@@ -132,21 +132,34 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.initDbIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var log, e_1, _a, _b, _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:db-handler:initDbIfNeeded");
                         (0, assert_1.default)(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, "DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (".concat(this._subplebbit.address, ") was provided"));
                         return [4 /*yield*/, this.initDbConfigIfNeeded()];
                     case 1:
-                        _a.sent();
+                        _e.sent();
                         if (!this._knex)
                             this._knex = (0, knex_1.default)(this._dbConfig);
-                        if (!!this._createdTables) return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.createTablesIfNeeded()];
+                        if (!!this._createdTables) return [3 /*break*/, 6];
+                        _e.label = 2;
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        _e.trys.push([2, 4, , 6]);
+                        return [4 /*yield*/, this.createTablesIfNeeded()];
                     case 3:
+                        _e.sent();
+                        return [3 /*break*/, 6];
+                    case 4:
+                        e_1 = _e.sent();
+                        _b = (_a = log).error;
+                        _d = (_c = "Sub (".concat(this._subplebbit.address, ") failed to create/migrate tables. Current db version (")).concat;
+                        return [4 /*yield*/, this.getDbVersion()];
+                    case 5:
+                        _b.apply(_a, [_d.apply(_c, [_e.sent(), "), latest db version ("]).concat(version_1.default.DB_VERSION, "). Error"), e_1]);
+                        throw e_1;
+                    case 6:
                         if (!this._keyv)
                             this._keyv = new keyv_1.default("sqlite://".concat(this._dbConfig.connection.filename));
                         return [2 /*return*/];
@@ -614,28 +627,31 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
                                         case 2:
                                             _a.sent();
-                                            return [3 /*break*/, 9];
+                                            return [3 /*break*/, 10];
                                         case 3:
-                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 9];
+                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 10];
                                             log("Migrating table ".concat(table, " to new schema"));
                                             return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
                                             _a.sent();
                                             tempTableName = "".concat(table).concat(version_1.default.DB_VERSION);
-                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
+                                            return [4 /*yield*/, this._knex.schema.dropTableIfExists(tempTableName)];
                                         case 5:
                                             _a.sent();
-                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
+                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 6:
                                             _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
+                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
                                         case 7:
                                             _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
+                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
                                         case 8:
                                             _a.sent();
-                                            _a.label = 9;
-                                        case 9: return [2 /*return*/];
+                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
+                                        case 9:
+                                            _a.sent();
+                                            _a.label = 10;
+                                        case 10: return [2 /*return*/];
                                     }
                                 });
                             }); }))];
@@ -1446,7 +1462,7 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.lockSubStart = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_1;
+            var log, lockfilePath, subDbPath, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1467,12 +1483,12 @@ var DbHandler = /** @class */ (function () {
                         log("Locked the start of subplebbit (".concat(subAddress, ") successfully"));
                         return [3 /*break*/, 4];
                     case 3:
-                        e_1 = _a.sent();
-                        if (e_1.message === "Lock file is already being held")
+                        e_2 = _a.sent();
+                        if (e_2.message === "Lock file is already being held")
                             (0, util_1.throwWithErrorCode)("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
                         else {
-                            log("Error while trying to lock start of sub (".concat(subAddress, "): ").concat(e_1));
-                            throw e_1;
+                            log("Error while trying to lock start of sub (".concat(subAddress, "): ").concat(e_2));
+                            throw e_2;
                         }
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
@@ -1483,7 +1499,7 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.unlockSubStart = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_2;
+            var log, lockfilePath, subDbPath, e_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1504,9 +1520,9 @@ var DbHandler = /** @class */ (function () {
                         log("Unlocked start of sub (".concat(subAddress, ")"));
                         return [3 /*break*/, 4];
                     case 3:
-                        e_2 = _a.sent();
-                        log("Error while trying to unlock start of sub (".concat(subAddress, "): ").concat(e_2));
-                        throw e_2;
+                        e_3 = _a.sent();
+                        log("Error while trying to unlock start of sub (".concat(subAddress, "): ").concat(e_3));
+                        throw e_3;
                     case 4: return [2 /*return*/];
                 }
             });
@@ -1527,7 +1543,7 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.lockSubCreation = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_3;
+            var log, lockfilePath, subDbPath, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1550,12 +1566,12 @@ var DbHandler = /** @class */ (function () {
                         log("Locked the creation of subplebbit (".concat(subAddress, ") successfully"));
                         return [3 /*break*/, 4];
                     case 3:
-                        e_3 = _a.sent();
-                        if (e_3.message === "Lock file is already being held")
+                        e_4 = _a.sent();
+                        if (e_4.message === "Lock file is already being held")
                             (0, util_1.throwWithErrorCode)("ERR_SUB_CREATION_LOCKED", { subplebbitAddress: subAddress });
                         else {
-                            log("Error while trying to lock creation of sub (".concat(subAddress, "): ").concat(e_3));
-                            throw e_3;
+                            log("Error while trying to lock creation of sub (".concat(subAddress, "): ").concat(e_4));
+                            throw e_4;
                         }
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
@@ -1566,7 +1582,7 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.unlockSubCreation = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_4;
+            var log, lockfilePath, subDbPath, e_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1587,8 +1603,8 @@ var DbHandler = /** @class */ (function () {
                         log("Unlocked creation of sub (".concat(subAddress, ")"));
                         return [3 /*break*/, 11];
                     case 3:
-                        e_4 = _a.sent();
-                        if (!(e_4.code === "ENOENT")) return [3 /*break*/, 6];
+                        e_5 = _a.sent();
+                        if (!(e_5.code === "ENOENT")) return [3 /*break*/, 6];
                         if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 5];
                         return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
                     case 4:
@@ -1596,7 +1612,7 @@ var DbHandler = /** @class */ (function () {
                         _a.label = 5;
                     case 5: return [3 /*break*/, 10];
                     case 6:
-                        if (!(e_4.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 9];
+                        if (!(e_5.message === "Lock is not acquired/owned by you")) return [3 /*break*/, 9];
                         if (!fs_1.default.existsSync(lockfilePath)) return [3 /*break*/, 8];
                         return [4 /*yield*/, fs_1.default.promises.rmdir(lockfilePath)];
                     case 7:
@@ -1604,8 +1620,8 @@ var DbHandler = /** @class */ (function () {
                         _a.label = 8;
                     case 8: return [3 /*break*/, 10];
                     case 9:
-                        log("Error while trying to unlock creation of sub (".concat(subAddress, "): ").concat(e_4));
-                        throw e_4;
+                        log("Error while trying to unlock creation of sub (".concat(subAddress, "): ").concat(e_5));
+                        throw e_5;
                     case 10: return [3 /*break*/, 11];
                     case 11: return [2 /*return*/];
                 }
@@ -1627,7 +1643,7 @@ var DbHandler = /** @class */ (function () {
     DbHandler.prototype.lockSubState = function (subAddress) {
         if (subAddress === void 0) { subAddress = this._subplebbit.address; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, lockfilePath, subDbPath, e_5;
+            var log, lockfilePath, subDbPath, e_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1649,8 +1665,8 @@ var DbHandler = /** @class */ (function () {
                         _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
-                        e_5 = _a.sent();
-                        if (e_5.message === "Lock file is already being held")
+                        e_6 = _a.sent();
+                        if (e_6.message === "Lock file is already being held")
                             (0, util_1.throwWithErrorCode)("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
