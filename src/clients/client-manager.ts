@@ -249,7 +249,9 @@ export class PublicationClientsManager extends ClientsManager {
         this._attemptingToResolve = true;
         const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         this._attemptingToResolve = false;
-        assert(typeof subIpns === "string");
+        if (!subIpns) throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
+
+        assert(typeof subIpns === "string", `Failed to resolve subplebbit address (${subplebbitAddress})`);
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;

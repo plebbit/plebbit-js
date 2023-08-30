@@ -46,6 +46,7 @@ import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription
 import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
 import assert from "assert";
+import { PlebbitError } from "./plebbit-error";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -219,6 +220,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        if (!resolvedSubplebbitAddress)
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
         const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress));
         const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true);
 
