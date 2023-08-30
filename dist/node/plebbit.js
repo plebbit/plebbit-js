@@ -87,6 +87,7 @@ var storage_1 = __importDefault(require("./runtime/node/storage"));
 var client_manager_1 = require("./clients/client-manager");
 var constants_1 = require("./constants");
 var assert_1 = __importDefault(require("assert"));
+var plebbit_error_1 = require("./plebbit-error");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -292,6 +293,8 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _c.sent();
+                        if (!resolvedSubplebbitAddress)
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress)];
                     case 2:

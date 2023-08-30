@@ -71,6 +71,7 @@ var assert_1 = __importDefault(require("assert"));
 var signer_1 = require("../signer");
 var lodash_1 = __importDefault(require("lodash"));
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
+var plebbit_error_1 = require("../plebbit-error");
 var ipfs_client_1 = require("./ipfs-client");
 var pubsub_client_1 = require("./pubsub-client");
 var chain_provider_client_1 = require("./chain-provider-client");
@@ -284,7 +285,9 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                     case 1:
                         subIpns = _e.sent();
                         this._attemptingToResolve = false;
-                        (0, assert_1.default)(typeof subIpns === "string");
+                        if (!subIpns)
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
+                        (0, assert_1.default)(typeof subIpns === "string", "Failed to resolve subplebbit address (".concat(subplebbitAddress, ")"));
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
                         this.updateIpfsState("fetching-subplebbit-ipns");

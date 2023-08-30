@@ -49,7 +49,7 @@ var open_graph_scraper_1 = __importDefault(require("open-graph-scraper"));
 var hpagent_1 = require("hpagent");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var plebbit_error_1 = require("../../plebbit-error");
-var probe_image_size_1 = __importDefault(require("probe-image-size"));
+var image_size_1 = __importDefault(require("image-size"));
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
@@ -138,13 +138,17 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
 exports.getThumbnailUrlOfLink = getThumbnailUrlOfLink;
 function fetchDimensionsOfImage(imageUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var result;
+        var imageFetched, imageBuffer, dimensions;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, probe_image_size_1.default)(imageUrl)];
+                case 0: return [4 /*yield*/, exports.nativeFunctions.fetch(imageUrl, { size: 5000000 })];
                 case 1:
-                    result = _a.sent();
-                    return [2 /*return*/, { width: result.width, height: result.height }];
+                    imageFetched = _a.sent();
+                    return [4 /*yield*/, imageFetched.buffer()];
+                case 2:
+                    imageBuffer = _a.sent();
+                    dimensions = (0, image_size_1.default)(imageBuffer);
+                    return [2 /*return*/, { width: dimensions.width, height: dimensions.height }];
             }
         });
     });

@@ -9,6 +9,7 @@ var messages;
     messages["ERR_COMMENT_UPDATE_MISSING_IPNS_NAME"] = "Can't update comment without a defined IPNS name (comment.ipnsName)";
     messages["ERR_SUBPLEBBIT_MISSING_FIELD"] = "Subplebbit is missing field needed for publishing";
     messages["ERR_INVALID_SUBPLEBBIT_ADDRESS"] = "Subplebbit address is incorrect. Address should be either a domain or IPNS";
+    messages["ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD"] = "The ENS address has no subplebbit-address text record that points to IPNS name";
     messages["ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS"] = "plebbit-author-address resolves to an invalid IPNS";
     messages["ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS"] = "subplebbit-address resolves to an invalid IPNS";
     messages["ERR_CID_IS_INVALID"] = "CID is invalid";
