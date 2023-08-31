@@ -49,7 +49,7 @@ var open_graph_scraper_1 = __importDefault(require("open-graph-scraper"));
 var hpagent_1 = require("hpagent");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var plebbit_error_1 = require("../../plebbit-error");
-var image_size_1 = __importDefault(require("image-size"));
+var probe_image_size_1 = __importDefault(require("probe-image-size"));
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
@@ -91,7 +91,13 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:getThumbnailUrlOfLink");
                     thumbnail = {};
-                    options = { url: url, downloadLimit: 2000000 };
+                    options = {
+                        url: url,
+                        downloadLimit: 2000000,
+                        headers: {
+                            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+                        }
+                    };
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 5, , 6]);
@@ -123,7 +129,7 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
                     e_1 = _b.sent();
                     plebbitError = new plebbit_error_1.PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
                         url: url,
-                        downloadLimit: options.downloadLimit,
+                        scrapeOptions: options,
                         proxyHttpUrl: proxyHttpUrl,
                         error: e_1
                     });
@@ -138,17 +144,13 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
 exports.getThumbnailUrlOfLink = getThumbnailUrlOfLink;
 function fetchDimensionsOfImage(imageUrl) {
     return __awaiter(this, void 0, void 0, function () {
-        var imageFetched, imageBuffer, dimensions;
+        var result;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, exports.nativeFunctions.fetch(imageUrl, { size: 5000000 })];
+                case 0: return [4 /*yield*/, (0, probe_image_size_1.default)(imageUrl)];
                 case 1:
-                    imageFetched = _a.sent();
-                    return [4 /*yield*/, imageFetched.buffer()];
-                case 2:
-                    imageBuffer = _a.sent();
-                    dimensions = (0, image_size_1.default)(imageBuffer);
-                    return [2 /*return*/, { width: dimensions.width, height: dimensions.height }];
+                    result = _a.sent();
+                    return [2 /*return*/, { width: result.width, height: result.height }];
             }
         });
     });
