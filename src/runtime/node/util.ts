@@ -49,7 +49,13 @@ export async function getThumbnailUrlOfLink(
 
     //@ts-expect-error
     const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
-    const options = { url, downloadLimit: 2000000 };
+    const options = {
+        url,
+        downloadLimit: 2000000,
+        headers: {
+            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+        }
+    };
 
     try {
         if (proxyHttpUrl) {
@@ -76,7 +82,7 @@ export async function getThumbnailUrlOfLink(
     } catch (e) {
         const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
             url,
-            downloadLimit: options.downloadLimit,
+            scrapeOptions: options,
             proxyHttpUrl,
             error: e
         });

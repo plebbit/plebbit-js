@@ -68,7 +68,7 @@
         "localforage": "1.10.0",
         "lodash-es": "4.17.21",
         "lru-cache": "7.18.3",
-        "open-graph-scraper": "5.2.3",
+        "open-graph-scraper": "4.11.1",
         "p-limit": "3.1.0",
         "peer-id": "0.16.0",
         "retry": "0.13.1",
