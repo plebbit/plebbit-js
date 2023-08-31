@@ -373,6 +373,15 @@ describe(`comment.link`, async () => {
         expect(thumbnailInfo.thumbnailHeight).to.equal(497);
     });
 
+    it(`Generates thumbnail url for twitter urls correctly`, async () => {
+        const url = "https://twitter.com/eustatheia/status/1691285870244937728";
+        const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
+    });
+
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
         const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
