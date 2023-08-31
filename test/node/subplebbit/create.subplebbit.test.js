@@ -123,6 +123,10 @@ describe(`plebbit.createSubplebbit`, async () => {
         expect(createdSubplebbit.description).to.equal(newSub.description);
         await createdSubplebbit.stop();
     });
+
+    it(`Fail to create a sub with ENS address has a capital letter`, async () => {
+        await assert.isRejected(plebbit.createSubplebbit({ address: "testEth.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+    });
 });
 
 describe("Create lock", async () => {

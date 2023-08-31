@@ -25,7 +25,7 @@ import {
 import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit";
-import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
@@ -219,6 +219,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
+        if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         if (!resolvedSubplebbitAddress)
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
@@ -302,6 +304,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async createSubplebbit(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType = {}): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         const canRunSub = this._canRunSub();
+
+        if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
         const localSub = async () => {
             if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });

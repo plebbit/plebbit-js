@@ -222,3 +222,8 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
     for (const code of Object.keys(messages)) if (messages[code] === message) return <keyof typeof messages>code;
     throw Error(`No error code was found for message (${message})`);
 }
+
+export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
+    if (!ensAddress.endsWith(".eth")) return false;
+    return /\p{Lu}/u.test(ensAddress); // Regex test for capital letters of all languages
+}
