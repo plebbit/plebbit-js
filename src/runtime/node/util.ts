@@ -11,7 +11,7 @@ import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error";
-import sizeOf from "image-size";
+import probe from "probe-image-size";
 
 export const mkdir = fs.mkdir;
 
@@ -93,10 +93,8 @@ export async function getThumbnailUrlOfLink(
 }
 
 async function fetchDimensionsOfImage(imageUrl: string): Promise<{ width: number; height: number } | undefined> {
-    const imageFetched = await nativeFunctions.fetch(imageUrl, { size: 5000000 }); // Max is 5mb
-    const imageBuffer = await imageFetched.buffer();
-    const dimensions = sizeOf(imageBuffer);
-    return { width: dimensions.width, height: dimensions.height };
+    const result = await probe(imageUrl);
+    return { width: result.width, height: result.height };
 }
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
