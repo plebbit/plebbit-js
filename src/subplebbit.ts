@@ -7,7 +7,8 @@ import {
     shortifyAddress,
     throwWithErrorCode,
     timestamp,
-    getErrorCodeFromMessage
+    getErrorCodeFromMessage,
+    doesEnsAddressHaveCapitalLetter
 } from "./util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer, encryptEd25519AesGcm } from "./signer";
 import { PostsPages } from "./pages";
@@ -355,6 +356,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         await this.dbHandler.initDestroyedConnection();
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
+            if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
+                throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
                 this.emit("error", err);
