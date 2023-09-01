@@ -98,9 +98,12 @@ new Subscription(subscriptionId).on('message', console.log)
 - `method: startSubplebbit, params: [address: string]`
 - `method: stopSubplebbit, params: [address: string]`
 - `method: editSubplebbit, params: [address: string, subplebbitEditOptions]`
+- `method: deleteSubplebbit, params: [address: string]`
 - `method: listSubplebbits, params: []`
 - `method: getDefaults, params: []`
 - `method: fetchCid, params: [cid: string]`
+- `method: getPlebbitOptions, params: []`
+- `method: setPlebbitOptions, params: [plebbitOptions]`
 - `method: getPeers, params: []`
 - `method: getStats, params: []`
 

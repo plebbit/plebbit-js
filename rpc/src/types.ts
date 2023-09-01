@@ -1,6 +1,7 @@
 export type PlebbitWsServerClassOptions = {
   port: number
   plebbit: any
+  plebbitOptions?: any
 }
 
 export type PlebbitWsServerOptions = {
