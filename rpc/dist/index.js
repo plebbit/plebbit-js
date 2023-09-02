@@ -52,13 +52,15 @@ const getStartedSubplebbit = (address) => __awaiter(void 0, void 0, void 0, func
     return startedSubplebbits[address];
 });
 class PlebbitWsServer extends events_1.EventEmitter {
-    constructor({ port, plebbit }) {
+    constructor({ port, plebbit, plebbitOptions }) {
         super();
         this.connections = {};
         this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
         this.publishing = {};
+        // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
+        this.plebbitOptions = plebbitOptions;
         this.rpcWebsockets = new rpc_websockets_1.Server({
             port,
             // might be needed to specify host for security later
@@ -95,8 +97,11 @@ class PlebbitWsServer extends events_1.EventEmitter {
         this.rpcWebsocketsRegister('startSubplebbit', this.startSubplebbit.bind(this));
         this.rpcWebsocketsRegister('stopSubplebbit', this.stopSubplebbit.bind(this));
         this.rpcWebsocketsRegister('editSubplebbit', this.editSubplebbit.bind(this));
+        this.rpcWebsocketsRegister('deleteSubplebbit', this.deleteSubplebbit.bind(this));
         this.rpcWebsocketsRegister('listSubplebbits', this.listSubplebbits.bind(this));
         this.rpcWebsocketsRegister('fetchCid', this.fetchCid.bind(this));
+        this.rpcWebsocketsRegister('getPlebbitOptions', this.getPlebbitOptions.bind(this));
+        this.rpcWebsocketsRegister('setPlebbitOptions', this.setPlebbitOptions.bind(this));
         // JSON RPC pubsub methods
         this.rpcWebsocketsRegister('commentUpdate', this.commentUpdate.bind(this));
         this.rpcWebsocketsRegister('subplebbitUpdate', this.subplebbitUpdate.bind(this));
@@ -174,6 +179,7 @@ class PlebbitWsServer extends events_1.EventEmitter {
             try {
                 const subplebbit = yield this.plebbit.createSubplebbit({ address });
                 yield subplebbit.start();
+                startedSubplebbits[address] = subplebbit;
             }
             catch (e) {
                 delete startedSubplebbits[address];
@@ -203,6 +209,28 @@ class PlebbitWsServer extends events_1.EventEmitter {
             return (0, utils_1.clone)(subplebbit);
         });
     }
+    deleteSubplebbit(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const address = params[0];
+            // try to delete a started sub
+            const startedSubplebbit = yield getStartedSubplebbit(address);
+            if (startedSubplebbit) {
+                yield startedSubplebbit.stop();
+                yield startedSubplebbit.delete();
+                delete startedSubplebbits[address];
+            }
+            // try to delete a sub not started
+            else {
+                const addresses = yield this.plebbit.listSubplebbits();
+                if (!addresses.includes(address)) {
+                    throw Error(`subplebbit with address '${address}' not found in plebbit.listSubplebbits()`);
+                }
+                const subplebbit = yield this.plebbit.createSubplebbit({ address });
+                yield subplebbit.delete();
+            }
+            return true;
+        });
+    }
     listSubplebbits(params) {
         return __awaiter(this, void 0, void 0, function* () {
             const subplebbits = yield this.plebbit.listSubplebbits();
@@ -214,6 +242,39 @@ class PlebbitWsServer extends events_1.EventEmitter {
             const cid = params[0];
             const res = yield this.plebbit.fetchCid(cid);
             return (0, utils_1.clone)(res);
+        });
+    }
+    getPlebbitOptions(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // if plebbitOptions is undefined, send empty object
+            return this.plebbitOptions || {};
+        });
+    }
+    setPlebbitOptions(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const plebbitOptions = params[0];
+            this.plebbit = yield plebbit_js_1.default.Plebbit(plebbitOptions);
+            this.plebbitOptions = plebbitOptions;
+            // restart all started subplebbits with new plebbit options
+            for (const address in startedSubplebbits) {
+                const startedSubplebbit = yield getStartedSubplebbit(address);
+                try {
+                    yield startedSubplebbit.stop();
+                }
+                catch (error) {
+                    log.error('setPlebbitOptions failed stopping subplebbit', { error, address, params });
+                }
+                try {
+                    startedSubplebbits[address] = yield this.plebbit.createSubplebbit({ address });
+                    yield startedSubplebbits[address].start();
+                }
+                catch (error) {
+                    log.error('setPlebbitOptions failed restarting subplebbit', { error, address, params });
+                }
+            }
+            // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options, 
+            // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
+            return true;
         });
     }
     commentUpdate(params, connectionId) {
@@ -396,7 +457,7 @@ const createPlebbitWsServer = ({ port, plebbitOptions }) => __awaiter(void 0, vo
         throw Error(`createPlebbitWsServer port '${port}' not a number`);
     }
     const plebbit = yield plebbit_js_1.default.Plebbit(plebbitOptions);
-    const plebbitWss = new PlebbitWsServer({ plebbit, port });
+    const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions });
     return plebbitWss;
 });
 const PlebbitRpc = {
