@@ -161,7 +161,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             };
             this._challenge = decryptedChallenge;
             this._updatePublishingState("waiting-challenge-answers");
-            const subscribedProviders = lodash.uniq(this._pubsubProviders.slice(0, this._currentPubsubProviderIndex + 1));
+            const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
+                .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
+                .map(([provider]) => provider);
+
             subscribedProviders.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-answers", provider));
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
@@ -201,8 +204,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             }
 
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            const subscribedProviders = lodash.uniq(this._pubsubProviders.slice(0, this._currentPubsubProviderIndex + 1));
-            subscribedProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
+            this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
@@ -236,9 +238,18 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
         this._updatePublishingState("publishing-challenge-answer");
-        await this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeAnswer);
+        this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
+        await this._clientsManager.pubsubPublishOnProvider(
+            this._pubsubTopicWithfallback(),
+            this._challengeAnswer,
+            this._pubsubProviders[this._currentPubsubProviderIndex]
+        );
+
         this._updatePublishingState("waiting-challenge-verification");
-        this._clientsManager.updatePubsubState("waiting-challenge-verification", undefined);
+        const providers = Object.entries(this._clientsManager.providerSubscriptions)
+            .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
+            .map(([provider]) => provider);
+        providers.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-verification", provider));
 
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", {
@@ -295,8 +306,13 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     _setProviderToFailIfNoResponse(providerIndex: number) {
         setTimeout(async () => {
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
-                await this._plebbit.clients.pubsubClients[this._pubsubProviders[providerIndex]]._client.pubsub.unsubscribe(
+                const log = Logger("plebbit-js:publication:publish");
+                log.error(
+                    `Provider (${this._pubsubProviders[providerIndex]}) did not receive a response after ${this._setProviderFailureThresholdSeconds}s, will unsubscribe and set state to stopped`
+                );
+                await this._clientsManager.pubsubUnsubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
+                    this._pubsubProviders[providerIndex],
                     this.handleChallengeExchange
                 );
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
@@ -355,14 +371,16 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         );
 
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-
             this._updatePublishingState("publishing-challenge-request");
             this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
             try {
                 await this._clientsManager.pubsubSubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
                     this.handleChallengeExchange,
+                    this._pubsubProviders[this._currentPubsubProviderIndex]
+                );
+                this._clientsManager.updatePubsubState(
+                    "publishing-challenge-request",
                     this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
                 await this._clientsManager.pubsubPublishOnProvider(
@@ -404,7 +422,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     this._updatePublishingState("failed");
                     const error = new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
                         pubsubProviders: this._pubsubProviders,
-                        publishedChallengeRequets: this._publishedChallengeRequests,
+                        publishedChallengeRequests: this._publishedChallengeRequests,
                         publishToDifferentProviderThresholdSeconds: this._publishToDifferentProviderThresholdSeconds
                     });
                     this.emit("error", error);

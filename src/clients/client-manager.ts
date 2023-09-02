@@ -212,24 +212,6 @@ export class PublicationClientsManager extends ClientsManager {
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
     }
 
-    // Pubsub methods here
-
-    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string) {
-        const newState =
-            this._publication.publishingState === "publishing-challenge-request"
-                ? "publishing-challenge-request"
-                : "publishing-challenge-answer";
-        this.updatePubsubState(newState, pubsubProvider);
-    }
-
-    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string) {
-        this.updatePubsubState("stopped", pubsubProvider);
-    }
-
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string) {
-        this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
-    }
-
     // Resolver methods here
     preResolveTextRecord(
         address: string,
