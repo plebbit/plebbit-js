@@ -198,6 +198,39 @@ describe("publishing comments", async () => {
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
         await publishWithExpectedResult(post, true);
     });
+
+    it(`comment.publish emits an error if challenge requests have been published but no response has been received by any provider within the time allotted`, async () => {
+        const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+        const upPubsubUrl = "http://localhost:15002/api/v0";
+        const plebbit = await mockPlebbit({
+            pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+        });
+
+        const mockPost = await generateMockPost(signers[0].address, plebbit);
+        mockPost._publishToDifferentProviderThresholdSeconds = 5;
+        mockPost._setProviderFailureThresholdSeconds = 5;
+
+        const expectedStates = {
+            [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
+            [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
+        };
+
+        const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+
+        for (const pubsubUrl of Object.keys(expectedStates))
+            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+
+        await mockPost.publish();
+        await new Promise((resolve) =>
+            mockPost.once("error", (err) => {
+                expect(err.details.publishedChallengeRequests.length).to.equal(2);
+                expect(err.code).to.equal("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST");
+                resolve();
+            })
+        );
+
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
 });
 
 describe(`commentUpdate.author.subplebbit`, async () => {

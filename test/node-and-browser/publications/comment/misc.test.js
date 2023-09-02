@@ -572,7 +572,7 @@ describe(`comment.clients`, async () => {
             const pubsubUrls = Object.keys(plebbit.clients.pubsubClients);
             // Only first pubsub url is used for subscription. For publishing we use all providers
             const expectedStates = {
-                [pubsubUrls[0]]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"],
+                [pubsubUrls[0]]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
                 [pubsubUrls[1]]: [],
                 [pubsubUrls[2]]: []
             };
@@ -599,11 +599,9 @@ describe(`comment.clients`, async () => {
                 [pubsubUrls[0]]: [
                     "subscribing-pubsub",
                     "publishing-challenge-request",
-                    "stopped",
                     "waiting-challenge",
                     "waiting-challenge-answers",
                     "publishing-challenge-answer",
-                    "stopped",
                     "waiting-challenge-verification",
                     "stopped"
                 ],
@@ -659,7 +657,7 @@ describe(`comment.clients`, async () => {
 
             const expectedStates = {
                 [offlinePubsubUrl]: ["subscribing-pubsub", "stopped"],
-                [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"]
+                [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
             };
 
             const actualStates = { [offlinePubsubUrl]: [], [upPubsubUrl]: [] };
@@ -682,11 +680,11 @@ describe(`comment.clients`, async () => {
             plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
 
             const mockPost = await generateMockPost(signers[0].address, plebbit);
-            mockPost._reattemptPublishingAfterSeconds = 5;
+            mockPost._publishToDifferentProviderThresholdSeconds = 5;
 
             const expectedStates = {
-                [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"],
-                [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "stopped", "waiting-challenge", "stopped"]
+                [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
+                [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
             };
 
             const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
@@ -694,15 +692,57 @@ describe(`comment.clients`, async () => {
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-            await Promise.all([
-                publishWithExpectedResult(mockPost, true),
-                new Promise((resolve) =>
-                    mockPost.once("error", (error) => {
-                        expect(error.code).to.equal("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST");
-                        resolve();
-                    })
-                )
-            ]);
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge (pubsub provider 0 fail to receive a response in alotted time)`, async () => {
+            const imageCaptchaSubplebbitAddress = signers[2].address;
+
+            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+            const upPubsubUrl = "http://localhost:15002/api/v0";
+            const plebbit = await mockPlebbit({
+                pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+            });
+
+            plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
+
+            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            mockPost._publishToDifferentProviderThresholdSeconds = 5;
+            mockPost.removeAllListeners();
+
+            const expectedStates = {
+                [notRespondingPubsubUrl]: [
+                    "subscribing-pubsub",
+                    "publishing-challenge-request",
+                    "waiting-challenge",
+                    "waiting-challenge-answers",
+                    "waiting-challenge-verification",
+                    "stopped"
+                ],
+                [upPubsubUrl]: [
+                    "subscribing-pubsub",
+                    "publishing-challenge-request",
+                    "waiting-challenge",
+                    "waiting-challenge-answers",
+                    "publishing-challenge-answer",
+                    "waiting-challenge-verification",
+                    "stopped"
+                ]
+            };
+
+            const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+
+            for (const pubsubUrl of Object.keys(expectedStates))
+                mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+
+            mockPost.once("challenge", async (challengeMsg) => {
+                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
+                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+            });
+
+            await publishWithExpectedResult(mockPost, true);
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
