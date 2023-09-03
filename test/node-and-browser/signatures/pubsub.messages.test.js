@@ -56,8 +56,8 @@ describe("challengerequest", async () => {
     it(`challenge request with outdated timestamp is invalidated`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
-        expect(comment._challengeRequest).to.be.a("object");
-        const challengeRequestToEdit = lodash.cloneDeep(comment._challengeRequest);
+        expect(comment._publishedChallengeRequests).to.be.a("array");
+        const challengeRequestToEdit = lodash.cloneDeep(comment._publishedChallengeRequests[0]);
         challengeRequestToEdit.timestamp = timestamp() - 6 * 60; // Should be invalidated now
         challengeRequestToEdit.signature = await signChallengeRequest(challengeRequestToEdit, comment.pubsubMessageSigner);
         const verificaiton = await verifyChallengeRequest(challengeRequestToEdit, true);
@@ -67,9 +67,9 @@ describe("challengerequest", async () => {
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
-        // comment._challengeRequest (ChallengeRequest) should be defined now
-        expect(comment._challengeRequest).to.be.a("object");
-        const verificaiton = await verifyChallengeRequest(comment._challengeRequest);
+        // comment._publishedChallengeRequests (ChallengeRequest[]) should be defined now
+        expect(comment._publishedChallengeRequests).to.be.a("array");
+        const verificaiton = await verifyChallengeRequest(comment._publishedChallengeRequests[0]);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
@@ -78,17 +78,18 @@ describe("challengerequest", async () => {
         const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
         comment._clientsManager.pubsubPublish = () => undefined;
 
-        await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+        await comment.publish(); // comment._publishedChallengeRequests should be defined now, although it hasn't been published
 
-        comment._challengeRequest.encryptedPublication = await encryptEd25519AesGcm(
+        const challengeRequestToModify = comment._publishedChallengeRequests[0];
+        challengeRequestToModify.encryptedPublication = await encryptEd25519AesGcm(
             JSON.stringify(comment.toJSONPubsubMessagePublication()),
             comment.pubsubMessageSigner.privateKey,
             signers[5].publicKey // Use a public key that cannot be decrypted for the sub
         );
 
-        comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
+        challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, comment.pubsubMessageSigner);
 
-        await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+        await originalPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify);
 
         await new Promise((resolve) => {
             comment.once("challengeverification", (verificationMsg) => {
@@ -106,12 +107,12 @@ describe("challengerequest", async () => {
         comment._clientsManager.pubsubPublishOnProvider = () => undefined;
 
         try {
-            await comment.publish(); // comment._challengeRequest should be defined now, although it hasn't been published
+            await comment.publish(); // comment._publishedChallengeRequests should be defined now, although it hasn't been published
         } catch {}
 
         comment._clientsManager.pubsubPublishOnProvider = originalPublish;
 
-        expect(comment._challengeRequest).to.be.a("object");
+        expect(comment._publishedChallengeRequests).to.be.a("array");
 
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
 
@@ -124,15 +125,17 @@ describe("challengerequest", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        comment._challengeRequest.encryptedPublication = await encryptEd25519AesGcm(
+        const challengeRequestToModify = comment._publishedChallengeRequests[0];
+
+        challengeRequestToModify.encryptedPublication = await encryptEd25519AesGcm(
             JSON.stringify(commentObjToEncrypt),
             comment.pubsubMessageSigner.privateKey,
             comment.subplebbit.encryption.publicKey
         );
 
-        comment._challengeRequest.signature = await signChallengeRequest(comment._challengeRequest, comment.pubsubMessageSigner);
+        challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, comment.pubsubMessageSigner);
 
-        await comment._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, comment._challengeRequest);
+        await comment._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify);
 
         await new Promise((resolve) => {
             comment.once("challengeverification", (verificationMsg) => {
@@ -152,19 +155,22 @@ describe("challengerequest", async () => {
 
         await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
 
-        // comment._challengeRequest (ChallengeRequest) should be defined now
-        expect(comment._challengeRequest).to.be.a("object");
-        const invalidSignature = lodash.clone(comment._challengeRequest);
-        invalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
-        const verificaiton = await verifyChallengeRequest(invalidSignature);
+        // comment._publishedChallengeRequests (ChallengeRequest) should be defined now
+        expect(comment._publishedChallengeRequests).to.be.a("array");
+        const requestWithInvalidSignature = lodash.clone(comment._publishedChallengeRequests[0]);
+        requestWithInvalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
+        const verificaiton = await verifyChallengeRequest(requestWithInvalidSignature);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
-        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, invalidSignature);
+        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, requestWithInvalidSignature);
 
         await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
                 const msgParsed = decode(pubsubMsg["data"]);
-                if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === invalidSignature.challengeRequestId) {
+                if (
+                    msgParsed.type === "CHALLENGEVERIFICATION" &&
+                    msgParsed.challengeRequestId === requestWithInvalidSignature.challengeRequestId
+                ) {
                     assert.fail("Subplebbit should not respond to a challenge request with invalid signature");
                 }
             };
@@ -259,7 +265,7 @@ describe("challengeanswer", async () => {
                 await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
                 const toSignAnswer = {
                     type: "CHALLENGEANSWER",
-                    challengeRequestId: comment._challengeRequest.challengeRequestId,
+                    challengeRequestId: comment._publishedChallengeRequests[0].challengeRequestId,
                     encryptedChallengeAnswers: JSON.stringify([2]),
                     userAgent: version.default.USER_AGENT,
                     protocolVersion: version.default.PROTOCOL_VERSION
@@ -283,7 +289,7 @@ describe("challengeanswer", async () => {
                     const msgParsed = decode(pubsubMsg["data"]);
                     if (
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
-                        msgParsed.challengeRequestId === comment._challengeRequest.challengeRequestId
+                        msgParsed.challengeRequestId === comment._publishedChallengeRequests[0].challengeRequestId
                     ) {
                         assert.fail("Subplebbit should ignore a challenge answer with invalid signature");
                     }
@@ -301,10 +307,10 @@ describe("challengeanswer", async () => {
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
-        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+        const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
 
         comment.once("challenge", async (challengeMsg) => {
-            comment._clientsManager.pubsubPublish = () => undefined;
+            comment._clientsManager.pubsubPublishOnProvider = () => undefined; // Disable publishing
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
@@ -314,7 +320,7 @@ describe("challengeanswer", async () => {
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
             comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
-            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer);
+            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer, comment._pubsubProviders[0]);
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);

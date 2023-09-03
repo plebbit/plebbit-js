@@ -44,6 +44,24 @@ describe("publishing comments", async () => {
         await waitTillCommentIsInParentPages(post, plebbit, { link });
     });
 
+    it(`comment.author.shortAddress is defined throughout publishing`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        expect(post.author.shortAddress).to.be.a("string").with.length.above(0);
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await publishWithExpectedResult(post, true);
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+            .to.be.a("string")
+            .with.length.above(0);
+        await post.stop();
+    });
+
     it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
         const commentProps = {
             title: "Random " + Math.random(),
@@ -182,6 +200,39 @@ describe("publishing comments", async () => {
 
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
         await publishWithExpectedResult(post, true);
+    });
+
+    it(`comment.publish emits an error if challenge requests have been published but no response has been received by any provider within the time allotted`, async () => {
+        const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+        const upPubsubUrl = "http://localhost:15002/api/v0";
+        const plebbit = await mockPlebbit({
+            pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+        });
+
+        const mockPost = await generateMockPost(signers[0].address, plebbit);
+        mockPost._publishToDifferentProviderThresholdSeconds = 5;
+        mockPost._setProviderFailureThresholdSeconds = 5;
+
+        const expectedStates = {
+            [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
+            [upPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"]
+        };
+
+        const actualStates = { [notRespondingPubsubUrl]: [], [upPubsubUrl]: [] };
+
+        for (const pubsubUrl of Object.keys(expectedStates))
+            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+
+        await mockPost.publish();
+        await new Promise((resolve) =>
+            mockPost.once("error", (err) => {
+                expect(err.details.publishedChallengeRequests.length).to.equal(2);
+                expect(err.code).to.equal("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST");
+                resolve();
+            })
+        );
+
+        expect(actualStates).to.deep.equal(expectedStates);
     });
 });
 
@@ -327,6 +378,20 @@ describe(`comment.publishingState`, async () => {
     it(`publishingState is stopped by default`, async () => {
         const comment = await generateMockPost(subplebbitAddress, plebbit);
         expect(comment.publishingState).to.equal("stopped");
+    });
+
+    it(`comment.publishingState stays as stopped after calling comment.update()`, async () => {
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+        const commentCid = sub.posts.pages.hot.comments[0].cid;
+        const comment = await plebbit.createComment({ cid: commentCid });
+        expect(comment.publishingState).to.equal("stopped");
+        comment.on("publishingstatechange", (newState) => {
+            if (newState !== "stopped") expect.fail("Should not change publishing state");
+        });
+        comment.update();
+        await new Promise((resolve) => comment.once("update", resolve));
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
     });
 
     it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {

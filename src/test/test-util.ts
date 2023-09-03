@@ -383,12 +383,14 @@ export async function publishWithExpectedResult(publication: Publication, expect
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason})`;
-                console.error(msg);
+                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
+                    verificationMsg.challengeSuccess
+                }). Reason (${verificationMsg.reason}): ${JSON.stringify(verificationMsg)}`;
                 reject(msg);
             } else if (expectedReason && expectedReason !== verificationMsg.reason) {
-                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason})`;
-                console.error(msg);
+                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(
+                    verificationMsg
+                )}`;
                 reject(msg);
             } else resolve(1);
         });

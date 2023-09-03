@@ -35,7 +35,7 @@ import { Plebbit } from "../../plebbit";
 import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 
-import * as lockfile from "proper-lockfile";
+import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../sort-handler";
 
 const TABLES = Object.freeze({
@@ -74,13 +74,27 @@ export class DbHandler {
     }
 
     async initDbIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:db-handler:initDbIfNeeded");
         assert(
             typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0,
             `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`
         );
         await this.initDbConfigIfNeeded();
         if (!this._knex) this._knex = knex(this._dbConfig);
-        if (!this._createdTables) await this.createTablesIfNeeded();
+        if (!this._createdTables)
+            try {
+                await this.createTablesIfNeeded();
+            } catch (e) {
+                log.error(
+                    `Sub (${
+                        this._subplebbit.address
+                    }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
+                        env.DB_VERSION
+                    }). Error`,
+                    e
+                );
+                throw e;
+            }
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
     }
 
@@ -163,6 +177,8 @@ export class DbHandler {
             table.integer("linkWidth").nullable().checkPositive();
             table.integer("linkHeight").nullable().checkPositive();
             table.string("thumbnailUrl").nullable();
+            table.integer("thumbnailUrlWidth").nullable();
+            table.integer("thumbnailUrlHeight").nullable();
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -355,7 +371,7 @@ export class DbHandler {
         const priorDbVersion = await this.getDbVersion();
 
         log.trace(`current db version: ${priorDbVersion}`);
-        const needToMigrate = priorDbVersion !== env.DB_VERSION;
+        const needToMigrate = priorDbVersion < env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -380,16 +396,11 @@ export class DbHandler {
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${env.DB_VERSION}`;
+                    await this._knex.schema.dropTableIfExists(tempTableName);
                     await createTableFunctions[i].bind(this)(tempTableName);
-                    if (table.startsWith("challenge") && priorDbVersion <= 6) {
-                        // Skip copying challenge tables if current db version is 6 or lower
-                        await this._knex.schema.dropTable(table);
-                        await this._knex.schema.renameTable(tempTableName, table);
-                    } else {
-                        await this._copyTable(table, tempTableName);
-                        await this._knex.schema.dropTable(table);
-                        await this._knex.schema.renameTable(tempTableName, table);
-                    }
+                    await this._copyTable(table, tempTableName);
+                    await this._knex.schema.dropTable(table);
+                    await this._knex.schema.renameTable(tempTableName, table);
                 }
             })
         );
@@ -417,6 +428,14 @@ export class DbHandler {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
             const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
+            // Need to make sure that array fields are json strings
+            for (const srcRecord of srcRecordFiltered)
+                for (const srcRecordKey of Object.keys(srcRecord))
+                    if (Array.isArray(srcRecord[srcRecordKey])) {
+                        srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
+                        assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
+                    }
+
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
             for (const srcRecord of srcRecordFiltered) await this._knex(dstTable).insert(srcRecord);
@@ -567,7 +586,7 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]> {
         if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
             this._needToUpdateCommentUpdates = false;
@@ -579,16 +598,25 @@ export class DbHandler {
         // 3 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
 
         // 4 - Comments that new votes, CommentEdit or other comments were published under them
+        // 5 - CommentUpdate IPNS has expired (timestamp() >= updatedAt + lifetime + 100)
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
 
         // Also add all comments of each author to the list
 
+        // updatedAt + ipnsLifetimeSeconds = expiry
+        // timestamp() > expiry - buffer => we should update the IPNS
+        // timestamp() + buffer > updatedAt + ipnsLifetimeSeconds
+        // timestamp() + buffer - ipnsLifetimeSeconds > updatedAt
+
+        const ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
+
         const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhereNotIn("ipnsKeyName", ipnsKeyNames);
+            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
+            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", timestamp() + ipnsBufferSeconds - ipnsLifetimeSeconds);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)

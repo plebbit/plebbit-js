@@ -355,6 +355,8 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
     deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
+    thumbnailUrlWidth?: number;
+    thumbnailUrlHeight?: number;
     cid?: string;
     shortCid?: string;
     ipnsName?: string;
@@ -363,7 +365,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
 export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "shortCid" | "postCid" | "depth" | "ipnsKeyName" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>, Omit<CommentUpdate, "author" | "replies"> {
     replies?: PagesTypeJson;
 }
-export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
+export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">, Pick<Required<CommentType>, "depth" | "ipnsName"> {
     author: AuthorIpfsType;
 }
 export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid">, Pick<CommentWithCommentUpdate, "cid" | "postCid"> {
@@ -372,7 +374,7 @@ export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
     depth: 0;
     parentCid: undefined;
 }
-export interface PostIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl">, Pick<CommentWithCommentUpdate, "cid" | "postCid">, Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl"> {
+export interface PostIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">, Pick<CommentWithCommentUpdate, "cid" | "postCid">, Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> {
 }
 export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
     author: CommentIpfsType["author"];

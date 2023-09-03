@@ -5,6 +5,7 @@ export enum messages {
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
+    ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD = "The ENS address has no subplebbit-address text record that points to IPNS name",
     ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS = "plebbit-author-address resolves to an invalid IPNS",
     ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS = "subplebbit-address resolves to an invalid IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
@@ -25,6 +26,7 @@ export enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
+    ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER = "ENS address has an uppercase letter. Subplebbit ENS address should be lowercase",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -68,6 +70,7 @@ export enum messages {
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
     ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors",
     ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD = "CommentEdit includes a field that cannot be used for mods",
+    ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for both mods and authors",
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
@@ -97,5 +100,6 @@ export enum messages {
     // Pubsub errors
     ERR_PUBSUB_FAILED_TO_SUBSCRIBE = "Failed to subscribe on pubsub",
     ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE = "Failed to unsubscribe on pubsub",
-    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub"
+    ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub",
+    ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST = "Did not receive response to challenge request in the specified time"
 }

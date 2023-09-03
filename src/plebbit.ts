@@ -25,7 +25,7 @@ import {
 import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit";
-import { removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
 import { Resolver } from "./resolver";
@@ -47,6 +47,7 @@ import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import assert from "assert";
+import { PlebbitError } from "./plebbit-error";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -227,8 +228,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
+        if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
         if (this.plebbitRpcClient) return this.plebbitRpcClient.getSubplebbit(subplebbitAddress);
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+        if (!resolvedSubplebbitAddress)
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
         const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress));
         const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true);
 
@@ -311,6 +316,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         if (this.plebbitRpcClient) return this.plebbitRpcClient.createSubplebbit(options);
         const canRunSub = this._canRunSub();
+
+        if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
         const localSub = async () => {
             if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });

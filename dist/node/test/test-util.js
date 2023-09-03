@@ -604,13 +604,11 @@ function publishWithExpectedResult(publication, expectedChallengeSuccess, expect
                             publication.once("challengeverification", function (verificationMsg) {
                                 receivedResponse = true;
                                 if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, "). Reason (").concat(verificationMsg.reason, ")");
-                                    console.error(msg);
+                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, "). Reason (").concat(verificationMsg.reason, "): ").concat(JSON.stringify(verificationMsg));
                                     reject(msg);
                                 }
                                 else if (expectedReason && expectedReason !== verificationMsg.reason) {
-                                    var msg = "Expected reason to be (".concat(expectedReason, ") and got (").concat(verificationMsg.reason, ")");
-                                    console.error(msg);
+                                    var msg = "Expected reason to be (".concat(expectedReason, ") and got (").concat(verificationMsg.reason, "): ").concat(JSON.stringify(verificationMsg));
                                     reject(msg);
                                 }
                                 else

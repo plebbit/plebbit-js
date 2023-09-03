@@ -7,7 +7,8 @@ import {
     shortifyAddress,
     throwWithErrorCode,
     timestamp,
-    getErrorCodeFromMessage
+    getErrorCodeFromMessage,
+    doesEnsAddressHaveCapitalLetter
 } from "./util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer, encryptEd25519AesGcm } from "./signer";
 import { PostsPages } from "./pages";
@@ -133,6 +134,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _ipfsNodeIpnsKeyNames: string[];
     private _subplebbitUpdateTrigger: boolean;
     private _loadingOperation: RetryOperation;
+    private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
 
     constructor(plebbit: Plebbit) {
@@ -144,6 +146,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
         this._sync = false;
+        this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
 
         // these functions might get separated from their `this` when used
         this.start = this.start.bind(this);
@@ -353,6 +356,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         await this.dbHandler.initDestroyedConnection();
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
+            if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
+                throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
                 this.emit("error", err);
@@ -578,32 +583,54 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
 
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined);
+        const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
+        const editorModRole = this.roles && this.roles[commentEdit.author.address];
+
         const editorAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-        const modRole = this.roles && this.roles[commentEdit.author.address];
-        if (commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey) {
-            // CommentEdit is signed by original author
-            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
+
+        if (editSignedByOriginalAuthor && editorModRole) {
+            const combinedEditFields = [...AUTHOR_EDIT_FIELDS, ...MOD_EDIT_FIELDS];
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEditRaw))) {
+                if (!combinedEditFields.includes(<any>editField)) {
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: combinedEditFields
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
+                }
+            }
+            await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
+            log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
+        } else if (editSignedByOriginalAuthor) {
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEditRaw))) {
                 if (!AUTHOR_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD;
-                    log(`(${challengeRequestId}): `, msg);
-                    return msg;
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: AUTHOR_EDIT_FIELDS
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
                 }
             }
 
             await this.dbHandler.insertEdit(commentEdit.toJSONForDb(challengeRequestId));
-            log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEdit.toJSON());
-        } else if (modRole) {
+            log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
+        } else if (editorModRole) {
             log.trace(
                 `(${challengeRequestId}): `,
-                `${modRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid} with CommentEdit: `,
-                commentEdit.toJSON()
+                `${editorModRole.role} (${editorAddress}) is attempting to CommentEdit ${commentToBeEdited?.cid} with CommentEdit: `,
+                commentEditRaw
             );
 
-            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEdit.toJSON()))) {
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(commentEditRaw))) {
                 if (!MOD_EDIT_FIELDS.includes(<any>editField)) {
-                    const msg = messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD;
-                    log(`(${challengeRequestId}): `, msg);
-                    return msg;
+                    const error = new PlebbitError("ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD", {
+                        invalidField: editField,
+                        allowedFields: AUTHOR_EDIT_FIELDS
+                    });
+                    log(`(${challengeRequestId}): `, String(error));
+                    return error.message;
                 }
             }
 
@@ -807,12 +834,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             const commentToInsert = await this.plebbit.createComment(publication);
 
-            if (commentToInsert.link && this.settings?.fetchThumbnailUrls)
-                commentToInsert.thumbnailUrl = await getThumbnailUrlOfLink(
-                    commentToInsert.link,
-                    this,
-                    this.settings.fetchThumbnailUrlsProxyUrl
-                );
+            if (commentToInsert.link && this.settings?.fetchThumbnailUrls) {
+                const thumbnailInfo = await getThumbnailUrlOfLink(commentToInsert.link, this, this.settings.fetchThumbnailUrlsProxyUrl);
+                if (thumbnailInfo) {
+                    commentToInsert.thumbnailUrl = thumbnailInfo.thumbnailUrl;
+                    commentToInsert.thumbnailUrlWidth = thumbnailInfo.thumbnailWidth;
+                    commentToInsert.thumbnailUrlHeight = thumbnailInfo.thumbnailHeight;
+                }
+            }
 
             const ipfsSigner = await this.plebbit.createSigner();
             ipfsSigner.ipnsKeyName = ipnsKeyName;
@@ -1204,7 +1233,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(options));
         await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: signerRaw.ipnsKeyName,
-            allowOffline: true
+            allowOffline: true,
+            lifetime: `${this._commentUpdateIpnsLifetimeSeconds}s`
         });
     }
 
@@ -1306,7 +1336,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
-        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(this._ipfsNodeIpnsKeyNames, trx);
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
+            this._ipfsNodeIpnsKeyNames,
+            this._commentUpdateIpnsLifetimeSeconds,
+            trx
+        );
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
 

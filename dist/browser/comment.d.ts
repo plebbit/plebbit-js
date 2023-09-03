@@ -11,6 +11,8 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     linkWidth?: number;
     linkHeight?: number;
     thumbnailUrl?: string;
+    thumbnailUrlWidth?: number;
+    thumbnailUrlHeight?: number;
     protocolVersion: ProtocolVersion;
     cid?: string;
     parentCid?: string;

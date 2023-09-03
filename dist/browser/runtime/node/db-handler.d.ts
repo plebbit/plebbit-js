@@ -63,7 +63,7 @@ export declare class DbHandler {
     queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryCommentsToBeUpdated(ipnsKeyNames: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]>;
     private _calcActiveUserCount;
     private _calcPostCount;
     querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
@@ -87,10 +87,10 @@ export declare class DbHandler {
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
-    isSubStartLocked(subAddress?: string): Promise<boolean>;
+    isSubStartLocked(subAddress?: string): Promise<any>;
     lockSubCreation(subAddress?: string): Promise<void>;
     unlockSubCreation(subAddress?: string): Promise<void>;
-    isSubCreationLocked(subAddress?: string): Promise<boolean>;
+    isSubCreationLocked(subAddress?: string): Promise<any>;
     lockSubState(subAddress?: string): Promise<void>;
     unlockSubState(subAddress?: string): Promise<void>;
     subDbExists(subAddress?: string): boolean;

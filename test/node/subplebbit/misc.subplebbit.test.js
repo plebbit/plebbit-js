@@ -344,11 +344,42 @@ describe(`comment.link`, async () => {
     after(async () => {
         await subplebbit.stop();
     });
-    it(`Generates thumbnail url for youtube video correctly`, async () => {
+    it(`Generates thumbnail url for youtube video correctly with thumbnailWidth and thumbnailHeight`, async () => {
         const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
         const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-        const thumbnailUrl = await getThumbnailUrlOfLink(url);
-        expect(thumbnailUrl).to.equal(expectedThumbnailUrl);
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(1280);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(720);
+    });
+
+    it(`generates thumbnail url for html page with thumbnailWidth and thumbnailHeight`, async () => {
+        const url =
+            "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
+        const expectedThumbnailUrl =
+            "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(675);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(450);
+    });
+
+    it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailWidth and thumbnailHeight`, async () => {
+        const url = "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
+        const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(512);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(497);
+    });
+
+    it(`Generates thumbnail url for twitter urls correctly`, async () => {
+        const url = "https://twitter.com/eustatheia/status/1691285870244937728";
+        const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
+        const thumbnailInfo = await getThumbnailUrlOfLink(url);
+        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+        expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
+        expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
     });
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
@@ -356,6 +387,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
+        expect(post.thumbnailUrlWidth).to.equal(1280);
+        expect(post.thumbnailUrlHeight).to.equal(720);
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
@@ -363,6 +396,8 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
     });
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
@@ -370,9 +405,11 @@ describe(`comment.link`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
     });
 
-    it(`comment.linkWidth is undefined if comment.link is a link of a gif`, async () => {
+    it(`comment.linkWidth and linkHeight is defined if the author defines them`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
         const linkWidth = 200;
         const linkHeight = 200;
@@ -380,11 +417,15 @@ describe(`comment.link`, async () => {
         expect(post.link).to.equal(link);
         expect(post.linkHeight).to.equal(linkHeight);
         expect(post.linkWidth).to.equal(linkWidth);
+        expect(post.thumbnailUrlWidth).to.be.undefined;
+        expect(post.thumbnailUrlHeight).to.be.undefined;
 
         const postInSubPages = subplebbit.posts.pages.hot.comments.find((comment) => comment.cid === post.cid);
         expect(postInSubPages.link).to.equal(link);
         expect(postInSubPages.linkHeight).to.equal(linkHeight);
         expect(postInSubPages.linkWidth).to.equal(linkWidth);
+        expect(postInSubPages.thumbnailUrlWidth).to.be.undefined;
+        expect(postInSubPages.thumbnailUrlHeight).to.be.undefined;
     });
 });
 
@@ -439,6 +480,35 @@ describe(`Migration to a new IPFS repo`, async () => {
             await plebbitDifferentIpfs._clientsManager.fetchSubplebbitIpns(postFromPage.ipnsName, plebbitDifferentIpfs)
         );
         expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
+    });
+
+    it(`Comments' commentUpdate IPNS is republished after expiring`, async () => {
+        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const sub = await createMockSub({}, plebbit);
+        sub._commentUpdateIpnsLifetimeSeconds = 2; // Republish IPNS every 2 seconds
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {}, false);
+
+        await post.update();
+
+        const updatedAtArray = [];
+
+        await new Promise((resolve) => {
+            post.on("update", () => {
+                updatedAtArray.push(post.updatedAt);
+                if (updatedAtArray.length === 8) {
+                    resolve();
+                }
+            });
+        });
+        await sub.stop();
+        await post.stop();
+
+        const bufferSeconds = 1;
+        for (let i = 0; i < updatedAtArray.length - 1; i++)
+            if (updatedAtArray[i + 1] - updatedAtArray[i] > sub._commentUpdateIpnsLifetimeSeconds + bufferSeconds)
+                expect.fail(`Sub should be publishing a new comment update every ${sub._commentUpdateIpnsLifetimeSeconds}`);
     });
 });
 

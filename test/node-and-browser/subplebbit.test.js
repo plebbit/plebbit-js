@@ -163,6 +163,10 @@ describe("plebbit.getSubplebbit", async () => {
         tempPlebbit._clientsManager.fetchSubplebbitIpns = () => JSON.stringify(subJson);
         await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);
     });
+
+    it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
+        await assert.isRejected(plebbit.getSubplebbit("testSub.eth"), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+    });
 });
 
 // These tests are for remote subs

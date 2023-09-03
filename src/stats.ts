@@ -1,5 +1,4 @@
 import { Plebbit } from "./plebbit";
-import Logger from "@plebbit/plebbit-logger";
 import assert from "assert";
 import lodash from "lodash";
 import { Chain } from "./types";
@@ -24,9 +23,6 @@ export default class Stats {
     }
 
     async recordGatewaySuccess(gatewayUrl: string, type: StatTypes, timeElapsedMs: number) {
-        const log = Logger("plebbit-js:stats:gateway:success");
-
-        log.trace(`Attempting to record gateway (${gatewayUrl}) success for type (${type}) that took ${timeElapsedMs}ms`);
         const countKey = this._getSuccessCountKey(gatewayUrl, type);
         const averageKey = this._getSuccessAverageKey(gatewayUrl, type);
 
@@ -37,10 +33,6 @@ export default class Stats {
         const newCount = curCount + 1;
 
         await Promise.all([this._plebbit._storage.setItem(averageKey, newAverage), this._plebbit._storage.setItem(countKey, newCount)]);
-
-        log.trace(
-            `Updated gateway (${gatewayUrl}) success average from (${curAverage}) to ${newAverage} and count from (${curCount}) to (${newCount}) for type (${type})`
-        );
     }
 
     private _getBaseKey(url: string, type: StatTypes) {
@@ -52,18 +44,12 @@ export default class Stats {
     }
 
     async recordGatewayFailure(gatewayUrl: string, type: StatTypes) {
-        const log = Logger("plebbit-js:stats:gateway:failure");
-
-        log.trace(`Attempting to record gateway (${gatewayUrl}) failure for type (${type})`);
-
         const countKey = this._getFailuresCountKey(gatewayUrl, type);
 
         const curCount: number = (await this._plebbit._storage.getItem(countKey)) || 0;
 
         const newCount: number = curCount + 1;
         await this._plebbit._storage.setItem(countKey, newCount);
-
-        log.trace(`Updated gateway (${gatewayUrl}) failure  count from (${curCount}) to (${newCount}) for type (${type})`);
     }
 
     private _gatewayScore(failureCounts: number, successCounts: number, successAverageMs: number) {
@@ -75,7 +61,6 @@ export default class Stats {
     }
 
     async sortGatewaysAccordingToScore(type: StatTypes): Promise<string[]> {
-        const log = Logger("plebbit-js:stats:gateway:sort");
         const gatewayType =
             type === "cid" || type === "ipns"
                 ? "ipfsGateways"
@@ -95,9 +80,7 @@ export default class Stats {
             const successCounts: number = (await this._plebbit._storage.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
             const successAverageMs: number = (await this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
 
-            const gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
-            log.trace(`gateway (${gatewayUrl}) score is (${gatewayScore}) for type (${type})`);
-            return score;
+            return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
 
         const gatewaysSorted = lodash.sortBy(gateways, score);

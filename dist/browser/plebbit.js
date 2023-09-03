@@ -87,6 +87,7 @@ var storage_1 = __importDefault(require("./runtime/browser/storage"));
 var client_manager_1 = require("./clients/client-manager");
 var constants_1 = require("./constants");
 var assert_1 = __importDefault(require("assert"));
+var plebbit_error_1 = require("./plebbit-error");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
@@ -289,9 +290,13 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
                             (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
+                        if ((0, util_2.doesEnsAddressHaveCapitalLetter)(subplebbitAddress))
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: subplebbitAddress });
                         return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _c.sent();
+                        if (!resolvedSubplebbitAddress)
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress)];
                     case 2:
@@ -422,6 +427,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
+                        if ((options === null || options === void 0 ? void 0 : options.address) && (0, util_2.doesEnsAddressHaveCapitalLetter)(options === null || options === void 0 ? void 0 : options.address))
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options === null || options === void 0 ? void 0 : options.address });
                         localSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit;
                             return __generator(this, function (_a) {

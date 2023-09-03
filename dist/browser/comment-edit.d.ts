@@ -6,7 +6,6 @@ export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
 export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];
 export declare class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
-    shortCid: string;
     content?: string;
     reason?: string;
     deleted?: boolean;
@@ -19,7 +18,34 @@ export declare class CommentEdit extends Publication implements CommentEditType 
     constructor(props: CommentEditType, plebbit: Plebbit);
     _initProps(props: CommentEditType): void;
     toJSONPubsubMessagePublication(): CommentEditPubsubMessage;
-    toJSON(): CommentEditPubsubMessage;
+    toJSON(): {
+        shortSubplebbitAddress: string;
+        author: {
+            shortAddress: string;
+            address: string;
+            previousCommentCid?: string;
+            displayName?: string;
+            wallets?: {
+                [chainTicker: string]: import("./types").Wallet;
+            };
+            avatar?: import("./types").Nft;
+            flair?: Flair;
+        };
+        deleted?: boolean;
+        signature: import("./signer/constants").JsonSignature;
+        content?: string;
+        spoiler?: boolean;
+        flair?: Flair;
+        subplebbitAddress: string;
+        timestamp: number;
+        commentCid: string;
+        reason?: string;
+        protocolVersion: "1.0.0";
+        pinned?: boolean;
+        locked?: boolean;
+        removed?: boolean;
+        commentAuthor?: CommentAuthorEditOptions;
+    };
     toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert;
     getType(): PublicationTypeName;
     private _validateSignature;

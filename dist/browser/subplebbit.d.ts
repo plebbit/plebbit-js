@@ -48,6 +48,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _ipfsNodeIpnsKeyNames;
     private _subplebbitUpdateTrigger;
     private _loadingOperation;
+    private _commentUpdateIpnsLifetimeSeconds;
     _clientsManager: SubplebbitClientsManager;
     constructor(plebbit: Plebbit);
     initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType): Promise<void>;

@@ -49,9 +49,9 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     }
 
     toJSONForDb(): ChallengeRequestsTableRowInsert {
-        const acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes)
-            ? JSON.stringify(this.acceptedChallengeTypes)
-            : this.acceptedChallengeTypes;
+        const acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined;
+        if (acceptedChallengeTypes === "[object Object]") throw Error(`challengeTypes  shouldn't be [object Object]`);
+
         return {
             ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]),
             acceptedChallengeTypes
@@ -94,6 +94,7 @@ export class ChallengeMessage implements ChallengeMessageType {
         assert(Array.isArray(challengeTypes), `Challenge types need to be array, (${challengeTypes}) is not an array`);
 
         const challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
+        if (challengeTypesFormattedForDb === "[object Object]") throw Error(`challengeTypes  shouldn't be [object Object]`);
 
         return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallenges"]), challengeTypes: challengeTypesFormattedForDb };
     }
@@ -132,6 +133,8 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert {
         assert(Array.isArray(challengeAnswers), `Challenge answers need to be array, (${challengeAnswers}) is not an array`);
         const challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
+        if (challengeAnswersFormattedForDb === "[object Object]") throw Error(`challengeAnswers  shouldn't be [object Object]`);
+
         return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers: challengeAnswersFormattedForDb };
     }
 }
@@ -177,9 +180,9 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     }
 
     toJSONForDb(): ChallengeVerificationsTableRowInsert {
-        const challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors)
-            ? JSON.stringify(this.challengeErrors)
-            : this.challengeErrors;
+        const challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined;
+
+        if (challengeErrorsFormattedForDb === "[object Object]") throw Error(`challengeErrors  shouldn't be [object Object]`);
 
         return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]), challengeErrors: challengeErrorsFormattedForDb };
     }

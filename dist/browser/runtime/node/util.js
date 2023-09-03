@@ -49,6 +49,7 @@ var open_graph_scraper_1 = __importDefault(require("open-graph-scraper"));
 var hpagent_1 = require("hpagent");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var plebbit_error_1 = require("../../plebbit-error");
+var probe_image_size_1 = __importDefault(require("probe-image-size"));
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
@@ -82,16 +83,24 @@ var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void
 exports.getDefaultSubplebbitDbConfig = getDefaultSubplebbitDbConfig;
 // Should be moved to subplebbit.ts
 function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
+    var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var log, options, httpAgent, httpsAgent, res, e_1, plebbitError;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var log, thumbnail, options, httpAgent, httpsAgent, res, dimensions, e_1, plebbitError;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:getThumbnailUrlOfLink");
-                    options = { url: url, downloadLimit: 2000000 };
-                    _a.label = 1;
+                    thumbnail = {};
+                    options = {
+                        url: url,
+                        downloadLimit: 2000000,
+                        headers: {
+                            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+                        }
+                    };
+                    _b.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
+                    _b.trys.push([1, 5, , 6]);
                     if (proxyHttpUrl) {
                         httpAgent = new hpagent_1.HttpProxyAgent({ proxy: proxyHttpUrl });
                         httpsAgent = new hpagent_1.HttpsProxyAgent({ proxy: proxyHttpUrl });
@@ -99,32 +108,53 @@ function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
                     }
                     return [4 /*yield*/, (0, open_graph_scraper_1.default)(options)];
                 case 2:
-                    res = _a.sent();
+                    res = _b.sent();
                     if (res.error)
                         return [2 /*return*/, undefined];
-                    if (typeof res.result.ogImage === "string")
-                        return [2 /*return*/, res.result.ogImage];
-                    else if (res.result.ogImage["url"])
-                        return [2 /*return*/, res.result.ogImage["url"]];
-                    else
+                    if (!((_a = res === null || res === void 0 ? void 0 : res.result) === null || _a === void 0 ? void 0 : _a.ogImage))
                         return [2 /*return*/, undefined];
-                    return [3 /*break*/, 4];
+                    thumbnail.thumbnailUrl = typeof res.result.ogImage === "string" ? res.result.ogImage : res.result.ogImage["url"];
+                    (0, assert_1.default)(thumbnail.thumbnailUrl, "thumbnailUrl needs to be defined");
+                    thumbnail.thumbnailHeight = parseInt(res.result.ogImageHeight || res.result.ogImage["height"] || 0) || undefined;
+                    thumbnail.thumbnailWidth = parseInt(res.result.ogImageWidth || res.result.ogImage["width"] || 0) || undefined;
+                    if (!(!thumbnail.thumbnailWidth || !thumbnail.thumbnailHeight)) return [3 /*break*/, 4];
+                    return [4 /*yield*/, fetchDimensionsOfImage(thumbnail.thumbnailUrl)];
                 case 3:
-                    e_1 = _a.sent();
+                    dimensions = _b.sent();
+                    thumbnail.thumbnailHeight = dimensions === null || dimensions === void 0 ? void 0 : dimensions.height;
+                    thumbnail.thumbnailWidth = dimensions === null || dimensions === void 0 ? void 0 : dimensions.width;
+                    _b.label = 4;
+                case 4: return [2 /*return*/, thumbnail];
+                case 5:
+                    e_1 = _b.sent();
                     plebbitError = new plebbit_error_1.PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
                         url: url,
-                        downloadLimit: options.downloadLimit,
-                        proxyHttpUrl: proxyHttpUrl
+                        scrapeOptions: options,
+                        proxyHttpUrl: proxyHttpUrl,
+                        error: e_1
                     });
                     log.error(String(plebbitError));
                     subplebbit.emit("error", plebbitError);
                     return [2 /*return*/, undefined];
-                case 4: return [2 /*return*/];
+                case 6: return [2 /*return*/];
             }
         });
     });
 }
 exports.getThumbnailUrlOfLink = getThumbnailUrlOfLink;
+function fetchDimensionsOfImage(imageUrl) {
+    return __awaiter(this, void 0, void 0, function () {
+        var result;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, (0, probe_image_size_1.default)(imageUrl)];
+                case 1:
+                    result = _a.sent();
+                    return [2 /*return*/, { width: result.width, height: result.height }];
+            }
+        });
+    });
+}
 exports.nativeFunctions = native_functions_1.default;
 var setNativeFunctions = function (newNativeFunctions) {
     if (!newNativeFunctions)

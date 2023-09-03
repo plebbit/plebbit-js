@@ -90,6 +90,11 @@ var BaseClientsManager = /** @class */ (function () {
         this._defaultPubsubProviderUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        this.providerSubscriptions = {};
+        for (var _i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
+            var provider = _a[_i];
+            this.providerSubscriptions[provider] = [];
+        }
     }
     BaseClientsManager.prototype.toJSON = function () {
         return undefined;
@@ -120,6 +125,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore)];
                     case 3:
                         _a.sent();
+                        this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
                         return [2 /*return*/];
                     case 4:
                         e_1 = _a.sent();
@@ -158,6 +164,19 @@ var BaseClientsManager = /** @class */ (function () {
             });
         });
     };
+    BaseClientsManager.prototype.pubsubUnsubscribeOnProvider = function (pubsubTopic, pubsubProvider, handler) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                    case 1:
+                        _a.sent();
+                        this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(function (subPubsubTopic) { return subPubsubTopic !== pubsubTopic; });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     BaseClientsManager.prototype.pubsubUnsubscribe = function (pubsubTopic, handler) {
         return __awaiter(this, void 0, void 0, function () {
             var i, pubsubProviderUrl, _a;
@@ -172,7 +191,7 @@ var BaseClientsManager = /** @class */ (function () {
                         _b.label = 2;
                     case 2:
                         _b.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                        return [4 /*yield*/, this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler)];
                     case 3:
                         _b.sent();
                         return [3 /*break*/, 5];
@@ -370,7 +389,7 @@ var BaseClientsManager = /** @class */ (function () {
     };
     BaseClientsManager.prototype.fetchFromMultipleGateways = function (loadOpts, loadType) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, controllers, gatewayPromises, res;
+            var path, _firstResolve, type, concurrencyLimit, queueLimit, gatewaysSorted, _a, controllers, gatewayPromises, res, gatewayToError, i, errorCode, combinedError;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -410,9 +429,16 @@ var BaseClientsManager = /** @class */ (function () {
                             queueLimit.clearQueue();
                             controllers.forEach(function (control) { return control.abort(); });
                             return [2 /*return*/, res];
-                        } //@ts-expect-error
-                        else
-                            throw res[0].value.error;
+                        }
+                        else {
+                            gatewayToError = {};
+                            for (i = 0; i < res.length; i++)
+                                if (res[i]["value"])
+                                    gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
+                            errorCode = Object.values(gatewayToError)[0].code;
+                            combinedError = new plebbit_error_1.PlebbitError(errorCode, { loadOpts: loadOpts, gatewayToError: gatewayToError });
+                            throw combinedError;
+                        }
                         return [2 /*return*/];
                 }
             });
@@ -486,12 +512,10 @@ var BaseClientsManager = /** @class */ (function () {
     // Resolver methods here
     BaseClientsManager.prototype._getCachedTextRecord = function (address, txtRecord) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, resolveCache, resolvedTimestamp, stale;
+            var resolveCache, resolvedTimestamp, stale;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:client-manager:resolveTextRecord");
-                        return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
+                    case 0: return [4 /*yield*/, this._plebbit._storage.getItem("".concat(address, "_").concat(txtRecord))];
                     case 1:
                         resolveCache = _a.sent();
                         if (!(typeof resolveCache === "string")) return [3 /*break*/, 3];
@@ -500,7 +524,6 @@ var BaseClientsManager = /** @class */ (function () {
                         resolvedTimestamp = _a.sent();
                         (0, assert_1.default)(typeof resolvedTimestamp === "number", "Cache of address (".concat(address, ") txt record (").concat(txtRecord, ") has no timestamp"));
                         stale = (0, util_1.timestamp)() - resolvedTimestamp > 3600;
-                        log.trace("Retrieved cache of address (".concat(address, ") text record (").concat(txtRecord, "):"), { stale: stale, resolveCache: resolveCache });
                         return [2 /*return*/, { stale: stale, resolveCache: resolveCache }];
                     case 3: return [2 /*return*/, undefined];
                 }

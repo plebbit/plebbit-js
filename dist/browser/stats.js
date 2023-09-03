@@ -39,7 +39,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var assert_1 = __importDefault(require("assert"));
 var lodash_1 = __importDefault(require("lodash"));
 var Stats = /** @class */ (function () {
@@ -57,12 +56,10 @@ var Stats = /** @class */ (function () {
     };
     Stats.prototype.recordGatewaySuccess = function (gatewayUrl, type, timeElapsedMs) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, countKey, averageKey, curAverage, curCount, newAverage, newCount;
+            var countKey, averageKey, curAverage, curCount, newAverage, newCount;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:success");
-                        log.trace("Attempting to record gateway (".concat(gatewayUrl, ") success for type (").concat(type, ") that took ").concat(timeElapsedMs, "ms"));
                         countKey = this._getSuccessCountKey(gatewayUrl, type);
                         averageKey = this._getSuccessAverageKey(gatewayUrl, type);
                         return [4 /*yield*/, this._plebbit._storage.getItem(averageKey)];
@@ -76,7 +73,6 @@ var Stats = /** @class */ (function () {
                         return [4 /*yield*/, Promise.all([this._plebbit._storage.setItem(averageKey, newAverage), this._plebbit._storage.setItem(countKey, newCount)])];
                     case 3:
                         _a.sent();
-                        log.trace("Updated gateway (".concat(gatewayUrl, ") success average from (").concat(curAverage, ") to ").concat(newAverage, " and count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
                         return [2 /*return*/];
                 }
             });
@@ -90,12 +86,10 @@ var Stats = /** @class */ (function () {
     };
     Stats.prototype.recordGatewayFailure = function (gatewayUrl, type) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, countKey, curCount, newCount;
+            var countKey, curCount, newCount;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:failure");
-                        log.trace("Attempting to record gateway (".concat(gatewayUrl, ") failure for type (").concat(type, ")"));
                         countKey = this._getFailuresCountKey(gatewayUrl, type);
                         return [4 /*yield*/, this._plebbit._storage.getItem(countKey)];
                     case 1:
@@ -104,7 +98,6 @@ var Stats = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit._storage.setItem(countKey, newCount)];
                     case 2:
                         _a.sent();
-                        log.trace("Updated gateway (".concat(gatewayUrl, ") failure  count from (").concat(curCount, ") to (").concat(newCount, ") for type (").concat(type, ")"));
                         return [2 /*return*/];
                 }
             });
@@ -117,10 +110,9 @@ var Stats = /** @class */ (function () {
     };
     Stats.prototype.sortGatewaysAccordingToScore = function (type) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, gatewayType, gateways, score, gatewaysSorted;
+            var gatewayType, gateways, score, gatewaysSorted;
             var _this = this;
             return __generator(this, function (_a) {
-                log = (0, plebbit_logger_1.default)("plebbit-js:stats:gateway:sort");
                 gatewayType = type === "cid" || type === "ipns"
                     ? "ipfsGateways"
                     : type === "pubsub-publish" || type === "pubsub-subscribe"
@@ -133,7 +125,7 @@ var Stats = /** @class */ (function () {
                     ? this._plebbit.clients.chainProviders[type].urls
                     : Object.keys(this._plebbit.clients[gatewayType]);
                 score = function (gatewayUrl) { return __awaiter(_this, void 0, void 0, function () {
-                    var failureCounts, successCounts, successAverageMs, gatewayScore;
+                    var failureCounts, successCounts, successAverageMs;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0: return [4 /*yield*/, this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))];
@@ -145,9 +137,7 @@ var Stats = /** @class */ (function () {
                                 return [4 /*yield*/, this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))];
                             case 3:
                                 successAverageMs = (_a.sent()) || 0;
-                                gatewayScore = this._gatewayScore(failureCounts, successCounts, successAverageMs);
-                                log.trace("gateway (".concat(gatewayUrl, ") score is (").concat(gatewayScore, ") for type (").concat(type, ")"));
-                                return [2 /*return*/, score];
+                                return [2 /*return*/, this._gatewayScore(failureCounts, successCounts, successAverageMs)];
                         }
                     });
                 }); };

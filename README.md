@@ -45,6 +45,8 @@ Post extends Comment /* (IPFS file) */ {
   linkWidth?: number // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
   linkHeight?: number
   thumbnailUrl?: string // fetched by subplebbit owner, not author, some web pages have thumbnail urls in their meta tags https://moz.com/blog/meta-data-templates-123
+  thumbnailUrlWidth?: number // subplebbit owner can optionally provide dimensions of thumbails which helps UI clients with infinite scrolling feeds
+  thumbnailUrlHeight?: number
 }
 Vote extends Publication {
   commentCid: string
@@ -396,7 +398,11 @@ PubsubSignature {
   - `comment.title`
   - `comment.content`
   - `comment.link`
+  - `comment.linkWidth`
+  - `comment.linkHeight`
   - `comment.thumbnailUrl`
+  - `comment.thumbnailUrlWidth`
+  - `comment.thumbnailUrlHeight`
   - `comment.ipnsName`
   - `comment.flair`
   - `comment.spoiler`

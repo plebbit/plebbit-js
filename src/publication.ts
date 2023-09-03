@@ -32,8 +32,6 @@ import { JsonSignature } from "./signer/constants";
 import lodash from "lodash";
 import { subplebbitForPublishingCache } from "./constants";
 
-const challengeDeadline = 20; // If we didn't receive a challenge within 20 seconds, then retry publishing request
-
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
     clients: PublicationClientsManager["clients"];
@@ -64,17 +62,21 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer: ChallengeAnswerMessage;
-    private _challengeRequest: ChallengeRequestMessage;
+    private _publishedChallengeRequests: ChallengeRequestMessage[];
     private _pubsubProviders: string[];
-    private _currentPubsubProvider: string;
-    private _receivedChallenge: boolean;
+    private _currentPubsubProviderIndex: number;
+    private _receivedChallengeFromSub: boolean;
+    private _receivedChallengeVerification: boolean;
+    private _challenge?: DecryptedChallengeMessageType;
+    private _publishToDifferentProviderThresholdSeconds: number;
+    private _setProviderFailureThresholdSeconds: number;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
 
     constructor(props: PublicationType, plebbit: Plebbit) {
         super();
         this._plebbit = plebbit;
-        this._receivedChallenge = false;
+        this._receivedChallengeFromSub = this._receivedChallengeVerification = false;
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
@@ -82,6 +84,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.publish = this.publish.bind(this);
         this.on("error", (...args) => this._plebbit.emit("error", ...args));
+        this._publishToDifferentProviderThresholdSeconds = 10;
+        this._setProviderFailureThresholdSeconds = 60 * 2; // Two minutes
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
@@ -120,8 +124,15 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
-        if (!lodash.isEqual(msgParsed?.challengeRequestId, this._challengeRequest.challengeRequestId)) return; // Process only this publication's challenge
+        if (
+            !this._publishedChallengeRequests.some((requestMsg) =>
+                lodash.isEqual(msgParsed?.challengeRequestId, requestMsg.challengeRequestId)
+            )
+        )
+            return; // Process only this publication's challenge requests
+
         if (msgParsed?.type === "CHALLENGE") {
+            if (this._receivedChallengeFromSub) return; // We already processed a challenge
             const challengeMsgValidity = await verifyChallengeMessage(msgParsed, this._pubsubTopicWithfallback(), true);
             if (!challengeMsgValidity.valid) {
                 const error = new PlebbitError("ERR_CHALLENGE_SIGNATURE_IS_INVALID", {
@@ -132,7 +143,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 this.emit("error", error);
                 return;
             }
-            this._receivedChallenge = true;
+            this._receivedChallengeFromSub = true;
 
             log(
                 `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
@@ -148,10 +159,16 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 ...msgParsed,
                 challenges: decryptedChallenges
             };
+            this._challenge = decryptedChallenge;
             this._updatePublishingState("waiting-challenge-answers");
-            this._clientsManager.updatePubsubState("waiting-challenge-answers", this._currentPubsubProvider);
+            const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
+                .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
+                .map(([provider]) => provider);
+
+            subscribedProviders.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-answers", provider));
             this.emit("challenge", decryptedChallenge);
         } else if (msgParsed?.type === "CHALLENGEVERIFICATION") {
+            if (this._receivedChallengeVerification) return;
             const signatureValidation = await verifyChallengeVerification(msgParsed, this._pubsubTopicWithfallback(), true);
             if (!signatureValidation.valid) {
                 const error = new PlebbitError("ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID", {
@@ -163,7 +180,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 this.emit("error", error);
                 return;
             }
-            this._receivedChallenge = true;
+            this._receivedChallengeVerification = true;
             let decryptedPublication: CommentIpfsWithCid | undefined;
             if (msgParsed.challengeSuccess) {
                 this._updatePublishingState("succeeded");
@@ -187,7 +204,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             }
 
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            this._clientsManager.updatePubsubState("stopped", this._currentPubsubProvider);
+            this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
@@ -210,7 +227,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = {
             type: "CHALLENGEANSWER",
-            challengeRequestId: this._challengeRequest.challengeRequestId,
+            challengeRequestId: this._challenge.challengeRequestId,
             encryptedChallengeAnswers: encryptedChallengeAnswers,
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
@@ -221,9 +238,18 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
         this._updatePublishingState("publishing-challenge-answer");
-        await this._clientsManager.pubsubPublish(this._pubsubTopicWithfallback(), this._challengeAnswer);
+        this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
+        await this._clientsManager.pubsubPublishOnProvider(
+            this._pubsubTopicWithfallback(),
+            this._challengeAnswer,
+            this._pubsubProviders[this._currentPubsubProviderIndex]
+        );
+
         this._updatePublishingState("waiting-challenge-verification");
-        this._clientsManager.updatePubsubState("waiting-challenge-verification", undefined);
+        const providers = Object.entries(this._clientsManager.providerSubscriptions)
+            .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
+            .map(([provider]) => provider);
+        providers.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-verification", provider));
 
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
         this.emit("challengeanswer", {
@@ -277,12 +303,31 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._updatePublishingState("stopped");
     }
 
+    _setProviderToFailIfNoResponse(providerIndex: number) {
+        setTimeout(async () => {
+            if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
+                const log = Logger("plebbit-js:publication:publish");
+                log.error(
+                    `Provider (${this._pubsubProviders[providerIndex]}) did not receive a response after ${this._setProviderFailureThresholdSeconds}s, will unsubscribe and set state to stopped`
+                );
+                await this._clientsManager.pubsubUnsubscribeOnProvider(
+                    this._pubsubTopicWithfallback(),
+                    this._pubsubProviders[providerIndex],
+                    this.handleChallengeExchange
+                );
+                this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
+            }
+        }, this._setProviderFailureThresholdSeconds * 1000);
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
 
-        if (!Array.isArray(this._pubsubProviders)) {
+        if (!this._publishedChallengeRequests) {
+            this._publishedChallengeRequests = [];
             this._pubsubProviders = Object.keys(this._plebbit.clients.pubsubClients);
+            this._currentPubsubProviderIndex = 0;
             if (this._pubsubProviders.length === 1) this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
         }
 
@@ -312,50 +357,57 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             timestamp: timestamp()
         };
 
-        this._challengeRequest = new ChallengeRequestMessage({
+        const challengeRequest = new ChallengeRequestMessage({
             ...toSignMsg,
             signature: await signChallengeRequest(toSignMsg, this.pubsubMessageSigner)
         });
-        log.trace(
+        log(
             `Attempting to publish ${this.getType()} with challenge id (${
-                this._challengeRequest.challengeRequestId
-            }) to pubsub topic (${this._pubsubTopicWithfallback()})`
+                challengeRequest.challengeRequestId
+            }) to pubsub topic (${this._pubsubTopicWithfallback()}) with provider (${
+                this._pubsubProviders[this._currentPubsubProviderIndex]
+            }): `,
+            this.toJSONPubsubMessagePublication()
         );
 
-        while (this._pubsubProviders.length > 0) {
-            this._currentPubsubProvider = this._pubsubProviders.shift();
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-
+        while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
             this._updatePublishingState("publishing-challenge-request");
-            this._clientsManager.updatePubsubState("subscribing-pubsub", this._currentPubsubProvider); // TODO this shouldn't be here, should be handled in client-manager
+            this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
             try {
                 await this._clientsManager.pubsubSubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
                     this.handleChallengeExchange,
-                    this._currentPubsubProvider
+                    this._pubsubProviders[this._currentPubsubProviderIndex]
+                );
+                this._clientsManager.updatePubsubState(
+                    "publishing-challenge-request",
+                    this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
                 await this._clientsManager.pubsubPublishOnProvider(
                     this._pubsubTopicWithfallback(),
-                    this._challengeRequest,
-                    this._currentPubsubProvider
+                    challengeRequest,
+                    this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
             } catch (e) {
-                this._clientsManager.updatePubsubState("stopped", this._currentPubsubProvider);
+                this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 this._updatePublishingState("failed");
-                log.error("Failed to publish challenge request using provider ", this._currentPubsubProvider);
-                if (this._pubsubProviders.length === 0) {
+                log.error("Failed to publish challenge request using provider ", this._pubsubProviders[this._currentPubsubProviderIndex]);
+                this._currentPubsubProviderIndex += 1;
+                if (this._currentPubsubProviderIndex === this._pubsubProviders.length) {
                     this.emit("error", e);
                     throw e;
                 }
                 continue;
             }
-            this._clientsManager.updatePubsubState("waiting-challenge", this._currentPubsubProvider);
+            this._publishedChallengeRequests.push(challengeRequest);
+            this._clientsManager.updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
+            this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);
 
             this._updatePublishingState("waiting-challenge");
 
-            log(`Sent a challenge request (${this._challengeRequest.challengeRequestId})`);
+            log(`Sent a challenge request (${challengeRequest.challengeRequestId})`);
             this.emit("challengerequest", {
-                ...this._challengeRequest,
+                ...challengeRequest,
                 publication: this.toJSONPubsubMessagePublication()
             });
             break;
@@ -363,11 +415,32 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // to handle cases where request is published but we didn't receive response within certain timeframe (20s for now)
         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
         setTimeout(() => {
-            if (this._pubsubProviders.length > 0 && !this._receivedChallenge) {
-                log(`Re-publishing publication after ${challengeDeadline}s of not receiving challenge`);
-                this.publish();
+            if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
+                if (this._currentPubsubProviderIndex === this._pubsubProviders.length - 1) {
+                    // plebbit-js tried all providers and still no response is received
+                    log.error(`Failed to receive any response for publication`);
+                    this._updatePublishingState("failed");
+                    const error = new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
+                        pubsubProviders: this._pubsubProviders,
+                        publishedChallengeRequests: this._publishedChallengeRequests,
+                        publishToDifferentProviderThresholdSeconds: this._publishToDifferentProviderThresholdSeconds
+                    });
+                    this.emit("error", error);
+                } else {
+                    log(
+                        `Re-publishing publication after ${
+                            this._publishToDifferentProviderThresholdSeconds
+                        }s of not receiving challenge from provider (${this._pubsubProviders[this._currentPubsubProviderIndex]})`
+                    );
+                    this._plebbit.stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-publish");
+                    this._plebbit.stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-subscribe");
+
+                    this._currentPubsubProviderIndex += 1;
+
+                    this.publish();
+                }
             }
-        }, challengeDeadline * 1000);
+        }, this._publishToDifferentProviderThresholdSeconds * 1000);
     }
 }
 

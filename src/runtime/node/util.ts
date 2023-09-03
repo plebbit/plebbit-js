@@ -11,6 +11,7 @@ import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error";
+import probe from "probe-image-size";
 
 export const mkdir = fs.mkdir;
 
@@ -39,10 +40,22 @@ export const getDefaultSubplebbitDbConfig = async (
 };
 
 // Should be moved to subplebbit.ts
-export async function getThumbnailUrlOfLink(url: string, subplebbit: Subplebbit, proxyHttpUrl?: string): Promise<string | undefined> {
+export async function getThumbnailUrlOfLink(
+    url: string,
+    subplebbit: Subplebbit,
+    proxyHttpUrl?: string
+): Promise<{ thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } | undefined> {
     const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
 
-    const options = { url, downloadLimit: 2000000 };
+    //@ts-expect-error
+    const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
+    const options = {
+        url,
+        downloadLimit: 2000000,
+        headers: {
+            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+        }
+    };
 
     try {
         if (proxyHttpUrl) {
@@ -53,20 +66,35 @@ export async function getThumbnailUrlOfLink(url: string, subplebbit: Subplebbit,
         const res = await scraper(options);
 
         if (res.error) return undefined;
+        if (!res?.result?.ogImage) return undefined;
 
-        if (typeof res.result.ogImage === "string") return res.result.ogImage;
-        else if (res.result.ogImage["url"]) return res.result.ogImage["url"];
-        else return undefined;
+        thumbnail.thumbnailUrl = typeof res.result.ogImage === "string" ? res.result.ogImage : res.result.ogImage["url"];
+        assert(thumbnail.thumbnailUrl, "thumbnailUrl needs to be defined");
+
+        thumbnail.thumbnailHeight = parseInt(res.result.ogImageHeight || res.result.ogImage["height"] || 0) || undefined;
+        thumbnail.thumbnailWidth = parseInt(res.result.ogImageWidth || res.result.ogImage["width"] || 0) || undefined;
+        if (!thumbnail.thumbnailWidth || !thumbnail.thumbnailHeight) {
+            const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
+            thumbnail.thumbnailHeight = dimensions?.height;
+            thumbnail.thumbnailWidth = dimensions?.width;
+        }
+        return thumbnail;
     } catch (e) {
         const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
             url,
-            downloadLimit: options.downloadLimit,
-            proxyHttpUrl
+            scrapeOptions: options,
+            proxyHttpUrl,
+            error: e
         });
         log.error(String(plebbitError));
         subplebbit.emit("error", plebbitError);
         return undefined;
     }
+}
+
+async function fetchDimensionsOfImage(imageUrl: string): Promise<{ width: number; height: number } | undefined> {
+    const result = await probe(imageUrl);
+    return { width: result.width, height: result.height };
 }
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;

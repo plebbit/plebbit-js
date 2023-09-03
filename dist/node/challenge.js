@@ -41,9 +41,9 @@ var ChallengeRequestMessage = /** @class */ (function () {
         };
     };
     ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes)
-            ? JSON.stringify(this.acceptedChallengeTypes)
-            : this.acceptedChallengeTypes;
+        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined;
+        if (acceptedChallengeTypes === "[object Object]")
+            throw Error("challengeTypes  shouldn't be [object Object]");
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { acceptedChallengeTypes: acceptedChallengeTypes });
     };
     return ChallengeRequestMessage;
@@ -73,6 +73,8 @@ var ChallengeMessage = /** @class */ (function () {
     ChallengeMessage.prototype.toJSONForDb = function (challengeTypes) {
         (0, assert_1.default)(Array.isArray(challengeTypes), "Challenge types need to be array, (".concat(challengeTypes, ") is not an array"));
         var challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
+        if (challengeTypesFormattedForDb === "[object Object]")
+            throw Error("challengeTypes  shouldn't be [object Object]");
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallenges"])), { challengeTypes: challengeTypesFormattedForDb });
     };
     return ChallengeMessage;
@@ -102,6 +104,8 @@ var ChallengeAnswerMessage = /** @class */ (function () {
     ChallengeAnswerMessage.prototype.toJSONForDb = function (challengeAnswers) {
         (0, assert_1.default)(Array.isArray(challengeAnswers), "Challenge answers need to be array, (".concat(challengeAnswers, ") is not an array"));
         var challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
+        if (challengeAnswersFormattedForDb === "[object Object]")
+            throw Error("challengeAnswers  shouldn't be [object Object]");
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"])), { challengeAnswers: challengeAnswersFormattedForDb });
     };
     return ChallengeAnswerMessage;
@@ -135,9 +139,9 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         };
     };
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
-        var challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors)
-            ? JSON.stringify(this.challengeErrors)
-            : this.challengeErrors;
+        var challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined;
+        if (challengeErrorsFormattedForDb === "[object Object]")
+            throw Error("challengeErrors  shouldn't be [object Object]");
         return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { challengeErrors: challengeErrorsFormattedForDb });
     };
     return ChallengeVerificationMessage;

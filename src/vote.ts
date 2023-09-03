@@ -28,7 +28,11 @@ class Vote extends Publication implements VoteType {
     }
 
     toJSON() {
-        return this.toJSONPubsubMessagePublication();
+        return {
+            ...this.toJSONPubsubMessagePublication(),
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            author: this.author.toJSON()
+        };
     }
 
     getType(): PublicationTypeName {
@@ -37,7 +41,7 @@ class Vote extends Publication implements VoteType {
 
     toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): VotesTableRowInsert {
         return {
-            ...this.toJSON(),
+            ...this.toJSONPubsubMessagePublication(),
             authorAddress: this.author.address,
             challengeRequestId
         };

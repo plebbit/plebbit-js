@@ -4,7 +4,7 @@ const WebSocketClient = require('rpc-websockets').Client
 
 const waitFor = async (callback) => {
   while (!Boolean(await callback())) {
-    await new Promise(r => setTimeout(r, 10))
+    await new Promise((r) => setTimeout(r, 10))
   }
 }
 
@@ -38,8 +38,7 @@ describe('plebbit-ws-server', () => {
       try {
         const res = await webSocketClient.call(...args)
         return res
-      }
-      catch (e) {
+      } catch (e) {
         e.message = e.message + `: ${e.data}`
         throw e
       }
@@ -122,6 +121,61 @@ describe('plebbit-ws-server', () => {
     const editedSubplebbit2 = await webSocketClientCall('editSubplebbit', [subplebbit.address, createSubplebbitOptions])
     expect(editedSubplebbit2?.title).to.equal(createSubplebbitOptions.title)
     expect(editedSubplebbit2?.description).to.equal(createSubplebbitOptions.description)
+  })
+
+  it('deleteSubplebbit', async () => {
+    const subplebbit = await webSocketClientCall('createSubplebbit', [])
+    expect(typeof subplebbit?.address).to.equal('string')
+
+    // sub is in listSubplebbits
+    let res = await webSocketClientCall('listSubplebbits', [])
+    expect(res.includes(subplebbit.address)).to.equal(true)
+
+    // delete sub
+    res = await webSocketClientCall('deleteSubplebbit', [subplebbit.address])
+    expect(res).to.equal(true)
+
+    // sub was deleted, is no longer in listSubplebbits
+    res = await webSocketClientCall('listSubplebbits', [])
+    expect(res.includes(subplebbit.address)).to.equal(false)
+
+    // try to delete the deleted sub again
+    let error
+    try {
+      await webSocketClientCall('deleteSubplebbit', [subplebbit.address])
+    } catch (e) {
+      error = e
+    }
+    expect(error?.message).to.equal(`Error: subplebbit with address 'created subplebbit address' not found in plebbit.listSubplebbits()`)
+
+    // try to delete a sub that doesn't exist
+    try {
+      await webSocketClientCall('deleteSubplebbit', [`doesn't exist`])
+    } catch (e) {
+      error = e
+    }
+    expect(error?.message).to.equal(`Error: subplebbit with address 'doesn't exist' not found in plebbit.listSubplebbits()`)
+  })
+
+  it('deleteSubplebbit started subplebbit', async () => {
+    const subplebbit = await webSocketClientCall('createSubplebbit', [])
+    expect(typeof subplebbit?.address).to.equal('string')
+
+    // sub is in listSubplebbits
+    let res = await webSocketClientCall('listSubplebbits', [])
+    expect(res.includes(subplebbit.address)).to.equal(true)
+
+    // start the sub
+    res = await webSocketClientCall('startSubplebbit', [subplebbit.address])
+    expect(res).to.equal(true)
+
+    // delete sub
+    res = await webSocketClientCall('deleteSubplebbit', [subplebbit.address])
+    expect(res).to.equal(true)
+
+    // sub was deleted, is no longer in listSubplebbits
+    res = await webSocketClientCall('listSubplebbits', [])
+    expect(res.includes(subplebbit.address)).to.equal(false)
   })
 
   it('listSubplebbits', async () => {
@@ -278,5 +332,22 @@ describe('plebbit-ws-server', () => {
     expect(subscriptionsMessages[subscriptionId][5].method).to.equal('publishCommentEdit')
     expect(subscriptionsMessages[subscriptionId][5].params.event).to.equal('challengeverification')
     expect(subscriptionsMessages[subscriptionId][5].params.result.challengeSuccess).to.equal(true)
+  })
+
+  it('getPlebbitOptions', async () => {
+    let res = await webSocketClientCall('getPlebbitOptions', [])
+    expect(res).to.deep.equal({})
+    const newPlebbitOptions = {
+      ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
+    }
+    res = await webSocketClientCall('setPlebbitOptions', [newPlebbitOptions])
+    expect(res).to.equal(true)
+    res = await webSocketClientCall('getPlebbitOptions', [])
+    expect(res).to.deep.equal(newPlebbitOptions)
+
+    // restore to default options so tests can work with the same server
+    await webSocketClientCall('setPlebbitOptions', [{}])
+    res = await webSocketClientCall('getPlebbitOptions', [])
+    expect(res).to.deep.equal({})
   })
 })
