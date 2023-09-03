@@ -363,11 +363,11 @@ export async function publishWithExpectedResult(publication: Publication, expect
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason})`;
-                console.error(msg);
+                console.error(msg, verificationMsg);
                 reject(msg);
             } else if (expectedReason && expectedReason !== verificationMsg.reason) {
                 const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason})`;
-                console.error(msg);
+                console.error(msg, verificationMsg);
                 reject(msg);
             } else resolve(1);
         });
