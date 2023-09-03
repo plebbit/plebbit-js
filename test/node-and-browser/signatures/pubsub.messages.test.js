@@ -307,10 +307,10 @@ describe("challengeanswer", async () => {
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
-        const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
+        const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
 
         comment.once("challenge", async (challengeMsg) => {
-            comment._clientsManager.pubsubPublish = () => undefined;
+            comment._clientsManager.pubsubPublishOnProvider = () => undefined; // Disable publishing
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
@@ -320,7 +320,7 @@ describe("challengeanswer", async () => {
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
             comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, comment.pubsubMessageSigner);
-            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer);
+            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer, comment._pubsubProviders[0]);
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
