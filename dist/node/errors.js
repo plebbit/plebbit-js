@@ -28,6 +28,7 @@ var messages;
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
     messages["ERR_CALCULATED_CID_DOES_NOT_MATCH"] = "The CID calculated from loaded content does not match the provided CID";
     messages["ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK"] = "Failed to fetch the thumbnail url of the link";
+    messages["ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER"] = "ENS address has an uppercase letter. Subplebbit ENS address should be lowercase";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";

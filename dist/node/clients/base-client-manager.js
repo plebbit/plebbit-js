@@ -90,6 +90,11 @@ var BaseClientsManager = /** @class */ (function () {
         this._defaultPubsubProviderUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        this.providerSubscriptions = {};
+        for (var _i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
+            var provider = _a[_i];
+            this.providerSubscriptions[provider] = [];
+        }
     }
     BaseClientsManager.prototype.toJSON = function () {
         return undefined;
@@ -120,6 +125,7 @@ var BaseClientsManager = /** @class */ (function () {
                         return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore)];
                     case 3:
                         _a.sent();
+                        this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
                         return [2 /*return*/];
                     case 4:
                         e_1 = _a.sent();
@@ -158,6 +164,19 @@ var BaseClientsManager = /** @class */ (function () {
             });
         });
     };
+    BaseClientsManager.prototype.pubsubUnsubscribeOnProvider = function (pubsubTopic, pubsubProvider, handler) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                    case 1:
+                        _a.sent();
+                        this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(function (subPubsubTopic) { return subPubsubTopic !== pubsubTopic; });
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     BaseClientsManager.prototype.pubsubUnsubscribe = function (pubsubTopic, handler) {
         return __awaiter(this, void 0, void 0, function () {
             var i, pubsubProviderUrl, _a;
@@ -172,7 +191,7 @@ var BaseClientsManager = /** @class */ (function () {
                         _b.label = 2;
                     case 2:
                         _b.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.unsubscribe(pubsubTopic, handler)];
+                        return [4 /*yield*/, this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler)];
                     case 3:
                         _b.sent();
                         return [3 /*break*/, 5];

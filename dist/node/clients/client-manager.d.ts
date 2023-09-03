@@ -66,9 +66,6 @@ export declare class PublicationClientsManager extends ClientsManager {
     constructor(publication: Publication);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
-    protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
-    protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
-    protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string): void;
     emitError(e: PlebbitError): void;
     fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
