@@ -33,8 +33,8 @@ export class BasePages implements PagesType {
     _clientsManager: BasePagesClientsManager;
 
     _plebbit: Plebbit;
-    _subplebbitAddress: string;
-    private _parentCid: CommentIpfsType["parentCid"];
+    protected _subplebbitAddress: string;
+    protected _parentCid: CommentIpfsType["parentCid"];
     private _pagesIpfs?: PagesTypeIpfs["pages"];
     constructor(props: ConstructorProps) {
         this._plebbit = props.plebbit;
@@ -97,6 +97,7 @@ export class RepliesPages extends BasePages {
     pageCids: Partial<Record<ReplySortName, string>>;
 
     clients: RepliesPagesClientsManager["clients"];
+    protected _parentCid: string;
 
     _clientsManager: RepliesPagesClientsManager;
 
@@ -111,6 +112,15 @@ export class RepliesPages extends BasePages {
     protected _initClientsManager(): void {
         this._clientsManager = new RepliesPagesClientsManager(this);
         this.clients = this._clientsManager.clients;
+    }
+
+    async getPage(pageCid: string): Promise<PageType> {
+        if (this._plebbit.plebbitRpcClient)
+            return await parsePageIpfs(
+                await this._plebbit.plebbitRpcClient.getCommentPage(pageCid, this._parentCid, this._subplebbitAddress),
+                this._plebbit
+            );
+        else return super.getPage(pageCid);
     }
 
     // TODO override toJSON, toJSONIpfs
@@ -140,6 +150,15 @@ export class PostsPages extends BasePages {
     protected _initClientsManager(): void {
         this._clientsManager = new PostsPagesClientsManager(this);
         this.clients = this._clientsManager.clients;
+    }
+
+    async getPage(pageCid: string): Promise<PageType> {
+        if (this._plebbit.plebbitRpcClient)
+            return await parsePageIpfs(
+                await this._plebbit.plebbitRpcClient.getSubplebbitPage(pageCid, this._subplebbitAddress),
+                this._plebbit
+            );
+        else return super.getPage(pageCid);
     }
 
     toJSON(): PostsPagesTypeJson | undefined {
