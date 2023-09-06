@@ -64,6 +64,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _challengeAnswer: ChallengeAnswerMessage;
     private _publishedChallengeRequests: ChallengeRequestMessage[];
     private _pubsubProviders: string[];
+    private _pubsubProvidersDoneWaiting: Record<string, boolean>;
     private _currentPubsubProviderIndex: number;
     private _receivedChallengeFromSub: boolean;
     private _receivedChallengeVerification: boolean;
@@ -303,8 +304,23 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._updatePublishingState("stopped");
     }
 
+    _isAllAttemptsExhausted(): boolean {
+        // When all providers failed to publish
+        // OR they're done with waiting
+
+        const allProvidersFailedToPublish =
+            this._currentPubsubProviderIndex === this._pubsubProviders.length && this._publishedChallengeRequests.length === 0;
+
+        const allProvidersDoneWithWaiting =
+            Object.keys(this._pubsubProvidersDoneWaiting).length === 0
+                ? false
+                : Object.values(this._pubsubProvidersDoneWaiting).every((b) => b);
+        return allProvidersFailedToPublish || allProvidersDoneWithWaiting;
+    }
+
     _setProviderToFailIfNoResponse(providerIndex: number) {
         setTimeout(async () => {
+            this._pubsubProvidersDoneWaiting[this._pubsubProviders[providerIndex]] = true;
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 const log = Logger("plebbit-js:publication:publish");
                 log.error(
@@ -316,6 +332,17 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     this.handleChallengeExchange
                 );
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
+
+                if (this._isAllAttemptsExhausted()) {
+                    const allAttemptsFailedError = new PlebbitError("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER", {
+                        pubsubProviders: this._pubsubProviders,
+                        pubsubTopic: this._pubsubTopicWithfallback()
+                    });
+                    log.error(String(allAttemptsFailedError));
+
+                    this._updatePublishingState("failed");
+                    this.emit("error", allAttemptsFailedError);
+                }
             }
         }, this._setProviderFailureThresholdSeconds * 1000);
     }
@@ -327,10 +354,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         if (!this._publishedChallengeRequests) {
             this._publishedChallengeRequests = [];
             this._pubsubProviders = Object.keys(this._plebbit.clients.pubsubClients);
+            this._pubsubProvidersDoneWaiting = {};
             this._currentPubsubProviderIndex = 0;
             if (this._pubsubProviders.length === 1) this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
         }
 
+        assert(this._currentPubsubProviderIndex < this._pubsubProviders.length, "There is miscalculation of current pubsub provider index");
         this._updateState("publishing");
 
         const options = { acceptedChallengeTypes: [] };
@@ -390,22 +419,33 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 );
             } catch (e) {
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[this._currentPubsubProviderIndex]);
-                this._updatePublishingState("failed");
                 log.error("Failed to publish challenge request using provider ", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 this._currentPubsubProviderIndex += 1;
-                if (this._currentPubsubProviderIndex === this._pubsubProviders.length) {
-                    this.emit("error", e);
-                    throw e;
-                }
-                continue;
+                if (this._isAllAttemptsExhausted()) {
+                    await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+                    this._updatePublishingState("failed");
+                    const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
+                        pubsubProviders: this._pubsubProviders,
+                        pubsubTopic: this._pubsubTopicWithfallback()
+                    });
+                    log.error(String(allAttemptsFailedError));
+                    this.emit("error", allAttemptsFailedError);
+                    throw allAttemptsFailedError;
+                } else if (this._currentPubsubProviderIndex === this._pubsubProviders.length) return;
+                else continue;
             }
+            this._pubsubProvidersDoneWaiting[this._pubsubProviders[this._currentPubsubProviderIndex]] = false;
             this._publishedChallengeRequests.push(challengeRequest);
             this._clientsManager.updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);
 
             this._updatePublishingState("waiting-challenge");
 
-            log(`Sent a challenge request (${challengeRequest.challengeRequestId})`);
+            log(
+                `Sent a challenge request (${challengeRequest.challengeRequestId}) with provider (${
+                    this._pubsubProviders[this._currentPubsubProviderIndex]
+                })`
+            );
             this.emit("challengerequest", {
                 ...challengeRequest,
                 publication: this.toJSONPubsubMessagePublication()
@@ -416,7 +456,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
         setTimeout(() => {
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
-                if (this._currentPubsubProviderIndex === this._pubsubProviders.length - 1) {
+                if (this._isAllAttemptsExhausted()) {
                     // plebbit-js tried all providers and still no response is received
                     log.error(`Failed to receive any response for publication`);
                     this._updatePublishingState("failed");

@@ -639,7 +639,7 @@ describe(`comment.clients`, async () => {
 
             mockPost.clients.pubsubClients[offlinePubsubUrl].on("statechange", (newState) => actualStates.push(newState));
 
-            await assert.isRejected(mockPost.publish(), messages.ERR_PUBSUB_FAILED_TO_SUBSCRIBE);
+            await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
