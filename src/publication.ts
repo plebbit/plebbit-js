@@ -477,7 +477,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
                     this._currentPubsubProviderIndex += 1;
 
-                    this.publish();
+                    if (this._currentPubsubProviderIndex < this._pubsubProviders.length) this.publish();
                 }
             }
         }, this._publishToDifferentProviderThresholdSeconds * 1000);
