@@ -563,7 +563,6 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
                     hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
-                    // const hash =
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];

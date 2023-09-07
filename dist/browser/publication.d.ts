@@ -21,6 +21,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _challengeAnswer;
     private _publishedChallengeRequests;
     private _pubsubProviders;
+    private _pubsubProvidersDoneWaiting;
     private _currentPubsubProviderIndex;
     private _receivedChallengeFromSub;
     private _receivedChallengeVerification;
@@ -43,6 +44,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _pubsubTopicWithfallback;
     _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
     stop(): Promise<void>;
+    _isAllAttemptsExhausted(): boolean;
     _setProviderToFailIfNoResponse(providerIndex: number): void;
     publish(): Promise<void>;
 }
