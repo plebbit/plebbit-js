@@ -345,6 +345,7 @@ PubsubSignature {
   - `plebbit.resolveAuthorAddress(address)`
   - `Plebbit.getShortAddress(address)`
   - `Plebbit.getShortCid(cid)`
+  - `Plebbit.rpcCall(method, params)`
   - `Plebbit.setNativeFunctions(nativeFunctions)`
   - `Plebbit.nativeFunctions`
 - [Subplebbit API](#subplebbit-api)
