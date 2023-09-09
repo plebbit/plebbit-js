@@ -230,7 +230,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.getSubplebbit(subplebbitAddress);
+        if (this.plebbitRpcClient){
+            const subcriptionId = this.plebbitRpcClient.webSocketClient
+
+            return this.plebbitRpcClient.getSubplebbit(subplebbitAddress);
+        } 
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         if (!resolvedSubplebbitAddress)
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });

@@ -160,6 +160,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 challenges: decryptedChallenges
             };
             this._challenge = decryptedChallenge;
+            // TODO implement RPC code here
             this._updatePublishingState("waiting-challenge-answers");
             const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
                 .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
@@ -237,6 +238,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             ...toSignAnswer,
             signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
         });
+        // TODO implement RPC code here
+
         this._updatePublishingState("publishing-challenge-answer");
         this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
         await this._clientsManager.pubsubPublishOnProvider(
@@ -299,6 +302,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     async stop() {
+        // TODO implement RPC code here
         if (this.subplebbit) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
         this._updatePublishingState("stopped");
     }
@@ -370,6 +374,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.toJSONPubsubMessagePublication()
         );
 
+        // TODO implement RPC code here
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
             this._updatePublishingState("publishing-challenge-request");
             this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);

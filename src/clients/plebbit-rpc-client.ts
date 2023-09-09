@@ -62,8 +62,8 @@ export default class PlebbitRpcClient {
         return this._plebbit.createComment(commentProps);
     }
 
-    async getCommentPage(pageCid: string, commentCid: string): Promise<PageIpfs> {
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentPage", [pageCid, commentCid]);
+    async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentPage", [pageCid, commentCid, subplebbitAddress]);
         return pageIpfs;
     }
 
@@ -89,6 +89,15 @@ export default class PlebbitRpcClient {
 
     async editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions) {
         await this._webSocketClient.call("editSubplebbit", [subplebbitAddress, subplebbitEditOptions]);
+    }
+
+    async deleteSubplebbit(subplebbitAddress: string) {
+        await this._webSocketClient.call("deleteSubplebbit", [subplebbitAddress]);
+    }
+
+    async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
+        const subscriptionId = <number>await this._webSocketClient.call("subplebbitUpdate", [subplebbitAddress]);
+        return subscriptionId;
     }
 
     async listSubplebbits(): Promise<string[]> {
