@@ -69,6 +69,7 @@ class PlebbitWsServer extends EventEmitter {
     // register all JSON RPC methods
     this.rpcWebsocketsRegister('getComment', this.getComment.bind(this))
     this.rpcWebsocketsRegister('getSubplebbitPage', this.getSubplebbitPage.bind(this))
+    this.rpcWebsocketsRegister('getCommentPage', this.getCommentPage.bind(this))
     this.rpcWebsocketsRegister('createSubplebbit', this.createSubplebbit.bind(this))
     this.rpcWebsocketsRegister('startSubplebbit', this.startSubplebbit.bind(this))
     this.rpcWebsocketsRegister('stopSubplebbit', this.stopSubplebbit.bind(this))
@@ -133,6 +134,13 @@ class PlebbitWsServer extends EventEmitter {
     const subplebbitAddress = params[1]
     const subplebbit = await this.plebbit.createSubplebbit({address: subplebbitAddress})
     const page = await subplebbit.posts.getPage(pageCid)
+    return clone(page)
+  }
+
+  async getCommentPage(params: any) {
+    const [pageCid, commentCid, subplebbitAddress] = params
+    const comment = await this.plebbit.createComment({cid: commentCid, subplebbitAddress})
+    const page = await comment.replies.getPage(pageCid)
     return clone(page)
   }
 
