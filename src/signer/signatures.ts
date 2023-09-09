@@ -395,7 +395,6 @@ export async function verifyCommentUpdate(
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
     const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
-    // const hash =
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 

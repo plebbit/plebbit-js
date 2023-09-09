@@ -202,7 +202,7 @@ describe("publishing comments", async () => {
         await publishWithExpectedResult(post, true);
     });
 
-    it(`comment.publish emits an error if challenge requests have been published but no response has been received by any provider within the time allotted`, async () => {
+    it(`comment.publish emits an error if provider 1 and 2 are not responding`, async () => {
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
         const upPubsubUrl = "http://localhost:15002/api/v0";
         const plebbit = await mockPlebbit({
@@ -211,7 +211,7 @@ describe("publishing comments", async () => {
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
         mockPost._publishToDifferentProviderThresholdSeconds = 5;
-        mockPost._setProviderFailureThresholdSeconds = 5;
+        mockPost._setProviderFailureThresholdSeconds = 10;
 
         const expectedStates = {
             [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
@@ -223,15 +223,83 @@ describe("publishing comments", async () => {
         for (const pubsubUrl of Object.keys(expectedStates))
             mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
+        let emittedError;
+        mockPost.on("error", (err) => {
+            if (emittedError) expect.fail("Can't receive the same error twice");
+            emittedError = err;
+        });
         await mockPost.publish();
+
         await new Promise((resolve) =>
-            mockPost.once("error", (err) => {
-                expect(err.details.publishedChallengeRequests.length).to.equal(2);
-                expect(err.code).to.equal("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST");
-                resolve();
-            })
+            setTimeout(
+                resolve,
+                mockPost._setProviderFailureThresholdSeconds * 1000 + mockPost._publishToDifferentProviderThresholdSeconds * 1000 + 2000
+            )
         );
 
+        expect(emittedError).to.be.not.undefined;
+        expect(emittedError.code).to.equal("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER");
+
+        expect(mockPost.publishingState).to.equal("failed");
+        expect(actualStates).to.deep.equal(expectedStates);
+    });
+
+    it(`comment emits and throws errors if all providers fail to publish`, async () => {
+        const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
+        const offlinePubsubPlebbit = await mockPlebbit({
+            pubsubHttpClientsOptions: offlinePubsubUrls
+        });
+        const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+
+        let emittedError;
+        mockPost.once("error", (err) => {
+            emittedError = err;
+        });
+
+        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
+        expect(emittedError.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
+
+        expect(mockPost.publishingState).to.equal("failed");
+        expect(mockPost.clients.pubsubClients[offlinePubsubUrls[0]].state).to.equal("stopped");
+        expect(mockPost.clients.pubsubClients[offlinePubsubUrls[1]].state).to.equal("stopped");
+    });
+
+    it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
+        // First provider waits, second provider fails to publish
+        // second provider should update its state to be stopped, but it should not emit an error until the first provider is done with waiting
+
+        const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+        const offlinePubsubUrl = "http://localhost:23425"; // Will throw errors; can't subscribe or publish
+        const offlinePubsubPlebbit = await mockPlebbit({
+            pubsubHttpClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl]
+        });
+        const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
+        mockPost._publishToDifferentProviderThresholdSeconds = 5;
+        mockPost._setProviderFailureThresholdSeconds = 10;
+
+        let emittedError;
+        mockPost.on("error", (err) => {
+            if (emittedError) expect.fail("Should not emit an error twice");
+            emittedError = err;
+        });
+
+        const expectedStates = {
+            [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
+            [offlinePubsubUrl]: ["subscribing-pubsub", "stopped"]
+        };
+
+        const actualStates = { [notRespondingPubsubUrl]: [], [offlinePubsubUrl]: [] };
+
+        for (const pubsubUrl of Object.keys(expectedStates))
+            mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
+
+        await mockPost.publish();
+
+        await new Promise((resolve) => setTimeout(() => resolve(), mockPost._setProviderFailureThresholdSeconds * 1000));
+        expect(emittedError).to.be.not.undefined;
+        expect(emittedError.code).to.equal("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER");
+
+        expect(mockPost.publishingState).to.equal("failed");
         expect(actualStates).to.deep.equal(expectedStates);
     });
 });
@@ -552,7 +620,7 @@ describe(`comment.publishingState`, async () => {
         offlinePubsubPlebbit.on("error", () => {});
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
-        await assert.isRejected(mockPost.publish(), messages.ERR_PUBSUB_FAILED_TO_SUBSCRIBE);
+        await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
 
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
