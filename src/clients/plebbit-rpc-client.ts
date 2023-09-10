@@ -13,6 +13,7 @@ import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { Subplebbit } from "../subplebbit";
+import { PlebbitError } from "../plebbit-error";
 
 export default class PlebbitRpcClient {
     private _webSocketClient: WebSocketClient;
@@ -54,6 +55,17 @@ export default class PlebbitRpcClient {
         this._webSocketClient.on("error", (error) => {
             this._plebbit.emit("error", error);
         });
+
+        // Process error JSON from server into a PlebbitError instance
+        const originalWebsocketCall = this._webSocketClient.call.bind(this._webSocketClient);
+        this._webSocketClient.call = (...args) => {
+            try {
+                return originalWebsocketCall(...args);
+            } catch (e) {
+                //e is an error json representation of PlebbitError
+                throw new PlebbitError(e?.code, e?.details);
+            }
+        };
     }
 
     getSubscriptionMessages(subscriptionId: number): any[] | undefined {

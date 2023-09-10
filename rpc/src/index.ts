@@ -91,16 +91,19 @@ class PlebbitWsServer extends EventEmitter {
 
   // util function to log errors of registered methods
   rpcWebsocketsRegister(method: string, callback: Function) {
-    const callbackWithLog = async (params: any, connectionId: string) => {
+    const callbackWithErrorHandled = async (params: any, connectionId: string) => {
       try {
         const res = await callback(params, connectionId)
         return res
       } catch (e) {
         log.error(`${callback.name} error`, {params, error: e})
-        throw e
+        // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
+        const errorJson = clone(e)
+        delete errorJson['stack']
+        throw errorJson
       }
     }
-    this.rpcWebsockets.register(method, callbackWithLog)
+    this.rpcWebsockets.register(method, callbackWithErrorHandled)
   }
 
   // send json rpc notification message (no id field, but must have subscription id)
@@ -137,7 +140,7 @@ class PlebbitWsServer extends EventEmitter {
     return page
   }
 
-  async getCommentPage(params: any): Promise<PageIpfs> {
+  async getCommentPage(params: any) {
     const [pageCid, commentCid, subplebbitAddress] = params
     const comment = await this.plebbit.createComment({cid: commentCid, subplebbitAddress})
     const page = await comment.replies._fetchAndVerifyPage(pageCid)
