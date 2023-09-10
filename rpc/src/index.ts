@@ -133,15 +133,15 @@ class PlebbitWsServer extends EventEmitter {
     const pageCid = params[0]
     const subplebbitAddress = params[1]
     const subplebbit = await this.plebbit.createSubplebbit({address: subplebbitAddress})
-    const page = await subplebbit.posts.getPage(pageCid)
-    return clone(page)
+    const page = await subplebbit.posts._fetchAndVerifyPage(pageCid)
+    return page
   }
 
-  async getCommentPage(params: any) {
+  async getCommentPage(params: any): Promise<PageIpfs> {
     const [pageCid, commentCid, subplebbitAddress] = params
     const comment = await this.plebbit.createComment({cid: commentCid, subplebbitAddress})
-    const page = await comment.replies.getPage(pageCid)
-    return clone(page)
+    const page = await comment.replies._fetchAndVerifyPage(pageCid)
+    return page
   }
 
   async createSubplebbit(params: any) {

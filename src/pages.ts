@@ -56,7 +56,7 @@ export class BasePages implements PagesType {
         throw Error(`This function should be overridden`);
     }
 
-    async getPage(pageCid: string): Promise<PageType> {
+    async _fetchAndVerifyPage(pageCid: string) {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         const signatureValidity = await verifyPage(
@@ -68,8 +68,11 @@ export class BasePages implements PagesType {
             true
         );
         if (!signatureValidity.valid) throw Error(signatureValidity.reason);
+        return pageIpfs;
+    }
 
-        return await parsePageIpfs(pageIpfs, this._plebbit);
+    async getPage(pageCid: string): Promise<PageType> {
+        return await parsePageIpfs(await this._fetchAndVerifyPage(pageCid), this._plebbit);
     }
 
     toJSON(): PagesTypeJson | undefined {
