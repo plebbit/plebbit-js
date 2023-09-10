@@ -36,7 +36,6 @@ export default class PlebbitRpcClient {
             const message = JSON.parse(jsonMessage);
             const subscriptionId = message?.params?.subscription;
             if (subscriptionId) {
-                debugger;
                 if (!this._subscriptionsMessages[subscriptionId]) {
                     this._subscriptionsMessages[subscriptionId] = [];
                 }
@@ -55,6 +54,14 @@ export default class PlebbitRpcClient {
         this._webSocketClient.on("error", (error) => {
             this._plebbit.emit("error", error);
         });
+    }
+
+    getSubscriptionMessages(subscriptionId: number): any[] | undefined {
+        return this._subscriptionsMessages[subscriptionId];
+    }
+
+    async unsubscribe(subscriptionId: number) {
+        await this._webSocketClient.call("unsubscribe", [subscriptionId]);
     }
 
     async getComment(commentCid: string): Promise<Comment> {

@@ -48,6 +48,7 @@ import { subplebbitForPublishingCache } from "./constants";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
+import waitUntil from "async-wait-until";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -90,7 +91,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         for (const option of Object.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
 
-        if (options.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
+        this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
+        if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
         this._pubsubSubscriptions = {};
 
@@ -230,11 +232,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
-        if (this.plebbitRpcClient){
-            const subcriptionId = this.plebbitRpcClient.webSocketClient
-
-            return this.plebbitRpcClient.getSubplebbit(subplebbitAddress);
-        } 
+        if (this.plebbitRpcClient) {
+            const subcriptionId = await this.plebbitRpcClient.subplebbitUpdate(subplebbitAddress);
+            const getFirstSubUpdate = () =>
+                this.plebbitRpcClient.getSubscriptionMessages(subcriptionId)?.find((msg) => msg.params.event === "update");
+            await waitUntil(() => getFirstSubUpdate());
+            const subProps = getFirstSubUpdate().params.result;
+            const subplebbit = new Subplebbit(this);
+            await subplebbit.initSubplebbit(subProps);
+            await this.plebbitRpcClient.unsubscribe(subcriptionId);
+            return subplebbit;
+        }
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         if (!resolvedSubplebbitAddress)
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
