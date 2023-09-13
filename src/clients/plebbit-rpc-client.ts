@@ -14,12 +14,12 @@ import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { Subplebbit } from "../subplebbit";
 import { PlebbitError } from "../plebbit-error";
+import EventEmitter from "events";
 
 export default class PlebbitRpcClient {
     private _webSocketClient: WebSocketClient;
     private _plebbit: Plebbit;
-    private _subscriptionsMessages = {}; // TODO determine type
-
+    private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions);
         this._plebbit = plebbit;
@@ -37,13 +37,10 @@ export default class PlebbitRpcClient {
             const message = JSON.parse(jsonMessage);
             const subscriptionId = message?.params?.subscription;
             if (subscriptionId) {
-                if (!this._subscriptionsMessages[subscriptionId]) {
-                    this._subscriptionsMessages[subscriptionId] = [];
-                }
+                if (!this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId] = new EventEmitter();
+
                 // in production, don't keep all messages forever, expire them after some time
-                this._subscriptionsMessages[subscriptionId].push(message);
-                // TODO expire messages here
-                setTimeout(() => this._subscriptionsMessages[subscriptionId].shift(), 60000 * 5);
+                this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
         });
 
@@ -68,8 +65,9 @@ export default class PlebbitRpcClient {
         };
     }
 
-    getSubscriptionMessages(subscriptionId: number): any[] | undefined {
-        return this._subscriptionsMessages[subscriptionId];
+    getSubscription(subscriptionId: number) {
+        if (!this._subscriptionEvents[subscriptionId]) throw Error(`No subscription to RPC with id (${subscriptionId})`);
+        else return this._subscriptionEvents[subscriptionId];
     }
 
     async unsubscribe(subscriptionId: number) {

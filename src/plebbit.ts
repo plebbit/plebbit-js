@@ -48,7 +48,6 @@ import { subplebbitForPublishingCache } from "./constants";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
-import waitUntil from "async-wait-until";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -233,14 +232,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
         if (this.plebbitRpcClient) {
-            const subcriptionId = await this.plebbitRpcClient.subplebbitUpdate(subplebbitAddress);
-            const getFirstSubUpdate = () =>
-                this.plebbitRpcClient.getSubscriptionMessages(subcriptionId)?.find((msg) => msg.params.event === "update");
-            await waitUntil(() => getFirstSubUpdate());
-            const subProps = getFirstSubUpdate().params.result;
+            const subscriptionId = await this.plebbitRpcClient.subplebbitUpdate(subplebbitAddress);
+            const subProps = <SubplebbitIpfsType>(
+                (await new Promise((resolve) => this.plebbitRpcClient.getSubscription(subscriptionId).once("update", resolve)))["params"][
+                    "result"
+                ]
+            );
             const subplebbit = new Subplebbit(this);
             await subplebbit.initSubplebbit(subProps);
-            await this.plebbitRpcClient.unsubscribe(subcriptionId);
+            await this.plebbitRpcClient.unsubscribe(subscriptionId);
             return subplebbit;
         }
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
