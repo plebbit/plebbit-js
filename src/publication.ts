@@ -10,6 +10,7 @@ import {
     ChallengeVerificationMessageType,
     CommentIpfsWithCid,
     DecryptedChallengeMessageType,
+    DecryptedChallengeVerificationMessageType,
     ProtocolVersion,
     PublicationEvents,
     PublicationType,
@@ -71,6 +72,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _challenge?: DecryptedChallengeMessageType;
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
+    private _rpcPublishSubscriptionId?: number;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
 
@@ -120,6 +122,20 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             author: this.author.toJSONIpfs(),
             protocolVersion: this.protocolVersion
         };
+    }
+
+    private async _handleRpcChallenge(challenge: DecryptedChallengeMessageType) {
+        this._challenge = challenge;
+        this._receivedChallengeFromSub = true;
+
+        this.emit("challenge", this._challenge);
+    }
+
+    private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
+        this._receivedChallengeVerification = true;
+        this._initProps(verification.publication);
+        this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
+        await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
     }
 
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
@@ -354,6 +370,27 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
+
+        if (this._plebbit.plebbitRpcClient) {
+            this._rpcPublishSubscriptionId =
+                this.getType() === "comment" //@ts-expect-error
+                    ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessagePublication())
+                    : this.getType() === "commentedit" //@ts-expect-error
+                    ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessagePublication())
+                    : this.getType() === "vote" //@ts-expect-error
+                    ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessagePublication())
+                    : undefined;
+            assert(typeof this._rpcPublishSubscriptionId === "number", "Failed to start publishing with RPC");
+
+            this._plebbit.plebbitRpcClient
+                .getSubscription(this._rpcPublishSubscriptionId)
+                .on("challenge", (args) => this._handleRpcChallenge(args.params.result))
+                .on("challengeverification", (args) => this._handleRpcChallengeVerification(args.params.result))
+                .on("publishingstatechange", (args) => this._updatePublishingState(args.params.result))
+                .on("statechange", (args) => this._updateState(args.params.result))
+                .on("error", (args) => this.emit("error", args.params.result));
+            return;
+        }
 
         if (!this._publishedChallengeRequests) {
             this._publishedChallengeRequests = [];

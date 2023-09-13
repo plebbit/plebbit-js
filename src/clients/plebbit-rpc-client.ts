@@ -1,7 +1,10 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
     CommentIpfsType,
+    CreateCommentEditOptions,
+    CreateCommentOptions,
     CreateSubplebbitOptions,
+    CreateVoteOptions,
     PageIpfs,
     PageType,
     PlebbitOptions,
@@ -39,7 +42,6 @@ export default class PlebbitRpcClient {
             if (subscriptionId) {
                 if (!this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId] = new EventEmitter();
 
-                // in production, don't keep all messages forever, expire them after some time
                 this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
         });
@@ -114,6 +116,21 @@ export default class PlebbitRpcClient {
 
     async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
         const subscriptionId = <number>await this._webSocketClient.call("subplebbitUpdate", [subplebbitAddress]);
+        return subscriptionId;
+    }
+
+    async publishComment(commentProps: CreateCommentOptions) {
+        const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
+        return subscriptionId;
+    }
+
+    async publishCommentEdit(commentEditProps: CreateCommentEditOptions) {
+        const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        return subscriptionId;
+    }
+
+    async publishVote(voteProps: CreateVoteOptions) {
+        const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
         return subscriptionId;
     }
 
