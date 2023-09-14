@@ -82,8 +82,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private _updateInterval?: any;
     private _isUpdating: boolean;
     private _rawCommentUpdate?: CommentUpdate;
+    private _rawCommentIpfs?: CommentIpfsType;
     private _loadingOperation: RetryOperation;
     _clientsManager: CommentClientsManager;
+    private _updateRpcSubscriptionId?: number;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
@@ -361,13 +363,13 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && !this.ipnsName) {
+        if (this.cid && (!this.ipnsName || !this.subplebbitAddress)) {
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
-            const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
-                commentIpfs,
+                this._rawCommentIpfs,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 true
@@ -376,14 +378,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 this.emit(
                     "error",
                     new PlebbitError(getErrorCodeFromMessage(commentIpfsValidation.reason), {
-                        commentIpfs,
+                        commentIpfs: this._rawCommentIpfs,
                         commentIpfsValidation,
                         cid: this.cid
                     })
                 );
                 return;
             }
-            this._initProps({ ...commentIpfs, cid: this.cid });
+            this._initProps({ ...this._rawCommentIpfs, cid: this.cid });
             this.emit("update", this);
         }
 
@@ -425,8 +427,25 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     async update() {
-        if (this._updateInterval) return; // Do nothing if it's already updating
         const log = Logger("plebbit-js:comment:update");
+
+        if (this._plebbit.plebbitRpcClient) {
+            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid, this.ipnsName);
+            this._plebbit.plebbitRpcClient
+                .getSubscription(this._updateRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                    log(`Received new CommentUpdate/CommentIpfs from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                    if (updateProps.params.result.subplebbitAddress) this._initProps(updateProps.params.result);
+                    else await this._initCommentUpdate(updateProps.params.result);
+                    this.emit("update", this);
+                })
+                .on("updatingstatechange", (args) => this._setUpdatingState(args.params.result))
+                .on("statechange", (args) => this._updateState(args.params.result))
+                .on("error", (err) => this.emit("error", err));
+
+            return;
+        }
+        if (this._updateInterval) return; // Do nothing if it's already updating
         this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
@@ -445,6 +464,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._setUpdatingState("stopped");
         this._updateState("stopped");
         this._isUpdating = false;
+        if (this._updateRpcSubscriptionId) {
+            await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            this._updateRpcSubscriptionId = undefined;
+        }
     }
 
     private async _validateSignature() {

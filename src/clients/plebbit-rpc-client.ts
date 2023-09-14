@@ -136,6 +136,12 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
+    async commentUpdate(commentCid: string, ipnsName: string) {
+        assert(commentCid && ipnsName, "Need to have either comment cid and ipns name in order to call RPC commentUpdate");
+        const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid, ipnsName]);
+        return subscriptionId;
+    }
+
     async listSubplebbits(): Promise<string[]> {
         const subs = <string[]>await this._webSocketClient.call("listSubplebbits", []);
         return subs;
