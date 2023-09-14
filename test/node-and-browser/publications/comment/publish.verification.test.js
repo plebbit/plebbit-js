@@ -77,7 +77,9 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     });
 
     it("Throws an error when publishing a duplicate post", async function () {
-        await publishWithExpectedResult(post, false, messages.ERR_DUPLICATE_COMMENT);
+        const newPost = await generateMockPost(subplebbitAddress, plebbit);
+        newPost.toJSONPubsubMessagePublication = () => post.toJSONPubsubMessagePublication();
+        await publishWithExpectedResult(newPost, false, messages.ERR_DUPLICATE_COMMENT);
     });
 
     it(`Throws an error when comment is over size`, async () => {

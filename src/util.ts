@@ -225,5 +225,5 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
 
 export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
     if (!ensAddress.endsWith(".eth")) return false;
-    return /^[A-Z]*$/.test(ensAddress); // Regex test for capital letters in English only
+    return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
 }

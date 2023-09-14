@@ -290,6 +290,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
                             (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
+                        if ((0, util_2.doesEnsAddressHaveCapitalLetter)(subplebbitAddress))
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: subplebbitAddress });
                         return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
                     case 1:
                         resolvedSubplebbitAddress = _c.sent();
@@ -425,6 +427,8 @@ var Plebbit = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
                         canRunSub = this._canRunSub();
+                        if ((options === null || options === void 0 ? void 0 : options.address) && (0, util_2.doesEnsAddressHaveCapitalLetter)(options === null || options === void 0 ? void 0 : options.address))
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options === null || options === void 0 ? void 0 : options.address });
                         localSub = function () { return __awaiter(_this, void 0, void 0, function () {
                             var subplebbit;
                             return __generator(this, function (_a) {

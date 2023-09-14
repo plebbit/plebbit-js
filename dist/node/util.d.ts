@@ -41,3 +41,4 @@ export declare function shortifyCid(cid: string): string;
 export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
+export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;

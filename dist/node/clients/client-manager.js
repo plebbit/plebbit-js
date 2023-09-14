@@ -161,22 +161,30 @@ var ClientsManager = /** @class */ (function (_super) {
         pubsubProvider = pubsubProvider || this._defaultPubsubProviderUrl;
         (0, assert_1.default)(typeof pubsubProvider === "string");
         (0, assert_1.default)(typeof newState === "string", "Can't update pubsub state to undefined");
+        if (this.clients.pubsubClients[pubsubProvider].state === newState)
+            return;
         this.clients.pubsubClients[pubsubProvider].state = newState;
         this.clients.pubsubClients[pubsubProvider].emit("statechange", newState);
     };
     ClientsManager.prototype.updateIpfsState = function (newState) {
         (0, assert_1.default)(this._defaultIpfsProviderUrl);
         (0, assert_1.default)(typeof newState === "string", "Can't update ipfs state to undefined");
+        if (this.clients.ipfsClients[this._defaultIpfsProviderUrl].state === newState)
+            return;
         this.clients.ipfsClients[this._defaultIpfsProviderUrl].state = newState;
         this.clients.ipfsClients[this._defaultIpfsProviderUrl].emit("statechange", newState);
     };
     ClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         (0, assert_1.default)(typeof newState === "string", "Can't update gateway state to undefined");
+        if (this.clients.ipfsGateways[gateway].state === newState)
+            return;
         this.clients.ipfsGateways[gateway].state = newState;
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     };
     ClientsManager.prototype.updateChainProviderState = function (newState, chainTicker, chainProviderUrl) {
         (0, assert_1.default)(typeof newState === "string", "Can't update chain provider state to undefined");
+        if (this.clients.chainProviders[chainTicker][chainProviderUrl].state === newState)
+            return;
         this.clients.chainProviders[chainTicker][chainProviderUrl].state = newState;
         this.clients.chainProviders[chainTicker][chainProviderUrl].emit("statechange", newState);
     };
@@ -249,19 +257,6 @@ var PublicationClientsManager = /** @class */ (function (_super) {
             var pubsubUrl = _b[_i];
             this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.PublicationPubsubClient("stopped"), _a));
         }
-    };
-    // Pubsub methods here
-    PublicationClientsManager.prototype.prePubsubPublishProvider = function (pubsubTopic, pubsubProvider) {
-        var newState = this._publication.publishingState === "publishing-challenge-request"
-            ? "publishing-challenge-request"
-            : "publishing-challenge-answer";
-        this.updatePubsubState(newState, pubsubProvider);
-    };
-    PublicationClientsManager.prototype.postPubsubPublishProviderSuccess = function (pubsubTopic, pubsubProvider) {
-        this.updatePubsubState("stopped", pubsubProvider);
-    };
-    PublicationClientsManager.prototype.postPubsubPublishProviderFailure = function (pubsubTopic, pubsubProvider) {
-        this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
     };
     // Resolver methods here
     PublicationClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {

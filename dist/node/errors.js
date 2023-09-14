@@ -28,6 +28,7 @@ var messages;
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
     messages["ERR_CALCULATED_CID_DOES_NOT_MATCH"] = "The CID calculated from loaded content does not match the provided CID";
     messages["ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK"] = "Failed to fetch the thumbnail url of the link";
+    messages["ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER"] = "ENS address has an uppercase letter. Subplebbit ENS address should be lowercase";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";
@@ -94,5 +95,7 @@ var messages;
     messages["ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE"] = "Failed to unsubscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_PUBLISH"] = "Failed to publish on pubsub";
     messages["ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST"] = "Did not receive response to challenge request in the specified time";
+    messages["ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS"] = "All pubsub providers throw an error and unable to publish or subscribe";
+    messages["ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER"] = "The challenge request has been published over the pubsub topic but no response was received";
 })(messages || (exports.messages = messages = {}));
 //# sourceMappingURL=errors.js.map

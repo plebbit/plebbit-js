@@ -8,12 +8,14 @@ export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string;
     _defaultIpfsProviderUrl: string | undefined;
+    providerSubscriptions: Record<string, string[]>;
     constructor(plebbit: Plebbit);
     toJSON(): any;
     getDefaultPubsub(): import("../types").PubsubClient;
     getDefaultIpfs(): import("../types").IpfsClient;
     pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string): Promise<void>;
     pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn): Promise<void>;
+    pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn): Promise<void>;
     pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn): Promise<void>;
     protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;

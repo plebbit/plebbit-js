@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var errors_1 = require("./errors");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
@@ -299,4 +299,10 @@ function getErrorCodeFromMessage(message) {
     throw Error("No error code was found for message (".concat(message, ")"));
 }
 exports.getErrorCodeFromMessage = getErrorCodeFromMessage;
+function doesEnsAddressHaveCapitalLetter(ensAddress) {
+    if (!ensAddress.endsWith(".eth"))
+        return false;
+    return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+}
+exports.doesEnsAddressHaveCapitalLetter = doesEnsAddressHaveCapitalLetter;
 //# sourceMappingURL=util.js.map

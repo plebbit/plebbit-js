@@ -19,11 +19,15 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     protected pubsubMessageSigner: Signer;
     private _challengeAnswer;
-    private _challengeRequest;
+    private _publishedChallengeRequests;
     private _pubsubProviders;
-    private _currentPubsubProvider;
-    private _receivedChallenge;
-    private _reattemptPublishingAfterSeconds;
+    private _pubsubProvidersDoneWaiting;
+    private _currentPubsubProviderIndex;
+    private _receivedChallengeFromSub;
+    private _receivedChallengeVerification;
+    private _challenge?;
+    private _publishToDifferentProviderThresholdSeconds;
+    private _setProviderFailureThresholdSeconds;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
     constructor(props: PublicationType, plebbit: Plebbit);
@@ -40,6 +44,8 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _pubsubTopicWithfallback;
     _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
     stop(): Promise<void>;
+    _isAllAttemptsExhausted(): boolean;
+    _setProviderToFailIfNoResponse(providerIndex: number): void;
     publish(): Promise<void>;
 }
 export default Publication;

@@ -428,6 +428,8 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 1:
                         _a.sent();
                         if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 5];
+                        if ((0, util_1.doesEnsAddressHaveCapitalLetter)(newSubplebbitOptions.address))
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
                             log.error(err.toString());
                             _this.emit("error", err);

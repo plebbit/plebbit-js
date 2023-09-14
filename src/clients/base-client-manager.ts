@@ -22,12 +22,15 @@ export class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string; // The URL of the pubsub that is used by default for pubsub
     _defaultIpfsProviderUrl: string | undefined; // The URL of the ipfs node that is used by default for IPFS ipfs/ipns retrieval
+    providerSubscriptions: Record<string, string[]>; // To keep track of subscriptions of each provider
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
         this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
+        this.providerSubscriptions = {};
+        for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
     }
 
     toJSON() {
@@ -53,6 +56,7 @@ export class BaseClientsManager {
         try {
             await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
             await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
+            this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
             return;
         } catch (e) {
             await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
@@ -80,11 +84,18 @@ export class BaseClientsManager {
         throw combinedError;
     }
 
+    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn) {
+        await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
+        this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
+            (subPubsubTopic) => subPubsubTopic !== pubsubTopic
+        );
+    }
+
     async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
         for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
             const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
             try {
-                await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.unsubscribe(pubsubTopic, handler);
+                await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
             } catch {}
         }
     }
