@@ -117,6 +117,10 @@ class PlebbitWsServer extends EventEmitter {
         event,
       },
     }
+    if (event === 'error') {
+      delete message?.params?.result?.stack
+      delete message?.params?.result?.details?.error?.stack
+    }
     this.connections[connectionId]?.send?.(JSON.stringify(message))
   }
 
