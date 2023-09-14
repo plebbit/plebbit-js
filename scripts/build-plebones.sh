@@ -5,13 +5,13 @@ cd "$(dirname "$0")"
 cd ..
 
 # build and bundle
-# npm install
-# npm run build
+npm install
+npm run build
 
 # build plebones
-# git clone https://github.com/plebbit/plebones.git plebones
+git clone https://github.com/plebbit/plebones.git plebones
 cd plebones
-# yarn
+yarn
 
 # replace old plebbit-js in plebones deps with latest plebbit-js
 rm -fr node_modules/@plebbit/plebbit-js/dist
