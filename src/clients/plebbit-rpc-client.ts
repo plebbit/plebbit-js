@@ -74,6 +74,8 @@ export default class PlebbitRpcClient {
 
     async unsubscribe(subscriptionId: number) {
         await this._webSocketClient.call("unsubscribe", [subscriptionId]);
+        this._subscriptionEvents[subscriptionId].removeAllListeners();
+        delete this._subscriptionEvents[subscriptionId];
     }
 
     async getComment(commentCid: string): Promise<Comment> {

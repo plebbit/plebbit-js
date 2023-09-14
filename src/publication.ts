@@ -133,9 +133,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
         this._receivedChallengeVerification = true;
-        this._initProps(verification.publication);
+        if (verification.publication) this._initProps(verification.publication);
         this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
         await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+        this._rpcPublishSubscriptionId = undefined;
     }
 
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
@@ -322,6 +323,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // TODO implement RPC code here
         if (this.subplebbit) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
         this._updatePublishingState("stopped");
+        if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+        this._rpcPublishSubscriptionId = undefined;
     }
 
     _isAllAttemptsExhausted(): boolean {
@@ -448,7 +451,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.toJSONPubsubMessagePublication()
         );
 
-        // TODO implement RPC code here
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
             this._updatePublishingState("publishing-challenge-request");
             this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);
