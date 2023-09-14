@@ -42,6 +42,11 @@ export default class PlebbitRpcClient {
             if (subscriptionId) {
                 if (!this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId] = new EventEmitter();
 
+                // We need to parse error props into PlebbitErrors
+                if (message?.params?.event === "error") {
+                    message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
+                    delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
+                }
                 this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
         });
