@@ -17,8 +17,8 @@ yarn
 rm -fr node_modules/@plebbit/plebbit-js/dist
 cp -r ../dist node_modules/@plebbit/plebbit-js/dist
 
-# build plebones
-yarn build
+# build plebones with latest plebbit-js commit ref
+REACT_APP_COMMIT_REF=$COMMIT_REF yarn build
 
 # copy plebones build to plebbit-js build folder
 cp -r build ../build
