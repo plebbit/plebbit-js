@@ -15,6 +15,7 @@ import assert from "assert";
 import { BasePages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
 import { Plebbit } from "./plebbit";
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -226,4 +227,30 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
 export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
     if (!ensAddress.endsWith(".eth")) return false;
     return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+}
+
+export function parsePubsubMsgFromRpc(pubsubMsg: any){
+    pubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
+    if (pubsubMsg.encryptedPublication){
+        pubsubMsg.encryptedPublication.tag = uint8ArrayFromString(pubsubMsg.encryptedPublication.tag, "base64");
+        pubsubMsg.encryptedPublication.iv = uint8ArrayFromString(pubsubMsg.encryptedPublication.iv, "base64");
+        pubsubMsg.encryptedPublication.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedPublication.ciphertext, "base64");
+    }
+
+    pubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
+    pubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
+
+    if (pubsubMsg.encryptedChallenges){
+        pubsubMsg.encryptedChallenges.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallenges.ciphertext, "base64");
+        pubsubMsg.encryptedChallenges.iv = uint8ArrayFromString(pubsubMsg.encryptedChallenges.iv, "base64");
+        pubsubMsg.encryptedChallenges.tag = uint8ArrayFromString(pubsubMsg.encryptedChallenges.tag, "base64");    
+    }
+
+    if (pubsubMsg.encryptedChallengeAnswers){
+        pubsubMsg.encryptedChallengeAnswers.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.ciphertext, "base64");
+        pubsubMsg.encryptedChallengeAnswers.iv = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.iv, "base64");
+        pubsubMsg.encryptedChallengeAnswers.tag = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.tag, "base64");
+    }
+
+    return pubsubMsg;
 }

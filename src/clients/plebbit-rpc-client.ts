@@ -1,5 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
+    ChallengeAnswerMessageType,
     CommentIpfsType,
     CreateCommentEditOptions,
     CreateCommentOptions,
@@ -18,11 +19,14 @@ import assert from "assert";
 import { Subplebbit } from "../subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import EventEmitter from "events";
+import { ChallengeAnswerMessage } from "../challenge";
+import { parsePubsubMsgFromRpc } from "../util";
 
 export default class PlebbitRpcClient {
     private _webSocketClient: WebSocketClient;
     private _plebbit: Plebbit;
     private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
+    private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions);
         this._plebbit = plebbit;
@@ -47,7 +51,10 @@ export default class PlebbitRpcClient {
                     message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
                     delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
                 }
-                this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
+                if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0) {
+                    if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [];
+                    else this._pendingSubscriptionMsgs[subscriptionId].push(message);
+                } else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
         });
 
@@ -79,8 +86,16 @@ export default class PlebbitRpcClient {
 
     async unsubscribe(subscriptionId: number) {
         await this._webSocketClient.call("unsubscribe", [subscriptionId]);
-        this._subscriptionEvents[subscriptionId].removeAllListeners();
+        if (this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId].removeAllListeners();
         delete this._subscriptionEvents[subscriptionId];
+        delete this._pendingSubscriptionMsgs[subscriptionId];
+    }
+
+    emitAllPendingMessages(subscriptionId: number) {
+        this._pendingSubscriptionMsgs[subscriptionId].forEach((message) =>
+            this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message)
+        );
+        delete this._pendingSubscriptionMsgs[subscriptionId];
     }
 
     async getComment(commentCid: string): Promise<Comment> {
@@ -141,10 +156,17 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async commentUpdate(commentCid: string, ipnsName: string) {
-        assert(commentCid && ipnsName, "Need to have either comment cid and ipns name in order to call RPC commentUpdate");
+    async commentUpdate(commentCid: string, ipnsName?: string) {
+        assert(commentCid, "Need to have comment cid in order to call RPC commentUpdate");
         const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid, ipnsName]);
         return subscriptionId;
+    }
+
+    async publishChallengeAnswers(subscriptionId: number, challengeAnswers: string[]) {
+        const rawChallengeAnswer = await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
+        const challengeAnswerMessage = <ChallengeAnswerMessageType>parsePubsubMsgFromRpc(rawChallengeAnswer);
+        // Need to parse challengeRequestId, encryptedChallengeAnswers, encryptedPublication, encryptedChallenges
+        return new ChallengeAnswerMessage(challengeAnswerMessage);
     }
 
     async listSubplebbits(): Promise<string[]> {
