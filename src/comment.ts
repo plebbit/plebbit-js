@@ -443,6 +443,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 .on("statechange", (args) => this._updateState(args.params.result))
                 .on("error", (err) => this.emit("error", err));
 
+            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
             return;
         }
         if (this._updateInterval) return; // Do nothing if it's already updating

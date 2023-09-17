@@ -136,6 +136,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _loadingOperation: RetryOperation;
     private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
+    private _updateRpcSubscriptionId?: number;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -434,11 +435,27 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.emit("update", this);
                 subplebbitForPublishingCache.set(subState.address, lodash.pick(subState, ["encryption", "address", "pubsubTopic"]));
             }
+        } else if (this.plebbit.plebbitRpcClient) {
+            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient.subplebbitUpdate(this.address);
+            this.plebbit.plebbitRpcClient
+                .getSubscription(this._updateRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                    log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                    await this.initSubplebbit(updateProps.params.result);
+                    this.emit("update", this);
+                })
+                .on("updatingstatechange", (args) => this._setUpdatingState(args.params.result))
+                .on("statechange", (args) => this._setState(args.params.result))
+                .on("error", (err) => this.emit("error", err));
+
+            this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+            return;
         } else {
             this._setUpdatingState("resolving-address");
 
             const ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
-            if (!ipnsAddress) return; // Temporary. Should retry
+            // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
+            if (!ipnsAddress) return; // TODO should throw error here, set states to failed and stop updating 
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
             const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
@@ -496,9 +513,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._updateInterval = clearTimeout(this._updateInterval);
         this._loadingOperation?.stop();
         this._setUpdatingState("stopped");
-        if (this.plebbit.plebbitRpcClient) {
-            await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+        if (this.plebbit.plebbitRpcClient && this._updateRpcSubscriptionId) {
+            // We're updating a remote sub here
+            await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            this._updateRpcSubscriptionId = undefined;
+        } else if (this.plebbit.plebbitRpcClient) {
+            // Subplebbit is running over RPC
         } else if (this._sync) {
+            // Subplebbit is running locally
             await this._clientsManager
                 .getDefaultPubsub()
                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
@@ -1472,6 +1494,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async delete() {
+        // TODO add RPC code here
         await this.stop();
         if (typeof this.plebbit.dataPath !== "string")
             throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
