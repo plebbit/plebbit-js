@@ -277,7 +277,7 @@ class PlebbitWsServer extends EventEmitter {
     const sendEvent = (event: string, result: any) => this.jsonRpcSendNotification({method: 'commentUpdate', subscription: subscriptionId, event, result, connectionId})
 
     const comment = await this.plebbit.createComment({cid, ipnsName})
-    comment.on('update', () => sendEvent('update', clone(comment.updatedAt ? comment._rawCommentUpdate : comment._rawCommentIpfs)))
+    comment.on('update', () => sendEvent('update', clone(comment.updatedAt ? comment._rawCommentUpdate : {cid, ...comment._rawCommentIpfs})))
     comment.on('updatingstatechange', () => sendEvent('updatingstatechange', comment.updatingState))
     comment.on('error', (error: any) => sendEvent('error', error))
 
