@@ -70,3 +70,167 @@ describe("image captcha", async () => {
         await publishWithExpectedResult(mockPost, false);
     });
 });
+
+describe("Validate props of publication Pubsub messages", async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    it(`Validate props of challengerequest`, async () => {
+        const comment = await generateMockPost(signers[0].address, plebbit);
+
+        comment.publish();
+        await new Promise((resolve) =>
+            comment.once("challengerequest", (request) => {
+                expect(request.publication).to.deep.equal(comment.toJSONPubsubMessagePublication());
+                expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
+                expect(request.challengeRequestId.length).to.equal(38);
+                expect(request.type).to.equal("CHALLENGEREQUEST");
+                expect(request.acceptedChallengeTypes).to.be.a("array");
+                expect(request.encryptedPublication).to.be.a("object");
+                expect(request.encryptedPublication.ciphertext.constructor.name).to.equal("Uint8Array");
+                expect(request.encryptedPublication.iv.constructor.name).to.equal("Uint8Array");
+                expect(request.encryptedPublication.tag.constructor.name).to.equal("Uint8Array");
+                expect(request.encryptedPublication.type).to.equal("ed25519-aes-gcm");
+                expect(request.protocolVersion).to.be.a("string");
+                expect(request.signature).to.be.a("object");
+                expect(request.signature.signature.constructor.name).to.equal("Uint8Array");
+                expect(request.signature.signature.length).to.equal(64);
+                expect(request.signature.publicKey.constructor.name).to.equal("Uint8Array");
+                expect(request.signature.publicKey.length).to.equal(32);
+                expect(request.signature.signedPropertyNames).to.deep.equal([
+                    "type",
+                    "challengeRequestId",
+                    "encryptedPublication",
+                    "acceptedChallengeTypes",
+                    "timestamp"
+                ]);
+                expect(request.signature.type).to.equal("ed25519");
+                expect(request.timestamp).to.be.a("number");
+                expect(request.userAgent).to.be.a("string");
+                resolve();
+            })
+        );
+    });
+
+    it(`Validate props of challenge`, async () => {
+        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+
+        comment.publish();
+        await new Promise((resolve) =>
+            comment.once("challenge", (challenge) => {
+                expect(challenge.challengeRequestId.constructor.name).to.equal("Uint8Array");
+                expect(challenge.challengeRequestId.length).to.equal(38);
+                expect(challenge.type).to.equal("CHALLENGE");
+                expect(challenge.challenges).to.be.a("array");
+                expect(challenge.challenges[0].challenge).to.be.a("string");
+                expect(challenge.challenges[0].type).to.equal("image/png");
+
+                expect(challenge.encryptedChallenges).to.be.a("object");
+                expect(challenge.encryptedChallenges.ciphertext.constructor.name).to.equal("Uint8Array");
+                expect(challenge.encryptedChallenges.iv.constructor.name).to.equal("Uint8Array");
+                expect(challenge.encryptedChallenges.tag.constructor.name).to.equal("Uint8Array");
+                expect(challenge.encryptedChallenges.type).to.equal("ed25519-aes-gcm");
+                expect(challenge.protocolVersion).to.be.a("string");
+                expect(challenge.signature).to.be.a("object");
+                expect(challenge.signature.signature.constructor.name).to.equal("Uint8Array");
+                expect(challenge.signature.signature.length).to.equal(64);
+                expect(challenge.signature.publicKey.constructor.name).to.equal("Uint8Array");
+                expect(challenge.signature.publicKey.length).to.equal(32);
+                expect(challenge.signature.signedPropertyNames).to.deep.equal([
+                    "type",
+                    "challengeRequestId",
+                    "encryptedChallenges",
+                    "timestamp"
+                ]);
+                expect(challenge.signature.type).to.equal("ed25519");
+                expect(challenge.timestamp).to.be.a("number");
+                expect(challenge.userAgent).to.be.a("string");
+                resolve();
+            })
+        );
+    });
+
+    it(`Validate props of challengeanswer`, async () => {
+        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+
+        comment.removeAllListeners();
+
+        comment.once("challenge", async (challengeMsg) => {
+            await comment.publishChallengeAnswers(["1234"]); // hardcode answer here
+        });
+        comment.publish();
+        await new Promise((resolve) =>
+            comment.once("challengeanswer", (challengeAnswer) => {
+                expect(challengeAnswer.challengeRequestId.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.challengeRequestId.length).to.equal(38);
+                expect(challengeAnswer.type).to.equal("CHALLENGEANSWER");
+                expect(challengeAnswer.challengeAnswers).to.deep.equal(["1234"]);
+                expect(challengeAnswer.encryptedChallengeAnswers).to.be.a("object");
+                expect(challengeAnswer.encryptedChallengeAnswers.ciphertext.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.encryptedChallengeAnswers.iv.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.encryptedChallengeAnswers.tag.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.encryptedChallengeAnswers.type).to.equal("ed25519-aes-gcm");
+                expect(challengeAnswer.protocolVersion).to.be.a("string");
+                expect(challengeAnswer.signature).to.be.a("object");
+                expect(challengeAnswer.signature.signature.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.signature.signature.length).to.equal(64);
+                expect(challengeAnswer.signature.publicKey.constructor.name).to.equal("Uint8Array");
+                expect(challengeAnswer.signature.publicKey.length).to.equal(32);
+                expect(challengeAnswer.signature.signedPropertyNames).to.deep.equal([
+                    "type",
+                    "challengeRequestId",
+                    "encryptedChallengeAnswers",
+                    "timestamp"
+                ]);
+                expect(challengeAnswer.signature.type).to.equal("ed25519");
+                expect(challengeAnswer.timestamp).to.be.a("number");
+                expect(challengeAnswer.userAgent).to.be.a("string");
+                resolve();
+            })
+        );
+    });
+
+    it(`Validate props of challengeverification`, async () => {
+        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+
+        comment.removeAllListeners();
+
+        comment.once("challenge", async (challengeMsg) => {
+            await comment.publishChallengeAnswers(["12345"]); // hardcode answer here
+        });
+        comment.publish();
+        await new Promise((resolve) =>
+            comment.once("challengeverification", (challengeVerifcation) => {
+                expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
+                expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
+                expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");
+                expect(challengeVerifcation.challengeErrors).to.deep.equal(["User answered image captcha incorrectly"]);
+                expect(challengeVerifcation.challengeSuccess).to.be.false;
+                expect(challengeVerifcation.encryptedPublication).to.be.undefined;
+                expect(challengeVerifcation.publication).to.be.undefined;
+                expect(challengeVerifcation.reason).to.be.undefined;
+                expect(challengeVerifcation.protocolVersion).to.be.a("string");
+                expect(challengeVerifcation.signature).to.be.a("object");
+                expect(challengeVerifcation.signature.signature.constructor.name).to.equal("Uint8Array");
+                expect(challengeVerifcation.signature.signature.length).to.equal(64);
+                expect(challengeVerifcation.signature.publicKey.constructor.name).to.equal("Uint8Array");
+                expect(challengeVerifcation.signature.publicKey.length).to.equal(32);
+                expect(challengeVerifcation.signature.signedPropertyNames).to.deep.equal([
+                    "reason",
+                    "type",
+                    "challengeRequestId",
+                    "encryptedPublication",
+                    "challengeSuccess",
+                    "challengeErrors",
+                    "timestamp"
+                ]);
+                expect(challengeVerifcation.signature.type).to.equal("ed25519");
+                expect(challengeVerifcation.timestamp).to.be.a("number");
+                expect(challengeVerifcation.userAgent).to.be.a("string");
+                resolve();
+            })
+        );
+    });
+});
