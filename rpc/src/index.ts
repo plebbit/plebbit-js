@@ -462,9 +462,7 @@ class PlebbitWsServer extends EventEmitter {
   async unsubscribe(params: any, connectionId: string) {
     const subscriptionId = params[0]
 
-    if (!this.subscriptionCleanups[connectionId][subscriptionId]) {
-      throw Error(`no subscription with id '${subscriptionId}'`)
-    }
+    if (!this.subscriptionCleanups[connectionId][subscriptionId]) return true
 
     this.subscriptionCleanups[connectionId][subscriptionId]()
     delete this.subscriptionCleanups[connectionId][subscriptionId]
