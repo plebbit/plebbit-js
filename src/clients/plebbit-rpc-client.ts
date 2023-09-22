@@ -163,10 +163,8 @@ export default class PlebbitRpcClient {
     }
 
     async publishChallengeAnswers(subscriptionId: number, challengeAnswers: string[]) {
-        const rawChallengeAnswer = await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
-        const challengeAnswerMessage = <ChallengeAnswerMessageType>parsePubsubMsgFromRpc(rawChallengeAnswer);
-        // Need to parse challengeRequestId, encryptedChallengeAnswers, encryptedPublication, encryptedChallenges
-        return new ChallengeAnswerMessage(challengeAnswerMessage);
+        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
+        return res;
     }
 
     async listSubplebbits(): Promise<string[]> {

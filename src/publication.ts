@@ -9,6 +9,7 @@ import {
     ChallengeType,
     ChallengeVerificationMessageType,
     CommentIpfsWithCid,
+    DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerificationMessageType,
@@ -140,6 +141,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._rpcPublishSubscriptionId = undefined;
     }
 
+    private async _handleRpcChallengeAnswer(answer: DecryptedChallengeAnswerMessageType){
+        this._challengeAnswer = new ChallengeAnswerMessage(answer);
+        this.emit("challengeanswer", answer);
+    }
+
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
@@ -239,14 +245,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
 
         if (this._plebbit.plebbitRpcClient) {
-            this._challengeAnswer = await this._plebbit.plebbitRpcClient.publishChallengeAnswers(
-                this._rpcPublishSubscriptionId,
-                challengeAnswers
-            );
-            this.emit("challengeanswer", {
-                ...this._challengeAnswer,
-                challengeAnswers
-            });
+            await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, challengeAnswers);
             return;
         }
 
@@ -423,6 +422,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     });
                 })
                 .on("challenge", (args) => this._handleRpcChallenge(parsePubsubMsgFromRpc(args.params.result)))
+                .on("challengeanswer", args => this._handleRpcChallengeAnswer(parsePubsubMsgFromRpc(args.params.result)))
                 .on("challengeverification", (args) => this._handleRpcChallengeVerification(parsePubsubMsgFromRpc(args.params.result)))
                 .on("publishingstatechange", (args) => this._updatePublishingState(args.params.result))
                 .on("statechange", (args) => this._updateState(args.params.result))

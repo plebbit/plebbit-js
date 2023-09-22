@@ -341,6 +341,7 @@ class PlebbitWsServer extends EventEmitter {
     const comment = await this.plebbit.createComment(createCommentOptions)
     this.publishing[subscriptionId] = comment
     comment.on('challenge', (challenge: any) => sendEvent('challenge', formatPubsubMsg(challenge)))
+    comment.on('challengeanswer', (answer: any) => sendEvent('challengeanswer', formatPubsubMsg(answer)))
     comment.on('challengerequest', (request: any) => sendEvent('challengerequest', formatPubsubMsg(request)))
     comment.on('challengeverification', (challengeVerification: any) => sendEvent('challengeverification', formatPubsubMsg(challengeVerification)))
     comment.on('publishingstatechange', () => sendEvent('publishingstatechange', comment.publishingState))
@@ -351,6 +352,7 @@ class PlebbitWsServer extends EventEmitter {
       delete this.publishing[subscriptionId]
       comment.stop().catch((error: any) => log.error('publishComment stop error', {error, params}))
       comment.removeAllListeners('challenge')
+      comment.removeAllListeners('challengeanswer')
       comment.removeAllListeners('challengerequest')
       comment.removeAllListeners('challengeverification')
       comment.removeAllListeners('publishingstatechange')
@@ -376,6 +378,7 @@ class PlebbitWsServer extends EventEmitter {
     const vote = await this.plebbit.createVote(createVoteOptions)
     this.publishing[subscriptionId] = vote
     vote.on('challenge', (challenge: any) => sendEvent('challenge', formatPubsubMsg(challenge)))
+    vote.on('challengeanswer', (answer: any) => sendEvent('challengeanswer', formatPubsubMsg(answer)))
     vote.on('challengerequest', (request: any) => sendEvent('challengerequest', formatPubsubMsg(request)))
     vote.on('challengeverification', (challengeVerification: any) => sendEvent('challengeverification', formatPubsubMsg(challengeVerification)))
     vote.on('publishingstatechange', () => sendEvent('publishingstatechange', vote.publishingState))
@@ -386,6 +389,7 @@ class PlebbitWsServer extends EventEmitter {
       delete this.publishing[subscriptionId]
       vote.stop().catch((error: any) => log.error('publishVote stop error', {error, params}))
       vote.removeAllListeners('challenge')
+      vote.removeAllListeners('challengeanswer')
       vote.removeAllListeners('challengerequest')
       vote.removeAllListeners('challengeverification')
       vote.removeAllListeners('publishingstatechange')
@@ -412,6 +416,7 @@ class PlebbitWsServer extends EventEmitter {
     const commentEdit = await this.plebbit.createCommentEdit(createCommentEditOptions)
     this.publishing[subscriptionId] = commentEdit
     commentEdit.on('challenge', (challenge: any) => sendEvent('challenge', formatPubsubMsg(challenge)))
+    commentEdit.on('challengeanswer', (answer: any) => sendEvent('challengeanswer', formatPubsubMsg(answer)))
     commentEdit.on('challengerequest', (request: any) => sendEvent('challengerequest', formatPubsubMsg(request)))
     commentEdit.on('challengeverification', (challengeVerification: any) => sendEvent('challengeverification', formatPubsubMsg(challengeVerification)))
     commentEdit.on('publishingstatechange', () => sendEvent('publishingstatechange', commentEdit.publishingState))
@@ -423,6 +428,7 @@ class PlebbitWsServer extends EventEmitter {
       commentEdit.stop().catch((error: any) => log.error('publishCommentEdit stop error', {error, params}))
       commentEdit.removeAllListeners('challengerequest')
       commentEdit.removeAllListeners('challenge')
+      commentEdit.removeAllListeners('challengeanswer')
       commentEdit.removeAllListeners('challengeverification')
       commentEdit.removeAllListeners('publishingstatechange')
     }
@@ -449,8 +455,7 @@ class PlebbitWsServer extends EventEmitter {
 
     await publication.publishChallengeAnswers(answers)
 
-    const formattedChallengeAnswer = formatPubsubMsg(publication._challengeAnswer)
-    return formattedChallengeAnswer
+    return true
   }
 
   async unsubscribe(params: any, connectionId: string) {
