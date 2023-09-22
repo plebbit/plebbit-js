@@ -96,6 +96,7 @@ describe("createComment", async () => {
         expect(post.replies).to.be.a("object");
         await publishRandomReply(post, plebbit, {}, true);
         await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.content).to.be.a("string");
         expect(post.replyCount).to.equal(1);
         expect(post.replies.pages.topAll.comments.length).to.equal(1);
@@ -112,6 +113,8 @@ describe("createComment", async () => {
         expect(page.comments.length).to.be.equal(1);
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`plebbit.createComment({cid}).update() verifies signature of comment ipfs`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
@@ -141,7 +144,7 @@ describe("createComment", async () => {
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const originalPost = subplebbit.posts.pages.hot.comments[5];
+        const originalPost = subplebbit.posts.pages.hot.comments[0];
 
         const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 
@@ -238,6 +241,7 @@ describe(`commentUpdate.replyCount`, async () => {
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replyCount).to.equal(0);
     });
 
@@ -302,6 +306,7 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
         await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
@@ -337,6 +342,7 @@ describe(`comment.state`, async () => {
         let receivedStateChange = false;
         comment.once("statechange", (newState) => (receivedStateChange = newState === "updating"));
         await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve));
         expect(comment.state).to.equal("updating");
         expect(receivedStateChange).to.be.true;
         await comment.stop();
@@ -354,6 +360,8 @@ describe("comment.updatingState", async () => {
         expect(mockPost.updatingState).to.equal("stopped");
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
@@ -363,12 +371,15 @@ describe("comment.updatingState", async () => {
         await mockPost.update();
 
         await new Promise((resolve) => mockPost.once("update", resolve));
+        if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
@@ -384,6 +395,34 @@ describe("comment.updatingState", async () => {
         expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
         expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
+
+    //prettier-ignore
+    if (process.env["USE_RPC"] === "1")
+    it(`updating states is in correct order upon updating a comment with RPC`, async () => {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        const expectedStates = [
+            "fetching-ipfs",
+            "succeeded",
+            "fetching-update-ipns",
+            "failed",
+            "fetching-update-ipns",
+            "fetching-update-ipfs",
+            "succeeded",
+            "stopped",
+          ]
+        const recordedStates = [];
+        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
+        await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
+        await mockPost.stop();
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+
+    });
 });
 
 describe(`comment.clients`, async () => {
@@ -393,6 +432,8 @@ describe(`comment.clients`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`comment.clients.ipfsGateways`, async () => {
         // All tests below use Plebbit instance that doesn't have ipfsClient
         it(`comment.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -474,6 +515,8 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`comment.clients.ipfsClients`, async () => {
         it(`comment.clients.ipfsClients is undefined for gateway plebbit`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
@@ -559,6 +602,8 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"]) 
     describe(`comment.clients.pubsubClients`, async () => {
         it(`comment.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -748,6 +793,8 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"]) 
     describe(`comment.clients.chainProviders`, async () => {
         it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -774,12 +821,16 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    describe(`comment.clients.plebbitRpcClients`, async () => {});
+
     describe(`comment.replies.clients`, async () => {
         let commentCid;
         before(async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
         });
+        //prettier-ignore
+        if (!process.env["USE_RPC"]) 
         describe(`comment.replies.clients.ipfsClients`, async () => {
             it(`comment.replies.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
@@ -811,7 +862,9 @@ describe(`comment.clients`, async () => {
             });
         });
 
-        describe(`comment.replies.clients.clients.ipfsGateways`, async () => {
+        //prettier-ignore
+        if (!process.env["USE_RPC"]) 
+        describe(`comment.replies.clients.ipfsGateways`, async () => {
             it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
                 const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
@@ -876,5 +929,7 @@ describe(`comment.clients`, async () => {
                 expect(actualStates).to.deep.equal(expectedStates);
             });
         });
+
+        describe(`comment.replies.clients.plebbitRpcClients`, async () => {});
     });
 });
