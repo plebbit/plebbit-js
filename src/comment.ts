@@ -363,7 +363,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && (!this.ipnsName || !this.subplebbitAddress)) {
+        if (this.cid && !this.ipnsName && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
             this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
@@ -430,7 +430,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const log = Logger("plebbit-js:comment:update");
 
         if (this._plebbit.plebbitRpcClient) {
-            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid, this.ipnsName);
+            this._updateState("updating");
+            try {
+                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+            } catch (e) {
+                log.error("Failed to receive commentUpdate from RPC due to error", e);
+                this._updateState("stopped");
+                this._setUpdatingState("failed");
+                throw e;
+            }
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {

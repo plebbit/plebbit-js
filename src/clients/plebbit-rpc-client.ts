@@ -36,7 +36,7 @@ export default class PlebbitRpcClient {
     async init() {
         const log = Logger("plebbit-js:PlebbitRpcClient");
         // wait for websocket connection to open
-        await new Promise((resolve) => this._webSocketClient.on("open", resolve));
+        await new Promise((resolve) => this._webSocketClient.once("open", resolve));
         // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
         // NOTE: it is possible to receive a subscription message before receiving the subscription id
         //@ts-expect-error
@@ -52,7 +52,7 @@ export default class PlebbitRpcClient {
                     delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
                 }
                 if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0) {
-                    if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [];
+                    if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [message];
                     else this._pendingSubscriptionMsgs[subscriptionId].push(message);
                 } else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
@@ -156,9 +156,9 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async commentUpdate(commentCid: string, ipnsName?: string) {
+    async commentUpdate(commentCid: string) {
         assert(commentCid, "Need to have comment cid in order to call RPC commentUpdate");
-        const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid, ipnsName]);
+        const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid]);
         return subscriptionId;
     }
 
