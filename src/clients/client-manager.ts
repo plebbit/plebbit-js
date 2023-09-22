@@ -310,7 +310,6 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
-        this._comment._setUpdatingState("fetching-ipfs");
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs");
             const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));

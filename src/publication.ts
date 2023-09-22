@@ -313,11 +313,13 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     _updatePublishingState(newState: Publication["publishingState"]) {
+        if (this.publishingState === newState) return;
         this.publishingState = newState;
         this.emit("publishingstatechange", this.publishingState);
     }
 
     protected _updateState(newState: Publication["state"]) {
+        if (this.state === newState) return;
         this.state = newState;
         this.emit("statechange", this.state);
     }
@@ -387,7 +389,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._validatePublicationFields();
 
         if (this._plebbit.plebbitRpcClient) {
-            this._rpcPublishSubscriptionId =
+            this._updateState("publishing");
+            try {
+                this._rpcPublishSubscriptionId =
                 this.getType() === "comment" //@ts-expect-error
                     ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessagePublication())
                     : this.getType() === "commentedit" //@ts-expect-error
@@ -395,6 +399,14 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     : this.getType() === "vote" //@ts-expect-error
                     ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessagePublication())
                     : undefined;
+
+            }
+            catch(e){
+                log.error("Failed to publish to RPC due to error", e);
+                this._updateState("stopped");
+                this._updatePublishingState("failed");
+                throw e;
+            }
             assert(typeof this._rpcPublishSubscriptionId === "number", "Failed to start publishing with RPC");
 
             this._plebbit.plebbitRpcClient

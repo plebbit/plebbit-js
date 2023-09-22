@@ -331,9 +331,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             this._loadingOperation.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    // TODO should inject this.clients here so gateway or ipfsClients states can be modified
-                    resolve(await this._clientsManager.fetchCommentCid(this.cid));
+                    this._setUpdatingState("fetching-ipfs");
+                    const res = await this._clientsManager.fetchCommentCid(this.cid);
+                    this._setUpdatingState("succeeded");
+                    resolve(res);
                 } catch (e) {
+                    e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this.emit("error", e);
@@ -351,6 +354,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
                     resolve(update);
                 } catch (e) {
+                    e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this._loadingOperation.retry(e);

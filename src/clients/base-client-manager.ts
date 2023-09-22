@@ -288,7 +288,8 @@ export class BaseClientsManager {
             if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
             return cid;
         } catch (error) {
-            throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
+            if (error?.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
         }
     }
 
