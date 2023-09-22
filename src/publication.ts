@@ -335,7 +335,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     async stop() {
-        if (this.subplebbit) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        if (this.subplebbit && !this._rpcPublishSubscriptionId) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
         this._updatePublishingState("stopped");
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
