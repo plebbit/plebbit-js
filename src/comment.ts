@@ -124,14 +124,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
-        this.replies = new RepliesPages({
-            pages: undefined,
-            pageCids: undefined,
-            plebbit: this._plebbit,
-            subplebbitAddress: this.subplebbitAddress,
-            pagesIpfs: undefined,
-            parentCid: this.cid
-        });
+        if (!this.replies)
+            this.replies = new RepliesPages({
+                pages: undefined,
+                pageCids: undefined,
+                plebbit: this._plebbit,
+                subplebbitAddress: this.subplebbitAddress,
+                pagesIpfs: undefined,
+                parentCid: this.cid
+            });
     }
 
     async _initCommentUpdate(props: CommentUpdate) {
