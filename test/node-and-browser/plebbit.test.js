@@ -59,6 +59,19 @@ describe("Plebbit options", async () => {
         expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url }]);
         expect(plebbit.ipfsHttpClientsOptions).to.deep.equal([{ url }]);
     });
+
+    //prettier-ignore
+    if(process.env["USE_RPC"] === "1")
+    it("Error is emitted to plebbit instance if RPC is down", async () => {
+
+        const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+
+        await new Promise(resolve => plebbit.once("error", err => {
+            expect(err.message).to.equal('connect ECONNREFUSED 127.0.0.1:39650');
+            resolve();
+        }))
+
+    });
 });
 
 describe("plebbit.createSigner", async () => {

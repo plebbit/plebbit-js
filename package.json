@@ -69,6 +69,7 @@
         "lru-cache": "7.18.3",
         "open-graph-scraper": "4.11.1",
         "p-limit": "3.1.0",
+        "p-timeout": "4.1.0",
         "peer-id": "0.16.0",
         "probe-image-size": "^7.2.3",
         "retry": "0.13.1",
