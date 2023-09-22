@@ -7,8 +7,6 @@ import {
     CreateSubplebbitOptions,
     CreateVoteOptions,
     PageIpfs,
-    PageType,
-    PlebbitOptions,
     SubplebbitEditOptions,
     SubplebbitType
 } from "../types";
@@ -19,24 +17,24 @@ import assert from "assert";
 import { Subplebbit } from "../subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import EventEmitter from "events";
-import { ChallengeAnswerMessage } from "../challenge";
-import { parsePubsubMsgFromRpc } from "../util";
+import pTimeout from "p-timeout";
+import { throwWithErrorCode } from "../util";
+
+const log = Logger("plebbit-js:PlebbitRpcClient");
 
 export default class PlebbitRpcClient {
     private _webSocketClient: WebSocketClient;
     private _plebbit: Plebbit;
     private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
+    private _timeoutSeconds: number;
+    private _openConnectionPromise: Promise<any>;
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions);
         this._plebbit = plebbit;
         this._webSocketClient = new WebSocketClient(plebbit.plebbitRpcClientsOptions[0]);
-    }
-
-    async init() {
-        const log = Logger("plebbit-js:PlebbitRpcClient");
-        // wait for websocket connection to open
-        await new Promise((resolve) => this._webSocketClient.once("open", resolve));
+        this._timeoutSeconds = 20;
+        // Set up events here
         // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
         // NOTE: it is possible to receive a subscription message before receiving the subscription id
         //@ts-expect-error
@@ -67,16 +65,43 @@ export default class PlebbitRpcClient {
             this._plebbit.emit("error", error);
         });
 
+        this._webSocketClient.on("close", () => {
+            log.error("connection with web socket has been closed");
+            this._openConnectionPromise = undefined;
+        });
+
         // Process error JSON from server into a PlebbitError instance
         const originalWebsocketCall = this._webSocketClient.call.bind(this._webSocketClient);
-        this._webSocketClient.call = (...args) => {
+        this._webSocketClient.call = async (...args) => {
+            await this._init();
             try {
                 return originalWebsocketCall(...args);
             } catch (e) {
                 //e is an error json representation of PlebbitError
-                throw new PlebbitError(e?.code, e?.details);
+                if (e?.code) throw new PlebbitError(e?.code, e?.details);
+                else throw e;
             }
         };
+    }
+
+    async _init() {
+        // wait for websocket connection to open
+        //@ts-expect-error
+        if (this._webSocketClient.ready) return;
+        if (!this._openConnectionPromise)
+            this._openConnectionPromise = pTimeout(
+                new Promise(async (resolve) => this._webSocketClient.once("open", resolve)),
+                this._timeoutSeconds * 1000
+            );
+
+        try {
+            await this._openConnectionPromise;
+        } catch (e) {
+            throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
+                plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
+                timeoutSeconds: this._timeoutSeconds
+            });
+        }
     }
 
     getSubscription(subscriptionId: number) {

@@ -222,8 +222,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._initResolver(options);
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
-
-        if (this.plebbitRpcClient) await this.plebbitRpcClient.init();
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {

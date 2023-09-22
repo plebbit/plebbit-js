@@ -141,7 +141,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._rpcPublishSubscriptionId = undefined;
     }
 
-    private async _handleRpcChallengeAnswer(answer: DecryptedChallengeAnswerMessageType){
+    private async _handleRpcChallengeAnswer(answer: DecryptedChallengeAnswerMessageType) {
         this._challengeAnswer = new ChallengeAnswerMessage(answer);
         this.emit("challengeanswer", answer);
     }
@@ -185,7 +185,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 challenges: decryptedChallenges
             };
             this._challenge = decryptedChallenge;
-            // TODO implement RPC code here
             this._updatePublishingState("waiting-challenge-answers");
             const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
                 .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
@@ -334,7 +333,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     async stop() {
-        if (this.subplebbit && !this._rpcPublishSubscriptionId) await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        if (this.subplebbit && !this._rpcPublishSubscriptionId)
+            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
         this._updatePublishingState("stopped");
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
@@ -391,17 +391,15 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this._updateState("publishing");
             try {
                 this._rpcPublishSubscriptionId =
-                this.getType() === "comment" //@ts-expect-error
-                    ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessagePublication())
-                    : this.getType() === "commentedit" //@ts-expect-error
-                    ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessagePublication())
-                    : this.getType() === "vote" //@ts-expect-error
-                    ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessagePublication())
-                    : undefined;
-
-            }
-            catch(e){
-                log.error("Failed to publish to RPC due to error", e);
+                    this.getType() === "comment" //@ts-expect-error
+                        ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessagePublication())
+                        : this.getType() === "commentedit" //@ts-expect-error
+                        ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessagePublication())
+                        : this.getType() === "vote" //@ts-expect-error
+                        ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessagePublication())
+                        : undefined;
+            } catch (e) {
+                log.error("Failed to publish to RPC due to error", String(e));
                 this._updateState("stopped");
                 this._updatePublishingState("failed");
                 throw e;
@@ -422,7 +420,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     });
                 })
                 .on("challenge", (args) => this._handleRpcChallenge(parsePubsubMsgFromRpc(args.params.result)))
-                .on("challengeanswer", args => this._handleRpcChallengeAnswer(parsePubsubMsgFromRpc(args.params.result)))
+                .on("challengeanswer", (args) => this._handleRpcChallengeAnswer(parsePubsubMsgFromRpc(args.params.result)))
                 .on("challengeverification", (args) => this._handleRpcChallengeVerification(parsePubsubMsgFromRpc(args.params.result)))
                 .on("publishingstatechange", (args) => this._updatePublishingState(args.params.result))
                 .on("statechange", (args) => this._updateState(args.params.result))
