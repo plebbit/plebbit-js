@@ -285,7 +285,6 @@ class PlebbitWsServer extends EventEmitter {
       comment.stop().catch((error: any) => log.error('commentUpdate stop error', {error, params}))
       comment.removeAllListeners('update')
       comment.removeAllListeners('updatingstatechange')
-      comment.removeAllListeners('error')
     }
 
     // if fail, cleanup
@@ -320,7 +319,6 @@ class PlebbitWsServer extends EventEmitter {
       subplebbit.stop().catch((error: any) => log.error('subplebbitUpdate stop error', {error, params}))
       subplebbit.removeAllListeners('update')
       subplebbit.removeAllListeners('updatingstatechange')
-      subplebbit.removeAllListeners('error')
     }
 
     // if fail, cleanup
@@ -356,7 +354,6 @@ class PlebbitWsServer extends EventEmitter {
       comment.removeAllListeners('challengerequest')
       comment.removeAllListeners('challengeverification')
       comment.removeAllListeners('publishingstatechange')
-      comment.removeAllListeners('error')
     }
 
     // if fail, cleanup
@@ -392,7 +389,6 @@ class PlebbitWsServer extends EventEmitter {
       vote.removeAllListeners('challengerequest')
       vote.removeAllListeners('challengeverification')
       vote.removeAllListeners('publishingstatechange')
-      vote.removeAllListeners('error')
     }
 
     // if fail, cleanup
@@ -429,7 +425,6 @@ class PlebbitWsServer extends EventEmitter {
       commentEdit.removeAllListeners('challenge')
       commentEdit.removeAllListeners('challengeverification')
       commentEdit.removeAllListeners('publishingstatechange')
-      commentEdit.removeAllListeners('error')
     }
 
     // if fail, cleanup
