@@ -112,6 +112,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     signature: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
     settings?: SubplebbitSettings;
+    _rawSubplebbitType?: SubplebbitIpfsType;
 
     // Only for Subplebbit instance
     state: "stopped" | "updating" | "started";
@@ -432,6 +433,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 log(`Local Subplebbit received a new update. Will emit an update event`);
                 this._setUpdatingState("succeeded");
                 await this.initSubplebbit(subState);
+                this._rawSubplebbitType = this.toJSONIpfs();
                 this.emit("update", this);
                 subplebbitForPublishingCache.set(subState.address, lodash.pick(subState, ["encryption", "address", "pubsubTopic"]));
             }
@@ -441,6 +443,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
                     log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                    this._rawSubplebbitType = updateProps.params.result;
                     await this.initSubplebbit(updateProps.params.result);
                     this.emit("update", this);
                 })
@@ -455,31 +458,34 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             const ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
             // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
-            if (!ipnsAddress) return; // TODO should throw error here, set states to failed and stop updating 
+            if (!ipnsAddress) return; // TODO should throw error here, set states to failed and stop updating
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
-            const subplebbitIpns = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
+            this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
 
-            if (this.updatedAt !== subplebbitIpns.updatedAt) {
+            if (this.updatedAt !== this._rawSubplebbitType.updatedAt) {
                 const updateValidity = await verifySubplebbit(
-                    subplebbitIpns,
+                    this._rawSubplebbitType,
                     this.plebbit.resolveAuthorAddresses,
                     this._clientsManager,
                     true
                 );
                 if (!updateValidity.valid) {
                     this._setUpdatingState("failed");
-                    const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: updateValidity, subplebbitIpns });
+                    const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
+                        signatureValidity: updateValidity,
+                        subplebbitIpns: this._rawSubplebbitType
+                    });
                     this.emit("error", error);
                     return;
                 }
-                await this.initSubplebbit(subplebbitIpns);
+                await this.initSubplebbit(this._rawSubplebbitType);
                 this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
                 subplebbitForPublishingCache.set(
-                    subplebbitIpns.address,
-                    lodash.pick(subplebbitIpns, ["encryption", "address", "pubsubTopic"])
+                    this._rawSubplebbitType.address,
+                    lodash.pick(this._rawSubplebbitType, ["encryption", "address", "pubsubTopic"])
                 );
             } else {
                 log.trace("Remote subplebbit received a new update with no new information");

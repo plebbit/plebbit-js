@@ -214,15 +214,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
         if (this.plebbitRpcClient) {
-            const subscriptionId = await this.plebbitRpcClient.subplebbitUpdate(subplebbitAddress);
-            const subProps = <SubplebbitIpfsType>(
-                (await new Promise((resolve) => this.plebbitRpcClient.getSubscription(subscriptionId).once("update", resolve)))["params"][
-                    "result"
-                ]
-            );
             const subplebbit = new Subplebbit(this);
-            await subplebbit.initSubplebbit(subProps);
-            await this.plebbitRpcClient.unsubscribe(subscriptionId);
+            await subplebbit.initSubplebbit({ address: subplebbitAddress });
+            await subplebbit.update();
+            const updatePromise = new Promise((resolve) => subplebbit.once("update", (sub) => resolve(sub)));
+            let error: PlebbitError | undefined;
+            const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
+            await Promise.race([updatePromise, errorPromise]);
+            await subplebbit.stop();
+            if (error) throw error;
+
             return subplebbit;
         }
         const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
@@ -237,6 +238,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(subplebbitJson);
+        subplebbit._rawSubplebbitType = subplebbitJson;
 
         return subplebbit;
     }
