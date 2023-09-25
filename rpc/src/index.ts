@@ -317,7 +317,7 @@ class PlebbitWsServer extends EventEmitter {
     // const startedSubplebbit = await getStartedSubplebbit(address)
 
     const subplebbit = await this.plebbit.createSubplebbit({address})
-    subplebbit.on('update', () => sendEvent('update', clone(subplebbit)))
+    subplebbit.on('update', () => sendEvent('update', subplebbit.toJSONIpfs()))
     subplebbit.on('updatingstatechange', () => sendEvent('updatingstatechange', subplebbit.updatingState))
     subplebbit.on('error', (error: any) => sendEvent('error', error))
 
