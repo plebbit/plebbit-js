@@ -26,11 +26,13 @@ export class BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
+        this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]?._clientOptions?.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
-            this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
-        this.providerSubscriptions = {};
-        for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
+            this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
+        if (this._defaultPubsubProviderUrl) {
+            this.providerSubscriptions = {};
+            for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
+        }
     }
 
     toJSON() {

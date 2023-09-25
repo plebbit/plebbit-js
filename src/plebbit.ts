@@ -102,7 +102,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
                 : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
-        const fallbackPubsubProviders = [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        const fallbackPubsubProviders = this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
         this.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
@@ -119,8 +119,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private _initIpfsClients() {
-        if (!this.ipfsHttpClientsOptions) return;
         this.clients.ipfsClients = {};
+        if (!this.ipfsHttpClientsOptions) return;
         for (const clientOptions of this.ipfsHttpClientsOptions) {
             const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
@@ -133,39 +133,36 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initPubsubClients() {
         this.clients.pubsubClients = {};
-        for (const clientOptions of this.pubsubHttpClientsOptions) {
-            const ipfsClient =
-                this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
-            this.clients.pubsubClients[<string>clientOptions.url] = {
-                _client: ipfsClient,
-                _clientOptions: clientOptions,
-                peers: async () => {
-                    const topics = await ipfsClient.pubsub.ls();
-                    return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
-                }
-            };
-        }
+        if (this.pubsubHttpClientsOptions)
+            for (const clientOptions of this.pubsubHttpClientsOptions) {
+                const ipfsClient =
+                    this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+                this.clients.pubsubClients[<string>clientOptions.url] = {
+                    _client: ipfsClient,
+                    _clientOptions: clientOptions,
+                    peers: async () => {
+                        const topics = await ipfsClient.pubsub.ls();
+                        return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
+                    }
+                };
+            }
     }
 
     private _initResolver(options: PlebbitOptions) {
-        this.chainProviders = options.chainProviders || {
-            eth: { urls: ["viem", "ethers.js"], chainId: 1 },
-            avax: {
-                urls: ["https://api.avax.network/ext/bc/C/rpc"],
-                chainId: 43114
-            },
-            matic: {
-                urls: ["https://polygon-rpc.com"],
-                chainId: 137
-            }
-        };
-        if (this.chainProviders.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
-        for (const chainTicker of Object.keys(this.chainProviders))
-            assert(
-                typeof this.chainProviders[chainTicker].chainId === "number",
-                `chain id for chainTicker (${chainTicker}) must be defined`
-            );
-
+        this.chainProviders = this.plebbitRpcClient
+            ? {}
+            : options.chainProviders || {
+                  eth: { urls: ["viem", "ethers.js"], chainId: 1 },
+                  avax: {
+                      urls: ["https://api.avax.network/ext/bc/C/rpc"],
+                      chainId: 43114
+                  },
+                  matic: {
+                      urls: ["https://polygon-rpc.com"],
+                      chainId: 137
+                  }
+              };
+        if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
         this.clients.chainProviders = this.chainProviders;
 
         this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
@@ -193,10 +190,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:_init");
 
         // If user did not provide ipfsGatewayUrls
-        const fallbackGateways = lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+        const fallbackGateways = this.plebbitRpcClient ? undefined : lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
+        // TODO no need to retrieve gateways from ipfs node
         else if (this.clients.ipfsClients) {
             for (const ipfsClient of Object.values(this.clients.ipfsClients)) {
                 try {
@@ -210,7 +208,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     log(`Failed to retrieve gateway url from ipfs node (${ipfsClient._clientOptions.url})`);
                 }
             }
-        } else for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+        } else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
         // Init cache
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
@@ -429,6 +427,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async resolveAuthorAddress(authorAddress: string) {
+        // TODO implement RPC call here
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }

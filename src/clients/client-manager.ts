@@ -48,9 +48,8 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initIpfsClients() {
-        if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
-                this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
+        for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+            this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
     }
 
     protected _initPubsubClients() {
