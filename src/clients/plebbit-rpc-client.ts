@@ -75,11 +75,12 @@ export default class PlebbitRpcClient {
         this._webSocketClient.call = async (...args) => {
             await this._init();
             try {
-                return originalWebsocketCall(...args);
+                return await originalWebsocketCall(...args);
             } catch (e) {
                 //e is an error json representation of PlebbitError
+                if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
                 if (e?.code) throw new PlebbitError(e?.code, e?.details);
-                else throw e;
+                else throw new Error(e.message)
             }
         };
     }
