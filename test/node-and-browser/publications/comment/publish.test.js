@@ -647,6 +647,4 @@ describe(`comment.publishingState`, async () => {
             expect(mockPost.publishingState).to.equal("failed");
             expect(mockPost.clients.pubsubClients[offlinePubsubUrl].state).to.equal("stopped");
         });
-
-    if (process.env["USE_RPC"] === "1") it(`comment.publishingState = 'failed' if RPC is down`);
 });

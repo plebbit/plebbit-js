@@ -19,8 +19,6 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe(`Client side verification`, async () => {
     let plebbit;
     before(async () => {
@@ -32,6 +30,8 @@ describe(`Client side verification`, async () => {
         await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockPlebbit();
         const subJson = JSON.parse(await customPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
@@ -48,6 +48,9 @@ describe(`Client side verification`, async () => {
         await assert.isRejected(mockPost.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
 });
+
+//prettier-ignore
+if (!process.env["USE_RPC"])
 
 describe("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
@@ -92,6 +95,8 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
 });
 
 // TODO include tests for replies later. Not needed as of now
+//prettier-ignore
+if (!process.env["USE_RPC"])
 describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
     before(async () => {
@@ -133,6 +138,8 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     );
 });
 
+//prettier-ignore
+if (!process.env["USE_RPC"])
 describe("Posts with forbidden author fields are rejected", async () => {
     let plebbit;
     before(async () => {

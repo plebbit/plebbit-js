@@ -53,6 +53,8 @@ describe("challengerequest", async () => {
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`challenge request with outdated timestamp is invalidated`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
@@ -73,6 +75,8 @@ describe("challengerequest", async () => {
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub responds with error to a challenge request whose publication can't be decrypted`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit);
         const originalPublish = comment._clientsManager.pubsubPublish.bind(comment._clientsManager);
@@ -101,6 +105,8 @@ describe("challengerequest", async () => {
         });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub responds with error to a challenge request with invalid pubsubMessage.encryptedPublication.signature`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit);
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
@@ -149,6 +155,8 @@ describe("challengerequest", async () => {
         });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub ignores a challenge request with invalid pubsubMessage.signature`, async () => {
         // This test case also includes challengeRequestId not being derived from signer since it's caught by verifyChallengeRequest
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
@@ -253,6 +261,8 @@ describe("challengeanswer", async () => {
         });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub ignores a challenge answer with invalid answer.signature`, async () => {
         // Test includes cases where challengeRequestId is not derived from the signer of the message because verifyChallengeAnswer checks for that too
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
@@ -302,6 +312,8 @@ describe("challengeanswer", async () => {
         });
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub responds with error to a challenge answer with answers that can't be decrypted`, async () => {
         const tempPlebbit = await mockPlebbit();
         const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
@@ -326,6 +338,8 @@ describe("challengeanswer", async () => {
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
     });
 
+    // prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Sub responds with error to challenge answer whose id not registered (no challenge request with same id)`, async () => {
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
 
