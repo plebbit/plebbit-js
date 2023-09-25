@@ -62,6 +62,22 @@ describe("Plebbit options", async () => {
 
     //prettier-ignore
     if(process.env["USE_RPC"] === "1")
+    it(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
+
+        const rpcUrl = "ws://localhost:39652";
+        const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] })
+        expect(plebbit.plebbitRpcClient).to.be.a("object");
+        expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
+        expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
+        expect(plebbit.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.ipfsClients).to.deep.equal({});
+        expect(plebbit.clients.pubsubClients).to.deep.equal({});
+        expect(plebbit.clients.ipfsGateways).to.deep.equal({});        
+});
+
+    //prettier-ignore
+    if(process.env["USE_RPC"] === "1")
     it("Error is emitted to plebbit instance if RPC is down", async () => {
 
         const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
