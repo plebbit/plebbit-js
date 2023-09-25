@@ -194,21 +194,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
-        // TODO no need to retrieve gateways from ipfs node
-        else if (this.clients.ipfsClients) {
-            for (const ipfsClient of Object.values(this.clients.ipfsClients)) {
-                try {
-                    let gatewayFromNode = await ipfsClient._client.config.get("Addresses.Gateway");
-                    if (Array.isArray(gatewayFromNode)) gatewayFromNode = gatewayFromNode[0];
-                    const splits = gatewayFromNode.toString().split("/");
-                    const ipfsGatewayUrl = `http://${splits[2]}:${splits[4]}`;
-                    log.trace(`plebbit.ipfsGatewayUrl (${ipfsGatewayUrl}) retrieved from IPFS node (${ipfsClient._clientOptions.url})`);
-                    this.clients.ipfsGateways[ipfsGatewayUrl] = {};
-                } catch (e) {
-                    log(`Failed to retrieve gateway url from ipfs node (${ipfsClient._clientOptions.url})`);
-                }
-            }
-        } else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
         // Init cache
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
