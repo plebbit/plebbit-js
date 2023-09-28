@@ -46,8 +46,8 @@ import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription
 import { ClientsManager } from "./clients/client-manager";
 import { subplebbitForPublishingCache } from "./constants";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
-import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
+import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -55,6 +55,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
+        plebbitRpcClients: { [plebbitRpcUrl: string]: GenericPlebbitRpcStateClient };
     };
     resolver: Resolver;
     plebbitRpcClient?: PlebbitRpcClient;
@@ -114,8 +115,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         this._initIpfsClients();
         this._initPubsubClients();
+        this._initRpcClients();
 
-        if (!this.noData) this.dataPath = options.dataPath || getDefaultDataPath();
+        if (!this.noData && !this.plebbitRpcClient) this.dataPath = options.dataPath || getDefaultDataPath();
     }
 
     private _initIpfsClients() {
@@ -146,6 +148,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     }
                 };
             }
+    }
+
+    private _initRpcClients() {
+        this.clients.plebbitRpcClients = {};
+        if (this.plebbitRpcClientsOptions)
+            for (const rpcUrl of this.plebbitRpcClientsOptions)
+                this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
     }
 
     private _initResolver(options: PlebbitOptions) {
@@ -194,7 +203,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
-         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+        else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
         // Init cache
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
