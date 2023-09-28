@@ -316,6 +316,31 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("publishingstatechange", this.publishingState);
     }
 
+    protected _updateRpcClientState(publishingState: Publication["publishingState"]) {
+        // We're deriving the the rpc state from publishing state
+
+        const mapper: Record<Publication["publishingState"], Publication["clients"]["plebbitRpcClients"][0]["state"][]> = {
+            failed: ["stopped"],
+            "fetching-subplebbit-ipfs": ["fetching-subplebbit-ipfs"],
+            "fetching-subplebbit-ipns": ["fetching-subplebbit-ipns"],
+            "publishing-challenge-answer": ["publishing-challenge-answer"],
+            "publishing-challenge-request": ["subscribing-pubsub", "publishing-challenge-request"],
+            "resolving-subplebbit-address": ["resolving-subplebbit-address"],
+            stopped: ["stopped"],
+            succeeded: ["stopped"],
+            "waiting-challenge": ["waiting-challenge"],
+            "waiting-challenge-answers": ["waiting-challenge-answers"],
+            "waiting-challenge-verification": ["waiting-challenge-verification"]
+        };
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+
+        const rpcStates = mapper[publishingState];
+        for (const rpcState of rpcStates) {
+            this.clients.plebbitRpcClients[currentRpcUrl].state = rpcState;
+            this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", rpcState);
+        }
+    }
+
     protected _updateState(newState: Publication["state"]) {
         if (this.state === newState) return;
         this.state = newState;
@@ -422,7 +447,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 .on("challenge", (args) => this._handleRpcChallenge(parsePubsubMsgFromRpc(args.params.result)))
                 .on("challengeanswer", (args) => this._handleRpcChallengeAnswer(parsePubsubMsgFromRpc(args.params.result)))
                 .on("challengeverification", (args) => this._handleRpcChallengeVerification(parsePubsubMsgFromRpc(args.params.result)))
-                .on("publishingstatechange", (args) => this._updatePublishingState(args.params.result))
+                .on("publishingstatechange", (args) => {
+                    this._updatePublishingState(args.params.result);
+                    this._updateRpcClientState(args.params.result);
+                })
                 .on("statechange", (args) => this._updateState(args.params.result))
                 .on("error", (args) => this.emit("error", args.params.result));
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
