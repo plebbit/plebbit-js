@@ -431,6 +431,17 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.emit("updatingstatechange", this.updatingState);
     }
 
+    protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]) {
+        // We're deriving the the rpc state from publishing state
+
+        const rpcState: Comment["clients"]["plebbitRpcClients"][0]["state"] =
+            updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+
+        this.clients.plebbitRpcClients[currentRpcUrl].state = rpcState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", rpcState);
+    }
+
     async update() {
         const log = Logger("plebbit-js:comment:update");
 
@@ -457,7 +468,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
                     this.emit("update", this);
                 })
-                .on("updatingstatechange", (args) => this._setUpdatingState(args.params.result))
+                .on("updatingstatechange", (args) => {
+                    const updateState: Comment["updatingState"] = args.params.result;
+                    this._setUpdatingState(updateState);
+                    this._updateRpcClientStateFromUpdatingState(updateState);
+                })
                 .on("statechange", (args) => this._updateState(args.params.result))
                 .on("error", (err) => this.emit("error", err));
 

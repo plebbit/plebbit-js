@@ -316,7 +316,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("publishingstatechange", this.publishingState);
     }
 
-    protected _updateRpcClientState(publishingState: Publication["publishingState"]) {
+    private _updateRpcClientStateFromPublishingState(publishingState: Publication["publishingState"]) {
         // We're deriving the the rpc state from publishing state
 
         const mapper: Record<Publication["publishingState"], Publication["clients"]["plebbitRpcClients"][0]["state"][]> = {
@@ -449,7 +449,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 .on("challengeverification", (args) => this._handleRpcChallengeVerification(parsePubsubMsgFromRpc(args.params.result)))
                 .on("publishingstatechange", (args) => {
                     this._updatePublishingState(args.params.result);
-                    this._updateRpcClientState(args.params.result);
+                    this._updateRpcClientStateFromPublishingState(args.params.result);
                 })
                 .on("statechange", (args) => this._updateState(args.params.result))
                 .on("error", (args) => this.emit("error", args.params.result));
