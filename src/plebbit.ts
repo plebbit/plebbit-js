@@ -241,13 +241,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async getComment(cid: string): Promise<Comment> {
-        if (!isIPFS.cid(cid)) throwWithErrorCode("ERR_CID_IS_INVALID", `getComment: cid (${cid}) is invalid as a CID`);
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.getComment(cid);
-        const commentJson: CommentIpfsType = JSON.parse(await this.fetchCid(cid));
-        const signatureValidity = await verifyComment(commentJson, this.resolveAuthorAddresses, this._clientsManager, true);
-        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { cid, signatureValidity });
-
-        return this.createComment({ ...commentJson, cid });
+        //@ts-expect-error
+        const comment = await this.createComment({ cid });
+        await comment.update();
+        const updatePromise = new Promise((resolve) => comment.once("update", resolve));
+        let error: PlebbitError | undefined;
+        const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
+        await Promise.race([updatePromise, errorPromise]);
+        await comment.stop();
+        return comment;
     }
 
     private async _initMissingFields(pubOptions: CreatePublicationOptions & { signer: CreateCommentOptions["signer"] }, log: Logger) {
@@ -282,6 +284,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
+        if (options["cid"] && !isIPFS.cid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
 
         const formattedOptions = options instanceof Comment ? options.toJSON() : options;
         formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
