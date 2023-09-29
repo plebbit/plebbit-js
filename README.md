@@ -492,10 +492,11 @@ An object which may have the following keys:
 const Plebbit = require('@plebbit/plebbit-js')
 const options = {
   ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
-  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'],
+  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'], // optional, must run an IPFS node to use localhost:5001/api/v0
   dataPath: __dirname
 }
 const plebbit = await Plebbit(options) // should be independent instance, not singleton
+plebbit.on('error', console.log)
 ```
 
 ### `plebbit.getMultisub(multisubAddress)`
@@ -682,10 +683,11 @@ An object which may have the following keys:
 const Plebbit = require('@plebbit/plebbit-js')
 const plebbitOptions = {
   ipfsGatewayUrls: ['https://cloudflare-ipfs.com'],
-  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'],
+  ipfsHttpClientsOptions: ['http://localhost:5001/api/v0'], // optional, must run an IPFS node to use localhost:5001/api/v0
   dataPath: __dirname
 }
 const plebbit = await Plebbit(plebbitOptions)
+plebbit.on('error', console.log)
 
 // create a new local subplebbit as the owner
 const subplebbit = await plebbit.createSubplebbit()
