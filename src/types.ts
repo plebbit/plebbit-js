@@ -638,7 +638,7 @@ declare module "knex/types/tables" {
 // Event emitter declaration
 export interface SubplebbitEvents {
     challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
-    challengemessage: (challenge: DecryptedChallengeMessageType) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
 

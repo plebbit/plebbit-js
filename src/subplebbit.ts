@@ -1085,7 +1085,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 lodash.omit(toSignChallenge, ["encryptedChallenges"])
             );
             this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
-            this.emit("challengemessage", {
+            this.emit("challenge", {
                 ...challengeMessage,
                 challenges: providedChallenges
             });
