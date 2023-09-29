@@ -132,14 +132,8 @@ class PlebbitWsServer extends EventEmitter {
 
   async getComment(params: any) {
     const cid = params[0]
-    const comment = await this.plebbit.createComment({cid})
-
-    // wait for first update which contains the IPFS file only
-    comment.update().catch((error: any) => log.error('getComment update error', {error, params}))
-    await new Promise((resolve) => comment.once('update', resolve))
-    comment.stop().catch((error: any) => log.error('getComment stop error', {error, params}))
-
-    return clone(comment)
+    const comment = await this.plebbit.getComment(cid)
+    return {cid, ...comment._rawCommentIpfs}
   }
 
   async getSubplebbitPage(params: any) {
