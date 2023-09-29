@@ -391,16 +391,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     _setState(newState: Subplebbit["state"]) {
+        if (newState === this.state) return;
         this.state = newState;
         this.emit("statechange", this.state);
     }
 
     _setUpdatingState(newState: Subplebbit["updatingState"]) {
+        if (newState === this.updatingState) return;
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
 
     _setStartedState(newState: Subplebbit["startedState"]) {
+        if (newState === this.startedState) return;
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     }
