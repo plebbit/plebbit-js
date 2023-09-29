@@ -222,32 +222,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
         if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
-        if (this.plebbitRpcClient) {
-            const subplebbit = new Subplebbit(this);
-            await subplebbit.initSubplebbit({ address: subplebbitAddress });
-            await subplebbit.update();
-            const updatePromise = new Promise((resolve) => subplebbit.once("update", (sub) => resolve(sub)));
-            let error: PlebbitError | undefined;
-            const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
-            await Promise.race([updatePromise, errorPromise]);
-            await subplebbit.stop();
-            if (error) throw error;
-
-            return subplebbit;
-        }
-        const resolvedSubplebbitAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-        if (!resolvedSubplebbitAddress)
-            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
-        const subplebbitJson: SubplebbitIpfsType = JSON.parse(await this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress));
-        const signatureValidity = await verifySubplebbit(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true);
-
-        if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
-
-        subplebbitForPublishingCache.set(subplebbitAddress, lodash.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]));
 
         const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(subplebbitJson);
-        subplebbit._rawSubplebbitType = subplebbitJson;
+        await subplebbit.initSubplebbit({ address: subplebbitAddress });
+        await subplebbit.update();
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", (sub) => resolve(sub)));
+        let error: PlebbitError | undefined;
+        const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
+        await Promise.race([updatePromise, errorPromise]);
+        await subplebbit.stop();
+        if (error) throw error;
+        subplebbitForPublishingCache.set(
+            subplebbitAddress,
+            lodash.pick(subplebbit._rawSubplebbitType, ["encryption", "address", "pubsubTopic"])
+        );
 
         return subplebbit;
     }
