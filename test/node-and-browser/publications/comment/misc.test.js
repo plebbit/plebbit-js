@@ -821,7 +821,59 @@ describe(`comment.clients`, async () => {
         });
     });
 
-    describe(`comment.clients.plebbitRpcClients`, async () => {});
+    //prettier-ignore
+    if (process.env["USE_RPC"] === "1")
+    describe(`comment.clients.plebbitRpcClients`, async () => {
+        it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
+            const imageCaptchaSubplebbitAddress = signers[2].address;
+
+            await plebbit.getSubplebbit(imageCaptchaSubplebbitAddress);// Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
+
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            mockPost.removeAllListeners();
+
+            const expectedStates = ["subscribing-pubsub","publishing-challenge-request","waiting-challenge","waiting-challenge-answers","publishing-challenge-answer","waiting-challenge-verification","stopped"];
+
+            const actualStates = [];
+
+            mockPost.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => actualStates.push(newState));
+
+            mockPost.once("challenge", async (challengeMsg) => {
+                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of comment.clients.plebbitRpcClients states when updating a comment`, async () => {
+            const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const expectedStates = [
+                "fetching-ipfs",
+                "stopped",
+                "fetching-update-ipns",
+                "stopped",
+                "fetching-update-ipns",
+                "fetching-update-ipfs",
+                "stopped",
+              ]
+            const recordedStates = [];
+            const currentRpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            mockPost.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+    
+            await mockPost.update();
+    
+            await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
+            await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
+            await mockPost.stop();
+    
+            expect(recordedStates).to.deep.equal(expectedStates);
+            expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    
+        });
+    });
 
     describe(`comment.replies.clients`, async () => {
         let commentCid;
