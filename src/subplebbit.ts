@@ -116,7 +116,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     // Only for Subplebbit instance
     state: "stopped" | "updating" | "started";
-    startedState: "stopped" | "fetching-ipns" | "publishing-ipns" | "failed" | "succeeded";
+    startedState: "stopped" | "publishing-ipns" | "failed" | "succeeded";
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     dbHandler?: DbHandlerPublicAPI;
