@@ -321,10 +321,12 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shor
     posts?: PagesTypeIpfs;
 }
 
-export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress"> {
+export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
 }
+
+export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {}
 
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;

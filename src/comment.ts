@@ -474,7 +474,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })
                 .on("statechange", (args) => this._updateState(args.params.result))
-                .on("error", (err) => this.emit("error", err));
+                .on("error", (args) => this.emit("error", args.params.result));
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
             return;
