@@ -1007,7 +1007,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (this._challengeIdToChallengeRequest[request.challengeRequestId.toString()]) return;
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
-        if (!requestSignatureValidation.valid) throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), { request });
+        if (!requestSignatureValidation.valid)
+            throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
+                challengeRequest: lodash.omit(request, ["encryptedPublication"])
+            });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
