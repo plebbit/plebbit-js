@@ -16,6 +16,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
 import { Plebbit } from "./plebbit";
+import { PlebbitError } from "./plebbit-error";
 
 type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
@@ -59,15 +60,25 @@ export class BasePages implements PagesType {
     async _fetchAndVerifyPage(pageCid: string) {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        const signatureValidity = await verifyPage(
-            pageIpfs,
-            this._plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            this._subplebbitAddress,
-            this._parentCid,
-            true
-        );
-        if (!signatureValidity.valid) throw Error(signatureValidity.reason);
+        if (!this._plebbit.plebbitRpcClient) {
+            const signatureValidity = await verifyPage(
+                pageIpfs,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                this._subplebbitAddress,
+                this._parentCid,
+                true
+            );
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {
+                    signatureValidity,
+                    parentCid: this._parentCid,
+                    subplebbitAddress: this._subplebbitAddress,
+                    pageIpfs,
+                    pageCid
+                });
+        }
+
         return pageIpfs;
     }
 
