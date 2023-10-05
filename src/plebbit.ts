@@ -225,8 +225,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit({ address: subplebbitAddress });
-        await subplebbit.update();
-        const updatePromise = new Promise((resolve) => subplebbit.once("update", (sub) => resolve(sub)));
+        subplebbit.update();
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
         await Promise.race([updatePromise, errorPromise]);
@@ -243,12 +243,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async getComment(cid: string): Promise<Comment> {
         //@ts-expect-error
         const comment = await this.createComment({ cid });
-        await comment.update();
+        comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
         await Promise.race([updatePromise, errorPromise]);
         await comment.stop();
+        if (error) throw error;
         return comment;
     }
 
