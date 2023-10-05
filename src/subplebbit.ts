@@ -366,6 +366,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
         const log = Logger("plebbit-js:subplebbit:edit");
 
+        if (this.plebbit.plebbitRpcClient) {
+            const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
+            await this.initSubplebbit(newProps);
+            return this;
+        }
+
         await this.dbHandler.initDestroyedConnection();
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
