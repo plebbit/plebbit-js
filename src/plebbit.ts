@@ -241,7 +241,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async getComment(cid: string): Promise<Comment> {
-        //@ts-expect-error
         const comment = await this.createComment({ cid });
         comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
@@ -271,7 +270,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createCommentInstance(
-        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate
+        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate | Pick<CommentWithCommentUpdate, "cid">
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = new Comment(<CommentType>options, this);
@@ -282,7 +281,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async createComment(
-        options: CreateCommentOptions | CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType | Comment
+        options:
+            | CreateCommentOptions
+            | CommentWithCommentUpdate
+            | CommentIpfsType
+            | CommentPubsubMessage
+            | CommentType
+            | Comment
+            | Pick<CommentWithCommentUpdate, "cid">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
         if (options["cid"] && !isIPFS.cid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });

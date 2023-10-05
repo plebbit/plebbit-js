@@ -11,6 +11,7 @@ import {
     CommentEditSignedPropertyNamesUnion,
     CommentSignedPropertyNamesUnion,
     Encrypted,
+    EncryptedEncoded,
     JsonSignature,
     PubsubSignature,
     SignerType,
@@ -209,6 +210,12 @@ export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMe
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
 }
 
+export interface EncodedDecryptedChallengeRequestMessageType
+    extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encryptedPublication" | "signature">,
+        BaseEncodedPubsubMessage {
+    encryptedPublication: EncryptedEncoded; // all base64 strings
+}
+
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGE";
@@ -219,6 +226,12 @@ export interface DecryptedChallengeMessageType extends ChallengeMessageType {
     challenges: ChallengeType[];
 }
 
+export interface EncodedDecryptedChallengeMessageType
+    extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encryptedChallenges" | "signature">,
+        BaseEncodedPubsubMessage {
+    encryptedChallenges: EncryptedEncoded; // all base64 strings
+}
+
 export interface ChallengeAnswerMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGEANSWER";
@@ -227,6 +240,17 @@ export interface ChallengeAnswerMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
     challengeAnswers: string[];
+}
+
+export interface BaseEncodedPubsubMessage {
+    challengeRequestId: string; // base64 string
+    signature: { publicKey: string; signature: string }; // base64 string
+}
+
+export interface EncodedDecryptedChallengeAnswerMessageType
+    extends Omit<DecryptedChallengeAnswerMessageType, "challengeRequestId" | "encryptedChallengeAnswers" | "signature">,
+        BaseEncodedPubsubMessage {
+    encryptedChallengeAnswers: EncryptedEncoded; // all base64 strings
 }
 
 export interface ChallengeVerificationMessageType extends PubsubMessage {
@@ -240,6 +264,12 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
     publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
+}
+
+export interface EncodedDecryptedChallengeVerificationMessageType
+    extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encryptedPublication" | "signature">,
+        BaseEncodedPubsubMessage {
+    encryptedPublication: EncryptedEncoded; // all base64 strings
 }
 
 export type SubplebbitStats = {

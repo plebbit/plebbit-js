@@ -1,12 +1,15 @@
+import {Plebbit} from '../../dist/node/plebbit'
+import {PlebbitOptions} from '../../dist/node/types'
+
 export type PlebbitWsServerClassOptions = {
   port: number
-  plebbit: any
-  plebbitOptions?: any
+  plebbit: Plebbit
+  plebbitOptions?: PlebbitOptions
 }
 
 export type PlebbitWsServerOptions = {
   port: number
-  plebbitOptions?: any
+  plebbitOptions?: PlebbitOptions
 }
 
 export type JsonRpcSendNotificationOptions = {

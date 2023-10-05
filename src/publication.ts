@@ -444,9 +444,17 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                         publication: this.toJSONPubsubMessagePublication()
                     });
                 })
-                .on("challenge", (args) => this._handleRpcChallenge(parsePubsubMsgFromRpc(args.params.result)))
-                .on("challengeanswer", (args) => this._handleRpcChallengeAnswer(parsePubsubMsgFromRpc(args.params.result)))
-                .on("challengeverification", (args) => this._handleRpcChallengeVerification(parsePubsubMsgFromRpc(args.params.result)))
+                .on("challenge", (args) =>
+                    this._handleRpcChallenge(<DecryptedChallengeMessageType>parsePubsubMsgFromRpc(args.params.result))
+                )
+                .on("challengeanswer", (args) =>
+                    this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>parsePubsubMsgFromRpc(args.params.result))
+                )
+                .on("challengeverification", (args) =>
+                    this._handleRpcChallengeVerification(
+                        <DecryptedChallengeVerificationMessageType>parsePubsubMsgFromRpc(args.params.result)
+                    )
+                )
                 .on("publishingstatechange", (args) => {
                     this._updatePublishingState(args.params.result);
                     this._updateRpcClientStateFromPublishingState(args.params.result);

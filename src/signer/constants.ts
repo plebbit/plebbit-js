@@ -41,6 +41,13 @@ export type Encrypted = {
     type: "ed25519-aes-gcm";
 };
 
+export type EncryptedEncoded = {
+    ciphertext: string; // base64
+    iv: string; // base64
+    tag: string; // base64
+    type: "ed25519-aes-gcm";
+
+}
 // ---------------------------
 // Signature
 

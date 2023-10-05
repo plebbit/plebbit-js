@@ -1,6 +1,14 @@
 import {
     CommentsTableRow,
     CommentUpdatesRow,
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeVerificationMessageType,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -229,28 +237,50 @@ export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
     return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
 }
 
-export function parsePubsubMsgFromRpc(pubsubMsg: any){
-    pubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg.encryptedPublication){
-        pubsubMsg.encryptedPublication.tag = uint8ArrayFromString(pubsubMsg.encryptedPublication.tag, "base64");
-        pubsubMsg.encryptedPublication.iv = uint8ArrayFromString(pubsubMsg.encryptedPublication.iv, "base64");
-        pubsubMsg.encryptedPublication.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedPublication.ciphertext, "base64");
+export function parsePubsubMsgFromRpc(
+    pubsubMsg:
+        | EncodedDecryptedChallengeMessageType
+        | EncodedDecryptedChallengeAnswerMessageType
+        | EncodedDecryptedChallengeRequestMessageType
+        | EncodedDecryptedChallengeVerificationMessageType
+) {
+    //@ts-expect-error
+    let parsedPubsubMsg:
+        | DecryptedChallengeMessageType
+        | DecryptedChallengeAnswerMessageType
+        | DecryptedChallengeRequestMessageType
+        | DecryptedChallengeVerificationMessageType = pubsubMsg;
+    parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
+    if (pubsubMsg["encryptedPublication"]) {
+        pubsubMsg = <EncodedDecryptedChallengeVerificationMessageType | EncodedDecryptedChallengeRequestMessageType> pubsubMsg;
+        parsedPubsubMsg = <DecryptedChallengeRequestMessageType | DecryptedChallengeVerificationMessageType> parsedPubsubMsg;
+        parsedPubsubMsg.encryptedPublication.tag = uint8ArrayFromString(pubsubMsg.encryptedPublication.tag, "base64");
+        parsedPubsubMsg.encryptedPublication.iv = uint8ArrayFromString(pubsubMsg.encryptedPublication.iv, "base64");
+        parsedPubsubMsg.encryptedPublication.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedPublication.ciphertext, "base64");
     }
 
-    pubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
-    pubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
+    parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
+    parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
 
-    if (pubsubMsg.encryptedChallenges){
-        pubsubMsg.encryptedChallenges.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallenges.ciphertext, "base64");
-        pubsubMsg.encryptedChallenges.iv = uint8ArrayFromString(pubsubMsg.encryptedChallenges.iv, "base64");
-        pubsubMsg.encryptedChallenges.tag = uint8ArrayFromString(pubsubMsg.encryptedChallenges.tag, "base64");    
+    if (pubsubMsg["encryptedChallenges"]) {
+        pubsubMsg = <EncodedDecryptedChallengeMessageType> pubsubMsg;
+        parsedPubsubMsg = <DecryptedChallengeMessageType> parsedPubsubMsg;
+        parsedPubsubMsg.encryptedChallenges.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallenges.ciphertext, "base64");
+        parsedPubsubMsg.encryptedChallenges.iv = uint8ArrayFromString(pubsubMsg.encryptedChallenges.iv, "base64");
+        parsedPubsubMsg.encryptedChallenges.tag = uint8ArrayFromString(pubsubMsg.encryptedChallenges.tag, "base64");
     }
 
-    if (pubsubMsg.encryptedChallengeAnswers){
-        pubsubMsg.encryptedChallengeAnswers.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.ciphertext, "base64");
-        pubsubMsg.encryptedChallengeAnswers.iv = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.iv, "base64");
-        pubsubMsg.encryptedChallengeAnswers.tag = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.tag, "base64");
+    if (pubsubMsg["encryptedChallengeAnswers"]) {
+        pubsubMsg = <EncodedDecryptedChallengeAnswerMessageType> pubsubMsg;
+        parsedPubsubMsg = <DecryptedChallengeAnswerMessageType> parsedPubsubMsg;
+
+        parsedPubsubMsg.encryptedChallengeAnswers.ciphertext = uint8ArrayFromString(
+            pubsubMsg.encryptedChallengeAnswers.ciphertext,
+            "base64"
+        );
+        parsedPubsubMsg.encryptedChallengeAnswers.iv = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.iv, "base64");
+        parsedPubsubMsg.encryptedChallengeAnswers.tag = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.tag, "base64");
     }
 
-    return pubsubMsg;
+    return parsedPubsubMsg;
 }
