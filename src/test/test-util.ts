@@ -296,9 +296,13 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     });
 
     plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
-        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
+        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
-            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+        else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+        else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address") return (await plebbit.createSigner()).address;
         else return null;
     };
 

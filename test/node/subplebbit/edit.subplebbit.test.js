@@ -15,8 +15,8 @@ const { v4 } = require("uuid");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
+//prettier-ignore
+if (!process.env["USE_RPC"] === "1")
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
@@ -109,6 +109,8 @@ describe(`subplebbit.edit`, async () => {
     });
 });
 
+//prettier-ignore
+if (!process.env["USE_RPC"] === "1")
 describe(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
     before(async () => {
@@ -242,10 +244,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
 
 describe(`Edit misc`, async () => {
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not exist`, async () => {
-        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        customPlebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-            if (ensName === "no-sub-address.eth") return undefined;
-        };
+        const customPlebbit = await mockPlebbit();
         const newSub = await customPlebbit.createSubplebbit();
         // Has no subplebbit-address text record
         await newSub.edit({ address: "no-sub-address.eth" });
@@ -253,14 +252,51 @@ describe(`Edit misc`, async () => {
     });
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
-        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        customPlebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-            if (ensName === "different-signer.eth") return signers[4].address;
-        };
+        const customPlebbit = await mockPlebbit();
         const newSub = await customPlebbit.createSubplebbit();
 
         // Should not match signer.address
         await newSub.edit({ address: "different-signer.eth" });
         expect(newSub.address).to.equal("different-signer.eth");
     });
+});
+
+//prettier-ignore
+if (process.env["USE_RPC"] === "1")
+describe(`subplebbit.edit (RPC)`, async () => {
+    let plebbit, subplebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        subplebbit = await plebbit.createSubplebbit({ signer: signers[7] });
+        await subplebbit.start();
+        await new Promise(resolve => subplebbit.once("update", resolve));
+        expect(subplebbit.address).to.equal(signers[7].address);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+    [
+        { title: `Test subplebbit RPC title edit ${Date.now()}` },
+        { description: `Test subplebbit RPC description edit ${Date.now()}` },
+        { address: `rpc-edit-test.eth` }
+    ].map((editArgs) =>
+        it(`subplebbit.edit(${JSON.stringify(editArgs)})`, async () => {
+            const [keyToEdit, newValue] = Object.entries(editArgs)[0];
+            await subplebbit.edit(editArgs);
+            expect(subplebbit[keyToEdit]).to.equal(newValue);
+            const remotePlebbit = await mockPlebbit({
+                plebbitRpcClientsOptions: undefined,
+                noData: true,
+                ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+            }); // This plebbit instance won't use RPC
+            const loadedSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
+            await loadedSubplebbit.update();
+            await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+            await loadedSubplebbit.stop();
+            expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
+            expect(stringify(loadedSubplebbit.toJSON())).to.equal(stringify(subplebbit.toJSON()));
+        })
+    );
 });
