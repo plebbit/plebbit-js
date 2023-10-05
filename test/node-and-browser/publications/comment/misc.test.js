@@ -92,7 +92,7 @@ describe("createComment", async () => {
     });
 
     it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
         expect(post.replies).to.be.a("object");
         await publishRandomReply(post, plebbit, {}, true);
         await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
@@ -982,6 +982,36 @@ describe(`comment.clients`, async () => {
             });
         });
 
-        describe(`comment.replies.clients.plebbitRpcClients`, async () => {});
+        //prettier-ignore
+        if (process.env["USE_RPC"] === "1") 
+        describe(`comment.replies.clients.plebbitRpcClients`, async () => {
+            
+            it(`comment.replies.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
+                // add tests here
+                expect(Object.keys(comment.replies.clients.plebbitRpcClients["new"]).length).to.equal(1);
+                expect(comment.replies.clients.plebbitRpcClients["new"][rpcUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                await comment.update();
+                await new Promise((resolve) => comment.once("update", resolve));
+                if (!comment.updatedAt) await new Promise(resolve => comment.once("update", resolve));
+
+                const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                comment.replies.clients.plebbitRpcClients["new"][rpcUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await comment.replies.getPage(comment.replies.pageCids.new);
+                await comment.stop();
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
     });
 });
