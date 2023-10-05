@@ -10,6 +10,7 @@ import { Comment } from "./comment";
 import {
     CommentEditSignedPropertyNamesUnion,
     CommentSignedPropertyNamesUnion,
+    EncodedPubsubSignature,
     Encrypted,
     EncryptedEncoded,
     JsonSignature,
@@ -244,7 +245,7 @@ export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMess
 
 export interface BaseEncodedPubsubMessage {
     challengeRequestId: string; // base64 string
-    signature: { publicKey: string; signature: string }; // base64 string
+    signature: EncodedPubsubSignature;
 }
 
 export interface EncodedDecryptedChallengeAnswerMessageType

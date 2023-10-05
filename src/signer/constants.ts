@@ -46,8 +46,7 @@ export type EncryptedEncoded = {
     iv: string; // base64
     tag: string; // base64
     type: "ed25519-aes-gcm";
-
-}
+};
 // ---------------------------
 // Signature
 
@@ -56,6 +55,11 @@ export interface PubsubSignature {
     publicKey: Uint8Array; // (byte string in cbor) 32 bytes
     type: "ed25519";
     signedPropertyNames: readonly string[];
+}
+
+export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string; // base64
+    publicKey: string; // base64
 }
 
 export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
