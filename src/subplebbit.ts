@@ -8,7 +8,8 @@ import {
     throwWithErrorCode,
     timestamp,
     getErrorCodeFromMessage,
-    doesEnsAddressHaveCapitalLetter
+    doesEnsAddressHaveCapitalLetter,
+    decodePubsubMsgFromRpc
 } from "./util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer, encryptEd25519AesGcm } from "./signer";
 import { PostsPages } from "./pages";
@@ -46,7 +47,10 @@ import {
     VoteType,
     SubplebbitEvents,
     SubplebbitSettings,
-    VotePubsubMessage
+    VotePubsubMessage,
+    InternalSubplebbitRpcType,
+    DecryptedChallengeMessageType,
+    DecryptedChallengeVerificationMessageType
 } from "./types";
 import { Comment } from "./comment";
 import {

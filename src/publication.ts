@@ -23,7 +23,7 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import { Plebbit } from "./plebbit";
 import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
-import { parsePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
+import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
@@ -435,7 +435,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 .getSubscription(this._rpcPublishSubscriptionId)
                 .on("challengerequest", (args) => {
                     const request = new ChallengeRequestMessage(
-                        <DecryptedChallengeRequestMessageType>parsePubsubMsgFromRpc(args.params.result)
+                        <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result)
                     );
                     if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
                     else this._publishedChallengeRequests.push(request);
@@ -445,14 +445,14 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     });
                 })
                 .on("challenge", (args) =>
-                    this._handleRpcChallenge(<DecryptedChallengeMessageType>parsePubsubMsgFromRpc(args.params.result))
+                    this._handleRpcChallenge(<DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result))
                 )
                 .on("challengeanswer", (args) =>
-                    this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>parsePubsubMsgFromRpc(args.params.result))
+                    this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
                 )
                 .on("challengeverification", (args) =>
                     this._handleRpcChallengeVerification(
-                        <DecryptedChallengeVerificationMessageType>parsePubsubMsgFromRpc(args.params.result)
+                        <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(args.params.result)
                     )
                 )
                 .on("publishingstatechange", (args) => {
