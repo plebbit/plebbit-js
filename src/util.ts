@@ -65,7 +65,7 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
     );
 
     const score = comment.update.upvoteCount - comment.update.downvoteCount;
-    const order = Math.log10(Math.max(score, 1));
+    const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
     return lodash.round(sign * order + seconds / 45000, 7);
