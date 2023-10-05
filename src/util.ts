@@ -237,7 +237,7 @@ export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
     return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
 }
 
-export function parsePubsubMsgFromRpc(
+export function decodePubsubMsgFromRpc(
     pubsubMsg:
         | EncodedDecryptedChallengeMessageType
         | EncodedDecryptedChallengeAnswerMessageType

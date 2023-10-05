@@ -476,7 +476,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
 
-            if (this.updatedAt !== this._rawSubplebbitType.updatedAt) {
+            if (this.updatedAt < this._rawSubplebbitType.updatedAt) {
                 const updateValidity = await verifySubplebbit(
                     this._rawSubplebbitType,
                     this.plebbit.resolveAuthorAddresses,
