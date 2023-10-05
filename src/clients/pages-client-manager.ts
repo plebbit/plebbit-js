@@ -7,20 +7,27 @@ import { PageIpfs, PostSortName, ReplySortName } from "../types";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../sort-handler";
 import lodash from "lodash";
 import { pageCidToSortTypesCache } from "../constants";
+import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
+import Logger from "@plebbit/plebbit-logger";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
     clients: {
         ipfsGateways: { [sortType: string]: { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient } };
         ipfsClients: { [sortType: string]: { [ipfsClientUrl: string]: PagesIpfsClient } };
+        plebbitRpcClients: { [sortType: string]: { [rpcUrl: string]: PagesPlebbitRpcStateClient } };
     };
+
+    protected _pages: BasePages;
 
     constructor(pages: BasePages) {
         super(pages._plebbit);
+        this._pages = pages;
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
         this._initIpfsClients();
+        this._initPlebbitRpcClients();
 
         if (pages.pageCids) this.updatePageCidsToSortTypes(pages.pageCids);
     }
@@ -46,6 +53,17 @@ export class BasePagesClientsManager extends BaseClientsManager {
                 this.clients.ipfsClients[sortType] = {};
                 for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
                     this.clients.ipfsClients[sortType][ipfsUrl] = new PagesIpfsClient("stopped");
+            }
+        }
+    }
+
+    protected _initPlebbitRpcClients() {
+        if (this._plebbit.clients.plebbitRpcClients) {
+            this.clients.plebbitRpcClients = {};
+            for (const sortType of this.getSortTypes()) {
+                this.clients.plebbitRpcClients[sortType] = {};
+                for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+                    this.clients.plebbitRpcClients[sortType][rpcUrl] = new PagesPlebbitRpcStateClient("stopped");
             }
         }
     }
@@ -98,6 +116,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (!Array.isArray(sortTypes)) return;
         assert(typeof this._defaultIpfsProviderUrl === "string");
         for (const sortType of sortTypes) {
+            if (this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
             this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
             this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].emit("statechange", newState);
         }
@@ -106,30 +125,62 @@ export class BasePagesClientsManager extends BaseClientsManager {
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]) {
         if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
+            if (this.clients.ipfsGateways[sortType][gateway].state === newState) continue;
             this.clients.ipfsGateways[sortType][gateway].state = newState;
             this.clients.ipfsGateways[sortType][gateway].emit("statechange", newState);
         }
     }
 
-    async fetchPage(pageCid: string): Promise<PageIpfs> {
-        // THIS IS WRONG, it should use fetchSubplebbitPage or fetchCommentPage
-        if (this._plebbit.plebbitRpcClient) {
-            // Updating the states should be part of the events
-            const page: PageIpfs = JSON.parse(await this._plebbit.plebbitRpcClient.fetchCid(pageCid));
-            if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            return page;
-        } else if (this._defaultIpfsProviderUrl) {
-            const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
-            this.updateIpfsState("fetching-ipfs", sortTypes);
-            const page: PageIpfs = JSON.parse(await this._fetchCidP2P(pageCid));
-            this.updateIpfsState("stopped", sortTypes);
-            if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            return page;
-        } else {
-            const page: PageIpfs = JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs"));
-            if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
-            return page;
+    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[]) {
+        if (!Array.isArray(sortTypes)) return;
+        for (const sortType of sortTypes) {
+            if (this.clients.plebbitRpcClients[sortType][rpcUrl].state === newState) continue;
+            this.clients.plebbitRpcClients[sortType][rpcUrl].state = newState;
+            this.clients.plebbitRpcClients[sortType][rpcUrl].emit("statechange", newState);
         }
+    }
+
+    private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
+        const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
+
+        log.trace(`Fetching page cid (${pageCid}) using rpc`);
+        this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
+        try {
+            const page = this._pages._parentCid
+                ? await this._plebbit.plebbitRpcClient.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
+                : await this._plebbit.plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
+            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
+
+            return page;
+        } catch (e) {
+            log.error(`Failed to retrieve page (${pageCid}) with rpc due to error:`, e);
+            this.updateRpcState("stopped", currentRpcUrl, sortTypes);
+            throw e;
+        }
+    }
+
+    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
+        this.updateIpfsState("fetching-ipfs", sortTypes);
+        try {
+            const page = <PageIpfs>JSON.parse(await this._fetchCidP2P(pageCid));
+            this.updateIpfsState("stopped", sortTypes);
+            return page;
+        } catch (e) {
+            this.updateIpfsState("stopped", sortTypes);
+            log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
+            throw e;
+        }
+    }
+    async fetchPage(pageCid: string): Promise<PageIpfs> {
+        const log = Logger("plebbit-js:pages:getPage");
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+        let page: PageIpfs;
+        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
+        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
+        else page = JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs"));
+
+        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+        return page;
     }
 }
 
@@ -137,6 +188,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
     clients: {
         ipfsGateways: Record<ReplySortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<ReplySortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
+        plebbitRpcClients: Record<ReplySortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 
     protected getSortTypes() {
@@ -148,6 +200,7 @@ export class PostsPagesClientsManager extends BasePagesClientsManager {
     clients: {
         ipfsGateways: Record<PostSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<PostSortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
+        plebbitRpcClients: Record<PostSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 
     protected getSortTypes() {
