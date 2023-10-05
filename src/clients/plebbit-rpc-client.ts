@@ -6,6 +6,7 @@ import {
     CreateCommentOptions,
     CreateSubplebbitOptions,
     CreateVoteOptions,
+    InternalSubplebbitRpcType,
     PageIpfs,
     SubplebbitEditOptions,
     SubplebbitType
@@ -80,7 +81,7 @@ export default class PlebbitRpcClient {
                 //e is an error json representation of PlebbitError
                 if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
                 if (e?.code) throw new PlebbitError(e?.code, e?.details);
-                else throw new Error(e.message)
+                else throw new Error(e.message);
             }
         };
     }
@@ -155,7 +156,10 @@ export default class PlebbitRpcClient {
     }
 
     async editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions) {
-        await this._webSocketClient.call("editSubplebbit", [subplebbitAddress, subplebbitEditOptions]);
+        const editedSub = <InternalSubplebbitRpcType>(
+            await this._webSocketClient.call("editSubplebbit", [subplebbitAddress, subplebbitEditOptions])
+        );
+        return editedSub;
     }
 
     async deleteSubplebbit(subplebbitAddress: string) {

@@ -157,7 +157,7 @@ class PlebbitWsServer extends EventEmitter {
       throw Error(`createSubplebbitOptions?.address '${createSubplebbitOptions?.address}' must be undefined to create a new subplebbit`)
     }
     const subplebbit = await this.plebbit.createSubplebbit(createSubplebbitOptions)
-    return clone(subplebbit)
+    return subplebbit.toJSONInternalRpc()
   }
 
   async startSubplebbit(params: any) {
@@ -200,7 +200,7 @@ class PlebbitWsServer extends EventEmitter {
 
     const subplebbit = await this.plebbit.createSubplebbit({address})
     await subplebbit.edit(editSubplebbitOptions)
-    return clone(subplebbit)
+    return subplebbit.toJSONInternalRpc()
   }
 
   async deleteSubplebbit(params: any) {
