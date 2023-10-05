@@ -5,11 +5,17 @@ NOTE: Challenges included with plebbit-js are located in ./plebbit-js-challenges
 ```js
 const {getChallengeVerification} = require('./challenges')
 
+// NOTE: publishing challenge pubsub message and waiting for challenge answer message go inside the getChallengeAnswers callback
+// because they are sometimes skipped
 const getChallengeAnswers = async (challenges) => {
-  // ...get challenge answers from user
+  // ...get challenge answers from user. e.g.:
+  // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers``
+  // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers``
   return challengeAnswers
 }
 
+// NOTE: we try to get challenge verification immediately after receiving challenge request
+// because some challenges are automatic and skip the challenge message
 let challengeVerification
 try {
   challengeVerification = await getChallengeVerification(challengeRequest, subplebbit, getChallengeAnswers)
