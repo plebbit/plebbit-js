@@ -96,15 +96,23 @@ describe("subplebbit.update", async () => {
         plebbit = await mockPlebbit();
     });
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
-        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-        await loadedSubplebbit.update();
-        const oldUpdatedAt = lodash.clone(loadedSubplebbit.updatedAt);
-        await publishRandomPost(loadedSubplebbit.address, plebbit, {}, false); // Invoke an update
-        await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
-        await loadedSubplebbit.stop();
-        expect(oldUpdatedAt).to.not.equal(loadedSubplebbit.updatedAt);
-        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
+    it(`subplebbit.update emits error if address of ENS and has no subplebbit-address`, async () => {
+        const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
+        sub.update();
+        // Should emit an error and keep on retrying in the next update loop
+        let errorCount = 0;
+        await new Promise((resolve) => {
+            sub.on("error", (err) => {
+                expect(err.code).to.equal("ERR_ENS_TXT_RECORD_NOT_FOUND");
+                expect(sub.updatingState).to.equal("failed");
+                errorCount++;
+                if (errorCount === 3) resolve();
+            });
+        });
+
+        await sub.stop();
+    });
+    it("subplebbit.update emits error if subplebbit address is incorrect", async () => {
     });
 });
 

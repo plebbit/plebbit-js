@@ -456,28 +456,25 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.emit("update", this);
                 subplebbitForPublishingCache.set(subState.address, lodash.pick(subState, ["encryption", "address", "pubsubTopic"]));
             }
-        } else if (this.plebbit.plebbitRpcClient) {
-            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient.subplebbitUpdate(this.address);
-            this.plebbit.plebbitRpcClient
-                .getSubscription(this._updateRpcSubscriptionId)
-                .on("update", async (updateProps) => {
-                    log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
-                    this._rawSubplebbitType = updateProps.params.result;
-                    await this.initSubplebbit(updateProps.params.result);
-                    this.emit("update", this);
-                })
-                .on("updatingstatechange", (args) => this._setUpdatingState(args.params.result))
-                .on("statechange", (args) => this._setState(args.params.result))
-                .on("error", (err) => this.emit("error", err));
-
-            this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-            return;
         } else {
-            this._setUpdatingState("resolving-address");
+            let ipnsAddress: string;
+            if (this.address.includes(".")) {
+                // It's a domain
+                this._setUpdatingState("resolving-address");
+                ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
+                // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
+                if (!ipnsAddress) {
+                    const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+                        subplebbitAddress: this.address,
+                        textRecord: "subplebbit-address"
+                    });
+                    log.error(String(error));
+                    this._setUpdatingState("failed");
+                    this.emit("error", error);
+                    return;
+                }
+            } else ipnsAddress = this.address;
 
-            const ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
-            // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
-            if (!ipnsAddress) return; // TODO should throw error here, set states to failed and stop updating
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
             this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
