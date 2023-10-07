@@ -218,11 +218,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
-            throwWithErrorCode("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress });
-        if (doesEnsAddressHaveCapitalLetter(subplebbitAddress))
-            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress });
-
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit({ address: subplebbitAddress });
         subplebbit.update();
@@ -232,10 +227,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         await Promise.race([updatePromise, errorPromise]);
         await subplebbit.stop();
         if (error) throw error;
-        subplebbitForPublishingCache.set(
-            subplebbitAddress,
-            lodash.pick(subplebbit._rawSubplebbitType, ["encryption", "address", "pubsubTopic"])
-        );
 
         return subplebbit;
     }
