@@ -94,12 +94,49 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     });
 });
 
-describe("subplebbit.update", async () => {
+describe("subplebbit.update (remote)", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
     });
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
+        const subplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
+        expect(subplebbit.address).to.equal("plebbit.eth");
+        const oldUpdatedAt = lodash.clone(subplebbit.updatedAt);
+        await subplebbit.update();
+        await publishRandomPost(subplebbit.address, plebbit, {}, false); // Invoke an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        expect(oldUpdatedAt).to.not.equal(subplebbit.updatedAt);
+        expect(subplebbit.address).to.equal("plebbit.eth");
+        await subplebbit.stop();
+    });
+
+    it(`subplebbit.update() loads the correct subplebbit IPNS record with its ipns address even if its address is ENS`, async () => {
+        const loadedSubplebbit = await plebbit.createSubplebbit({ address: ensSubplebbitSigner.address });
+        loadedSubplebbit.update();
+        await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
+        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
+        expect(loadedSubplebbit.updatedAt).to.be.a("number");
+        await loadedSubplebbit.stop();
+    });
+
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
+    it(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
+        const remotePlebbit = await mockRemotePlebbit();
+        const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address))._rawSubplebbitType;
+        rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
+        tempSubplebbit._clientsManager.fetchSubplebbit = () => rawSubplebbitJson;
+        tempSubplebbit.update();
+        await new Promise(resolve => {
+            tempSubplebbit.once("error", err =>{
+                expect(err.code).to.equal("ERR_SIGNATURE_IS_INVALID");
+                resolve();
+            })
+        });
+        await tempSubplebbit.stop();
+    });
     it(`subplebbit.update emits error if address of ENS and has no subplebbit-address`, async () => {
         const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
         sub.update();
@@ -115,8 +152,41 @@ describe("subplebbit.update", async () => {
         });
 
         await sub.stop();
+        await sub.removeAllListeners("error");
     });
     it("subplebbit.update emits error if subplebbit address is incorrect", async () => {
+        const invalidAddress = "0xdeadbeef";
+        const sub = await plebbit.createSubplebbit({ address: invalidAddress });
+        sub.update();
+        // Should emit an error and keep on retrying in the next update loop
+        let errorCount = 0;
+        await new Promise((resolve) => {
+            sub.on("error", (err) => {
+                expect(err.code).to.equal("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS");
+                expect(sub.updatingState).to.equal("failed");
+                errorCount++;
+                if (errorCount === 3) resolve();
+            });
+        });
+
+        await sub.stop();
+        await sub.removeAllListeners("error");
+    });
+
+    it(`subplebbit.stop() stops subplebbit updates`, async () => {
+        const remotePlebbit = await mockRemotePlebbit();
+        const subplebbit = await remotePlebbit.createSubplebbit({ address: "plebbit.eth" }); // 'plebbit.eth' is part of test-server.js
+        subplebbit.update();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+        await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval + 1));
+        let updatedHasBeenCalled = false;
+        subplebbit.updateOnce = subplebbit._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+
+        await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
     });
 });
 
