@@ -270,7 +270,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createCommentInstance(
-        options: CreateCommentOptions | CommentIpfsType | CommentPubsubMessage | CommentWithCommentUpdate | Pick<CommentWithCommentUpdate, "cid">
+        options:
+            | CreateCommentOptions
+            | CommentIpfsType
+            | CommentPubsubMessage
+            | CommentWithCommentUpdate
+            | Pick<CommentWithCommentUpdate, "cid">
     ) {
         options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
         const comment = new Comment(<CommentType>options, this);
