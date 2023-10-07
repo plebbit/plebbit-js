@@ -164,6 +164,17 @@ describe("plebbit.getComment", async () => {
         for (const key of Object.keys(expectedCommentProps))
             expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
     });
+
+    it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        const comment = await plebbit.getComment(loadedSubplebbit.posts.pages.hot.comments[0].cid);
+        let updatedHasBeenCalled = false;
+        comment.updateOnce = comment._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
+    });
 });
 
 describe("plebbit.fetchCid", async () => {

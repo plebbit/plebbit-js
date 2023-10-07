@@ -233,12 +233,21 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getComment(cid: string): Promise<Comment> {
         const comment = await this.createComment({ cid });
+
+        // The reason why we override this function is because we don't want update() to load the IPNS
+        //@ts-expect-error
+        const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(this);
+        //@ts-expect-error
+        comment._retryLoadingCommentUpdate = () => {};
         comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
         await Promise.race([updatePromise, errorPromise]);
         await comment.stop();
+        //@ts-expect-error
+        comment._retryLoadingCommentUpdate = originalLoadMethod;
+
         if (error) throw error;
         return comment;
     }
