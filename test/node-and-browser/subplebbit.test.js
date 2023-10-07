@@ -88,6 +88,10 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
         const page = await newSubplebbit.posts.getPage(pageCid);
         expect(page.comments.length).to.be.greaterThan(0);
     });
+
+    it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
+        await assert.isRejected(plebbit.createSubplebbit({ address: "testSub.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+    });
 });
 
 describe("subplebbit.update", async () => {

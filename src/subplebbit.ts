@@ -217,6 +217,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     private setAddress(newAddress: string) {
+        if (doesEnsAddressHaveCapitalLetter(newAddress))
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
+
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
     }
