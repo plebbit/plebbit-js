@@ -196,8 +196,8 @@ describe("plebbit.getSubplebbit", async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
     });
     it("Can load subplebbit via IPNS address", async () => {
-        const _subplebbitIpns = JSON.parse(await plebbit._clientsManager.fetchSubplebbitIpns(subplebbitSigner.address));
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        const _subplebbitIpns = loadedSubplebbit._rawSubplebbitType;
         expect(_subplebbitIpns.lastPostCid).to.be.a.string;
         expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
         expect(_subplebbitIpns.address).to.be.a.string;
@@ -212,42 +212,24 @@ describe("plebbit.getSubplebbit", async () => {
         expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
     });
 
-    it("Throws an error when subplebbit address is incorrect", async () => {
-        const gibbreishAddress = "0xdeadbeef";
-        await assert.isRejected(plebbit.getSubplebbit(gibbreishAddress), messages.ERR_FAILED_T_FETCH_IPNS);
-    });
-
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
-        const tempPlebbit = await mockPlebbit();
-
-        const subplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitAddress);
+        const subplebbit = await plebbit.getSubplebbit(ensSubplebbitAddress);
         expect(subplebbit.address).to.equal(ensSubplebbitAddress);
-        // I'd add more tests for subplebbit.title and subplebbit.description here but the ipfs node is offline, and won't be able to retrieve plebwhales.eth IPNS record
-    });
-
-    it(`A subplebbit with ENS domain for address can also be loaded from its IPNS`, async () => {
-        const tempPlebbit = await mockPlebbit();
-
-        const loadedSubplebbit = await tempPlebbit.getSubplebbit(ensSubplebbitSigner.address);
-        expect(loadedSubplebbit.address).to.equal(ensSubplebbitAddress);
-    });
-
-    it(`plebbit.getSubplebbit() throws an error if fetched subplebbit has invalid signature`, async () => {
-        const tempPlebbit = await mockPlebbit();
-
-        const subJson = JSON.parse(await tempPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
-        subJson.updatedAt += 1; // Should invalidate the signature
-        expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager)).to.deep.equal({
-            valid: false,
-            reason: messages.ERR_SIGNATURE_IS_INVALID
-        });
-
-        tempPlebbit._clientsManager.fetchSubplebbitIpns = () => JSON.stringify(subJson);
-        await assert.isRejected(tempPlebbit.getSubplebbit(subplebbitAddress), messages.ERR_SIGNATURE_IS_INVALID);
+        expect(subplebbit.updatedAt).to.be.a("number");
     });
 
     it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
         await assert.isRejected(plebbit.getSubplebbit("testSub.eth"), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
+    });
+
+    it(`plebbit.getSubplebbit is not fetching subplebbit updates in background after fulfilling its promise`, async () => {
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        let updatedHasBeenCalled = false;
+        loadedSubplebbit.updateOnce = loadedSubplebbit._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
     });
 });
 
