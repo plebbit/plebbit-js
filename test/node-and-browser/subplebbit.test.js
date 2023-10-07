@@ -11,7 +11,6 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const stringify = require("safe-stable-stringify");
-const { verifySubplebbit } = require("../../dist/node/signer");
 
 const subplebbitAddress = signers[0].address;
 
@@ -44,9 +43,8 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const remotePlebbit = await mockRemotePlebbit();
         const subJson = lodash.cloneDeep(require("../fixtures/valid_subplebbit.json"));
-        const subObj = await remotePlebbit.createSubplebbit(lodash.cloneDeep(require("../fixtures/valid_subplebbit.json")));
+        const subObj = await plebbit.createSubplebbit(lodash.cloneDeep(require("../fixtures/valid_subplebbit.json")));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
@@ -59,12 +57,10 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
 
         expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids);
 
-        const subLoaded = await remotePlebbit.getSubplebbit(subJson.address);
+        const subLoaded = await plebbit.getSubplebbit(subJson.address);
         for (const pageKey of Object.keys(subJson.posts.pages)) {
             const subJsonComments = await Promise.all(
-                subJson.posts.pages[pageKey].comments.map((comment) =>
-                    remotePlebbit.createComment({ ...comment.comment, subplebbit: subLoaded })
-                )
+                subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment({ ...comment.comment, subplebbit: subLoaded }))
             );
 
             for (let i = 0; i < subJsonComments.length; i++)
@@ -75,14 +71,13 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     });
 
     it("Remote subplebbit instance created with only address prop can call getPage", async () => {
-        const remotePlebbit = await mockRemotePlebbit();
-        const actualSub = await remotePlebbit.getSubplebbit(subplebbitAddress);
+        const actualSub = await plebbit.getSubplebbit(subplebbitAddress);
         expect(actualSub.createdAt).to.be.a("number");
 
         expect(actualSub.posts.pages.hot).to.be.a("object");
         const pageCid = actualSub.posts.pageCids.new; // get it somehow
         expect(pageCid).to.be.a("string");
-        const newSubplebbit = await remotePlebbit.createSubplebbit({ address: actualSub.address });
+        const newSubplebbit = await plebbit.createSubplebbit({ address: actualSub.address });
         expect(newSubplebbit.createdAt).to.be.undefined;
 
         const page = await newSubplebbit.posts.getPage(pageCid);
@@ -241,6 +236,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
         remotePlebbit = await mockRemotePlebbit();
     });
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.ipfsGateways`, async () => {
         // All tests below use Plebbit instance that doesn't have ipfsClient
         it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -287,6 +284,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.ipfsClients`, async () => {
         it(`subplebbit.clients.ipfsClients is undefined for gateway plebbit`, async () => {
             const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -336,6 +335,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(signers[0].address);
@@ -367,6 +368,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
     });
 
     describe(`subplebbit.posts.clients`, async () => {
+        //prettier-ignore
+        if (!process.env["USE_RPC"])
         describe(`subplebbit.posts.clients.ipfsClients`, async () => {
             it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -458,9 +461,12 @@ describe(`subplebbit.clients (Remote)`, async () => {
                         resolve();
                     });
                 });
+                await sub.stop();
             });
         });
 
+        //prettier-ignore
+        if (!process.env["USE_RPC"])
         describe(`subplebbit.posts.clients.ipfsGateways`, async () => {
             it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -487,7 +493,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
         //prettier-ignore
         if (process.env["USE_RPC"] === "1")
-        describe.only(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
+        describe(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
             it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
                 const rpcUrl = Object.keys(mockSub.clients.plebbitRpcClients)[0];
