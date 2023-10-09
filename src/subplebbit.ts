@@ -1639,8 +1639,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async delete() {
-        // TODO add RPC code here
         await this.stop();
+        if (this.plebbit.plebbitRpcClient) return this.plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
+
+        const log = Logger("plebbit-js:subplebbit:delete");
         if (typeof this.plebbit.dataPath !== "string")
             throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
 
