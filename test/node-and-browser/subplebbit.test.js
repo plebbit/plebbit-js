@@ -92,7 +92,7 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
 describe("subplebbit.update (remote)", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
         const subplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
@@ -183,12 +183,28 @@ describe("subplebbit.update (remote)", async () => {
         await new Promise((resolve) => setTimeout(resolve, remotePlebbit.updateInterval + 1));
         expect(updatedHasBeenCalled).to.be.false;
     });
+
+    it(`subplebbit.update() is working as expected after calling subplebbit.stop()`, async () => {
+        const subplebbit = await plebbit.createSubplebbit({address: signers[0].address});
+
+        await subplebbit.update();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await subplebbit.stop();
+
+        await subplebbit.update();
+
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+    });
+
 });
 
-describe("plebbit.getSubplebbit", async () => {
+describe("plebbit.getSubplebbit (Remote)", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockRemotePlebbit();
     });
     it("Can load subplebbit via IPNS address", async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
