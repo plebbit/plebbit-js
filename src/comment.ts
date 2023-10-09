@@ -394,15 +394,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             this.emit("update", this);
         }
 
-        const res = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+        const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
-        if (res && this.updatedAt !== res.updatedAt) {
+        if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
-                res,
+                commentUpdate,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 this.subplebbitAddress,
@@ -411,18 +411,18 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             );
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
-                const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
+                const err = new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
                 log.error(err.toString());
                 this.emit("error", err);
                 return;
             }
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(res);
+            await this._initCommentUpdate(commentUpdate);
             this.emit("update", this);
-        } else if (res) {
+        } else if (commentUpdate) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(res);
+            await this._initCommentUpdate(commentUpdate);
         }
     }
 
@@ -479,7 +479,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
             return;
         }
-        if (this._updateInterval) return; // Do nothing if it's already updating
+        if (this._isUpdating) return; // Do nothing if it's already updating
         this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
