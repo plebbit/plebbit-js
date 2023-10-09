@@ -73,6 +73,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     publishInterval: number;
     updateInterval: number;
     noData: boolean;
+    private _userPlebbitOptions: PlebbitOptions;
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -91,6 +92,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         for (const option of Object.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
 
+        this._userPlebbitOptions = options;
         this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
         if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
@@ -310,7 +312,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         }
     }
 
-    _canRunSub(): boolean {
+    _canCreateNewLocalSub(): boolean {
         try {
             //@ts-ignore
             nativeFunctions.createDbHandler({ address: "", plebbit: this });
@@ -320,57 +322,76 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return false;
     }
 
+    private async _createSubplebbitRpc(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+
+        if (options.address && !options.signer) {
+            const rpcSubs = await this.listSubplebbits();
+            const isSubLocal = rpcSubs.includes(options.address);
+            if (isSubLocal)
+                return this.getSubplebbit(options.address); // getSubplebbit will fetch the local sub through RPC subplebbitUpdate
+            else return this._createRemoteSubplebbitInstance(options);
+        } else {
+            const newLocalSub = await this.plebbitRpcClient.createSubplebbit(options);
+            log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
+            return newLocalSub;
+        }
+    }
+
+    private async _createRemoteSubplebbitInstance(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+
+        const subplebbit = new Subplebbit(this);
+        await subplebbit.initSubplebbit(options);
+        log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
+        return subplebbit;
+    }
+
+    private async _createLocalSub(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        const canCreateLocalSub = this._canCreateNewLocalSub();
+        if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+        const subplebbit = new Subplebbit(this);
+        await subplebbit.initSubplebbit(options);
+        await subplebbit.prePublish(); // May fail because sub is already being created (locked)
+        log(
+            `Created local subplebbit (${subplebbit.address}) with props:`,
+            removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
+        );
+        return subplebbit;
+    }
+
     async createSubplebbit(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType = {}): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.createSubplebbit(options);
-        const canRunSub = this._canRunSub();
 
         if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
-        const localSub = async () => {
-            if (!canRunSub) throwWithErrorCode("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub, dataPath: this.dataPath });
+        if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
 
-            const subplebbit = new Subplebbit(this);
-            await subplebbit.initSubplebbit(options);
-            await subplebbit.prePublish(); // May fail because sub is already being created (locked)
-            log(
-                `Created subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
-            );
-            return subplebbit;
-        };
+        const canCreateLocalSub = this._canCreateNewLocalSub();
 
-        const remoteSub = async () => {
-            const subplebbit = new Subplebbit(this);
-            await subplebbit.initSubplebbit(options);
-            return subplebbit;
-        };
+        if (options.signer && !canCreateLocalSub)
+            throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+
+        if (!canCreateLocalSub) return this._createRemoteSubplebbitInstance(options);
 
         if (options.address && !options.signer) {
-            if (!canRunSub) return remoteSub();
-            else {
-                const dbHandler = nativeFunctions.createDbHandler({ address: options.address, plebbit: this });
-                const isSubLocal = dbHandler.subDbExists();
-                if (isSubLocal) return localSub();
-                else return remoteSub();
-            }
+            const localSubs = await this.listSubplebbits();
+            const isSubLocal = localSubs.includes(options.address);
+            if (isSubLocal) return this._createLocalSub(options);
+            else return this._createRemoteSubplebbitInstance(options);
         } else if (!options.address && !options.signer) {
-            if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
-            else {
-                options.signer = await this.createSigner();
-                options.address = (<Signer>options.signer).address;
-                log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.address})`);
-                return localSub();
-            }
+            options.signer = await this.createSigner();
+            options.address = (<Signer>options.signer).address;
+            log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.address})`);
+
+            return this._createLocalSub(options);
         } else if (!options.address && options.signer) {
-            if (!canRunSub) throw Error(`missing nativeFunctions required to create a subplebbit`);
-            const signer = await this.createSigner(options.signer);
-            options.address = signer.address;
-            options.signer = signer;
-            return localSub();
-        } else if (!canRunSub) return remoteSub();
-        else return localSub();
+            options.signer = await this.createSigner(options.signer);
+            options.address = (<Signer>options.signer).address;
+            return this._createLocalSub(options);
+        } else return this._createLocalSub(options);
     }
 
     async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
@@ -402,8 +423,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async listSubplebbits(): Promise<string[]> {
         if (this.plebbitRpcClient) return this.plebbitRpcClient.listSubplebbits();
-        const canRunSub = this._canRunSub();
-        if (!canRunSub || !this.dataPath) return [];
+        const canCreateSubs = this._canCreateNewLocalSub();
+        if (!canCreateSubs || !this.dataPath) return [];
         return nativeFunctions.listSubplebbits(this.dataPath);
     }
 
