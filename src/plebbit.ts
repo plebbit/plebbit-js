@@ -236,7 +236,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // The reason why we override this function is because we don't want update() to load the IPNS
         //@ts-expect-error
-        const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(this);
+        const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = () => {};
         comment.update();
