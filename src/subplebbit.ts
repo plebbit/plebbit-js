@@ -445,6 +445,20 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         mapper[startedState].forEach(this._setRpcClientState.bind(this));
     }
 
+    private _updateRpcClientStateFromUpdatingState(updatingState: Subplebbit["updatingState"]) {
+        // We're deriving the the rpc state from updating state
+
+        const mapper: Record<Subplebbit["updatingState"], Subplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
+            failed: ["stopped"],
+            "fetching-ipfs": ["fetching-ipfs"],
+            "fetching-ipns": ["fetching-ipns"],
+            "resolving-address": ["resolving-subplebbit-address"],
+            stopped: ["stopped"],
+            succeeded: ["stopped"]
+        };
+
+        mapper[updatingState].forEach(this._setRpcClientState.bind(this));
+    }
 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType> {
         return new Promise((resolve) => {
@@ -536,7 +550,35 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (this._isUpdating || this._sync || this._updateRpcSubscriptionId || this._startRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         const log = Logger("plebbit-js:subplebbit:update");
-        this._setState("updating");
+        if (this.plebbit.plebbitRpcClient) {
+            try {
+                this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient.subplebbitUpdate(this.address);
+                this._setState("updating");
+            } catch (e) {
+                log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
+                this._setState("stopped");
+                this._setUpdatingState("failed");
+                throw e;
+            }
+            this.plebbit.plebbitRpcClient
+                .getSubscription(this._updateRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                    log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                    this._rawSubplebbitType = updateProps.params.result;
+                    await this.initSubplebbit(this._rawSubplebbitType);
+                    this.emit("update", this);
+                })
+                .on("updatingstatechange", (args) => {
+                    const newUpdatingState: Subplebbit["updatingState"] = args.params.result;
+                    this._setUpdatingState(newUpdatingState);
+                    this._updateRpcClientStateFromUpdatingState(newUpdatingState);
+                })
+                .on("error", (args) => this.emit("error", args.params.result));
+
+            this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+            return;
+        }
+
         const updateLoop = (async () => {
             if (this._isUpdating)
                 this.updateOnce()
@@ -587,6 +629,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._setStartedState("stopped");
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
+            if (this.dbHandler) await this.dbHandler.destoryConnection();
+            log(`Stopped the running of local subplebbit (${this.address})`);
+        }
         this._setUpdatingState("stopped");
         this._setState("stopped");
     }
