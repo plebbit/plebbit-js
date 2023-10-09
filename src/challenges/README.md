@@ -9,8 +9,8 @@ const {getChallengeVerification} = require('./challenges')
 // because they are sometimes skipped
 const getChallengeAnswers = async (challenges) => {
   // ...get challenge answers from user. e.g.:
-  // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers``
-  // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers``
+  // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers`
+  // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers`
   return challengeAnswers
 }
 
@@ -41,8 +41,12 @@ Plebbit.challenges = {[challengeName: string]: ChallengeFile}
 
 // new props 
 ChallengeRequestMessage {
-  encryptedChallengeCommentCids?: Encrypted<string[]> // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
-  encryptedChallengeAnswers: Encrypted<string[]> // some challenges might be included in subplebbit.challenges
+  encrypted: Encrypted
+  /* ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON {
+    publication: Publication
+    challengeAnswers?: string[] // some challenges might be included in subplebbit.challenges and can be pre-answered
+    challengeCommentCids?: string[] // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+  } */
 }
 Subplebbit {
   // challenges is public, part of the IPNS record
