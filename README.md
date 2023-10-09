@@ -285,8 +285,13 @@ PubsubMessage: {
 }
 ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
-  encryptedPublication: Encrypted
-  // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
+  encrypted: Encrypted
+  /* ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON {
+    publication: Publication
+    challengeAnswers?: string[] // some challenges might be included in subplebbit.challenges and can be pre-answered
+    challengeCommentCids?: string[] // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+  }
+  plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeRequestMessage.publication` property for convenience (not part of the broadcasted pubsub message) */
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
   encryptedChallenges: Encrypted // a challenge message has a challenges array with 1 or more challenges
@@ -300,8 +305,12 @@ ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner)
   challengeSuccess: bool // true if the challenge was successfully completed by the requester
   challengeErrors?: (string|undefined)[] // tell the user which challenge failed and why
   reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
-  encryptedPublication: Encrypted
-  // plebbit-js should decrypt the publication when possible, and add an `publication` property for convenience (not part of the broadcasted pubsub message)
+  encrypted: Encrypted
+  /* ChallengeVerificationMessage.encrypted.ciphertext decrypts to JSON {
+    publication: Publication // must contain comment.cid when comment
+    signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
+  }
+  plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeVerificationMessage.publication` property for convenience (not part of the broadcasted pubsub message) */
 }
 Challenge {
   type: 'image/png' | 'text/plain' | 'chain/<chainTicker>' // tells the client how to display the challenge, start with implementing image and text only first
@@ -804,6 +813,8 @@ An object which may have the following keys:
 | link | `string` or `undefined` | If comment is a post, it might be a link post |
 | spoiler | `boolean` or `undefined` | Hide the comment thumbnail behind spoiler warning |
 | flair | `Flair` or `undefined` | Author or mod chosen colored label for the comment |
+| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
+| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ipnsName | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ...comment | `any` | `CreateCommentOptions` can also initialize any property on the `Comment` instance |
@@ -883,6 +894,8 @@ An object which may have the following keys:
 | locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
 | removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
 | commentAuthor | `CommentAuthorEditOptions` or `undefined` | (Only mod) Edited author property of the comment |
+| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
+| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 
 ##### CommentAuthorEditOptions
 
@@ -933,6 +946,8 @@ An object which may have the following keys:
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
 | signer | `Signer` | Signer of the vote |
+| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
+| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 
 #### Returns
 
