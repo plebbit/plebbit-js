@@ -608,11 +608,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.initSubplebbit({ ...newIpns, signature });
         this._subplebbitUpdateTrigger = false;
 
+        this._rawSubplebbitType = { ...newIpns, signature };
         await this._updateDbInternalState(
             lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
         );
 
-        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify({ ...newIpns, signature }));
+        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(this._rawSubplebbitType));
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true
