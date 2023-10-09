@@ -382,7 +382,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             if (!commentIpfsValidation.valid) {
                 // This is a crticial error, it should stop the comment from updating
                 log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
-                await this.stop();
+                this._updateState("stopped");
+                await this._stopUpdateLoop();
+                this._setUpdatingState("failed");
                 this.emit(
                     "error",
                     new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
@@ -479,8 +481,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 })
                 .on("statechange", (args) => this._updateState(args.params.result))
                 .on("error", async (args) => {
+                    if (this._isCriticalRpcError(args.params.result)) {
+                        this._setUpdatingState("failed");
+                        this._updateState("stopped");
+                        await this._stopUpdateLoop();
+                    }
                     this.emit("error", args.params.result);
-                    if (this._isCriticalRpcError(args.params.result)) await this.stop();
                 });
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
@@ -498,17 +504,21 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         updateLoop();
     }
 
-    async stop() {
-        await super.stop();
+    private async _stopUpdateLoop() {
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
-        this._setUpdatingState("stopped");
         this._isUpdating = false;
         if (this._updateRpcSubscriptionId) {
             await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }
+    }
+
+    async stop() {
+        await super.stop();
+        this._setUpdatingState("stopped");
+        await this._stopUpdateLoop();
     }
 
     private async _validateSignature() {

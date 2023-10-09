@@ -325,6 +325,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
     });
 
     after(async () => await post.stop());

@@ -183,7 +183,7 @@ describe(`comment.update`, async () => {
 
         expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
         expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("stopped"); // Not sure if should be stopped or failed
+        expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
         expect(updateHasBeenEmitted).to.be.false;
     });
 
@@ -942,10 +942,9 @@ describe(`comment.clients`, async () => {
 
         it(`Correct order of comment.clients.plebbitRpcClients states when updating a comment`, async () => {
             const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 2 + 1))
             const expectedStates = [
                 "fetching-ipfs",
-                "stopped",
-                "fetching-update-ipns",
                 "stopped",
                 "fetching-update-ipns",
                 "fetching-update-ipfs",

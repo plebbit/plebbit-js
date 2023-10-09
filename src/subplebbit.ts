@@ -467,12 +467,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
                 // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
                 if (!ipnsAddress) {
+                    this._setUpdatingState("failed");
                     const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
                         subplebbitAddress: this.address,
                         textRecord: "subplebbit-address"
                     });
                     log.error(String(error));
-                    this._setUpdatingState("failed");
                     this.emit("error", error);
                     return;
                 }
@@ -507,7 +507,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                     lodash.pick(this._rawSubplebbitType, ["encryption", "address", "pubsubTopic"])
                 );
             } else {
-                log.trace("Remote subplebbit received a new update with no new information");
+                log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
                 this._setUpdatingState("succeeded");
             }
         }
