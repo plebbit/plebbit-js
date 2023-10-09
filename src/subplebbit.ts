@@ -52,7 +52,6 @@ import {
     DecryptedChallengeMessageType,
     DecryptedChallengeVerificationMessageType
 } from "./types";
-import { Comment } from "./comment";
 import {
     getIpfsKeyFromPrivateKey,
     getPlebbitAddressFromPrivateKey,
@@ -142,6 +141,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
     private _updateRpcSubscriptionId?: number;
+    private _isUpdating: boolean;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -514,20 +514,22 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async update() {
-        if (this._updateInterval || this._sync) return; // No need to do anything if subplebbit is already updating
+        if (this._isUpdating || this._sync || this._updateRpcSubscriptionId || this._startRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         const log = Logger("plebbit-js:subplebbit:update");
         this._setState("updating");
         const updateLoop = (async () => {
-            if (this._updateInterval)
+            if (this._isUpdating)
                 this.updateOnce()
                     .catch((e) => log.error(`Failed to update subplebbit`, e))
                     .finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
         }).bind(this);
 
+        this._isUpdating = true;
+
         this.updateOnce()
             .catch((e) => log.error(`Failed to update subplebbit`, e))
-            .finally(() => (this._updateInterval = setTimeout(updateLoop, this.plebbit.updateInterval)));
+            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this.plebbit.updateInterval)));
     }
 
     private pubsubTopicWithfallback() {
@@ -535,9 +537,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async stop() {
-        this._updateInterval = clearTimeout(this._updateInterval);
+        const log = Logger("plebbit-js:subplebbit:stop");
         this._loadingOperation?.stop();
-        this._setUpdatingState("stopped");
+        clearTimeout(this._updateTimeout);
+        this._updateTimeout = undefined;
+        this._isUpdating = false;
         if (this.plebbit.plebbitRpcClient && this._updateRpcSubscriptionId) {
             // We're updating a remote sub here
             await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
@@ -556,9 +560,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._setStartedState("stopped");
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
-        }
-        if (this.dbHandler) await this.dbHandler.destoryConnection();
-
+        this._setUpdatingState("stopped");
         this._setState("stopped");
     }
 
