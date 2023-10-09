@@ -112,13 +112,10 @@ describe("createComment", async () => {
         const page = await postClone.replies.getPage(pageCid);
         expect(page.comments.length).to.be.equal(1);
     });
-
-    //prettier-ignore
-    if (!process.env["USE_RPC"])
-    it(`plebbit.createComment({cid}).update() verifies signature of comment ipfs`, async () => {
+    it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const postJson = lodash.cloneDeep(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+        const postJson = subplebbit.posts.pages.hot.comments[0].toJSONIpfs();
 
         postJson.title += "1234"; // Invalidate signature
 
@@ -127,16 +124,29 @@ describe("createComment", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        const postWithInvalidSignatureCid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))).path;
+        const postWithInvalidSignatureCid = (
+            await (await mockRemotePlebbitIpfsOnly())._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))
+        ).path;
 
         const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
 
-        createdComment.once("update", () => assert.fail("Should not update with invalid comment props"));
-        createdComment.update();
+        let updateHasBeenEmitted = false;
+        createdComment.once("update", () => (updateHasBeenEmitted = true));
+        await createdComment.update();
 
-        await new Promise((resolve) => createdComment.once("error", resolve));
+        await new Promise((resolve) =>
+            createdComment.once("error", (err) => {
+                expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+                resolve();
+            })
+        );
 
         expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
+        expect(createdComment.state).to.equal("stopped");
+        expect(createdComment.updatingState).to.equal("stopped"); // Not sure if should be stopped or failed
+        expect(updateHasBeenEmitted).to.be.false;
+    });
+
 
         await createdComment.stop();
     });

@@ -380,9 +380,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 true
             );
             if (!commentIpfsValidation.valid) {
+                // This is a crticial error, it should stop the comment from updating
+                log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
+                await this.stop();
                 this.emit(
                     "error",
-                    new PlebbitError(getErrorCodeFromMessage(commentIpfsValidation.reason), {
+                    new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
                         commentIpfs: this._rawCommentIpfs,
                         commentIpfsValidation,
                         cid: this.cid
@@ -436,10 +439,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
         const rpcState: Comment["clients"]["plebbitRpcClients"][0]["state"] =
             updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
 
-        this.clients.plebbitRpcClients[currentRpcUrl].state = rpcState;
-        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", rpcState);
+    private _isCriticalRpcError(err: Error | PlebbitError) {
+        // Critical Errors for now are:
+        // Invalid signature of CommentIpfs
+        return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
     }
 
     async update() {
@@ -474,7 +478,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })
                 .on("statechange", (args) => this._updateState(args.params.result))
-                .on("error", (args) => this.emit("error", args.params.result));
+                .on("error", async (args) => {
+                    this.emit("error", args.params.result);
+                    if (this._isCriticalRpcError(args.params.result)) await this.stop();
+                });
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
             return;
