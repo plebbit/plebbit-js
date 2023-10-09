@@ -228,8 +228,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 );
             }
 
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
-            this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
+            await this._postSucessOrFailurePublishing();
             this.emit(
                 "challengeverification",
                 { ...msgParsed, publication: decryptedPublication },
@@ -358,11 +357,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     async stop() {
-        if (this.subplebbit && !this._rpcPublishSubscriptionId)
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+        await this._postSucessOrFailurePublishing();
         this._updatePublishingState("stopped");
-        if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
-        this._rpcPublishSubscriptionId = undefined;
     }
 
     _isAllAttemptsExhausted(): boolean {
@@ -395,17 +391,32 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
 
                 if (this._isAllAttemptsExhausted()) {
+                    await this._postSucessOrFailurePublishing();
+                    this._updatePublishingState("failed");
                     const allAttemptsFailedError = new PlebbitError("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER", {
                         pubsubProviders: this._pubsubProviders,
                         pubsubTopic: this._pubsubTopicWithfallback()
                     });
                     log.error(String(allAttemptsFailedError));
 
-                    this._updatePublishingState("failed");
                     this.emit("error", allAttemptsFailedError);
                 }
             }
         }, this._setProviderFailureThresholdSeconds * 1000);
+    }
+
+    private async _postSucessOrFailurePublishing() {
+        this._updateState("stopped");
+        if (this._rpcPublishSubscriptionId) {
+            await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+            this._rpcPublishSubscriptionId = undefined;
+            this._setRpcClientState("stopped");
+        }
+
+        if (Array.isArray(this._pubsubProviders)) {
+            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+            this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
+        }
     }
 
     async publish() {
@@ -544,7 +555,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 log.error("Failed to publish challenge request using provider ", this._pubsubProviders[this._currentPubsubProviderIndex]);
                 this._currentPubsubProviderIndex += 1;
                 if (this._isAllAttemptsExhausted()) {
-                    await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+                    await this._postSucessOrFailurePublishing();
                     this._updatePublishingState("failed");
                     const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
                         pubsubProviders: this._pubsubProviders,
@@ -576,11 +587,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         }
         // to handle cases where request is published but we didn't receive response within certain timeframe (20s for now)
         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
-        setTimeout(() => {
+        setTimeout(async () => {
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 if (this._isAllAttemptsExhausted()) {
                     // plebbit-js tried all providers and still no response is received
                     log.error(`Failed to receive any response for publication`);
+                    await this._postSucessOrFailurePublishing();
                     this._updatePublishingState("failed");
                     const error = new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {
                         pubsubProviders: this._pubsubProviders,

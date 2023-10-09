@@ -446,9 +446,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const log = Logger("plebbit-js:comment:update");
 
         if (this._plebbit.plebbitRpcClient) {
-            this._updateState("updating");
             try {
                 this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+                this._updateState("updating");
             } catch (e) {
                 log.error("Failed to receive commentUpdate from RPC due to error", e);
                 this._updateState("stopped");
@@ -496,11 +496,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
         this._setUpdatingState("stopped");
-        this._updateState("stopped");
         this._isUpdating = false;
         if (this._updateRpcSubscriptionId) {
             await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
+            this._setRpcClientState("stopped");
         }
     }
 
