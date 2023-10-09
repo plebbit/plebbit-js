@@ -23,7 +23,7 @@ import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
-import { getErrorCodeFromMessage } from "./util";
+import { messages } from "./errors";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -337,7 +337,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     this._setUpdatingState("succeeded");
                     resolve(res);
                 } catch (e) {
-                    e.details.commentCid = this.cid;
+                    if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this.emit("error", e);
@@ -355,7 +355,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
                     resolve(update);
                 } catch (e) {
-                    e.details.commentCid = this.cid;
+                    if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this._loadingOperation.retry(e);
