@@ -331,19 +331,20 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             "waiting-challenge-answers": ["waiting-challenge-answers"],
             "waiting-challenge-verification": ["waiting-challenge-verification"]
         };
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
 
-        const rpcStates = mapper[publishingState];
-        for (const rpcState of rpcStates) {
-            this.clients.plebbitRpcClients[currentRpcUrl].state = rpcState;
-            this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", rpcState);
-        }
+        mapper[publishingState].forEach(this._setRpcClientState.bind(this));
     }
 
     protected _updateState(newState: Publication["state"]) {
         if (this.state === newState) return;
         this.state = newState;
         this.emit("statechange", this.state);
+    }
+    protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]) {
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
     private _pubsubTopicWithfallback() {

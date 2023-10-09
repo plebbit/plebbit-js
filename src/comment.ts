@@ -435,12 +435,20 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
+    protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    }
 
     protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]) {
         // We're deriving the the rpc state from publishing state
 
         const rpcState: Comment["clients"]["plebbitRpcClients"][0]["state"] =
             updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        this._setRpcClientState(rpcState);
+    }
 
     private _isCriticalRpcError(err: Error | PlebbitError) {
         // Critical Errors for now are:
