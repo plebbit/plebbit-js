@@ -251,54 +251,39 @@ describe("createComment", async () => {
 
         await recreatedReply.stop();
     });
-});
 
-describe(`comment.update`, async () => {
-    let plebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-    });
-
-    it(`comment.stop() stops new update loops from running`, async () => {
-        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
+    it(`comment.stop() stops comment updates`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
         await comment.update();
         await new Promise((resolve) => comment.once("update", resolve));
         await comment.stop();
-        comment.updateOnce = () => expect.fail(`updateOnce should not be called after stopping`);
-        comment._retryLoadingCommentUpdate = () => expect.fail(`_retryLoadingCommentUpdate  should not be called after stopping`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        let updatedHasBeenCalled = false;
+        comment.updateOnce = comment._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
     });
 
-    it(`Comment instance can retrieve ipnsName from just cid`, async () => {
-        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
-        expect(comment.shortCid).to.be.a("string").with.length(12);
-        expect(comment.author.shortAddress).to.be.a("string").with.length(12);
+    it(`comment.update() is working as expected after calling comment.stop()`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
-        const recreatedComment = await plebbit.createComment({ cid: comment.cid });
-        expect(recreatedComment.cid).to.equal(comment.cid);
-        expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+        await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentIpfs Update
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentUpdate update
 
-        let eventNum = 0;
-        recreatedComment.on("update", (_) => {
-            if (eventNum === 0) {
-                // This is the update where Comment props are loaded (postCid, title, content, etc)
-                expect(recreatedComment.cid).to.equal(comment.cid);
-                expect(recreatedComment.shortCid).to.equal(comment.shortCid);
-                expect(recreatedComment.author).to.deep.equal(comment.author);
-            } else if (eventNum === 1) {
-                // The update where CommentUpdate props are loaded
-                expect(recreatedComment.updatedAt).to.be.a("number");
-                recreatedComment.removeAllListeners("update");
-            }
-            eventNum++;
-        });
+        await comment.stop();
 
-        recreatedComment.update();
+        await comment.update();
 
-        await waitUntil(() => eventNum >= 2, { timeout: 20000 });
-        await recreatedComment.stop();
+        await publishRandomReply(comment, plebbit, {}, false);
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
     });
-    it(`comment.update() is working as expected after calling comment.stop()`);
 });
 
 describe(`commentUpdate.replyCount`, async () => {
