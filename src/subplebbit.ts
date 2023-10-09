@@ -132,7 +132,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private provideCaptchaCallback: (request: DecryptedChallengeRequestMessageType) => Promise<[ChallengeType[], string | undefined]>;
     private validateCaptchaAnswerCallback: (answerMessage: DecryptedChallengeAnswerMessageType) => Promise<[boolean, string[] | undefined]>;
     private sortHandler: SortHandler;
-    private _updateInterval?: any;
+    private _updateTimeout?: NodeJS.Timeout;
     private _syncInterval?: any; // TODO change "sync" to "publish"
     private _sync: boolean;
     private _ipfsNodeIpnsKeyNames: string[];
@@ -151,7 +151,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setState("stopped");
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
-        this._sync = false;
+        this._sync = this._isUpdating = false;
         this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
 
         // these functions might get separated from their `this` when used
