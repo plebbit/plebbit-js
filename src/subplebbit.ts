@@ -11,7 +11,7 @@ import {
     doesEnsAddressHaveCapitalLetter,
     decodePubsubMsgFromRpc
 } from "./util";
-import { Signer, decryptEd25519AesGcmPublicKeyBuffer, encryptEd25519AesGcm } from "./signer";
+import { Signer, decryptEd25519AesGcmPublicKeyBuffer } from "./signer";
 import { PostsPages } from "./pages";
 import { Plebbit } from "./plebbit";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -141,6 +141,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
     private _updateRpcSubscriptionId?: number;
+    private _startRpcSubscriptionId?: number;
     private _isUpdating: boolean;
 
     constructor(plebbit: Plebbit) {
@@ -426,6 +427,24 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.startedState = newState;
         this.emit("startedstatechange", this.startedState);
     }
+    _setRpcClientState(newState: Subplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    }
+
+    private _updateRpcClientStateFromStartedState(startedState: Subplebbit["startedState"]) {
+        const mapper: Record<Subplebbit["startedState"], Subplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
+            failed: ["stopped"],
+            "publishing-ipns": ["publishing-ipns"],
+            stopped: ["stopped"],
+            succeeded: ["stopped"]
+        };
+
+        mapper[startedState].forEach(this._setRpcClientState.bind(this));
+    }
+
 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType> {
         return new Promise((resolve) => {
@@ -545,9 +564,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (this.plebbit.plebbitRpcClient && this._updateRpcSubscriptionId) {
             // We're updating a remote sub here
             await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            this._setRpcClientState("stopped");
             this._updateRpcSubscriptionId = undefined;
-        } else if (this.plebbit.plebbitRpcClient) {
+            log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);
+        } else if (this.plebbit.plebbitRpcClient && this._startRpcSubscriptionId) {
             // Subplebbit is running over RPC
+            await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            this._setStartedState("stopped");
+            this._setRpcClientState("stopped");
+            this._startRpcSubscriptionId = undefined;
+            log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
         } else if (this._sync) {
             // Subplebbit is running locally
             await this._clientsManager
@@ -1479,7 +1506,49 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async start() {
         const log = Logger("plebbit-js:subplebbit:start");
 
-        if (this.plebbit.plebbitRpcClient) return this.plebbit.plebbitRpcClient.startSubplebbit(this.address);
+        if (this.plebbit.plebbitRpcClient) {
+            try {
+                this._startRpcSubscriptionId = await this.plebbit.plebbitRpcClient.startSubplebbit(this.address);
+            } catch (e) {
+                log.error(`Failed to start subplebbit (${this.address}) from RPC due to error`, e);
+                this._setState("stopped");
+                this._setStartedState("failed");
+                throw e;
+            }
+            this.plebbit.plebbitRpcClient
+                .getSubscription(this._startRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                    log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                    this._rawSubplebbitType = updateProps.params.result;
+                    await this.initSubplebbit(this._rawSubplebbitType);
+                    this.emit("update", this);
+                })
+                .on("startedstatechange", (args) => {
+                    const newStartedState: Subplebbit["startedState"] = args.params.result;
+                    this._setStartedState(newStartedState);
+                    this._updateRpcClientStateFromStartedState(newStartedState);
+                })
+                .on("challengerequest", (args) =>
+                    this.emit("challengerequest", <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result))
+                )
+                .on("challenge", (args) =>
+                    this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result))
+                )
+                .on("challengeanswer", (args) =>
+                    this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
+                )
+                .on("challengeverification", (args) =>
+                    this.emit(
+                        "challengeverification",
+                        <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(args.params.result)
+                    )
+                )
+
+                .on("error", (args) => this.emit("error", args.params.result));
+
+            this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
+            return;
+        }
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this._clientsManager.getDefaultIpfs())
             throwWithErrorCode("ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE", { ipfsHttpClientOptions: this.plebbit.ipfsHttpClientsOptions });

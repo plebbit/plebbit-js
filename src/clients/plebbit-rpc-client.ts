@@ -147,8 +147,15 @@ export default class PlebbitRpcClient {
         return subplebbit;
     }
 
-    async startSubplebbit(subplebbitAddress: string): Promise<void> {
-        await this._webSocketClient.call("startSubplebbit", [subplebbitAddress]);
+    private _initSubscriptionEvent(subscriptionId: number) {
+        if (!this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId] = new EventEmitter();
+        if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [];
+    }
+
+    async startSubplebbit(subplebbitAddress: string) {
+        const subscriptionId = <number>await this._webSocketClient.call("startSubplebbit", [subplebbitAddress]);
+        this._initSubscriptionEvent(subscriptionId);
+        return subscriptionId;
     }
 
     async stopSubplebbit(subplebbitAddress: string): Promise<void> {
@@ -168,6 +175,7 @@ export default class PlebbitRpcClient {
 
     async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
         const subscriptionId = <number>await this._webSocketClient.call("subplebbitUpdate", [subplebbitAddress]);
+        this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
