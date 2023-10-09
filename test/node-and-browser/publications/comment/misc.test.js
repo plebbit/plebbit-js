@@ -147,6 +147,63 @@ describe("createComment", async () => {
         expect(updateHasBeenEmitted).to.be.false;
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
+    it(`comment.update() emit an error if CommentUpdate signature is invalid`, async () => {
+        // Should emit an error as well as continue the update loop
+
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
+
+        invalidCommentUpdateJson.upvoteCount += 1234; // Invalidate signature
+
+        expect(
+            await verifyCommentUpdate(
+                invalidCommentUpdateJson,
+                true,
+                plebbit._clientsManager,
+                subplebbit.address,
+                { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
+                false
+            )
+        ).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        const createdComment = await plebbit.createComment({
+            cid: subplebbit.posts.pages.hot.comments[0].cid,
+            ...subplebbit.posts.pages.hot.comments[0].toJSONIpfs()
+        });
+
+        let loadingRetries = 0;
+        let errorsEmittedCount = 0;
+        createdComment._retryLoadingCommentUpdate = () => {
+            loadingRetries++;
+            return invalidCommentUpdateJson;
+        };
+
+        let updateHasBeenEmitted = false;
+        createdComment.once("update", () => (updateHasBeenEmitted = true));
+        await createdComment.update();
+
+        await new Promise((resolve) =>
+            createdComment.on("error", (err) => {
+                expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
+                errorsEmittedCount++;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+
+        expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+        expect(createdComment.state).to.equal("updating");
+        expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+        expect(updateHasBeenEmitted).to.be.false;
+        expect(loadingRetries).to.be.above(2);
+        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
 
         await createdComment.stop();
     });
