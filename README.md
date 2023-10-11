@@ -294,12 +294,18 @@ ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeRequestMessage.publication` property for convenience (not part of the broadcasted pubsub message) */
 }
 ChallengeMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
-  encryptedChallenges: Encrypted // a challenge message has a challenges array with 1 or more challenges
-  // plebbit-js should decrypt the challenges when possible, and add a `challenges: Challenge[]` property for convenience (not part of the broadcasted pubsub message)
+  encrypted: Encrypted
+  /* ChallengeMessage.encrypted.ciphertext decrypts to JSON {
+    challenges: Challenge[]
+  }
+  plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeMessage.challenges` property for convenience (not part of the broadcasted pubsub message) */
 }
 ChallengeAnswerMessage extends PubsubMessage /* (sent by post author) */ {
-  encryptedChallengeAnswers: Encrypted // for example ['2+2=4', '1+7=8']
-  // plebbit-js should decrypt the challengeAnswers when possible, and add a `challengeAnswers: string[]` property for convenience (not part of the broadcasted pubsub message)
+  encrypted: Encrypted
+  /* ChallengeAnswerMessage.encrypted.ciphertext decrypts to JSON {
+    challengeAnswers: string[] // for example ['2+2=4', '1+7=8']
+  }
+  plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeAnswerMessage.challengeAnswers` property for convenience (not part of the broadcasted pubsub message) */
 }
 ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner) */ {
   challengeSuccess: bool // true if the challenge was successfully completed by the requester
