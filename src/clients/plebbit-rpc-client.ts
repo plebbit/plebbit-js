@@ -1,11 +1,8 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
-    ChallengeAnswerMessageType,
     CommentIpfsType,
-    CreateCommentEditOptions,
-    CreateCommentOptions,
     CreateSubplebbitOptions,
-    CreateVoteOptions,
+    DecryptedChallengeRequest,
     InternalSubplebbitRpcType,
     PageIpfs,
     SubplebbitEditOptions,
@@ -179,17 +176,17 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async publishComment(commentProps: CreateCommentOptions) {
+    async publishComment(commentProps: DecryptedChallengeRequest) {
         const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
         return subscriptionId;
     }
 
-    async publishCommentEdit(commentEditProps: CreateCommentEditOptions) {
+    async publishCommentEdit(commentEditProps: DecryptedChallengeRequest) {
         const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
         return subscriptionId;
     }
 
-    async publishVote(voteProps: CreateVoteOptions) {
+    async publishVote(voteProps: DecryptedChallengeRequest) {
         const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
         return subscriptionId;
     }
@@ -202,6 +199,11 @@ export default class PlebbitRpcClient {
 
     async publishChallengeAnswers(subscriptionId: number, challengeAnswers: string[]) {
         const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
+        return res;
+    }
+
+    async resolveAuthorAddress(authorAddress: string) {
+        const res = <string | undefined>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
         return res;
     }
 

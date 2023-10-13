@@ -50,7 +50,10 @@ import {
     VotePubsubMessage,
     InternalSubplebbitRpcType,
     DecryptedChallengeMessageType,
-    DecryptedChallengeVerificationMessageType
+    DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeRequest,
+    DecryptedChallengeAnswer,
+    DecryptedChallenge
 } from "./types";
 import {
     getIpfsKeyFromPrivateKey,
@@ -1011,15 +1014,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         request: ChallengeRequestMessage | ChallengeAnswerMessage
     ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
-        let decrypted: any | undefined;
+        let decrypted: DecryptedChallengeAnswer | DecryptedChallengeRequest;
         try {
-            decrypted = await decryptEd25519AesGcmPublicKeyBuffer(
-                request.type === "CHALLENGEANSWER" ? request.encryptedChallengeAnswers : request.encryptedPublication,
-                this.signer.privateKey,
-                request.signature.publicKey
+            decrypted = JSON.parse(
+                await decryptEd25519AesGcmPublicKeyBuffer(request.encrypted, this.signer.privateKey, request.signature.publicKey)
             );
-            if (request.type === "CHALLENGEREQUEST") return { ...request, publication: JSON.parse(decrypted) };
-            else if (request.type === "CHALLENGEANSWER") return { ...request, challengeAnswers: JSON.parse(decrypted) };
+            if (request.type === "CHALLENGEREQUEST") return { ...request, ...(<DecryptedChallengeRequest>decrypted) };
+            else if (request.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
         } catch (e) {
             log.error(`Failed to decrypt request (${request.challengeRequestId}) due to error`, e);
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
@@ -1098,7 +1099,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
-        await this.dbHandler.insertChallengeRequest(request.toJSONForDb(), undefined);
+        await this.dbHandler.insertChallengeRequest(
+            request.toJSONForDb(decryptedRequest.challengeAnswers, decryptedRequest.challengeCommentCids),
+            undefined
+        );
         await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest);
         this._challengeIdToChallengeRequest[decryptedRequest.challengeRequestId.toString()] = decryptedRequest;
         this.emit("challengerequest", decryptedRequest);
@@ -1109,9 +1113,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log.trace(`(${decryptedRequest.challengeRequestId}): No challenge is required`);
 
             const publicationOrReason = await this.storePublicationIfValid(decryptedRequest);
-            const encryptedPublication = lodash.isPlainObject(publicationOrReason)
+            const encrypted = lodash.isPlainObject(publicationOrReason)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
-                      deterministicStringify(publicationOrReason),
+                      deterministicStringify({ publication: publicationOrReason }),
                       this.signer.privateKey,
                       request.signature.publicKey
                   )
@@ -1122,7 +1126,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 challengeRequestId: request.challengeRequestId,
                 challengeSuccess: typeof publicationOrReason !== "string",
                 reason: typeof publicationOrReason === "string" ? publicationOrReason : reasonForSkippingCaptcha,
-                encryptedPublication: encryptedPublication,
+                encrypted,
                 challengeErrors: undefined,
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION,
@@ -1151,13 +1155,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 publication: typeof publicationOrReason === "string" ? undefined : publicationOrReason
             });
         } else {
+            const toEncryptChallenge: DecryptedChallenge = { challenges: providedChallenges };
             const toSignChallenge: Omit<ChallengeMessageType, "signature"> = {
                 type: "CHALLENGE",
                 protocolVersion: env.PROTOCOL_VERSION,
                 userAgent: env.USER_AGENT,
                 challengeRequestId: request.challengeRequestId,
-                encryptedChallenges: await encryptEd25519AesGcmPublicKeyBuffer(
-                    deterministicStringify(providedChallenges),
+                encrypted: await encryptEd25519AesGcmPublicKeyBuffer(
+                    deterministicStringify(toEncryptChallenge),
                     this.signer.privateKey,
                     request.signature.publicKey
                 ),
@@ -1208,9 +1213,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const publicationOrReason = await this.storePublicationIfValid(
                 this._challengeIdToChallengeRequest[decryptedChallengeAnswer.challengeRequestId.toString()]
             ); // could contain "publication" or "reason"
-            const encryptedPublication = lodash.isPlainObject(publicationOrReason)
+            const encrypted = lodash.isPlainObject(publicationOrReason)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
-                      deterministicStringify(publicationOrReason),
+                      deterministicStringify({ publication: publicationOrReason }),
                       this.signer.privateKey,
                       challengeAnswer.signature.publicKey
                   )
@@ -1221,7 +1226,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 challengeRequestId: challengeAnswer.challengeRequestId,
                 challengeSuccess: typeof publicationOrReason !== "string",
                 reason: typeof publicationOrReason === "string" ? publicationOrReason : undefined,
-                encryptedPublication: encryptedPublication,
+                encrypted,
                 challengeErrors: challengeErrors,
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION,
@@ -1248,7 +1253,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             this.emit("challengeverification", {
                 ...challengeVerification,
-                publication: encryptedPublication ? <CommentIpfsWithCid>publicationOrReason : undefined
+                publication: encrypted ? <CommentIpfsWithCid>publicationOrReason : undefined
             });
         } else {
             log.trace(`Challenge (${decryptedChallengeAnswer.challengeRequestId}) has been answered incorrectly`);

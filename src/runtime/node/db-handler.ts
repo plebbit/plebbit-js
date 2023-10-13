@@ -262,6 +262,8 @@ export class DbHandler {
             table.json("acceptedChallengeTypes").nullable(); // string[]
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.json("challengeCommentCids").nullable(); // string[]
+            table.json("challengeAnswers").nullable(); // string[]
         });
     }
 

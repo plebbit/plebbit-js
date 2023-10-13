@@ -10,8 +10,8 @@ import {Plebbit} from '../../dist/node/plebbit'
 import {
   CommentEditPubsubMessage,
   CommentPubsubMessage,
-  CreateCommentOptions,
   CreateSubplebbitOptions,
+  DecryptedChallengeRequest,
   PlebbitOptions,
   SubplebbitEditOptions,
   VotePubsubMessage,
@@ -378,12 +378,16 @@ class PlebbitWsServer extends EventEmitter {
   }
 
   async publishComment(params: any, connectionId: string) {
-    const createCommentOptions = <CommentPubsubMessage>params[0]
+    const publishOptions = <DecryptedChallengeRequest>params[0]
     const subscriptionId = generateSubscriptionId()
 
     const sendEvent = (event: string, result: any) => this.jsonRpcSendNotification({method: 'publishComment', subscription: subscriptionId, event, result, connectionId})
 
-    const comment = await this.plebbit.createComment(createCommentOptions)
+    const comment = await this.plebbit.createComment({
+      challengeAnswers: publishOptions.challengeAnswers,
+      challengeCommentCids: publishOptions.challengeCommentCids,
+      ...(<CommentPubsubMessage>publishOptions.publication),
+    })
     this.publishing[subscriptionId] = comment
     comment.on('challenge', (challenge) => sendEvent('challenge', encodePubsubMsg(challenge)))
     comment.on('challengeanswer', (answer) => sendEvent('challengeanswer', encodePubsubMsg(answer)))
@@ -415,12 +419,16 @@ class PlebbitWsServer extends EventEmitter {
   }
 
   async publishVote(params: any, connectionId: string) {
-    const createVoteOptions = <VotePubsubMessage>params[0]
+    const publishOptions = <DecryptedChallengeRequest>params[0]
     const subscriptionId = generateSubscriptionId()
 
     const sendEvent = (event: string, result: any) => this.jsonRpcSendNotification({method: 'publishVote', subscription: subscriptionId, event, result, connectionId})
 
-    const vote = await this.plebbit.createVote(createVoteOptions)
+    const vote = await this.plebbit.createVote({
+      ...(<VotePubsubMessage>publishOptions.publication),
+      challengeAnswers: publishOptions.challengeAnswers,
+      challengeCommentCids: publishOptions.challengeCommentCids,
+    })
     this.publishing[subscriptionId] = vote
     vote.on('challenge', (challenge) => sendEvent('challenge', encodePubsubMsg(challenge)))
     vote.on('challengeanswer', (answer) => sendEvent('challengeanswer', encodePubsubMsg(answer)))
@@ -452,13 +460,17 @@ class PlebbitWsServer extends EventEmitter {
   }
 
   async publishCommentEdit(params: any, connectionId: string) {
-    const createCommentEditOptions = <CommentEditPubsubMessage>params[0]
+    const publishOptions = <DecryptedChallengeRequest>params[0]
     const subscriptionId = generateSubscriptionId()
 
     const sendEvent = (event: string, result: any) =>
       this.jsonRpcSendNotification({method: 'publishCommentEdit', subscription: subscriptionId, event, result, connectionId})
 
-    const commentEdit = await this.plebbit.createCommentEdit(createCommentEditOptions)
+    const commentEdit = await this.plebbit.createCommentEdit({
+      ...(<CommentEditPubsubMessage>publishOptions.publication),
+      challengeCommentCids: publishOptions.challengeCommentCids,
+      challengeAnswers: publishOptions.challengeAnswers,
+    })
     this.publishing[subscriptionId] = commentEdit
     commentEdit.on('challenge', (challenge) => sendEvent('challenge', encodePubsubMsg(challenge)))
     commentEdit.on('challengeanswer', (answer) => sendEvent('challengeanswer', encodePubsubMsg(answer)))

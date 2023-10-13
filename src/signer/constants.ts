@@ -153,27 +153,27 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
 export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "acceptedChallengeTypes",
     "timestamp"
 ] as const;
 export const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[] = [
     "type",
     "challengeRequestId",
-    "encryptedChallenges",
+    "encrypted",
     "timestamp"
 ] as const;
 export const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[] = [
     "type",
     "challengeRequestId",
-    "encryptedChallengeAnswers",
+    "encrypted",
     "timestamp"
 ] as const;
 export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[] = [
     "reason",
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "challengeSuccess",
     "challengeErrors",
     "timestamp"

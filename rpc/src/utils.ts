@@ -25,33 +25,18 @@ export const encodePubsubMsg = (
     | EncodedDecryptedChallengeAnswerMessageType
     | EncodedDecryptedChallengeRequestMessageType
     | EncodedDecryptedChallengeVerificationMessageType = clone(pubsubMsg)
+
   encodedMsg.challengeRequestId = uint8ArrayToString(pubsubMsg.challengeRequestId, 'base58btc')
-  if ((<any>pubsubMsg)['encryptedPublication']) {
-    pubsubMsg = <DecryptedChallengeRequestMessageType | DecryptedChallengeVerificationMessageType>pubsubMsg
-    encodedMsg = <EncodedDecryptedChallengeRequestMessageType | EncodedDecryptedChallengeVerificationMessageType>encodedMsg
-    encodedMsg.encryptedPublication.tag = uint8ArrayToString(pubsubMsg.encryptedPublication?.tag, 'base64')
-    encodedMsg.encryptedPublication.iv = uint8ArrayToString(pubsubMsg.encryptedPublication?.iv, 'base64')
-    encodedMsg.encryptedPublication.ciphertext = uint8ArrayToString(pubsubMsg.encryptedPublication?.ciphertext, 'base64')
-  }
+  if (pubsubMsg.encrypted)
+    encodedMsg.encrypted = {
+      tag: uint8ArrayToString(pubsubMsg.encrypted?.tag, 'base64'),
+      iv: uint8ArrayToString(pubsubMsg.encrypted?.iv, 'base64'),
+      ciphertext: uint8ArrayToString(pubsubMsg.encrypted?.ciphertext, 'base64'),
+      type: pubsubMsg.encrypted.type,
+    }
 
   encodedMsg.signature.publicKey = uint8ArrayToString(pubsubMsg.signature.publicKey, 'base64')
   encodedMsg.signature.signature = uint8ArrayToString(pubsubMsg.signature.signature, 'base64')
-
-  if ((<any>pubsubMsg)['encryptedChallenges']) {
-    pubsubMsg = <DecryptedChallengeMessageType>pubsubMsg
-    encodedMsg = <EncodedDecryptedChallengeMessageType>encodedMsg
-    encodedMsg.encryptedChallenges.ciphertext = uint8ArrayToString(pubsubMsg.encryptedChallenges.ciphertext, 'base64')
-    encodedMsg.encryptedChallenges.iv = uint8ArrayToString(pubsubMsg.encryptedChallenges.iv, 'base64')
-    encodedMsg.encryptedChallenges.tag = uint8ArrayToString(pubsubMsg.encryptedChallenges.tag, 'base64')
-  }
-
-  if ((<any>pubsubMsg)['encryptedChallengeAnswers']) {
-    pubsubMsg = <DecryptedChallengeAnswerMessageType>pubsubMsg
-    encodedMsg = <EncodedDecryptedChallengeAnswerMessageType>encodedMsg
-    encodedMsg.encryptedChallengeAnswers.ciphertext = uint8ArrayToString(pubsubMsg.encryptedChallengeAnswers.ciphertext, 'base64')
-    encodedMsg.encryptedChallengeAnswers.iv = uint8ArrayToString(pubsubMsg.encryptedChallengeAnswers.iv, 'base64')
-    encodedMsg.encryptedChallengeAnswers.tag = uint8ArrayToString(pubsubMsg.encryptedChallengeAnswers.tag, 'base64')
-  }
 
   return encodedMsg
 }

@@ -245,42 +245,19 @@ export function decodePubsubMsgFromRpc(
         | EncodedDecryptedChallengeVerificationMessageType
 ) {
     //@ts-expect-error
-    let parsedPubsubMsg:
+    const parsedPubsubMsg:
         | DecryptedChallengeMessageType
         | DecryptedChallengeAnswerMessageType
         | DecryptedChallengeRequestMessageType
         | DecryptedChallengeVerificationMessageType = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg["encryptedPublication"]) {
-        pubsubMsg = <EncodedDecryptedChallengeVerificationMessageType | EncodedDecryptedChallengeRequestMessageType> pubsubMsg;
-        parsedPubsubMsg = <DecryptedChallengeRequestMessageType | DecryptedChallengeVerificationMessageType> parsedPubsubMsg;
-        parsedPubsubMsg.encryptedPublication.tag = uint8ArrayFromString(pubsubMsg.encryptedPublication.tag, "base64");
-        parsedPubsubMsg.encryptedPublication.iv = uint8ArrayFromString(pubsubMsg.encryptedPublication.iv, "base64");
-        parsedPubsubMsg.encryptedPublication.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedPublication.ciphertext, "base64");
+    if (pubsubMsg.encrypted){
+        parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
+        parsedPubsubMsg.encrypted.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
+        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");    
     }
-
     parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
     parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
-
-    if (pubsubMsg["encryptedChallenges"]) {
-        pubsubMsg = <EncodedDecryptedChallengeMessageType> pubsubMsg;
-        parsedPubsubMsg = <DecryptedChallengeMessageType> parsedPubsubMsg;
-        parsedPubsubMsg.encryptedChallenges.ciphertext = uint8ArrayFromString(pubsubMsg.encryptedChallenges.ciphertext, "base64");
-        parsedPubsubMsg.encryptedChallenges.iv = uint8ArrayFromString(pubsubMsg.encryptedChallenges.iv, "base64");
-        parsedPubsubMsg.encryptedChallenges.tag = uint8ArrayFromString(pubsubMsg.encryptedChallenges.tag, "base64");
-    }
-
-    if (pubsubMsg["encryptedChallengeAnswers"]) {
-        pubsubMsg = <EncodedDecryptedChallengeAnswerMessageType> pubsubMsg;
-        parsedPubsubMsg = <DecryptedChallengeAnswerMessageType> parsedPubsubMsg;
-
-        parsedPubsubMsg.encryptedChallengeAnswers.ciphertext = uint8ArrayFromString(
-            pubsubMsg.encryptedChallengeAnswers.ciphertext,
-            "base64"
-        );
-        parsedPubsubMsg.encryptedChallengeAnswers.iv = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.iv, "base64");
-        parsedPubsubMsg.encryptedChallengeAnswers.tag = uint8ArrayFromString(pubsubMsg.encryptedChallengeAnswers.tag, "base64");
-    }
 
     return parsedPubsubMsg;
 }

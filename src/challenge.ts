@@ -16,7 +16,7 @@ import { Encrypted, PubsubSignature } from "./signer/constants";
 import assert from "assert";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
-    encryptedPublication: Encrypted;
+    encrypted: Encrypted;
     type: "CHALLENGEREQUEST";
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     acceptedChallengeTypes?: string[];
@@ -28,7 +28,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
         this.acceptedChallengeTypes = props.acceptedChallengeTypes;
-        this.encryptedPublication = props.encryptedPublication;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -40,7 +40,7 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
             acceptedChallengeTypes: this.acceptedChallengeTypes,
-            encryptedPublication: this.encryptedPublication,
+            encrypted: this.encrypted,
             signature: this.signature,
             userAgent: this.userAgent,
             protocolVersion: this.protocolVersion,
@@ -48,19 +48,18 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
         };
     }
 
-    toJSONForDb(): ChallengeRequestsTableRowInsert {
-        const acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined;
-        if (acceptedChallengeTypes === "[object Object]") throw Error(`challengeTypes  shouldn't be [object Object]`);
-
+    toJSONForDb(challengeAnswers: string[] | undefined, challengeCommentCids: string[] | undefined): ChallengeRequestsTableRowInsert {
         return {
-            ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]),
-            acceptedChallengeTypes
+            ...lodash.omit(this.toJSON(), ["type", "encrypted"]),
+            acceptedChallengeTypes: Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined,
+            challengeAnswers: Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : undefined,
+            challengeCommentCids: Array.isArray(challengeCommentCids) ? JSON.stringify(challengeCommentCids) : undefined
         };
     }
 }
 
 export class ChallengeMessage implements ChallengeMessageType {
-    encryptedChallenges: Encrypted;
+    encrypted: Encrypted;
     type: "CHALLENGE";
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: PubsubSignature;
@@ -71,7 +70,7 @@ export class ChallengeMessage implements ChallengeMessageType {
     constructor(props: Omit<ChallengeMessageType, "type">) {
         this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
-        this.encryptedChallenges = props.encryptedChallenges;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -80,7 +79,7 @@ export class ChallengeMessage implements ChallengeMessageType {
 
     toJSON(): ChallengeMessageType {
         return {
-            encryptedChallenges: this.encryptedChallenges,
+            encrypted: this.encrypted,
             type: this.type,
             challengeRequestId: this.challengeRequestId,
             signature: this.signature,
@@ -96,13 +95,13 @@ export class ChallengeMessage implements ChallengeMessageType {
         const challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
         if (challengeTypesFormattedForDb === "[object Object]") throw Error(`challengeTypes  shouldn't be [object Object]`);
 
-        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallenges"]), challengeTypes: challengeTypesFormattedForDb };
+        return { ...lodash.omit(this.toJSON(), ["type", "encrypted"]), challengeTypes: challengeTypesFormattedForDb };
     }
 }
 
 export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
-    encryptedChallengeAnswers: Encrypted;
+    encrypted: Encrypted;
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
@@ -110,7 +109,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">) {
         this.type = "CHALLENGEANSWER";
-        this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
+        this.encrypted = props.encrypted;
         this.challengeRequestId = props.challengeRequestId;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
@@ -122,7 +121,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            encryptedChallengeAnswers: this.encryptedChallengeAnswers,
+            encrypted: this.encrypted,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent,
@@ -135,7 +134,7 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
         const challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
         if (challengeAnswersFormattedForDb === "[object Object]") throw Error(`challengeAnswers  shouldn't be [object Object]`);
 
-        return { ...lodash.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"]), challengeAnswers: challengeAnswersFormattedForDb };
+        return { ...lodash.omit(this.toJSON(), ["type", "encrypted"]), challengeAnswers: challengeAnswersFormattedForDb };
     }
 }
 
@@ -145,7 +144,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
-    encryptedPublication?: Encrypted;
+    encrypted?: Encrypted;
     signature: PubsubSignature;
     protocolVersion: "1.0.0";
     userAgent: string;
@@ -157,7 +156,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
         this.challengeSuccess = props.challengeSuccess;
         this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
-        this.encryptedPublication = props.encryptedPublication;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -171,7 +170,7 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
             challengeSuccess: this.challengeSuccess,
             challengeErrors: this.challengeErrors,
             reason: this.reason,
-            encryptedPublication: this.encryptedPublication,
+            encrypted: this.encrypted,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent,
@@ -180,10 +179,9 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
     }
 
     toJSONForDb(): ChallengeVerificationsTableRowInsert {
-        const challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined;
-
-        if (challengeErrorsFormattedForDb === "[object Object]") throw Error(`challengeErrors  shouldn't be [object Object]`);
-
-        return { ...lodash.omit(this.toJSON(), ["type", "encryptedPublication"]), challengeErrors: challengeErrorsFormattedForDb };
+        return {
+            ...lodash.omit(this.toJSON(), ["type", "encrypted"]),
+            challengeErrors: Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined
+        };
     }
 }

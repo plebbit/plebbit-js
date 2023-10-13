@@ -133,7 +133,9 @@ export type Wallet = {
     // ...will add more stuff later, like signer or send/sign or balance
 };
 
-export interface PublicationType extends Required<CreatePublicationOptions> {
+export interface PublicationType
+    extends Required<Omit<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">>,
+        Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids"> {
     author: AuthorIpfsType;
     signature: JsonSignature; // sign immutable fields like author, title, content, timestamp to prevent tampering
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
@@ -142,7 +144,9 @@ export interface PublicationType extends Required<CreatePublicationOptions> {
 export interface CreatePublicationOptions {
     author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
-    timestamp?: number; // // Time of publishing in seconds, Math.round(Date.now() / 1000) if undefined
+    timestamp?: number; // // Time of publishing in seconds, Defaults to Math.round(Date.now() / 1000) if undefined
+    challengeAnswers?: string[]; // Optional pre-answers to subplebbit.challenges
+    challengeCommentCids?: string[]; // Optional comment cids for subplebbit.challenges related to author karma/age in other subs
 }
 
 // CommentEdit section
@@ -203,45 +207,54 @@ export interface ChallengeType {
 export interface ChallengeRequestMessageType extends PubsubMessage {
     challengeRequestId: Uint8Array; // (byte string in cbor) // multihash of challengeRequestMessage.signature.publicKey, each challengeRequestMessage must use a new public key
     type: "CHALLENGEREQUEST";
-    encryptedPublication: Encrypted;
+    encrypted: Encrypted;
     acceptedChallengeTypes?: string[];
 }
 
-export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
+export interface DecryptedChallengeRequest {
+    // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
+    challengeAnswers: string[] | undefined; // some challenges might be included in subplebbit.challenges and can be pre-answered
+    challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 }
 
+export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
+
 export interface EncodedDecryptedChallengeRequestMessageType
-    extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encryptedPublication" | "signature">,
+    extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
-    encryptedPublication: EncryptedEncoded; // all base64 strings
+    encrypted: EncryptedEncoded; // all base64 strings
 }
 
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGE";
-    encryptedChallenges: Encrypted;
+    encrypted: Encrypted; // Will decrypt to {challenges: ChallengeType[]}
 }
 
-export interface DecryptedChallengeMessageType extends ChallengeMessageType {
+export interface DecryptedChallenge {
     challenges: ChallengeType[];
 }
 
+export interface DecryptedChallengeMessageType extends ChallengeMessageType, DecryptedChallenge {}
+
 export interface EncodedDecryptedChallengeMessageType
-    extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encryptedChallenges" | "signature">,
+    extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
-    encryptedChallenges: EncryptedEncoded; // all base64 strings
+    encrypted: EncryptedEncoded; // all base64 strings
 }
 
 export interface ChallengeAnswerMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGEANSWER";
-    encryptedChallengeAnswers: Encrypted;
+    encrypted: Encrypted; // Will decrypt to {challengeAnswers: string[]}
 }
 
-export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
-    challengeAnswers: string[];
+export interface DecryptedChallengeAnswer {
+    challengeAnswers: string[]; // for example ['2+2=4', '1+7=8']
 }
+
+export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType, DecryptedChallengeAnswer {}
 
 export interface BaseEncodedPubsubMessage {
     challengeRequestId: string; // base64 string
@@ -249,9 +262,9 @@ export interface BaseEncodedPubsubMessage {
 }
 
 export interface EncodedDecryptedChallengeAnswerMessageType
-    extends Omit<DecryptedChallengeAnswerMessageType, "challengeRequestId" | "encryptedChallengeAnswers" | "signature">,
+    extends Omit<DecryptedChallengeAnswerMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
-    encryptedChallengeAnswers: EncryptedEncoded; // all base64 strings
+    encrypted: EncryptedEncoded; // all base64 strings
 }
 
 export interface ChallengeVerificationMessageType extends PubsubMessage {
@@ -260,17 +273,20 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
-    encryptedPublication?: Encrypted;
+    encrypted?: Encrypted; // Can be undefined if challengeSuccess is false or publication is of a vote/commentedit
 }
 
-export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
+export interface DecryptedChallengeVerification {
     publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
+    // signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
 }
+
+export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType, DecryptedChallengeVerification {}
 
 export interface EncodedDecryptedChallengeVerificationMessageType
-    extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encryptedPublication" | "signature">,
+    extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
-    encryptedPublication: EncryptedEncoded; // all base64 strings
+    encrypted?: EncryptedEncoded; // all base64 strings
 }
 
 export type SubplebbitStats = {
@@ -567,7 +583,9 @@ export type OnlyDefinedProperties<T> = Pick<
 
 // Define database tables and fields here
 
-export interface CommentsTableRow extends CommentIpfsWithCid, Required<Pick<CommentType, "ipnsKeyName">> {
+export interface CommentsTableRow
+    extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids">,
+        Required<Pick<CommentType, "ipnsKeyName">> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     id: number;
@@ -586,7 +604,7 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 
 // Votes table
 
-export interface VotesTableRow extends VoteType {
+export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
@@ -596,8 +614,11 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 
 // Challenge Request table
 
-export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {
+export interface ChallengeRequestsTableRow
+    extends Omit<DecryptedChallengeRequestMessageType, "type" | "encrypted" | "publication" | "challengeAnswers" | "challengeCommentCids"> {
     insertedAt: number;
+    challengeAnswers?: string; // Needs to stringify from string[]
+    challengeCommentCids?: string; // Needs to stringify from string[]
 }
 
 export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
@@ -605,7 +626,7 @@ export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsT
 }
 
 // Challenges table
-export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
+export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encrypted"> {
     challengeTypes: ChallengeType["type"][];
     insertedAt: number;
 }
@@ -616,7 +637,7 @@ export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "inse
 
 // Challenge answers table
 
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encrypted"> {
     insertedAt: number;
 }
 
@@ -625,7 +646,8 @@ export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTab
 }
 
 // Challenge verifications table
-export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {
+export interface ChallengeVerificationsTableRow
+    extends Omit<DecryptedChallengeVerificationMessageType, "type" | "encrypted" | "publication"> {
     insertedAt: number;
 }
 
@@ -642,7 +664,7 @@ export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt
 
 // Comment edits table
 
-export interface CommentEditsTableRow extends CommentEditType {
+export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
