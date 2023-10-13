@@ -4,8 +4,6 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 // example of node only tests
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe("plebbit", () => {
     it("has default plebbit options", async () => {
         const plebbit = await Plebbit({ dataPath: globalThis["window"]?.plebbitDataPath });

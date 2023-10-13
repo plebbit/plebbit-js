@@ -12,7 +12,6 @@ const subplebbitAddress = signers[0].address;
 
 // TODO add a test where you load all posts using lastPostCid and compare them with pages
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");

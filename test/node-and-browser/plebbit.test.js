@@ -41,7 +41,7 @@ describe("Plebbit options", async () => {
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
         expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
-        expect(Object.keys(testPlebbit.clients.ipfsGateways)).to.deep.equal(["http://127.0.0.1:18080"]);
+        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
@@ -52,7 +52,7 @@ describe("Plebbit options", async () => {
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
 
-        expect(Object.keys(plebbit.clients.ipfsGateways)).to.deep.equal([]);
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
         expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
 

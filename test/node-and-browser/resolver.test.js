@@ -8,7 +8,6 @@ const { messages } = require("../../dist/node/errors");
 const { mockPlebbit, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
 
 const mockComments = [];
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe(`Resolving text records`, async () => {
     it(`Can resolve correctly with just viem`, async () => {
