@@ -18,9 +18,10 @@ import {
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
-import { Subplebbit } from "./subplebbit";
+import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
+import { Flair } from "./subplebbit/types";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
@@ -78,10 +79,6 @@ export interface PagesTypeIpfs {
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
 
-export type SubplebbitEncryption = {
-    type: "ed25519-aes-gcm"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    publicKey: string; // 32 bytes base64 string (same as subplebbit.signer.publicKey)
-};
 export interface CreateCommentOptions extends CreatePublicationOptions {
     signer: Pick<SignerType, "privateKey" | "type">;
     parentCid?: string; // The parent comment CID, undefined if comment is a post, same as postCid if comment is top level
@@ -130,6 +127,8 @@ export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
 
 export type Wallet = {
     address: string;
+    timestamp: number; // in seconds, allows partial blocking multiple authors using the same wallet
+    signature: JsonSignature; // type 'eip191' {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress}","{timestamp:${wallet.timestamp}"}
     // ...will add more stuff later, like signer or send/sign or balance
 };
 
@@ -189,7 +188,6 @@ export type Nft = {
     signature: JsonSignature; // proof that author.address owns the nft
     // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 };
-export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
@@ -220,11 +218,23 @@ export interface DecryptedChallengeRequest {
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
+export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
+    // This interface will query author.subplebbit and embed it within publication.author
+    // We may add author
+    publication: (VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage) & {
+        author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+    };
+}
+
 export interface EncodedDecryptedChallengeRequestMessageType
     extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
     encrypted: EncryptedEncoded; // all base64 strings
 }
+
+export interface EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+    extends Omit<EncodedDecryptedChallengeRequestMessageType, "publication">,
+        Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, "publication"> {}
 
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
@@ -277,11 +287,21 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeVerification {
-    publication?: CommentIpfsWithCid; // Only comments receive new props after verification for now
+    publication: CommentIpfsWithCid | undefined; // Only comments receive new props after verification for now
     // signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
 }
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType, DecryptedChallengeVerification {}
+
+export interface DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor extends DecryptedChallengeVerificationMessageType {
+    // This interface will query author.subplebbit and embed it within publication.author
+    // We may add author
+    publication:
+        | (CommentIpfsWithCid & {
+              author: CommentIpfsWithCid["author"] & { subplebbit: SubplebbitAuthor };
+          })
+        | undefined;
+}
 
 export interface EncodedDecryptedChallengeVerificationMessageType
     extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">,
@@ -289,120 +309,9 @@ export interface EncodedDecryptedChallengeVerificationMessageType
     encrypted?: EncryptedEncoded; // all base64 strings
 }
 
-export type SubplebbitStats = {
-    hourActiveUserCount: number;
-    dayActiveUserCount: number;
-    weekActiveUserCount: number;
-    monthActiveUserCount: number;
-    yearActiveUserCount: number;
-    allActiveUserCount: number;
-    hourPostCount: number;
-    dayPostCount: number;
-    weekPostCount: number;
-    monthPostCount: number;
-    yearPostCount: number;
-    allPostCount: number;
-};
-
-export type SubplebbitFeatures = {
-    // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-    noVideos?: boolean;
-    noSpoilers?: boolean; // author can't comment.spoiler = true their own comments
-    noImages?: boolean;
-    noVideoReplies?: boolean;
-    noSpoilerReplies?: boolean;
-    noImageReplies?: boolean;
-    noPolls?: boolean;
-    noCrossposts?: boolean;
-    noUpvotes?: boolean;
-    noDownvotes?: boolean;
-    noAuthors?: boolean; // no authors at all, like 4chan
-    anonymousAuthors?: boolean; // authors are given anonymous ids inside threads, like 4chan
-    noNestedReplies?: boolean; // no nested replies, like old school forums and 4chan
-    safeForWork?: boolean;
-    authorFlairs?: boolean; // authors can choose their own author flairs (otherwise only mods can)
-    requireAuthorFlairs?: boolean; // force authors to choose an author flair before posting
-    postFlairs?: boolean; // authors can choose their own post flairs (otherwise only mods can)
-    requirePostFlairs?: boolean; // force authors to choose a post flair before posting
-    noMarkdownImages?: boolean; // don't embed images in text posts markdown
-    noMarkdownVideos?: boolean; // don't embed videos in text posts markdown
-    markdownImageReplies?: boolean;
-    markdownVideoReplies?: boolean;
-};
-
-export type SubplebbitSuggested = {
-    // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
-    primaryColor?: string;
-    secondaryColor?: string;
-    avatarUrl?: string;
-    bannerUrl?: string;
-    backgroundUrl?: string;
-    language?: string;
-    // TODO: menu links, wiki pages, sidebar widgets
-};
-
-export type Flair = {
-    text: string;
-    backgroundColor?: string;
-    textColor?: string;
-    expiresAt?: number; // timestamp in second, a flair assigned to an author by a mod will follow the author in future comments, unless it expires
-};
-
-export type FlairOwner = "post" | "author";
-
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
-    signature: JsonSignature;
-    encryption: SubplebbitEncryption;
-    address: string;
-    shortAddress: string;
-    signer?: SignerType;
-    createdAt: number;
-    updatedAt: number;
-    pubsubTopic?: string;
-    statsCid?: string;
-    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts?: PagesTypeJson;
-}
-
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings"> {
-    posts?: PagesTypeIpfs;
-}
-
-export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
-    signer: Pick<SignerType, "address" | "privateKey" | "type">;
-    _subplebbitUpdateTrigger: boolean;
-}
-
-export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {}
-
-export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
-    createdAt?: number;
-    updatedAt?: number;
-    signer?: Pick<SignerType, "privateKey" | "type">;
-    encryption?: SubplebbitEncryption;
-    signature?: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
-}
-
-export interface SubplebbitEditOptions {
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole };
-    rules?: string[];
-    lastPostCid?: string;
-    pubsubTopic?: string;
-    challengeTypes?: ChallengeType[];
-    stats?: SubplebbitStats;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-    address?: string;
-    settings?: SubplebbitSettings;
-}
-
-export type SubplebbitSettings = {
-    fetchThumbnailUrls?: boolean;
-    fetchThumbnailUrlsProxyUrl?: string;
-};
+export interface EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
+    extends Omit<EncodedDecryptedChallengeVerificationMessageType, "publication">,
+        Pick<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, "publication"> {}
 
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
@@ -692,10 +601,10 @@ declare module "knex/types/tables" {
 
 // Event emitter declaration
 export interface SubplebbitEvents {
-    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
+    challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) => void;
 
     error: (error: PlebbitError) => void;
 

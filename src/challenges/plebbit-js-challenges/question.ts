@@ -1,3 +1,6 @@
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../types"
+
 const optionInputs = [
 {
     option: 'question',
@@ -16,11 +19,11 @@ const optionInputs = [
   }
 ]
 
-const type = 'text'
+const type: Challenge["type"] = "text/plain"
 
 const description = `Ask a question, like 'What is the password?'`
 
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number) => {
   let answer = subplebbitChallengeSettings?.options?.answer
   if (!answer) {
     throw Error('no option answer')
@@ -33,7 +36,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
   if (challengeAnswer === undefined) {
     return {
       challenge: subplebbitChallengeSettings?.options?.question,
-      verify: async (_answer) => {
+      verify: async (_answer: string) => {
         if (_answer === answer) return {
           success: true
         }
@@ -60,7 +63,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
   }
 }
 
-function ChallengeFileFactory (subplebbitChallengeSettings) {
+function ChallengeFileFactory (subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
   // some challenges can prepublish the challenge so that it can be preanswered
   // in the challengeRequestMessage
   const question = subplebbitChallengeSettings?.options?.question

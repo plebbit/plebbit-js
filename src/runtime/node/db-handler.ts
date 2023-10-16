@@ -1,6 +1,6 @@
 import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
 import knex, { Knex } from "knex";
-import { Subplebbit } from "../../subplebbit";
+import { Subplebbit } from "../../subplebbit/subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -24,7 +24,6 @@ import {
     SignersTableRow,
     SingersTableRowInsert,
     SubplebbitAuthor,
-    SubplebbitStats,
     VotesTableRow,
     VotesTableRowInsert
 } from "../../types";
@@ -37,6 +36,7 @@ import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../sort-handler";
+import { SubplebbitStats } from "../../subplebbit/types";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -876,9 +876,9 @@ export class DbHandler {
         return { ...banAuthor, ...authorFlairByMod };
     }
 
-    async querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor> {
+    async querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined> {
         const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
-        assert(authorCommentCids.length > 0);
+        if (authorCommentCids.length === 0) return undefined
         const authorComments: (CommentsTableRow & Pick<CommentUpdate, "upvoteCount" | "downvoteCount">)[] = [];
         for (const cidObj of authorCommentCids) {
             authorComments.push({

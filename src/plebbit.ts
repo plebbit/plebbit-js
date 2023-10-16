@@ -9,25 +9,21 @@ import {
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreatePublicationOptions,
-    CreateSubplebbitOptions,
     CreateVoteOptions,
     GatewayClient,
     IpfsClient,
     PlebbitEvents,
     PlebbitOptions,
-    PostType,
     PubsubClient,
-    SubplebbitIpfsType,
-    SubplebbitType,
     VotePubsubMessage,
     VoteType
 } from "./types";
 import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
-import { Subplebbit } from "./subplebbit";
+import { Subplebbit } from "./subplebbit/subplebbit";
 import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
-import { createSigner, Signer, verifyComment, verifySubplebbit } from "./signer";
+import { createSigner, Signer } from "./signer";
 import { Resolver } from "./resolver";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util";
@@ -44,10 +40,10 @@ import Stats from "./stats";
 import Storage from "./runtime/node/storage";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
-import { subplebbitForPublishingCache } from "./constants";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import { PlebbitError } from "./plebbit-error";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
+import { CreateSubplebbitOptions, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -449,6 +445,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async resolveAuthorAddress(authorAddress: string) {
         // TODO implement RPC call here
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.resolveAuthorAddress(authorAddress);
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }

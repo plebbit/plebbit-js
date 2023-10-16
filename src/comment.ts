@@ -11,7 +11,6 @@ import {
     CommentType,
     CommentUpdate,
     CommentWithCommentUpdate,
-    Flair,
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
@@ -24,6 +23,7 @@ import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
 import { messages } from "./errors";
+import { Flair } from "./subplebbit/types";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props

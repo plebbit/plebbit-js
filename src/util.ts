@@ -4,11 +4,15 @@ import {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -241,7 +245,8 @@ export function decodePubsubMsgFromRpc(
     pubsubMsg:
         | EncodedDecryptedChallengeMessageType
         | EncodedDecryptedChallengeAnswerMessageType
-        | EncodedDecryptedChallengeRequestMessageType
+        | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+        | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
         | EncodedDecryptedChallengeVerificationMessageType
 ) {
     //@ts-expect-error
@@ -249,12 +254,14 @@ export function decodePubsubMsgFromRpc(
         | DecryptedChallengeMessageType
         | DecryptedChallengeAnswerMessageType
         | DecryptedChallengeRequestMessageType
-        | DecryptedChallengeVerificationMessageType = pubsubMsg;
+        | DecryptedChallengeVerificationMessageType
+        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+        | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg.encrypted){
+    if (pubsubMsg.encrypted) {
         parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
         parsedPubsubMsg.encrypted.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
-        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");    
+        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
     }
     parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
     parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");

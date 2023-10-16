@@ -2,7 +2,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types";
 import Publication from "../publication";
 import { Comment } from "../comment";
-import { Subplebbit } from "../subplebbit";
+import { Subplebbit } from "../subplebbit/subplebbit";
 import { BasePages } from "../pages";
 
 // Types

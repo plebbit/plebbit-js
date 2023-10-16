@@ -1,5 +1,8 @@
 // the purpose of this challenge is to always fail, can be used with SubplebbitChallenge.exclude to whitelist users
 
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../types"
+
 const optionInputs = [
   {
     option: 'error',
@@ -10,11 +13,11 @@ const optionInputs = [
   }
 ]
 
-const type = 'text'
+const type: Challenge["type"] = "text/plain"
 
 const description = 'A challenge that automatically fails with a custom error message.'
 
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number) => {
   // add a custom error message to display to the author
   const error = subplebbitChallengeSettings?.options?.error
 
@@ -25,7 +28,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
   }
 }
 
-function ChallengeFileFactory (subplebbitChallengeSettings) {
+function ChallengeFileFactory (subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
   return {getChallenge, optionInputs, type, description}
 }
 

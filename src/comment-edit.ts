@@ -2,13 +2,13 @@ import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { verifyCommentEdit } from "./signer/signatures";
+import { Flair } from "./subplebbit/types";
 import {
     AuthorCommentEdit,
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
     CommentEditsTableRowInsert,
     CommentEditType,
-    Flair,
     ModeratorCommentEdit,
     PublicationType,
     PublicationTypeName

@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
 import { NativeFunctions } from "../../types";
 import path from "path";
-import { Subplebbit } from "../../subplebbit";
+import { Subplebbit } from "../../subplebbit/subplebbit";
 import assert from "assert";
 import { Knex } from "knex";
 import { Plebbit } from "../../plebbit";

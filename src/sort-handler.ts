@@ -8,7 +8,7 @@ import {
     timestamp,
     topScore
 } from "./util";
-import { Subplebbit } from "./subplebbit";
+import { Subplebbit } from "./subplebbit/subplebbit";
 import assert from "assert";
 import {
     CommentsTableRow,

@@ -6,7 +6,6 @@ import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeType,
     ChallengeVerificationMessageType,
     CommentIpfsWithCid,
     DecryptedChallenge,
@@ -20,8 +19,7 @@ import {
     ProtocolVersion,
     PublicationEvents,
     PublicationType,
-    PublicationTypeName,
-    SubplebbitIpfsType
+    PublicationTypeName
 } from "./types";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
@@ -38,6 +36,7 @@ import * as cborg from "cborg";
 import { JsonSignature } from "./signer/constants";
 import lodash from "lodash";
 import { subplebbitForPublishingCache } from "./constants";
+import { SubplebbitIpfsType } from "./subplebbit/types";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
@@ -191,11 +190,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
             );
             const decryptedChallenge: DecryptedChallenge = JSON.parse(
-                await decryptEd25519AesGcm(
-                    msgParsed.encrypted,
-                    this.pubsubMessageSigner.privateKey,
-                    this.subplebbit.encryption.publicKey
-                )
+                await decryptEd25519AesGcm(msgParsed.encrypted, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)
             );
             this._challenge = {
                 ...msgParsed,
@@ -268,7 +263,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
 
-        const toEncryptAnswers: DecryptedChallengeAnswer = {challengeAnswers};
+        const toEncryptAnswers: DecryptedChallengeAnswer = { challengeAnswers };
 
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),

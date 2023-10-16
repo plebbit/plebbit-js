@@ -7,8 +7,17 @@ import fail from './plebbit-js-challenges/fail'
 import blacklist from './plebbit-js-challenges/blacklist'
 import question from './plebbit-js-challenges/question'
 import evmContractCall from './plebbit-js-challenges/evm-contract-call'
+import { Subplebbit } from '../subplebbit/subplebbit'
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../types'
+import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../subplebbit/types'
+import { ChallengeVerificationMessage } from '../challenge'
 
-const plebbitJsChallenges = {
+
+type PendingChallenge = Challenge & {index: number};
+
+export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<string[]>
+
+const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
   'text-math': textMath,
   'captcha-canvas-v3': captchaCanvasV3,
   'fail': fail,
@@ -17,21 +26,21 @@ const plebbitJsChallenges = {
   'evm-contract-call': evmContractCall
 }
 
-const validateChallengeFileFactory = (challengeFileFactory, challengeIndex, subplebbit) => {
+const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: Subplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   if (typeof challengeFileFactory !== 'function') {
     throw Error(`invalid challenge file factory export from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`)
   }
 }
 
-const validateChallengeFile = (challengeFile, challengeIndex, subplebbit) => {
+const validateChallengeFile = (challengeFile: ChallengeFile, challengeIndex: number, subplebbit: Subplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   if (typeof challengeFile?.getChallenge !== 'function') {
     throw Error(`invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`)
   }
 }
 
-const validateChallengeResult = (challengeResult, challengeIndex, subplebbit) => {
+const validateChallengeResult = (challengeResult: ChallengeResult, challengeIndex: number, subplebbit: Subplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   const error = `invalid challenge result from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`
   if (typeof challengeResult?.success !== 'boolean') {
@@ -39,14 +48,14 @@ const validateChallengeResult = (challengeResult, challengeIndex, subplebbit) =>
   }
 }
 
-const validateChallengeOrChallengeResult = (challengeOrChallengeResult, getChallengeError, challengeIndex, subplebbit) => {
-  if (challengeOrChallengeResult?.success !== undefined) {
-    validateChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit)
+const validateChallengeOrChallengeResult = (challengeOrChallengeResult: Challenge | ChallengeResult, getChallengeError: Error, challengeIndex: number, subplebbit: Subplebbit) => {
+  if (challengeOrChallengeResult?.["success"] !== undefined) {
+    validateChallengeResult(<ChallengeResult>challengeOrChallengeResult, challengeIndex, subplebbit)
   }
   else if (
-    typeof challengeOrChallengeResult?.challenge !== 'string' ||
-    typeof challengeOrChallengeResult?.type !== 'string' ||
-    typeof challengeOrChallengeResult?.verify !== 'function'
+    typeof challengeOrChallengeResult?.["challenge"] !== 'string' ||
+    typeof challengeOrChallengeResult?.["type"] !== 'string' ||
+    typeof challengeOrChallengeResult?.["verify"] !== 'function'
   ) {
     const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
     let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`
@@ -57,18 +66,18 @@ const validateChallengeOrChallengeResult = (challengeOrChallengeResult, getChall
   }
 }
 
-const getPendingChallengesOrChallengeVerification = async (challengeRequestMessage, subplebbit) => {
-  const challengeResults = []
+const getPendingChallengesOrChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit) => {
+  const challengeResults: (Challenge | ChallengeResult)[] = []
   // interate over all challenges of the subplebbit, can be more than 1
   for (const i in subplebbit.settings?.challenges) {
     const challengeIndex = Number(i)
     const subplebbitChallengeSettings = subplebbit.settings?.challenges[challengeIndex]
 
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
-    let challengeFile
+    let challengeFile: ChallengeFile
     if (subplebbitChallengeSettings.path) {
       try {
-        const ChallengeFileFactory = require(subplebbitChallengeSettings.path)
+        const ChallengeFileFactory = require(subplebbitChallengeSettings.path) as ChallengeFileFactory
         validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit)
         challengeFile = ChallengeFileFactory(subplebbitChallengeSettings)
         validateChallengeFile(challengeFile, challengeIndex, subplebbit)
@@ -89,7 +98,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
       validateChallengeFile(challengeFile, challengeIndex, subplebbit)
     }
 
-    let challengeResult, getChallengeError
+    let challengeResult: Challenge | ChallengeResult, getChallengeError: Error
     try {
       // the getChallenge function could throw
       challengeResult = await challengeFile.getChallenge(subplebbitChallengeSettings, challengeRequestMessage, challengeIndex)
@@ -103,8 +112,8 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
 
   // check failures and errors
   let challengeFailureCount = 0
-  let pendingChallenges = []
-  const challengeErrors = new Array(challengeResults.length)
+  let pendingChallenges: PendingChallenge[] = []
+  const challengeErrors: string[] = new Array(challengeResults.length)
   for (const i in challengeResults) {
     const challengeIndex = Number(i)
     const challengeResult = challengeResults[challengeIndex]
@@ -125,16 +134,16 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
       continue
     }
 
-    if (challengeResult.success === false) {
+    if (challengeResult["success"] === false) {
       challengeFailureCount++
-      challengeErrors[challengeIndex] = challengeResult.error
+      challengeErrors[challengeIndex] = (<ChallengeResult>challengeResult).error
     }
-    else if (challengeResult.success === true) {
+    else if (challengeResult["success"] === true) {
       // do nothing
     }
     else {
       // index is needed to exlude based on other challenge success in getChallengeVerification
-      pendingChallenges.push({...challengeResult, index: challengeIndex})
+      pendingChallenges.push({...<Challenge>challengeResult, index: challengeIndex})
     }
   }
 
@@ -164,8 +173,8 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
   }
 }
 
-const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, challengeAnswers, subplebbit) => {
-  const verifyChallengePromises = []
+const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: Subplebbit) => {
+  const verifyChallengePromises: Promise<ChallengeResult>[] = []
   for (const i in pendingChallenges) {
     verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i]))
   }
@@ -178,15 +187,15 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
   }
 
   // when filtering only pending challenges, the original indexes get lost so restore them
-  const challengeResults = []
-  const challengeResultToPendingChallenge = []
+  const challengeResults: ChallengeResult[] = []
+  const challengeResultToPendingChallenge: PendingChallenge[] = []
   for (const i in challengeResultsWithPendingIndexes) {
     challengeResults[pendingChallenges[i].index] = challengeResultsWithPendingIndexes[i]
     challengeResultToPendingChallenge[pendingChallenges[i].index] = pendingChallenges[i]
   }
 
   let challengeFailureCount = 0
-  const challengeErrors = []
+  const challengeErrors: ChallengeResult["error"][] = []
   for (let i in challengeResults) {
     const challengeIndex = Number(i)
     const challengeResult = challengeResults[challengeIndex]
@@ -218,7 +227,7 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
   }
 }
 
-const getChallengeVerification = async (challengeRequestMessage, subplebbit, getChallengeAnswers) => {
+const getChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit, getChallengeAnswers: GetChallengeAnswers): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" >> => {
   if (!challengeRequestMessage) {
     throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`)
   }
@@ -231,7 +240,7 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
 
   const {pendingChallenges, challengeSuccess, challengeErrors} = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit)
 
-  let challengeVerification
+  let challengeVerification: Pick<ChallengeVerificationMessage, "challengeSuccess" | "challengeErrors">
   // was able to verify without asking author for challenges
   if (!pendingChallenges) {
     challengeVerification = {challengeSuccess}
@@ -241,8 +250,7 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
   }
   // author still has some pending challenges to complete
   else {
-    const challenges = pendingChallenges.map(pendingChallenge => pendingChallenge.challenge)
-    const challengeAnswers = await getChallengeAnswers(challenges)
+    const challengeAnswers = await getChallengeAnswers(pendingChallenges)
     challengeVerification = await getChallengeVerificationFromChallengeAnswers(pendingChallenges, challengeAnswers, subplebbit)
   }
 
@@ -253,13 +261,13 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
 }
 
 // get the data to be published publicly to subplebbit.challenges
-const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallengeSettings) => {
+const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallengeSettings: SubplebbitChallengeSettings): SubplebbitChallenge => {
   if (!subplebbitChallengeSettings) {
     throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid subplebbitChallengeSettings argument '${subplebbitChallengeSettings}'`)
   }
 
   // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
-  let challengeFile
+  let challengeFile: ChallengeFile
   if (subplebbitChallengeSettings.path) {
     try {
       const ChallengeFileFactory = require(subplebbitChallengeSettings.path)

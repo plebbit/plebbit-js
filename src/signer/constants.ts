@@ -1,6 +1,7 @@
 // Signer section
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -13,7 +14,6 @@ import {
     CreateCommentOptions,
     CreateVoteOptions,
     PublicationTypeName,
-    SubplebbitIpfsType,
     VotePubsubMessage
 } from "../types";
 
@@ -138,7 +138,7 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "pubsubTopic",
     "lastPostCid",
     "posts",
-    "challengeTypes",
+    "challenges",
     "statsCid",
     "createdAt",
     "updatedAt",

@@ -3,8 +3,8 @@ import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
 import { throwWithErrorCode } from "../util";
 import assert from "assert";
-import { Chain, CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
-import { Subplebbit } from "../subplebbit";
+import { Chain, CommentIpfsType, CommentUpdate } from "../types";
+import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
 import isIPFS from "is-ipfs";
@@ -27,6 +27,7 @@ import {
     PublicationPlebbitRpcStateClient,
     SubplebbitPlebbitRpcStateClient
 } from "./plebbit-rpc-state-client";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
