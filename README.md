@@ -359,6 +359,7 @@ PubsubSignature {
   - `Plebbit.rpcCall(method, params)`
   - `Plebbit.setNativeFunctions(nativeFunctions)`
   - `Plebbit.nativeFunctions`
+  - `Plebbit.challenges`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
