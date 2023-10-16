@@ -4,7 +4,7 @@ import { BaseClientsManager, LoadType } from "./base-client-manager";
 import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../sort-handler";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../subplebbit/sort-handler";
 import lodash from "lodash";
 import { pageCidToSortTypesCache } from "../constants";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";

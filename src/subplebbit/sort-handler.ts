@@ -7,8 +7,8 @@ import {
     TIMEFRAMES_TO_SECONDS,
     timestamp,
     topScore
-} from "./util";
-import { Subplebbit } from "./subplebbit/subplebbit";
+} from "../util";
+import { Subplebbit } from "./subplebbit";
 import assert from "assert";
 import {
     CommentsTableRow,
@@ -21,7 +21,7 @@ import {
     ReplySort,
     ReplySortName,
     SortProps
-} from "./types";
+} from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 

@@ -1,6 +1,6 @@
 import { sha256 } from "js-sha256";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../challenge";
-import { SortHandler } from "../sort-handler";
+import { SortHandler } from "./sort-handler";
 import {
     parseRawPages,
     removeKeysWithUndefinedValues,

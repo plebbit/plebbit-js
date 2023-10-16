@@ -35,7 +35,7 @@ import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "../../sort-handler";
+import { PageOptions } from "../../subplebbit/sort-handler";
 import { SubplebbitStats } from "../../subplebbit/types";
 
 const TABLES = Object.freeze({
@@ -878,7 +878,7 @@ export class DbHandler {
 
     async querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined> {
         const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
-        if (authorCommentCids.length === 0) return undefined
+        if (authorCommentCids.length === 0) return undefined;
         const authorComments: (CommentsTableRow & Pick<CommentUpdate, "upvoteCount" | "downvoteCount">)[] = [];
         for (const cidObj of authorCommentCids) {
             authorComments.push({
