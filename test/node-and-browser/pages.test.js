@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const { expect } = require("chai");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
+const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/subplebbit/sort-handler");
 const signers = require("../fixtures/signers");
 const { loadAllPages, publishRandomPost, mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
