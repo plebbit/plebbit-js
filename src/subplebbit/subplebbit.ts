@@ -990,24 +990,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const publication = request.publication;
 
-        if (publication["signer"]) {
-            log(`(${request.challengeRequestId.toString()}): `, messages.ERR_FORBIDDEN_SIGNER_FIELD);
-            return messages.ERR_FORBIDDEN_SIGNER_FIELD;
-        }
+        if (publication["signer"]) return messages.ERR_FORBIDDEN_SIGNER_FIELD;
 
-        log.trace(`(${request.challengeRequestId.toString()}): `, `Will attempt to store publication if valid, `, publication);
+        if (publication.subplebbitAddress !== this.address) return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
 
-        if (publication.subplebbitAddress !== this.address) {
-            log(`(${request.challengeRequestId.toString()}): `, messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS);
-            return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
-        }
+        if (typeof publication?.author?.subplebbit?.banExpiresAt === "number" && publication.author.subplebbit.banExpiresAt > timestamp())
+            return messages.ERR_AUTHOR_IS_BANNED;
 
         const forbiddenAuthorFields: (keyof Author)[] = ["subplebbit", "shortAddress"];
 
-        if (Object.keys(publication.author).some((key: keyof Author) => forbiddenAuthorFields.includes(key))) {
-            log(`(${request.challengeRequestId.toString()}): `, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
+        if (Object.keys(publication.author).some((key: keyof Author) => forbiddenAuthorFields.includes(key)))
             return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
-        }
 
         if (!this.isPublicationPost(publication)) {
             const parentCid: string | undefined = this.isPublicationReply(publication)
@@ -1016,63 +1009,37 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 ? publication["commentCid"]
                 : undefined;
 
-            if (!parentCid) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED);
-                return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
-            }
+            if (!parentCid) return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
 
             const parent = await this.dbHandler.queryComment(parentCid);
-            if (!parent) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
-                return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
-            }
+            if (!parent) return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
 
             const parentFlags = await this.dbHandler.queryCommentFlags(parentCid);
 
-            if (parentFlags.removed && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
+            if (parentFlags.removed && !this.isPublicationCommentEdit(publication))
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
-            }
 
             const isParentDeleted = await this.dbHandler.queryAuthorEditDeleted(parentCid);
 
-            if (isParentDeleted && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
-                return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
-            }
+            if (isParentDeleted && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
 
             const postFlags = await this.dbHandler.queryCommentFlags(parent.postCid);
 
-            if (postFlags.removed && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
-                return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
-            }
+            if (postFlags.removed && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
 
             const isPostDeleted = await this.dbHandler.queryAuthorEditDeleted(parent.postCid);
 
-            if (isPostDeleted && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
-                return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
-            }
+            if (isPostDeleted && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED;
 
-            if (postFlags.locked && !this.isPublicationCommentEdit(publication)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED);
-                return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
-            }
+            if (postFlags.locked && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED;
 
-            if (parent.timestamp > publication.timestamp) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT);
-                return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
-            }
+            if (parent.timestamp > publication.timestamp) return messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT;
         }
 
         // Reject publications if their size is over 40kb
         const publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
 
-        if (publicationKilobyteSize > 40) {
-            log(`(${request.challengeRequestId.toString()}): `, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
-            return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
-        }
+        if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
             const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
@@ -1097,18 +1064,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 "shortCid"
             ];
 
-            if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key))) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_FORBIDDEN_COMMENT_FIELD);
+            if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
-            }
-
-            // Comment and Post need to add file to ipfs
-            const ipnsKeyName = sha256(deterministicStringify(publication));
-
-            if (await this.dbHandler.querySigner(ipnsKeyName)) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_DUPLICATE_COMMENT);
-                return messages.ERR_DUPLICATE_COMMENT;
-            }
         }
 
         if (this.isPublicationVote(request.publication)) {
@@ -1116,10 +1073,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 request.publication["commentCid"],
                 request.publication.author.address
             );
-            if (lastVote && request.publication.signature.publicKey !== lastVote.signature.publicKey) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE);
+            if (lastVote && request.publication.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
-            }
         }
 
         if (this.isPublicationCommentEdit(request.publication)) {
@@ -1142,10 +1097,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
                 if (!allowedEditFields.includes(<any>editField)) return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
 
-            if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0) {
-                log(`(${request.challengeRequestId.toString()}): `, messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY);
+            if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
-            }
         }
 
         return undefined;
@@ -1162,6 +1115,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
+        if (typeof decryptedRequest?.publication?.author?.address !== "string")
+            return this._publishChallengeVerification(
+                { reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED, challengeSuccess: false }, //@ts-expect-error
+                decryptedRequest
+            );
         await this.dbHandler.insertChallengeRequest(
             request.toJSONForDb(decryptedRequest.challengeAnswers, decryptedRequest.challengeCommentCids),
             undefined
