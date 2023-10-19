@@ -5,19 +5,12 @@ import Logger from '@plebbit/plebbit-logger'
 import {EventEmitter} from 'events'
 const log = Logger('plebbit-js-rpc:plebbit-ws-server')
 import {PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions} from './types'
-import {Subplebbit} from '../../dist/node/subplebbit'
 import {Plebbit} from '../../dist/node/plebbit'
-import {
-  CommentEditPubsubMessage,
-  CommentPubsubMessage,
-  CreateSubplebbitOptions,
-  DecryptedChallengeRequest,
-  PlebbitOptions,
-  SubplebbitEditOptions,
-  VotePubsubMessage,
-} from '../../dist/node/types'
+import {CommentEditPubsubMessage, CommentPubsubMessage, DecryptedChallengeRequest, PlebbitOptions, VotePubsubMessage} from '../../dist/node/types'
 import {WebSocket} from 'ws'
 import Publication from '../../dist/node/publication'
+import {CreateSubplebbitOptions, SubplebbitEditOptions} from '../../dist/node/subplebbit/types'
+import {Subplebbit} from '../../dist/node/subplebbit/subplebbit'
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
