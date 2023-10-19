@@ -2,7 +2,7 @@ import { messages } from "./errors";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {
     code: keyof typeof messages;
-    message: string;
+    message: messages;
     stack?: string;
     details: {}; // Used to hold key-value of related props. Could be cid of a comment that failed to update
     constructor(code: keyof typeof messages, details?: {}) {

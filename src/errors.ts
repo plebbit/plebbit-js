@@ -73,10 +73,6 @@ export enum messages {
     ERR_PUBLICATION_HAS_NO_AUTHOR_ADDRESS = "Publication has no author.address",
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED = "The parent of this publication has been removed",
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
-    ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors",
-    ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD = "CommentEdit includes a field that cannot be used for mods",
-    ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for both mods and authors",
-    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
     ERR_SUB_PUBLICATION_POST_IS_LOCKED = "The post of this publication has been locked",
@@ -87,6 +83,11 @@ export enum messages {
     ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
     ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG = "Subplebbit failed to decrypt the pubsub message",
     ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
+    UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE = "An author attempted to change another author's vote",
+
+    // Comment Edit errors
+    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
+    ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
 
     // Resolver errors
     ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",
