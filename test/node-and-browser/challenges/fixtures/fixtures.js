@@ -398,10 +398,10 @@ const subplebbits = [
 const results = {}
 results[textMathChallegeSubplebbit.title] = {
   'high-karma.eth': {
-    pendingChallenges: [ { challenge: '660 - 256', type: 'text' } ]
+    pendingChallenges: [ { challenge: '660 - 256', type: 'text/plain' } ]
   },
   'low-karma.eth': {
-    pendingChallenges: [ { challenge: '69 * 63', type: 'text' } ]
+    pendingChallenges: [ { challenge: '69 * 63', type: 'text/plain' } ]
   }
 }
 // comment out because don't know how to make the captcha node code work in the browser
@@ -409,20 +409,20 @@ results[textMathChallegeSubplebbit.title] = {
 //   'high-karma.eth': {
 //     pendingChallenges: [
 //       { challenge: '...', type: 'image' },
-//       { challenge: '94 + 25', type: 'text' }
+//       { challenge: '94 + 25', type: 'text/plain' }
 //     ]
 //   },
 //   'low-karma.eth': {
 //     pendingChallenges: [
 //       { challenge: '...', type: 'image' },
-//       { challenge: '99 - 90', type: 'text' }
+//       { challenge: '99 - 90', type: 'text/plain' }
 //     ]
 //   }
 // }
 results[excludeHighKarmaChallegeSubplebbit.title] = {
   'high-karma.eth': { challengeSuccess: true },
   'low-karma.eth': {
-    pendingChallenges: [ { challenge: '82 * 45', type: 'text' } ]
+    pendingChallenges: [ { challenge: '82 * 45', type: 'text/plain' } ]
   }
 }
 results[excludeAccountAgeChallegeSubplebbit.title] = {
