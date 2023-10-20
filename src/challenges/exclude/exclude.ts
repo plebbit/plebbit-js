@@ -136,8 +136,7 @@ const invalidIpnsName = 'i'
 const commentUpdateCache = new TinyCache()
 const commentUpdateCacheTime = 1000 * 60 * 60
 const getCommentPending = {}
-
-const shouldExcludeChallengeCommentCids = async (subplebbitChallenge: SubplebbitChallenge, challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, plebbit: Plebbit) => {
+const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeRequestMessage, plebbit) => {
   if (!subplebbitChallenge) {
     throw Error(`shouldExcludeChallengeCommentCids invalid subplebbitChallenge argument '${subplebbitChallenge}'`)
   }
@@ -156,12 +155,12 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge: Subplebbit
     throw Error(`shouldExcludeChallengeCommentCids invalid challengeRequestMessage.publication.author.address argument '${author?.address}'`)
   }
 
-  const _getComment = async (commentCid: string, addressesSet: Set<string>) => {
+  const _getComment = async (commentCid, addressesSet) => {
     // comment is cached
-    let cachedComment = commentCache.get(commentCid)
+    let cachedComment: any = commentCache.get(commentCid)
 
     // comment is not cached, add to cache
-    let comment: Comment
+    let comment
     if (!cachedComment) {
       comment = await plebbit.getComment(commentCid)
       // only cache useful values
@@ -186,11 +185,12 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge: Subplebbit
     }
 
     // comment hasn't been updated yet
-    let cachedCommentUpdate: {author?: {subplebbit?: CommentUpdate["author"]["subplebbit"]}}  = commentUpdateCache.get(cachedComment.ipnsName)
+    let cachedCommentUpdate = commentUpdateCache.get(cachedComment.ipnsName)
     if (!cachedCommentUpdate) {
       let commentUpdate = comment
       if (!commentUpdate) {
-        commentUpdate = await plebbit.createComment({cid: commentCid, ipnsName: cachedComment.ipnsName})
+        // @ts-ignore
+        commentUpdate = await plebbit.createComment({cid: commentCid, ipnsName: commentCache.ipnsName})
       }
       const commentUpdatePromise = new Promise((resolve) => commentUpdate.once('update', resolve))
       await commentUpdate.update()
@@ -205,13 +205,13 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge: Subplebbit
       commentUpdateCache._timeouts[cachedComment.ipnsName].unref?.()
     }
 
-    return {...cachedComment, author: {...cachedComment.author, ...cachedCommentUpdate.author}}
+    return {...cachedComment, ...cachedCommentUpdate}
   }
 
-  const getComment = async (commentCid: string, addressesSet: Set<string>) => {
+  const getComment = async (commentCid, addressesSet) => {
     // don't fetch the same comment twice
-    const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
-    const pendingKey = commentCid + Object.keys(plebbit.clients.ipfsGateways)?.[0] + Object.keys(plebbit.clients.ipfsClients)?.[0]
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms))
+    const pendingKey = commentCid + plebbit.plebbitOptions?.ipfsGatewayUrl + plebbit.plebbitOptions?.ipfsHttpClientOptions?.url
     while (getCommentPending[pendingKey] === true) {
       await sleep(20)
     }

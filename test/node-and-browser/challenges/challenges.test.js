@@ -104,14 +104,14 @@ describe("getChallengeVerification", () => {
   it("only 50% of challenges must succeed", async () => {
     // fail the first challenge answer, should still succeed
     const getChallengeAnswersFail1 = (challenges) => {
-      return ['wrong', String(eval(challenges[1]))]
+      return ['wrong', String(eval(challenges[1].challenge))]
     }
     let challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersFail1)
     expect(challengeVerification).to.deep.equal({ challengeSuccess: true })
 
     // fail only the second challenge, should still succeed
     const getChallengeAnswersFail2 = (challenges) => {
-      return ['wrong', String(eval(challenges[1]))]
+      return ['wrong', String(eval(challenges[1].challenge))]
     }
     challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersFail2)
     expect(challengeVerification).to.deep.equal({ challengeSuccess: true })
@@ -127,7 +127,7 @@ describe("getChallengeVerification", () => {
 
     // succeed both challenge
     const getChallengeAnswersSucceedAll = (challenges) => {
-      return [String(eval(challenges[0])), String(eval(challenges[1]))]
+      return [String(eval(challenges[0].challenge)), String(eval(challenges[1].challenge))]
     }
     challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, getChallengeAnswersSucceedAll)
     expect(challengeVerification).to.deep.equal({ challengeSuccess: true })
