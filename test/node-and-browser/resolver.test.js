@@ -9,6 +9,8 @@ const { mockPlebbit, publishWithExpectedResult, publishRandomPost } = require(".
 
 const mockComments = [];
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Resolving text records`, async () => {
     it(`Can resolve correctly with just viem`, async () => {
         const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
@@ -57,7 +59,8 @@ describe("Comments with Authors as domains", async () => {
             title: "Mock post title",
             subplebbitAddress: signers[0].address
         });
-        expect(await plebbit._clientsManager.resolveAuthorAddressIfNeeded(mockPost.author.address)).to.equal(signers[6].address);
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(mockPost.author.address);
+        expect(resolvedAuthorAddress).to.equal(signers[6].address);
 
         expect(mockPost.author.address).to.equal("plebbit.eth");
 
@@ -85,13 +88,18 @@ describe("Comments with Authors as domains", async () => {
         expect(mockPost.author.address).to.equal("testgibbreish.eth");
     });
 
-    it(`getComment corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
+    it(`comment.update() corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
         const tempPlebbit = await mockPlebbit();
-        tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress) =>
+        const comment = await tempPlebbit.createComment({cid: mockComments[mockComments.length - 1].cid});
+        comment._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
-        // verifyComment in getComment should overwrite author.address to derived address
-        const post = await tempPlebbit.getComment(mockComments[mockComments.length - 1].cid);
-        expect(post.author.address).to.equal(signers[6].address);
+        // verifyComment in comment.update should overwrite author.address to derived address
+        await comment.update();
+        await new Promise(resolve => comment.once("update", resolve));
+        await comment.stop();
+        expect(comment.author.address).to.equal(signers[6].address);
     });
 });
 
@@ -117,11 +125,13 @@ describe(`Vote with authors as domains`, async () => {
     });
 });
 
+//prettier-ignore
+if (!process.env["USE_RPC"]) // This code won't run in rpc clients
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
         const regularPlebbit = await mockPlebbit();
 
-        regularPlebbit.resolver._getChainProvider = regularPlebbit.resolver._resolveViaEthers = () => {
+        regularPlebbit.resolver.resolveTxtRecord  = () => {
             throw Error("Failed just because");
         };
         const plebbit = await mockPlebbit();
