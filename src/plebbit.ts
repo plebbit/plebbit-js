@@ -230,6 +230,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async getComment(cid: string): Promise<Comment> {
+        const log = Logger("plebbit-js:plebbit:getComment");
         const comment = await this.createComment({ cid });
 
         // The reason why we override this function is because we don't want update() to load the IPNS
@@ -246,7 +247,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = originalLoadMethod;
 
-        if (error) throw error;
+        if (error) {
+            log.error(`Failed to load comment (${cid}) due to error: ${error}`);
+            throw error;
+        }
         return comment;
     }
 
