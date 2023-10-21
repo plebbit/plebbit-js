@@ -1,21 +1,17 @@
 const Plebbit = require("../../dist/node");
 const { expect } = require("chai");
 const signers = require("../fixtures/signers");
-const { generateMockPost, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
+const {
+    generateMockPost,
+    publishWithExpectedResult,
+    publishRandomPost,
+    generatePostForMathCliSubplebbit
+} = require("../../dist/node/test/test-util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const mathCliSubplebbitAddress = signers[1].address;
-
-const generateRandomPostForMathCli = async (plebbit) => {
-    const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
-    mockPost.removeAllListeners();
-    mockPost.once("challenge", (challengeMessage) => {
-        mockPost.publishChallengeAnswers(["2"]);
-    });
-    return mockPost;
-};
 
 describe.skip(`Stress test challenge exchange`, async () => {
     const num = 50;
@@ -39,14 +35,14 @@ describe("math-cli", async () => {
         plebbit = await mockPlebbit({ pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
     });
     it("can post after answering correctly", async function () {
-        const mockPost = await generateRandomPostForMathCli(plebbit);
+        const mockPost = await generatePostForMathCliSubplebbit(plebbit);
         await publishWithExpectedResult(mockPost, true);
     });
     it("Throws an error when user fails to solve mathcli captcha", async function () {
         const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
         mockPost.removeAllListeners();
         mockPost.once("challenge", (challengeMessage) => {
-            mockPost.publishChallengeAnswers(["3"]);
+            mockPost.publishChallengeAnswers(["3"]); // wrong answer
         });
         await publishWithExpectedResult(mockPost, false);
     });
@@ -59,7 +55,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengerequest`, async () => {
-        const comment = await generateRandomPostForMathCli(plebbit);
+        const comment = await generatePostForMathCliSubplebbit(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
@@ -96,7 +92,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challenge`, async () => {
-        const comment = await generateRandomPostForMathCli(plebbit);
+        const comment = await generatePostForMathCliSubplebbit(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
@@ -130,7 +126,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeanswer`, async () => {
-        const comment = await generateRandomPostForMathCli(plebbit);
+        const comment = await generatePostForMathCliSubplebbit(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
@@ -165,7 +161,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeverification (challengeSuccess=false)`, async () => {
-        const comment = await generateRandomPostForMathCli(plebbit);
+        const comment = await generatePostForMathCliSubplebbit(plebbit);
 
         comment.removeAllListeners();
 
@@ -207,7 +203,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeverification (challengeSuccess=true)`, async () => {
-        const comment = await generateRandomPostForMathCli(plebbit);
+        const comment = await generatePostForMathCliSubplebbit(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
