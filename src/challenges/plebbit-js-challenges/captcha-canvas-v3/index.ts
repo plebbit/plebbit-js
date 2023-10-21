@@ -1,11 +1,10 @@
 // import {createCaptcha} from 'captcha-canvas'
-// import nodeNativeFunctions from "../../../runtime/node/native-functions"
+import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants"
+import nodeNativeFunctions from "../../../runtime/node/native-functions"
 
 import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../subplebbit/types"
 import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../types"
 
-// use a mock native function because don't know how to make tests work with real native functions
-const nodeNativeFunctions: any = {createImageCaptcha: () => {throw Error('not implemented')}}
 
 const optionInputs = [
   {
@@ -37,7 +36,12 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
 
   const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : undefined
   const height = subplebbitChallengeSettings?.options?.height ? Number(subplebbitChallengeSettings?.options?.height) : undefined
-  const setCaptchaOptions = {characters: subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.height) : undefined, colors: subplebbitChallengeSettings?.options?.colors ? Number(subplebbitChallengeSettings?.options?.colors) : undefined}
+  const characters = subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.height) : undefined;
+  const colors = subplebbitChallengeSettings?.options?.colors ? (subplebbitChallengeSettings?.options?.colors).split(",") : undefined;
+
+  const setCaptchaOptions: CreateCaptchaOptions["captcha"] = {}
+  if (characters) setCaptchaOptions.characters = characters;
+  if (colors) setCaptchaOptions.colors = colors;
 
 
   
