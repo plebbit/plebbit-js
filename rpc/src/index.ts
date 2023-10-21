@@ -84,6 +84,7 @@ class PlebbitWsServer extends EventEmitter {
     this.rpcWebsocketsRegister('deleteSubplebbit', this.deleteSubplebbit.bind(this))
     this.rpcWebsocketsRegister('listSubplebbits', this.listSubplebbits.bind(this))
     this.rpcWebsocketsRegister('fetchCid', this.fetchCid.bind(this))
+    this.rpcWebsocketsRegister('resolveAuthorAddress', this.resolveAuthorAddress.bind(this))
     this.rpcWebsocketsRegister('getPlebbitOptions', this.getPlebbitOptions.bind(this))
     this.rpcWebsocketsRegister('setPlebbitOptions', this.setPlebbitOptions.bind(this))
     // JSON RPC pubsub methods
@@ -506,6 +507,12 @@ class PlebbitWsServer extends EventEmitter {
     await publication.publishChallengeAnswers(answers)
 
     return true
+  }
+
+  async resolveAuthorAddress(params: any) {
+    const authorAddress = <string>params[0]
+    const resolvedAuthorAddress = await this.plebbit.resolveAuthorAddress(authorAddress)
+    return resolvedAuthorAddress
   }
 
   async unsubscribe(params: any, connectionId: string) {

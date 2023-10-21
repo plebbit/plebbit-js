@@ -458,7 +458,8 @@ export class BaseClientsManager {
     async resolveAuthorAddressIfNeeded(authorAddress: string) {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!this._plebbit.resolver.isDomain(authorAddress)) return authorAddress;
-        return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
+        else if (this._plebbit.plebbitRpcClient) return this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress);
+        else return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
     }
 
     // Misc functions

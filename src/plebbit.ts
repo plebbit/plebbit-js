@@ -448,8 +448,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        // TODO implement RPC call here
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.resolveAuthorAddress(authorAddress);
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }
