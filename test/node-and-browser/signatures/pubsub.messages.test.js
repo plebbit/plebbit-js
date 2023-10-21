@@ -21,7 +21,6 @@ const { encryptEd25519AesGcm } = require("../../../dist/node/signer/index");
 const { timestamp } = require("../../../dist/node/util");
 
 const mathCliSubplebbitAddress = signers[1].address;
-const imageCaptchaSubplebbitAddress = signers[2].address;
 
 const parseMsgJson = (json) => {
     // Convert stringified pubsub msg with buffers to regular pubsub msg with uint8Array for buffers
@@ -316,7 +315,7 @@ describe("challengeanswer", async () => {
     if (!process.env["USE_RPC"])
     it(`Sub responds with error to a challenge answer with answers that can't be decrypted`, async () => {
         const tempPlebbit = await mockPlebbit();
-        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, tempPlebbit);
+        const comment = await generateMockPost(mathCliSubplebbitAddress, tempPlebbit);
         comment.removeAllListeners("challenge");
 
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
@@ -326,8 +325,8 @@ describe("challengeanswer", async () => {
 
             await comment.publishChallengeAnswers([]);
             // comment._challengeAnswer should be defined now
-            comment._challengeAnswer.encryptedChallengeAnswers = await encryptEd25519AesGcm(
-                JSON.stringify([]),
+            comment._challengeAnswer.encrypted = await encryptEd25519AesGcm(
+                JSON.stringify({}),
                 comment.pubsubMessageSigner.privateKey,
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );

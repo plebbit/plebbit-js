@@ -8,7 +8,9 @@ const {
     publishWithExpectedResult,
     loadAllPages,
     mockGatewayPlebbit,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    generatePostForMathCliSubplebbit,
+    publishVote
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
@@ -324,6 +326,15 @@ describe(`comment.update`, async () => {
         await new Promise((resolve) => comment.once("update", resolve));
         await comment.stop();
     });
+
+    it(`comment.update() is working as expected after comment.publish()`, async () => {
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        expect(post.updatedAt).to.be.a("number");
+        await post.stop();
+    });
 });
 
 describe(`commentUpdate.replyCount`, async () => {
@@ -408,6 +419,97 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
         await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
         expect(post.replyCount).to.equal(2);
         expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
+    });
+});
+
+describe(`commentUpdate.author.subplebbit`, async () => {
+    let plebbit, post;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+    });
+
+    after(async () => await post.stop());
+
+    it(`post.author.subplebbit.postScore increases with upvote to post`, async () => {
+        expect(post.cid).to.be.a("string");
+        await publishVote(post.cid, post.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => post.upvoteCount === 1, { timeout: 200000 });
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(1);
+        expect(post.author.subplebbit.replyScore).to.equal(0);
+    });
+
+    it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        await anotherPost.update();
+
+        await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => anotherPost.upvoteCount === 1 && post.author.subplebbit.postScore === 2, { timeout: 200000 });
+        expect(anotherPost.upvoteCount).to.equal(1);
+        expect(anotherPost.author.subplebbit.postScore).to.equal(2);
+        expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(2);
+        expect(post.author.subplebbit.replyScore).to.equal(0);
+        await anotherPost.stop();
+    });
+
+    it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        await reply.update();
+        await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
+
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(2);
+        expect(post.author.subplebbit.replyScore).to.equal(1);
+
+        expect(reply.upvoteCount).to.equal(1);
+        expect(reply.author.subplebbit.postScore).to.equal(2);
+        expect(reply.author.subplebbit.replyScore).to.equal(1);
+
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await reply.stop();
+    });
+
+    it(`author.subplebbit.lastCommentCid is updated with every new post of author`, async () => {
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        await anotherPost.update();
+
+        await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
+            timeout: 200000
+        });
+
+        expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
+        expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await anotherPost.stop();
+    });
+
+    it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        await reply.update();
+
+        await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
+
+        expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+        expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await reply.stop();
+    });
+
+    it("CommentUpdate.author.subplebbit.firstCommentTimestamp is the timestamp of the first comment ", async () => {
+        expect(post.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
     });
 });
 
@@ -725,10 +827,8 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge`, async () => {
-            const imageCaptchaSubplebbitAddress = signers[2].address;
 
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
-            mockPost.removeAllListeners();
+            const mockPost = await generatePostForMathCliSubplebbit(plebbit);
 
             const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
             // Only first pubsub url is used for subscription. For publishing we use all providers
@@ -751,10 +851,6 @@ describe(`comment.clients`, async () => {
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-            mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-            });
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -835,9 +931,7 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge (pubsub provider 0 fail to receive a response in alotted time)`, async () => {
-            const imageCaptchaSubplebbitAddress = signers[2].address;
-
-            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take pubsub msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
             const plebbit = await mockPlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
@@ -845,9 +939,8 @@ describe(`comment.clients`, async () => {
 
             plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
 
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            const mockPost = await generatePostForMathCliSubplebbit( plebbit);
             mockPost._publishToDifferentProviderThresholdSeconds = 5;
-            mockPost.removeAllListeners();
 
             const expectedStates = {
                 [notRespondingPubsubUrl]: [
@@ -873,11 +966,6 @@ describe(`comment.clients`, async () => {
 
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
-
-            mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-            });
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -917,12 +1005,12 @@ describe(`comment.clients`, async () => {
     if (process.env["USE_RPC"] === "1")
     describe(`comment.clients.plebbitRpcClients`, async () => {
         it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
-            const imageCaptchaSubplebbitAddress = signers[2].address;
+            const mathCliSubplebbitAddress = signers[1].address;
 
-            await plebbit.getSubplebbit(imageCaptchaSubplebbitAddress);// Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
+            await plebbit.getSubplebbit(mathCliSubplebbitAddress);// Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
 
             const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);
             mockPost.removeAllListeners();
 
             const expectedStates = ["subscribing-pubsub","publishing-challenge-request","waiting-challenge","waiting-challenge-answers","publishing-challenge-answer","waiting-challenge-verification","stopped"];
@@ -932,7 +1020,7 @@ describe(`comment.clients`, async () => {
             mockPost.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => actualStates.push(newState));
 
             mockPost.once("challenge", async (challengeMsg) => {
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+                await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
             });
 
             await publishWithExpectedResult(mockPost, true);

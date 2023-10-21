@@ -158,7 +158,9 @@ async function _publishReplies(parentComment: Comment, numOfReplies: number, ple
 
 async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number, plebbit: Plebbit) {
     return Promise.all(
-        new Array(votesPerCommentToPublish).fill(null).map(() => publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {}))
+        new Array(votesPerCommentToPublish)
+            .fill(null)
+            .map(() => publishVote(comment.cid, comment.subplebbitAddress, Math.random() > 0.5 ? 1 : -1, plebbit, {}))
     );
 }
 
@@ -337,12 +339,17 @@ export async function publishRandomPost(
     return post;
 }
 
-export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>) {
-    const comment = await plebbit.getComment(commentCid);
+export async function publishVote(
+    commentCid: string,
+    subplebbitAddress: string,
+    vote: 1 | 0 | -1,
+    plebbit: Plebbit,
+    voteProps?: Partial<VoteType>
+) {
     const voteObj = await plebbit.createVote({
         commentCid,
         vote,
-        subplebbitAddress: comment.subplebbitAddress,
+        subplebbitAddress,
         signer: voteProps?.signer || (await plebbit.createSigner()),
         ...voteProps
     });
@@ -431,7 +438,7 @@ export async function createSubWithNoChallenge(props: CreateSubplebbitOptions, p
     return sub;
 }
 
-export async function generatePostForMathCliSubplebbit(plebbit: Plebbit){
+export async function generatePostForMathCliSubplebbit(plebbit: Plebbit) {
     const mathCliAddress = "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z";
     const mockPost = await generateMockPost(mathCliAddress, plebbit, false);
     mockPost.removeAllListeners();
@@ -439,5 +446,4 @@ export async function generatePostForMathCliSubplebbit(plebbit: Plebbit){
         mockPost.publishChallengeAnswers(["2"]);
     });
     return mockPost;
-
 }

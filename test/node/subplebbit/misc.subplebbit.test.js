@@ -717,7 +717,7 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount should increase by 1 for new vote author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishVote(post.cid, 1, plebbit, { signer: signers[3] }, false);
+            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[3] }, false);
             await new Promise((resolve) => subplebbit.once("update", resolve));
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
@@ -727,7 +727,7 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount does not increase when an existing user is publishing a new vote`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishVote(post.cid, 1, plebbit, { signer: signers[5] }, false);
+            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[5] }, false);
             await new Promise((resolve) => subplebbit.once("update", resolve));
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
