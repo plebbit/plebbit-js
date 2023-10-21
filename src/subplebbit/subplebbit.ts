@@ -758,7 +758,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             }
 
             const ipfsSigner = await this.plebbit.createSigner();
-            ipfsSigner.ipnsKeyName = ipfsSigner.ipnsKeyName;
+            ipfsSigner.ipnsKeyName = sha256(deterministicStringify(publication));
             await this.dbHandler.insertSigner(ipfsSigner.toJSONSignersTableRow(), undefined);
             ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(ipfsSigner.privateKey));
             commentToInsert.setCommentIpnsKey(
