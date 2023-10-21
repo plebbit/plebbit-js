@@ -1515,7 +1515,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         await this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey });
 
-        if (!this.settings?.challenges) await this.edit({ settings: { ...this.settings, challenges: [{ name: "canvas-v3 catpcha" }] } });
+        if (!this.settings?.challenges) await this.edit({ settings: { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] } });
 
         if (typeof this.pubsubTopic !== "string") {
             this.pubsubTopic = lodash.clone(this.signer.address);
