@@ -1,4 +1,3 @@
-import { sha256 } from "js-sha256";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../challenge";
 import { SortHandler } from "./sort-handler";
 import {
@@ -37,19 +36,13 @@ import {
     SubplebbitEvents,
     VotePubsubMessage,
     DecryptedChallengeMessageType,
-    DecryptedChallengeVerificationMessageType,
     DecryptedChallengeRequest,
     DecryptedChallengeAnswer,
     DecryptedChallenge,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
 } from "../types";
-import {
-    getIpfsKeyFromPrivateKey,
-    getPlebbitAddressFromPrivateKey,
-    getPlebbitAddressFromPublicKey,
-    getPublicKeyFromPrivateKey
-} from "../signer/util";
+import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../signer/util";
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../comment-edit";
 import { messages } from "../errors";
 import Logger from "@plebbit/plebbit-logger";
@@ -99,6 +92,8 @@ import {
     SubplebbitType
 } from "./types";
 import { GetChallengeAnswers, getChallengeVerification } from "../challenges";
+import { sha256 } from "js-sha256";
+import LRUCache from "lru-cache";
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -148,8 +143,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _updateRpcSubscriptionId?: number;
     private _startRpcSubscriptionId?: number;
     private _isUpdating: boolean;
-    private _challengeAnswerPromises: Record<string, Promise<string[]>> = {};
-    private _challengeAnswerResolveReject: Record<string, { resolve: (answers: string[]) => void; reject: (error: Error) => void }> = {};
+
+    // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
+    // Most of the time they will be delete and cleaned up automatically
+    private _challengeAnswerPromises = new LRUCache<string, Promise<string[]>>({
+        max: 1000,
+        ttl: 600000
+    });
+    private _challengeAnswerResolveReject = new LRUCache<string, { resolve: (answers: string[]) => void; reject: (error: Error) => void }>({
+        max: 1000,
+        ttl: 600000
+    });
+    private _ongoingChallengeExchanges = new LRUCache<string, boolean>({
+        max: 1000,
+        ttl: 600000
+    }); // Will be a list of challenge request ids
 
     constructor(plebbit: Plebbit) {
         super();
@@ -806,14 +814,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (request.type === "CHALLENGEREQUEST") return { ...request, ...(<DecryptedChallengeRequest>decrypted) };
             else if (request.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
         } catch (e) {
-            log.error(`Failed to decrypt request (${request.challengeRequestId.toString()}) due to error`, e);
+            log.error(`Failed to decrypt request (${request?.challengeRequestId?.toString()}) due to error`, e);
             if (request?.challengeRequestId?.toString()) {
                 this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
-                await this._publishChallengeVerification(
-                    { challengeSuccess: false, reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG },
-                    //@ts-expect-error
-                    request
+                await this._publishFailedChallengeVerification(
+                    { reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG },
+                    request.challengeRequestId
                 );
+                this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             }
 
             throw e;
@@ -840,8 +848,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             );
 
         if (!validity.valid) {
-            //@ts-expect-error
-            await this._publishChallengeVerification({ challengeSuccess: false, reason: validity.reason }, request);
+            await this._publishFailedChallengeVerification({ reason: validity.reason }, request.challengeRequestId);
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
 
             throwWithErrorCode(getErrorCodeFromMessage(validity.reason), { publication: request.publication, validity });
@@ -890,46 +897,52 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         });
     }
 
+    private async _publishFailedChallengeVerification(
+        result: Pick<ChallengeVerificationMessageType, "challengeErrors" | "reason">,
+        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
+    ) {
+        // challengeSucess=false
+        const log = Logger("plebbit-js:subplebbit:_publishFailedChallengeVerification");
+
+        const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
+            type: "CHALLENGEVERIFICATION",
+            challengeRequestId: challengeRequestId,
+            challengeSuccess: false,
+            challengeErrors: result.challengeErrors,
+            reason: result.reason,
+            userAgent: env.USER_AGENT,
+            protocolVersion: env.PROTOCOL_VERSION,
+            timestamp: timestamp()
+        };
+
+        const challengeVerification = new ChallengeVerificationMessage({
+            ...toSignVerification,
+            signature: await signChallengeVerification(toSignVerification, this.signer)
+        });
+
+        this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
+        log(`(${challengeRequestId}): `, `Will publish ${challengeVerification.type} over pubsub:`, toSignVerification);
+
+        await Promise.all([
+            this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
+            this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
+        ]);
+        this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
+
+        this.emit("challengeverification", {
+            ...challengeVerification,
+            publication: undefined
+        });
+        this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
+    }
+
     private async _publishChallengeVerification(
         challengeResult: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">,
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
         const log = Logger("plebbit-js:subplebbit:_publishChallengeVerification");
-        if (!challengeResult.challengeSuccess) {
-            const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
-                type: "CHALLENGEVERIFICATION",
-                challengeRequestId: request.challengeRequestId,
-                challengeSuccess: challengeResult.challengeSuccess,
-                challengeErrors: challengeResult.challengeErrors,
-                reason: challengeResult.reason,
-                userAgent: env.USER_AGENT,
-                protocolVersion: env.PROTOCOL_VERSION,
-                timestamp: timestamp()
-            };
-
-            const challengeVerification = new ChallengeVerificationMessage({
-                ...toSignVerification,
-                signature: await signChallengeVerification(toSignVerification, this.signer)
-            });
-
-            this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
-            log(
-                `(${request.challengeRequestId.toString()}): `,
-                `Will publish ${challengeVerification.type} over pubsub:`,
-                toSignVerification
-            );
-
-            await Promise.all([
-                this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
-                this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
-            ]);
-            this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
-
-            this.emit("challengeverification", {
-                ...challengeVerification,
-                publication: undefined
-            });
-        } else {
+        if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
+        else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
             log.trace(`(${request.challengeRequestId.toString()}): `, `User has been answered correctly`);
             const publication = await this.storePublication(request);
@@ -983,6 +996,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 ...challengeVerification,
                 publication: publicationToEmit
             });
+            this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
         }
     }
 
@@ -1111,7 +1125,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async handleChallengeRequest(request: ChallengeRequestMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeRequest");
 
-        if (this._challengeAnswerPromises[request.challengeRequestId.toString()]) return; // This is a duplicate challenge request
+        if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) return; // This is a duplicate challenge request
+        this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
             throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
@@ -1120,10 +1135,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
         if (typeof decryptedRequest?.publication?.author?.address !== "string")
-            return this._publishChallengeVerification(
-                { reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED, challengeSuccess: false }, //@ts-expect-error
-                decryptedRequest
+            return this._publishFailedChallengeVerification(
+                { reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED },
+                decryptedRequest.challengeRequestId
             );
+
         await this.dbHandler.insertChallengeRequest(
             request.toJSONForDb(decryptedRequest.challengeAnswers, decryptedRequest.challengeCommentCids),
             undefined
@@ -1149,10 +1165,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         // Check publication props validity
         const publicationInvalidityReason = await this._checkPublicationValidity(decryptedRequestWithSubplebbitAuthor);
         if (publicationInvalidityReason)
-            return this._publishChallengeVerification(
-                { reason: publicationInvalidityReason, challengeSuccess: false },
-                decryptedRequestWithSubplebbitAuthor
-            );
+            return this._publishFailedChallengeVerification({ reason: publicationInvalidityReason }, request.challengeRequestId);
 
         const answerPromiseKey = decryptedRequestWithSubplebbitAuthor.challengeRequestId.toString();
         const getChallengeAnswers: GetChallengeAnswers = async (challenges) => {
@@ -1160,13 +1173,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers`
             // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers`
             await this._publishChallenges(challenges, decryptedRequestWithSubplebbitAuthor);
-            // TODO expire this._challengeAnswerPromises[answerPromiseKey] after some time here so it wouldn't hog memory
-            this._challengeAnswerPromises[answerPromiseKey] = new Promise(
-                (resolve, reject) => (this._challengeAnswerResolveReject[answerPromiseKey] = { resolve, reject })
+            this._challengeAnswerPromises.set(
+                answerPromiseKey,
+                new Promise((resolve, reject) => this._challengeAnswerResolveReject.set(answerPromiseKey, { resolve, reject }))
             );
-            const challengeAnswers = await this._challengeAnswerPromises[answerPromiseKey];
-            delete this._challengeAnswerResolveReject[answerPromiseKey];
-            delete this._challengeAnswerPromises[answerPromiseKey];
+            const challengeAnswers = await this._challengeAnswerPromises.get(answerPromiseKey);
+            this._cleanUpChallengeAnswerPromise(answerPromiseKey);
             return challengeAnswers;
         };
         // NOTE: we try to get challenge verification immediately after receiving challenge request
@@ -1191,8 +1203,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     private _cleanUpChallengeAnswerPromise(challengeRequestIdString: string) {
-        delete this._challengeAnswerPromises[challengeRequestIdString];
-        delete this._challengeAnswerResolveReject[challengeRequestIdString]; // Not sure should be here
+        this._challengeAnswerPromises.delete(challengeRequestIdString);
+        this._challengeAnswerResolveReject.delete(challengeRequestIdString);
     }
 
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
@@ -1201,8 +1213,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
 
         if (!answerSignatureValidation.valid) {
-            throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
             this._cleanUpChallengeAnswerPromise(challengeAnswer.challengeRequestId.toString());
+            this._ongoingChallengeExchanges.delete(challengeAnswer.challengeRequestId.toString());
+            throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
         }
 
         const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
@@ -1215,25 +1228,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         );
     }
 
-    private async _respondWithErrorToAnswerWithNoRequest(answer: ChallengeAnswerMessageType) {
-        const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
-            type: "CHALLENGEVERIFICATION",
-            challengeRequestId: answer.challengeRequestId,
-            challengeSuccess: false,
-            reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST,
-            userAgent: env.USER_AGENT,
-            protocolVersion: env.PROTOCOL_VERSION,
-            timestamp: timestamp()
-        };
-
-        const challengeVerification = new ChallengeVerificationMessage({
-            ...toSignVerification,
-            signature: await signChallengeVerification(toSignVerification, this.signer)
-        });
-
-        await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
-    }
-
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
@@ -1242,9 +1236,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             msgParsed = cborg.decode(pubsubMsg.data);
             if (msgParsed.type === "CHALLENGEREQUEST") {
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
-            } else if (msgParsed.type === "CHALLENGEANSWER" && !this._challengeAnswerPromises[msgParsed.challengeRequestId.toString()])
+            } else if (
+                msgParsed.type === "CHALLENGEANSWER" &&
+                !this._ongoingChallengeExchanges.has(msgParsed.challengeRequestId.toString())
+            )
                 // Respond with error to answers without challenge request
-                await this._respondWithErrorToAnswerWithNoRequest(<ChallengeAnswerMessageType>msgParsed);
+                await this._publishFailedChallengeVerification(
+                    { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
+                    msgParsed.challengeRequestId
+                );
             else if (msgParsed.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
         } catch (e) {
             e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
