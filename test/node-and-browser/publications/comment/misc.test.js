@@ -266,10 +266,9 @@ describe(`comment.update`, async () => {
         expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
 
         await new Promise((resolve) => recreatedPost.once("update", resolve));
+        await recreatedPost.stop();
         expect(recreatedPost.updatedAt).to.be.a("number");
         expect(recreatedPost.toJSON()).to.deep.equal(originalPost.toJSON());
-
-        await recreatedPost.stop();
     });
 
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {

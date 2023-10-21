@@ -228,6 +228,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 pages: undefined,
                 pagesIpfs: undefined
             });
+
+        // TODO should update subplebbit.challenges field here
     }
 
     private setAddress(newAddress: string) {
@@ -988,7 +990,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log(
                 `(${request.challengeRequestId.toString()}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
-                lodash.omit(toSignMsg, ["encryptedPublication"])
+                lodash.omit(toSignMsg, ["encrypted"])
             );
 
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
@@ -1138,7 +1140,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
             throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
-                challengeRequest: lodash.omit(request, ["encryptedPublication"])
+                challengeRequest: lodash.omit(request, ["encrypted"])
             });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);

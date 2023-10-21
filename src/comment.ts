@@ -498,7 +498,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 });
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-            return;
+            this._isUpdating = true;
         }
         if (this._isUpdating) return; // Do nothing if it's already updating
         this._isUpdating = true;

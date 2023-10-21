@@ -33,17 +33,16 @@ export default class PlebbitRpcClient {
             const message = JSON.parse(jsonMessage);
             const subscriptionId = message?.params?.subscription;
             if (subscriptionId) {
-                if (!this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId] = new EventEmitter();
+                this._initSubscriptionEvent(subscriptionId);
 
                 // We need to parse error props into PlebbitErrors
                 if (message?.params?.event === "error") {
                     message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
                     delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
                 }
-                if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0) {
-                    if (!this._pendingSubscriptionMsgs[subscriptionId]) this._pendingSubscriptionMsgs[subscriptionId] = [message];
-                    else this._pendingSubscriptionMsgs[subscriptionId].push(message);
-                } else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
+                if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
+                    this._pendingSubscriptionMsgs[subscriptionId].push(message);
+                else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
             }
         });
 
@@ -187,6 +186,7 @@ export default class PlebbitRpcClient {
     async commentUpdate(commentCid: string) {
         assert(commentCid, "Need to have comment cid in order to call RPC commentUpdate");
         const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid]);
+        this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
