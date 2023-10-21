@@ -7,7 +7,15 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const mathCliSubplebbitAddress = signers[1].address;
-const imageCaptchaSubplebbitAddress = signers[2].address;
+
+const generateRandomPostForMathCli = async (plebbit) => {
+    const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
+    mockPost.removeAllListeners();
+    mockPost.once("challenge", (challengeMessage) => {
+        mockPost.publishChallengeAnswers(["2"]);
+    });
+    return mockPost;
+};
 
 describe.skip(`Stress test challenge exchange`, async () => {
     const num = 50;
@@ -31,11 +39,7 @@ describe("math-cli", async () => {
         plebbit = await mockPlebbit({ pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`] }, true); // Singular pubsub provider to avoid multiple challenge request/answers collision
     });
     it("can post after answering correctly", async function () {
-        const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[0] });
-        mockPost.removeAllListeners();
-        mockPost.once("challenge", (challengeMessage) => {
-            mockPost.publishChallengeAnswers(["2"]);
-        });
+        const mockPost = await generateRandomPostForMathCli(plebbit);
         await publishWithExpectedResult(mockPost, true);
     });
     it("Throws an error when user fails to solve mathcli captcha", async function () {
@@ -48,29 +52,6 @@ describe("math-cli", async () => {
     });
 });
 
-describe("image captcha", async () => {
-    let plebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-    });
-    it("can post after answering correctly", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
-        mockPost.removeAllListeners();
-
-        mockPost.once("challenge", async (challengeMsg) => {
-            expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-            await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-        });
-
-        await publishWithExpectedResult(mockPost, true);
-    });
-
-    it("Throws an error if unable to solve image captcha", async function () {
-        const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
-        await publishWithExpectedResult(mockPost, false);
-    });
-});
-
 describe("Validate props of publication Pubsub messages", async () => {
     let plebbit;
     before(async () => {
@@ -78,7 +59,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengerequest`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit);
+        const comment = await generateRandomPostForMathCli(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
@@ -115,7 +96,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challenge`, async () => {
-        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        const comment = await generateRandomPostForMathCli(plebbit);
 
         comment.publish();
         await new Promise((resolve) =>
@@ -125,7 +106,8 @@ describe("Validate props of publication Pubsub messages", async () => {
                 expect(challenge.type).to.equal("CHALLENGE");
                 expect(challenge.challenges).to.be.a("array");
                 expect(challenge.challenges[0].challenge).to.be.a("string");
-                expect(challenge.challenges[0].type).to.equal("image/png");
+                expect(challenge.challenges[0].index).to.be.a("number");
+                expect(challenge.challenges[0].type).to.equal("text/plain");
 
                 expect(challenge.encrypted).to.be.a("object");
                 expect(challenge.encrypted.ciphertext.constructor.name).to.equal("Uint8Array");
@@ -148,20 +130,15 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeanswer`, async () => {
-        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        const comment = await generateRandomPostForMathCli(plebbit);
 
-        comment.removeAllListeners();
-
-        comment.once("challenge", async (challengeMsg) => {
-            await comment.publishChallengeAnswers(["1234"]); // hardcode answer here
-        });
         comment.publish();
         await new Promise((resolve) =>
             comment.once("challengeanswer", (challengeAnswer) => {
                 expect(challengeAnswer.challengeRequestId.constructor.name).to.equal("Uint8Array");
                 expect(challengeAnswer.challengeRequestId.length).to.equal(38);
                 expect(challengeAnswer.type).to.equal("CHALLENGEANSWER");
-                expect(challengeAnswer.challengeAnswers).to.deep.equal(["1234"]);
+                expect(challengeAnswer.challengeAnswers).to.deep.equal(["2"]);
                 expect(challengeAnswer.encrypted).to.be.a("object");
                 expect(challengeAnswer.encrypted.ciphertext.constructor.name).to.equal("Uint8Array");
                 expect(challengeAnswer.encrypted.iv.constructor.name).to.equal("Uint8Array");
@@ -188,7 +165,7 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeverification (challengeSuccess=false)`, async () => {
-        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        const comment = await generateRandomPostForMathCli(plebbit);
 
         comment.removeAllListeners();
 
@@ -201,7 +178,7 @@ describe("Validate props of publication Pubsub messages", async () => {
                 expect(challengeVerifcation.challengeRequestId.constructor.name).to.equal("Uint8Array");
                 expect(challengeVerifcation.challengeRequestId.length).to.equal(38);
                 expect(challengeVerifcation.type).to.equal("CHALLENGEVERIFICATION");
-                expect(challengeVerifcation.challengeErrors).to.deep.equal(["User answered image captcha incorrectly"]);
+                expect(challengeVerifcation.challengeErrors).to.deep.equal(["Wrong answer."]);
                 expect(challengeVerifcation.challengeSuccess).to.be.false;
                 expect(challengeVerifcation.encrypted).to.be.undefined;
                 expect(challengeVerifcation.publication).to.be.undefined;
@@ -230,13 +207,8 @@ describe("Validate props of publication Pubsub messages", async () => {
     });
 
     it(`Validate props of challengeverification (challengeSuccess=true)`, async () => {
-        const comment = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+        const comment = await generateRandomPostForMathCli(plebbit);
 
-        comment.removeAllListeners();
-
-        comment.once("challenge", async (challengeMsg) => {
-            await comment.publishChallengeAnswers(["1234"]); // right answer
-        });
         comment.publish();
         await new Promise((resolve) =>
             comment.once("challengeverification", (challengeVerifcation) => {
