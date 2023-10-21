@@ -115,7 +115,7 @@ export interface SubplebbitEditOptions {
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
     address?: string;
     settings?: SubplebbitSettings;
-    challenges?: SubplebbitChallenge[];
+    challenges?: SubplebbitChallenge[] | null | undefined;
 }
 
 interface ExcludeSubplebbit {

@@ -397,6 +397,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._switchDbIfNeeded();
         }
 
+        // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
+        // settings.challenges = [] means sub has no challenges
+        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges"))
+            newSubplebbitOptions.settings.challenges =
+                newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
+                    ? []
+                    : newSubplebbitOptions.settings.challenges;
+
         const newSubProps = {
             ...lodash.omit(newSubplebbitOptions, "address"),
             _subplebbitUpdateTrigger: true
