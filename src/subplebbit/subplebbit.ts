@@ -1231,9 +1231,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.dbHandler.insertChallengeAnswer(challengeAnswer.toJSONForDb(decryptedChallengeAnswer.challengeAnswers), undefined);
         this.emit("challengeanswer", decryptedChallengeAnswer);
 
-        this._challengeAnswerResolveReject[challengeAnswer.challengeRequestId.toString()].resolve(
-            decryptedChallengeAnswer.challengeAnswers
-        );
+        this._challengeAnswerResolveReject
+            .get(challengeAnswer.challengeRequestId.toString())
+            .resolve(decryptedChallengeAnswer.challengeAnswers);
     }
 
     private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
