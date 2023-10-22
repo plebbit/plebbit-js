@@ -240,6 +240,12 @@ SubplebbitStats {
   monthPostCount: number
   yearPostCount: number
   allPostCount: number
+  hourReplyCount: number
+  dayReplyCount: number
+  weekReplyCount: number
+  monthReplyCount: number
+  yearReplyCount: number
+  allReplyCount: number
 }
 ChallengeType {
   type: 'image/png' | 'text/plain' | 'chain/<chainTicker>'
