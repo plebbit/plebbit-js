@@ -91,7 +91,7 @@ import {
     SubplebbitSuggested,
     SubplebbitType
 } from "./types";
-import { GetChallengeAnswers, getChallengeVerification } from "../challenges";
+import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "../challenges";
 import { sha256 } from "js-sha256";
 import LRUCache from "lru-cache";
 
@@ -228,8 +228,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 pages: undefined,
                 pagesIpfs: undefined
             });
-
-        // TODO should update subplebbit.challenges field here
     }
 
     private setAddress(newAddress: string) {
@@ -401,11 +399,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
         // settings.challenges = [] means sub has no challenges
-        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges"))
+        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges")) {
             newSubplebbitOptions.settings.challenges =
                 newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
                     ? []
                     : newSubplebbitOptions.settings.challenges;
+            this.challenges = newSubplebbitOptions.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+        }
 
         const newSubProps = {
             ...lodash.omit(newSubplebbitOptions, "address"),

@@ -115,7 +115,7 @@ export interface SubplebbitEditOptions {
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
     address?: string;
     settings?: SubplebbitSettings;
-    challenges?: SubplebbitChallenge[] | null | undefined;
+    challenges?: SubplebbitChallenge[];
 }
 
 interface ExcludeSubplebbit {
@@ -208,5 +208,5 @@ export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChall
 export type SubplebbitSettings = {
     fetchThumbnailUrls?: boolean;
     fetchThumbnailUrlsProxyUrl?: string;
-    challenges: SubplebbitChallengeSettings[];
+    challenges?: SubplebbitChallengeSettings[] | null | undefined;
 };
