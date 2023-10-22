@@ -21,13 +21,14 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.start();
         // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit?.settings.challenges).to.deep.equal([{ name: "captcha-canvas-v3" }]);
         expect(subplebbit.challenges[0].type).to.equal("image/png");
         expect(subplebbit.challenges[0].challenge).to.be.undefined;
         expect(subplebbit.challenges[0].description).to.equal("make custom image captcha");
         expect(subplebbit.challenges[0].exclude).to.be.undefined;
 
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`settings.challenges as null or undefined is parsed as []`, async () => {
@@ -36,6 +37,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit.challenges).to.be.undefined;
 
         await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit?.settings?.challenges).to.not.be.undefined; // Should default to captcha
 
         for (const noChallengeValue of [null, undefined, []]) {
@@ -44,7 +46,7 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(subplebbit.challenges).to.deep.equal([]);
         }
 
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`Can set a basic question challenge system`, async () => {
@@ -65,6 +67,17 @@ describe(`subplebbit.settings.challenges`, async () => {
 
         await publishWithExpectedResult(mockPost, true);
 
-        await subplebbit.stop();
+        await subplebbit.delete();
+    });
+
+    it(`subplebbit.settings.challenges isn't overridden with subplebbit.start() if it was edited before starting the sub`, async () => {
+        const subplebbit = await plebbit.createSubplebbit({});
+        await subplebbit.edit({ settings: { challenges: undefined } });
+        expect(subplebbit.settings.challenges).to.deep.equal([]);
+        expect(subplebbit.challenges).to.deep.equal([]);
+        await subplebbit.start();
+        expect(subplebbit.settings.challenges).to.deep.equal([]);
+        expect(subplebbit.challenges).to.deep.equal([]);
+        await subplebbit.delete();
     });
 });
