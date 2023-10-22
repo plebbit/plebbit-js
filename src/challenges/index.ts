@@ -299,8 +299,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallen
     }
   }
   const {challenge, type} = challengeFile
-  const {exclude, description} = subplebbitChallengeSettings
-  return {exclude, description, challenge, type}
+  return {exclude: subplebbitChallengeSettings.exclude, description: subplebbitChallengeSettings.description || challengeFile.description, challenge, type}
 }
 
 export {
