@@ -20,7 +20,6 @@ import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeType,
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
     CommentIpfsWithCid,
@@ -371,6 +370,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit> {
         const log = Logger("plebbit-js:subplebbit:edit");
 
+        // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
+        // settings.challenges = [] means sub has no challenges
+        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges"))
+            newSubplebbitOptions.settings.challenges =
+                newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
+                    ? []
+                    : newSubplebbitOptions.settings.challenges;
+
         if (this.plebbit.plebbitRpcClient) {
             const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
             await this.initSubplebbit(newProps);
@@ -397,15 +404,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._switchDbIfNeeded();
         }
 
-        // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
-        // settings.challenges = [] means sub has no challenges
-        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges")) {
-            newSubplebbitOptions.settings.challenges =
-                newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
-                    ? []
-                    : newSubplebbitOptions.settings.challenges;
+        if (newSubplebbitOptions?.settings?.challenges)
             this.challenges = newSubplebbitOptions.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
-        }
 
         const newSubProps = {
             ...lodash.omit(newSubplebbitOptions, "address"),
