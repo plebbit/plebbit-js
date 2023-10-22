@@ -31,6 +31,8 @@ const optionInputs = [
 
 const type: Challenge["type"] = "image/png"
 
+const description = "make custom image captcha" 
+
 const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, challengeIndex: number) => {
   // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
 
@@ -63,7 +65,7 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
 }
 
 function ChallengeFileFactory (subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
-  return {getChallenge, optionInputs, type}
+  return {getChallenge, optionInputs, type, description}
 }
 
 export default ChallengeFileFactory
