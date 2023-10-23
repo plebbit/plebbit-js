@@ -351,11 +351,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         const canCreateLocalSub = this._canCreateNewLocalSub();
         if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+        const isLocalSub = (await this.listSubplebbits()).includes(options?.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(options);
+        await subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options);
         await subplebbit.prePublish(); // May fail because sub is already being created (locked)
         log(
-            `Created local subplebbit (${subplebbit.address}) with props:`,
+            `Created ${isLocalSub ? "" : "new"} local subplebbit (${subplebbit.address}) with props:`,
             removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
         );
         return subplebbit;
