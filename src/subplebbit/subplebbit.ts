@@ -600,6 +600,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }).bind(this);
 
         this._isUpdating = true;
+        this._setState("updating");
 
         this.updateOnce()
             .catch((e) => log.error(`Failed to update subplebbit`, e))
