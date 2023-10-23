@@ -1,5 +1,10 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit, generateMockComment, generateMockPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+const {
+    mockPlebbit,
+    generateMockPost,
+    publishWithExpectedResult,
+    mockRemotePlebbitIpfsOnly
+} = require("../../../dist/node/test/test-util");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -7,9 +12,10 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 describe(`subplebbit.settings.challenges`, async () => {
-    let plebbit;
+    let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
     it(`default challenge is captcha-canvas-v3`, async () => {
@@ -23,10 +29,14 @@ describe(`subplebbit.settings.challenges`, async () => {
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
         await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit?.settings.challenges).to.deep.equal([{ name: "captcha-canvas-v3" }]);
-        expect(subplebbit.challenges[0].type).to.equal("image/png");
-        expect(subplebbit.challenges[0].challenge).to.be.undefined;
-        expect(subplebbit.challenges[0].description).to.equal("make custom image captcha");
-        expect(subplebbit.challenges[0].exclude).to.be.undefined;
+
+        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        for (const _subplebbit of [subplebbit, remoteSub]) {
+            expect(_subplebbit.challenges[0].type).to.equal("image/png");
+            expect(_subplebbit.challenges[0].challenge).to.be.undefined;
+            expect(_subplebbit.challenges[0].description).to.equal("make custom image captcha");
+            expect(_subplebbit.challenges[0].exclude).to.be.undefined;
+        }
 
         await subplebbit.delete();
     });
@@ -54,13 +64,20 @@ describe(`subplebbit.settings.challenges`, async () => {
         const challenges = [{ name: "question", options: { question: "1+1=?", answer: "2" } }];
         await subplebbit.edit({ settings: { challenges } });
         expect(subplebbit?.settings?.challenges).to.deep.equal(challenges);
-        expect(subplebbit.challenges[0].challenge).to.equal("1+1=?");
-        expect(subplebbit.challenges[0].description).to.equal("Ask a question, like 'What is the password?'");
-        expect(subplebbit.challenges[0].exclude).to.be.undefined;
-        expect(subplebbit.challenges[0].type).to.equal("text/plain");
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+
+        expect(subplebbit.updatedAt).to.equal(remoteSub.updatedAt);
+        for (const _subplebbit of [subplebbit, remoteSub]) {
+            expect(_subplebbit.challenges[0].challenge).to.equal("1+1=?");
+            expect(_subplebbit.challenges[0].description).to.equal("Ask a question, like 'What is the password?'");
+            expect(_subplebbit.challenges[0].exclude).to.be.undefined;
+            expect(_subplebbit.challenges[0].type).to.equal("text/plain");
+        }
+
         const mockPost = await generateMockPost(subplebbit.address, plebbit, false, { challengeAnswers: ["2"] });
 
         mockPost.once("challenge", (msg) => expect.fail("it should not send a challenge since it's there in subplebbit.challenge"));
@@ -76,8 +93,11 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         expect(subplebbit.challenges).to.deep.equal([]);
         await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit.settings.challenges).to.deep.equal([]);
-        expect(subplebbit.challenges).to.deep.equal([]);
+        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
+
         await subplebbit.delete();
     });
 });

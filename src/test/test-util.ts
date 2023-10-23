@@ -48,10 +48,6 @@ export async function generateMockPost(
         subplebbitAddress,
         ...postProps
     });
-    //@ts-ignore
-    post._updateIntervalMs = 200;
-
-    post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
     return post;
 }
@@ -77,10 +73,6 @@ export async function generateMockComment(
         timestamp: commentTimestamp,
         ...commentProps
     });
-    //@ts-ignore
-    comment._updateIntervalMs = 200;
-
-    comment.once("challenge", (challengeMsg) => comment.publishChallengeAnswers([]));
 
     return comment;
 }
@@ -262,6 +254,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
             return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
         else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address") return (await plebbit.createSigner()).address;
+        else if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+            return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
         else return null;
     };
 
@@ -398,7 +392,7 @@ export async function waitTillCommentIsInParentPages(
     checkInAllPages = false
 ) {
     const parent =
-        comment.depth === 0 ? await plebbit.getSubplebbit(comment.subplebbitAddress) : await plebbit.getComment(comment.parentCid);
+        comment.depth === 0 ? await plebbit.getSubplebbit(comment.subplebbitAddress) : await plebbit.createComment({cid: comment.parentCid});
     await parent.update();
     const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
