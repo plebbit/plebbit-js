@@ -404,8 +404,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._switchDbIfNeeded();
         }
 
-        if (newSubplebbitOptions?.settings?.challenges)
-            this.challenges = newSubplebbitOptions.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+        if (Array.isArray(newSubplebbitOptions?.settings?.challenges))
+            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(
+                getSubplebbitChallengeFromSubplebbitChallengeSettings
+            );
 
         const newSubProps = {
             ...lodash.omit(newSubplebbitOptions, "address"),

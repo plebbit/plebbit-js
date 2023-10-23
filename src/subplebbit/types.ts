@@ -85,6 +85,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings"> {
     posts?: PagesTypeIpfs;
+    challenges: Required<SubplebbitType["challenges"]>;
 }
 
 export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
