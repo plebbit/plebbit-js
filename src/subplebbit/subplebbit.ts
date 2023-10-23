@@ -8,7 +8,8 @@ import {
     timestamp,
     getErrorCodeFromMessage,
     doesEnsAddressHaveCapitalLetter,
-    decodePubsubMsgFromRpc
+    decodePubsubMsgFromRpc,
+    replaceXWithY
 } from "../util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer } from "../signer";
 import { PostsPages } from "../pages";
@@ -379,7 +380,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                     : newSubplebbitOptions.settings.challenges;
 
         if (this.plebbit.plebbitRpcClient) {
-            const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
+            const optionsParsed = <SubplebbitEditOptions>replaceXWithY(newSubplebbitOptions, undefined, null);
+            const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed);
             await this.initSubplebbit(newProps);
             return this;
         }

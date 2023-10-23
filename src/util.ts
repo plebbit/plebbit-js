@@ -45,13 +45,15 @@ export function timestamp() {
 
 export function replaceXWithY(obj: Object, x: any, y: any): any {
     // obj is a JS object
+    if (!lodash.isPlainObject(obj)) return obj;
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x) newObj[key] = y;
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (value instanceof Object && value !== null) newObj[key] = replaceXWithY(value, x, y);
+        else if (lodash.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
+        else if (Array.isArray(value)) newObj[key] = value.map((iterValue) => replaceXWithY(iterValue, x, y));
         else newObj[key] = value;
     });
     return newObj;
