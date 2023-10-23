@@ -1473,6 +1473,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (this.plebbit.plebbitRpcClient) {
             try {
                 this._startRpcSubscriptionId = await this.plebbit.plebbitRpcClient.startSubplebbit(this.address);
+                this._setState("started");
             } catch (e) {
                 log.error(`Failed to start subplebbit (${this.address}) from RPC due to error`, e);
                 this._setState("stopped");
