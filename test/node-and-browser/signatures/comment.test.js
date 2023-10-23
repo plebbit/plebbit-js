@@ -108,6 +108,8 @@ describe("sign comment", async () => {
     });
 });
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe("verify Comment", async () => {
     let plebbit;
     before(async () => {
@@ -160,6 +162,8 @@ describe("verify Comment", async () => {
     it(`can verify a comment whose flair have been changed by mod`);
 });
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Comment with author.address as domain`, async () => {
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockPlebbit();
@@ -192,6 +196,8 @@ describe(`Comment with author.address as domain`, async () => {
     });
 });
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {

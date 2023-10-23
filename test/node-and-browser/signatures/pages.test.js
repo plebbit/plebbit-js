@@ -39,6 +39,8 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
     return pageObjRes;
 };
 
+//prettier-ignore
+if (!process.env["USE_RPC"]) // RPC tests don't need to run this because clients of RPC trust RPC response and won't validate
 describe(`verify pages`, async () => {
     let plebbit, subplebbit;
     before(async () => {

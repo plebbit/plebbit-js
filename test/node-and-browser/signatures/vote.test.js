@@ -48,6 +48,8 @@ describe("Sign Vote", async () => {
     });
 });
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe("Verify vote", async () => {
     let plebbit;
     before(async () => {

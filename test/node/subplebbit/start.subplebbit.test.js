@@ -1,5 +1,10 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit, createMockSub, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+const {
+    publishRandomPost,
+    mockPlebbit,
+    createSubWithNoChallenge,
+    publishWithExpectedResult
+} = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
 const fs = require("fs");
@@ -11,13 +16,11 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
@@ -34,7 +37,7 @@ describe(`subplebbit.start`, async () => {
     });
 
     it(`Can start a sub after stopping it`, async () => {
-        const newSub = await createMockSub({}, plebbit);
+        const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
         await publishRandomPost(newSub.address, plebbit, {}, false);
@@ -44,6 +47,8 @@ describe(`subplebbit.start`, async () => {
         await newSub.stop();
     });
 
+    //prettier-ignore
+    if(!process.env["USE_RPC"])
     it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
@@ -61,6 +66,8 @@ describe(`subplebbit.start`, async () => {
     });
 });
 
+//prettier-ignore
+if (!process.env["USE_RPC"])
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
@@ -132,7 +139,7 @@ describe(`Publish loop resiliency`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await createMockSub({}, plebbit);
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
@@ -161,4 +168,6 @@ describe(`Publish loop resiliency`, async () => {
 
         expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
     });
+
+    it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`);
 });

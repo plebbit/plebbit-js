@@ -2,7 +2,7 @@ const Plebbit = require("../../../dist/node");
 const {
     mockPlebbit,
     publishRandomPost,
-    createMockSub,
+    createSubWithNoChallenge,
     mockGatewayPlebbit,
     publishRandomReply,
     publishVote,
@@ -21,12 +21,10 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe("plebbit.listSubplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
         subSigner = await plebbit.createSigner();
     });
 
@@ -51,7 +49,7 @@ describe("plebbit.listSubplebbits", async () => {
 describe(`subplebbit.delete`, async () => {
     let plebbit, sub;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
         sub = await plebbit.createSubplebbit();
     });
 
@@ -64,12 +62,16 @@ describe(`subplebbit.delete`, async () => {
         expect(subsAfterDeletion).to.not.include(sub.address);
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
         const ipfsKeys = await plebbit._clientsManager.getDefaultIpfs()._client.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
         expect(subKeyExists).to.be.false;
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
         const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", sub.address);
         expect(fs.existsSync(expectedPath)).to.be.true;
@@ -79,8 +81,8 @@ describe(`subplebbit.delete`, async () => {
 describe(`subplebbit.lastPostCid`, async () => {
     let plebbit, sub;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        sub = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
     });
@@ -120,7 +122,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
-        const sub = await createMockSub({}, plebbit);
+        const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
@@ -137,7 +139,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
-        const sub = await createMockSub({}, plebbit);
+        const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
@@ -148,35 +150,38 @@ describe(`Create a sub with basic auth urls`, async () => {
 describe(`subplebbit.pubsubTopic`, async () => {
     let subplebbit, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`subplebbit.pubsubTopic is defaulted to address when start() is called`, async () => {
         expect(subplebbit.pubsubTopic).to.be.undefined;
         await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit.pubsubTopic).to.equal(subplebbit.address);
     });
     it(`Publications can be published to a sub with pubsubTopic=undefined`, async () => {
         await subplebbit.edit({ pubsubTopic: undefined });
-        expect(subplebbit.pubsubTopic).to.be.undefined;
+        if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
+            expect.fail("subplebbit.pubsubTopic should be null or undefined");
         await new Promise((resolve) => subplebbit.once("update", resolve));
-        expect(subplebbit.pubsubTopic).to.be.undefined;
+        if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
+            expect.fail("subplebbit.pubsubTopic should be null or undefined");
 
-        const post = await publishRandomPost(subplebbit.address, plebbit, {});
-        expect(post.subplebbit.pubsubTopic).to.be.undefined;
+        const post = await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        expect(post.subplebbit?.pubsubTopic).to.be.undefined;
     });
 });
 
 describe(`subplebbit.state`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
     after(async () => {
@@ -233,12 +238,12 @@ describe(`subplebbit.state`, async () => {
 describe(`subplebbit.startedState`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`subplebbit.startedState defaults to stopped`, async () => {
@@ -257,6 +262,8 @@ describe(`subplebbit.startedState`, async () => {
         expect(plebbit.eventNames()).to.deep.equal(["error"]);
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
@@ -272,11 +279,11 @@ describe(`subplebbit.updatingState`, async () => {
         expect(subplebbit.updatingState).to.equal("stopped");
     });
 
-    it(`subplebbit.updatingState is in correct order upon updating with IPFS client`, async () => {
+    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
         const plebbit = await mockPlebbit();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
-        const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await subplebbit.update();
@@ -285,16 +292,18 @@ describe(`subplebbit.updatingState`, async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 5)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`updating states is in correct order upon updating with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
 
         const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
 
-        const expectedStates = ["resolving-address", "fetching-ipns", "succeeded", "stopped"];
+        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
         const recordedStates = [];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -304,12 +313,14 @@ describe(`subplebbit.updatingState`, async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     it(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
-        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const plebbit = await mockPlebbit();
         const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
         const expectedStates = ["succeeded", "stopped"];
         const recordedStates = [];
@@ -333,8 +344,8 @@ describe(`comment.link`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await createMockSub({}, plebbit);
-        await subplebbit.edit({ settings: { fetchThumbnailUrls: true } });
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+        await subplebbit.edit({ settings: { ...subplebbit.settings, fetchThumbnailUrls: true } });
         expect(subplebbit.settings.fetchThumbnailUrls).to.be.true;
 
         await subplebbit.start();
@@ -429,12 +440,14 @@ describe(`comment.link`, async () => {
     });
 });
 
+//prettier-ignore
+if (!process.env["USE_RPC"])
 describe(`Migration to a new IPFS repo`, async () => {
     let subAddress;
     let plebbitDifferentIpfs;
     before(async () => {
         const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        const sub = await createMockSub({}, plebbit);
+        const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
         const post = await publishRandomPost(sub.address, plebbit, {}, true);
@@ -447,7 +460,7 @@ describe(`Migration to a new IPFS repo`, async () => {
             ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"]
         }); // Different IPFS repo
 
-        const subDifferentIpfs = await createMockSub({ address: sub.address }, plebbitDifferentIpfs);
+        const subDifferentIpfs = await createSubWithNoChallenge({ address: sub.address }, plebbitDifferentIpfs);
         await subDifferentIpfs.start();
         await new Promise((resolve) => subDifferentIpfs.once("update", resolve));
         subAddress = subDifferentIpfs.address;
@@ -484,7 +497,7 @@ describe(`Migration to a new IPFS repo`, async () => {
 
     it(`Comments' commentUpdate IPNS is republished after expiring`, async () => {
         const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        const sub = await createMockSub({}, plebbit);
+        const sub = await createSubWithNoChallenge({}, plebbit);
         sub._commentUpdateIpnsLifetimeSeconds = 2; // Republish IPNS every 2 seconds
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
@@ -518,15 +531,17 @@ describe(`subplebbit.clients (Local)`, async () => {
         plebbit = await mockPlebbit();
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.ipfsClients`, async () => {
         it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
-            const mockSub = await createMockSub({}, plebbit);
+            const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.ipfsClients).length).to.equal(1);
             expect(Object.values(mockSub.clients.ipfsClients)[0].state).to.equal("stopped");
         });
 
         it(`subplebbit.clients.ipfsClients.state is publishing-ipns before publishing a new IPNS`, async () => {
-            const sub = await createMockSub({}, plebbit);
+            const sub = await createSubWithNoChallenge({}, plebbit);
 
             let publishStateTime;
             let updateTime;
@@ -550,15 +565,17 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.pubsubClients`, async () => {
         it(`subplebbit.clients.pubsubClients[url].state is stopped by default`, async () => {
-            const mockSub = await createMockSub({}, plebbit);
+            const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.pubsubClients).length).to.equal(3);
             expect(Object.values(mockSub.clients.pubsubClients)[0].state).to.equal("stopped");
         });
 
         it(`correct order of pubsubClients state when receiving a comment while skipping challenge`, async () => {
-            const mockSub = await createMockSub({}, plebbit);
+            const mockSub = await createSubWithNoChallenge({}, plebbit);
 
             const expectedStates = ["waiting-challenge-requests", "publishing-challenge-verification", "waiting-challenge-requests"];
 
@@ -582,9 +599,7 @@ describe(`subplebbit.clients (Local)`, async () => {
         it(`Correct order of pubsubClients when receiving a comment while mandating challenge`, async () => {
             const mockSub = await plebbit.createSubplebbit({});
 
-            mockSub.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
-                return [true, undefined];
-            });
+            await mockSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
             const expectedStates = [
                 "waiting-challenge-requests",
@@ -604,17 +619,25 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => mockSub.once("update", resolve));
 
-            publishRandomPost(mockSub.address, plebbit, {}, false);
+            const post = await generateMockPost(mockSub.address, plebbit);
+            post.once("challenge", async () => {
+                await post.publishChallengeAnswers(["2"]);
+            });
+            await post.publish();
 
             await new Promise((resolve) => mockSub.once("challengeverification", resolve));
 
             expect(actualStates).to.deep.equal(expectedStates);
+
+            await mockSub.delete();
         });
     });
 
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
-            const mockSub = await createMockSub({}, plebbit);
+            const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
@@ -624,12 +647,11 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
 
         it(`correct order of chainProviders state when receiving a comment with a domain for author.address`, async () => {
-            const mockSub = await createMockSub({}, plebbit);
+            const mockSub = await createSubWithNoChallenge({}, plebbit);
 
             const expectedStates = ["resolving-author-address", "stopped"];
 
             const actualStates = [];
-
             mockSub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
@@ -643,6 +665,9 @@ describe(`subplebbit.clients (Local)`, async () => {
             expect(actualStates).to.deep.equal(expectedStates);
         });
     });
+
+    // TODO
+    describe(`subplebbit.clients.plebbitRpcClients`, async () => {});
 });
 
 describe(`subplebbit.statsCid`, async () => {
@@ -650,7 +675,7 @@ describe(`subplebbit.statsCid`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await createMockSub({}, plebbit);
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
@@ -783,7 +808,7 @@ describe.skip(`Challenge exchange resiliency`, async () => {
         }
 
         const subplebbitPlebbit = await mockPlebbit();
-        subplebbit = await createMockSub({}, subplebbitPlebbit);
+        subplebbit = await createSubWithNoChallenge({}, subplebbitPlebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });

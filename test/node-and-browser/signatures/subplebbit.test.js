@@ -10,6 +10,8 @@ const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/
 const { mockPlebbit } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe("Sign subplebbit", async () => {
     let plebbit;
     before(async () => {
@@ -35,6 +37,8 @@ describe("Sign subplebbit", async () => {
     });
 });
 
+// prettier-ignore
+if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
 describe("Verify subplebbit", async () => {
     let plebbit;
 

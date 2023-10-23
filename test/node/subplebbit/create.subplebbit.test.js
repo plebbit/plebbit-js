@@ -1,5 +1,11 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit, publishRandomPost, publishRandomReply, createMockSub } = require("../../../dist/node/test/test-util");
+const {
+    mockPlebbit,
+    publishRandomPost,
+    publishRandomReply,
+    createSubWithNoChallenge,
+    mockRemotePlebbitIpfsOnly
+} = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const path = require("path");
 const { messages } = require("../../../dist/node/errors");
@@ -13,12 +19,11 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe(`plebbit.createSubplebbit (local)`, async () => {
-    let plebbit;
+    let plebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
     const _createAndValidateSubArsg = async (subArgs) => {
@@ -29,7 +34,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address.startsWith("12D3")).to.be.true;
-        const subplebbitIpns = await plebbit.getSubplebbit(newSubplebbit.address);
+        const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
         expect(stringify(subplebbitIpns.toJSON())).to.equal(stringify(newSubplebbit.toJSON()));
         return newSubplebbit;
     };
@@ -56,12 +61,13 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         if (!process.env["USE_RPC"])
             // signer will not exist on RPC tests
             expect(createdSub.signer.address).to.be.a("string");
-        await createdSub.stop();
+        await createdSub.delete();
     });
 
-    it.only(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
+    // This test
+    it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
         const props = { title: "Test hello", description: "Hello there" };
-        const sub = await createMockSub(props, plebbit); // Need a way to set sub to be without challenges
+        const sub = await createSubWithNoChallenge(props, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
         const post = await publishRandomPost(sub.address, plebbit, {}, false);
@@ -70,7 +76,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const clonedSub = await plebbit.createSubplebbit(sub);
         expect(clonedSub.posts).to.be.a("object");
         expect(sub.toJSON()).to.deep.equal(clonedSub.toJSON());
-        await sub.stop();
+        await sub.delete();
     });
 
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
@@ -83,7 +89,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const title = `Test online plebbit`;
         const createdSub = await onlinePlebbit.createSubplebbit({ title: title });
         const endTime = timestamp();
-        await createdSub.stop();
+        await createdSub.delete();
         expect(endTime).to.be.lessThanOrEqual(startTime + 10, "createSubplebbit took more than 10s in an online ipfs node");
     });
 
@@ -93,11 +99,11 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
         expect(stringify(createdSub.toJSON())).to.equal(stringify(sub.toJSON()));
-        await createdSub.stop();
+        await createdSub.delete();
     });
 
     it(`Recreating a local sub with createSubplebbit({address, ...extraProps}) should not override local sub props`, async () => {
-        const newSub = await createMockSub(
+        const newSub = await createSubWithNoChallenge(
             {
                 title: `Test for extra props`,
                 description: "Test for description extra props"
@@ -108,7 +114,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await new Promise((resolve) => newSub.once("update", resolve));
         await newSub.stop();
 
-        const createdSubplebbit = await createMockSub(
+        const createdSubplebbit = await createSubWithNoChallenge(
             {
                 address: newSub.address,
                 title: "nothing",
@@ -123,7 +129,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await new Promise((resolve) => createdSubplebbit.once("update", resolve));
         expect(createdSubplebbit.title).to.equal(newSub.title);
         expect(createdSubplebbit.description).to.equal(newSub.description);
-        await createdSubplebbit.stop();
+        await createdSubplebbit.delete();
     });
 
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
@@ -164,6 +170,6 @@ if (!process.env["USE_RPC"])
             await assert.isFulfilled(plebbit.createSubplebbit({ address: sub.address }));
             const elapsedTime = Date.now() - timeBefore;
             expect(elapsedTime).to.be.greaterThan(10000); // It should take more than 10s because plebbit-js will keep trying to acquire lock until it's stale
-            await sub.stop();
+            await sub.delete();
         });
     });
