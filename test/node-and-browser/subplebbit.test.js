@@ -185,7 +185,7 @@ describe("subplebbit.update (remote)", async () => {
     });
 
     it(`subplebbit.update() is working as expected after calling subplebbit.stop()`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({address: signers[0].address});
+        const subplebbit = await plebbit.createSubplebbit({ address: signers[0].address });
 
         await subplebbit.update();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -198,7 +198,6 @@ describe("subplebbit.update (remote)", async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
     });
-
 });
 
 describe("plebbit.getSubplebbit (Remote)", async () => {
@@ -382,6 +381,59 @@ describe(`subplebbit.clients (Remote)`, async () => {
             expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
         });
     });
+
+    //prettier-ignore
+    if (process.env["USE_RPC"] === "1")
+    describe(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
+
+        it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
+            const sub = await plebbit.createSubplebbit({address: signers[0].address});
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
+        })
+
+        it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with plebbit address`, async () => {
+            const sub = await plebbit.createSubplebbit({address: signers[0].address});
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const recordedStates = [];
+            const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
+
+            sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
+                recordedStates.push(newState)
+            );
+
+
+            await sub.update();
+
+            await new Promise(resolve => sub.once("update", resolve));
+
+            expect(recordedStates).to.deep.equal(expectedStates);
+
+            await sub.stop();
+
+        })
+
+        it(`subplebbit.clients.plebbitRpcClients states are correct if fetching a sub with ENS address`, async () => {
+
+            const sub = await plebbit.createSubplebbit({address: "plebbit.eth"});
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const recordedStates = [];
+            const expectedStates = ["resolving-subplebbit-address","fetching-ipns", "fetching-ipfs", "stopped"];
+
+            sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
+                recordedStates.push(newState)
+            );
+
+
+            await sub.update();
+
+            await new Promise(resolve => sub.once("update", resolve));
+
+            expect(recordedStates).to.deep.equal(expectedStates);
+
+            await sub.stop();
+        })
+    })
 
     describe(`subplebbit.posts.clients`, async () => {
         //prettier-ignore

@@ -6,7 +6,8 @@ const {
     mockGatewayPlebbit,
     publishRandomReply,
     publishVote,
-    generateMockPost
+    generateMockPost,
+    publishWithExpectedResult
 } = require("../../../dist/node/test/test-util");
 const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
 
@@ -666,8 +667,109 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
-    // TODO
-    describe(`subplebbit.clients.plebbitRpcClients`, async () => {});
+    //prettier-ignore
+    if (process.env["USE_RPC"] === "1")
+    describe(`subplebbit.clients.plebbitRpcClients (local subplebbit ran over RPC)`, async () => {
+
+        it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
+            const sub = await plebbit.createSubplebbit({});
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            expect(sub.clients.plebbitRpcClients[rpcUrl].state).to.equal("stopped");
+        })
+
+        it(`subplebbit.clients.plebbitRpcClients states are set correctly prior to publishing IPNS`, async () => {
+            const sub = await plebbit.createSubplebbit({});
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const recordedStates = [];
+
+            sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
+                recordedStates.push(newState)
+            );
+
+
+            await sub.start();
+
+            await new Promise(resolve => sub.once("update", resolve));
+
+            expect(recordedStates).to.deep.equal(["publishing-ipns"]);
+
+            await sub.delete();
+
+        })
+
+        it(`subplebbit.clients.plebbitRpcClients states are set correctly if it receives a comment while having no challenges`, async () =>{
+            const sub = await createSubWithNoChallenge({}, plebbit);
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const recordedStates = [];
+
+            const expectedStates = [
+                "publishing-ipns",
+                "stopped",
+                "waiting-challenge-requests",
+                "publishing-challenge-verification",
+                "waiting-challenge-requests",
+                "publishing-ipns",
+                "stopped",
+              ];
+            sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
+                recordedStates.push(newState)
+            );
+
+
+            await sub.start();
+
+            await new Promise(resolve => sub.once("update", resolve));
+
+            await publishRandomPost(sub.address, plebbit, {}, true);
+            expect(recordedStates).to.deep.equal(expectedStates);
+
+            await sub.delete();
+
+
+        })
+
+        it.only(`subplebbit.clients.plebbitRpcClients states are set correctly if it receives a comment while mandating challenge`, async () => {
+            const sub = await plebbit.createSubplebbit({}, plebbit);
+            await sub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const recordedStates = [];
+
+            const expectedStates = [
+                "publishing-ipns",
+                "stopped",
+                "waiting-challenge-requests",
+                "publishing-challenge",
+                "waiting-challenge-answers",
+                "publishing-challenge-verification",
+                "waiting-challenge-requests",
+                "publishing-ipns",
+              ]
+            sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
+                recordedStates.push(newState)
+            );
+
+
+            await sub.start();
+
+            await new Promise(resolve => sub.once("update", resolve));
+
+            const mockPost = await generateMockPost(sub.address, plebbit);
+
+            mockPost.once("challenge", (challengeMessage) => {
+                mockPost.publishChallengeAnswers(["2"]);
+            });
+
+
+
+            await publishWithExpectedResult(mockPost, true);
+            await new Promise(resolve => sub.once("update", resolve));
+            expect(recordedStates).to.deep.equal(expectedStates);
+
+            await sub.delete();
+        })
+
+    });
 });
 
 describe(`subplebbit.statsCid`, async () => {
