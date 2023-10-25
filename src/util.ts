@@ -64,7 +64,8 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
             typeof comment.comment.timestamp === "number"
     );
 
-    const score = comment.update.upvoteCount - comment.update.downvoteCount;
+    let score = comment.update.upvoteCount - comment.update.downvoteCount;
+    score++ // reddit initial upvotes is 1, plebbit is 0
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
@@ -74,12 +75,13 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
 export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
     assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
-    if (comment.update.downvoteCount <= 0 || comment.update.upvoteCount <= 0) return 0;
-    const magnitude = comment.update.upvoteCount + comment.update.downvoteCount;
+    const upvoteCount = comment.update.upvoteCount + 1 // reddit initial upvotes is 1, plebbit is 0
+    if (comment.update.downvoteCount <= 0 || upvoteCount <= 0) return 0;
+    const magnitude = upvoteCount + comment.update.downvoteCount;
     const balance =
-        comment.update.upvoteCount > comment.update.downvoteCount
-            ? comment.update.downvoteCount / comment.update.upvoteCount
-            : comment.update.upvoteCount / comment.update.downvoteCount;
+        upvoteCount > comment.update.downvoteCount
+            ? comment.update.downvoteCount / upvoteCount
+            : upvoteCount / comment.update.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 
