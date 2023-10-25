@@ -1493,24 +1493,29 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                     this._setStartedState(newStartedState);
                     this._updateRpcClientStateFromStartedState(newStartedState);
                 })
-                .on("challengerequest", (args) =>
+                .on("challengerequest", (args) => {
+                    this._setRpcClientState("waiting-challenge-requests");
                     this.emit(
                         "challengerequest",
                         <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(args.params.result)
-                    )
-                )
-                .on("challenge", (args) =>
-                    this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result))
-                )
-                .on("challengeanswer", (args) =>
-                    this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
-                )
-                .on("challengeverification", (args) =>
+                    );
+                })
+                .on("challenge", (args) => {
+                    this._setRpcClientState("publishing-challenge");
+                    this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result));
+                    this._setRpcClientState("waiting-challenge-answers");
+                })
+                .on("challengeanswer", (args) => {
+                    this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result));
+                })
+                .on("challengeverification", (args) => {
+                    this._setRpcClientState("publishing-challenge-verification");
                     this.emit(
                         "challengeverification",
                         <DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(args.params.result)
-                    )
-                )
+                    );
+                    this._setRpcClientState("waiting-challenge-requests");
+                })
 
                 .on("error", (args) => this.emit("error", args.params.result));
 
