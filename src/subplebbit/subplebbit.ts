@@ -1099,6 +1099,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
+
+            const publicationHash = sha256(deterministicStringify(publication));
+            const ipfsSigner = await this.dbHandler.querySigner(publicationHash);
+            if (ipfsSigner) return messages.ERR_DUPLICATE_COMMENT;
         }
 
         if (this.isPublicationVote(request.publication)) {
