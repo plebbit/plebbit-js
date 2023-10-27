@@ -1,4 +1,4 @@
-const {testRateLimit, addToRateLimiter} = require('../../../dist/node/challenges/exclude/rate-limiter')
+const {testRateLimit, addToRateLimiter} = require('../../dist/node/challenges/exclude/rate-limiter')
 const {expect} = require('chai')
 
 // sometimes use random addresses because the rate limiter 

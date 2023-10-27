@@ -1,5 +1,5 @@
-const {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess} = require('../../../dist/node/challenges/exclude')
-const {testRateLimit, addToRateLimiter} = require('../../../dist/node/challenges/exclude/rate-limiter')
+const {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess} = require('../../dist/node/challenges/exclude')
+const {testRateLimit, addToRateLimiter} = require('../../dist/node/challenges/exclude/rate-limiter')
 const {expect} = require('chai')
 const {Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results} = require('./fixtures/fixtures')
 
