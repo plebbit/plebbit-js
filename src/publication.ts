@@ -68,9 +68,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
     // private
     protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
-    protected pubsubMessageSigner: Signer;
     private _challengeAnswer: ChallengeAnswerMessage;
     private _publishedChallengeRequests: ChallengeRequestMessage[];
+    private _challengeIdToPubsubSigner: Record<string, Signer>;
     private _pubsubProviders: string[];
     private _pubsubProvidersDoneWaiting: Record<string, boolean>;
     private _currentPubsubProviderIndex: number;
@@ -87,6 +87,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         super();
         this._plebbit = plebbit;
         this._receivedChallengeFromSub = this._receivedChallengeVerification = false;
+        this._challengeIdToPubsubSigner = {};
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
@@ -190,7 +191,11 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
             );
             const decryptedChallenge: DecryptedChallenge = JSON.parse(
-                await decryptEd25519AesGcm(msgParsed.encrypted, this.pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)
+                await decryptEd25519AesGcm(
+                    msgParsed.encrypted,
+                    this._challengeIdToPubsubSigner[msgParsed.challengeRequestId.toString()].privateKey,
+                    this.subplebbit.encryption.publicKey
+                )
             );
             this._challenge = {
                 ...msgParsed,
@@ -225,7 +230,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     const decryptedProps: DecryptedChallengeVerification = JSON.parse(
                         await decryptEd25519AesGcm(
                             msgParsed.encrypted,
-                            this.pubsubMessageSigner.privateKey,
+                            this._challengeIdToPubsubSigner[msgParsed.challengeRequestId.toString()].privateKey,
                             this.subplebbit.encryption.publicKey
                         )
                     );
@@ -267,7 +272,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),
-            this.pubsubMessageSigner.privateKey,
+            this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()].privateKey,
             this.subplebbit.encryption.publicKey
         );
 
@@ -281,7 +286,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         };
         this._challengeAnswer = new ChallengeAnswerMessage({
             ...toSignAnswer,
-            signature: await signChallengeAnswer(toSignAnswer, this.pubsubMessageSigner)
+            signature: await signChallengeAnswer(
+                toSignAnswer,
+                this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()]
+            )
         });
 
         this._updatePublishingState("publishing-challenge-answer");
@@ -516,16 +524,17 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         }
         this._validateSubFields();
 
-        this.pubsubMessageSigner = await this._plebbit.createSigner();
+        const pubsubMessageSigner = await this._plebbit.createSigner();
 
         const encrypted = await encryptEd25519AesGcm(
             JSON.stringify(this.toJSONPubsubMessage()),
-            this.pubsubMessageSigner.privateKey,
+            pubsubMessageSigner.privateKey,
             this.subplebbit.encryption.publicKey
         );
 
-        const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(this.pubsubMessageSigner.publicKey);
+        const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(pubsubMessageSigner.publicKey);
 
+        this._challengeIdToPubsubSigner[challengeRequestId.toString()] = pubsubMessageSigner;
         const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = {
             type: "CHALLENGEREQUEST",
             encrypted,
@@ -538,7 +547,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         const challengeRequest = new ChallengeRequestMessage({
             ...toSignMsg,
-            signature: await signChallengeRequest(toSignMsg, this.pubsubMessageSigner)
+            signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
         });
         log(
             `Attempting to publish ${this.getType()} with challenge id (${
