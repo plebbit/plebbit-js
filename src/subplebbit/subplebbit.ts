@@ -1158,6 +1158,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 { reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED },
                 decryptedRequest.challengeRequestId
             );
+        if (decryptedRequest?.publication?.author?.["subplebbit"])
+            return this._publishFailedChallengeVerification(
+                { reason: messages.ERR_FORBIDDEN_AUTHOR_FIELD },
+                decryptedRequest.challengeRequestId
+            );
 
         await this.dbHandler.insertChallengeRequest(
             request.toJSONForDb(decryptedRequest.challengeAnswers, decryptedRequest.challengeCommentCids),
