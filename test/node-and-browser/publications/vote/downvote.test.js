@@ -16,7 +16,6 @@ const chaiAsPromised = require("chai-as-promised");
 const { default: waitUntil } = require("async-wait-until");
 chai.use(chaiAsPromised);
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const subplebbitAddress = signers[0].address;
 

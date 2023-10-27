@@ -51,12 +51,11 @@ describe(`Client side verification`, async () => {
 
 //prettier-ignore
 if (!process.env["USE_RPC"])
-
 describe("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
     before(async () => {
         plebbit = await mockPlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit);
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
     });
 
     it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);

@@ -9,8 +9,6 @@ const {
 } = require("../../dist/node/test/test-util");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 const mathCliSubplebbitAddress = signers[1].address;
 
 describe.skip(`Stress test challenge exchange`, async () => {

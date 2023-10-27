@@ -10,7 +10,6 @@ const { mockPlebbit } = require("../../../dist/node/test/test-util");
 
 const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
     commentValidationCache.clear();

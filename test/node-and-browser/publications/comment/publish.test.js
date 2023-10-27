@@ -23,7 +23,6 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("publishing comments", async () => {
     let plebbit;

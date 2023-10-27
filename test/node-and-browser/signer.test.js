@@ -11,7 +11,6 @@ const { fromString } = require("uint8arrays/from-string");
 const { Buffer } = require("buffer");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;

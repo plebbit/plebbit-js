@@ -10,7 +10,6 @@ const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const subplebbitSigner = signers[0];
 

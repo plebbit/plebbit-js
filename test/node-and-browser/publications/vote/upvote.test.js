@@ -16,7 +16,6 @@ const subplebbitAddress = signers[0].address;
 
 const previousVotes = [];
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("Test upvote", async () => {
     let plebbit, postToVote, replyToVote, signer;

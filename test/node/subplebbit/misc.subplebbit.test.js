@@ -244,7 +244,9 @@ describe(`subplebbit.startedState`, async () => {
     });
 
     after(async () => {
-        await subplebbit.delete();
+        try {
+            await subplebbit.delete();
+        } catch {}
     });
 
     it(`subplebbit.startedState defaults to stopped`, async () => {

@@ -66,7 +66,7 @@ describe(`DB importing`, async () => {
 
     it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
         const regularPlebbit = await mockPlebbit();
-        const tempPlebbit = await mockPlebbit({ dataPath: tempy.directory() });
+        const tempPlebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
         const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address);
         await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", signers[0].address));
         // Should be included in tempPlebbit.listSubplebbits now

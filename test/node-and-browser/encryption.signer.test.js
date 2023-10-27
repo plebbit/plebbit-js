@@ -14,7 +14,6 @@ const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
 const { mockPlebbit } = require("../../dist/node/test/test-util");
 const ed = require("@noble/ed25519");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 describe("encryption", () => {
     let plebbit, authorSigner;
