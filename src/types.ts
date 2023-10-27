@@ -4,7 +4,7 @@ import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
-import { Plebbit } from "./plebbit";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import {
@@ -479,7 +479,7 @@ export type NativeFunctions = {
     createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{ Id: string; Name: string }>;
+    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: {url: string; headers?: Object;}) => Promise<IpfsKey>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
 };
 

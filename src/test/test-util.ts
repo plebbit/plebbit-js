@@ -227,7 +227,7 @@ export async function startSubplebbits(props: {
 }
 
 export function mockDefaultOptionsForNodeAndBrowserTests() {
-    const shouldUseRPC = process?.env["USE_RPC"] === "1";
+    const shouldUseRPC = process?.env?.["USE_RPC"] === "1";
 
     if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
     else

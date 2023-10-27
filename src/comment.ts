@@ -24,6 +24,7 @@ import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
 import { messages } from "./errors";
 import { Flair } from "./subplebbit/types";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -300,10 +301,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         };
     }
 
-    setCommentIpnsKey(ipnsKey: { Id: string; Name: string }) {
+    setCommentIpnsKey(ipnsKey: IpfsKey) {
         // Contains name and id
-        this.ipnsName = ipnsKey.Id;
-        this.ipnsKeyName = ipnsKey.Name;
+        this.ipnsName = ipnsKey.id;
+        this.ipnsKeyName = ipnsKey.name;
     }
 
     setPostCid(newPostCid: string) {

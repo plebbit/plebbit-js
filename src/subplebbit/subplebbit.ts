@@ -9,7 +9,8 @@ import {
     getErrorCodeFromMessage,
     doesEnsAddressHaveCapitalLetter,
     decodePubsubMsgFromRpc,
-    replaceXWithY
+    replaceXWithY,
+    removeNullAndUndefinedValuesRecursively
 } from "../util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer } from "../signer";
 import { PostsPages } from "../pages";
@@ -74,6 +75,7 @@ import Author from "../author";
 import { SubplebbitClientsManager } from "../clients/client-manager";
 import * as cborg from "cborg";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption";
 import {
     Challenge,
@@ -135,7 +137,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _updateTimeout?: NodeJS.Timeout;
     private _syncInterval?: any; // TODO change "sync" to "publish"
     private _sync: boolean;
-    private _ipfsNodeIpnsKeyNames: string[];
+    private _ipfsNodeKeys: IpfsKey[];
     private _subplebbitUpdateTrigger: boolean;
     private _loadingOperation: RetryOperation;
     private _commentUpdateIpnsLifetimeSeconds: number;
@@ -320,15 +322,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _importSignerIntoIpfsIfNeeded(signer: Required<Pick<SignerType, "ipnsKeyName" | "privateKey">>) {
         assert(signer.ipnsKeyName);
-        if (!this._ipfsNodeIpnsKeyNames)
-            this._ipfsNodeIpnsKeyNames = (await this._clientsManager.getDefaultIpfs()._client.key.list()).map((key) => key.name);
+        if (!this._ipfsNodeKeys) this._ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
 
-        const keyExistsInNode = this._ipfsNodeIpnsKeyNames.some((key) => key === signer.ipnsKeyName);
-        if (!keyExistsInNode) {
+        const signerInNode = this._ipfsNodeKeys.find((key) => key.name === signer.ipnsKeyName);
+        if (!signerInNode) {
             const ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
-            await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, this.plebbit);
-            this._ipfsNodeIpnsKeyNames.push(signer.ipnsKeyName);
+            const res = await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, {
+                url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
+                headers: this.plebbit.ipfsHttpClientsOptions[0].headers
+            });
+            this._ipfsNodeKeys.push(res);
+            return res;
         }
+        return signerInNode;
     }
 
     // TODO rename and make this private
@@ -776,9 +782,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ipfsSigner.ipnsKeyName = sha256(deterministicStringify(publication));
             await this.dbHandler.insertSigner(ipfsSigner.toJSONSignersTableRow(), undefined);
             ipfsSigner.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(ipfsSigner.privateKey));
-            commentToInsert.setCommentIpnsKey(
-                await nativeFunctions.importSignerIntoIpfsNode(ipfsSigner.ipnsKeyName, ipfsSigner.ipfsKey, this.plebbit)
-            );
+            //@ts-expect-error
+            const signerOnIpfsNode = await this._importSignerIntoIpfsIfNeeded(ipfsSigner);
+            commentToInsert.setCommentIpnsKey(signerOnIpfsNode);
 
             if (this.isPublicationPost(commentToInsert)) {
                 // Post
@@ -898,7 +904,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         log(
             `(${request.challengeRequestId.toString()}): `,
             `Published ${challengeMessage.type} over pubsub: `,
-            lodash.omit(toSignChallenge, ["encrypted"])
+            removeNullAndUndefinedValuesRecursively(lodash.omit(toSignChallenge, ["encrypted"]))
         );
         this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
         this.emit("challenge", {
@@ -1005,7 +1011,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log(
                 `(${request.challengeRequestId.toString()}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
-                lodash.omit(objectToEmit, ["encrypted", "signature"])
+                removeNullAndUndefinedValuesRecursively(lodash.omit(objectToEmit, ["encrypted", "signature"]))
             );
         }
     }
@@ -1385,7 +1391,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
         const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(
-            this._ipfsNodeIpnsKeyNames,
+            this._ipfsNodeKeys.map((key) => key.name),
             this._commentUpdateIpnsLifetimeSeconds,
             trx
         );
@@ -1434,7 +1440,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         try {
             await this._mergeInstanceStateWithDbState({});
-            this._ipfsNodeIpnsKeyNames = (await this._clientsManager.getDefaultIpfs()._client.key.list()).map((key) => key.name);
+            this._ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
             this._clientsManager.updateIpfsState("publishing-ipns");

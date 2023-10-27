@@ -1,3 +1,4 @@
+import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import {
     StorageInterface,
     ChainProvider,
@@ -18,7 +19,6 @@ import {
     VotePubsubMessage,
     VoteType
 } from "./types";
-import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit/subplebbit";
 import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
@@ -121,6 +121,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private _initIpfsClients() {
         this.clients.ipfsClients = {};
         if (!this.ipfsHttpClientsOptions) return;
+        if (!nativeFunctions)
+            throw Error("Native function is defined at all. Can't create ipfs client: " + JSON.stringify(this._userPlebbitOptions));
         for (const clientOptions of this.ipfsHttpClientsOptions) {
             const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
