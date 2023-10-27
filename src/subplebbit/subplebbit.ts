@@ -830,14 +830,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             else if (request.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
         } catch (e) {
             log.error(`Failed to decrypt request (${request?.challengeRequestId?.toString()}) due to error`, e);
-            if (request?.challengeRequestId?.toString()) {
-                this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
+            if (request?.challengeRequestId?.toString())
                 await this._publishFailedChallengeVerification(
                     { reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG },
                     request.challengeRequestId
                 );
-                this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
-            }
 
             throw e;
         }
@@ -864,8 +861,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (!validity.valid) {
             await this._publishFailedChallengeVerification({ reason: validity.reason }, request.challengeRequestId);
-            this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
-
             throwWithErrorCode(getErrorCodeFromMessage(validity.reason), { publication: request.publication, validity });
         }
     }
@@ -949,6 +944,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             publication: undefined
         });
         this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
+        this._cleanUpChallengeAnswerPromise(challengeRequestId.toString());
     }
 
     private async _publishChallengeVerification(
@@ -992,11 +988,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.dbHandler.insertChallengeVerification(challengeVerification.toJSONForDb(), undefined),
                 this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification)
             ]);
-            log(
-                `(${request.challengeRequestId.toString()}): `,
-                `Published ${challengeVerification.type} over pubsub:`,
-                lodash.omit(toSignMsg, ["encrypted"])
-            );
 
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
@@ -1007,11 +998,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 publicationToEmit.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(publicationToEmit.author.address);
             }
 
-            this.emit("challengeverification", {
-                ...challengeVerification,
-                publication: publicationToEmit
-            });
+            const objectToEmit = { ...challengeVerification, publication: publicationToEmit };
+            this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
+            this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
+            log(
+                `(${request.challengeRequestId.toString()}): `,
+                `Published ${challengeVerification.type} over pubsub:`,
+                lodash.omit(objectToEmit, ["encrypted", "signature"])
+            );
         }
     }
 
