@@ -12,7 +12,6 @@ const subplebbitAddress = signers[0].address;
 
 // TODO add a test where you load all posts using lastPostCid and compare them with pages
 
-
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
@@ -86,12 +85,9 @@ const activeScore = async (comment) => {
 };
 
 const testListOfSortedComments = async (sortedComments, sortName) => {
-    console.log(`Testing sort ${sortName}. There are ${sortedComments.length} comments under ${sortName}`);
-
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
-    console.log(`Current sort ${sortName} current timeframe = ${currentTimeframe}`);
 
     for (let j = 0; j < sortedComments.length - 1; j++) {
         // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
@@ -119,7 +115,6 @@ const testListOfSortedComments = async (sortedComments, sortName) => {
         }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }
-    console.log(`Passed tests for current sort ${sortName}`);
 };
 
 const testPostsSort = async (sortName) => {

@@ -730,7 +730,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
         })
 
-        it.only(`subplebbit.clients.plebbitRpcClients states are set correctly if it receives a comment while mandating challenge`, async () => {
+        it(`subplebbit.clients.plebbitRpcClients states are set correctly if it receives a comment while mandating challenge`, async () => {
             const sub = await plebbit.createSubplebbit({}, plebbit);
             await sub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
