@@ -3,7 +3,8 @@ const {
     publishRandomPost,
     mockPlebbit,
     createSubWithNoChallenge,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    mockRemotePlebbitIpfsOnly
 } = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
@@ -136,16 +137,17 @@ describe(`Start lock`, async () => {
 });
 
 describe(`Publish loop resiliency`, async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`Subplebbit can publish a new IPNS record with one of its comments having a valid ENS author address`, async () => {
@@ -164,10 +166,44 @@ describe(`Publish loop resiliency`, async () => {
             if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
         }, 60000);
         await new Promise((resolve) => subplebbit.once("update", () => (updated = true) && resolve(1)));
-        const loadedSub = await plebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
+        const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
         expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
     });
 
-    it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`);
+    //prettier-ignore
+    if (!process.env["USE_RPC"])
+    it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
+
+        
+        const mockPost = await plebbit.createComment({
+            author: { address: "plebbit.eth" },
+            signer: signers[7], // Wrong signer
+            title: "Test publishing with invalid ENS " + Date.now(),
+            subplebbitAddress: subplebbit.address
+        });
+
+        subplebbit.on("error", (err) => {
+            console.log(err);
+        })
+        subplebbit.plebbit.resolveAuthorAddresses = false; // So the post gets accepted
+
+        await publishWithExpectedResult(mockPost, true); 
+        subplebbit.plebbit.resolveAuthorAddresses = true; 
+
+        expect(mockPost.author.address).to.equal("plebbit.eth");
+
+        await publishRandomPost(subplebbit.address ,plebbit); // Stimulate an update
+
+        for (const resolveAuthorAddresses of [true, false]) {
+            const remotePlebbit = await mockRemotePlebbitIpfsOnly({resolveAuthorAddresses});
+            const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); 
+            const mockPostInPage = loadedSub.posts.pages.hot.comments.find(comment => comment.cid === mockPost.cid);
+            if (resolveAuthorAddresses)
+                expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
+            else 
+                expect(mockPostInPage.author.address).to.equal(mockPost.author.address);
+        }
+
+    });
 });
