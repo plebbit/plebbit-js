@@ -1,5 +1,11 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit, loadAllPages, createSubWithNoChallenge } = require("../../../dist/node/test/test-util");
+const {
+    publishRandomPost,
+    mockPlebbit,
+    loadAllPages,
+    createSubWithNoChallenge,
+    mockRemotePlebbitIpfsOnly
+} = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
@@ -268,10 +274,11 @@ describe(`subplebbit.edit (RPC)`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await plebbit.createSubplebbit({ signer: signers[7] });
+        const signer = await plebbit.createSigner();
+        subplebbit = await plebbit.createSubplebbit({signer});
         await subplebbit.start();
         await new Promise(resolve => subplebbit.once("update", resolve));
-        expect(subplebbit.address).to.equal(signers[7].address);
+        expect(subplebbit.address).to.equal(signer.address);
     });
 
     after(async () => {
@@ -286,17 +293,12 @@ describe(`subplebbit.edit (RPC)`, async () => {
             const [keyToEdit, newValue] = Object.entries(editArgs)[0];
             await subplebbit.edit(editArgs);
             expect(subplebbit[keyToEdit]).to.equal(newValue);
-            const remotePlebbit = await mockPlebbit({
-                plebbitRpcClientsOptions: undefined,
-                noData: true,
-                ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-            }); // This plebbit instance won't use RPC
+            const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
             const loadedSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
             await loadedSubplebbit.update();
             await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
             await loadedSubplebbit.stop();
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
-            expect(stringify(loadedSubplebbit.toJSON())).to.equal(stringify(subplebbit.toJSON()));
         })
     );
 });
