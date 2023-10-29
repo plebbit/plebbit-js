@@ -9,7 +9,7 @@ const {
     mockPlebbit,
     findCommentInPage,
     mockGatewayPlebbit,
-    generatePostForMathCliSubplebbit
+    generatePostToAnswerMathQuestion
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -22,7 +22,6 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
-
 
 describe("publishing comments", async () => {
     let plebbit;
@@ -399,7 +398,7 @@ describe(`comment.publishingState`, async () => {
                 "succeeded"
             ];
             const recordedStates = [];
-            const mockPost = await generatePostForMathCliSubplebbit(plebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
@@ -423,7 +422,7 @@ describe(`comment.publishingState`, async () => {
             const recordedStates = [];
             const mathCliSubplebbitAddress = signers[1].address;
             await plebbit.getSubplebbit(mathCliSubplebbitAddress); // address of math cli, we fetch it here to make sure it's cached
-            const mockPost = await generatePostForMathCliSubplebbit(plebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
 
@@ -468,7 +467,7 @@ describe(`comment.publishingState`, async () => {
             ];
             const recordedStates = [];
             await gatewayPlebbit.getSubplebbit(mathCliSubplebbitAddress); // Make sure it's cached
-            const mockPost = await generatePostForMathCliSubplebbit(gatewayPlebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, gatewayPlebbit);
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));
 
@@ -491,7 +490,7 @@ describe(`comment.publishingState`, async () => {
                 "succeeded"
             ];
             const recordedStates = [];
-            const mockPost = await generatePostForMathCliSubplebbit(gatewayPlebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, gatewayPlebbit);
             mockPost._getSubplebbitCache = () => undefined;
 
             mockPost.on("publishingstatechange", (newState) => recordedStates.push(newState));

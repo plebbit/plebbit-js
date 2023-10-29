@@ -43,7 +43,7 @@ describe("sign comment", async () => {
         const signature = await signComment(comment, signer, plebbit);
         expect(signature.publicKey).to.equal(signer.publicKey);
         const signedComment = { signature: signature, ...comment };
-        const verificaiton = await verifyComment(signedComment, plebbit);
+        const verificaiton = await verifyComment(signedComment, plebbit.resolveAuthorAddresses);
         expect(verificaiton).to.deep.equal({ valid: true });
         signedCommentClone = lodash.cloneDeep(signedComment);
     });
@@ -60,7 +60,7 @@ describe("sign comment", async () => {
         const signature = await signComment(comment, signer, plebbit);
         const signedComment = { signature: signature, ...comment };
         expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
-        const verificaiton = await verifyComment(signedComment, plebbit);
+        const verificaiton = await verifyComment(signedComment, plebbit.resolveAuthorAddresses);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
@@ -103,7 +103,7 @@ describe("sign comment", async () => {
             timestamp: 12345678
         };
         const signature = await signComment(comment, signers[4], plebbit);
-        const res = await verifyComment({ ...comment, signature }, plebbit);
+        const res = await verifyComment({ ...comment, signature }, plebbit.resolveAuthorAddresses);
         expect(res).to.deep.equal({ valid: true });
     });
 });
