@@ -1461,7 +1461,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (unpinnedCommentsCids.length === 0) return;
 
-        log.trace(`There are ${unpinnedCommentsCids.length} comments that need to be repinned`);
+        log(`There are ${unpinnedCommentsCids.length} comments that need to be repinned`);
 
         const unpinnedComments = await Promise.all(
             (await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)).map((dbRes) => this.plebbit.createComment(dbRes))
@@ -1487,7 +1487,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
             this._clientsManager.updateIpfsState("publishing-ipns");
-            await Promise.all([this._updateCommentsThatNeedToBeUpdated(), this._repinCommentsIPFSIfNeeded()]);
+            await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
             this._setStartedState("succeeded");
             this._clientsManager.updateIpfsState("stopped");
@@ -1606,6 +1606,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
         this._setState("started");
+
+        await this._repinCommentsIPFSIfNeeded();
 
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this.plebbit.publishInterval))
