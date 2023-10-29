@@ -962,7 +962,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
             log.trace(`(${request.challengeRequestId.toString()}): `, `User has been answered correctly`);
-            const publication = await this.storePublication(request);
+            //@ts-expect-error
+            const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
+                await this.storePublication(request);
+            if (lodash.isPlainObject(publication))
+                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(publication.author.address);
             // could contain "publication" or "reason"
             const encrypted = lodash.isPlainObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
