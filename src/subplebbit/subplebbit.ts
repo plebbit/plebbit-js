@@ -1114,6 +1114,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const publicationHash = sha256(deterministicStringify(publication));
             const ipfsSigner = await this.dbHandler.querySigner(publicationHash);
             if (ipfsSigner) return messages.ERR_DUPLICATE_COMMENT;
+            if (typeof publication["link"] === "string" && publication["link"].length > 2000)
+                return messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT;
         }
 
         if (this.isPublicationVote(request.publication)) {
