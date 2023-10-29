@@ -64,7 +64,6 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await createdSub.delete();
     });
 
-    // This test
     it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
         const props = { title: "Test hello", description: "Hello there" };
         const sub = await createSubWithNoChallenge(props, plebbit);

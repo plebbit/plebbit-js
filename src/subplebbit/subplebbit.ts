@@ -146,6 +146,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _updateRpcSubscriptionId?: number;
     private _startRpcSubscriptionId?: number;
     private _isUpdating: boolean;
+    private _cidsToUnPin: string[] = [];
 
     // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
     // Most of the time they will be delete and cleaned up automatically
@@ -672,6 +673,23 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.emit("error", error);
         }
     }
+
+    private async _unpinStaleCids() {
+        const log = Logger("plebbit-js:subplebbit:unpinStaleCids");
+        this._cidsToUnPin = lodash.uniq(this._cidsToUnPin);
+        if (this._cidsToUnPin.length > 0) {
+            await Promise.all(
+                this._cidsToUnPin.map(async (cid) => {
+                    try {
+                        await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid);
+                    } catch (e) {
+                        log.trace("Failed to unpin cid " + cid);
+                    }
+                })
+            );
+            log(`unpinned ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
+        }
+    }
     private async updateSubplebbitIpnsIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
@@ -689,7 +707,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.sortHandler.generateSubplebbitPosts()
         ]);
 
+        if (subplebbitPosts && this.posts?.pageCids) {
+            const newPageCids = Object.values(subplebbitPosts.pageCids);
+            const pageCidsToUnPin = Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid));
+
+            this._cidsToUnPin.push(...pageCidsToUnPin);
+        }
+
         const statsCid = (await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
+        if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.push(this.statsCid);
 
         await this._mergeInstanceStateWithDbState({});
 
@@ -720,7 +746,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ])
         );
 
+        await this._unpinStaleCids();
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(this._rawSubplebbitType));
+        this._cidsToUnPin = [file.path];
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true
@@ -1418,6 +1446,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const commentsGroupedByDepth = lodash.groupBy(commentsToUpdate, "depth");
 
         const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+
+        // TODO we should unpin old cids of comment ipns here
 
         for (const depthKey of depthsKeySorted) for (const comment of commentsGroupedByDepth[depthKey]) await this._updateComment(comment);
     }

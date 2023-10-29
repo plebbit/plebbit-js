@@ -396,6 +396,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 );
                 return;
             }
+            log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
             this._initProps({ ...this._rawCommentIpfs, cid: this.cid });
             this.emit("update", this);
         }
