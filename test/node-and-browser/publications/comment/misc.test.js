@@ -9,8 +9,8 @@ const {
     loadAllPages,
     mockGatewayPlebbit,
     mockRemotePlebbitIpfsOnly,
-    generatePostForMathCliSubplebbit,
-    publishVote
+    publishVote,
+    generatePostToAnswerMathQuestion
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
@@ -26,6 +26,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
+const mathCliSubplebbitAddress = signers[1].address;
 
 describe("createComment", async () => {
     let plebbit;
@@ -136,10 +137,11 @@ describe(`comment.update`, async () => {
         let eventNum = 0;
         recreatedComment.on("update", (_) => {
             if (eventNum === 0) {
-                // This is the update where Comment props are loaded (postCid, title, content, etc)
+                // This is the update where CommentIpfs props are loaded (postCid, title, content, etc)
                 expect(recreatedComment.cid).to.equal(comment.cid);
                 expect(recreatedComment.shortCid).to.equal(comment.shortCid);
-                expect(recreatedComment.author).to.deep.equal(comment.author);
+                expect(recreatedComment.toJSONIpfs()).to.deep.equal(comment.toJSONIpfs());
+                expect(recreatedComment.updatedAt).to.be.undefined;
             } else if (eventNum === 1) {
                 // The update where CommentUpdate props are loaded
                 expect(recreatedComment.updatedAt).to.be.a("number");
@@ -827,7 +829,7 @@ describe(`comment.clients`, async () => {
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge`, async () => {
 
-            const mockPost = await generatePostForMathCliSubplebbit(plebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress},plebbit);
 
             const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
             // Only first pubsub url is used for subscription. For publishing we use all providers
@@ -938,7 +940,7 @@ describe(`comment.clients`, async () => {
 
             plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
 
-            const mockPost = await generatePostForMathCliSubplebbit( plebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress},plebbit);
             mockPost._publishToDifferentProviderThresholdSeconds = 5;
 
             const expectedStates = {
