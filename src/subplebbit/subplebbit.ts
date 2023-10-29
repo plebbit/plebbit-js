@@ -708,8 +708,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         ]);
 
         if (subplebbitPosts && this.posts?.pageCids) {
-            const newPageCids = Object.values(subplebbitPosts.pageCids);
-            const pageCidsToUnPin = Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid));
+            const newPageCids = lodash.uniq(Object.values(subplebbitPosts.pageCids));
+            const pageCidsToUnPin = lodash.uniq(Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
 
             this._cidsToUnPin.push(...pageCidsToUnPin);
         }
@@ -1361,6 +1361,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
+        if (storedCommentUpdate?.replies?.pageCids && generatedPages){
+            const newPageCids = lodash.uniq(Object.values(generatedPages.pageCids));
+            const pageCidsToUnPin = lodash.uniq(Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
+            this._cidsToUnPin.push(...pageCidsToUnPin);
+        }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
         const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
