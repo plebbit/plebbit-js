@@ -79,7 +79,7 @@ describe(`subplebbit.delete`, async () => {
     });
 });
 
-describe(`subplebbit.lastPostCid`, async () => {
+describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     let plebbit, sub;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -90,11 +90,21 @@ describe(`subplebbit.lastPostCid`, async () => {
 
     after(async () => await sub.stop());
 
-    it(`subplebbit.lastPostCid reflects latest post published`, async () => {
+    it(`subplebbit.lastPostCid and lastCommentCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
-        const post = await publishRandomPost(sub.address, plebbit, {}, false);
-        await waitUntil(() => typeof sub.lastPostCid === "string", { timeout: 200000 });
+        expect(sub.lastCommentCid).to.be.undefined;
+        const post = await publishRandomPost(sub.address, plebbit, {}, true);
         expect(sub.lastPostCid).to.equal(post.cid);
+        expect(sub.lastCommentCid).to.equal(post.cid);
+    });
+
+    it(`subplebbit.lastPostCid doesn't reflect latest reply`, async () => {
+        await publishRandomReply(sub.posts.pages.hot.comments[0], plebbit);
+        expect(sub.lastPostCid).to.equal(sub.posts.pages.hot.comments[0].cid);
+    });
+
+    it(`subplebbit.lastCommentCid reflects latest comment (post or reply)`, async () => {
+        expect(sub.lastCommentCid).to.equal(sub.posts.pages.hot.comments[0].replies.pages.topAll.comments[0].cid);
     });
 });
 
