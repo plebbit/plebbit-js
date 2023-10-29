@@ -392,7 +392,9 @@ export async function waitTillCommentIsInParentPages(
     checkInAllPages = false
 ) {
     const parent =
-        comment.depth === 0 ? await plebbit.getSubplebbit(comment.subplebbitAddress) : await plebbit.createComment({cid: comment.parentCid});
+        comment.depth === 0
+            ? await plebbit.getSubplebbit(comment.subplebbitAddress)
+            : await plebbit.createComment({ cid: comment.parentCid });
     await parent.update();
     const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
@@ -432,12 +434,12 @@ export async function createSubWithNoChallenge(props: CreateSubplebbitOptions, p
     return sub;
 }
 
-export async function generatePostForMathCliSubplebbit(plebbit: Plebbit) {
-    const mathCliAddress = "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z";
-    const mockPost = await generateMockPost(mathCliAddress, plebbit, false);
+export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
+    const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
     mockPost.removeAllListeners();
     mockPost.once("challenge", (challengeMessage) => {
         mockPost.publishChallengeAnswers(["2"]);
     });
+
     return mockPost;
 }
