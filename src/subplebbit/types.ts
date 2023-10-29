@@ -109,6 +109,7 @@ export interface SubplebbitEditOptions {
     roles?: { [authorAddress: string]: SubplebbitRole };
     rules?: string[];
     lastPostCid?: string;
+    lastCommentCid?: string;
     pubsubTopic?: string;
     stats?: SubplebbitStats;
     features?: SubplebbitFeatures;

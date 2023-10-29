@@ -845,8 +845,12 @@ export class DbHandler {
         };
     }
 
-    async queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentWithCommentUpdate, "cid"> | undefined> {
+    async queryLatestPostCid(trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ depth: 0 }).orderBy("id", "desc").first();
+    }
+
+    async queryLatestCommentCid(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
     }
 
     async insertSigner(signer: SingersTableRowInsert, trx?: Transaction) {

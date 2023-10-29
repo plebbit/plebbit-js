@@ -103,6 +103,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     description?: string;
     roles?: { [authorAddress: string]: SubplebbitRole };
     lastPostCid?: string;
+    lastCommentCid?: string;
     posts: PostsPages;
     pubsubTopic?: string;
     stats?: SubplebbitStats;
@@ -197,6 +198,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
+        this.lastCommentCid = mergedProps.lastCommentCid;
         this.setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challenges = mergedProps.challenges;
@@ -296,6 +298,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             title: this.title,
             description: this.description,
             lastPostCid: this.lastPostCid,
+            lastCommentCid: this.lastCommentCid,
             pubsubTopic: this.pubsubTopic,
             address: this.address,
             challenges: this.challenges,
@@ -678,6 +681,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPostCid(trx);
+        const latestComment = await this.dbHandler.queryLatestCommentCid(trx);
         await this.dbHandler.commitTransaction("subplebbit");
 
         const [stats, subplebbitPosts] = await Promise.all([
@@ -693,6 +697,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...lodash.omit(this._toJSONBase(), "signature"),
             lastPostCid: latestPost?.cid,
+            lastCommentCid: latestComment?.cid,
             statsCid,
             updatedAt,
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined
@@ -704,7 +709,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         this._rawSubplebbitType = { ...newIpns, signature };
         await this._updateDbInternalState(
-            lodash.pick(this.toJSONInternal(), ["posts", "lastPostCid", "statsCid", "updatedAt", "signature", "_subplebbitUpdateTrigger"])
+            lodash.pick(this.toJSONInternal(), [
+                "posts",
+                "lastPostCid",
+                "lastCommentCid",
+                "statsCid",
+                "updatedAt",
+                "signature",
+                "_subplebbitUpdateTrigger"
+            ])
         );
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(this._rawSubplebbitType));
@@ -1001,14 +1014,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
-            let publicationToEmit: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined = undefined;
-            if (lodash.isPlainObject(publication)) {
-                //@ts-expect-error
-                publicationToEmit = publication;
-                publicationToEmit.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(publicationToEmit.author.address);
-            }
-
-            const objectToEmit = { ...challengeVerification, publication: publicationToEmit };
+            const objectToEmit = { ...challengeVerification, publication };
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
