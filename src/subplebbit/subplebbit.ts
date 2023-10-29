@@ -729,7 +729,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined
         };
         const signature = await signSubplebbit(newIpns, this.signer);
-        this._validateLocalSignature(signature, newIpns);
+        // this._validateLocalSignature(signature, newIpns); // this commented line should be taken out later
         await this.initSubplebbit({ ...newIpns, signature });
         this._subplebbitUpdateTrigger = false;
 
@@ -1335,14 +1335,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _validateCommentUpdate(update: CommentUpdate, comment: Pick<CommentWithCommentUpdate, "cid" | "signature">) {
         const simUpdate = JSON.parse(deterministicStringify(update)); // We need to stringify the update, so it will have the same shape as if it were sent by pubsub or IPNS
-        const signatureValidity = await verifyCommentUpdate(
-            simUpdate,
-            this.plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            this.address,
-            comment,
-            false
-        );
+        const signatureValidity = await verifyCommentUpdate(simUpdate, false, this._clientsManager, this.address, comment, false);
         assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
     }
 
@@ -1378,7 +1371,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
-        await this._validateCommentUpdate(newIpns, comment); // TODO Should be removed once signature are working properly
+        // await this._validateCommentUpdate(newIpns, comment); // this line should be take out later
         await this.dbHandler.upsertCommentUpdate(newIpns);
 
         await this._publishCommentIpns(comment, newIpns);
