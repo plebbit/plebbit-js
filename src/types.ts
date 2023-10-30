@@ -27,6 +27,7 @@ export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
 export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
+    // Options as inputted by user
     ipfsGatewayUrls?: string[];
     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
@@ -40,6 +41,14 @@ export interface PlebbitOptions {
     noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
 }
 
+export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
+    // These will be the final options after parsing/processing
+    ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
+    pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
+    plebbitRpcClientsOptions: string[] | undefined;
+
+    dataPath: string | undefined;
+}
 export interface PageType {
     comments: Comment[];
     nextCid?: string;
@@ -479,7 +488,7 @@ export type NativeFunctions = {
     createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: {url: string; headers?: Object;}) => Promise<IpfsKey>;
+    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => Promise<IpfsKey>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
 };
 

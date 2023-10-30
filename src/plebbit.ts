@@ -17,7 +17,8 @@ import {
     PlebbitOptions,
     PubsubClient,
     VotePubsubMessage,
-    VoteType
+    VoteType,
+    ParsedPlebbitOptions
 } from "./types";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit/subplebbit";
@@ -63,6 +64,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     chainProviders: { [chainTicker: string]: ChainProvider };
     _storage: StorageInterface;
     stats: Stats;
+    parsedPlebbitOptions: ParsedPlebbitOptions;
 
     private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
     _clientsManager: ClientsManager;
@@ -89,20 +91,22 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
 
         this._userPlebbitOptions = options;
-        this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
+        //@ts-expect-error
+        this.parsedPlebbitOptions = lodash.cloneDeep(options);
+        this.parsedPlebbitOptions.plebbitRpcClientsOptions = this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
         if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
         this._pubsubSubscriptions = {};
 
         //@ts-expect-error
         this.clients = {};
-        this.ipfsHttpClientsOptions =
+        this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions =
             Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
                 : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
 
         const fallbackPubsubProviders = this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
-        this.pubsubHttpClientsOptions =
+        this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
                 : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions || this.ipfsHttpClientsOptions || fallbackPubsubProviders;
@@ -111,12 +115,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             ? options.publishInterval
             : 20000; // Default to 20s
         this.updateInterval = this.parsedPlebbitOptions.updateInterval = options.hasOwnProperty("updateInterval")
+            ? options.updateInterval
+            : 60000; // Default to 1 minute
+        this.noData = this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
 
         this._initIpfsClients();
         this._initPubsubClients();
         this._initRpcClients();
 
-        if (!this.noData && !this.plebbitRpcClient) this.dataPath = options.dataPath || getDefaultDataPath();
+        if (!this.noData && !this.plebbitRpcClient)
+            this.dataPath = this.parsedPlebbitOptions.dataPath = options.dataPath || getDefaultDataPath();
     }
 
     private _initIpfsClients() {
@@ -153,13 +161,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initRpcClients() {
         this.clients.plebbitRpcClients = {};
-        if (this.plebbitRpcClientsOptions)
+        if (this.parsedPlebbitOptions.plebbitRpcClientsOptions)
             for (const rpcUrl of this.plebbitRpcClientsOptions)
                 this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
     }
 
     private _initResolver(options: PlebbitOptions) {
-        this.chainProviders = this.plebbitRpcClient
+        this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClient
             ? {}
             : options.chainProviders || {
                   eth: { urls: ["viem", "ethers.js"], chainId: 1 },
@@ -175,7 +183,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
         this.clients.chainProviders = this.chainProviders;
 
-        this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
+        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses")
+            ? options.resolveAuthorAddresses
+            : true;
         this.resolver = new Resolver({
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
