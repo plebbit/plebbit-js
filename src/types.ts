@@ -21,7 +21,7 @@ import {
 import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
-import { Flair } from "./subplebbit/types";
+import { ChallengeFile, Flair } from "./subplebbit/types";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
@@ -723,4 +723,14 @@ export interface StorageInterface {
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;
     keys: () => Promise<string[]>;
+}
+
+// RPC types
+export interface PlebbitWsServerSettings {
+    plebbitOptions: PlebbitOptions;
+}
+
+export interface PlebbitWsServerSettingsSerialized {
+    plebbitOptions: ParsedPlebbitOptions;
+    challenges: Record<string, Omit<ChallengeFile, "getChallenge">>;
 }

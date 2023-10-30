@@ -6,11 +6,20 @@ import {EventEmitter} from 'events'
 const log = Logger('plebbit-js-rpc:plebbit-ws-server')
 import {PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions} from './types'
 import {Plebbit} from '../../dist/node/plebbit'
-import {CommentEditPubsubMessage, CommentPubsubMessage, DecryptedChallengeRequest, PlebbitOptions, VotePubsubMessage} from '../../dist/node/types'
+import {
+  CommentEditPubsubMessage,
+  CommentPubsubMessage,
+  DecryptedChallengeRequest,
+  PlebbitOptions,
+  PlebbitWsServerSettings,
+  PlebbitWsServerSettingsSerialized,
+  VotePubsubMessage,
+} from '../../dist/node/types'
 import {WebSocket} from 'ws'
 import Publication from '../../dist/node/publication'
 import {CreateSubplebbitOptions, SubplebbitEditOptions} from '../../dist/node/subplebbit/types'
 import {Subplebbit} from '../../dist/node/subplebbit/subplebbit'
+import lodash from 'lodash'
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -25,7 +34,6 @@ const getStartedSubplebbit = async (address: string) => {
 
 class PlebbitWsServer extends EventEmitter {
   plebbit: Plebbit
-  plebbitOptions?: PlebbitOptions
   rpcWebsockets: RpcWebsocketsServer
   ws: RpcWebsocketsServer['wss']
   connections: {[connectionId: string]: WebSocket} = {}
@@ -37,7 +45,6 @@ class PlebbitWsServer extends EventEmitter {
     super()
     // don't instantiate plebbit in constructor because it's an async function
     this.plebbit = plebbit
-    this.plebbitOptions = plebbitOptions
     this.rpcWebsockets = new RpcWebsocketsServer({
       port,
       // might be needed to specify host for security later
@@ -85,8 +92,8 @@ class PlebbitWsServer extends EventEmitter {
     this.rpcWebsocketsRegister('listSubplebbits', this.listSubplebbits.bind(this))
     this.rpcWebsocketsRegister('fetchCid', this.fetchCid.bind(this))
     this.rpcWebsocketsRegister('resolveAuthorAddress', this.resolveAuthorAddress.bind(this))
-    this.rpcWebsocketsRegister('getPlebbitOptions', this.getPlebbitOptions.bind(this))
-    this.rpcWebsocketsRegister('setPlebbitOptions', this.setPlebbitOptions.bind(this))
+    this.rpcWebsocketsRegister('getSettings', this.getSettings.bind(this))
+    this.rpcWebsocketsRegister('setSettings', this.setSettings.bind(this))
     // JSON RPC pubsub methods
     this.rpcWebsocketsRegister('commentUpdate', this.commentUpdate.bind(this))
     this.rpcWebsocketsRegister('subplebbitUpdate', this.subplebbitUpdate.bind(this))
@@ -272,15 +279,15 @@ class PlebbitWsServer extends EventEmitter {
     return res
   }
 
-  async getPlebbitOptions(params: any) {
-    // if plebbitOptions is undefined, send empty object
-    return this.plebbitOptions || {}
+  async getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized> {
+    const plebbitOptions = this.plebbit.parsedPlebbitOptions
+    const challenges = lodash.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) => lodash.omit(challengeFactory({}), 'getChallenge'))
+    return {plebbitOptions, challenges}
   }
 
-  async setPlebbitOptions(params: any) {
-    const plebbitOptions = params[0]
-    this.plebbit = await PlebbitJs.Plebbit(plebbitOptions)
-    this.plebbitOptions = plebbitOptions
+  async setSettings(params: any) {
+    const settings = <PlebbitWsServerSettings>params[0]
+    this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions)
 
     // restart all started subplebbits with new plebbit options
     for (const address in startedSubplebbits) {

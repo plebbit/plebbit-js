@@ -1,5 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
-import { CommentIpfsType, DecryptedChallengeRequest, PageIpfs } from "../types";
+import { CommentIpfsType, DecryptedChallengeRequest, PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
@@ -205,13 +205,23 @@ export default class PlebbitRpcClient {
         return subs;
     }
 
-    async getDefaults() {
-        throw Error("Not implemented");
-    }
-
     async fetchCid(cid: string): Promise<string> {
         const res = <string>await this._webSocketClient.call("fetchCid", [cid]);
         return res;
+    }
+
+    async setSettings(settings: PlebbitWsServerSettings) {
+        const res = <boolean>await this._webSocketClient.call("setSettings", [settings]);
+        return res;
+    }
+
+    async getSettings() {
+        const res = <PlebbitWsServerSettingsSerialized>await this._webSocketClient.call("getSettings", []);
+        return res;
+    }
+
+    async getDefaults() {
+        throw Error("Not implemented");
     }
 
     async getPeers() {
