@@ -290,6 +290,7 @@ describe(`comment.update`, async () => {
 
         await new Promise((resolve) => recreatedReply.once("update", resolve));
         expect(recreatedReply.updatedAt).to.be.a("number");
+        expect(recreatedReply.updatedAt).to.equal(originalReply.updatedAt);
         expect(recreatedReply.toJSON()).to.deep.equal(originalReply.toJSON());
 
         await recreatedReply.stop();

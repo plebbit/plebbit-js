@@ -293,8 +293,9 @@ describe(`subplebbit.edit (RPC)`, async () => {
             const [keyToEdit, newValue] = Object.entries(editArgs)[0];
             await subplebbit.edit(editArgs);
             expect(subplebbit[keyToEdit]).to.equal(newValue);
+            await new Promise(resolve => subplebbit.once("update", resolve));
             const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
-            const loadedSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
+            const loadedSubplebbit = await remotePlebbit.createSubplebbit({address: subplebbit.address});
             await loadedSubplebbit.update();
             await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
             await loadedSubplebbit.stop();

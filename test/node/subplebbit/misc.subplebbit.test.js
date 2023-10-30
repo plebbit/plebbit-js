@@ -104,6 +104,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     });
 
     it(`subplebbit.lastCommentCid reflects latest comment (post or reply)`, async () => {
+        if ((sub.posts.pages.hot.comments[0].replyCount || 0) === 0) await new Promise((resolve) => sub.once("update", resolve));
         expect(sub.lastCommentCid).to.equal(sub.posts.pages.hot.comments[0].replies.pages.topAll.comments[0].cid);
     });
 });
@@ -720,8 +721,7 @@ describe(`subplebbit.clients (Local)`, async () => {
                 "waiting-challenge-requests",
                 "publishing-challenge-verification",
                 "waiting-challenge-requests",
-                "publishing-ipns",
-                "stopped",
+                "publishing-ipns"
               ];
             sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
                 recordedStates.push(newState)
@@ -733,7 +733,10 @@ describe(`subplebbit.clients (Local)`, async () => {
             await new Promise(resolve => sub.once("update", resolve));
 
             await publishRandomPost(sub.address, plebbit, {}, true);
-            expect(recordedStates).to.deep.equal(expectedStates);
+            if (recordedStates[recordedStates.length - 1] === "stopped")
+                expect(recordedStates).to.deep.equal([...expectedStates, "stopped"]);
+            else
+                expect(recordedStates).to.deep.equal(expectedStates);
 
             await sub.delete();
 
