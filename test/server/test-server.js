@@ -2,11 +2,13 @@
 // that can be used during node and browser tests
 const getIpfsPath = require("go-ipfs").path;
 const { execSync, exec } = require("child_process");
-const { startSubplebbits } = require("../../dist/node/test/test-util");
+const { startSubplebbits, mockRpcServerPlebbit } = require("../../dist/node/test/test-util");
 const signers = require("../fixtures/signers");
 const http = require("http");
 
 const ipfsPath = getIpfsPath();
+
+const rpcPort = 39652;
 
 // use the test server with the compiled version (dist/node)
 // with plain Javascript and commonjs require (not import)
@@ -108,7 +110,16 @@ const startIpfsNodes = async () => {
 (async () => {
     // do more stuff here, like start some subplebbits
 
-    const dirsToDelete = [".plebbit", ".plebbit2", ".test-ipfs-offline", ".test-ipfs-offline2", ".test-ipfs-online", ".test-ipfs-pubsub", ".test-ipfs-pubsub2"];
+    const dirsToDelete = [
+        ".plebbit",
+        ".plebbit2",
+        ".plebbit-rpc-server",
+        ".test-ipfs-offline",
+        ".test-ipfs-offline2",
+        ".test-ipfs-online",
+        ".test-ipfs-pubsub",
+        ".test-ipfs-pubsub2"
+    ];
 
     await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
 
@@ -145,6 +156,22 @@ const startIpfsNodes = async () => {
 
     const runInMemory = process.env["CLIENT"]?.includes("browser") || process.env["CLIENT"]?.includes("remote"); // Sub should be in memory if running tests on browser
     if (runInMemory) console.log(`test-server will run in memory`);
+
+    if (process.env["USE_RPC"] === "1") {
+        // run RPC here
+        delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
+        const PlebbitRpc = require("../../rpc/dist/index");
+        const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort });
+        plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
+
+        // debug raw JSON RPC messages in console (optional)
+        plebbitWebSocketServer.ws.on("connection", (socket, request) => {
+            console.log("connection");
+            socket.on("message", (message) => console.log(message.toString()));
+        });
+
+        console.log(`test server plebbit wss listening on port ${rpcPort}`);
+    }
 
     if (process.env["NO_SUBPLEBBITS"] !== "1")
         await startSubplebbits({
