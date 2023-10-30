@@ -107,9 +107,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
                 : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions || this.ipfsHttpClientsOptions || fallbackPubsubProviders;
 
-        this.publishInterval = options.hasOwnProperty("publishInterval") ? options.publishInterval : 100000; // Default to 1.67 minutes
-        this.updateInterval = options.hasOwnProperty("updateInterval") ? options.updateInterval : 60000; // Default to 1 minute
-        this.noData = options.hasOwnProperty("noData") ? options.noData : false;
+        this.publishInterval = this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
+            ? options.publishInterval
+            : 20000; // Default to 20s
+        this.updateInterval = this.parsedPlebbitOptions.updateInterval = options.hasOwnProperty("updateInterval")
 
         this._initIpfsClients();
         this._initPubsubClients();
