@@ -27,7 +27,7 @@ if (!isRpcFlagOn())
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${v4()}.eth`;
         const originalPlebbit = await mockPlebbit();
@@ -121,7 +121,7 @@ if (!isRpcFlagOn())
 describe(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
     });
 
     it("Two unstarted local sub instances can receive each other updates with subplebbit.update and edit", async () => {
@@ -149,7 +149,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
         { address: `address-eth-${v4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
-            const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+            const plebbit = await mockPlebbit();
             // create subplebbit
             const subplebbitTitle = "subplebbit title" + timestamp();
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
@@ -220,7 +220,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     );
 
     it(`Can edit a local sub address, then start it`, async () => {
-        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const customPlebbit = await mockPlebbit();
         const signer = await customPlebbit.createSigner();
         const domain = `edit-before-start-${timestamp()}.eth`;
 
