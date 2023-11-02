@@ -111,6 +111,8 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Create a sub with basic auth urls`, async () => {
     it(`Can create a sub with encoded authorization `, async () => {
         const headers = {
@@ -131,8 +133,7 @@ describe(`Create a sub with basic auth urls`, async () => {
 
         const plebbitOptions = {
             ipfsHttpClientsOptions,
-            pubsubHttpClientsOptions,
-            dataPath: globalThis["window"]?.plebbitDataPath
+            pubsubHttpClientsOptions
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
@@ -148,8 +149,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const pubsubHttpClientsOptions = [`http://user:password@localhost:15002/api/v0`];
         const plebbitOptions = {
             ipfsHttpClientsOptions,
-            pubsubHttpClientsOptions,
-            dataPath: globalThis["window"]?.plebbitDataPath
+            pubsubHttpClientsOptions
         };
 
         const plebbit = await mockPlebbit(plebbitOptions);
@@ -371,42 +371,48 @@ describe(`comment.link`, async () => {
     after(async () => {
         await subplebbit.stop();
     });
-    it(`Generates thumbnail url for youtube video correctly with thumbnailWidth and thumbnailHeight`, async () => {
-        const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
-        const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-        const thumbnailInfo = await getThumbnailUrlOfLink(url);
-        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-        expect(thumbnailInfo.thumbnailWidth).to.equal(1280);
-        expect(thumbnailInfo.thumbnailHeight).to.equal(720);
-    });
 
-    it(`generates thumbnail url for html page with thumbnailWidth and thumbnailHeight`, async () => {
-        const url =
-            "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
-        const expectedThumbnailUrl =
-            "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
-        const thumbnailInfo = await getThumbnailUrlOfLink(url);
-        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-        expect(thumbnailInfo.thumbnailWidth).to.equal(675);
-        expect(thumbnailInfo.thumbnailHeight).to.equal(450);
-    });
+    //prettier-ignore
+    if (!isRpcFlagOn())
+    describe(`Test getThumbnailUrlOfLink`, async () => {
+        it(`Generates thumbnail url for youtube video correctly with thumbnailWidth and thumbnailHeight`, async () => {
+            const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
+            const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
+            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(thumbnailInfo.thumbnailWidth).to.equal(1280);
+            expect(thumbnailInfo.thumbnailHeight).to.equal(720);
+        });
 
-    it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailWidth and thumbnailHeight`, async () => {
-        const url = "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
-        const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
-        const thumbnailInfo = await getThumbnailUrlOfLink(url);
-        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-        expect(thumbnailInfo.thumbnailWidth).to.equal(512);
-        expect(thumbnailInfo.thumbnailHeight).to.equal(497);
-    });
+        it(`generates thumbnail url for html page with thumbnailWidth and thumbnailHeight`, async () => {
+            const url =
+                "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
+            const expectedThumbnailUrl =
+                "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
+            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(thumbnailInfo.thumbnailWidth).to.equal(675);
+            expect(thumbnailInfo.thumbnailHeight).to.equal(450);
+        });
 
-    it(`Generates thumbnail url for twitter urls correctly`, async () => {
-        const url = "https://twitter.com/eustatheia/status/1691285870244937728";
-        const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
-        const thumbnailInfo = await getThumbnailUrlOfLink(url);
-        expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-        expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
-        expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
+        it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailWidth and thumbnailHeight`, async () => {
+            const url =
+                "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
+            const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
+            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(thumbnailInfo.thumbnailWidth).to.equal(512);
+            expect(thumbnailInfo.thumbnailHeight).to.equal(497);
+        });
+
+        it(`Generates thumbnail url for twitter urls correctly`, async () => {
+            const url = "https://twitter.com/eustatheia/status/1691285870244937728";
+            const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
+            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
+            expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
+        });
     });
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
