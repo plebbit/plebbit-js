@@ -1,7 +1,7 @@
 const Plebbit = require("../../dist/node");
 const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const { expect } = require("chai");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/sort-handler");
+const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/subplebbit/sort-handler");
 const signers = require("../fixtures/signers");
 const { loadAllPages, publishRandomPost, mockPlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -11,8 +11,6 @@ const subCommentPages = {};
 const subplebbitAddress = signers[0].address;
 
 // TODO add a test where you load all posts using lastPostCid and compare them with pages
-
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
 
 const testCommentFields = (comment) => {
     expect(comment.author.address).to.be.a("string");
@@ -87,12 +85,9 @@ const activeScore = async (comment) => {
 };
 
 const testListOfSortedComments = async (sortedComments, sortName) => {
-    console.log(`Testing sort ${sortName}. There are ${sortedComments.length} comments under ${sortName}`);
-
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
-    console.log(`Current sort ${sortName} current timeframe = ${currentTimeframe}`);
 
     for (let j = 0; j < sortedComments.length - 1; j++) {
         // Check if timestamp is within [timestamp() - timeframe, subplebbit.updatedAt]
@@ -120,7 +115,6 @@ const testListOfSortedComments = async (sortedComments, sortName) => {
         }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }
-    console.log(`Passed tests for current sort ${sortName}`);
 };
 
 const testPostsSort = async (sortName) => {

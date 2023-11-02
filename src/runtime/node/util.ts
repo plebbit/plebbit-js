@@ -1,11 +1,10 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
-import { NativeFunctions } from "../../types";
+import { NativeFunctions, PlebbitOptions } from "../../types";
 import path from "path";
-import { Subplebbit } from "../../subplebbit";
+import { Subplebbit } from "../../subplebbit/subplebbit";
 import assert from "assert";
 import { Knex } from "knex";
-import { Plebbit } from "../../plebbit";
 import { parseJsonStrings } from "../../util";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
@@ -18,7 +17,7 @@ export const mkdir = fs.mkdir;
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<Plebbit, "dataPath" | "noData"> }
+    subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<PlebbitOptions, "dataPath" | "noData"> }
 ): Promise<Knex.Config<any>> => {
     let filename: string;
     if (subplebbit.plebbit.noData) filename = ":memory:";

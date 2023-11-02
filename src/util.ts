@@ -1,6 +1,18 @@
 import {
     CommentsTableRow,
     CommentUpdatesRow,
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    EncodedDecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -15,6 +27,7 @@ import assert from "assert";
 import { BasePages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
 import { Plebbit } from "./plebbit";
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -32,13 +45,15 @@ export function timestamp() {
 
 export function replaceXWithY(obj: Object, x: any, y: any): any {
     // obj is a JS object
+    if (!lodash.isPlainObject(obj)) return obj;
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x) newObj[key] = y;
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (value instanceof Object && value !== null) newObj[key] = replaceXWithY(value, x, y);
+        else if (lodash.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
+        else if (Array.isArray(value)) newObj[key] = value.map((iterValue) => replaceXWithY(iterValue, x, y));
         else newObj[key] = value;
     });
     return newObj;
@@ -51,7 +66,8 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
             typeof comment.comment.timestamp === "number"
     );
 
-    const score = comment.update.upvoteCount - comment.update.downvoteCount;
+    let score = comment.update.upvoteCount - comment.update.downvoteCount;
+    score++; // reddit initial upvotes is 1, plebbit is 0
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
@@ -61,12 +77,13 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
 export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
     assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
-    if (comment.update.downvoteCount <= 0 || comment.update.upvoteCount <= 0) return 0;
-    const magnitude = comment.update.upvoteCount + comment.update.downvoteCount;
+    const upvoteCount = comment.update.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
+    if (comment.update.downvoteCount <= 0 || upvoteCount <= 0) return 0;
+    const magnitude = upvoteCount + comment.update.downvoteCount;
     const balance =
-        comment.update.upvoteCount > comment.update.downvoteCount
-            ? comment.update.downvoteCount / comment.update.upvoteCount
-            : comment.update.upvoteCount / comment.update.downvoteCount;
+        upvoteCount > comment.update.downvoteCount
+            ? comment.update.downvoteCount / upvoteCount
+            : upvoteCount / comment.update.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 
@@ -103,7 +120,7 @@ export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
 
 // TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
-    const newObj = JSON.parse(JSON.stringify(object));
+    const newObj = lodash.cloneDeep(object);
     for (const prop in newObj)
         if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}") delete newObj[prop];
 
@@ -226,4 +243,32 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
 export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
     if (!ensAddress.endsWith(".eth")) return false;
     return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+}
+
+export function decodePubsubMsgFromRpc(
+    pubsubMsg:
+        | EncodedDecryptedChallengeMessageType
+        | EncodedDecryptedChallengeAnswerMessageType
+        | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+        | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
+        | EncodedDecryptedChallengeVerificationMessageType
+) {
+    //@ts-expect-error
+    const parsedPubsubMsg:
+        | DecryptedChallengeMessageType
+        | DecryptedChallengeAnswerMessageType
+        | DecryptedChallengeRequestMessageType
+        | DecryptedChallengeVerificationMessageType
+        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+        | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = pubsubMsg;
+    parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
+    if (pubsubMsg.encrypted) {
+        parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
+        parsedPubsubMsg.encrypted.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
+        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
+    }
+    parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
+    parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
+
+    return parsedPubsubMsg;
 }

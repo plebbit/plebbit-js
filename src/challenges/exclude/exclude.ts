@@ -10,8 +10,13 @@ import {
   testRole
 } from './utils'
 import {testRateLimit} from './rate-limiter'
+import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../subplebbit/types'
+import {  CommentUpdate, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../types'
+import { Subplebbit } from '../../subplebbit/subplebbit'
+import { Plebbit } from '../../plebbit'
+import { Comment } from '../../comment'
 
-const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) => {
+const shouldExcludePublication = (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: Subplebbit) => {
   if (!subplebbitChallenge) {
     throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}'`)
   }
@@ -83,7 +88,7 @@ const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) 
   return false
 }
 
-const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) => {
+const shouldExcludeChallengeSuccess = (subplebbitChallenge: SubplebbitChallenge, challengeResults: (Challenge | ChallengeResult)[]) => {
   if (!subplebbitChallenge) {
     throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallenge argument '${subplebbitChallenge}'`)
   }
@@ -108,7 +113,7 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) =>
     let shouldExclude = true
     for (const challengeIndex of excludeItem.challenges) {
 
-      if (challengeResults[challengeIndex]?.success !== true) {
+      if (challengeResults[challengeIndex]?.["success"] !== true) {
         // found a false, should not exclude based on this exclude item,
         // but try again in the next exclude item
         shouldExclude = false
@@ -125,13 +130,12 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) =>
 }
 
 // cache for fetching comment cids, never expire
-const commentCache: any = new QuickLRU({maxSize: 10000})
+const commentCache = new QuickLRU<string, Pick<Comment, "ipnsName" | "subplebbitAddress"> & {author: {address: Comment["author"]["address"]}}>({maxSize: 10000})
 const invalidIpnsName = 'i'
 // cache for fetching comment updates, expire after 1 day
 const commentUpdateCache = new TinyCache()
 const commentUpdateCacheTime = 1000 * 60 * 60
 const getCommentPending = {}
-
 const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeRequestMessage, plebbit) => {
   if (!subplebbitChallenge) {
     throw Error(`shouldExcludeChallengeCommentCids invalid subplebbitChallenge argument '${subplebbitChallenge}'`)
@@ -185,6 +189,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     if (!cachedCommentUpdate) {
       let commentUpdate = comment
       if (!commentUpdate) {
+        // @ts-ignore
         commentUpdate = await plebbit.createComment({cid: commentCid, ipnsName: commentCache.ipnsName})
       }
       const commentUpdatePromise = new Promise((resolve) => commentUpdate.once('update', resolve))
@@ -224,7 +229,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     }
   }
 
-  const validateComment = async (commentCid, addressesSet, exclude) => {
+  const validateComment = async (commentCid: string, addressesSet: Set<string>, exclude: Exclude) => {
     const comment = await getComment(commentCid, addressesSet)
     const {postScore, replyScore, firstCommentTimestamp} = exclude?.subplebbit || {}
     if (
@@ -238,7 +243,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     throw Error(`should not exclude comment cid`)
   }
 
-  const validateExclude = async (exclude) => {
+  const validateExclude = async (exclude: Exclude) => {
     let {addresses, maxCommentCids} = exclude?.subplebbit || {}
     if (!maxCommentCids) {
       maxCommentCids = 3
@@ -256,7 +261,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     }
 
     // fetch and test all comments of the author async
-    const validateCommentPromises = []
+    const validateCommentPromises: Promise<void>[] = []
     let i = 0
     while (i < maxCommentCids) {
       const commentCid = commentCids[i++]
@@ -267,7 +272,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
 
     // if doesn't throw, at least 1 comment was valid
     try {
-      // @ts-ignore
+      //@ts-expect-error
       await Promise.any(validateCommentPromises)
     }
     catch (e) {
@@ -287,7 +292,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
 
   // if at least 1 valid exclude, should exclude
   try {
-    // @ts-ignore
+    // @ts-expect-error
     await Promise.any(validateExcludePromises)
     return true
   }

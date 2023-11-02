@@ -3,24 +3,25 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const tempy = require("tempy");
+const signers = require("../fixtures/signers");
 
 const path = require("path");
 const fs = require("fs");
-const { mockPlebbit, generateMockPost, publishWithExpectedResult } = require("../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishWithExpectedResult, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const plebbitVersion = require("../../dist/node/version");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
-const plebbitOptions = {
-    dataPath: tempy.directory(),
-    ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
-    pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+const getTemporaryPlebbitOptions = () => {
+    const tempy = require("tempy");
+    return {
+        dataPath: tempy.directory(),
+        ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
+        pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+    };
 };
-console.log(`PlebbitOptions for db.subplebbit.test.js`, plebbitOptions);
 
 const getDatabasesToMigrate = () => {
+    if (!process) return [];
     const dbRootPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs");
     const versions = fs.readdirSync(dbRootPath); // version_6, version_7, version_8 etc
     const databasesToMigrate = []; // {version: number; path: string; address: string}[]
@@ -41,21 +42,59 @@ const copyDbToDataPath = async (databaseObj, plebbit) => {
     const newPath = path.join(plebbit.dataPath, "subplebbits", databaseObj.address);
     await fs.promises.cp(databaseObj.path, newPath);
 };
+
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`DB importing`, async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit(plebbitOptions);
+        plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
     });
 
     it(`Subplebbit will show up in listSubplebbits if its db was copied to datapath/subplebbits`, async () => {
-        const databasesToMigrate = getDatabasesToMigrate();
-        await copyDbToDataPath(databasesToMigrate[0], plebbit);
+        expect(await plebbit.listSubplebbits()).to.not.include(signers[0].address);
+
+        const regularPlebbit = await mockPlebbit();
+        const databaseToMigrate = {
+            address: signers[0].address,
+            path: path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address)
+        };
+        await copyDbToDataPath(databaseToMigrate, plebbit);
         const listedSubs = await plebbit.listSubplebbits();
-        expect(listedSubs).to.include(databasesToMigrate[0].address);
+        expect(listedSubs).to.include(databaseToMigrate.address);
+    });
+
+    it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
+        const regularPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockPlebbit(getTemporaryPlebbitOptions());
+        const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address);
+        await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", signers[0].address));
+        // Should be included in tempPlebbit.listSubplebbits now
+        const subplebbit = await tempPlebbit.createSubplebbit({ address: signers[0].address });
+        await subplebbit.edit({
+            settings: { ...subplebbit.settings, challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] }
+        }); // We want this sub to have a full challenge exchange to test all db tables
+        expect(subplebbit.updatedAt).to.be.a("number"); // Should be fetched from db
+
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
+        expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION);
+
+        const mockPost = await generateMockPost(subplebbit.address, tempPlebbit);
+        mockPost.once("challenge", async (challengeMsg) => {
+            await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
+        });
+
+        await publishWithExpectedResult(mockPost, true);
+
+        await subplebbit.delete();
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe("DB Migration", () => {
     const databasesToMigrate = getDatabasesToMigrate();
 
@@ -63,7 +102,7 @@ describe("DB Migration", () => {
         it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address (${databaseInfo.address})`, async () => {
             // Once we start the sub, it's gonna attempt to migrate to the latest DB version
 
-            const plebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
+            const plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
 
             console.log(
                 `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${databaseInfo.version}) to ${plebbitVersion.default.DB_VERSION}`
@@ -73,26 +112,15 @@ describe("DB Migration", () => {
             const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
 
             await assert.isFulfilled(subplebbit.start());
-            subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
-                const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
-                const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
-                return [challengeSuccess, challengeErrors];
-            });
-            const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
-            expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION); // If they're equal, that means all tables have been migrated
 
             await new Promise((resolve) => subplebbit.once("update", resolve)); // Ensure IPNS is published
             const mockPost = await generateMockPost(subplebbit.address, plebbit);
-            mockPost.removeAllListeners();
-
             mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
+                await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
             });
 
             await publishWithExpectedResult(mockPost, true);
 
-            await subplebbit.stop();
             await subplebbit.delete();
         }).timeout(400000)
     );

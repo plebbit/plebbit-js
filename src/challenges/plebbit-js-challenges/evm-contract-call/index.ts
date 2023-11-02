@@ -1,3 +1,5 @@
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../../types"
 
 const optionInputs = [
   {
@@ -42,7 +44,7 @@ const optionInputs = [
 
 const description = 'The response from an EVM contract call passes a condition, e.g. a token balance challenge.'
 
-const verifyAuthorAddress = (publication, chainTicker) => {
+const verifyAuthorAddress = (publication: DecryptedChallengeRequestMessageType["publication"], chainTicker: string) => {
   const authorAddress = publication.author.wallets?.[chainTicker]?.address
   const wallet = publication.author.wallets?.[chainTicker]
   const nftAvatar = publication.author?.avatar
@@ -68,13 +70,13 @@ const getContractCallResponse = ({chainTicker, address, abi}, authorAddress) => 
   return 10000
 }
 
-const conditionHasUnsafeCharacters = (condition) => {
+const conditionHasUnsafeCharacters = (condition: string) => {
   // condition should only allow true, false, and characters 0-9, <, >, =
   const unsafeCharacters = condition.replace(/true|false|[0-9<>=]/g, '')
   return unsafeCharacters !== ''
 }
 
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number) => {
   let {chainTicker, address, abi, condition, error} = subplebbitChallengeSettings?.options || {}
 
   if (!chainTicker) {
@@ -139,10 +141,10 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
   }
 }
 
-function ChallengeFileFactory (subplebbitChallengeSettings) {
+function ChallengeFileFactory (subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
   let {chainTicker} = subplebbitChallengeSettings?.options || {}
 
-  const type = 'chain/' + (chainTicker || '<chainTicker>')
+  const type  = <Challenge["type"]>('chain/' + (chainTicker || '<chainTicker>'))
   return {getChallenge, optionInputs, type, description}
 }
 

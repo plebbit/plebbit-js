@@ -1,6 +1,7 @@
 // Signer section
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -13,7 +14,6 @@ import {
     CreateCommentOptions,
     CreateVoteOptions,
     PublicationTypeName,
-    SubplebbitIpfsType,
     VotePubsubMessage
 } from "../types";
 
@@ -41,6 +41,12 @@ export type Encrypted = {
     type: "ed25519-aes-gcm";
 };
 
+export type EncryptedEncoded = {
+    ciphertext: string; // base64
+    iv: string; // base64
+    tag: string; // base64
+    type: "ed25519-aes-gcm";
+};
 // ---------------------------
 // Signature
 
@@ -49,6 +55,11 @@ export interface PubsubSignature {
     publicKey: Uint8Array; // (byte string in cbor) 32 bytes
     type: "ed25519";
     signedPropertyNames: readonly string[];
+}
+
+export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string; // base64
+    publicKey: string; // base64
 }
 
 export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
@@ -127,7 +138,7 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "pubsubTopic",
     "lastPostCid",
     "posts",
-    "challengeTypes",
+    "challenges",
     "statsCid",
     "createdAt",
     "updatedAt",
@@ -142,27 +153,27 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
 export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "acceptedChallengeTypes",
     "timestamp"
 ] as const;
 export const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[] = [
     "type",
     "challengeRequestId",
-    "encryptedChallenges",
+    "encrypted",
     "timestamp"
 ] as const;
 export const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[] = [
     "type",
     "challengeRequestId",
-    "encryptedChallengeAnswers",
+    "encrypted",
     "timestamp"
 ] as const;
 export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[] = [
     "reason",
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "challengeSuccess",
     "challengeErrors",
     "timestamp"

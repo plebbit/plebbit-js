@@ -16,6 +16,7 @@ import lodash from "lodash";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
 import { Plebbit } from "./plebbit";
+import { PlebbitError } from "./plebbit-error";
 
 type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
@@ -34,7 +35,7 @@ export class BasePages implements PagesType {
 
     _plebbit: Plebbit;
     _subplebbitAddress: string;
-    private _parentCid: CommentIpfsType["parentCid"];
+    _parentCid: CommentIpfsType["parentCid"];
     private _pagesIpfs?: PagesTypeIpfs["pages"];
     constructor(props: ConstructorProps) {
         this._plebbit = props.plebbit;
@@ -56,20 +57,33 @@ export class BasePages implements PagesType {
         throw Error(`This function should be overridden`);
     }
 
-    async getPage(pageCid: string): Promise<PageType> {
+    async _fetchAndVerifyPage(pageCid: string) {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        const signatureValidity = await verifyPage(
-            pageIpfs,
-            this._plebbit.resolveAuthorAddresses,
-            this._clientsManager,
-            this._subplebbitAddress,
-            this._parentCid,
-            true
-        );
-        if (!signatureValidity.valid) throw Error(signatureValidity.reason);
+        if (!this._plebbit.plebbitRpcClient) {
+            const signatureValidity = await verifyPage(
+                pageIpfs,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                this._subplebbitAddress,
+                this._parentCid,
+                true
+            );
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {
+                    signatureValidity,
+                    parentCid: this._parentCid,
+                    subplebbitAddress: this._subplebbitAddress,
+                    pageIpfs,
+                    pageCid
+                });
+        }
 
-        return await parsePageIpfs(pageIpfs, this._plebbit);
+        return pageIpfs;
+    }
+
+    async getPage(pageCid: string): Promise<PageType> {
+        return await parsePageIpfs(await this._fetchAndVerifyPage(pageCid), this._plebbit);
     }
 
     toJSON(): PagesTypeJson | undefined {
@@ -97,6 +111,7 @@ export class RepliesPages extends BasePages {
     pageCids: Partial<Record<ReplySortName, string>>;
 
     clients: RepliesPagesClientsManager["clients"];
+    _parentCid: string;
 
     _clientsManager: RepliesPagesClientsManager;
 

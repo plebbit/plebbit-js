@@ -11,7 +11,6 @@ import {
     CommentType,
     CommentUpdate,
     CommentWithCommentUpdate,
-    Flair,
     ProtocolVersion,
     PublicationTypeName
 } from "./types";
@@ -23,7 +22,9 @@ import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
 import assert from "assert";
 import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
-import { getErrorCodeFromMessage } from "./util";
+import { messages } from "./errors";
+import { Flair } from "./subplebbit/types";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -82,8 +83,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private _updateInterval?: any;
     private _isUpdating: boolean;
     private _rawCommentUpdate?: CommentUpdate;
+    private _rawCommentIpfs?: CommentIpfsType;
     private _loadingOperation: RetryOperation;
     _clientsManager: CommentClientsManager;
+    private _updateRpcSubscriptionId?: number;
 
     constructor(props: CommentType, plebbit: Plebbit) {
         super(props, plebbit);
@@ -122,14 +125,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
-        this.replies = new RepliesPages({
-            pages: undefined,
-            pageCids: undefined,
-            plebbit: this._plebbit,
-            subplebbitAddress: this.subplebbitAddress,
-            pagesIpfs: undefined,
-            parentCid: this.cid
-        });
+        if (!this.replies)
+            this.replies = new RepliesPages({
+                pages: undefined,
+                pageCids: undefined,
+                plebbit: this._plebbit,
+                subplebbitAddress: this.subplebbitAddress,
+                pagesIpfs: undefined,
+                parentCid: this.cid
+            });
     }
 
     async _initCommentUpdate(props: CommentUpdate) {
@@ -297,10 +301,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         };
     }
 
-    setCommentIpnsKey(ipnsKey: { Id: string; Name: string }) {
+    setCommentIpnsKey(ipnsKey: IpfsKey) {
         // Contains name and id
-        this.ipnsName = ipnsKey.Id;
-        this.ipnsKeyName = ipnsKey.Name;
+        this.ipnsName = ipnsKey.id;
+        this.ipnsKeyName = ipnsKey.name;
     }
 
     setPostCid(newPostCid: string) {
@@ -329,9 +333,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             this._loadingOperation.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    // TODO should inject this.clients here so gateway or ipfsClients states can be modified
-                    resolve(await this._clientsManager.fetchCommentCid(this.cid));
+                    this._setUpdatingState("fetching-ipfs");
+                    const res = await this._clientsManager.fetchCommentCid(this.cid);
+                    this._setUpdatingState("succeeded");
+                    resolve(res);
                 } catch (e) {
+                    if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this.emit("error", e);
@@ -349,6 +356,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                     const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
                     resolve(update);
                 } catch (e) {
+                    if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(String(e));
                     this._loadingOperation.retry(e);
@@ -361,41 +369,47 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && !this.ipnsName) {
+        if (this.cid && !this.ipnsName && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
             // plebbit-js should be able to retrieve ipnsName from the IPFS file
-            const commentIpfs: CommentIpfsType = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
-                commentIpfs,
+                this._rawCommentIpfs,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 true
             );
             if (!commentIpfsValidation.valid) {
+                // This is a crticial error, it should stop the comment from updating
+                log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
+                this._updateState("stopped");
+                await this._stopUpdateLoop();
+                this._setUpdatingState("failed");
                 this.emit(
                     "error",
-                    new PlebbitError(getErrorCodeFromMessage(commentIpfsValidation.reason), {
-                        commentIpfs,
+                    new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
+                        commentIpfs: this._rawCommentIpfs,
                         commentIpfsValidation,
                         cid: this.cid
                     })
                 );
                 return;
             }
-            this._initProps({ ...commentIpfs, cid: this.cid });
+            log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
+            this._initProps({ ...this._rawCommentIpfs, cid: this.cid });
             this.emit("update", this);
         }
 
-        const res = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+        const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
-        if (res && this.updatedAt !== res.updatedAt) {
+        if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
-                res,
+                commentUpdate,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 this.subplebbitAddress,
@@ -404,18 +418,18 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             );
             if (!signatureValidity.valid) {
                 this._setUpdatingState("failed");
-                const err = new PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate: res });
+                const err = new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
                 log.error(err.toString());
                 this.emit("error", err);
                 return;
             }
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(res);
+            await this._initCommentUpdate(commentUpdate);
             this.emit("update", this);
-        } else if (res) {
+        } else if (commentUpdate) {
             log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(res);
+            await this._initCommentUpdate(commentUpdate);
         }
     }
 
@@ -423,10 +437,72 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
+    protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    }
+
+    protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]) {
+        // We're deriving the the rpc state from publishing state
+
+        const rpcState: Comment["clients"]["plebbitRpcClients"][0]["state"] =
+            updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        this._setRpcClientState(rpcState);
+    }
+
+    private _isCriticalRpcError(err: Error | PlebbitError) {
+        // Critical Errors for now are:
+        // Invalid signature of CommentIpfs
+        return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
+    }
 
     async update() {
-        if (this._updateInterval) return; // Do nothing if it's already updating
         const log = Logger("plebbit-js:comment:update");
+
+        if (this._plebbit.plebbitRpcClient) {
+            try {
+                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+                this._updateState("updating");
+            } catch (e) {
+                log.error("Failed to receive commentUpdate from RPC due to error", e);
+                this._updateState("stopped");
+                this._setUpdatingState("failed");
+                throw e;
+            }
+            this._plebbit.plebbitRpcClient
+                .getSubscription(this._updateRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                    if (updateProps.params.result.subplebbitAddress) {
+                        log(`Received new CommentIpfs (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                        this._initProps(updateProps.params.result);
+                    } else {
+                        log(`Received new CommentUpdate (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                        await this._initCommentUpdate(updateProps.params.result);
+                    }
+
+                    this.emit("update", this);
+                })
+                .on("updatingstatechange", (args) => {
+                    const updateState: Comment["updatingState"] = args.params.result;
+                    this._setUpdatingState(updateState);
+                    this._updateRpcClientStateFromUpdatingState(updateState);
+                })
+                .on("statechange", (args) => this._updateState(args.params.result))
+                .on("error", async (args) => {
+                    if (this._isCriticalRpcError(args.params.result)) {
+                        this._setUpdatingState("failed");
+                        this._updateState("stopped");
+                        await this._stopUpdateLoop();
+                    }
+                    this.emit("error", args.params.result);
+                });
+
+            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+            this._isUpdating = true;
+        }
+        if (this._isUpdating) return; // Do nothing if it's already updating
         this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
@@ -438,13 +514,21 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         updateLoop();
     }
 
-    async stop() {
-        await super.stop();
+    private async _stopUpdateLoop() {
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
-        this._setUpdatingState("stopped");
-        this._updateState("stopped");
         this._isUpdating = false;
+        if (this._updateRpcSubscriptionId) {
+            await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            this._updateRpcSubscriptionId = undefined;
+            this._setRpcClientState("stopped");
+        }
+    }
+
+    async stop() {
+        await super.stop();
+        this._setUpdatingState("stopped");
+        await this._stopUpdateLoop();
     }
 
     private async _validateSignature() {

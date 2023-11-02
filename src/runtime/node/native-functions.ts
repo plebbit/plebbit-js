@@ -3,8 +3,8 @@ import fs from "fs/promises";
 import path from "path";
 import assert from "assert";
 
-import { Plebbit } from "../../plebbit";
 import { DbHandler } from "./db-handler";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 import fetch from "node-fetch";
 import { CID, create, Options } from "ipfs-http-client";
@@ -137,27 +137,31 @@ const nativeFunctions: NativeFunctions = {
             swarm: { peers: ipfsClient.swarm.peers }
         };
     },
-    importSignerIntoIpfsNode: async (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit): Promise<{ Id: string; Name: string }> => {
+    importSignerIntoIpfsNode: async (
+        ipnsKeyName: string,
+        ipfsKey: Uint8Array,
+        ipfsNode: { url: string; headers?: Object }
+    ): Promise<IpfsKey> => {
         const data = new FormData();
         if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
         if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
             throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
         data.append("file", Buffer.from(ipfsKey));
-        const nodeUrl = plebbit.ipfsHttpClientsOptions[0]?.url;
-        if (!nodeUrl)
-            throw Error(`Can't figure out ipfs node URL from ipfsHttpClientOptions (${JSON.stringify(plebbit.ipfsHttpClientsOptions)}`);
+        const nodeUrl = ipfsNode.url;
+        if (!nodeUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
         const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
         const res = await nativeFunctions.fetch(url, {
             method: "POST",
             body: data,
-            headers: <Record<string, string>>plebbit.ipfsHttpClientsOptions[0]?.headers // We're assuming that only IPFS one client will be used
+            headers: <Record<string, string>>ipfsNode?.headers // We're assuming that only IPFS one client will be used
         });
 
         if (res.status !== 200)
             throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
         const resJson: { Id: string; Name: string } = await res.json();
-        return resJson;
+
+        return { id: resJson.Id, name: resJson.Name };
     },
     deleteSubplebbit: async (subplebbitAddress: string, dataPath: string) => {
         // Delete subplebbit will just move the sub db file to another directory

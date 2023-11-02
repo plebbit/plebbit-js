@@ -1,5 +1,12 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit, loadAllPages, createMockSub } = require("../../../dist/node/test/test-util");
+const {
+    publishRandomPost,
+    mockPlebbit,
+    loadAllPages,
+    createSubWithNoChallenge,
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
+} = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
@@ -10,18 +17,18 @@ const signers = require("../../fixtures/signers");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
-const { POSTS_SORT_TYPES } = require("../../../dist/node/sort-handler");
+const { POSTS_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
 const { v4 } = require("uuid");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
         plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit, 1000);
+        subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${v4()}.eth`;
         const originalPlebbit = await mockPlebbit();
         const subplebbitAddress = lodash.clone(subplebbit.address);
@@ -109,6 +116,8 @@ describe(`subplebbit.edit`, async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
     before(async () => {
@@ -116,9 +125,9 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     });
 
     it("Two unstarted local sub instances can receive each other updates with subplebbit.update and edit", async () => {
-        const subOne = await createMockSub({}, plebbit);
+        const subOne = await createSubWithNoChallenge({}, plebbit);
         // subOne is published now
-        const subTwo = await createMockSub({ address: subOne.address }, plebbit);
+        const subTwo = await createSubWithNoChallenge({ address: subOne.address }, plebbit);
         await subTwo.update();
 
         const newTitle = "Test new Title" + Date.now();
@@ -150,13 +159,13 @@ describe(`Concurrency with subplebbit.edit`, async () => {
                     subAddress === editArgs.address ? subplebbitSignerAddress : subAddress;
 
             // subplebbit is updating
-            const updatingSubplebbit = await createMockSub({ address: subplebbit.address }, plebbit);
+            const updatingSubplebbit = await createSubWithNoChallenge({ address: subplebbit.address }, plebbit);
             expect(updatingSubplebbit.signer).to.be.a("object");
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             await updatingSubplebbit.update();
 
             // start subplebbit
-            const startedSubplebbit = await createMockSub({ address: subplebbit.address }, plebbit);
+            const startedSubplebbit = await createSubWithNoChallenge({ address: subplebbit.address }, plebbit);
             await startedSubplebbit.start();
 
             expect(startedSubplebbit.title).to.equal(subplebbitTitle);
@@ -221,7 +230,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             if (ensName === domain && txtRecordName === "subplebbit-address") return signer.address;
             else return originalPlebbit.resolver.resolveTxtRecord(ensName, txtRecordName);
         };
-        const sub = await createMockSub({ signer }, customPlebbit);
+        const sub = await createSubWithNoChallenge({ signer }, customPlebbit);
         await sub.edit({ address: domain });
         // Check for locks
         expect(await sub.dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
@@ -242,10 +251,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
 
 describe(`Edit misc`, async () => {
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not exist`, async () => {
-        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        customPlebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-            if (ensName === "no-sub-address.eth") return undefined;
-        };
+        const customPlebbit = await mockPlebbit();
         const newSub = await customPlebbit.createSubplebbit();
         // Has no subplebbit-address text record
         await newSub.edit({ address: "no-sub-address.eth" });
@@ -253,14 +259,48 @@ describe(`Edit misc`, async () => {
     });
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
-        const customPlebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        customPlebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-            if (ensName === "different-signer.eth") return signers[4].address;
-        };
+        const customPlebbit = await mockPlebbit();
         const newSub = await customPlebbit.createSubplebbit();
 
         // Should not match signer.address
         await newSub.edit({ address: "different-signer.eth" });
         expect(newSub.address).to.equal("different-signer.eth");
     });
+});
+
+//prettier-ignore
+if (isRpcFlagOn())
+describe(`subplebbit.edit (RPC)`, async () => {
+    let plebbit, subplebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        const signer = await plebbit.createSigner();
+        subplebbit = await plebbit.createSubplebbit({signer});
+        await subplebbit.start();
+        await new Promise(resolve => subplebbit.once("update", resolve));
+        expect(subplebbit.address).to.equal(signer.address);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+    [
+        { title: `Test subplebbit RPC title edit ${Date.now()}` },
+        { description: `Test subplebbit RPC description edit ${Date.now()}` },
+        { address: `rpc-edit-test.eth` }
+    ].map((editArgs) =>
+        it(`subplebbit.edit(${JSON.stringify(editArgs)})`, async () => {
+            const [keyToEdit, newValue] = Object.entries(editArgs)[0];
+            await subplebbit.edit(editArgs);
+            expect(subplebbit[keyToEdit]).to.equal(newValue);
+            await new Promise(resolve => subplebbit.once("update", resolve));
+            const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
+            const loadedSubplebbit = await remotePlebbit.createSubplebbit({address: subplebbit.address});
+            await loadedSubplebbit.update();
+            await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+            await loadedSubplebbit.stop();
+            expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
+        })
+    );
 });

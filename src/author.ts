@@ -1,6 +1,7 @@
 import assert from "assert";
-import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
+import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "./types";
 import { shortifyAddress } from "./util";
+import { Flair } from "./subplebbit/types";
 
 class Author implements AuthorTypeWithCommentUpdate {
     address: string;
@@ -23,11 +24,11 @@ class Author implements AuthorTypeWithCommentUpdate {
         this.shortAddress = shortifyAddress(this.address);
     }
 
-    toJSON(){
+    toJSON() {
         return {
             ...(this.subplebbit ? this.toJSONIpfsWithCommentUpdate() : this.toJSONIpfs()),
             shortAddress: this.shortAddress
-        }
+        };
     }
 
     toJSONIpfs(): AuthorIpfsType {

@@ -30,7 +30,6 @@ import {
     CreateVoteOptions,
     PageIpfs,
     PubsubMessage,
-    SubplebbitIpfsType,
     VotePubsubMessage
 } from "../types";
 import Logger from "@plebbit/plebbit-logger";
@@ -56,6 +55,7 @@ import {
 } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
 import { commentUpdateValidationCache, commentValidationCache } from "../constants";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 
 export interface ValidationResult {
     valid: boolean;
@@ -272,6 +272,7 @@ const _verifyPublicationWithAuthor = async (
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult & { derivedAddress?: string }> => {
     // Validate author
+    const log = Logger("plebbit-js:signatures:verifyPublicationWithAUthor");
     const authorSignatureValidity = await _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager);
 
     if (authorSignatureValidity.useDerivedAddress && !overrideAuthorAddressIfInvalid)
@@ -281,8 +282,12 @@ const _verifyPublicationWithAuthor = async (
     const signatureValidity = await _verifyJsonSignature(publicationJson);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
 
-    if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress)
+    if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress) {
+        log(
+            `Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`
+        );
         publicationJson.author.address = authorSignatureValidity.derivedAddress;
+    }
 
     return { valid: true };
 };
@@ -315,11 +320,9 @@ export async function verifyComment(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
-    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
     const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!validation.valid) return validation;
 
-    commentValidationCache.set(hash, true);
     return { valid: true };
 }
 
@@ -329,9 +332,7 @@ export async function verifyCommentWithCache(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
-    const hash = createHash().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
-    if (commentValidationCache.get(hash)) return { valid: true };
-    else return verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    return verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
 }
 
 export async function verifySubplebbit(
@@ -394,7 +395,6 @@ export async function verifyCommentUpdate(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
-    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
@@ -424,8 +424,6 @@ export async function verifyCommentUpdate(
 
     if (!jsonValidation.valid) return jsonValidation;
 
-    commentUpdateValidationCache.set(hash, true);
-
     return { valid: true };
 }
 
@@ -437,17 +435,7 @@ export async function verifyCommentUpdateWithCache(
     comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
-    const hash = createHash().update(JSON.stringify(update)).digest("hex").slice(0, 12);
-    if (commentUpdateValidationCache.get(hash)) return { valid: true };
-    else
-        return verifyCommentUpdate(
-            update,
-            resolveAuthorAddresses,
-            clientsManager,
-            subplebbitAddress,
-            comment,
-            overrideAuthorAddressIfInvalid
-        );
+    return verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid);
 }
 
 // -5 mins

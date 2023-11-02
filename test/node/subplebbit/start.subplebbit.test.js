@@ -1,5 +1,12 @@
 const Plebbit = require("../../../dist/node");
-const { publishRandomPost, mockPlebbit, createMockSub, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+const {
+    publishRandomPost,
+    mockPlebbit,
+    createSubWithNoChallenge,
+    publishWithExpectedResult,
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
+} = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
 const fs = require("fs");
@@ -11,13 +18,11 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe(`subplebbit.start`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        subplebbit = await createMockSub({}, plebbit);
+        plebbit = await mockPlebbit();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
@@ -34,7 +39,7 @@ describe(`subplebbit.start`, async () => {
     });
 
     it(`Can start a sub after stopping it`, async () => {
-        const newSub = await createMockSub({}, plebbit);
+        const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
         await publishRandomPost(newSub.address, plebbit, {}, false);
@@ -44,6 +49,8 @@ describe(`subplebbit.start`, async () => {
         await newSub.stop();
     });
 
+    //prettier-ignore
+    if(!isRpcFlagOn())
     it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
@@ -61,6 +68,8 @@ describe(`subplebbit.start`, async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
@@ -129,16 +138,17 @@ describe(`Start lock`, async () => {
 });
 
 describe(`Publish loop resiliency`, async () => {
-    let plebbit, subplebbit;
+    let plebbit, subplebbit, remotePlebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        subplebbit = await createMockSub({}, plebbit);
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`Subplebbit can publish a new IPNS record with one of its comments having a valid ENS author address`, async () => {
@@ -157,8 +167,44 @@ describe(`Publish loop resiliency`, async () => {
             if (!updated) assert.fail("Subplebbit failed to publish a new IPNS record with ENS author address");
         }, 60000);
         await new Promise((resolve) => subplebbit.once("update", () => (updated = true) && resolve(1)));
-        const loadedSub = await plebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
+        const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); // If it can load, then it has a valid signature
 
         expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
+    });
+
+    //prettier-ignore
+    if (!isRpcFlagOn())
+    it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
+
+        
+        const mockPost = await plebbit.createComment({
+            author: { address: "plebbit.eth" },
+            signer: signers[7], // Wrong signer
+            title: "Test publishing with invalid ENS " + Date.now(),
+            subplebbitAddress: subplebbit.address
+        });
+
+        subplebbit.on("error", (err) => {
+            console.log(err);
+        })
+        subplebbit.plebbit.resolveAuthorAddresses = false; // So the post gets accepted
+
+        await publishWithExpectedResult(mockPost, true); 
+        subplebbit.plebbit.resolveAuthorAddresses = true; 
+
+        expect(mockPost.author.address).to.equal("plebbit.eth");
+
+        await publishRandomPost(subplebbit.address ,plebbit); // Stimulate an update
+
+        for (const resolveAuthorAddresses of [true, false]) {
+            const remotePlebbit = await mockRemotePlebbitIpfsOnly({resolveAuthorAddresses});
+            const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); 
+            const mockPostInPage = loadedSub.posts.pages.hot.comments.find(comment => comment.cid === mockPost.cid);
+            if (resolveAuthorAddresses)
+                expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
+            else 
+                expect(mockPostInPage.author.address).to.equal(mockPost.author.address);
+        }
+
     });
 });

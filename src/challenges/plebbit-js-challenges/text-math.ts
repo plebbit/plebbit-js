@@ -1,3 +1,6 @@
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../types"
+
 const optionInputs = [
   {
     option: 'difficulty',
@@ -8,13 +11,13 @@ const optionInputs = [
   }
 ]
 
-const type = 'text'
+const type: Challenge["type"] = "text/plain"
 
 const description = 'Ask a plain text math question, insecure, use ONLY for testing.'
 
-const getRandomNumber = (minNumber, maxNumber) => Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber)
+const getRandomNumber = (minNumber: number, maxNumber: number) => Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber)
 
-const getChallengeString = (minNumber, maxNumber, operators) => {
+const getChallengeString = (minNumber: number, maxNumber: number, operators: ("*" | "-" | "+" | "/")[]) => {
   let firstNumber = getRandomNumber(minNumber, maxNumber)
   let secondNumber = getRandomNumber(minNumber, maxNumber)
   const operator = operators[getRandomNumber(0, operators.length - 1)]
@@ -32,14 +35,11 @@ const getChallengeString = (minNumber, maxNumber, operators) => {
   return `${firstNumber} ${operator} ${secondNumber}`
 }
 
-const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
-  let difficulty = subplebbitChallengeSettings?.options?.difficulty
-  if (!difficulty) {
-  	difficulty = '1'
-  }
-  difficulty = Number(difficulty)
+const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number) => {
+  const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1"
+  const difficulty = Number(difficultyString)
 
-  let challenge
+  let challenge: string
   if (difficulty === 1) {
     challenge = getChallengeString(1, 10, ['+', '-'])
   }
@@ -53,7 +53,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     throw Error(`invalid challenge difficulty '${difficulty}'`)
   }
 
-  const verify = async (_answer) => {
+  const verify = async (_answer: string) => {
     if (String(eval(challenge)) === _answer) {
       return {success: true}
     }
@@ -64,7 +64,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
   return {challenge, verify, type}
 }
 
-function ChallengeFileFactory (subplebbitChallengeSettings) {
+function ChallengeFileFactory (subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
   return {getChallenge, optionInputs, type, description}
 }
 

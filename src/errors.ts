@@ -16,6 +16,7 @@ export enum messages {
     ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS = "missing nativeFunctions required to create a subplebbit",
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
     ERR_PLEBBIT_OPTION_NOT_ACCEPTED = "Option is not accepted on Plebbit constructor",
+    ERR_CAN_NOT_CREATE_A_SUB = "Can't create a new sub with the current PlebbitOptions",
 
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
@@ -40,7 +41,6 @@ export enum messages {
     ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT = "comment.content is not set to the latest comment.authorEdit.content",
     ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT = "Comment update is not signed by the subplebbit",
     ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR = "Author edit is not signed by original author of comment",
-    ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
     ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT = "CommentUpdate.cid is different than comment.cid",
     ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge pubsub message is not the subplebbit",
     ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT = "The signer of challenge verification pubsub message is not the subplebbit",
@@ -48,10 +48,14 @@ export enum messages {
     ERR_CHALLENGE_SIGNATURE_IS_INVALID = "Received a challenge message with an invalid signature",
     ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID = "Received a challenge verification message with an invalid signature",
     ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Local subplebbit signature is invalid",
+    ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
+    ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID = "CommentIpfs signature is invalid",
+    ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
+    ERR_PAGE_SIGNATURE_IS_INVALID = "The signature of one of the comment in the page is invalid",
 
     // Subplebbit rejections of pubsub messages
     ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST = "Received a challenge answer without a prior challenge request",
@@ -66,12 +70,9 @@ export enum messages {
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
     ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS = "The subplebbitAddress field of publication is not the same as the subplebbit being published to",
     ERR_AUTHOR_IS_BANNED = "Author is banned",
+    ERR_PUBLICATION_HAS_NO_AUTHOR_ADDRESS = "Publication has no author.address",
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED = "The parent of this publication has been removed",
     ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED = "The parent of this publication has been deleted",
-    ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for authors",
-    ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD = "CommentEdit includes a field that cannot be used for mods",
-    ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD = "CommentEdit includes a field that cannot be used for both mods and authors",
-    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED = "The post of this publication has been deleted",
     ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED = "The post of this publication has been removed",
     ERR_SUB_PUBLICATION_POST_IS_LOCKED = "The post of this publication has been locked",
@@ -82,6 +83,12 @@ export enum messages {
     ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
     ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG = "Subplebbit failed to decrypt the pubsub message",
     ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
+    UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE = "An author attempted to change another author's vote",
+    COMMENT_LINK_LENGTH_IS_OVER_LIMIT = "comment.link length is over the limit",
+
+    // Comment Edit errors
+    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
+    ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
 
     // Resolver errors
     ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",
@@ -103,5 +110,8 @@ export enum messages {
     ERR_PUBSUB_FAILED_TO_PUBLISH = "Failed to publish on pubsub",
     ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST = "Did not receive response to challenge request in the specified time",
     ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS = "All pubsub providers throw an error and unable to publish or subscribe",
-    ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER = "The challenge request has been published over the pubsub topic but no response was received"
+    ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER = "The challenge request has been published over the pubsub topic but no response was received",
+
+    // RPC errors
+    ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC"
 }

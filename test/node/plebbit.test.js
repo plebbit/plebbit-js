@@ -4,23 +4,22 @@ const { mockPlebbit } = require("../../dist/node/test/test-util");
 
 // example of node only tests
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 describe("plebbit", () => {
-    let plebbit;
-
-    before(async () => {
-        plebbit = await Plebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-    });
-
     it("has default plebbit options", async () => {
+        const plebbit = await Plebbit();
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"].sort());
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
+        expect(plebbit.clients.ipfsClients).to.deep.equal({});
+        expect(plebbit.ipfsHttpClientsOptions).to.be.undefined;
+        expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
+        expect(Object.keys(plebbit.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic"]);
+        expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic"]);
+
         expect(plebbit.dataPath).to.match(/\.plebbit$/);
     });
 
     it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const plebbit = await mockPlebbit();
         const newSubplebbit = await plebbit.createSubplebbit({
             signer: await plebbit.createSigner()
         });

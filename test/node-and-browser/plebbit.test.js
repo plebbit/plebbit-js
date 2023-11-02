@@ -4,18 +4,17 @@ const signers = require("../fixtures/signers");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, loadAllPages } = require("../../dist/node/test/test-util");
+const { mockPlebbit, loadAllPages, isRpcFlagOn } = require("../../dist/node/test/test-util");
 const { default: Author } = require("../../dist/node/author");
 const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
 const subplebbitSigner = signers[0];
 
 describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
+        // RPC exception
         const defaultPlebbit = await Plebbit();
         expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
             ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
@@ -33,28 +32,59 @@ describe("Plebbit options", async () => {
     });
 
     it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
+        // RPC exception
         const url = "http://localhost:15001/api/v0";
         const options = { ipfsHttpClientsOptions: [url] };
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
         expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
-        expect(Object.keys(testPlebbit.clients.ipfsGateways)).to.deep.equal(["http://127.0.0.1:18080"]);
+        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
     });
 
     it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
+        // RPC exception
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
 
-        expect(Object.keys(plebbit.clients.ipfsGateways)).to.deep.equal([]);
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
         expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url }]);
         expect(plebbit.ipfsHttpClientsOptions).to.deep.equal([{ url }]);
+    });
+
+    //prettier-ignore
+    if(isRpcFlagOn())
+    it(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
+
+        const rpcUrl = "ws://localhost:39652";
+        const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] })
+        expect(plebbit.plebbitRpcClient).to.be.a("object");
+        expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
+        expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
+        expect(plebbit.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.ipfsClients).to.deep.equal({});
+        expect(plebbit.clients.pubsubClients).to.deep.equal({});
+        expect(plebbit.clients.ipfsGateways).to.deep.equal({});        
+});
+
+    //prettier-ignore
+    if(isRpcFlagOn())
+    it("Error is emitted to plebbit instance if RPC is down", async () => {
+
+        const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+
+        await new Promise(resolve => plebbit.once("error", err => {
+            expect(err.message).to.equal('connect ECONNREFUSED 127.0.0.1:39650');
+            resolve();
+        }))
+
     });
 });
 
@@ -62,7 +92,7 @@ describe("plebbit.createSigner", async () => {
     let plebbit, signer;
     const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
         signer = await plebbit.createSigner();
     });
 
@@ -95,7 +125,7 @@ describe("plebbit.createSigner", async () => {
 describe("plebbit.getComment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
     });
     it("post props are loaded correctly", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -132,20 +162,30 @@ describe("plebbit.getComment", async () => {
         for (const key of Object.keys(expectedCommentProps))
             expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
     });
+
+    it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {
+        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
+        const comment = await plebbit.getComment(loadedSubplebbit.posts.pages.hot.comments[0].cid);
+        let updatedHasBeenCalled = false;
+        comment.updateOnce = comment._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
+    });
 });
 
 describe("plebbit.fetchCid", async () => {
-    let plebbit, gatewayPlebbit;
+    let plebbit, gatewayPlebbit, ipfsPlebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
-        gatewayPlebbit = await Plebbit({
-            ipfsGatewayUrls: ["http://127.0.0.1:18080"]
-        });
+        plebbit = await mockPlebbit(); // Here this should be alternated for RPC
+        gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
+        ipfsPlebbit = await Plebbit({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"] });
     });
 
     it(`Can fetch a cid correctly`, async () => {
         const fileString = "Hello plebs";
-        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(fileString)).path;
+        const cid = (await ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(fileString)).path;
         const contentFromFetchCid = await plebbit.fetchCid(cid);
         expect(contentFromFetchCid).to.equal(fileString);
         const contentFromGatewayFetchCid = await gatewayPlebbit.fetchCid(cid);
@@ -153,9 +193,10 @@ describe("plebbit.fetchCid", async () => {
     });
 
     it(`Throws an error if malicious gateway modifies content of file`, async () => {
+        // RPC exception
         const [fileString1, fileString2] = ["Hello plebs", "Hello plebs 2"];
         const cids = (
-            await Promise.all([fileString1, fileString2].map((file) => plebbit._clientsManager.getDefaultIpfs()._client.add(file)))
+            await Promise.all([fileString1, fileString2].map((file) => ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
         const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:33415"] });
@@ -166,6 +207,8 @@ describe("plebbit.fetchCid", async () => {
         await assert.isRejected(plebbitWithMaliciousGateway.fetchCid(cids[1]), messages.ERR_GENERATED_CID_DOES_NOT_MATCH);
     });
 
+    it(`Throws an error if malicious RPC modifies content of file in plebbit.fetchCid`);
+
     it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
         const gibberishCid = "12345";
 
@@ -174,19 +217,16 @@ describe("plebbit.fetchCid", async () => {
     });
     it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
         const jsonFileTest = { 123: "123" };
-        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
+        const cid = (await ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
         expect(cid).to.equal("QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo");
-        let jsonFileLoaded = JSON.parse(await plebbit.fetchCid(cid));
-        expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
-
-        jsonFileLoaded = JSON.parse(await plebbit.fetchCid(cid));
-        expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
+        expect(JSON.parse(await plebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
+        expect(JSON.parse(await gatewayPlebbit.fetchCid(cid))).to.deep.equal(jsonFileTest);
     });
 
     it("Throws an error when file to download is over 1mb for both loading via IPFS and gateway", async () => {
         const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) };
 
-        const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
+        const cid = (await ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
         expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
 
         await assert.isRejected(plebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);
@@ -195,6 +235,7 @@ describe("plebbit.fetchCid", async () => {
 
     it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
         // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
+        // RPC exception
         const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://localhost:33417", "http://127.0.0.1:18080"] });
 
         const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
@@ -211,6 +252,7 @@ describe("plebbit.fetchCid", async () => {
 if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
     describe("Authentication in ipfsHttpClientsOptions and PubsubHttpClientsOptions", async () => {
         it(`Authorization credentials are generated correctly`, async () => {
+            // RPC exception
             const plebbit = await Plebbit({
                 ipfsHttpClientsOptions: ["http://user:password@localhost:15001/api/v0"],
                 pubsubHttpClientsOptions: ["http://user:password@localhost:15002/api/v0"]

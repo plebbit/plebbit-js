@@ -8,7 +8,7 @@ const { expect, assert } = chai;
 const lodash = require("lodash");
 const { messages } = require("../../../dist/node/errors");
 const { verifyCommentEdit, signCommentEdit } = require("../../../dist/node/signer/signatures");
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
 
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
@@ -49,6 +49,8 @@ describe("Sign commentedit", async () => {
     });
 });
 
+// prettier-ignore
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("Verify CommentEdit", async () => {
     let plebbit;
     before(async () => {

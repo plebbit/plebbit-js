@@ -7,7 +7,11 @@ const {
     publishRandomReply,
     publishWithExpectedResult,
     loadAllPages,
-    mockGatewayPlebbit
+    mockGatewayPlebbit,
+    mockRemotePlebbitIpfsOnly,
+    publishVote,
+    generatePostToAnswerMathQuestion,
+    isRpcFlagOn
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
@@ -18,10 +22,12 @@ const { createMockIpfsClient } = require("../../../../dist/node/test/mock-ipfs-c
 const { default: waitUntil } = require("async-wait-until");
 const stringify = require("safe-stable-stringify");
 const { verifyComment } = require("../../../../dist/node/signer");
+const { verifyCommentUpdate } = require("../../../../dist/node/signer/signatures");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
+const mathCliSubplebbitAddress = signers[1].address;
 
 describe("createComment", async () => {
     let plebbit;
@@ -92,10 +98,11 @@ describe("createComment", async () => {
     });
 
     it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
         expect(post.replies).to.be.a("object");
         await publishRandomReply(post, plebbit, {}, true);
         await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.content).to.be.a("string");
         expect(post.replyCount).to.equal(1);
         expect(post.replies.pages.topAll.comments.length).to.equal(1);
@@ -111,11 +118,49 @@ describe("createComment", async () => {
         const page = await postClone.replies.getPage(pageCid);
         expect(page.comments.length).to.be.equal(1);
     });
+});
 
-    it(`plebbit.createComment({cid}).update() verifies signature of comment ipfs`, async () => {
+describe(`comment.update`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+
+    it(`Comment instance can retrieve ipnsName from just cid`, async () => {
+        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
+        expect(comment.shortCid).to.be.a("string").with.length(12);
+        expect(comment.author.shortAddress).to.be.a("string").with.length(12);
+
+        const recreatedComment = await plebbit.createComment({ cid: comment.cid });
+        expect(recreatedComment.cid).to.equal(comment.cid);
+        expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+
+        let eventNum = 0;
+        recreatedComment.on("update", (_) => {
+            if (eventNum === 0) {
+                // This is the update where CommentIpfs props are loaded (postCid, title, content, etc)
+                expect(recreatedComment.cid).to.equal(comment.cid);
+                expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+                expect(recreatedComment.toJSONIpfs()).to.deep.equal(comment.toJSONIpfs());
+                expect(recreatedComment.updatedAt).to.be.undefined;
+            } else if (eventNum === 1) {
+                // The update where CommentUpdate props are loaded
+                expect(recreatedComment.updatedAt).to.be.a("number");
+                recreatedComment.removeAllListeners("update");
+            }
+            eventNum++;
+        });
+
+        recreatedComment.update();
+
+        await waitUntil(() => eventNum >= 2, { timeout: 20000 });
+        await recreatedComment.stop();
+    });
+
+    it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const postJson = lodash.cloneDeep(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+        const postJson = subplebbit.posts.pages.hot.comments[0].toJSONIpfs();
 
         postJson.title += "1234"; // Invalidate signature
 
@@ -124,16 +169,86 @@ describe("createComment", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        const postWithInvalidSignatureCid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))).path;
+        const postWithInvalidSignatureCid = (
+            await (await mockRemotePlebbitIpfsOnly())._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))
+        ).path;
 
         const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
 
-        createdComment.once("update", () => assert.fail("Should not update with invalid comment props"));
-        createdComment.update();
+        let updateHasBeenEmitted = false;
+        createdComment.once("update", () => (updateHasBeenEmitted = true));
+        await createdComment.update();
 
-        await new Promise((resolve) => createdComment.once("error", resolve));
+        await new Promise((resolve) =>
+            createdComment.once("error", (err) => {
+                expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+                resolve();
+            })
+        );
 
         expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
+        expect(createdComment.state).to.equal("stopped");
+        expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+        expect(updateHasBeenEmitted).to.be.false;
+    });
+
+    //prettier-ignore
+    if (!isRpcFlagOn())
+    it(`comment.update() emit an error if CommentUpdate signature is invalid`, async () => {
+        // Should emit an error as well as continue the update loop
+
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
+
+        invalidCommentUpdateJson.upvoteCount += 1234; // Invalidate signature
+
+        expect(
+            await verifyCommentUpdate(
+                invalidCommentUpdateJson,
+                true,
+                plebbit._clientsManager,
+                subplebbit.address,
+                { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
+                false
+            )
+        ).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        const createdComment = await plebbit.createComment({
+            cid: subplebbit.posts.pages.hot.comments[0].cid,
+            ...subplebbit.posts.pages.hot.comments[0].toJSONIpfs()
+        });
+
+        let loadingRetries = 0;
+        let errorsEmittedCount = 0;
+        createdComment._retryLoadingCommentUpdate = () => {
+            loadingRetries++;
+            return invalidCommentUpdateJson;
+        };
+
+        let updateHasBeenEmitted = false;
+        createdComment.once("update", () => (updateHasBeenEmitted = true));
+        await createdComment.update();
+
+        await new Promise((resolve) =>
+            createdComment.on("error", (err) => {
+                expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
+                errorsEmittedCount++;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+
+        expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+        expect(createdComment.state).to.equal("updating");
+        expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+        expect(updateHasBeenEmitted).to.be.false;
+        expect(loadingRetries).to.be.above(2);
+        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
 
         await createdComment.stop();
     });
@@ -141,7 +256,7 @@ describe("createComment", async () => {
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const originalPost = subplebbit.posts.pages.hot.comments[5];
+        const originalPost = subplebbit.posts.pages.hot.comments[0];
 
         const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 
@@ -154,10 +269,9 @@ describe("createComment", async () => {
         expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
 
         await new Promise((resolve) => recreatedPost.once("update", resolve));
+        await recreatedPost.stop();
         expect(recreatedPost.updatedAt).to.be.a("number");
         expect(recreatedPost.toJSON()).to.deep.equal(originalPost.toJSON());
-
-        await recreatedPost.stop();
     });
 
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
@@ -177,58 +291,53 @@ describe("createComment", async () => {
 
         await new Promise((resolve) => recreatedReply.once("update", resolve));
         expect(recreatedReply.updatedAt).to.be.a("number");
+        expect(recreatedReply.updatedAt).to.equal(originalReply.updatedAt);
         expect(recreatedReply.toJSON()).to.deep.equal(originalReply.toJSON());
 
         await recreatedReply.stop();
     });
-});
 
-describe(`comment.update`, async () => {
-    let plebbit;
-    before(async () => {
-        plebbit = await mockPlebbit();
-    });
-
-    it(`comment.stop() stops new update loops from running`, async () => {
-        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
+    it(`comment.stop() stops comment updates`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
         await comment.update();
         await new Promise((resolve) => comment.once("update", resolve));
         await comment.stop();
-        comment.updateOnce = () => expect.fail(`updateOnce should not be called after stopping`);
-        comment._retryLoadingCommentUpdate = () => expect.fail(`_retryLoadingCommentUpdate  should not be called after stopping`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        let updatedHasBeenCalled = false;
+        comment.updateOnce = comment._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
     });
 
-    it(`Comment instance can retrieve ipnsName from just cid`, async () => {
-        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
-        expect(comment.shortCid).to.be.a("string").with.length(12);
-        expect(comment.author.shortAddress).to.be.a("string").with.length(12);
+    it(`comment.update() is working as expected after calling comment.stop()`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
 
-        const recreatedComment = await plebbit.createComment({ cid: comment.cid });
-        expect(recreatedComment.cid).to.equal(comment.cid);
-        expect(recreatedComment.shortCid).to.equal(comment.shortCid);
+        await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentIpfs Update
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentUpdate update
 
-        let eventNum = 0;
-        recreatedComment.on("update", (_) => {
-            if (eventNum === 0) {
-                // This is the update where Comment props are loaded (postCid, title, content, etc)
-                expect(recreatedComment.cid).to.equal(comment.cid);
-                expect(recreatedComment.shortCid).to.equal(comment.shortCid);
-                expect(recreatedComment.author).to.deep.equal(comment.author);
-            } else if (eventNum === 1) {
-                // The update where CommentUpdate props are loaded
-                expect(recreatedComment.updatedAt).to.be.a("number");
-                recreatedComment.removeAllListeners("update");
-            }
-            eventNum++;
-        });
+        await comment.stop();
 
-        recreatedComment.update();
+        await comment.update();
 
-        await waitUntil(() => eventNum >= 2, { timeout: 20000 });
-        await recreatedComment.stop();
+        await publishRandomReply(comment, plebbit, {}, false);
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
     });
-    it(`comment.update() is working as expected after calling comment.stop()`);
+
+    it(`comment.update() is working as expected after comment.publish()`, async () => {
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        expect(post.updatedAt).to.be.a("number");
+        await post.stop();
+    });
 });
 
 describe(`commentUpdate.replyCount`, async () => {
@@ -238,6 +347,7 @@ describe(`commentUpdate.replyCount`, async () => {
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replyCount).to.equal(0);
     });
 
@@ -302,6 +412,7 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
         await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
@@ -311,6 +422,97 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
         await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
         expect(post.replyCount).to.equal(2);
         expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
+    });
+});
+
+describe(`commentUpdate.author.subplebbit`, async () => {
+    let plebbit, post;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+    });
+
+    after(async () => await post.stop());
+
+    it(`post.author.subplebbit.postScore increases with upvote to post`, async () => {
+        expect(post.cid).to.be.a("string");
+        await publishVote(post.cid, post.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => post.upvoteCount === 1, { timeout: 200000 });
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(1);
+        expect(post.author.subplebbit.replyScore).to.equal(0);
+    });
+
+    it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        await anotherPost.update();
+
+        await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => anotherPost.upvoteCount === 1 && post.author.subplebbit.postScore === 2, { timeout: 200000 });
+        expect(anotherPost.upvoteCount).to.equal(1);
+        expect(anotherPost.author.subplebbit.postScore).to.equal(2);
+        expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(2);
+        expect(post.author.subplebbit.replyScore).to.equal(0);
+        await anotherPost.stop();
+    });
+
+    it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        await reply.update();
+        await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
+        await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
+
+        expect(post.upvoteCount).to.equal(1);
+        expect(post.author.subplebbit.postScore).to.equal(2);
+        expect(post.author.subplebbit.replyScore).to.equal(1);
+
+        expect(reply.upvoteCount).to.equal(1);
+        expect(reply.author.subplebbit.postScore).to.equal(2);
+        expect(reply.author.subplebbit.replyScore).to.equal(1);
+
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await reply.stop();
+    });
+
+    it(`author.subplebbit.lastCommentCid is updated with every new post of author`, async () => {
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        await anotherPost.update();
+
+        await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
+            timeout: 200000
+        });
+
+        expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
+        expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
+        expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await anotherPost.stop();
+    });
+
+    it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
+        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        await reply.update();
+
+        await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
+
+        expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+        expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
+        expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
+
+        await reply.stop();
+    });
+
+    it("CommentUpdate.author.subplebbit.firstCommentTimestamp is the timestamp of the first comment ", async () => {
+        expect(post.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
     });
 });
 
@@ -326,20 +528,22 @@ describe(`comment.state`, async () => {
     });
 
     it(`state changes to publishing after calling .publish()`, async () => {
-        let receivedStateChange = false;
-        comment.once("statechange", (newState) => (receivedStateChange = newState === "publishing"));
-        await publishWithExpectedResult(comment, true);
-        expect(comment.state).to.equal("publishing");
-        expect(receivedStateChange).to.be.true;
+        publishWithExpectedResult(comment, true);
+        if (comment.publishingState !== "publishing")
+            await new Promise((resolve) =>
+                comment.once("statechange", (state) => {
+                    if (state === "publishing") resolve();
+                })
+            );
     });
 
-    it(`state changes to updating after calling updating`, async () => {
-        let receivedStateChange = false;
-        comment.once("statechange", (newState) => (receivedStateChange = newState === "updating"));
-        await comment.update();
-        expect(comment.state).to.equal("updating");
-        expect(receivedStateChange).to.be.true;
-        await comment.stop();
+    it(`state changes to updating after calling .update()`, async () => {
+        const tempComment = await plebbit.createComment({
+            cid: (await plebbit.getSubplebbit(signers[0].address)).posts.pages.hot.comments[0].cid
+        });
+        await tempComment.update();
+        expect(tempComment.state).to.equal("updating");
+        await tempComment.stop();
     });
 });
 
@@ -354,6 +558,8 @@ describe("comment.updatingState", async () => {
         expect(mockPost.updatingState).to.equal("stopped");
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
@@ -363,12 +569,15 @@ describe("comment.updatingState", async () => {
         await mockPost.update();
 
         await new Promise((resolve) => mockPost.once("update", resolve));
+        if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
@@ -384,6 +593,33 @@ describe("comment.updatingState", async () => {
         expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
         expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
+
+    //prettier-ignore
+    if (isRpcFlagOn())
+    it(`updating states is in correct order upon updating a comment with RPC`, async () => {
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 3 + 1));
+        const expectedStates = [
+            "fetching-ipfs",
+            "succeeded",
+            "fetching-update-ipns",
+            "fetching-update-ipfs",
+            "succeeded",
+            "stopped",
+          ]
+        const recordedStates = [];
+        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await mockPost.update();
+
+        await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
+        await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
+        await mockPost.stop();
+
+        expect(recordedStates).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+
+    });
 });
 
 describe(`comment.clients`, async () => {
@@ -393,6 +629,8 @@ describe(`comment.clients`, async () => {
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     describe(`comment.clients.ipfsGateways`, async () => {
         // All tests below use Plebbit instance that doesn't have ipfsClient
         it(`comment.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -474,6 +712,8 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     describe(`comment.clients.ipfsClients`, async () => {
         it(`comment.clients.ipfsClients is undefined for gateway plebbit`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
@@ -559,6 +799,8 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn()) 
     describe(`comment.clients.pubsubClients`, async () => {
         it(`comment.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -588,10 +830,8 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge`, async () => {
-            const imageCaptchaSubplebbitAddress = signers[2].address;
 
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
-            mockPost.removeAllListeners();
+            const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress},plebbit);
 
             const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
             // Only first pubsub url is used for subscription. For publishing we use all providers
@@ -614,10 +854,6 @@ describe(`comment.clients`, async () => {
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-            mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-            });
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -698,9 +934,7 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge (pubsub provider 0 fail to receive a response in alotted time)`, async () => {
-            const imageCaptchaSubplebbitAddress = signers[2].address;
-
-            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
+            const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take pubsub msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
             const plebbit = await mockPlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
@@ -708,9 +942,8 @@ describe(`comment.clients`, async () => {
 
             plebbit.clients.pubsubClients[upPubsubUrl]._client = createMockIpfsClient(); // Use mock pubsub to be on the same pubsub as the sub
 
-            const mockPost = await generateMockPost(imageCaptchaSubplebbitAddress, plebbit);
+            const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress},plebbit);
             mockPost._publishToDifferentProviderThresholdSeconds = 5;
-            mockPost.removeAllListeners();
 
             const expectedStates = {
                 [notRespondingPubsubUrl]: [
@@ -737,17 +970,14 @@ describe(`comment.clients`, async () => {
             for (const pubsubUrl of Object.keys(expectedStates))
                 mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-            mockPost.once("challenge", async (challengeMsg) => {
-                expect(challengeMsg?.challenges[0]?.challenge).to.be.a("string");
-                await mockPost.publishChallengeAnswers(["1234"]); // hardcode answer here
-            });
-
             await publishWithExpectedResult(mockPost, true);
 
             expect(actualStates).to.deep.equal(expectedStates);
         });
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn()) 
     describe(`comment.clients.chainProviders`, async () => {
         it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -774,12 +1004,67 @@ describe(`comment.clients`, async () => {
         });
     });
 
+    //prettier-ignore
+    if (isRpcFlagOn())
+    describe(`comment.clients.plebbitRpcClients`, async () => {
+        it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
+            const mathCliSubplebbitAddress = signers[1].address;
+
+            await plebbit.getSubplebbit(mathCliSubplebbitAddress);// Do this to cache subplebbit so we won't get fetching-subplebbit-ipns
+
+            const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            const mockPost = await generateMockPost(mathCliSubplebbitAddress, plebbit);
+            mockPost.removeAllListeners();
+
+            const expectedStates = ["subscribing-pubsub","publishing-challenge-request","waiting-challenge","waiting-challenge-answers","publishing-challenge-answer","waiting-challenge-verification","stopped"];
+
+            const actualStates = [];
+
+            mockPost.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => actualStates.push(newState));
+
+            mockPost.once("challenge", async (challengeMsg) => {
+                await mockPost.publishChallengeAnswers(["2"]); // hardcode answer here
+            });
+
+            await publishWithExpectedResult(mockPost, true);
+
+            expect(actualStates).to.deep.equal(expectedStates);
+        });
+
+        it(`Correct order of comment.clients.plebbitRpcClients states when updating a comment`, async () => {
+            const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 2 + 1))
+            const expectedStates = [
+                "fetching-ipfs",
+                "stopped",
+                "fetching-update-ipns",
+                "fetching-update-ipfs",
+                "stopped",
+              ]
+            const recordedStates = [];
+            const currentRpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
+            mockPost.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+    
+            await mockPost.update();
+    
+            await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
+            await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
+            await mockPost.stop();
+    
+            expect(recordedStates).to.deep.equal(expectedStates);
+            expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    
+        });
+    });
+
     describe(`comment.replies.clients`, async () => {
         let commentCid;
         before(async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
         });
+        //prettier-ignore
+        if (!isRpcFlagOn()) 
         describe(`comment.replies.clients.ipfsClients`, async () => {
             it(`comment.replies.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
@@ -811,7 +1096,9 @@ describe(`comment.clients`, async () => {
             });
         });
 
-        describe(`comment.replies.clients.clients.ipfsGateways`, async () => {
+        //prettier-ignore
+        if (!isRpcFlagOn()) 
+        describe(`comment.replies.clients.ipfsGateways`, async () => {
             it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
                 const gatewayUrl = Object.keys(comment.clients.ipfsGateways)[0];
@@ -839,6 +1126,7 @@ describe(`comment.clients`, async () => {
             });
 
             it(`Correct state of 'new' sort is correct after fetching from responsive and unresponsive gateway `, async () => {
+                // RPC exception
                 const gateways = [
                     "http://localhost:33417", // This gateway will take 10s to respond
                     "http://127.0.0.1:18080" // This one is immediate
@@ -872,6 +1160,38 @@ describe(`comment.clients`, async () => {
                 const timeItTookInMs = Date.now() - timeBefore;
                 expect(timeItTookInMs).to.be.lessThan(9000);
 
+                expect(actualStates).to.deep.equal(expectedStates);
+            });
+        });
+
+        //prettier-ignore
+        if (isRpcFlagOn()) 
+        describe(`comment.replies.clients.plebbitRpcClients`, async () => {
+            
+            it(`comment.replies.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
+                // add tests here
+                expect(Object.keys(comment.replies.clients.plebbitRpcClients["new"]).length).to.equal(1);
+                expect(comment.replies.clients.plebbitRpcClients["new"][rpcUrl].state).to.equal("stopped");
+            });
+
+            it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
+                const comment = await plebbit.getComment(commentCid);
+                await comment.update();
+                await new Promise((resolve) => comment.once("update", resolve));
+                if (!comment.updatedAt) await new Promise(resolve => comment.once("update", resolve));
+
+                const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];
+
+                const expectedStates = ["fetching-ipfs", "stopped"];
+                const actualStates = [];
+                comment.replies.clients.plebbitRpcClients["new"][rpcUrl].on("statechange", (newState) => {
+                    actualStates.push(newState);
+                });
+
+                await comment.replies.getPage(comment.replies.pageCids.new);
+                await comment.stop();
                 expect(actualStates).to.deep.equal(expectedStates);
             });
         });

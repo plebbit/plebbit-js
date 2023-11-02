@@ -8,31 +8,35 @@ import {
   testReply,
   testPost
 } from './utils'
+import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../types'
+import { ChallengeResult, Exclude, SubplebbitChallenge } from "../../subplebbit/types"
 
+type PublicationType = "post" | "reply" | "vote"
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
-const rateLimiters = new QuickLRU({maxSize: 50000})
+const rateLimiters = new QuickLRU<string, RateLimiter>({maxSize: 50000})
 
-const getRateLimiterName = (exclude, publication, publicationType, challengeSuccess) => `${publication.author.address}-${exclude.rateLimit}-${publicationType}-${challengeSuccess}`
+const getRateLimiterName = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], publicationType: PublicationType, challengeSuccess: ChallengeResult["success"]) => `${publication.author.address}-${exclude.rateLimit}-${publicationType}-${challengeSuccess}`
 
-const getOrCreateRateLimiter = (exclude, publication, publicationType, challengeSuccess) => {
+const getOrCreateRateLimiter = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], publicationType: PublicationType, challengeSuccess: ChallengeResult["success"]) => {
   const rateLimiterName = getRateLimiterName(exclude, publication, publicationType, challengeSuccess)
-  let rateLimiter: any = rateLimiters.get(rateLimiterName)
+  let rateLimiter = rateLimiters.get(rateLimiterName)
   if (!rateLimiter) {
     rateLimiter = new RateLimiter({tokensPerInterval: exclude.rateLimit, interval: "hour", fireImmediately: true})
+    //@ts-expect-error
     rateLimiter.name = rateLimiterName // add name for debugging
     rateLimiters.set(rateLimiterName, rateLimiter)
   }
   return rateLimiter
 }
 
-const addFilteredRateLimiter = (exclude, publication, publicationType, challengeSuccess, filteredRateLimiters) => {
+const addFilteredRateLimiter = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], publicationType: PublicationType, challengeSuccess: ChallengeResult["success"], filteredRateLimiters: Record<string, RateLimiter>) => {
   filteredRateLimiters[getRateLimiterName(exclude, publication, publicationType, challengeSuccess)] = getOrCreateRateLimiter(exclude, publication, publicationType, challengeSuccess)
 }
 
-const getRateLimitersToTest = (exclude, publication, challengeSuccess) => {
+const getRateLimitersToTest = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], challengeSuccess: ChallengeResult["success"]) => {
   // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
-  const filteredRateLimiters = {}
+  const filteredRateLimiters: Record<string, RateLimiter> = {}
   if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
     addFilteredRateLimiter(exclude, publication, 'post', challengeSuccess, filteredRateLimiters)
   }
@@ -45,7 +49,7 @@ const getRateLimitersToTest = (exclude, publication, challengeSuccess) => {
   return filteredRateLimiters
 }
 
-const testRateLimit = (exclude, publication) => {
+const testRateLimit = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]) => {
   if (
     exclude?.rateLimit === undefined ||
     (exclude.post === true && !isPost(publication)) ||
@@ -78,9 +82,9 @@ const testRateLimit = (exclude, publication) => {
   return true
 }
 
-const getRateLimitersToAddTo = (excludeArray, publication, challengeSuccess) => {
+const getRateLimitersToAddTo = (excludeArray: Exclude[], publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], challengeSuccess: ChallengeResult["success"]) => {
   // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
-  const filteredRateLimiters = {}
+  const filteredRateLimiters: Record<string, RateLimiter> = {}
   for (const exclude of excludeArray) {
     if (exclude?.rateLimit === undefined) {
       continue
@@ -98,7 +102,7 @@ const getRateLimitersToAddTo = (excludeArray, publication, challengeSuccess) => 
   return filteredRateLimiters
 }
 
-const addToRateLimiter = (subplebbitChallenges, publication, challengeSuccess) => {
+const addToRateLimiter = (subplebbitChallenges: SubplebbitChallenge[], publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], challengeSuccess: ChallengeResult["success"]) => {
   if (!subplebbitChallenges) {
     // subplebbit has no challenges, no need to rate limit
     return
@@ -127,7 +131,7 @@ const addToRateLimiter = (subplebbitChallenges, publication, challengeSuccess) =
   }
 
   const rateLimiters = getRateLimitersToAddTo(excludeArray, publication, challengeSuccess)
-  for (const rateLimiter of Object.values<any>(rateLimiters)) {
+  for (const rateLimiter of Object.values(rateLimiters)) {
     rateLimiter.tryRemoveTokens(1)
   }
 }

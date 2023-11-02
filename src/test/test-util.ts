@@ -3,8 +3,8 @@ import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
-import { Subplebbit } from "../subplebbit";
-import { CreateCommentOptions, CreateSubplebbitOptions, PlebbitOptions, PostType, VoteType } from "../types";
+import { Subplebbit } from "../subplebbit/subplebbit";
+import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import isIPFS from "is-ipfs";
 import waitUntil from "async-wait-until";
 import assert from "assert";
@@ -15,6 +15,7 @@ import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
+import { CreateSubplebbitOptions } from "../subplebbit/types";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -47,10 +48,6 @@ export async function generateMockPost(
         subplebbitAddress,
         ...postProps
     });
-    //@ts-ignore
-    post._updateIntervalMs = 200;
-
-    post.once("challenge", (challengeMsg) => post.publishChallengeAnswers([]));
 
     return post;
 }
@@ -76,10 +73,6 @@ export async function generateMockComment(
         timestamp: commentTimestamp,
         ...commentProps
     });
-    //@ts-ignore
-    comment._updateIntervalMs = 200;
-
-    comment.once("challenge", (challengeMsg) => comment.publishChallengeAnswers([]));
 
     return comment;
 }
@@ -122,12 +115,6 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages): P
 async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
 
-    plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
-        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return signers[3].address;
-        else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address") return signers[6].address;
-        else return null;
-    };
-
     for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
         plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
 
@@ -136,41 +123,17 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: Ple
 
 async function _startMathCliSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[1]);
-    const subplebbit = await createMockSub({ signer }, plebbit);
-
-    subplebbit.setProvideCaptchaCallback(async (challengeRequestMessage) => {
-        // Expected return is:
-        // Challenge[], reason for skipping captcha (if it's skipped by nullifying Challenge[])
-        return [[{ challenge: "1+1=?", type: "text/plain" }], undefined];
-    });
-
-    subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
-        const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "2";
-        const challengeErrors = challengeSuccess ? undefined : ["Result of math expression is incorrect"];
-        return [challengeSuccess, challengeErrors];
-    });
-    await subplebbit.start();
-    return subplebbit;
-}
-
-async function _startImageCaptchaSubplebbit(signers: SignerType[], plebbit: Plebbit) {
-    const signer = await plebbit.createSigner(signers[2]);
     const subplebbit = await plebbit.createSubplebbit({ signer });
 
-    // Image captcha are default
+    await subplebbit.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+
     await subplebbit.start();
-    subplebbit.setValidateCaptchaAnswerCallback(async (challengeAnswerMessage) => {
-        const challengeSuccess = challengeAnswerMessage.challengeAnswers[0] === "1234";
-        const challengeErrors = challengeSuccess ? undefined : ["User answered image captcha incorrectly"];
-        return [challengeSuccess, challengeErrors];
-    });
     return subplebbit;
 }
 
 async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[3]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
-    subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
     assert.equal(subplebbit.address, "plebbit.eth");
@@ -187,7 +150,9 @@ async function _publishReplies(parentComment: Comment, numOfReplies: number, ple
 
 async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number, plebbit: Plebbit) {
     return Promise.all(
-        new Array(votesPerCommentToPublish).fill(null).map(() => publishVote(comment.cid, Math.random() > 0.5 ? 1 : -1, plebbit, {}))
+        new Array(votesPerCommentToPublish)
+            .fill(null)
+            .map(() => publishVote(comment.cid, comment.subplebbitAddress, Math.random() > 0.5 ? 1 : -1, plebbit, {}))
     );
 }
 
@@ -239,21 +204,18 @@ export async function startSubplebbits(props: {
 }) {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
-    const subplebbit = await createMockSub({ signer }, plebbit);
-
-    subplebbit.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
 
     await subplebbit.start();
     console.time("populate");
-    const [imageSub, mathSub, ensSub] = await Promise.all([
-        _startImageCaptchaSubplebbit(props.signers, plebbit),
+    const [mathSub, ensSub] = await Promise.all([
         _startMathCliSubplebbit(props.signers, plebbit),
         _startEnsSubplebbit(props.signers, plebbit),
         _populateSubplebbit(subplebbit, props)
     ]);
     console.timeEnd("populate");
 
-    for (const sub of [imageSub, mathSub, ensSub, subplebbit]) {
+    for (const sub of [mathSub, ensSub, subplebbit]) {
         sub.on("update", () => {
             const lastUpdatedAt = sub["lastUpdatedAt"];
             console.log(`Sub (${sub.address}) took ${sub.updatedAt - lastUpdatedAt} seconds for update loop to complete`);
@@ -264,10 +226,20 @@ export async function startSubplebbits(props: {
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 }
 
+export function mockDefaultOptionsForNodeAndBrowserTests() {
+    const shouldUseRPC = isRpcFlagOn();
+
+    if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
+    else
+        return {
+            ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`]
+        };
+}
+
 export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false) {
     const plebbit = await PlebbitIndex({
-        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-        pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
+        ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
         publishInterval: 1000,
         updateInterval: 1000,
@@ -275,9 +247,15 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     });
 
     plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
-        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address") return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo";
+        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
         else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
-            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y";
+            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+        else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+        else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address") return (await plebbit.createSigner()).address;
+        else if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+            return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
         else return null;
     };
 
@@ -295,13 +273,28 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
 
 export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await mockPlebbit(plebbitOptions);
-    plebbit._canRunSub = () => false;
+    plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
+
+export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions) {
+    const plebbit = await mockPlebbit({
+        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+        plebbitRpcClientsOptions: undefined,
+        ...plebbitOptions
+    });
+    plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
+
+export async function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions) {
+    const plebbit = await mockPlebbit(plebbitOptions);
     return plebbit;
 }
 
 export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit(plebbitOptions);
+    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], ...plebbitOptions });
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;
@@ -340,12 +333,17 @@ export async function publishRandomPost(
     return post;
 }
 
-export async function publishVote(commentCid: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>) {
-    const comment = await plebbit.getComment(commentCid);
+export async function publishVote(
+    commentCid: string,
+    subplebbitAddress: string,
+    vote: 1 | 0 | -1,
+    plebbit: Plebbit,
+    voteProps?: Partial<VoteType>
+) {
     const voteObj = await plebbit.createVote({
         commentCid,
         vote,
-        subplebbitAddress: comment.subplebbitAddress,
+        subplebbitAddress,
         signer: voteProps?.signer || (await plebbit.createSigner()),
         ...voteProps
     });
@@ -394,9 +392,9 @@ export async function waitTillCommentIsInParentPages(
     checkInAllPages = false
 ) {
     const parent =
-        comment.depth === 0 ? await plebbit.getSubplebbit(comment.subplebbitAddress) : await plebbit.getComment(comment.parentCid);
-    //@ts-ignore
-    parent._updateIntervalMs = 200;
+        comment.depth === 0
+            ? await plebbit.getSubplebbit(comment.subplebbitAddress)
+            : await plebbit.createComment({ cid: comment.parentCid });
     await parent.update();
     const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
@@ -430,8 +428,25 @@ export async function waitTillCommentIsInParentPages(
                 throw Error(`commentInPage[${key}] is incorrect`);
 }
 
-export async function createMockSub(props: CreateSubplebbitOptions, plebbit: Plebbit) {
+export async function createSubWithNoChallenge(props: CreateSubplebbitOptions, plebbit: Plebbit) {
     const sub = await plebbit.createSubplebbit(props);
-    sub.setProvideCaptchaCallback(async () => [[], "Challenge skipped"]);
+    await sub.edit({ settings: { challenges: undefined } }); // No challenge
     return sub;
+}
+
+export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
+    const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
+    mockPost.removeAllListeners();
+    mockPost.once("challenge", (challengeMessage) => {
+        mockPost.publishChallengeAnswers(["2"]);
+    });
+
+    return mockPost;
+}
+
+export function isRpcFlagOn(): boolean {
+    const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
+    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
+    const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
+    return isRpcFlagOn;
 }

@@ -6,11 +6,10 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
-if (globalThis["navigator"]?.userAgent?.includes("Electron")) Plebbit.setNativeFunctions(window.plebbitJsNativeFunctions);
-
-// TODO rewrite this
+//prettier-ignore
+if (!isRpcFlagOn())
 describe("Test util functions", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
@@ -25,7 +24,7 @@ describe("Test util functions", async () => {
             await assert.isRejected(fetch("https://ifconfig.me"));
         });
 
-    describe("loadIpnsAsJson", async () => {
+    describe("loading IPNS", async () => {
         it("Throws if provided with invalid ipns", async () => {
             const gibberishIpns = "12345";
             await assert.isRejected(
@@ -64,6 +63,8 @@ describe("Test util functions", async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Test parsing of database queries`, async () => {
     it(`Can parse regular json object with a field that's json string`, async () => {
         const rawObj = {

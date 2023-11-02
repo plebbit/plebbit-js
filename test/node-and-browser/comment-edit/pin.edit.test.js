@@ -11,7 +11,7 @@ const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../../dist/node/sort-handler");
+const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
 
 const subplebbitAddress = signers[0].address;
 const roles = [

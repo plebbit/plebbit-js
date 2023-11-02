@@ -16,7 +16,7 @@ export default class Cache implements StorageInterface {
     }
 
     async init() {
-        if (this._plebbit.noData) {
+        if (this._plebbit.noData || !this._plebbit.dataPath) {
             this._keyv = new Keyv(`sqlite://:memory:`);
         } else {
             fs.mkdirSync(this._plebbit.dataPath, { recursive: true });

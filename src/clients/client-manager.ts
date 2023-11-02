@@ -3,8 +3,8 @@ import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
 import { throwWithErrorCode } from "../util";
 import assert from "assert";
-import { Chain, CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
-import { Subplebbit } from "../subplebbit";
+import { Chain, CommentIpfsType, CommentUpdate } from "../types";
+import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
 import isIPFS from "is-ipfs";
@@ -21,6 +21,13 @@ import {
 
 import { BaseClientsManager, LoadType } from "./base-client-manager";
 import { subplebbitForPublishingCache } from "../constants";
+import {
+    CommentPlebbitRpcStateClient,
+    GenericPlebbitRpcStateClient,
+    PublicationPlebbitRpcStateClient,
+    SubplebbitPlebbitRpcStateClient
+} from "./plebbit-rpc-state-client";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -30,6 +37,7 @@ export class ClientsManager extends BaseClientsManager {
         ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        plebbitRpcClients: { [plebbitRpcClientUrl: string]: GenericPlebbitRpcStateClient };
     };
 
     constructor(plebbit: Plebbit) {
@@ -40,6 +48,7 @@ export class ClientsManager extends BaseClientsManager {
         this._initIpfsClients();
         this._initPubsubClients();
         this._initChainProviders();
+        this._initPlebbitRpcClients();
     }
 
     protected _initIpfsGateways() {
@@ -48,9 +57,8 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initIpfsClients() {
-        if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
-                this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
+        for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+            this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
     }
 
     protected _initPubsubClients() {
@@ -67,6 +75,11 @@ export class ClientsManager extends BaseClientsManager {
             for (const chainProviderUrl of chainProvider.urls)
                 this.clients.chainProviders[chain][chainProviderUrl] = new GenericChainProviderClient("stopped");
         }
+    }
+
+    protected _initPlebbitRpcClients() {
+        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+            this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new GenericPlebbitRpcStateClient("stopped") };
     }
 
     // Overriding functions from base client manager here
@@ -192,6 +205,7 @@ export class PublicationClientsManager extends ClientsManager {
         ipfsClients: { [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
     _publication: Publication;
     _attemptingToResolve: boolean;
@@ -210,6 +224,14 @@ export class PublicationClientsManager extends ClientsManager {
     protected _initPubsubClients(): void {
         for (const pubsubUrl of Object.keys(this._plebbit.clients.pubsubClients))
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
+    }
+
+    protected _initPlebbitRpcClients() {
+        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+            this.clients.plebbitRpcClients = {
+                ...this.clients.plebbitRpcClients,
+                [rpcUrl]: new PublicationPlebbitRpcStateClient("stopped")
+            };
     }
 
     // Resolver methods here
@@ -278,6 +300,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         ipfsClients: { [ipfsClientUrl: string]: CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
     private _comment: Comment;
 
@@ -290,6 +313,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._plebbit.clients.ipfsClients)
             for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
                 this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new CommentIpfsClient("stopped") };
+    }
+
+    protected _initPlebbitRpcClients() {
+        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+            this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
     }
 
     async fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate> {
@@ -310,7 +338,6 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
-        this._comment._setUpdatingState("fetching-ipfs");
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs");
             const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));
@@ -333,6 +360,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         ipfsClients: { [ipfsClientUrl: string]: SubplebbitIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: SubplebbitPubsubClient };
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
     private _subplebbit: Subplebbit;
 
@@ -350,6 +378,14 @@ export class SubplebbitClientsManager extends ClientsManager {
     protected _initPubsubClients(): void {
         for (const pubsubUrl of Object.keys(this._plebbit.clients.pubsubClients))
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new SubplebbitPubsubClient("stopped") };
+    }
+
+    protected _initPlebbitRpcClients() {
+        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+            this.clients.plebbitRpcClients = {
+                ...this.clients.plebbitRpcClients,
+                [rpcUrl]: new SubplebbitPlebbitRpcStateClient("stopped")
+            };
     }
 
     async fetchSubplebbit(ipnsName: string) {
