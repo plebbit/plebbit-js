@@ -24,9 +24,16 @@ jobs:
       # build dist folder
       - run: npm ci
       - run: npm run build
+      
+
+      # build dist folder for RPC
+      - run: cd rpc
+      - run: npm ci
+      - run: npm run build
+      - run: cd ../
 
       # NOTE: doesn't work if `git add dist --force` is removed
-      - run: git add dist --force
+      - run: git add dist rpc/dist --force
       - run: git status
 
       # commit and push dist folder

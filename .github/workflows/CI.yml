@@ -8,6 +8,7 @@ on:
     paths:
       - "test/**"
       - "src/**"
+      - "rpc/**"
       - "config/**"
       - "package.json"
       - "package-lock.json"
@@ -17,6 +18,7 @@ on:
     paths:
       - "test/**"
       - "src/**"
+      - "rpc/**"
       - "config/**"
       - ".github/**"
       - "package.json"
