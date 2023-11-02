@@ -53,7 +53,7 @@ jobs:
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - name: Run mocked challenge tests
         run: npm run test:mocked:challenges
-      - run:  npm run test:${{ matrix.testClient }}
+      - run:  DEBUG="plebbit*" npm run test:${{ matrix.testClient }}
 
   test-plebbit-react-hooks:
     uses: ./.github/workflows/CI-plebbit-react-hooks.yml
