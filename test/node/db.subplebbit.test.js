@@ -5,22 +5,23 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const signers = require("../fixtures/signers");
 
-const tempy = require("tempy");
-
 const path = require("path");
 const fs = require("fs");
 const { mockPlebbit, generateMockPost, publishWithExpectedResult, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const plebbitVersion = require("../../dist/node/version");
 
-const plebbitOptions = {
-    dataPath: tempy.directory(),
-    ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
-    pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+const getTemporaryPlebbitOptions = () => {
+    const tempy = require("tempy");
+    return {
+        dataPath: tempy.directory(),
+        ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
+        pubsubHttpClientsOptions: ["http://localhost:15005/api/v0"]
+    };
 };
-console.log(`PlebbitOptions for db.subplebbit.test.js`, plebbitOptions);
 
 const getDatabasesToMigrate = () => {
+    if (!process) return [];
     const dbRootPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs");
     const versions = fs.readdirSync(dbRootPath); // version_6, version_7, version_8 etc
     const databasesToMigrate = []; // {version: number; path: string; address: string}[]
@@ -48,7 +49,7 @@ describe(`DB importing`, async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit(plebbitOptions);
+        plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
     });
 
     it(`Subplebbit will show up in listSubplebbits if its db was copied to datapath/subplebbits`, async () => {
@@ -66,7 +67,7 @@ describe(`DB importing`, async () => {
 
     it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
         const regularPlebbit = await mockPlebbit();
-        const tempPlebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
+        const tempPlebbit = await mockPlebbit(getTemporaryPlebbitOptions());
         const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address);
         await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", signers[0].address));
         // Should be included in tempPlebbit.listSubplebbits now
@@ -101,7 +102,7 @@ describe("DB Migration", () => {
         it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address (${databaseInfo.address})`, async () => {
             // Once we start the sub, it's gonna attempt to migrate to the latest DB version
 
-            const plebbit = await mockPlebbit({ ...plebbitOptions, dataPath: tempy.directory() });
+            const plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
 
             console.log(
                 `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${databaseInfo.version}) to ${plebbitVersion.default.DB_VERSION}`
