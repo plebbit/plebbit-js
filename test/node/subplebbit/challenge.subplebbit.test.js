@@ -121,8 +121,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
     });
 
     it(`Validate props of challengerequest`, async () => {
-        const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbit.address, signer: commentSigner }, plebbit);
-
+        const comment = await generateMockPost(subplebbit.address, plebbit, false, { signer: commentSigner });
         await comment.publish();
         const request = await new Promise((resolve) => subplebbit.once("challengerequest", resolve));
         expect(JSON.stringify(request.publication)).to.equal(JSON.stringify(comment.toJSONPubsubMessagePublication()));
@@ -154,7 +153,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
     });
 
     it(`Validate props of challenge`, async () => {
-        const comment = await generatePostToAnswerMathQuestion({ subplebbitAddress: subplebbit.address, signer: commentSigner }, plebbit);
+        const comment = await generateMockPost(subplebbit.address, plebbit, false, { signer: commentSigner });
 
         await comment.publish();
         const challenge = await new Promise((resolve) => subplebbit.once("challenge", resolve));
@@ -188,6 +187,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
 
         await comment.publish();
         const challengeAnswer = await new Promise((resolve) => subplebbit.once("challengeanswer", resolve));
+        await new Promise((resolve) => comment.once("challengeverification", resolve));
         expect(challengeAnswer.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(challengeAnswer.challengeRequestId.length).to.equal(38);
         expect(challengeAnswer.type).to.equal("CHALLENGEANSWER");
