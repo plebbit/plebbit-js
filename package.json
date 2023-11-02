@@ -16,6 +16,7 @@
         "test:mocked:challenges": "mocha --config config/.mocharc.js --recursive test/challenges",
         "test:node:parallel:all": "mocha --parallel --recursive --config config/.mocharc.js test/node test/node-and-browser",
         "test:node:parallel:local": "mocha --parallel --recursive --config config/.mocharc.js test/node",
+        "test:node:local": "mocha --recursive --config config/.mocharc.js test/node",
         "test:node:parallel:remote": "mocha --parallel --recursive --config config/.mocharc.js test/node-and-browser",
         "test:browser:chrome": "CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN='' karma start config/karma.conf.js",
         "test:browser:firefox": "FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.js",
