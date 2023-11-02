@@ -227,7 +227,7 @@ export async function startSubplebbits(props: {
 }
 
 export function mockDefaultOptionsForNodeAndBrowserTests() {
-    const shouldUseRPC = process?.env?.["USE_RPC"] === "1";
+    const shouldUseRPC = isRpcFlagOn();
 
     if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
     else
@@ -444,8 +444,9 @@ export async function generatePostToAnswerMathQuestion(props: CreateCommentOptio
     return mockPost;
 }
 
-export function isRpcFlagOn(): boolean{
+export function isRpcFlagOn(): boolean {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
-    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.args?.["USE_RPC"] === "1";
-    return isPartOfKarmaArgs || isPartOfProcessEnv;
+    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
+    const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
+    return isRpcFlagOn;
 }
