@@ -5,12 +5,12 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, publishWithExpectedResult, publishRandomPost } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const mockComments = [];
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Resolving text records`, async () => {
     it(`Can resolve correctly with just viem`, async () => {
         const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
@@ -89,7 +89,7 @@ describe("Comments with Authors as domains", async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`comment.update() corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
         const tempPlebbit = await mockPlebbit();
         const comment = await tempPlebbit.createComment({cid: mockComments[mockComments.length - 1].cid});
@@ -126,7 +126,7 @@ describe(`Vote with authors as domains`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"]) // This code won't run in rpc clients
+if (!isRpcFlagOn()) // This code won't run in rpc clients
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
         const regularPlebbit = await mockPlebbit();

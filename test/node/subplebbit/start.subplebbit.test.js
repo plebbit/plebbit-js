@@ -4,7 +4,8 @@ const {
     mockPlebbit,
     createSubWithNoChallenge,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
 } = require("../../../dist/node/test/test-util");
 const { messages } = require("../../../dist/node/errors");
 const path = require("path");
@@ -49,7 +50,7 @@ describe(`subplebbit.start`, async () => {
     });
 
     //prettier-ignore
-    if(!process.env["USE_RPC"])
+    if(!isRpcFlagOn())
     it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
@@ -68,7 +69,7 @@ describe(`subplebbit.start`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
@@ -172,7 +173,7 @@ describe(`Publish loop resiliency`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
 
         

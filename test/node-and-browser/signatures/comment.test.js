@@ -13,7 +13,7 @@ const {
 const { messages } = require("../../../dist/node/errors");
 const signers = require("../../fixtures/signers");
 const { timestamp } = require("../../../dist/node/util");
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
 
 const fixtureComment = require("../../fixtures/publications").comment;
@@ -109,7 +109,7 @@ describe("sign comment", async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("verify Comment", async () => {
     let plebbit;
     before(async () => {
@@ -163,7 +163,7 @@ describe("verify Comment", async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Comment with author.address as domain`, async () => {
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockPlebbit();
@@ -197,7 +197,7 @@ describe(`Comment with author.address as domain`, async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {

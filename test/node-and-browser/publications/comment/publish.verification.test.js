@@ -5,7 +5,8 @@ const {
     generateMockComment,
     publishWithExpectedResult,
     mockPlebbit,
-    publishRandomPost
+    publishRandomPost,
+    isRpcFlagOn
 } = require("../../../../dist/node/test/test-util");
 const { messages } = require("../../../../dist/node/errors");
 const { signComment, verifyComment } = require("../../../../dist/node/signer/signatures");
@@ -31,7 +32,7 @@ describe(`Client side verification`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockPlebbit();
         const subJson = JSON.parse(await customPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
@@ -50,7 +51,7 @@ describe(`Client side verification`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
     before(async () => {
@@ -95,7 +96,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
 
 // TODO include tests for replies later. Not needed as of now
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
     before(async () => {
@@ -138,7 +139,7 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe("Posts with forbidden author fields are rejected", async () => {
     let plebbit;
     before(async () => {

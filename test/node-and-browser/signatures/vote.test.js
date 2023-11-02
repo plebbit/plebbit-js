@@ -6,7 +6,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
 const { verifyVote, signVote } = require("../../../dist/node/signer/signatures");
-const { mockPlebbit } = require("../../../dist/node/test/test-util");
+const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { timestamp } = require("../../../dist/node/util");
 
@@ -49,7 +49,7 @@ describe("Sign Vote", async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("Verify vote", async () => {
     let plebbit;
     before(async () => {

@@ -9,7 +9,7 @@ const tempy = require("tempy");
 
 const path = require("path");
 const fs = require("fs");
-const { mockPlebbit, generateMockPost, publishWithExpectedResult, createSubWithNoChallenge } = require("../../dist/node/test/test-util");
+const { mockPlebbit, generateMockPost, publishWithExpectedResult, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const plebbitVersion = require("../../dist/node/version");
 
@@ -43,7 +43,7 @@ const copyDbToDataPath = async (databaseObj, plebbit) => {
 };
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`DB importing`, async () => {
     let plebbit;
 
@@ -93,7 +93,7 @@ describe(`DB importing`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe("DB Migration", () => {
     const databasesToMigrate = getDatabasesToMigrate();
 

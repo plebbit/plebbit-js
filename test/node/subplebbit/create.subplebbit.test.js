@@ -4,7 +4,8 @@ const {
     publishRandomPost,
     publishRandomReply,
     createSubWithNoChallenge,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
 } = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const path = require("path");
@@ -58,7 +59,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
         const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
         expect(createdSub.title).to.equal(props.title);
-        if (!process.env["USE_RPC"])
+        if (!isRpcFlagOn())
             // signer will not exist on RPC tests
             expect(createdSub.signer.address).to.be.a("string");
         await createdSub.delete();
@@ -136,7 +137,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     });
 });
 
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
     describe("Create lock", async () => {
         let plebbit;
         before(async () => {

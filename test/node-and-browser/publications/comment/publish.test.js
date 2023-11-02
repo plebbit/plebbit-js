@@ -9,7 +9,8 @@ const {
     mockPlebbit,
     findCommentInPage,
     mockGatewayPlebbit,
-    generatePostToAnswerMathQuestion
+    generatePostToAnswerMathQuestion,
+    isRpcFlagOn
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const chai = require("chai");
@@ -120,7 +121,7 @@ describe("publishing comments", async () => {
         await post.stop();
     });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publish() can be caught if subplebbit failed to load (gateway)`, async () => {
             // RPC exception
             const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
@@ -132,7 +133,7 @@ describe("publishing comments", async () => {
 
     it(`publish() can be caught if subplebbit failed to load (P2P or RPC)`);
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
             const subAddress = signers[7].address;
             const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://localhost:33416", "http://localhost:18080"] });
@@ -161,7 +162,7 @@ describe("publishing comments", async () => {
         await post.stop();
     });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit({
                 ipfsGatewayUrls: [
@@ -182,7 +183,7 @@ describe("publishing comments", async () => {
             await publishWithExpectedResult(post, true);
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`Can publish a comment when all pubsub providers are down except one`, async () => {
             const tempPlebbit = await mockPlebbit();
             // We're gonna modify this plebbit instance to throw errors when pubsub publish/subscribe is called for two of its pubsub providers (it uses three)
@@ -208,7 +209,7 @@ describe("publishing comments", async () => {
             await publishWithExpectedResult(post, true);
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`comment.publish emits an error if provider 1 and 2 are not responding`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
@@ -252,7 +253,7 @@ describe("publishing comments", async () => {
             await mockPost.stop();
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`comment emits and throws errors if all providers fail to publish`, async () => {
             const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
             const offlinePubsubPlebbit = await mockPlebbit({
@@ -273,7 +274,7 @@ describe("publishing comments", async () => {
             expect(mockPost.clients.pubsubClients[offlinePubsubUrls[1]].state).to.equal("stopped");
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
             // First provider waits, second provider fails to publish
             // second provider should update its state to be stopped, but it should not emit an error until the first provider is done with waiting
@@ -385,7 +386,7 @@ describe(`comment.publishingState`, async () => {
         await comment.stop();
     });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publishing states is in correct order upon publishing a comment with IPFS client (uncached)`, async () => {
             const expectedStates = [
                 "fetching-subplebbit-ipns",
@@ -409,7 +410,7 @@ describe(`comment.publishingState`, async () => {
             expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
             const expectedStates = [
                 "publishing-challenge-request",
@@ -432,7 +433,7 @@ describe(`comment.publishingState`, async () => {
             expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
             const expectedStates = [
                 "resolving-subplebbit-address",
@@ -454,7 +455,7 @@ describe(`comment.publishingState`, async () => {
             expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publishing states is in correct order upon publishing a comment with gateway (cached)`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const expectedStates = [
@@ -477,7 +478,7 @@ describe(`comment.publishingState`, async () => {
             expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
         });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`publishing states is in correct order upon publishing a comment with gateway (uncached)`, async () => {
             const gatewayPlebbit = await mockGatewayPlebbit();
             const expectedStates = [
@@ -517,7 +518,7 @@ describe(`comment.publishingState`, async () => {
         await mockPost.stop();
     });
 
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
         it(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
             const offlinePubsubUrl = "http://localhost:23425";
             const offlinePubsubPlebbit = await mockPlebbit({

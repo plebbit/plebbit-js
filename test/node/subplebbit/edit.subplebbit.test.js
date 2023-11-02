@@ -4,7 +4,8 @@ const {
     mockPlebbit,
     loadAllPages,
     createSubWithNoChallenge,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
 } = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
 const lodash = require("lodash");
@@ -22,7 +23,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
@@ -116,7 +117,7 @@ describe(`subplebbit.edit`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`Concurrency with subplebbit.edit`, async () => {
     let plebbit;
     before(async () => {
@@ -268,7 +269,7 @@ describe(`Edit misc`, async () => {
 });
 
 //prettier-ignore
-if (process.env["USE_RPC"] === "1")
+if (isRpcFlagOn())
 describe(`subplebbit.edit (RPC)`, async () => {
     let plebbit, subplebbit;
 

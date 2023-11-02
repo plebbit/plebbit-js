@@ -10,7 +10,8 @@ const {
     mockGatewayPlebbit,
     mockRemotePlebbitIpfsOnly,
     publishVote,
-    generatePostToAnswerMathQuestion
+    generatePostToAnswerMathQuestion,
+    isRpcFlagOn
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
@@ -192,7 +193,7 @@ describe(`comment.update`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`comment.update() emit an error if CommentUpdate signature is invalid`, async () => {
         // Should emit an error as well as continue the update loop
 
@@ -558,7 +559,7 @@ describe("comment.updatingState", async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
@@ -576,7 +577,7 @@ describe("comment.updatingState", async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
@@ -594,7 +595,7 @@ describe("comment.updatingState", async () => {
     });
 
     //prettier-ignore
-    if (process.env["USE_RPC"] === "1")
+    if (isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with RPC`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 3 + 1));
@@ -629,7 +630,7 @@ describe(`comment.clients`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`comment.clients.ipfsGateways`, async () => {
         // All tests below use Plebbit instance that doesn't have ipfsClient
         it(`comment.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -712,7 +713,7 @@ describe(`comment.clients`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`comment.clients.ipfsClients`, async () => {
         it(`comment.clients.ipfsClients is undefined for gateway plebbit`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, gatewayPlebbit);
@@ -799,7 +800,7 @@ describe(`comment.clients`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"]) 
+    if (!isRpcFlagOn()) 
     describe(`comment.clients.pubsubClients`, async () => {
         it(`comment.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -976,7 +977,7 @@ describe(`comment.clients`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"]) 
+    if (!isRpcFlagOn()) 
     describe(`comment.clients.chainProviders`, async () => {
         it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
@@ -1004,7 +1005,7 @@ describe(`comment.clients`, async () => {
     });
 
     //prettier-ignore
-    if (process.env["USE_RPC"] === "1")
+    if (isRpcFlagOn())
     describe(`comment.clients.plebbitRpcClients`, async () => {
         it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
             const mathCliSubplebbitAddress = signers[1].address;
@@ -1063,7 +1064,7 @@ describe(`comment.clients`, async () => {
             commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
         });
         //prettier-ignore
-        if (!process.env["USE_RPC"]) 
+        if (!isRpcFlagOn()) 
         describe(`comment.replies.clients.ipfsClients`, async () => {
             it(`comment.replies.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
@@ -1096,7 +1097,7 @@ describe(`comment.clients`, async () => {
         });
 
         //prettier-ignore
-        if (!process.env["USE_RPC"]) 
+        if (!isRpcFlagOn()) 
         describe(`comment.replies.clients.ipfsGateways`, async () => {
             it(`comment.replies.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const comment = await gatewayPlebbit.getComment(commentCid);
@@ -1164,7 +1165,7 @@ describe(`comment.clients`, async () => {
         });
 
         //prettier-ignore
-        if (process.env["USE_RPC"] === "1") 
+        if (isRpcFlagOn()) 
         describe(`comment.replies.clients.plebbitRpcClients`, async () => {
             
             it(`comment.replies.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {

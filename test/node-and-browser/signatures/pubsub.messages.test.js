@@ -8,7 +8,13 @@ const {
     signChallengeRequest,
     verifyComment
 } = require("../../../dist/node/signer/signatures");
-const { generateMockPost, mockPlebbit, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+const {
+    generateMockPost,
+    mockPlebbit,
+    publishRandomPost,
+    publishWithExpectedResult,
+    isRpcFlagOn
+} = require("../../../dist/node/test/test-util");
 const signers = require("../../fixtures/signers");
 const { expect, assert } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -35,7 +41,7 @@ const parseMsgJson = (json) => {
 };
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("challengerequest", async () => {
     let plebbit;
     before(async () => {
@@ -191,7 +197,7 @@ describe("challengerequest", async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`challengemessage`, async () => {
     let plebbit;
     before(async () => {
@@ -232,7 +238,7 @@ describe(`challengemessage`, async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("challengeanswer", async () => {
     let plebbit;
     before(async () => {
@@ -391,7 +397,7 @@ describe("challengeanswer", async () => {
 });
 
 // prettier-ignore
-if (!process.env["USE_RPC"]) // Clients of RPC will trust the response of RPC and won't validate
+if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("challengeverification", async () => {
     let plebbit;
     before(async () => {

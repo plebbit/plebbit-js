@@ -2,7 +2,7 @@ const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { messages } = require("../../dist/node/errors");
 
-const { mockPlebbit, publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
 
@@ -116,7 +116,7 @@ describe("subplebbit.update (remote)", async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
         const remotePlebbit = await mockRemotePlebbit();
         const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
@@ -252,7 +252,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
         remotePlebbit = await mockRemotePlebbit();
     });
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.ipfsGateways`, async () => {
         // All tests below use Plebbit instance that doesn't have ipfsClient
         it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
@@ -300,7 +300,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.ipfsClients`, async () => {
         it(`subplebbit.clients.ipfsClients is undefined for gateway plebbit`, async () => {
             const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -351,7 +351,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(signers[0].address);
@@ -383,7 +383,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
     });
 
     //prettier-ignore
-    if (process.env["USE_RPC"] === "1")
+    if (isRpcFlagOn())
     describe(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
 
         it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
@@ -437,7 +437,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
     describe(`subplebbit.posts.clients`, async () => {
         //prettier-ignore
-        if (!process.env["USE_RPC"])
+        if (!isRpcFlagOn())
         describe(`subplebbit.posts.clients.ipfsClients`, async () => {
             it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -534,7 +534,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
         });
 
         //prettier-ignore
-        if (!process.env["USE_RPC"])
+        if (!isRpcFlagOn())
         describe(`subplebbit.posts.clients.ipfsGateways`, async () => {
             it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
@@ -560,7 +560,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
         });
 
         //prettier-ignore
-        if (process.env["USE_RPC"] === "1")
+        if (isRpcFlagOn())
         describe(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
             it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
                 const mockSub = await plebbit.getSubplebbit(subplebbitAddress);

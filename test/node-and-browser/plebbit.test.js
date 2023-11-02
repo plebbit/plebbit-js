@@ -4,12 +4,11 @@ const signers = require("../fixtures/signers");
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, loadAllPages } = require("../../dist/node/test/test-util");
+const { mockPlebbit, loadAllPages, isRpcFlagOn } = require("../../dist/node/test/test-util");
 const { default: Author } = require("../../dist/node/author");
 const stringify = require("safe-stable-stringify");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-
 
 const subplebbitSigner = signers[0];
 
@@ -60,7 +59,7 @@ describe("Plebbit options", async () => {
     });
 
     //prettier-ignore
-    if(process.env["USE_RPC"] === "1")
+    if(isRpcFlagOn())
     it(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
 
         const rpcUrl = "ws://localhost:39652";
@@ -76,7 +75,7 @@ describe("Plebbit options", async () => {
 });
 
     //prettier-ignore
-    if(process.env["USE_RPC"] === "1")
+    if(isRpcFlagOn())
     it("Error is emitted to plebbit instance if RPC is down", async () => {
 
         const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config

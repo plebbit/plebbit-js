@@ -7,7 +7,8 @@ const {
     publishRandomReply,
     publishVote,
     generateMockPost,
-    publishWithExpectedResult
+    publishWithExpectedResult,
+    isRpcFlagOn
 } = require("../../../dist/node/test/test-util");
 const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
 
@@ -64,7 +65,7 @@ describe(`subplebbit.delete`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`Deleted sub ipfs keys are not listed in ipfs node`, async () => {
         const ipfsKeys = await plebbit._clientsManager.getDefaultIpfs()._client.key.list();
         const subKeyExists = ipfsKeys.some((key) => key.name === sub.ipnsKeyName);
@@ -72,7 +73,7 @@ describe(`subplebbit.delete`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
         const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", sub.address);
         expect(fs.existsSync(expectedPath)).to.be.true;
@@ -94,6 +95,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
         expect(sub.lastCommentCid).to.be.undefined;
         const post = await publishRandomPost(sub.address, plebbit, {}, true);
+        if (!sub.lastPostCid) await new Promise((resolve) => sub.once("update", resolve));
         expect(sub.lastPostCid).to.equal(post.cid);
         expect(sub.lastCommentCid).to.equal(post.cid);
     });
@@ -277,7 +279,7 @@ describe(`subplebbit.startedState`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
@@ -311,7 +313,7 @@ describe(`subplebbit.updatingState`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
 
@@ -332,7 +334,7 @@ describe(`subplebbit.updatingState`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     it(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
         const plebbit = await mockPlebbit();
         const localSub = await plebbit.createSubplebbit({ address: signers[0].address });
@@ -455,7 +457,7 @@ describe(`comment.link`, async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`Migration to a new IPFS repo`, async () => {
     let subAddress;
     let plebbitDifferentIpfs;
@@ -546,7 +548,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.ipfsClients`, async () => {
         it(`subplebbit.clients.ipfsClients[url] is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
@@ -580,7 +582,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.pubsubClients`, async () => {
         it(`subplebbit.clients.pubsubClients[url].state is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
@@ -648,7 +650,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     });
 
     //prettier-ignore
-    if (!process.env["USE_RPC"])
+    if (!isRpcFlagOn())
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
@@ -681,7 +683,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     });
 
     //prettier-ignore
-    if (process.env["USE_RPC"] === "1")
+    if (isRpcFlagOn())
     describe(`subplebbit.clients.plebbitRpcClients (local subplebbit ran over RPC)`, async () => {
 
         it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {

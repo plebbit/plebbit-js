@@ -6,10 +6,10 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../dist/node/errors");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+const { mockPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe("Test util functions", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
@@ -64,7 +64,7 @@ describe("Test util functions", async () => {
 });
 
 //prettier-ignore
-if (!process.env["USE_RPC"])
+if (!isRpcFlagOn())
 describe(`Test parsing of database queries`, async () => {
     it(`Can parse regular json object with a field that's json string`, async () => {
         const rawObj = {
