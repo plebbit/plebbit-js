@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         testServer: ["server:node"]
-        testClient: ["node:parallel:local", "node:parallel:remote","node:rpc","browser:firefox", "browser:chrome"]
+        testClient: ["node:local", "node:parallel:remote","node:rpc","browser:firefox", "browser:chrome"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -48,7 +48,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run:  CLIENT=${{ matrix.testClient }} DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
+      - run:  USE_RPC=1 CLIENT=${{ matrix.testClient }} DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - name: Run mocked challenge tests
