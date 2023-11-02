@@ -21,8 +21,8 @@ const getTemporaryPlebbitOptions = () => {
 };
 
 const getDatabasesToMigrate = () => {
-    if (!process) return [];
     const dbRootPath = path.join(process.cwd(), "test", "fixtures", "subplebbits_dbs");
+    if (!fs.existsSync(dbRootPath)) return [];
     const versions = fs.readdirSync(dbRootPath); // version_6, version_7, version_8 etc
     const databasesToMigrate = []; // {version: number; path: string; address: string}[]
 
