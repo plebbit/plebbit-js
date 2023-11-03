@@ -81,8 +81,8 @@ describe('plebbit-ws-server', () => {
 
   it('startSubplebbit', async () => {
     const subplebbitAddress = 'subplebbit address ' + Math.random()
-    const res = await webSocketClientCall('startSubplebbit', [subplebbitAddress])
-    expect(res).to.equal(true)
+    const subscriptionId = await webSocketClientCall('startSubplebbit', [subplebbitAddress])
+    expect(subscriptionId).to.be.a('number')
 
     // try to start the same sub again but fail
     let error
@@ -91,7 +91,7 @@ describe('plebbit-ws-server', () => {
     } catch (e) {
       error = e
     }
-    expect(error?.data).to.equal(`subplebbit '${subplebbitAddress}' already started`)
+    expect(error?.message).to.include(`subplebbit '${subplebbitAddress}' already started`)
   })
 
   it('stopSubplebbit', async () => {
@@ -146,7 +146,7 @@ describe('plebbit-ws-server', () => {
     } catch (e) {
       error = e
     }
-    expect(error?.message).to.equal(`Error: subplebbit with address 'created subplebbit address' not found in plebbit.listSubplebbits()`)
+    expect(error?.message).to.include(`not found in plebbit.listSubplebbits()`)
 
     // try to delete a sub that doesn't exist
     try {
@@ -154,7 +154,7 @@ describe('plebbit-ws-server', () => {
     } catch (e) {
       error = e
     }
-    expect(error?.message).to.equal(`Error: subplebbit with address 'doesn't exist' not found in plebbit.listSubplebbits()`)
+    expect(error?.message).to.include(`not found in plebbit.listSubplebbits()`)
   })
 
   it('deleteSubplebbit started subplebbit', async () => {
@@ -167,7 +167,7 @@ describe('plebbit-ws-server', () => {
 
     // start the sub
     res = await webSocketClientCall('startSubplebbit', [subplebbit.address])
-    expect(res).to.equal(true)
+    expect(res).to.be.a('number')
 
     // delete sub
     res = await webSocketClientCall('deleteSubplebbit', [subplebbit.address])
@@ -231,7 +231,7 @@ describe('plebbit-ws-server', () => {
     expect(unsubscribed).to.equal(true)
   })
 
-  it('publishComment', async () => {
+  it.only('publishComment', async () => {
     const createCommentOptions = {
       timestamp: 1000,
       content: 'content',

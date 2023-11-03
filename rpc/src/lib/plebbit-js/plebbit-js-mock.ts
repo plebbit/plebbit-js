@@ -146,6 +146,10 @@ export class Pages {
     await simulateLoadingTime()
     return getCommentsPage(pageCid, this.subplebbit)
   }
+
+  async _fetchAndVerifyPage(pageCid: string) {
+    return this.getPage(pageCid)
+  }
 }
 
 export class Subplebbit extends EventEmitter {
@@ -184,6 +188,21 @@ export class Subplebbit extends EventEmitter {
     if (!createSubplebbitOptions?.address || Object.keys(createSubplebbitOptions).length !== 1) {
       this.firstUpdate = false
     }
+  }
+
+  toJSONInternalRpc() {
+    return {
+      title: this.title,
+      description: this.description,
+      address: this.address,
+      statsCid: this.statsCid,
+      roles: this.roles,
+      posts: this.posts,
+    }
+  }
+
+  toJSONIpfs() {
+    return this.toJSONInternalRpc()
   }
 
   async update() {
@@ -340,7 +359,7 @@ const getCommentsPage = (pageCid: string, subplebbit: any) => {
       updatedAt: index,
     })
   }
-  return page
+  return {...page, _fetchAndVerifyPage: () => page}
 }
 
 let challengeRequestCount = 0
@@ -442,6 +461,15 @@ export class Comment extends Publication {
 
     if (createCommentOptions?.author?.address) {
       this.author.shortAddress = `short ${createCommentOptions.author.address}`
+    }
+    //@ts-expect-error
+    this._rawCommentIpfs = {
+      ipnsName: this.ipnsName,
+      content: this.content,
+      author: this.author,
+      timestamp: this.timestamp,
+      parentCid: this.parentCid,
+      subplebbitAddress: this.subplebbitAddress,
     }
   }
 
