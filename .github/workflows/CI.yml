@@ -53,7 +53,7 @@ jobs:
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - name: Run mocked challenge tests
         run: npm run test:mocked:challenges
-      - run:  DEBUG="plebbit*" npm run test:${{ matrix.testClient }}
+      - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:${{ matrix.testClient }}
 
   test-plebbit-rpc:
     runs-on: ubuntu-latest
@@ -78,7 +78,7 @@ jobs:
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # Setup tests for plebbit-js using rpc here
       - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
-      - run: DEBUG="plebbit*" npm run test:node:rpc
+      - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
 
 
       # Setup tests for rpc directory here (skipped for now)
