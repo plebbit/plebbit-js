@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         testServer: ["server:node"]
-        testClient: ["node:parallel:local", "node:parallel:remote","node:rpc","browser:firefox", "browser:chrome"]
+        testClient: ["node:parallel:local", "node:parallel:remote","browser:firefox", "browser:chrome"]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -48,12 +48,42 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run:  USE_RPC=1 CLIENT=${{ matrix.testClient }} DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
+      - run: CLIENT=${{ matrix.testClient }} DEBUG="plebbit*" npm run test:${{ matrix.testServer }} & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - name: Run mocked challenge tests
         run: npm run test:mocked:challenges
       - run:  DEBUG="plebbit*" npm run test:${{ matrix.testClient }}
+
+  test-plebbit-rpc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "npm"
+      
+      # Setup plebbit-js deps
+      - run: npm ci
+      - run: npm run build
+      - run: npm run webpack
+      # Setup RPC deps
+      - run: cd rpc/
+      - run: npm ci
+      - run: npm run build
+      - run: npm run webpack
+      - run: cd ../
+      # disable hosts we shouldn't use
+      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+      # Setup tests for plebbit-js using rpc here
+      - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+      - run: DEBUG="plebbit*" npm run test:node:rpc
+
+
+      # Setup tests for rpc directory here (skipped for now)
 
   test-plebbit-react-hooks:
     uses: ./.github/workflows/CI-plebbit-react-hooks.yml
