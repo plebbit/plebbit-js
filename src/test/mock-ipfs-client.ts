@@ -1,11 +1,10 @@
-import io from "socket.io-client";
+import io, { Socket } from "socket.io-client";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { IpfsHttpClientPublicAPI } from "../types";
 
 const port = 25963;
-if (globalThis["window"] && !globalThis["window"]["io"]) globalThis["window"]["io"] = io(`ws://localhost:${port}`);
 
-const ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
+let ioClient: Socket;
 
 class IpfsHttpClient {
     public pubsub: IpfsHttpClientPublicAPI["pubsub"];
@@ -49,4 +48,12 @@ class IpfsHttpClient {
     }
 }
 
-export const createMockIpfsClient = (dropRate?: number) => new IpfsHttpClient(dropRate);
+export const createMockIpfsClient = (dropRate?: number) => {
+    if (globalThis["window"] && !globalThis["window"]["io"]) globalThis["window"]["io"] = io(`ws://localhost:${port}`);
+    if (!ioClient) ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
+    return new IpfsHttpClient(dropRate);
+};
+
+export const destroyMockIpfsClient = () => {
+    ioClient?.disconnect();
+};
