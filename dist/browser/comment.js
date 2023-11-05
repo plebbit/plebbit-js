@@ -76,7 +76,7 @@ var signatures_1 = require("./signer/signatures");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_error_1 = require("./plebbit-error");
 var client_manager_1 = require("./clients/client-manager");
-var util_2 = require("./util");
+var errors_1 = require("./errors");
 var Comment = /** @class */ (function (_super) {
     __extends(Comment, _super);
     function Comment(props, plebbit) {
@@ -115,14 +115,15 @@ var Comment = /** @class */ (function (_super) {
         this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
-        this.replies = new pages_1.RepliesPages({
-            pages: undefined,
-            pageCids: undefined,
-            plebbit: this._plebbit,
-            subplebbitAddress: this.subplebbitAddress,
-            pagesIpfs: undefined,
-            parentCid: this.cid
-        });
+        if (!this.replies)
+            this.replies = new pages_1.RepliesPages({
+                pages: undefined,
+                pageCids: undefined,
+                plebbit: this._plebbit,
+                subplebbitAddress: this.subplebbitAddress,
+                pagesIpfs: undefined,
+                parentCid: this.cid
+            });
     };
     Comment.prototype._initCommentUpdate = function (props) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
@@ -228,8 +229,8 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
         // Contains name and id
-        this.ipnsName = ipnsKey.Id;
-        this.ipnsKeyName = ipnsKey.Name;
+        this.ipnsName = ipnsKey.id;
+        this.ipnsKeyName = ipnsKey.name;
     };
     Comment.prototype.setPostCid = function (newPostCid) {
         this.postCid = newPostCid;
@@ -254,23 +255,25 @@ var Comment = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve) {
                         _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
-                            var _a, e_1;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
+                            var res, e_1;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
                                     case 0:
                                         log.trace("Retrying to load comment ipfs (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
-                                        _b.label = 1;
+                                        _a.label = 1;
                                     case 1:
-                                        _b.trys.push([1, 3, , 4]);
-                                        // TODO should inject this.clients here so gateway or ipfsClients states can be modified
-                                        _a = resolve;
+                                        _a.trys.push([1, 3, , 4]);
+                                        this._setUpdatingState("fetching-ipfs");
                                         return [4 /*yield*/, this._clientsManager.fetchCommentCid(this.cid)];
                                     case 2:
-                                        // TODO should inject this.clients here so gateway or ipfsClients states can be modified
-                                        _a.apply(void 0, [_b.sent()]);
+                                        res = _a.sent();
+                                        this._setUpdatingState("succeeded");
+                                        resolve(res);
                                         return [3 /*break*/, 4];
                                     case 3:
-                                        e_1 = _b.sent();
+                                        e_1 = _a.sent();
+                                        if (e_1["details"])
+                                            e_1.details.commentCid = this.cid;
                                         this._setUpdatingState("failed");
                                         log.error(String(e_1));
                                         this.emit("error", e_1);
@@ -305,6 +308,8 @@ var Comment = /** @class */ (function (_super) {
                                         return [3 /*break*/, 4];
                                     case 3:
                                         e_2 = _a.sent();
+                                        if (e_2["details"])
+                                            e_2.details.commentCid = this.cid;
                                         this._setUpdatingState("failed");
                                         log.error(String(e_2));
                                         this._loadingOperation.retry(e_2);
@@ -320,61 +325,74 @@ var Comment = /** @class */ (function (_super) {
     };
     Comment.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentIpfs, commentIpfsValidation, res, commentInstance, signatureValidity, err;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var log, _a, commentIpfsValidation, commentUpdate, commentInstance, signatureValidity, err;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
                         this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
-                        if (!(this.cid && !this.ipnsName)) return [3 /*break*/, 3];
+                        if (!(this.cid && !this.ipnsName && !this._rawCommentIpfs)) return [3 /*break*/, 5];
+                        // User may have attempted to call plebbit.createComment({cid}).update
+                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
+                        _a = this;
                         return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
                     case 1:
-                        commentIpfs = _a.sent();
-                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
+                        // User may have attempted to call plebbit.createComment({cid}).update
+                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
+                        _a._rawCommentIpfs = _b.sent(); // Will keep retrying to load until comment.stop() is called
+                        return [4 /*yield*/, (0, signatures_1.verifyComment)(this._rawCommentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 2:
-                        commentIpfsValidation = _a.sent();
-                        if (!commentIpfsValidation.valid) {
-                            this.emit("error", new plebbit_error_1.PlebbitError((0, util_2.getErrorCodeFromMessage)(commentIpfsValidation.reason), {
-                                commentIpfs: commentIpfs,
-                                commentIpfsValidation: commentIpfsValidation,
-                                cid: this.cid
-                            }));
-                            return [2 /*return*/];
-                        }
-                        this._initProps(__assign(__assign({}, commentIpfs), { cid: this.cid }));
-                        this.emit("update", this);
-                        _a.label = 3;
-                    case 3: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
+                        commentIpfsValidation = _b.sent();
+                        if (!!commentIpfsValidation.valid) return [3 /*break*/, 4];
+                        // This is a crticial error, it should stop the comment from updating
+                        log.error("The signature of CommentIpfs (".concat(this.cid, ") is invalid, this is a critical error and will stop the update loop"));
+                        this._updateState("stopped");
+                        return [4 /*yield*/, this._stopUpdateLoop()];
+                    case 3:
+                        _b.sent();
+                        this._setUpdatingState("failed");
+                        this.emit("error", new plebbit_error_1.PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
+                            commentIpfs: this._rawCommentIpfs,
+                            commentIpfsValidation: commentIpfsValidation,
+                            cid: this.cid
+                        }));
+                        return [2 /*return*/];
                     case 4:
-                        res = _a.sent();
-                        if (!(res && this.updatedAt !== res.updatedAt)) return [3 /*break*/, 7];
+                        log("Loaded the CommentIpfs props of cid (".concat(this.cid, ") correctly, updating the instance props"));
+                        this._initProps(__assign(__assign({}, this._rawCommentIpfs), { cid: this.cid }));
+                        this.emit("update", this);
+                        _b.label = 5;
+                    case 5: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
+                    case 6:
+                        commentUpdate = _b.sent();
+                        if (!(commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt)) return [3 /*break*/, 9];
                         log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(res, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
-                    case 5:
-                        signatureValidity = _a.sent();
+                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
+                    case 7:
+                        signatureValidity = _b.sent();
                         if (!signatureValidity.valid) {
                             this._setUpdatingState("failed");
-                            err = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, commentUpdate: res });
+                            err = new plebbit_error_1.PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, commentUpdate: commentUpdate });
                             log.error(err.toString());
                             this.emit("error", err);
                             return [2 /*return*/];
                         }
                         this._setUpdatingState("succeeded");
-                        return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 6:
-                        _a.sent();
+                        return [4 /*yield*/, this._initCommentUpdate(commentUpdate)];
+                    case 8:
+                        _b.sent();
                         this.emit("update", this);
-                        return [3 /*break*/, 9];
-                    case 7:
-                        if (!res) return [3 /*break*/, 9];
+                        return [3 /*break*/, 11];
+                    case 9:
+                        if (!commentUpdate) return [3 /*break*/, 11];
                         log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
                         this._setUpdatingState("succeeded");
-                        return [4 /*yield*/, this._initCommentUpdate(res)];
-                    case 8:
-                        _a.sent();
-                        _a.label = 9;
-                    case 9: return [2 /*return*/];
+                        return [4 /*yield*/, this._initCommentUpdate(commentUpdate)];
+                    case 10:
+                        _b.sent();
+                        _b.label = 11;
+                    case 11: return [2 /*return*/];
                 }
             });
         });
@@ -383,44 +401,149 @@ var Comment = /** @class */ (function (_super) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     };
+    Comment.prototype._setRpcClientState = function (newState) {
+        var currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state)
+            return;
+        this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
+        this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
+    };
+    Comment.prototype._updateRpcClientStateFromUpdatingState = function (updatingState) {
+        // We're deriving the the rpc state from publishing state
+        var rpcState = updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        this._setRpcClientState(rpcState);
+    };
+    Comment.prototype._isCriticalRpcError = function (err) {
+        // Critical Errors for now are:
+        // Invalid signature of CommentIpfs
+        return err.message === errors_1.messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
+    };
     Comment.prototype.update = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, updateLoop;
+            var log, _a, e_3, updateLoop;
             var _this = this;
-            return __generator(this, function (_a) {
-                if (this._updateInterval)
-                    return [2 /*return*/]; // Do nothing if it's already updating
-                log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                this._isUpdating = true;
-                this._updateState("updating");
-                updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
-                    var _this = this;
-                    return __generator(this, function (_a) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
+                        if (!this._plebbit.plebbitRpcClient) return [3 /*break*/, 5];
+                        _b.label = 1;
+                    case 1:
+                        _b.trys.push([1, 3, , 4]);
+                        _a = this;
+                        return [4 /*yield*/, this._plebbit.plebbitRpcClient.commentUpdate(this.cid)];
+                    case 2:
+                        _a._updateRpcSubscriptionId = _b.sent();
+                        this._updateState("updating");
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_3 = _b.sent();
+                        log.error("Failed to receive commentUpdate from RPC due to error", e_3);
+                        this._updateState("stopped");
+                        this._setUpdatingState("failed");
+                        throw e_3;
+                    case 4:
+                        this._plebbit.plebbitRpcClient
+                            .getSubscription(this._updateRpcSubscriptionId)
+                            .on("update", function (updateProps) { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!updateProps.params.result.subplebbitAddress) return [3 /*break*/, 1];
+                                        log("Received new CommentIpfs (".concat(this.cid, ") from RPC (").concat(this._plebbit.plebbitRpcClientsOptions[0], ")"));
+                                        this._initProps(updateProps.params.result);
+                                        return [3 /*break*/, 3];
+                                    case 1:
+                                        log("Received new CommentUpdate (".concat(this.cid, ") from RPC (").concat(this._plebbit.plebbitRpcClientsOptions[0], ")"));
+                                        return [4 /*yield*/, this._initCommentUpdate(updateProps.params.result)];
+                                    case 2:
+                                        _a.sent();
+                                        _a.label = 3;
+                                    case 3:
+                                        this.emit("update", this);
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); })
+                            .on("updatingstatechange", function (args) {
+                            var updateState = args.params.result;
+                            _this._setUpdatingState(updateState);
+                            _this._updateRpcClientStateFromUpdatingState(updateState);
+                        })
+                            .on("statechange", function (args) { return _this._updateState(args.params.result); })
+                            .on("error", function (args) { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!this._isCriticalRpcError(args.params.result)) return [3 /*break*/, 2];
+                                        this._setUpdatingState("failed");
+                                        this._updateState("stopped");
+                                        return [4 /*yield*/, this._stopUpdateLoop()];
+                                    case 1:
+                                        _a.sent();
+                                        _a.label = 2;
+                                    case 2:
+                                        this.emit("error", args.params.result);
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+                        this._isUpdating = true;
+                        _b.label = 5;
+                    case 5:
                         if (this._isUpdating)
-                            this.updateOnce()
-                                .catch(function (e) { return log.error("Failed to update comment", e); })
-                                .finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
+                            return [2 /*return*/]; // Do nothing if it's already updating
+                        this._isUpdating = true;
+                        this._updateState("updating");
+                        updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
+                            var _this = this;
+                            return __generator(this, function (_a) {
+                                if (this._isUpdating)
+                                    this.updateOnce()
+                                        .catch(function (e) { return log.error("Failed to update comment", e); })
+                                        .finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
+                                return [2 /*return*/];
+                            });
+                        }); }).bind(this);
+                        updateLoop();
                         return [2 /*return*/];
-                    });
-                }); }).bind(this);
-                updateLoop();
-                return [2 /*return*/];
+                }
             });
         });
     };
-    Comment.prototype.stop = function () {
+    Comment.prototype._stopUpdateLoop = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.stop.call(this)];
-                    case 1:
-                        _b.sent();
+                    case 0:
                         (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
                         this._updateInterval = clearTimeout(this._updateInterval);
-                        this._setUpdatingState("stopped");
-                        this._updateState("stopped");
                         this._isUpdating = false;
+                        if (!this._updateRpcSubscriptionId) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId)];
+                    case 1:
+                        _b.sent();
+                        this._updateRpcSubscriptionId = undefined;
+                        this._setRpcClientState("stopped");
+                        _b.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Comment.prototype.stop = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, _super.prototype.stop.call(this)];
+                    case 1:
+                        _a.sent();
+                        this._setUpdatingState("stopped");
+                        return [4 /*yield*/, this._stopUpdateLoop()];
+                    case 2:
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });

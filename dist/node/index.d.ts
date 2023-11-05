@@ -10,5 +10,6 @@ declare const Plebbit: {
     };
     getShortCid: typeof shortifyCid;
     getShortAddress: typeof shortifyAddress;
+    challenges: Record<string, import("./subplebbit/types").ChallengeFileFactory>;
 };
 export = Plebbit;

@@ -18,14 +18,16 @@ declare class Vote extends Publication implements VoteType {
                 [chainTicker: string]: import("./types").Wallet;
             };
             avatar?: import("./types").Nft;
-            flair?: import("./types").Flair;
+            flair?: import("./subplebbit/types").Flair;
         };
         signature: import("./signer/constants").JsonSignature;
+        protocolVersion: "1.0.0";
         vote: 0 | 1 | -1;
         subplebbitAddress: string;
         timestamp: number;
+        challengeAnswers?: string[];
+        challengeCommentCids?: string[];
         commentCid: string;
-        protocolVersion: "1.0.0";
     };
     getType(): PublicationTypeName;
     toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): VotesTableRowInsert;

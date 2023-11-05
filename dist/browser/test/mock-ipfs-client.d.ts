@@ -5,4 +5,5 @@ declare class IpfsHttpClient {
     constructor(dropRate?: number);
 }
 export declare const createMockIpfsClient: (dropRate?: number) => IpfsHttpClient;
+export declare const destroyMockIpfsClient: () => void;
 export {};

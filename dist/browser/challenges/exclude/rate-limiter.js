@@ -16,6 +16,7 @@ var getOrCreateRateLimiter = function (exclude, publication, publicationType, ch
     var rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
         rateLimiter = new limiter_1.RateLimiter({ tokensPerInterval: exclude.rateLimit, interval: "hour", fireImmediately: true });
+        //@ts-expect-error
         rateLimiter.name = rateLimiterName; // add name for debugging
         rateLimiters.set(rateLimiterName, rateLimiter);
     }

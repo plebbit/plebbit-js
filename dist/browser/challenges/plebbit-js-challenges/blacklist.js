@@ -52,7 +52,7 @@ var optionInputs = [
         placeholder: "You're blacklisted."
     }
 ];
-var type = 'text';
+var type = "text/plain";
 var description = 'Blacklist author addresses.';
 var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) { return __awaiter(void 0, void 0, void 0, function () {
     var error, blacklist, blacklistSet;

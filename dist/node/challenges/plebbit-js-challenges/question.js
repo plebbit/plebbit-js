@@ -53,7 +53,7 @@ var optionInputs = [
         required: true
     }
 ];
-var type = 'text';
+var type = "text/plain";
 var description = "Ask a question, like 'What is the password?'";
 var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) { return __awaiter(void 0, void 0, void 0, function () {
     var answer, challengeAnswer;

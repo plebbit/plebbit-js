@@ -1,8 +1,10 @@
 import Publication from "./publication";
 import { RepliesPages } from "./pages";
-import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, Flair, ProtocolVersion, PublicationTypeName } from "./types";
+import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, ProtocolVersion, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
 import { CommentClientsManager } from "./clients/client-manager";
+import { Flair } from "./subplebbit/types";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
     shortCid?: string;
     clients: CommentClientsManager["clients"];
@@ -42,8 +44,10 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     private _updateInterval?;
     private _isUpdating;
     private _rawCommentUpdate?;
+    private _rawCommentIpfs?;
     private _loadingOperation;
     _clientsManager: CommentClientsManager;
+    private _updateRpcSubscriptionId?;
     constructor(props: CommentType, plebbit: Plebbit);
     _initClients(): void;
     _initProps(props: Omit<CommentType, "shortSubplebbitAddress">): void;
@@ -59,10 +63,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     toJSONAfterChallengeVerification(): CommentIpfsWithCid;
     toJSONCommentsTableRowInsert(challengeRequestId: CommentsTableRowInsert["challengeRequestId"]): CommentsTableRowInsert;
     toJSONMerged(): CommentWithCommentUpdate;
-    setCommentIpnsKey(ipnsKey: {
-        Id: string;
-        Name: string;
-    }): void;
+    setCommentIpnsKey(ipnsKey: IpfsKey): void;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;
     setPreviousCid(newPreviousCid?: string): void;
@@ -72,7 +73,11 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     private _retryLoadingCommentUpdate;
     updateOnce(): Promise<void>;
     _setUpdatingState(newState: Comment["updatingState"]): void;
+    protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]): void;
+    protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]): void;
+    private _isCriticalRpcError;
     update(): Promise<void>;
+    private _stopUpdateLoop;
     stop(): Promise<void>;
     private _validateSignature;
     publish(): Promise<void>;

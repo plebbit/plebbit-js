@@ -60,7 +60,7 @@ var Cache = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var dbPath;
             return __generator(this, function (_a) {
-                if (this._plebbit.noData) {
+                if (this._plebbit.noData || !this._plebbit.dataPath) {
                     this._keyv = new keyv_1.default("sqlite://:memory:");
                 }
                 else {

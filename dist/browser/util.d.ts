@@ -1,4 +1,4 @@
-import { CommentsTableRow, CommentUpdatesRow, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
+import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
 import { messages } from "./errors";
 import { BasePages } from "./pages";
 import { Plebbit } from "./plebbit";
@@ -42,3 +42,4 @@ export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
 export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;
+export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;

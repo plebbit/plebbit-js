@@ -1,4 +1,5 @@
-import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Flair, Nft, SubplebbitAuthor, Wallet } from "./types";
+import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "./types";
+import { Flair } from "./subplebbit/types";
 declare class Author implements AuthorTypeWithCommentUpdate {
     address: string;
     previousCommentCid?: string;

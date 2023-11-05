@@ -60,6 +60,7 @@ var signatures_1 = require("./signer/signatures");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_client_manager_1 = require("./clients/pages-client-manager");
+var plebbit_error_1 = require("./plebbit-error");
 var BasePages = /** @class */ (function () {
     function BasePages(props) {
         this._plebbit = props.plebbit;
@@ -79,7 +80,7 @@ var BasePages = /** @class */ (function () {
     BasePages.prototype._initClientsManager = function () {
         throw Error("This function should be overridden");
     };
-    BasePages.prototype.getPage = function (pageCid) {
+    BasePages.prototype._fetchAndVerifyPage = function (pageCid) {
         return __awaiter(this, void 0, void 0, function () {
             var pageIpfs, signatureValidity;
             return __generator(this, function (_a) {
@@ -89,13 +90,34 @@ var BasePages = /** @class */ (function () {
                         return [4 /*yield*/, this._clientsManager.fetchPage(pageCid)];
                     case 1:
                         pageIpfs = _a.sent();
+                        if (!!this._plebbit.plebbitRpcClient) return [3 /*break*/, 3];
                         return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid, true)];
                     case 2:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)
-                            throw Error(signatureValidity.reason);
-                        return [4 /*yield*/, (0, util_1.parsePageIpfs)(pageIpfs, this._plebbit)];
-                    case 3: return [2 /*return*/, _a.sent()];
+                            throw new plebbit_error_1.PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {
+                                signatureValidity: signatureValidity,
+                                parentCid: this._parentCid,
+                                subplebbitAddress: this._subplebbitAddress,
+                                pageIpfs: pageIpfs,
+                                pageCid: pageCid
+                            });
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, pageIpfs];
+                }
+            });
+        });
+    };
+    BasePages.prototype.getPage = function (pageCid) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = util_1.parsePageIpfs;
+                        return [4 /*yield*/, this._fetchAndVerifyPage(pageCid)];
+                    case 1: return [4 /*yield*/, _a.apply(void 0, [_b.sent(), this._plebbit])];
+                    case 2: return [2 /*return*/, _b.sent()];
                 }
             });
         });

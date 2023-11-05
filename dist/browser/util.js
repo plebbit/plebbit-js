@@ -39,12 +39,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.decodePubsubMsgFromRpc = exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var errors_1 = require("./errors");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
 var plebbit_error_1 = require("./plebbit-error");
+var from_string_1 = require("uint8arrays/from-string");
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -60,6 +61,8 @@ function timestamp() {
 exports.timestamp = timestamp;
 function replaceXWithY(obj, x, y) {
     // obj is a JS object
+    if (!lodash_1.default.isPlainObject(obj))
+        return obj;
     var newObj = {};
     Object.entries(obj).forEach(function (_a) {
         var key = _a[0], value = _a[1];
@@ -68,8 +71,10 @@ function replaceXWithY(obj, x, y) {
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (value instanceof Object && value !== null)
+        else if (lodash_1.default.isPlainObject(value))
             newObj[key] = replaceXWithY(value, x, y);
+        else if (Array.isArray(value))
+            newObj[key] = value.map(function (iterValue) { return replaceXWithY(iterValue, x, y); });
         else
             newObj[key] = value;
     });
@@ -81,7 +86,8 @@ function hotScore(comment) {
         typeof comment.update.upvoteCount === "number" &&
         typeof comment.comment.timestamp === "number");
     var score = comment.update.upvoteCount - comment.update.downvoteCount;
-    var order = Math.log10(Math.max(score, 1));
+    score++; // reddit initial upvotes is 1, plebbit is 0
+    var order = Math.log10(Math.max(Math.abs(score), 1));
     var sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     var seconds = comment.comment.timestamp - 1134028003;
     return lodash_1.default.round(sign * order + seconds / 45000, 7);
@@ -89,12 +95,13 @@ function hotScore(comment) {
 exports.hotScore = hotScore;
 function controversialScore(comment) {
     (0, assert_1.default)(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
-    if (comment.update.downvoteCount <= 0 || comment.update.upvoteCount <= 0)
+    var upvoteCount = comment.update.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
+    if (comment.update.downvoteCount <= 0 || upvoteCount <= 0)
         return 0;
-    var magnitude = comment.update.upvoteCount + comment.update.downvoteCount;
-    var balance = comment.update.upvoteCount > comment.update.downvoteCount
-        ? comment.update.downvoteCount / comment.update.upvoteCount
-        : comment.update.upvoteCount / comment.update.downvoteCount;
+    var magnitude = upvoteCount + comment.update.downvoteCount;
+    var balance = upvoteCount > comment.update.downvoteCount
+        ? comment.update.downvoteCount / upvoteCount
+        : upvoteCount / comment.update.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 exports.controversialScore = controversialScore;
@@ -134,7 +141,7 @@ exports.removeNullAndUndefinedValuesRecursively = removeNullAndUndefinedValuesRe
 // TODO rename
 function removeKeysWithUndefinedValues(object) {
     var _a, _b;
-    var newObj = JSON.parse(JSON.stringify(object));
+    var newObj = lodash_1.default.cloneDeep(object);
     for (var prop in newObj)
         if (((_b = (_a = newObj[prop]) === null || _a === void 0 ? void 0 : _a.constructor) === null || _b === void 0 ? void 0 : _b.name) === "Object" && JSON.stringify(newObj[prop]) === "{}")
             delete newObj[prop];
@@ -305,4 +312,18 @@ function doesEnsAddressHaveCapitalLetter(ensAddress) {
     return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
 }
 exports.doesEnsAddressHaveCapitalLetter = doesEnsAddressHaveCapitalLetter;
+function decodePubsubMsgFromRpc(pubsubMsg) {
+    //@ts-expect-error
+    var parsedPubsubMsg = pubsubMsg;
+    parsedPubsubMsg.challengeRequestId = (0, from_string_1.fromString)(pubsubMsg.challengeRequestId, "base58btc");
+    if (pubsubMsg.encrypted) {
+        parsedPubsubMsg.encrypted.tag = (0, from_string_1.fromString)(pubsubMsg.encrypted.tag, "base64");
+        parsedPubsubMsg.encrypted.iv = (0, from_string_1.fromString)(pubsubMsg.encrypted.iv, "base64");
+        parsedPubsubMsg.encrypted.ciphertext = (0, from_string_1.fromString)(pubsubMsg.encrypted.ciphertext, "base64");
+    }
+    parsedPubsubMsg.signature.publicKey = (0, from_string_1.fromString)(pubsubMsg.signature.publicKey, "base64");
+    parsedPubsubMsg.signature.signature = (0, from_string_1.fromString)(pubsubMsg.signature.signature, "base64");
+    return parsedPubsubMsg;
+}
+exports.decodePubsubMsgFromRpc = decodePubsubMsgFromRpc;
 //# sourceMappingURL=util.js.map

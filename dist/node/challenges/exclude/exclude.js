@@ -146,7 +146,7 @@ var shouldExcludeChallengeSuccess = function (subplebbitChallenge, challengeResu
         var shouldExclude = true;
         for (var _e = 0, _f = excludeItem.challenges; _e < _f.length; _e++) {
             var challengeIndex = _f[_e];
-            if (((_c = challengeResults[challengeIndex]) === null || _c === void 0 ? void 0 : _c.success) !== true) {
+            if (((_c = challengeResults[challengeIndex]) === null || _c === void 0 ? void 0 : _c["success"]) !== true) {
                 // found a false, should not exclude based on this exclude item,
                 // but try again in the next exclude item
                 shouldExclude = false;
@@ -227,6 +227,7 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                                 if (!!commentUpdate_1) return [3 /*break*/, 4];
                                 return [4 /*yield*/, plebbit.createComment({ cid: commentCid, ipnsName: commentCache.ipnsName })];
                             case 3:
+                                // @ts-ignore
                                 commentUpdate_1 = _g.sent();
                                 _g.label = 4;
                             case 4:
@@ -336,10 +337,10 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                                 _b.label = 1;
                             case 1:
                                 _b.trys.push([1, 3, , 4]);
-                                // @ts-ignore
+                                //@ts-expect-error
                                 return [4 /*yield*/, Promise.any(validateCommentPromises)];
                             case 2:
-                                // @ts-ignore
+                                //@ts-expect-error
                                 _b.sent();
                                 return [3 /*break*/, 4];
                             case 3:
@@ -359,10 +360,10 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                 _c.label = 1;
             case 1:
                 _c.trys.push([1, 3, , 4]);
-                // @ts-ignore
+                // @ts-expect-error
                 return [4 /*yield*/, Promise.any(validateExcludePromises)];
             case 2:
-                // @ts-ignore
+                // @ts-expect-error
                 _c.sent();
                 return [2 /*return*/, true];
             case 3:

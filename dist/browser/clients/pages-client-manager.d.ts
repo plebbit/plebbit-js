@@ -3,6 +3,7 @@ import { BaseClientsManager, LoadType } from "./base-client-manager";
 import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
+import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
 export declare class BasePagesClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: {
@@ -15,11 +16,18 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
                 [ipfsClientUrl: string]: PagesIpfsClient;
             };
         };
+        plebbitRpcClients: {
+            [sortType: string]: {
+                [rpcUrl: string]: PagesPlebbitRpcStateClient;
+            };
+        };
     };
+    protected _pages: BasePages;
     constructor(pages: BasePages);
     protected getSortTypes(): string[];
     protected _initIpfsGateways(): void;
     protected _initIpfsClients(): void;
+    protected _initPlebbitRpcClients(): void;
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
@@ -29,6 +37,9 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string): void;
     updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]): void;
     updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]): void;
+    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[]): void;
+    private _fetchPageWithRpc;
+    private _fetchPageWithIpfsP2P;
     fetchPage(pageCid: string): Promise<PageIpfs>;
 }
 export declare class RepliesPagesClientsManager extends BasePagesClientsManager {
@@ -38,6 +49,9 @@ export declare class RepliesPagesClientsManager extends BasePagesClientsManager 
         }>;
         ipfsClients: Record<ReplySortName, {
             [ipfsClientUrl: string]: PagesIpfsGatewayClient;
+        }>;
+        plebbitRpcClients: Record<ReplySortName, {
+            [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
     protected getSortTypes(): string[];
@@ -49,6 +63,9 @@ export declare class PostsPagesClientsManager extends BasePagesClientsManager {
         }>;
         ipfsClients: Record<PostSortName, {
             [ipfsClientUrl: string]: PagesIpfsGatewayClient;
+        }>;
+        plebbitRpcClients: Record<PostSortName, {
+            [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
     protected getSortTypes(): string[];

@@ -1,10 +1,11 @@
 import Author from "./author";
 import { Signer } from "./signer";
-import { ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName, SubplebbitIpfsType } from "./types";
+import { DecryptedChallengeRequest, ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName } from "./types";
 import { Plebbit } from "./plebbit";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
 import { JsonSignature } from "./signer/constants";
+import { SubplebbitIpfsType } from "./subplebbit/types";
 declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     clients: PublicationClientsManager["clients"];
     subplebbitAddress: string;
@@ -16,10 +17,12 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     protocolVersion: ProtocolVersion;
     state: "stopped" | "updating" | "publishing";
     publishingState: "stopped" | "resolving-subplebbit-address" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "publishing-challenge-request" | "waiting-challenge" | "waiting-challenge-answers" | "publishing-challenge-answer" | "waiting-challenge-verification" | "failed" | "succeeded";
+    challengeAnswers?: string[];
+    challengeCommentCids?: string[];
     protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
-    protected pubsubMessageSigner: Signer;
     private _challengeAnswer;
     private _publishedChallengeRequests;
+    private _challengeIdToPubsubSigner;
     private _pubsubProviders;
     private _pubsubProvidersDoneWaiting;
     private _currentPubsubProviderIndex;
@@ -28,6 +31,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     private _challenge?;
     private _publishToDifferentProviderThresholdSeconds;
     private _setProviderFailureThresholdSeconds;
+    private _rpcPublishSubscriptionId?;
     _clientsManager: PublicationClientsManager | CommentClientsManager;
     _plebbit: Plebbit;
     constructor(props: PublicationType, plebbit: Plebbit);
@@ -35,17 +39,24 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     _initProps(props: PublicationType): void;
     protected getType(): PublicationTypeName;
     toJSONPubsubMessagePublication(): PublicationType;
+    toJSONPubsubMessage(): DecryptedChallengeRequest;
+    private _handleRpcChallenge;
+    private _handleRpcChallengeVerification;
+    private _handleRpcChallengeAnswer;
     private handleChallengeExchange;
     publishChallengeAnswers(challengeAnswers: string[]): Promise<void>;
     private _validatePublicationFields;
     private _validateSubFields;
     _updatePublishingState(newState: Publication["publishingState"]): void;
+    private _updateRpcClientStateFromPublishingState;
     protected _updateState(newState: Publication["state"]): void;
+    protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]): void;
     private _pubsubTopicWithfallback;
     _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
     stop(): Promise<void>;
     _isAllAttemptsExhausted(): boolean;
     _setProviderToFailIfNoResponse(providerIndex: number): void;
+    private _postSucessOrFailurePublishing;
     publish(): Promise<void>;
 }
 export default Publication;

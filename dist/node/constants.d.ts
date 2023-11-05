@@ -1,5 +1,5 @@
 import LRUCache from "lru-cache";
-import { SubplebbitIpfsType } from "./types";
+import { SubplebbitIpfsType } from "./subplebbit/types";
 export declare enum CACHE_KEYS {
     SUBPLEBBIT_IPNS = 0,
     INTERNAL_SUBPLEBBIT = 1

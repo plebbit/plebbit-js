@@ -8,6 +8,7 @@ declare const PlebbitJs: {
         };
         getShortCid: typeof import("../../../../dist/node/util").shortifyCid;
         getShortAddress: typeof import("../../../../dist/node/util").shortifyAddress;
+        challenges: Record<string, import("../../../../dist/node/subplebbit/types").ChallengeFileFactory>;
     };
 };
 /**

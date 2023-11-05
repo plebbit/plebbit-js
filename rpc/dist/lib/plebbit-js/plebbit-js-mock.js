@@ -165,6 +165,11 @@ class Pages {
             return getCommentsPage(pageCid, this.subplebbit);
         });
     }
+    _fetchAndVerifyPage(pageCid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.getPage(pageCid);
+        });
+    }
 }
 exports.Pages = Pages;
 class Subplebbit extends events_1.default {
@@ -192,6 +197,19 @@ class Subplebbit extends events_1.default {
         if (!(createSubplebbitOptions === null || createSubplebbitOptions === void 0 ? void 0 : createSubplebbitOptions.address) || Object.keys(createSubplebbitOptions).length !== 1) {
             this.firstUpdate = false;
         }
+    }
+    toJSONInternalRpc() {
+        return {
+            title: this.title,
+            description: this.description,
+            address: this.address,
+            statsCid: this.statsCid,
+            roles: this.roles,
+            posts: this.posts,
+        };
+    }
+    toJSONIpfs() {
+        return this.toJSONInternalRpc();
     }
     update() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -335,7 +353,7 @@ const getCommentsPage = (pageCid, subplebbit) => {
             updatedAt: index,
         });
     }
-    return page;
+    return Object.assign(Object.assign({}, page), { _fetchAndVerifyPage: () => page });
 };
 let challengeRequestCount = 0;
 class Publication extends events_1.default {
@@ -415,6 +433,15 @@ class Comment extends Publication {
         if ((_a = createCommentOptions === null || createCommentOptions === void 0 ? void 0 : createCommentOptions.author) === null || _a === void 0 ? void 0 : _a.address) {
             this.author.shortAddress = `short ${createCommentOptions.author.address}`;
         }
+        //@ts-expect-error
+        this._rawCommentIpfs = {
+            ipnsName: this.ipnsName,
+            content: this.content,
+            author: this.author,
+            timestamp: this.timestamp,
+            parentCid: this.parentCid,
+            subplebbitAddress: this.subplebbitAddress,
+        };
     }
     update() {
         return __awaiter(this, void 0, void 0, function* () {

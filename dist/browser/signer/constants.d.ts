@@ -1,5 +1,6 @@
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PublicationTypeName, SubplebbitIpfsType, VotePubsubMessage } from "../types";
+import { SubplebbitIpfsType } from "../subplebbit/types";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PublicationTypeName, VotePubsubMessage } from "../types";
 export type CreateSignerOptions = {
     privateKey?: string;
     type?: "ed25519";
@@ -18,11 +19,21 @@ export type Encrypted = {
     tag: Uint8Array;
     type: "ed25519-aes-gcm";
 };
+export type EncryptedEncoded = {
+    ciphertext: string;
+    iv: string;
+    tag: string;
+    type: "ed25519-aes-gcm";
+};
 export interface PubsubSignature {
     signature: Uint8Array;
     publicKey: Uint8Array;
     type: "ed25519";
     signedPropertyNames: readonly string[];
+}
+export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string;
+    publicKey: string;
 }
 export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
     signature: string;

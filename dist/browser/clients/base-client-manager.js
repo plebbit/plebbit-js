@@ -86,14 +86,17 @@ var DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 exports.resolvePromises = {};
 var BaseClientsManager = /** @class */ (function () {
     function BaseClientsManager(plebbit) {
+        var _a, _b, _c, _d;
         this._plebbit = plebbit;
-        this._defaultPubsubProviderUrl = Object.values(plebbit.clients.pubsubClients)[0]._clientOptions.url; // TODO Should be the gateway with the best score
+        this._defaultPubsubProviderUrl = (_b = (_a = Object.values(plebbit.clients.pubsubClients)[0]) === null || _a === void 0 ? void 0 : _a._clientOptions) === null || _b === void 0 ? void 0 : _b.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
-            this._defaultIpfsProviderUrl = Object.values(plebbit.clients.ipfsClients)[0]._clientOptions.url;
-        this.providerSubscriptions = {};
-        for (var _i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
-            var provider = _a[_i];
-            this.providerSubscriptions[provider] = [];
+            this._defaultIpfsProviderUrl = (_d = (_c = Object.values(plebbit.clients.ipfsClients)[0]) === null || _c === void 0 ? void 0 : _c._clientOptions) === null || _d === void 0 ? void 0 : _d.url;
+        if (this._defaultPubsubProviderUrl) {
+            this.providerSubscriptions = {};
+            for (var _i = 0, _e = Object.keys(plebbit.clients.pubsubClients); _i < _e.length; _i++) {
+                var provider = _e[_i];
+                this.providerSubscriptions[provider] = [];
+            }
         }
     }
     BaseClientsManager.prototype.toJSON = function () {
@@ -463,7 +466,10 @@ var BaseClientsManager = /** @class */ (function () {
                         return [2 /*return*/, cid];
                     case 3:
                         error_2 = _a.sent();
-                        (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error_2 });
+                        if ((error_2 === null || error_2 === void 0 ? void 0 : error_2.code) === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS")
+                            throw error_2;
+                        else
+                            (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns: ipns, error: error_2 });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];
                 }
@@ -696,7 +702,11 @@ var BaseClientsManager = /** @class */ (function () {
                 (0, assert_1.default)(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
                 if (!this._plebbit.resolver.isDomain(authorAddress))
                     return [2 /*return*/, authorAddress];
-                return [2 /*return*/, this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address")];
+                else if (this._plebbit.plebbitRpcClient)
+                    return [2 /*return*/, this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress)];
+                else
+                    return [2 /*return*/, this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address")];
+                return [2 /*return*/];
             });
         });
     };

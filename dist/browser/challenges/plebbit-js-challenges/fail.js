@@ -46,7 +46,7 @@ var optionInputs = [
         placeholder: "You're not allowed to publish."
     }
 ];
-var type = 'text';
+var type = "text/plain";
 var description = 'A challenge that automatically fails with a custom error message.';
 var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) { return __awaiter(void 0, void 0, void 0, function () {
     var error;

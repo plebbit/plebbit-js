@@ -4,13 +4,14 @@ import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
-import { Plebbit } from "./plebbit";
+import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 import { Knex } from "knex";
 import { Comment } from "./comment";
-import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, Encrypted, JsonSignature, PubsubSignature, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
-import { Subplebbit } from "./subplebbit";
+import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
+import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
+import { ChallengeFile, Flair } from "./subplebbit/types";
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
 export type ChainProvider = {
@@ -21,6 +22,7 @@ export interface PlebbitOptions {
     ipfsGatewayUrls?: string[];
     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
+    plebbitRpcClientsOptions?: string[];
     dataPath?: string;
     chainProviders?: {
         [chainTicker: string]: ChainProvider;
@@ -29,6 +31,12 @@ export interface PlebbitOptions {
     publishInterval?: number;
     updateInterval?: number;
     noData?: boolean;
+}
+export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
+    ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
+    pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
+    plebbitRpcClientsOptions: string[] | undefined;
+    dataPath: string | undefined;
 }
 export interface PageType {
     comments: Comment[];
@@ -64,10 +72,6 @@ export interface PagesTypeIpfs {
     pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
     pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
 }
-export type SubplebbitEncryption = {
-    type: "ed25519-aes-gcm";
-    publicKey: string;
-};
 export interface CreateCommentOptions extends CreatePublicationOptions {
     signer: Pick<SignerType, "privateKey" | "type">;
     parentCid?: string;
@@ -112,8 +116,10 @@ export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
 }
 export type Wallet = {
     address: string;
+    timestamp: number;
+    signature: JsonSignature;
 };
-export interface PublicationType extends Required<CreatePublicationOptions> {
+export interface PublicationType extends Required<Omit<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">>, Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids"> {
     author: AuthorIpfsType;
     signature: JsonSignature;
     protocolVersion: ProtocolVersion;
@@ -122,6 +128,8 @@ export interface CreatePublicationOptions {
     author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string;
     timestamp?: number;
+    challengeAnswers?: string[];
+    challengeCommentCids?: string[];
 }
 export interface ModeratorCommentEditOptions {
     commentCid: string;
@@ -156,9 +164,6 @@ export type Nft = {
     timestamp: number;
     signature: JsonSignature;
 };
-export type SubplebbitRole = {
-    role: "owner" | "admin" | "moderator";
-};
 export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
     signature: PubsubSignature;
@@ -173,27 +178,57 @@ export interface ChallengeType {
 export interface ChallengeRequestMessageType extends PubsubMessage {
     challengeRequestId: Uint8Array;
     type: "CHALLENGEREQUEST";
-    encryptedPublication: Encrypted;
+    encrypted: Encrypted;
     acceptedChallengeTypes?: string[];
 }
-export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType {
+export interface DecryptedChallengeRequest {
     publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
+    challengeAnswers: string[] | undefined;
+    challengeCommentCids: string[] | undefined;
+}
+export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {
+}
+export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
+    publication: (VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage) & {
+        author: AuthorIpfsType & {
+            subplebbit: SubplebbitAuthor | undefined;
+        };
+    };
+}
+export interface EncodedDecryptedChallengeRequestMessageType extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encrypted" | "signature">, BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded;
+}
+export interface EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends Omit<EncodedDecryptedChallengeRequestMessageType, "publication">, Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, "publication"> {
 }
 export interface ChallengeMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGE";
-    encryptedChallenges: Encrypted;
+    encrypted: Encrypted;
 }
-export interface DecryptedChallengeMessageType extends ChallengeMessageType {
+export interface DecryptedChallenge {
     challenges: ChallengeType[];
+}
+export interface DecryptedChallengeMessageType extends ChallengeMessageType, DecryptedChallenge {
+}
+export interface EncodedDecryptedChallengeMessageType extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encrypted" | "signature">, BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded;
 }
 export interface ChallengeAnswerMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     type: "CHALLENGEANSWER";
-    encryptedChallengeAnswers: Encrypted;
+    encrypted: Encrypted;
 }
-export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType {
+export interface DecryptedChallengeAnswer {
     challengeAnswers: string[];
+}
+export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType, DecryptedChallengeAnswer {
+}
+export interface BaseEncodedPubsubMessage {
+    challengeRequestId: string;
+    signature: EncodedPubsubSignature;
+}
+export interface EncodedDecryptedChallengeAnswerMessageType extends Omit<DecryptedChallengeAnswerMessageType, "challengeRequestId" | "encrypted" | "signature">, BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded;
 }
 export interface ChallengeVerificationMessageType extends PubsubMessage {
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
@@ -201,112 +236,25 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
-    encryptedPublication?: Encrypted;
+    encrypted?: Encrypted;
 }
-export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType {
-    publication?: CommentIpfsWithCid;
+export interface DecryptedChallengeVerification {
+    publication: CommentIpfsWithCid | undefined;
 }
-export type SubplebbitStats = {
-    hourActiveUserCount: number;
-    dayActiveUserCount: number;
-    weekActiveUserCount: number;
-    monthActiveUserCount: number;
-    yearActiveUserCount: number;
-    allActiveUserCount: number;
-    hourPostCount: number;
-    dayPostCount: number;
-    weekPostCount: number;
-    monthPostCount: number;
-    yearPostCount: number;
-    allPostCount: number;
-};
-export type SubplebbitFeatures = {
-    noVideos?: boolean;
-    noSpoilers?: boolean;
-    noImages?: boolean;
-    noVideoReplies?: boolean;
-    noSpoilerReplies?: boolean;
-    noImageReplies?: boolean;
-    noPolls?: boolean;
-    noCrossposts?: boolean;
-    noUpvotes?: boolean;
-    noDownvotes?: boolean;
-    noAuthors?: boolean;
-    anonymousAuthors?: boolean;
-    noNestedReplies?: boolean;
-    safeForWork?: boolean;
-    authorFlairs?: boolean;
-    requireAuthorFlairs?: boolean;
-    postFlairs?: boolean;
-    requirePostFlairs?: boolean;
-    noMarkdownImages?: boolean;
-    noMarkdownVideos?: boolean;
-    markdownImageReplies?: boolean;
-    markdownVideoReplies?: boolean;
-};
-export type SubplebbitSuggested = {
-    primaryColor?: string;
-    secondaryColor?: string;
-    avatarUrl?: string;
-    bannerUrl?: string;
-    backgroundUrl?: string;
-    language?: string;
-};
-export type Flair = {
-    text: string;
-    backgroundColor?: string;
-    textColor?: string;
-    expiresAt?: number;
-};
-export type FlairOwner = "post" | "author";
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
-    signature: JsonSignature;
-    encryption: SubplebbitEncryption;
-    address: string;
-    shortAddress: string;
-    signer?: SignerType;
-    createdAt: number;
-    updatedAt: number;
-    pubsubTopic?: string;
-    statsCid?: string;
-    protocolVersion: ProtocolVersion;
-    posts?: PagesTypeJson;
+export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType, DecryptedChallengeVerification {
 }
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings"> {
-    posts?: PagesTypeIpfs;
+export interface DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor extends DecryptedChallengeVerificationMessageType {
+    publication: (CommentIpfsWithCid & {
+        author: CommentIpfsWithCid["author"] & {
+            subplebbit: SubplebbitAuthor;
+        };
+    }) | undefined;
 }
-export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress"> {
-    signer: Pick<SignerType, "address" | "privateKey" | "type">;
-    _subplebbitUpdateTrigger: boolean;
+export interface EncodedDecryptedChallengeVerificationMessageType extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">, BaseEncodedPubsubMessage {
+    encrypted?: EncryptedEncoded;
 }
-export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
-    createdAt?: number;
-    updatedAt?: number;
-    signer?: Pick<SignerType, "privateKey" | "type">;
-    encryption?: SubplebbitEncryption;
-    signature?: JsonSignature;
+export interface EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor extends Omit<EncodedDecryptedChallengeVerificationMessageType, "publication">, Pick<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, "publication"> {
 }
-export interface SubplebbitEditOptions {
-    title?: string;
-    description?: string;
-    roles?: {
-        [authorAddress: string]: SubplebbitRole;
-    };
-    rules?: string[];
-    lastPostCid?: string;
-    pubsubTopic?: string;
-    challengeTypes?: ChallengeType[];
-    stats?: SubplebbitStats;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>;
-    address?: string;
-    settings?: SubplebbitSettings;
-}
-export type SubplebbitSettings = {
-    fetchThumbnailUrls?: boolean;
-    fetchThumbnailUrlsProxyUrl?: string;
-};
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 export type PostSortName = "hot" | "new" | "topHour" | "topDay" | "topWeek" | "topMonth" | "topYear" | "topAll" | "controversialHour" | "controversialDay" | "controversialWeek" | "controversialMonth" | "controversialYear" | "controversialAll" | "active";
 export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
@@ -425,16 +373,16 @@ export type NativeFunctions = {
         image: string;
         text: string;
     }>;
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, plebbit: Plebbit) => Promise<{
-        Id: string;
-        Name: string;
-    }>;
+    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: {
+        url: string;
+        headers?: Object;
+    }) => Promise<IpfsKey>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
 };
 export type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
 }[keyof T]>;
-export interface CommentsTableRow extends CommentIpfsWithCid, Required<Pick<CommentType, "ipnsKeyName">> {
+export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids">, Required<Pick<CommentType, "ipnsKeyName">> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     id: number;
@@ -447,33 +395,35 @@ export interface CommentUpdatesRow extends CommentUpdate {
 }
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {
 }
-export interface VotesTableRow extends VoteType {
+export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
 }
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 }
-export interface ChallengeRequestsTableRow extends Omit<ChallengeRequestMessageType, "type" | "encryptedPublication"> {
+export interface ChallengeRequestsTableRow extends Omit<DecryptedChallengeRequestMessageType, "type" | "encrypted" | "publication" | "challengeAnswers" | "challengeCommentCids"> {
     insertedAt: number;
+    challengeAnswers?: string;
+    challengeCommentCids?: string;
 }
 export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
     acceptedChallengeTypes?: string;
 }
-export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encryptedChallenges"> {
+export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encrypted"> {
     challengeTypes: ChallengeType["type"][];
     insertedAt: number;
 }
 export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt" | "challengeTypes"> {
     challengeTypes: string;
 }
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encryptedChallengeAnswers"> {
+export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encrypted"> {
     insertedAt: number;
 }
 export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt" | "challengeAnswers"> {
     challengeAnswers: string;
 }
-export interface ChallengeVerificationsTableRow extends Omit<ChallengeVerificationMessageType, "type" | "encryptedPublication"> {
+export interface ChallengeVerificationsTableRow extends Omit<DecryptedChallengeVerificationMessageType, "type" | "encrypted" | "publication"> {
     insertedAt: number;
 }
 export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt" | "challengeErrors"> {
@@ -484,7 +434,7 @@ export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" 
 }
 export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt"> {
 }
-export interface CommentEditsTableRow extends CommentEditType {
+export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
@@ -505,10 +455,10 @@ declare module "knex/types/tables" {
     }
 }
 export interface SubplebbitEvents {
-    challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
-    challengemessage: (challenge: DecryptedChallengeMessageType) => void;
+    challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
+    challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) => void;
     error: (error: PlebbitError) => void;
     statechange: (newState: Subplebbit["state"]) => void;
     updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
@@ -598,5 +548,12 @@ export interface StorageInterface {
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;
     keys: () => Promise<string[]>;
+}
+export interface PlebbitWsServerSettings {
+    plebbitOptions: PlebbitOptions;
+}
+export interface PlebbitWsServerSettingsSerialized {
+    plebbitOptions: ParsedPlebbitOptions;
+    challenges: Record<string, Omit<ChallengeFile, "getChallenge">>;
 }
 export {};

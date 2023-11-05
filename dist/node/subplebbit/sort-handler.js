@@ -60,7 +60,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SortHandler = exports.REPLIES_SORT_TYPES = exports.POSTS_SORT_TYPES = void 0;
-var util_1 = require("./util");
+var util_1 = require("../util");
 var assert_1 = __importDefault(require("assert"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var lodash_1 = __importDefault(require("lodash"));

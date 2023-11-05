@@ -1,7 +1,8 @@
 import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
-import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, Flair, ModeratorCommentEdit, PublicationTypeName } from "./types";
+import { Flair } from "./subplebbit/types";
+import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, ModeratorCommentEdit, PublicationTypeName } from "./types";
 export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
 export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];
 export declare class CommentEdit extends Publication implements CommentEditType {
@@ -33,14 +34,16 @@ export declare class CommentEdit extends Publication implements CommentEditType 
         };
         deleted?: boolean;
         signature: import("./signer/constants").JsonSignature;
+        protocolVersion: "1.0.0";
         content?: string;
         spoiler?: boolean;
         flair?: Flair;
         subplebbitAddress: string;
         timestamp: number;
+        challengeAnswers?: string[];
+        challengeCommentCids?: string[];
         commentCid: string;
         reason?: string;
-        protocolVersion: "1.0.0";
         pinned?: boolean;
         locked?: boolean;
         removed?: boolean;

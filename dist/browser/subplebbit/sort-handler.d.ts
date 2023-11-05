@@ -1,5 +1,5 @@
 import { Subplebbit } from "./subplebbit";
-import { CommentsTableRow, CommentUpdatesRow, CommentWithCommentUpdate, PageIpfs, PagesTypeIpfs, PostSort, PostSortName, ReplySort, ReplySortName } from "./types";
+import { CommentsTableRow, CommentUpdatesRow, CommentWithCommentUpdate, PageIpfs, PagesTypeIpfs, PostSort, PostSortName, ReplySort, ReplySortName } from "../types";
 export declare const POSTS_SORT_TYPES: PostSort;
 export declare const REPLIES_SORT_TYPES: ReplySort;
 export type PageOptions = {

@@ -1,7 +1,8 @@
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
-import { AuthorCommentEdit, ChallengeAnswersTableRowInsert, ChallengeRequestsTableRowInsert, ChallengesTableRowInsert, ChallengeVerificationsTableRowInsert, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, CommentWithCommentUpdate, SignersTableRow, SingersTableRowInsert, SubplebbitAuthor, SubplebbitStats, VotesTableRow, VotesTableRowInsert } from "../../types";
-import { PageOptions } from "../../sort-handler";
+import { AuthorCommentEdit, ChallengeAnswersTableRowInsert, ChallengeRequestsTableRowInsert, ChallengesTableRowInsert, ChallengeVerificationsTableRowInsert, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, SignersTableRow, SingersTableRowInsert, SubplebbitAuthor, VotesTableRow, VotesTableRowInsert } from "../../types";
+import { PageOptions } from "../../subplebbit/sort-handler";
+import { SubplebbitStats } from "../../subplebbit/types";
 export declare class DbHandler {
     private _knex;
     private _subplebbit;
@@ -79,11 +80,12 @@ export declare class DbHandler {
     private _queryModCommentFlair;
     private _queryLastChildCidAndLastReplyTimestamp;
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "author" | "timestamp">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;
-    queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentWithCommentUpdate, "cid"> | undefined>;
+    queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
+    queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
     insertSigner(signer: SingersTableRowInsert, trx?: Transaction): Promise<number[]>;
     querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignersTableRow | undefined>;
     queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
-    querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor>;
+    querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
