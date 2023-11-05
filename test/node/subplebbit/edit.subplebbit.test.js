@@ -222,7 +222,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
     it(`Can edit a local sub address, then start it`, async () => {
         const customPlebbit = await mockPlebbit();
         const signer = await customPlebbit.createSigner();
-        const domain = `edit-before-start-${timestamp()}.eth`;
+        const domain = `edit-before-start-${v4()}.eth`;
 
         const originalPlebbit = await mockPlebbit();
 
