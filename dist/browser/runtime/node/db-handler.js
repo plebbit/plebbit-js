@@ -241,6 +241,9 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, ((_a = this._knex) === null || _a === void 0 ? void 0 : _a.destroy())];
                     case 1:
                         _b.sent();
+                        return [4 /*yield*/, this._keyv.disconnect()];
+                    case 2:
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });

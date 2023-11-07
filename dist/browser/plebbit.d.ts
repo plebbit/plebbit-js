@@ -12,7 +12,7 @@ import Stats from "./stats";
 import { ClientsManager } from "./clients/client-manager";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
-import { CreateSubplebbitOptions, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
+import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
         ipfsGateways: {
@@ -66,7 +66,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _createSubplebbitRpc;
     private _createRemoteSubplebbitInstance;
     private _createLocalSub;
-    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType): Promise<Subplebbit>;
+    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType): Promise<Subplebbit>;
     createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote>;
     createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;
@@ -75,4 +75,5 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     pubsubSubscribe(subplebbitAddress: string): Promise<void>;
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
     resolveAuthorAddress(authorAddress: string): Promise<string>;
+    destroy(): Promise<void>;
 }

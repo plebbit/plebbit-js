@@ -148,7 +148,7 @@ var Subplebbit = /** @class */ (function (_super) {
         _this._setState("stopped");
         _this._setStartedState("stopped");
         _this._setUpdatingState("stopped");
-        _this._sync = _this._isUpdating = false;
+        _this._isSubRunningLocally = false;
         _this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
         // these functions might get separated from their `this` when used
         _this.start = _this.start.bind(_this);
@@ -202,6 +202,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.signature = mergedProps.signature;
                         this.settings = mergedProps.settings;
                         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+                        this._setStartedState(mergedProps.startedState);
                         if (!this.signer && mergedProps.signer)
                             this.signer = new signer_1.Signer(mergedProps.signer);
                         if (!newProps["posts"]) return [3 /*break*/, 2];
@@ -295,10 +296,10 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.toJSONInternal = function () {
         var _a;
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["shortAddress"])), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSONIpfs(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, settings: this.settings });
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["shortAddress"])), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSONIpfs(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, settings: this.settings, startedState: this.startedState });
     };
     Subplebbit.prototype.toJSONInternalRpc = function () {
-        return __assign({}, lodash_1.default.omit(this.toJSONInternal(), ["signer", "_subplebbitUpdateTrigger"]));
+        return __assign({}, lodash_1.default.omit(this.toJSONInternal(), ["signer"]));
     };
     Subplebbit.prototype.toJSON = function () {
         var _a;
@@ -438,7 +439,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.edit = function (newSubplebbitOptions) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, optionsParsed, newProps, newSubProps;
+            var log, optionsParsed, newProps_1, newProps;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -455,15 +456,20 @@ var Subplebbit = /** @class */ (function (_super) {
                         optionsParsed = (0, util_1.replaceXWithY)(newSubplebbitOptions, undefined, null);
                         return [4 /*yield*/, this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed)];
                     case 1:
-                        newProps = _b.sent();
-                        return [4 /*yield*/, this.initSubplebbit(newProps)];
+                        newProps_1 = _b.sent();
+                        return [4 /*yield*/, this.initSubplebbit(newProps_1)];
                     case 2:
                         _b.sent();
                         return [2 /*return*/, this];
-                    case 3: return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
+                    case 3:
+                        if (Array.isArray((_a = newSubplebbitOptions === null || newSubplebbitOptions === void 0 ? void 0 : newSubplebbitOptions.settings) === null || _a === void 0 ? void 0 : _a.challenges))
+                            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(challenges_1.getSubplebbitChallengeFromSubplebbitChallengeSettings);
+                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 4:
                         _b.sent();
-                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 8];
+                        this._subplebbitUpdateTrigger = true;
+                        newProps = __assign(__assign({}, newSubplebbitOptions), { _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+                        if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 10];
                         if ((0, util_1.doesEnsAddressHaveCapitalLetter)(newSubplebbitOptions.address))
                             throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
                         this.assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch(function (err) {
@@ -471,8 +477,15 @@ var Subplebbit = /** @class */ (function (_super) {
                             _this.emit("error", err);
                         });
                         log("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
-                        return [4 /*yield*/, this._updateDbInternalState(lodash_1.default.pick(newSubplebbitOptions, "address"))];
+                        return [4 /*yield*/, this._updateDbInternalState(newProps)];
                     case 5:
+                        _b.sent();
+                        return [4 /*yield*/, this.dbHandler.isSubStartLocked()];
+                    case 6:
+                        if (!!(_b.sent())) return [3 /*break*/, 9];
+                        log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 7:
                         _b.sent();
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
@@ -481,30 +494,23 @@ var Subplebbit = /** @class */ (function (_super) {
                                     noData: this.plebbit.noData
                                 }
                             })];
-                    case 6:
-                        _b.sent();
-                        return [4 /*yield*/, this._switchDbIfNeeded()];
-                    case 7:
-                        _b.sent();
-                        _b.label = 8;
                     case 8:
-                        if (Array.isArray((_a = newSubplebbitOptions === null || newSubplebbitOptions === void 0 ? void 0 : newSubplebbitOptions.settings) === null || _a === void 0 ? void 0 : _a.challenges))
-                            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(challenges_1.getSubplebbitChallengeFromSubplebbitChallengeSettings);
-                        newSubProps = __assign(__assign({}, lodash_1.default.omit(newSubplebbitOptions, "address")), { _subplebbitUpdateTrigger: true });
-                        return [4 /*yield*/, this._updateDbInternalState(newSubProps)];
-                    case 9:
                         _b.sent();
-                        return [4 /*yield*/, this.initSubplebbit(newSubProps)];
-                    case 10:
-                        _b.sent();
-                        log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newSubplebbitOptions), ") has been edited"));
-                        if (!!this._sync) return [3 /*break*/, 12];
-                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                        _b.label = 9;
+                    case 9: return [3 /*break*/, 13];
+                    case 10: return [4 /*yield*/, this._updateDbInternalState(newProps)];
                     case 11:
+                        _b.sent();
+                        if (!!this._isSubRunningLocally) return [3 /*break*/, 13];
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 12:
                         _b.sent(); // Need to destory connection so process wouldn't hang
-                        _b.label = 12;
-                    case 12: // Need to destory connection so process wouldn't hang
-                    return [2 /*return*/, this];
+                        _b.label = 13;
+                    case 13: return [4 /*yield*/, this.initSubplebbit(newProps)];
+                    case 14:
+                        _b.sent();
+                        log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newProps), ") has been edited"));
+                        return [2 /*return*/, this];
                 }
             });
         });
@@ -677,7 +683,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        if (this._isUpdating || this._sync || this._updateRpcSubscriptionId || this._startRpcSubscriptionId)
+                        if (this.state !== "stopped" || this._updateRpcSubscriptionId || this._startRpcSubscriptionId)
                             return [2 /*return*/]; // No need to do anything if subplebbit is already updating
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:update");
                         if (!this.plebbit.plebbitRpcClient) return [3 /*break*/, 5];
@@ -725,14 +731,13 @@ var Subplebbit = /** @class */ (function (_super) {
                         updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
                             var _this = this;
                             return __generator(this, function (_a) {
-                                if (this._isUpdating)
+                                if (this.state === "updating")
                                     this.updateOnce()
                                         .catch(function (e) { return log.error("Failed to update subplebbit", e); })
                                         .finally(function () { return setTimeout(updateLoop, _this.plebbit.updateInterval); });
                                 return [2 /*return*/];
                             });
                         }); }).bind(this);
-                        this._isUpdating = true;
                         this._setState("updating");
                         this.updateOnce()
                             .catch(function (e) { return log.error("Failed to update subplebbit", e); })
@@ -756,7 +761,6 @@ var Subplebbit = /** @class */ (function (_super) {
                         (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
                         clearTimeout(this._updateTimeout);
                         this._updateTimeout = undefined;
-                        this._isUpdating = false;
                         if (!(this.plebbit.plebbitRpcClient && this._updateRpcSubscriptionId)) return [3 /*break*/, 2];
                         // We're updating a remote sub here
                         return [4 /*yield*/, this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId)];
@@ -766,7 +770,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setRpcClientState("stopped");
                         this._updateRpcSubscriptionId = undefined;
                         log.trace("Stopped the update of remote subplebbit (".concat(this.address, ") via RPC"));
-                        return [3 /*break*/, 11];
+                        return [3 /*break*/, 12];
                     case 2:
                         if (!(this.plebbit.plebbitRpcClient && this._startRpcSubscriptionId)) return [3 /*break*/, 5];
                         // Subplebbit is running over RPC
@@ -781,9 +785,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setRpcClientState("stopped");
                         this._startRpcSubscriptionId = undefined;
                         log("Stopped the running of local subplebbit (".concat(this.address, ") via RPC"));
-                        return [3 /*break*/, 11];
+                        return [3 /*break*/, 12];
                     case 5:
-                        if (!this._sync) return [3 /*break*/, 11];
+                        if (!this._isSubRunningLocally) return [3 /*break*/, 12];
                         // Subplebbit is running locally
                         return [4 /*yield*/, this._clientsManager
                                 .getDefaultPubsub()
@@ -791,52 +795,31 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 6:
                         // Subplebbit is running locally
                         _b.sent();
-                        return [4 /*yield*/, this.dbHandler.rollbackAllTransactions()];
+                        this._setStartedState("stopped");
+                        return [4 /*yield*/, this._updateDbInternalState({ startedState: this.startedState })];
                     case 7:
                         _b.sent();
-                        return [4 /*yield*/, this.dbHandler.unlockSubStart()];
+                        this._isSubRunningLocally = false;
+                        return [4 /*yield*/, this.dbHandler.rollbackAllTransactions()];
                     case 8:
                         _b.sent();
-                        this._sync = false;
-                        this._syncInterval = clearInterval(this._syncInterval);
-                        this._setStartedState("stopped");
-                        this._clientsManager.updateIpfsState("stopped");
-                        this._clientsManager.updatePubsubState("stopped", undefined);
-                        if (!this.dbHandler) return [3 /*break*/, 10];
-                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                        return [4 /*yield*/, this.dbHandler.unlockSubStart()];
                     case 9:
                         _b.sent();
-                        _b.label = 10;
+                        this._syncInterval = clearInterval(this._syncInterval);
+                        this._clientsManager.updateIpfsState("stopped");
+                        this._clientsManager.updatePubsubState("stopped", undefined);
+                        if (!this.dbHandler) return [3 /*break*/, 11];
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
                     case 10:
-                        log("Stopped the running of local subplebbit (".concat(this.address, ")"));
+                        _b.sent();
                         _b.label = 11;
                     case 11:
+                        log("Stopped the running of local subplebbit (".concat(this.address, ")"));
+                        _b.label = 12;
+                    case 12:
                         this._setUpdatingState("stopped");
                         this._setState("stopped");
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Subplebbit.prototype._validateLocalSignature = function (newSignature, record) {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, ipnsRecord, signatureValidation, error;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_validateLocalSignature");
-                        ipnsRecord = JSON.parse(JSON.stringify(__assign(__assign({}, record), { signature: newSignature })));
-                        return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(ipnsRecord.address)];
-                    case 1:
-                        _a.sent(); // Resolve before validation so we wouldn't have multiple resolves running concurrently
-                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(ipnsRecord, false, this._clientsManager, false)];
-                    case 2:
-                        signatureValidation = _a.sent();
-                        if (!signatureValidation.valid) {
-                            error = new plebbit_error_1.PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation: signatureValidation });
-                            log.error(String(error));
-                            this.emit("error", error);
-                        }
                         return [2 /*return*/];
                 }
             });
@@ -879,35 +862,48 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Subplebbit.prototype._isCurrentSubplebbitEqualToLatestPublishedRecord = function () {
+        var fieldsToOmit = ["posts", "updatedAt"];
+        var rawSubplebbitTypeFiltered = lodash_1.default.omit(this._rawSubplebbitType, fieldsToOmit);
+        var currentSubplebbitFiltered = lodash_1.default.omit(this.toJSONIpfs(), fieldsToOmit);
+        return lodash_1.default.isEqual(rawSubplebbitTypeFiltered, currentSubplebbitFiltered);
+    };
     Subplebbit.prototype.updateSubplebbitIpnsIfNeeded = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, lastPublishTooOld, trx, latestPost, latestComment, _b, stats, subplebbitPosts, newPageCids_1, pageCidsToUnPin, statsCid, updatedAt, newIpns, signature, file, publishRes;
+            var log, lastPublishTooOld, dbInstance, trx, latestPost, latestComment, _b, stats, subplebbitPosts, newPageCids_1, pageCidsToUnPin, statsCid, updatedAt, newIpns, signature, file, publishRes;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
                         lastPublishTooOld = this.updatedAt < (0, util_1.timestamp)() - 60 * 15;
+                        return [4 /*yield*/, this._getDbInternalState(true)];
+                    case 1:
+                        dbInstance = _d.sent();
+                        this._subplebbitUpdateTrigger =
+                            this._subplebbitUpdateTrigger ||
+                                dbInstance._subplebbitUpdateTrigger ||
+                                !this._isCurrentSubplebbitEqualToLatestPublishedRecord();
                         if (!this._subplebbitUpdateTrigger && !lastPublishTooOld)
                             return [2 /*return*/]; // No reason to update
                         return [4 /*yield*/, this.dbHandler.createTransaction("subplebbit")];
-                    case 1:
+                    case 2:
                         trx = _d.sent();
                         return [4 /*yield*/, this.dbHandler.queryLatestPostCid(trx)];
-                    case 2:
+                    case 3:
                         latestPost = _d.sent();
                         return [4 /*yield*/, this.dbHandler.queryLatestCommentCid(trx)];
-                    case 3:
+                    case 4:
                         latestComment = _d.sent();
                         return [4 /*yield*/, this.dbHandler.commitTransaction("subplebbit")];
-                    case 4:
+                    case 5:
                         _d.sent();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.querySubplebbitStats(undefined),
                                 this.sortHandler.generateSubplebbitPosts()
                             ])];
-                    case 5:
+                    case 6:
                         _b = _d.sent(), stats = _b[0], subplebbitPosts = _b[1];
                         if (subplebbitPosts && ((_a = this.posts) === null || _a === void 0 ? void 0 : _a.pageCids)) {
                             newPageCids_1 = lodash_1.default.uniq(Object.values(subplebbitPosts.pageCids));
@@ -915,21 +911,21 @@ var Subplebbit = /** @class */ (function (_super) {
                             (_c = this._cidsToUnPin).push.apply(_c, pageCidsToUnPin);
                         }
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(stats))];
-                    case 6:
+                    case 7:
                         statsCid = (_d.sent()).path;
                         if (this.statsCid && statsCid !== this.statsCid)
                             this._cidsToUnPin.push(this.statsCid);
                         return [4 /*yield*/, this._mergeInstanceStateWithDbState({})];
-                    case 7:
+                    case 8:
                         _d.sent();
                         updatedAt = (0, util_1.timestamp)() === this.updatedAt ? (0, util_1.timestamp)() + 1 : (0, util_1.timestamp)();
                         newIpns = __assign(__assign({}, lodash_1.default.omit(this._toJSONBase(), "signature")), { lastPostCid: latestPost === null || latestPost === void 0 ? void 0 : latestPost.cid, lastCommentCid: latestComment === null || latestComment === void 0 ? void 0 : latestComment.cid, statsCid: statsCid, updatedAt: updatedAt, posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash_1.default.pick(subplebbitPosts.pages, "hot") } : undefined });
                         return [4 /*yield*/, (0, signatures_1.signSubplebbit)(newIpns, this.signer)];
-                    case 8:
+                    case 9:
                         signature = _d.sent();
                         // this._validateLocalSignature(signature, newIpns); // this commented line should be taken out later
                         return [4 /*yield*/, this.initSubplebbit(__assign(__assign({}, newIpns), { signature: signature }))];
-                    case 9:
+                    case 10:
                         // this._validateLocalSignature(signature, newIpns); // this commented line should be taken out later
                         _d.sent();
                         this._subplebbitUpdateTrigger = false;
@@ -941,22 +937,23 @@ var Subplebbit = /** @class */ (function (_super) {
                                 "statsCid",
                                 "updatedAt",
                                 "signature",
+                                "startedState",
                                 "_subplebbitUpdateTrigger"
                             ]))];
-                    case 10:
-                        _d.sent();
-                        return [4 /*yield*/, this._unpinStaleCids()];
                     case 11:
                         _d.sent();
-                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(this._rawSubplebbitType))];
+                        return [4 /*yield*/, this._unpinStaleCids()];
                     case 12:
+                        _d.sent();
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(this._rawSubplebbitType))];
+                    case 13:
                         file = _d.sent();
                         this._cidsToUnPin = [file.path];
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: this.signer.ipnsKeyName,
                                 allowOffline: true
                             })];
-                    case 13:
+                    case 14:
                         publishRes = _d.sent();
                         this.emit("update", this);
                         log("Published a new IPNS record for sub(".concat(this.address, ") on IPNS (").concat(publishRes.name, ") that points to file (").concat(publishRes.value, ") with updatedAt (").concat(this.updatedAt, ")"));
@@ -1686,22 +1683,6 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._validateCommentUpdate = function (update, comment) {
-        return __awaiter(this, void 0, void 0, function () {
-            var simUpdate, signatureValidity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        simUpdate = JSON.parse((0, safe_stable_stringify_1.stringify)(update));
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(simUpdate, false, this._clientsManager, this.address, comment, false)];
-                    case 1:
-                        signatureValidity = _a.sent();
-                        (0, assert_1.default)(signatureValidity.valid, "Comment Update signature is invalid. Reason (".concat(signatureValidity.reason, ")"));
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     Subplebbit.prototype._updateComment = function (comment) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
@@ -1815,51 +1796,48 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._switchDbIfNeeded = function () {
+    Subplebbit.prototype._switchDbWhileRunningIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, internalState, potentialNewAddresses, wasSubRunning, newAddresses, newAddress;
-            var _this = this;
+            var log, internalState, currentDbAddress;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_switchDbIfNeeded");
-                        return [4 /*yield*/, this._getDbInternalState(false)];
+                        return [4 /*yield*/, this._getDbInternalState(true)];
                     case 1:
                         internalState = _a.sent();
-                        potentialNewAddresses = lodash_1.default.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
+                        currentDbAddress = this.dbHandler.subAddress();
                         if (!this.dbHandler.isDbInMemory()) return [3 /*break*/, 2];
                         this.setAddress(this.dbHandler.subAddress());
-                        return [3 /*break*/, 9];
+                        return [3 /*break*/, 7];
                     case 2:
-                        if (!(potentialNewAddresses.length > 1)) return [3 /*break*/, 9];
-                        return [4 /*yield*/, Promise.all(potentialNewAddresses.map(this.dbHandler.isSubStartLocked))];
+                        if (!(internalState.address !== currentDbAddress)) return [3 /*break*/, 7];
+                        // That means a call has been made to edit the sub's address while it's running
+                        // We need to stop the sub from running, change its file name, then establish a connection to the new DB
+                        log("Running sub (".concat(this.address, ") has received a new address (").concat(internalState.address, ") to change to"));
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
                     case 3:
-                        wasSubRunning = (_a.sent()).some(Boolean);
-                        newAddresses = potentialNewAddresses.filter(function (address) { return _this.dbHandler.subDbExists(address); });
-                        if (newAddresses.length > 1)
-                            throw Error("There are multiple dbs of the same sub");
-                        newAddress = newAddresses[0];
-                        log("Updating to a new address (".concat(newAddress, ") "));
-                        this._subplebbitUpdateTrigger = true;
-                        return [4 /*yield*/, Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart))];
+                        _a.sent();
+                        this.setAddress(internalState.address);
+                        return [4 /*yield*/, this.dbHandler.changeDbFilename(internalState.address, {
+                                address: internalState.address,
+                                plebbit: {
+                                    dataPath: this.plebbit.dataPath,
+                                    noData: this.plebbit.noData
+                                }
+                            })];
                     case 4:
                         _a.sent();
-                        if (!wasSubRunning) return [3 /*break*/, 6];
-                        return [4 /*yield*/, this.dbHandler.lockSubStart(newAddress)];
+                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 5:
                         _a.sent();
-                        _a.label = 6;
+                        this.sortHandler = new sort_handler_1.SortHandler(lodash_1.default.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
+                        this._subplebbitUpdateTrigger = true;
+                        return [4 /*yield*/, this.dbHandler.lockSubStart()];
                     case 6:
-                        this.setAddress(newAddress);
-                        this.dbHandler = this.sortHandler = undefined;
-                        return [4 /*yield*/, this.initDbHandlerIfNeeded()];
-                    case 7:
                         _a.sent();
-                        return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
-                    case 8:
-                        _a.sent();
-                        _a.label = 9;
-                    case 9: return [2 /*return*/];
+                        _a.label = 7;
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -1965,7 +1943,7 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:sync");
-                        return [4 /*yield*/, this._switchDbIfNeeded()];
+                        return [4 /*yield*/, this._switchDbWhileRunningIfNeeded()];
                     case 1:
                         _b.sent();
                         _b.label = 2;
@@ -2037,7 +2015,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
-                                if (!this._sync) return [3 /*break*/, 3];
+                                if (!this._isSubRunningLocally) return [3 /*break*/, 3];
                                 return [4 /*yield*/, this.syncIpnsWithDb()];
                             case 1:
                                 _a.sent();
@@ -2132,7 +2110,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.lockSubStart()];
                     case 7:
                         _d.sent(); // Will throw if sub is locked already
-                        this._sync = true;
+                        this._setState("started");
+                        this._setStartedState("publishing-ipns");
+                        this._isSubRunningLocally = true;
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
                     case 8:
                         _d.sent();
@@ -2164,10 +2144,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         _d.label = 15;
                     case 15:
                         this._subplebbitUpdateTrigger = true;
-                        return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger })];
+                        return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState })];
                     case 16:
                         _d.sent();
-                        this._setState("started");
                         return [4 /*yield*/, this._repinCommentsIPFSIfNeeded()];
                     case 17:
                         _d.sent();
