@@ -82,8 +82,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     it(`createSubplebbit on online IPFS node doesn't take more than 10s`, async () => {
         const onlinePlebbit = await mockPlebbit({
             ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
-            pubsubHttpClientsOptions: [`http://localhost:15003/api/v0`],
-            dataPath: globalThis["window"]?.plebbitDataPath
+            pubsubHttpClientsOptions: [`http://localhost:15003/api/v0`]
         });
         const startTime = timestamp();
         const title = `Test online plebbit`;
@@ -141,7 +140,7 @@ if (!isRpcFlagOn())
     describe("Create lock", async () => {
         let plebbit;
         before(async () => {
-            plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+            plebbit = await mockPlebbit();
         });
 
         it(`Can create subplebbit as soon as create lock is unlocked`, async () => {
