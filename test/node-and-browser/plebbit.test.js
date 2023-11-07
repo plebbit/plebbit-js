@@ -137,7 +137,7 @@ describe("plebbit.getComment", async () => {
         for (const key of Object.keys(expectedPostProps)) expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
     });
 
-    it("comment props are loaded correctly", async () => {
+    it.only("comment props are loaded correctly", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
         const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
@@ -159,6 +159,7 @@ describe("plebbit.getComment", async () => {
 
         const loadedComment = await plebbit.getComment(comment.cid);
         expect(loadedComment.constructor.name).to.equal("Comment");
+        if (loadedComment.author.subplebbit) delete loadedComment.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
         for (const key of Object.keys(expectedCommentProps))
             expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
     });
