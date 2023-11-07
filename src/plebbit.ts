@@ -465,4 +465,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }
+
+    async destroy() {
+        // Clean up connections
+        if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
+    }
 }

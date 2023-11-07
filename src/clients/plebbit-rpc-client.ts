@@ -95,6 +95,14 @@ export default class PlebbitRpcClient {
         }
     }
 
+    async destroy() {
+        this._webSocketClient.close();
+        this._webSocketClient = undefined;
+
+        this._subscriptionEvents = undefined;
+        this._pendingSubscriptionMsgs = undefined;
+    }
+
     getSubscription(subscriptionId: number) {
         if (!this._subscriptionEvents[subscriptionId]) throw Error(`No subscription to RPC with id (${subscriptionId})`);
         else return this._subscriptionEvents[subscriptionId];
