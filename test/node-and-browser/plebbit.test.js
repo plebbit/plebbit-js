@@ -137,7 +137,7 @@ describe("plebbit.getComment", async () => {
         for (const key of Object.keys(expectedPostProps)) expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
     });
 
-    it.only("comment props are loaded correctly", async () => {
+    it("comment props are loaded correctly", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
         const newComments = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
         const comment = newComments.filter((comment) => comment.replyCount > 0)[0]?.replies?.pages?.topAll?.comments[0];
