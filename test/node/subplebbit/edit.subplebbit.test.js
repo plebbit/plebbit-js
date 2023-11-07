@@ -100,7 +100,7 @@ describe(`subplebbit.edit`, async () => {
     });
 
     it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
-        await waitUntil(() => subplebbit.posts.pages.hot.comments.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
+        await waitUntil(() => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
             timeout: 200000
         });
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
@@ -205,8 +205,11 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             await updateStartedSubEventPromise;
 
             expect(startedSubplebbit.title).to.equal(subplebbitTitle);
-            for (const [editKey, editValue] of Object.entries(editArgs))
+            for (const [editKey, editValue] of Object.entries(editArgs)){
+                if (stringify(startedSubplebbit[editKey]) !== stringify(editValue))
+                    await new Promise(resolve => startedSubplebbit.once("update", resolve)); // Wait until the new props are included in the next update
                 expect(stringify(startedSubplebbit[editKey])).to.equal(stringify(editValue));
+            }
 
             await startedSubplebbit.stop();
 
