@@ -154,8 +154,6 @@ const startIpfsNodes = async () => {
 
     require("./pubsub-mock-server");
 
-    const runInMemory = process.env["CLIENT"]?.includes("browser") || process.env["CLIENT"]?.includes("remote"); // Sub should be in memory if running tests on browser
-    if (runInMemory) console.log(`test-server will run in memory`);
 
     if (process.env["USE_RPC"] === "1") {
         // run RPC here
@@ -177,7 +175,6 @@ const startIpfsNodes = async () => {
         await startSubplebbits({
             signers: signers,
             publishInterval: 3000,
-            noData: runInMemory,
             votesPerCommentToPublish: 5,
             numOfPostsToPublish: 51,
             numOfCommentsToPublish: 10
