@@ -430,6 +430,8 @@ var DbHandler = /** @class */ (function () {
                             table.json("acceptedChallengeTypes").nullable(); // string[]
                             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
                             table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+                            table.json("challengeCommentCids").nullable(); // string[]
+                            table.json("challengeAnswers").nullable(); // string[]
                         })];
                     case 1:
                         _a.sent();
@@ -1336,6 +1338,13 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryLatestCommentCid = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first()];
+            });
+        });
+    };
     DbHandler.prototype.insertSigner = function (signer, trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -1386,7 +1395,8 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress)];
                     case 1:
                         authorCommentCids = _f.sent();
-                        (0, assert_1.default)(authorCommentCids.length > 0);
+                        if (authorCommentCids.length === 0)
+                            return [2 /*return*/, undefined];
                         authorComments = [];
                         _i = 0, authorCommentCids_1 = authorCommentCids;
                         _f.label = 2;

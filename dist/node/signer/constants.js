@@ -61,7 +61,7 @@ exports.SubplebbitSignedPropertyNames = [
     "pubsubTopic",
     "lastPostCid",
     "posts",
-    "challengeTypes",
+    "challenges",
     "statsCid",
     "createdAt",
     "updatedAt",
@@ -75,27 +75,27 @@ exports.SubplebbitSignedPropertyNames = [
 exports.ChallengeRequestMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "acceptedChallengeTypes",
     "timestamp"
 ];
 exports.ChallengeMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
-    "encryptedChallenges",
+    "encrypted",
     "timestamp"
 ];
 exports.ChallengeAnswerMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
-    "encryptedChallengeAnswers",
+    "encrypted",
     "timestamp"
 ];
 exports.ChallengeVerificationMessageSignedPropertyNames = [
     "reason",
     "type",
     "challengeRequestId",
-    "encryptedPublication",
+    "encrypted",
     "challengeSuccess",
     "challengeErrors",
     "timestamp"

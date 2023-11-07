@@ -19,6 +19,7 @@ var messages;
     messages["ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS"] = "missing nativeFunctions required to create a subplebbit";
     messages["ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE"] = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined";
     messages["ERR_PLEBBIT_OPTION_NOT_ACCEPTED"] = "Option is not accepted on Plebbit constructor";
+    messages["ERR_CAN_NOT_CREATE_A_SUB"] = "Can't create a new sub with the current PlebbitOptions";
     // Fetch errors
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"] = "Failed to fetch IPFS file via gateway";
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS"] = "Failed to fetch an IPFS via IPFS P2P";
@@ -40,7 +41,6 @@ var messages;
     messages["ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT"] = "comment.content is not set to the latest comment.authorEdit.content";
     messages["ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT"] = "Comment update is not signed by the subplebbit";
     messages["ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR"] = "Author edit is not signed by original author of comment";
-    messages["ERR_SUBPLEBBIT_POSTS_INVALID"] = "subplebbit.posts signature is invalid";
     messages["ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT"] = "CommentUpdate.cid is different than comment.cid";
     messages["ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] = "The signer of challenge pubsub message is not the subplebbit";
     messages["ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT"] = "The signer of challenge verification pubsub message is not the subplebbit";
@@ -48,9 +48,13 @@ var messages;
     messages["ERR_CHALLENGE_SIGNATURE_IS_INVALID"] = "Received a challenge message with an invalid signature";
     messages["ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID"] = "Received a challenge verification message with an invalid signature";
     messages["ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID"] = "Local subplebbit signature is invalid";
+    messages["ERR_SUBPLEBBIT_POSTS_INVALID"] = "subplebbit.posts signature is invalid";
+    messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"] = "CommentIpfs signature is invalid";
+    messages["ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID"] = "CommentUpdate signature is invalid";
     // getPage errors
     messages["ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB"] = "Comment in page should be under the same subplebbit";
     messages["ERR_PARENT_CID_NOT_AS_EXPECTED"] = "Comment under parent comment/post should have parentCid initialized";
+    messages["ERR_PAGE_SIGNATURE_IS_INVALID"] = "The signature of one of the comment in the page is invalid";
     // Subplebbit rejections of pubsub messages
     messages["ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST"] = "Received a challenge answer without a prior challenge request";
     messages["ERR_REUSED_PUBSUB_MSG_SIGNER"] = "Reusing a pubsub message signer is forbidden";
@@ -62,12 +66,9 @@ var messages;
     messages["ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"] = "The parent cid of this comment is not defined";
     messages["ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS"] = "The subplebbitAddress field of publication is not the same as the subplebbit being published to";
     messages["ERR_AUTHOR_IS_BANNED"] = "Author is banned";
+    messages["ERR_PUBLICATION_HAS_NO_AUTHOR_ADDRESS"] = "Publication has no author.address";
     messages["ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED"] = "The parent of this publication has been removed";
     messages["ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED"] = "The parent of this publication has been deleted";
-    messages["ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for authors";
-    messages["ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for mods";
-    messages["ERR_SUB_COMMENT_EDIT_MOD_AUTHOR_INVALID_FIELD"] = "CommentEdit includes a field that cannot be used for both mods and authors";
-    messages["ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED"] = "The post of this publication has been deleted";
     messages["ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED"] = "The post of this publication has been removed";
     messages["ERR_SUB_PUBLICATION_POST_IS_LOCKED"] = "The post of this publication has been locked";
@@ -78,6 +79,11 @@ var messages;
     messages["ERR_AUTHOR_ADDRESS_UNDEFINED"] = "author address is undefined";
     messages["ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG"] = "Subplebbit failed to decrypt the pubsub message";
     messages["ERR_COMMENT_OVER_ALLOWED_SIZE"] = "Comment size is over the allowed size";
+    messages["UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE"] = "An author attempted to change another author's vote";
+    messages["COMMENT_LINK_LENGTH_IS_OVER_LIMIT"] = "comment.link length is over the limit";
+    // Comment Edit errors
+    messages["ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
+    messages["ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD"] = "CommentEdit includes a field that cannot be used";
     // Resolver errors
     messages["ERR_FAILED_TO_RESOLVE_TEXT_RECORD"] = "Failed to resolve text record";
     messages["ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER"] = "no chain provider options set for chain ticker";
@@ -97,5 +103,7 @@ var messages;
     messages["ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST"] = "Did not receive response to challenge request in the specified time";
     messages["ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS"] = "All pubsub providers throw an error and unable to publish or subscribe";
     messages["ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER"] = "The challenge request has been published over the pubsub topic but no response was received";
+    // RPC errors
+    messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"] = "Failed to open connection to RPC";
 })(messages || (exports.messages = messages = {}));
 //# sourceMappingURL=errors.js.map

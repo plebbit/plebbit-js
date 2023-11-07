@@ -1,7 +1,7 @@
 import { ChallengeAnswerMessageType, ChallengeAnswersTableRowInsert, ChallengeMessageType, ChallengeRequestMessageType, ChallengeRequestsTableRowInsert, ChallengesTableRow, ChallengesTableRowInsert, ChallengeVerificationMessageType, ChallengeVerificationsTableRowInsert, DecryptedChallengeAnswerMessageType, ProtocolVersion } from "./types";
 import { Encrypted, PubsubSignature } from "./signer/constants";
 export declare class ChallengeRequestMessage implements ChallengeRequestMessageType {
-    encryptedPublication: Encrypted;
+    encrypted: Encrypted;
     type: "CHALLENGEREQUEST";
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     acceptedChallengeTypes?: string[];
@@ -11,10 +11,10 @@ export declare class ChallengeRequestMessage implements ChallengeRequestMessageT
     timestamp: number;
     constructor(props: Omit<ChallengeRequestMessageType, "type">);
     toJSON(): ChallengeRequestMessageType;
-    toJSONForDb(): ChallengeRequestsTableRowInsert;
+    toJSONForDb(challengeAnswers: string[] | undefined, challengeCommentCids: string[] | undefined): ChallengeRequestsTableRowInsert;
 }
 export declare class ChallengeMessage implements ChallengeMessageType {
-    encryptedChallenges: Encrypted;
+    encrypted: Encrypted;
     type: "CHALLENGE";
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: PubsubSignature;
@@ -27,7 +27,7 @@ export declare class ChallengeMessage implements ChallengeMessageType {
 }
 export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
-    encryptedChallengeAnswers: Encrypted;
+    encrypted: Encrypted;
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     signature: PubsubSignature;
     protocolVersion: ProtocolVersion;
@@ -43,7 +43,7 @@ export declare class ChallengeVerificationMessage implements ChallengeVerificati
     challengeSuccess: boolean;
     challengeErrors?: (string | undefined)[];
     reason?: string;
-    encryptedPublication?: Encrypted;
+    encrypted?: Encrypted;
     signature: PubsubSignature;
     protocolVersion: "1.0.0";
     userAgent: string;

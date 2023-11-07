@@ -22,7 +22,7 @@ var ChallengeRequestMessage = /** @class */ (function () {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
         this.acceptedChallengeTypes = props.acceptedChallengeTypes;
-        this.encryptedPublication = props.encryptedPublication;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -33,18 +33,15 @@ var ChallengeRequestMessage = /** @class */ (function () {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
             acceptedChallengeTypes: this.acceptedChallengeTypes,
-            encryptedPublication: this.encryptedPublication,
+            encrypted: this.encrypted,
             signature: this.signature,
             userAgent: this.userAgent,
             protocolVersion: this.protocolVersion,
             timestamp: this.timestamp
         };
     };
-    ChallengeRequestMessage.prototype.toJSONForDb = function () {
-        var acceptedChallengeTypes = Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined;
-        if (acceptedChallengeTypes === "[object Object]")
-            throw Error("challengeTypes  shouldn't be [object Object]");
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { acceptedChallengeTypes: acceptedChallengeTypes });
+    ChallengeRequestMessage.prototype.toJSONForDb = function (challengeAnswers, challengeCommentCids) {
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encrypted"])), { acceptedChallengeTypes: Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined, challengeAnswers: Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : undefined, challengeCommentCids: Array.isArray(challengeCommentCids) ? JSON.stringify(challengeCommentCids) : undefined });
     };
     return ChallengeRequestMessage;
 }());
@@ -53,7 +50,7 @@ var ChallengeMessage = /** @class */ (function () {
     function ChallengeMessage(props) {
         this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
-        this.encryptedChallenges = props.encryptedChallenges;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -61,7 +58,7 @@ var ChallengeMessage = /** @class */ (function () {
     }
     ChallengeMessage.prototype.toJSON = function () {
         return {
-            encryptedChallenges: this.encryptedChallenges,
+            encrypted: this.encrypted,
             type: this.type,
             challengeRequestId: this.challengeRequestId,
             signature: this.signature,
@@ -75,7 +72,7 @@ var ChallengeMessage = /** @class */ (function () {
         var challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
         if (challengeTypesFormattedForDb === "[object Object]")
             throw Error("challengeTypes  shouldn't be [object Object]");
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallenges"])), { challengeTypes: challengeTypesFormattedForDb });
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encrypted"])), { challengeTypes: challengeTypesFormattedForDb });
     };
     return ChallengeMessage;
 }());
@@ -83,7 +80,7 @@ exports.ChallengeMessage = ChallengeMessage;
 var ChallengeAnswerMessage = /** @class */ (function () {
     function ChallengeAnswerMessage(props) {
         this.type = "CHALLENGEANSWER";
-        this.encryptedChallengeAnswers = props.encryptedChallengeAnswers;
+        this.encrypted = props.encrypted;
         this.challengeRequestId = props.challengeRequestId;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
@@ -94,7 +91,7 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
-            encryptedChallengeAnswers: this.encryptedChallengeAnswers,
+            encrypted: this.encrypted,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent,
@@ -106,7 +103,7 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         var challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
         if (challengeAnswersFormattedForDb === "[object Object]")
             throw Error("challengeAnswers  shouldn't be [object Object]");
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedChallengeAnswers"])), { challengeAnswers: challengeAnswersFormattedForDb });
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encrypted"])), { challengeAnswers: challengeAnswersFormattedForDb });
     };
     return ChallengeAnswerMessage;
 }());
@@ -118,7 +115,7 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         this.challengeSuccess = props.challengeSuccess;
         this.challengeErrors = props.challengeErrors;
         this.reason = props.reason;
-        this.encryptedPublication = props.encryptedPublication;
+        this.encrypted = props.encrypted;
         this.signature = props.signature;
         this.protocolVersion = props.protocolVersion;
         this.userAgent = props.userAgent;
@@ -131,7 +128,7 @@ var ChallengeVerificationMessage = /** @class */ (function () {
             challengeSuccess: this.challengeSuccess,
             challengeErrors: this.challengeErrors,
             reason: this.reason,
-            encryptedPublication: this.encryptedPublication,
+            encrypted: this.encrypted,
             signature: this.signature,
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent,
@@ -139,10 +136,7 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         };
     };
     ChallengeVerificationMessage.prototype.toJSONForDb = function () {
-        var challengeErrorsFormattedForDb = Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined;
-        if (challengeErrorsFormattedForDb === "[object Object]")
-            throw Error("challengeErrors  shouldn't be [object Object]");
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encryptedPublication"])), { challengeErrors: challengeErrorsFormattedForDb });
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["type", "encrypted"])), { challengeErrors: Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined });
     };
     return ChallengeVerificationMessage;
 }());

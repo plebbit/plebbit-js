@@ -4,12 +4,11 @@ import { setPlebbitJs } from './lib/plebbit-js';
 import { EventEmitter } from 'events';
 import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from './types';
 import { Plebbit } from '../../dist/node/plebbit';
-import { PlebbitOptions } from '../../dist/node/types';
+import { PlebbitWsServerSettingsSerialized } from '../../dist/node/types';
 import { WebSocket } from 'ws';
 import Publication from '../../dist/node/publication';
 declare class PlebbitWsServer extends EventEmitter {
     plebbit: Plebbit;
-    plebbitOptions?: PlebbitOptions;
     rpcWebsockets: RpcWebsocketsServer;
     ws: RpcWebsocketsServer['wss'];
     connections: {
@@ -36,8 +35,8 @@ declare class PlebbitWsServer extends EventEmitter {
     deleteSubplebbit(params: any): Promise<boolean>;
     listSubplebbits(params: any): Promise<any>;
     fetchCid(params: any): Promise<string>;
-    getPlebbitOptions(params: any): Promise<PlebbitOptions>;
-    setPlebbitOptions(params: any): Promise<boolean>;
+    getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized>;
+    setSettings(params: any): Promise<boolean>;
     commentUpdate(params: any, connectionId: string): Promise<number>;
     subplebbitUpdate(params: any, connectionId: string): Promise<number>;
     publishComment(params: any, connectionId: string): Promise<number>;

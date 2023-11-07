@@ -1,42 +1,31 @@
-import textMath from './plebbit-js-challenges/text-math';
-import captchaCanvasV3 from './plebbit-js-challenges/captcha-canvas-v3';
-import fail from './plebbit-js-challenges/fail';
-import blacklist from './plebbit-js-challenges/blacklist';
-import question from './plebbit-js-challenges/question';
-import evmContractCall from './plebbit-js-challenges/evm-contract-call';
-declare const plebbitJsChallenges: {
-    'text-math': typeof textMath;
-    'captcha-canvas-v3': typeof captchaCanvasV3;
-    fail: typeof fail;
-    blacklist: typeof blacklist;
-    question: typeof question;
-    'evm-contract-call': typeof evmContractCall;
+import { Subplebbit } from '../subplebbit/subplebbit';
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../types';
+import { Challenge, ChallengeFileFactory, SubplebbitChallenge, SubplebbitChallengeSettings } from '../subplebbit/types';
+type PendingChallenge = Challenge & {
+    index: number;
 };
-declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: any, subplebbit: any) => Promise<{
+export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<string[]>;
+declare const plebbitJsChallenges: Record<string, ChallengeFileFactory>;
+declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit) => Promise<{
     challengeSuccess: any;
     challengeErrors?: undefined;
     pendingChallenges?: undefined;
 } | {
     challengeSuccess: any;
-    challengeErrors: any[];
+    challengeErrors: string[];
     pendingChallenges?: undefined;
 } | {
-    pendingChallenges: any[];
+    pendingChallenges: PendingChallenge[];
     challengeSuccess?: undefined;
     challengeErrors?: undefined;
 }>;
-declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: any, challengeAnswers: any, subplebbit: any) => Promise<{
+declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: Subplebbit) => Promise<{
     challengeSuccess: boolean;
-    challengeErrors: any[];
+    challengeErrors: string[];
 } | {
     challengeSuccess: boolean;
     challengeErrors?: undefined;
 }>;
-declare const getChallengeVerification: (challengeRequestMessage: any, subplebbit: any, getChallengeAnswers: any) => Promise<any>;
-declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: any) => {
-    exclude: any;
-    description: any;
-    challenge: any;
-    type: any;
-};
+declare const getChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit, getChallengeAnswers: GetChallengeAnswers) => Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess">>;
+declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: SubplebbitChallengeSettings) => SubplebbitChallenge;
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };

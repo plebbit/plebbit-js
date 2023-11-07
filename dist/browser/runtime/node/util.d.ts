@@ -1,13 +1,12 @@
 /// <reference types="node" />
 import { promises as fs } from "fs";
-import { NativeFunctions } from "../../types";
-import { Subplebbit } from "../../subplebbit";
+import { NativeFunctions, PlebbitOptions } from "../../types";
+import { Subplebbit } from "../../subplebbit/subplebbit";
 import { Knex } from "knex";
-import { Plebbit } from "../../plebbit";
 export declare const mkdir: typeof fs.mkdir;
 export declare const getDefaultDataPath: () => string;
 export declare const getDefaultSubplebbitDbConfig: (subplebbit: Pick<Subplebbit, "address"> & {
-    plebbit: Pick<Plebbit, "dataPath" | "noData">;
+    plebbit: Pick<PlebbitOptions, "dataPath" | "noData">;
 }) => Promise<Knex.Config<any>>;
 export declare function getThumbnailUrlOfLink(url: string, subplebbit: Subplebbit, proxyHttpUrl?: string): Promise<{
     thumbnailUrl: string;

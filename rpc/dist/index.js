@@ -36,11 +36,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 const rpc_websockets_1 = require("rpc-websockets");
 const plebbit_js_1 = __importStar(require("./lib/plebbit-js"));
-const { toString: uint8ArrayToString } = require('uint8arrays/to-string');
 const utils_1 = require("./utils");
 const plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 const events_1 = require("events");
 const log = (0, plebbit_logger_1.default)('plebbit-js-rpc:plebbit-ws-server');
+const lodash_1 = __importDefault(require("lodash"));
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 const startedSubplebbits = {};
@@ -60,7 +60,6 @@ class PlebbitWsServer extends events_1.EventEmitter {
         this.publishing = {};
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
-        this.plebbitOptions = plebbitOptions;
         this.rpcWebsockets = new rpc_websockets_1.Server({
             port,
             // might be needed to specify host for security later
@@ -77,7 +76,9 @@ class PlebbitWsServer extends events_1.EventEmitter {
         });
         // save connections to send messages to them later
         this.ws.on('connection', (ws) => {
+            //@ts-expect-error
             this.connections[ws._id] = ws;
+            //@ts-expect-error
             this.subscriptionCleanups[ws._id] = {};
         });
         // cleanup on disconnect
@@ -93,6 +94,7 @@ class PlebbitWsServer extends events_1.EventEmitter {
         // register all JSON RPC methods
         this.rpcWebsocketsRegister('getComment', this.getComment.bind(this));
         this.rpcWebsocketsRegister('getSubplebbitPage', this.getSubplebbitPage.bind(this));
+        this.rpcWebsocketsRegister('getCommentPage', this.getCommentPage.bind(this));
         this.rpcWebsocketsRegister('createSubplebbit', this.createSubplebbit.bind(this));
         this.rpcWebsocketsRegister('startSubplebbit', this.startSubplebbit.bind(this));
         this.rpcWebsocketsRegister('stopSubplebbit', this.stopSubplebbit.bind(this));
@@ -100,8 +102,9 @@ class PlebbitWsServer extends events_1.EventEmitter {
         this.rpcWebsocketsRegister('deleteSubplebbit', this.deleteSubplebbit.bind(this));
         this.rpcWebsocketsRegister('listSubplebbits', this.listSubplebbits.bind(this));
         this.rpcWebsocketsRegister('fetchCid', this.fetchCid.bind(this));
-        this.rpcWebsocketsRegister('getPlebbitOptions', this.getPlebbitOptions.bind(this));
-        this.rpcWebsocketsRegister('setPlebbitOptions', this.setPlebbitOptions.bind(this));
+        this.rpcWebsocketsRegister('resolveAuthorAddress', this.resolveAuthorAddress.bind(this));
+        this.rpcWebsocketsRegister('getSettings', this.getSettings.bind(this));
+        this.rpcWebsocketsRegister('setSettings', this.setSettings.bind(this));
         // JSON RPC pubsub methods
         this.rpcWebsocketsRegister('commentUpdate', this.commentUpdate.bind(this));
         this.rpcWebsocketsRegister('subplebbitUpdate', this.subplebbitUpdate.bind(this));
@@ -113,41 +116,53 @@ class PlebbitWsServer extends events_1.EventEmitter {
     }
     // util function to log errors of registered methods
     rpcWebsocketsRegister(method, callback) {
-        const callbackWithLog = (params, connectionId) => __awaiter(this, void 0, void 0, function* () {
+        const callbackWithErrorHandled = (params, connectionId) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const res = yield callback(params, connectionId);
                 return res;
             }
             catch (e) {
                 log.error(`${callback.name} error`, { params, error: e });
-                throw e;
+                // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
+                if (!e.code) {
+                    const errorJson = JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e)));
+                    delete errorJson['stack'];
+                    throw errorJson;
+                }
+                else {
+                    // PlebbitError
+                    const errorJson = (0, utils_1.clone)(e);
+                    delete errorJson['stack'];
+                    throw errorJson;
+                }
             }
         });
-        this.rpcWebsockets.register(method, callbackWithLog);
+        this.rpcWebsockets.register(method, callbackWithErrorHandled);
     }
     // send json rpc notification message (no id field, but must have subscription id)
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const message = {
             jsonrpc: '2.0',
             method,
             params: {
                 result,
                 subscription,
-                event
-            }
+                event,
+            },
         };
-        (_b = (_a = this.connections[connectionId]) === null || _a === void 0 ? void 0 : _a.send) === null || _b === void 0 ? void 0 : _b.call(_a, JSON.stringify(message));
+        if (event === 'error') {
+            (_b = (_a = message === null || message === void 0 ? void 0 : message.params) === null || _a === void 0 ? void 0 : _a.result) === null || _b === void 0 ? true : delete _b.stack;
+            (_f = (_e = (_d = (_c = message === null || message === void 0 ? void 0 : message.params) === null || _c === void 0 ? void 0 : _c.result) === null || _d === void 0 ? void 0 : _d.details) === null || _e === void 0 ? void 0 : _e.error) === null || _f === void 0 ? true : delete _f.stack;
+        }
+        (_h = (_g = this.connections[connectionId]) === null || _g === void 0 ? void 0 : _g.send) === null || _h === void 0 ? void 0 : _h.call(_g, JSON.stringify(message));
     }
     getComment(params) {
         return __awaiter(this, void 0, void 0, function* () {
             const cid = params[0];
-            const comment = yield this.plebbit.createComment({ cid });
-            // wait for first update which contains the IPFS file only
-            comment.update().catch((error) => log.error('getComment update error', { error, params }));
-            yield new Promise((resolve) => comment.once('update', resolve));
-            comment.stop().catch((error) => log.error('getComment stop error', { error, params }));
-            return (0, utils_1.clone)(comment);
+            const comment = yield this.plebbit.getComment(cid);
+            //@ts-expect-error
+            return Object.assign({ cid }, comment._rawCommentIpfs);
         });
     }
     getSubplebbitPage(params) {
@@ -155,8 +170,16 @@ class PlebbitWsServer extends events_1.EventEmitter {
             const pageCid = params[0];
             const subplebbitAddress = params[1];
             const subplebbit = yield this.plebbit.createSubplebbit({ address: subplebbitAddress });
-            const page = yield subplebbit.posts.getPage(pageCid);
-            return (0, utils_1.clone)(page);
+            const page = yield subplebbit.posts._fetchAndVerifyPage(pageCid);
+            return page;
+        });
+    }
+    getCommentPage(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [pageCid, commentCid, subplebbitAddress] = params;
+            const comment = yield this.plebbit.createComment({ cid: commentCid, subplebbitAddress });
+            const page = yield comment.replies._fetchAndVerifyPage(pageCid);
+            return page;
         });
     }
     createSubplebbit(params) {
@@ -166,26 +189,49 @@ class PlebbitWsServer extends events_1.EventEmitter {
                 throw Error(`createSubplebbitOptions?.address '${createSubplebbitOptions === null || createSubplebbitOptions === void 0 ? void 0 : createSubplebbitOptions.address}' must be undefined to create a new subplebbit`);
             }
             const subplebbit = yield this.plebbit.createSubplebbit(createSubplebbitOptions);
-            return (0, utils_1.clone)(subplebbit);
+            return subplebbit.toJSONInternalRpc();
         });
     }
-    startSubplebbit(params) {
+    startSubplebbit(params, connectionId) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const address = params[0];
             if (startedSubplebbits[address]) {
                 throw Error(`subplebbit '${address}' already started`);
             }
             startedSubplebbits[address] = 'pending';
+            const subscriptionId = (0, utils_1.generateSubscriptionId)();
+            const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: 'startSubplebbit', subscription: subscriptionId, event, result, connectionId });
             try {
                 const subplebbit = yield this.plebbit.createSubplebbit({ address });
+                subplebbit.on('update', () => sendEvent('update', subplebbit.toJSONInternalRpc()));
+                subplebbit.on('startedstatechange', () => sendEvent('startedstatechange', subplebbit.startedState));
+                subplebbit.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.encodePubsubMsg)(challenge)));
+                subplebbit.on('challengeanswer', (answer) => sendEvent('challengeanswer', (0, utils_1.encodePubsubMsg)(answer)));
+                subplebbit.on('challengerequest', (request) => sendEvent('challengerequest', (0, utils_1.encodePubsubMsg)(request)));
+                subplebbit.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.encodePubsubMsg)(challengeVerification)));
+                subplebbit.on('error', (error) => sendEvent('error', error));
+                // cleanup function
+                this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+                    subplebbit.stop().catch((error) => log.error('subplebbit stop error', { error, params }));
+                    subplebbit.removeAllListeners('update');
+                    subplebbit.removeAllListeners('startedstatechange');
+                    subplebbit.removeAllListeners('challenge');
+                    subplebbit.removeAllListeners('challengeanswer');
+                    subplebbit.removeAllListeners('challengerequest');
+                    subplebbit.removeAllListeners('challengeverification');
+                };
+                subplebbit.emit('update', subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
                 yield subplebbit.start();
                 startedSubplebbits[address] = subplebbit;
             }
             catch (e) {
+                if ((_b = (_a = this.subscriptionCleanups) === null || _a === void 0 ? void 0 : _a[connectionId]) === null || _b === void 0 ? void 0 : _b[subscriptionId])
+                    this.subscriptionCleanups[connectionId][subscriptionId]();
                 delete startedSubplebbits[address];
                 throw e;
             }
-            return true;
+            return subscriptionId;
         });
     }
     stopSubplebbit(params) {
@@ -206,7 +252,7 @@ class PlebbitWsServer extends events_1.EventEmitter {
             const editSubplebbitOptions = params[1];
             const subplebbit = yield this.plebbit.createSubplebbit({ address });
             yield subplebbit.edit(editSubplebbitOptions);
-            return (0, utils_1.clone)(subplebbit);
+            return subplebbit.toJSONInternalRpc();
         });
     }
     deleteSubplebbit(params) {
@@ -241,20 +287,20 @@ class PlebbitWsServer extends events_1.EventEmitter {
         return __awaiter(this, void 0, void 0, function* () {
             const cid = params[0];
             const res = yield this.plebbit.fetchCid(cid);
-            return (0, utils_1.clone)(res);
+            return res;
         });
     }
-    getPlebbitOptions(params) {
+    getSettings(params) {
         return __awaiter(this, void 0, void 0, function* () {
-            // if plebbitOptions is undefined, send empty object
-            return this.plebbitOptions || {};
+            const plebbitOptions = this.plebbit.parsedPlebbitOptions;
+            const challenges = lodash_1.default.mapValues(plebbit_js_1.default.Plebbit.challenges, (challengeFactory) => lodash_1.default.omit(challengeFactory({}), 'getChallenge'));
+            return { plebbitOptions, challenges };
         });
     }
-    setPlebbitOptions(params) {
+    setSettings(params) {
         return __awaiter(this, void 0, void 0, function* () {
-            const plebbitOptions = params[0];
-            this.plebbit = yield plebbit_js_1.default.Plebbit(plebbitOptions);
-            this.plebbitOptions = plebbitOptions;
+            const settings = params[0];
+            this.plebbit = yield plebbit_js_1.default.Plebbit(settings.plebbitOptions);
             // restart all started subplebbits with new plebbit options
             for (const address in startedSubplebbits) {
                 const startedSubplebbit = yield getStartedSubplebbit(address);
@@ -272,7 +318,7 @@ class PlebbitWsServer extends events_1.EventEmitter {
                     log.error('setPlebbitOptions failed restarting subplebbit', { error, address, params });
                 }
             }
-            // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options, 
+            // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
             // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
             return true;
         });
@@ -280,11 +326,11 @@ class PlebbitWsServer extends events_1.EventEmitter {
     commentUpdate(params, connectionId) {
         return __awaiter(this, void 0, void 0, function* () {
             const cid = params[0];
-            const ipnsName = params[1];
             const subscriptionId = (0, utils_1.generateSubscriptionId)();
             const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: 'commentUpdate', subscription: subscriptionId, event, result, connectionId });
-            const comment = yield this.plebbit.createComment({ cid, ipnsName });
-            comment.on('update', () => sendEvent('update', (0, utils_1.clone)(comment)));
+            const comment = yield this.plebbit.createComment({ cid });
+            //@ts-expect-error
+            comment.on('update', () => sendEvent('update', comment.updatedAt ? comment._rawCommentUpdate : Object.assign({ cid }, comment._rawCommentIpfs)));
             comment.on('updatingstatechange', () => sendEvent('updatingstatechange', comment.updatingState));
             comment.on('error', (error) => sendEvent('error', error));
             // cleanup function
@@ -292,7 +338,6 @@ class PlebbitWsServer extends events_1.EventEmitter {
                 comment.stop().catch((error) => log.error('commentUpdate stop error', { error, params }));
                 comment.removeAllListeners('update');
                 comment.removeAllListeners('updatingstatechange');
-                comment.removeAllListeners('error');
             };
             // if fail, cleanup
             try {
@@ -314,7 +359,7 @@ class PlebbitWsServer extends events_1.EventEmitter {
             // possibly move it to a startedSubplebbitUpdate method
             // const startedSubplebbit = await getStartedSubplebbit(address)
             const subplebbit = yield this.plebbit.createSubplebbit({ address });
-            subplebbit.on('update', () => sendEvent('update', (0, utils_1.clone)(subplebbit)));
+            subplebbit.on('update', () => sendEvent('update', subplebbit.signer ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs()));
             subplebbit.on('updatingstatechange', () => sendEvent('updatingstatechange', subplebbit.updatingState));
             subplebbit.on('error', (error) => sendEvent('error', error));
             // cleanup function
@@ -322,10 +367,12 @@ class PlebbitWsServer extends events_1.EventEmitter {
                 subplebbit.stop().catch((error) => log.error('subplebbitUpdate stop error', { error, params }));
                 subplebbit.removeAllListeners('update');
                 subplebbit.removeAllListeners('updatingstatechange');
-                subplebbit.removeAllListeners('error');
             };
             // if fail, cleanup
             try {
+                if (subplebbit.signer)
+                    // need to send an update when fetching sub from db for first time
+                    subplebbit.emit('update', subplebbit);
                 yield subplebbit.update();
             }
             catch (e) {
@@ -337,13 +384,15 @@ class PlebbitWsServer extends events_1.EventEmitter {
     }
     publishComment(params, connectionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const createCommentOptions = params[0];
+            const publishOptions = params[0];
             const subscriptionId = (0, utils_1.generateSubscriptionId)();
             const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: 'publishComment', subscription: subscriptionId, event, result, connectionId });
-            const comment = yield this.plebbit.createComment(createCommentOptions);
+            const comment = yield this.plebbit.createComment(Object.assign({ challengeAnswers: publishOptions.challengeAnswers, challengeCommentCids: publishOptions.challengeCommentCids }, publishOptions.publication));
             this.publishing[subscriptionId] = comment;
-            comment.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.clone)(challenge)));
-            comment.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.clone)(challengeVerification)));
+            comment.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.encodePubsubMsg)(challenge)));
+            comment.on('challengeanswer', (answer) => sendEvent('challengeanswer', (0, utils_1.encodePubsubMsg)(answer)));
+            comment.on('challengerequest', (request) => sendEvent('challengerequest', (0, utils_1.encodePubsubMsg)(request)));
+            comment.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.encodePubsubMsg)(challengeVerification)));
             comment.on('publishingstatechange', () => sendEvent('publishingstatechange', comment.publishingState));
             comment.on('error', (error) => sendEvent('error', error));
             // cleanup function
@@ -351,9 +400,10 @@ class PlebbitWsServer extends events_1.EventEmitter {
                 delete this.publishing[subscriptionId];
                 comment.stop().catch((error) => log.error('publishComment stop error', { error, params }));
                 comment.removeAllListeners('challenge');
+                comment.removeAllListeners('challengeanswer');
+                comment.removeAllListeners('challengerequest');
                 comment.removeAllListeners('challengeverification');
                 comment.removeAllListeners('publishingstatechange');
-                comment.removeAllListeners('error');
             };
             // if fail, cleanup
             try {
@@ -368,13 +418,15 @@ class PlebbitWsServer extends events_1.EventEmitter {
     }
     publishVote(params, connectionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const createVoteOptions = params[0];
+            const publishOptions = params[0];
             const subscriptionId = (0, utils_1.generateSubscriptionId)();
             const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: 'publishVote', subscription: subscriptionId, event, result, connectionId });
-            const vote = yield this.plebbit.createVote(createVoteOptions);
+            const vote = yield this.plebbit.createVote(Object.assign(Object.assign({}, publishOptions.publication), { challengeAnswers: publishOptions.challengeAnswers, challengeCommentCids: publishOptions.challengeCommentCids }));
             this.publishing[subscriptionId] = vote;
-            vote.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.clone)(challenge)));
-            vote.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.clone)(challengeVerification)));
+            vote.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.encodePubsubMsg)(challenge)));
+            vote.on('challengeanswer', (answer) => sendEvent('challengeanswer', (0, utils_1.encodePubsubMsg)(answer)));
+            vote.on('challengerequest', (request) => sendEvent('challengerequest', (0, utils_1.encodePubsubMsg)(request)));
+            vote.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.encodePubsubMsg)(challengeVerification)));
             vote.on('publishingstatechange', () => sendEvent('publishingstatechange', vote.publishingState));
             vote.on('error', (error) => sendEvent('error', error));
             // cleanup function
@@ -382,9 +434,10 @@ class PlebbitWsServer extends events_1.EventEmitter {
                 delete this.publishing[subscriptionId];
                 vote.stop().catch((error) => log.error('publishVote stop error', { error, params }));
                 vote.removeAllListeners('challenge');
+                vote.removeAllListeners('challengeanswer');
+                vote.removeAllListeners('challengerequest');
                 vote.removeAllListeners('challengeverification');
                 vote.removeAllListeners('publishingstatechange');
-                vote.removeAllListeners('error');
             };
             // if fail, cleanup
             try {
@@ -399,23 +452,26 @@ class PlebbitWsServer extends events_1.EventEmitter {
     }
     publishCommentEdit(params, connectionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            const createCommentEditOptions = params[0];
+            const publishOptions = params[0];
             const subscriptionId = (0, utils_1.generateSubscriptionId)();
             const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: 'publishCommentEdit', subscription: subscriptionId, event, result, connectionId });
-            const commentEdit = yield this.plebbit.createCommentEdit(createCommentEditOptions);
+            const commentEdit = yield this.plebbit.createCommentEdit(Object.assign(Object.assign({}, publishOptions.publication), { challengeCommentCids: publishOptions.challengeCommentCids, challengeAnswers: publishOptions.challengeAnswers }));
             this.publishing[subscriptionId] = commentEdit;
-            commentEdit.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.clone)(challenge)));
-            commentEdit.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.clone)(challengeVerification)));
+            commentEdit.on('challenge', (challenge) => sendEvent('challenge', (0, utils_1.encodePubsubMsg)(challenge)));
+            commentEdit.on('challengeanswer', (answer) => sendEvent('challengeanswer', (0, utils_1.encodePubsubMsg)(answer)));
+            commentEdit.on('challengerequest', (request) => sendEvent('challengerequest', (0, utils_1.encodePubsubMsg)(request)));
+            commentEdit.on('challengeverification', (challengeVerification) => sendEvent('challengeverification', (0, utils_1.encodePubsubMsg)(challengeVerification)));
             commentEdit.on('publishingstatechange', () => sendEvent('publishingstatechange', commentEdit.publishingState));
             commentEdit.on('error', (error) => sendEvent('error', error));
             // cleanup function
             this.subscriptionCleanups[connectionId][subscriptionId] = () => {
                 delete this.publishing[subscriptionId];
                 commentEdit.stop().catch((error) => log.error('publishCommentEdit stop error', { error, params }));
+                commentEdit.removeAllListeners('challengerequest');
                 commentEdit.removeAllListeners('challenge');
+                commentEdit.removeAllListeners('challengeanswer');
                 commentEdit.removeAllListeners('challengeverification');
                 commentEdit.removeAllListeners('publishingstatechange');
-                commentEdit.removeAllListeners('error');
             };
             // if fail, cleanup
             try {
@@ -440,12 +496,18 @@ class PlebbitWsServer extends events_1.EventEmitter {
             return true;
         });
     }
+    resolveAuthorAddress(params) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const authorAddress = params[0];
+            const resolvedAuthorAddress = yield this.plebbit.resolveAuthorAddress(authorAddress);
+            return resolvedAuthorAddress;
+        });
+    }
     unsubscribe(params, connectionId) {
         return __awaiter(this, void 0, void 0, function* () {
             const subscriptionId = params[0];
-            if (!this.subscriptionCleanups[connectionId][subscriptionId]) {
-                throw Error(`no subscription with id '${subscriptionId}'`);
-            }
+            if (!this.subscriptionCleanups[connectionId][subscriptionId])
+                return true;
             this.subscriptionCleanups[connectionId][subscriptionId]();
             delete this.subscriptionCleanups[connectionId][subscriptionId];
             return true;
@@ -463,6 +525,6 @@ const createPlebbitWsServer = ({ port, plebbitOptions }) => __awaiter(void 0, vo
 const PlebbitRpc = {
     PlebbitWsServer: createPlebbitWsServer,
     // for mocking plebbit-js during tests
-    setPlebbitJs: plebbit_js_1.setPlebbitJs
+    setPlebbitJs: plebbit_js_1.setPlebbitJs,
 };
 module.exports = PlebbitRpc;

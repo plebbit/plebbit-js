@@ -88,12 +88,12 @@ var validateChallengeResult = function (challengeResult, challengeIndex, subpleb
     }
 };
 var validateChallengeOrChallengeResult = function (challengeOrChallengeResult, getChallengeError, challengeIndex, subplebbit) {
-    if ((challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult.success) !== undefined) {
+    if ((challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult["success"]) !== undefined) {
         validateChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
     }
-    else if (typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult.challenge) !== 'string' ||
-        typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult.type) !== 'string' ||
-        typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult.verify) !== 'function') {
+    else if (typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult["challenge"]) !== 'string' ||
+        typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult["type"]) !== 'string' ||
+        typeof (challengeOrChallengeResult === null || challengeOrChallengeResult === void 0 ? void 0 : challengeOrChallengeResult["verify"]) !== 'function') {
         var subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
         var errorMessage = "invalid getChallenge response from subplebbit challenge '".concat(subplebbitChallengeSettings.name || subplebbitChallengeSettings.path, "' (challenge #").concat(challengeIndex + 1, ")");
         if (getChallengeError) {
@@ -197,11 +197,11 @@ var getPendingChallengesOrChallengeVerification = function (challengeRequestMess
                 if ((0, exclude_1.shouldExcludeChallengeSuccess)(subplebbitChallenge, challengeResults)) {
                     return [3 /*break*/, 10];
                 }
-                if (challengeResult.success === false) {
+                if (challengeResult["success"] === false) {
                     challengeFailureCount++;
                     challengeErrors[challengeIndex] = challengeResult.error;
                 }
-                else if (challengeResult.success === true) {
+                else if (challengeResult["success"] === true) {
                     // do nothing
                 }
                 else {
@@ -295,7 +295,7 @@ var getChallengeVerificationFromChallengeAnswers = function (pendingChallenges, 
 }); };
 exports.getChallengeVerificationFromChallengeAnswers = getChallengeVerificationFromChallengeAnswers;
 var getChallengeVerification = function (challengeRequestMessage, subplebbit, getChallengeAnswers) { return __awaiter(void 0, void 0, void 0, function () {
-    var _a, pendingChallenges, challengeSuccess, challengeErrors, challengeVerification, challenges, challengeAnswers;
+    var _a, pendingChallenges, challengeSuccess, challengeErrors, challengeVerification, challengeAnswers;
     var _b, _c;
     return __generator(this, function (_d) {
         switch (_d.label) {
@@ -318,9 +318,7 @@ var getChallengeVerification = function (challengeRequestMessage, subplebbit, ge
                     challengeVerification.challengeErrors = challengeErrors;
                 }
                 return [3 /*break*/, 5];
-            case 2:
-                challenges = pendingChallenges.map(function (pendingChallenge) { return pendingChallenge.challenge; });
-                return [4 /*yield*/, getChallengeAnswers(challenges)];
+            case 2: return [4 /*yield*/, getChallengeAnswers(pendingChallenges)];
             case 3:
                 challengeAnswers = _d.sent();
                 return [4 /*yield*/, getChallengeVerificationFromChallengeAnswers(pendingChallenges, challengeAnswers, subplebbit)];
@@ -373,8 +371,7 @@ var getSubplebbitChallengeFromSubplebbitChallengeSettings = function (subplebbit
         }
     }
     var challenge = challengeFile.challenge, type = challengeFile.type;
-    var exclude = subplebbitChallengeSettings.exclude, description = subplebbitChallengeSettings.description;
-    return { exclude: exclude, description: description, challenge: challenge, type: type };
+    return { exclude: subplebbitChallengeSettings.exclude, description: subplebbitChallengeSettings.description || challengeFile.description, challenge: challenge, type: type };
 };
 exports.getSubplebbitChallengeFromSubplebbitChallengeSettings = getSubplebbitChallengeFromSubplebbitChallengeSettings;
 //# sourceMappingURL=index.js.map

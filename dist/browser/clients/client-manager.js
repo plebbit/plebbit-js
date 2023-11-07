@@ -78,6 +78,7 @@ var chain_provider_client_1 = require("./chain-provider-client");
 var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
 var base_client_manager_1 = require("./base-client-manager");
 var constants_1 = require("../constants");
+var plebbit_rpc_state_client_1 = require("./plebbit-rpc-state-client");
 var ClientsManager = /** @class */ (function (_super) {
     __extends(ClientsManager, _super);
     function ClientsManager(plebbit) {
@@ -88,6 +89,7 @@ var ClientsManager = /** @class */ (function (_super) {
         _this._initIpfsClients();
         _this._initPubsubClients();
         _this._initChainProviders();
+        _this._initPlebbitRpcClients();
         return _this;
     }
     ClientsManager.prototype._initIpfsGateways = function () {
@@ -99,11 +101,10 @@ var ClientsManager = /** @class */ (function (_super) {
     };
     ClientsManager.prototype._initIpfsClients = function () {
         var _a;
-        if (this._plebbit.clients.ipfsClients)
-            for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
-                var ipfsUrl = _b[_i];
-                this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.GenericIpfsClient("stopped"), _a));
-            }
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.ipfsClients); _i < _b.length; _i++) {
+            var ipfsUrl = _b[_i];
+            this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.GenericIpfsClient("stopped"), _a));
+        }
     };
     ClientsManager.prototype._initPubsubClients = function () {
         var _a;
@@ -123,6 +124,13 @@ var ClientsManager = /** @class */ (function (_super) {
                 var chainProviderUrl = _c[_b];
                 this.clients.chainProviders[chain][chainProviderUrl] = new chain_provider_client_1.GenericChainProviderClient("stopped");
             }
+        }
+    };
+    ClientsManager.prototype._initPlebbitRpcClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.plebbitRpcClients); _i < _b.length; _i++) {
+            var rpcUrl = _b[_i];
+            this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.GenericPlebbitRpcStateClient("stopped"), _a));
         }
     };
     // Overriding functions from base client manager here
@@ -258,6 +266,13 @@ var PublicationClientsManager = /** @class */ (function (_super) {
             this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.PublicationPubsubClient("stopped"), _a));
         }
     };
+    PublicationClientsManager.prototype._initPlebbitRpcClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.plebbitRpcClients); _i < _b.length; _i++) {
+            var rpcUrl = _b[_i];
+            this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.PublicationPlebbitRpcStateClient("stopped"), _a));
+        }
+    };
     // Resolver methods here
     PublicationClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
         _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
@@ -341,6 +356,13 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 this.clients.ipfsClients = __assign(__assign({}, this.clients.ipfsClients), (_a = {}, _a[ipfsUrl] = new ipfs_client_1.CommentIpfsClient("stopped"), _a));
             }
     };
+    CommentClientsManager.prototype._initPlebbitRpcClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.plebbitRpcClients); _i < _b.length; _i++) {
+            var rpcUrl = _b[_i];
+            this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.CommentPlebbitRpcStateClient("stopped"), _a));
+        }
+    };
     CommentClientsManager.prototype.fetchCommentUpdate = function (ipnsName) {
         return __awaiter(this, void 0, void 0, function () {
             var updateCid, commentUpdate, _a, _b, update, _c, _d;
@@ -377,7 +399,6 @@ var CommentClientsManager = /** @class */ (function (_super) {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        this._comment._setUpdatingState("fetching-ipfs");
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
                         this.updateIpfsState("fetching-ipfs");
                         _b = (_a = JSON).parse;
@@ -422,6 +443,13 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
         for (var _i = 0, _b = Object.keys(this._plebbit.clients.pubsubClients); _i < _b.length; _i++) {
             var pubsubUrl = _b[_i];
             this.clients.pubsubClients = __assign(__assign({}, this.clients.pubsubClients), (_a = {}, _a[pubsubUrl] = new pubsub_client_1.SubplebbitPubsubClient("stopped"), _a));
+        }
+    };
+    SubplebbitClientsManager.prototype._initPlebbitRpcClients = function () {
+        var _a;
+        for (var _i = 0, _b = Object.keys(this._plebbit.clients.plebbitRpcClients); _i < _b.length; _i++) {
+            var rpcUrl = _b[_i];
+            this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.SubplebbitPlebbitRpcStateClient("stopped"), _a));
         }
     };
     SubplebbitClientsManager.prototype.fetchSubplebbit = function (ipnsName) {

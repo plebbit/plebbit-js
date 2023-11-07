@@ -35,11 +35,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-// import {createCaptcha} from 'captcha-canvas'
-// import nodeNativeFunctions from "../../../runtime/node/native-functions"
-// use a mock native function because don't know how to make tests work with real native functions
-var nodeNativeFunctions = { createImageCaptcha: function () { throw Error('not implemented'); } };
+var native_functions_1 = __importDefault(require("../../../runtime/node/native-functions"));
 var optionInputs = [
     {
         option: 'characters',
@@ -62,29 +62,26 @@ var optionInputs = [
         description: 'Color of the captcha.',
     },
 ];
-var type = 'image';
+var type = "image/png";
+var description = "make custom image captcha";
 var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) { return __awaiter(void 0, void 0, void 0, function () {
-    var setCaptchaOptions, _a, width, height, characters, color, res, answer, verify, challenge;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var width, height, characters, colors, setCaptchaOptions, res, answer, verify, challenge;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    return __generator(this, function (_j) {
+        switch (_j.label) {
             case 0:
+                width = ((_a = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _a === void 0 ? void 0 : _a.width) ? Number((_b = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _b === void 0 ? void 0 : _b.width) : undefined;
+                height = ((_c = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _c === void 0 ? void 0 : _c.height) ? Number((_d = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _d === void 0 ? void 0 : _d.height) : undefined;
+                characters = ((_e = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _e === void 0 ? void 0 : _e.characters) ? Number((_f = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _f === void 0 ? void 0 : _f.height) : undefined;
+                colors = ((_g = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _g === void 0 ? void 0 : _g.colors) ? ((_h = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _h === void 0 ? void 0 : _h.colors).split(",") : undefined;
                 setCaptchaOptions = {};
-                _a = (subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) || {}, width = _a.width, height = _a.height, characters = _a.characters, color = _a.color;
-                if (width) {
-                    width = Number(width);
-                }
-                if (height) {
-                    height = Number(height);
-                }
-                if (characters) {
-                    setCaptchaOptions.characters = Number(characters);
-                }
-                if (color) {
-                    setCaptchaOptions.color = color;
-                }
-                return [4 /*yield*/, nodeNativeFunctions.createImageCaptcha(width, height, { captcha: setCaptchaOptions })];
+                if (characters)
+                    setCaptchaOptions.characters = characters;
+                if (colors)
+                    setCaptchaOptions.colors = colors;
+                return [4 /*yield*/, native_functions_1.default.createImageCaptcha(width, height, { captcha: setCaptchaOptions })];
             case 1:
-                res = _b.sent();
+                res = _j.sent();
                 answer = res.text;
                 verify = function (_answer) { return __awaiter(void 0, void 0, void 0, function () {
                     return __generator(this, function (_a) {
@@ -102,7 +99,7 @@ var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessag
     });
 }); };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
-    return { getChallenge: getChallenge, optionInputs: optionInputs, type: type };
+    return { getChallenge: getChallenge, optionInputs: optionInputs, type: type, description: description };
 }
 exports.default = ChallengeFileFactory;
 //# sourceMappingURL=index.js.map

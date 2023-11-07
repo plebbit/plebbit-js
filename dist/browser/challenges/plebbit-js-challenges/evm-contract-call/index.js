@@ -180,7 +180,7 @@ var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessag
 }); };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
     var chainTicker = ((subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) || {}).chainTicker;
-    var type = 'chain/' + (chainTicker || '<chainTicker>');
+    var type = ('chain/' + (chainTicker || '<chainTicker>'));
     return { getChallenge: getChallenge, optionInputs: optionInputs, type: type, description: description };
 }
 exports.default = ChallengeFileFactory;

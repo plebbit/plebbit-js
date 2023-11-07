@@ -38,14 +38,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMockIpfsClient = void 0;
+exports.destroyMockIpfsClient = exports.createMockIpfsClient = void 0;
 var socket_io_client_1 = __importDefault(require("socket.io-client"));
 var port = 25963;
-if (globalThis["window"] && !globalThis["window"]["io"])
-    globalThis["window"]["io"] = (0, socket_io_client_1.default)("ws://localhost:".concat(port));
-var ioClient = ((_a = globalThis["window"]) === null || _a === void 0 ? void 0 : _a["io"]) || (0, socket_io_client_1.default)("ws://localhost:".concat(port));
+var ioClient;
 var IpfsHttpClient = /** @class */ (function () {
     function IpfsHttpClient(dropRate) {
         var _this = this;
@@ -103,6 +100,17 @@ var IpfsHttpClient = /** @class */ (function () {
     }
     return IpfsHttpClient;
 }());
-var createMockIpfsClient = function (dropRate) { return new IpfsHttpClient(dropRate); };
+var createMockIpfsClient = function (dropRate) {
+    var _a;
+    if (globalThis["window"] && !globalThis["window"]["io"])
+        globalThis["window"]["io"] = (0, socket_io_client_1.default)("ws://localhost:".concat(port));
+    if (!ioClient)
+        ioClient = ((_a = globalThis["window"]) === null || _a === void 0 ? void 0 : _a["io"]) || (0, socket_io_client_1.default)("ws://localhost:".concat(port));
+    return new IpfsHttpClient(dropRate);
+};
 exports.createMockIpfsClient = createMockIpfsClient;
+var destroyMockIpfsClient = function () {
+    ioClient === null || ioClient === void 0 ? void 0 : ioClient.disconnect();
+};
+exports.destroyMockIpfsClient = destroyMockIpfsClient;
 //# sourceMappingURL=mock-ipfs-client.js.map

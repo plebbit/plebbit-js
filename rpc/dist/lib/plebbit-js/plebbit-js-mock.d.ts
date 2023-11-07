@@ -29,6 +29,7 @@ export declare class Pages {
     comment: any;
     constructor(pagesOptions?: any);
     getPage(pageCid: string): Promise<any>;
+    _fetchAndVerifyPage(pageCid: string): Promise<any>;
 }
 export declare class Subplebbit extends EventEmitter {
     updateCalledTimes: number;
@@ -43,6 +44,22 @@ export declare class Subplebbit extends EventEmitter {
     state: string;
     updatingState: string;
     constructor(createSubplebbitOptions?: any);
+    toJSONInternalRpc(): {
+        title: string | undefined;
+        description: string | undefined;
+        address: string | undefined;
+        statsCid: string | undefined;
+        roles: {};
+        posts: Pages;
+    };
+    toJSONIpfs(): {
+        title: string | undefined;
+        description: string | undefined;
+        address: string | undefined;
+        statsCid: string | undefined;
+        roles: {};
+        posts: Pages;
+    };
     update(): Promise<void>;
     stop(): Promise<void>;
     start(): Promise<void>;

@@ -68,7 +68,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Plebbit = void 0;
 var util_1 = require("./runtime/browser/util");
 var comment_1 = require("./comment");
-var subplebbit_1 = require("./subplebbit");
+var subplebbit_1 = require("./subplebbit/subplebbit");
 var util_2 = require("./util");
 var vote_1 = __importDefault(require("./vote"));
 var signer_1 = require("./signer");
@@ -85,15 +85,14 @@ var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var stats_1 = __importDefault(require("./stats"));
 var storage_1 = __importDefault(require("./runtime/browser/storage"));
 var client_manager_1 = require("./clients/client-manager");
-var constants_1 = require("./constants");
-var assert_1 = __importDefault(require("assert"));
+var plebbit_rpc_client_1 = __importDefault(require("./clients/plebbit-rpc-client"));
 var plebbit_error_1 = require("./plebbit-error");
+var plebbit_rpc_state_client_1 = require("./clients/plebbit-rpc-state-client");
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
-        _this._pubsubSubscriptions = {};
         var acceptedOptions = [
             "chainProviders",
             "dataPath",
@@ -101,6 +100,7 @@ var Plebbit = /** @class */ (function (_super) {
             "ipfsHttpClientsOptions",
             "pubsubHttpClientsOptions",
             "resolveAuthorAddresses",
+            "plebbitRpcClientsOptions",
             "publishInterval",
             "updateInterval",
             "noData"
@@ -110,30 +110,44 @@ var Plebbit = /** @class */ (function (_super) {
             if (!acceptedOptions.includes(option))
                 (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option: option });
         }
+        _this._userPlebbitOptions = options;
+        //@ts-expect-error
+        _this.parsedPlebbitOptions = lodash_1.default.cloneDeep(options);
+        _this.parsedPlebbitOptions.plebbitRpcClientsOptions = _this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
+        if (_this.plebbitRpcClientsOptions)
+            _this.plebbitRpcClient = new plebbit_rpc_client_1.default(_this);
+        _this._pubsubSubscriptions = {};
         //@ts-expect-error
         _this.clients = {};
-        _this.ipfsHttpClientsOptions =
+        _this.ipfsHttpClientsOptions = _this.parsedPlebbitOptions.ipfsHttpClientsOptions =
             Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
                 ? _this._parseUrlToOption(options.ipfsHttpClientsOptions)
                 : options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
-        var fallbackPubsubProviders = [{ url: "https://pubsubprovider.xyz/api/v0" }];
-        _this.pubsubHttpClientsOptions =
+        var fallbackPubsubProviders = _this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
+        _this.pubsubHttpClientsOptions = _this.parsedPlebbitOptions.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? _this._parseUrlToOption(options.pubsubHttpClientsOptions)
                 : options.pubsubHttpClientsOptions || _this.ipfsHttpClientsOptions || fallbackPubsubProviders;
-        _this.publishInterval = options.hasOwnProperty("publishInterval") ? options.publishInterval : 100000; // Default to 1.67 minutes
-        _this.updateInterval = options.hasOwnProperty("updateInterval") ? options.updateInterval : 60000; // Default to 1 minute
-        _this.noData = options.hasOwnProperty("noData") ? options.noData : false;
+        _this.publishInterval = _this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
+            ? options.publishInterval
+            : 20000; // Default to 20s
+        _this.updateInterval = _this.parsedPlebbitOptions.updateInterval = options.hasOwnProperty("updateInterval")
+            ? options.updateInterval
+            : 60000; // Default to 1 minute
+        _this.noData = _this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
         _this._initIpfsClients();
         _this._initPubsubClients();
-        if (!_this.noData)
-            _this.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
+        _this._initRpcClients();
+        if (!_this.noData && !_this.plebbitRpcClient)
+            _this.dataPath = _this.parsedPlebbitOptions.dataPath = options.dataPath || (0, util_1.getDefaultDataPath)();
         return _this;
     }
     Plebbit.prototype._initIpfsClients = function () {
+        this.clients.ipfsClients = {};
         if (!this.ipfsHttpClientsOptions)
             return;
-        this.clients.ipfsClients = {};
+        if (!util_1.nativeFunctions)
+            throw Error("Native function is defined at all. Can't create ipfs client: " + JSON.stringify(this._userPlebbitOptions));
         for (var _i = 0, _a = this.ipfsHttpClientsOptions; _i < _a.length; _i++) {
             var clientOptions = _a[_i];
             var ipfsClient = util_1.nativeFunctions.createIpfsClient(clientOptions);
@@ -148,53 +162,64 @@ var Plebbit = /** @class */ (function (_super) {
         var _this = this;
         var _a, _b;
         this.clients.pubsubClients = {};
-        var _loop_1 = function (clientOptions) {
-            var ipfsClient = ((_b = (_a = this_1.clients.ipfsClients) === null || _a === void 0 ? void 0 : _a[clientOptions.url]) === null || _b === void 0 ? void 0 : _b._client) || util_1.nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
-            this_1.clients.pubsubClients[clientOptions.url] = {
-                _client: ipfsClient,
-                _clientOptions: clientOptions,
-                peers: function () { return __awaiter(_this, void 0, void 0, function () {
-                    var topics, _a, _b, _c, _d;
-                    return __generator(this, function (_e) {
-                        switch (_e.label) {
-                            case 0: return [4 /*yield*/, ipfsClient.pubsub.ls()];
-                            case 1:
-                                topics = _e.sent();
-                                _b = (_a = lodash_1.default).uniq;
-                                _d = (_c = lodash_1.default).flattenDeep;
-                                return [4 /*yield*/, Promise.all(topics.map(function (topic) { return ipfsClient.pubsub.peers(topic); }))];
-                            case 2: return [2 /*return*/, _b.apply(_a, [_d.apply(_c, [_e.sent()])])];
-                        }
-                    });
-                }); }
+        if (this.pubsubHttpClientsOptions) {
+            var _loop_1 = function (clientOptions) {
+                var ipfsClient = ((_b = (_a = this_1.clients.ipfsClients) === null || _a === void 0 ? void 0 : _a[clientOptions.url]) === null || _b === void 0 ? void 0 : _b._client) || util_1.nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+                this_1.clients.pubsubClients[clientOptions.url] = {
+                    _client: ipfsClient,
+                    _clientOptions: clientOptions,
+                    peers: function () { return __awaiter(_this, void 0, void 0, function () {
+                        var topics, _a, _b, _c, _d;
+                        return __generator(this, function (_e) {
+                            switch (_e.label) {
+                                case 0: return [4 /*yield*/, ipfsClient.pubsub.ls()];
+                                case 1:
+                                    topics = _e.sent();
+                                    _b = (_a = lodash_1.default).uniq;
+                                    _d = (_c = lodash_1.default).flattenDeep;
+                                    return [4 /*yield*/, Promise.all(topics.map(function (topic) { return ipfsClient.pubsub.peers(topic); }))];
+                                case 2: return [2 /*return*/, _b.apply(_a, [_d.apply(_c, [_e.sent()])])];
+                            }
+                        });
+                    }); }
+                };
             };
-        };
-        var this_1 = this;
-        for (var _i = 0, _c = this.pubsubHttpClientsOptions; _i < _c.length; _i++) {
-            var clientOptions = _c[_i];
-            _loop_1(clientOptions);
+            var this_1 = this;
+            for (var _i = 0, _c = this.pubsubHttpClientsOptions; _i < _c.length; _i++) {
+                var clientOptions = _c[_i];
+                _loop_1(clientOptions);
+            }
         }
     };
-    Plebbit.prototype._initResolver = function (options) {
-        this.chainProviders = options.chainProviders || {
-            eth: { urls: ["viem", "ethers.js"], chainId: 1 },
-            avax: {
-                urls: ["https://api.avax.network/ext/bc/C/rpc"],
-                chainId: 43114
-            },
-            matic: {
-                urls: ["https://polygon-rpc.com"],
-                chainId: 137
+    Plebbit.prototype._initRpcClients = function () {
+        this.clients.plebbitRpcClients = {};
+        if (this.parsedPlebbitOptions.plebbitRpcClientsOptions)
+            for (var _i = 0, _a = this.plebbitRpcClientsOptions; _i < _a.length; _i++) {
+                var rpcUrl = _a[_i];
+                this.clients.plebbitRpcClients[rpcUrl] = new plebbit_rpc_state_client_1.GenericPlebbitRpcStateClient("stopped");
             }
-        };
-        if (this.chainProviders.eth && !this.chainProviders.eth.chainId)
+    };
+    Plebbit.prototype._initResolver = function (options) {
+        var _a;
+        this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClient
+            ? {}
+            : options.chainProviders || {
+                eth: { urls: ["viem", "ethers.js"], chainId: 1 },
+                avax: {
+                    urls: ["https://api.avax.network/ext/bc/C/rpc"],
+                    chainId: 43114
+                },
+                matic: {
+                    urls: ["https://polygon-rpc.com"],
+                    chainId: 137
+                }
+            };
+        if (((_a = this.chainProviders) === null || _a === void 0 ? void 0 : _a.eth) && !this.chainProviders.eth.chainId)
             this.chainProviders.eth.chainId = 1;
-        for (var _i = 0, _a = Object.keys(this.chainProviders); _i < _a.length; _i++) {
-            var chainTicker = _a[_i];
-            (0, assert_1.default)(typeof this.chainProviders[chainTicker].chainId === "number", "chain id for chainTicker (".concat(chainTicker, ") must be defined"));
-        }
         this.clients.chainProviders = this.chainProviders;
-        this.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses") ? options.resolveAuthorAddresses : true;
+        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses")
+            ? options.resolveAuthorAddresses
+            : true;
         this.resolver = new resolver_1.Resolver({
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
@@ -212,65 +237,34 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype._init = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, fallbackGateways, _i, _a, gatewayUrl, _b, _c, ipfsClient, gatewayFromNode, splits, ipfsGatewayUrl, e_1, _d, fallbackGateways_1, gatewayUrl;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var log, fallbackGateways, _i, _a, gatewayUrl, _b, fallbackGateways_1, gatewayUrl;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:_init");
-                        fallbackGateways = lodash_1.default.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+                        fallbackGateways = this.plebbitRpcClient ? undefined : lodash_1.default.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
                         if (!this.dataPath) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.mkdir)(this.dataPath, { recursive: true })];
                     case 1:
-                        _e.sent();
-                        _e.label = 2;
+                        _c.sent();
+                        _c.label = 2;
                     case 2:
                         this.clients.ipfsGateways = {};
-                        if (!options.ipfsGatewayUrls) return [3 /*break*/, 3];
-                        for (_i = 0, _a = options.ipfsGatewayUrls; _i < _a.length; _i++) {
-                            gatewayUrl = _a[_i];
-                            this.clients.ipfsGateways[gatewayUrl] = {};
-                        }
-                        return [3 /*break*/, 11];
-                    case 3:
-                        if (!this.clients.ipfsClients) return [3 /*break*/, 10];
-                        _b = 0, _c = Object.values(this.clients.ipfsClients);
-                        _e.label = 4;
-                    case 4:
-                        if (!(_b < _c.length)) return [3 /*break*/, 9];
-                        ipfsClient = _c[_b];
-                        _e.label = 5;
-                    case 5:
-                        _e.trys.push([5, 7, , 8]);
-                        return [4 /*yield*/, ipfsClient._client.config.get("Addresses.Gateway")];
-                    case 6:
-                        gatewayFromNode = _e.sent();
-                        if (Array.isArray(gatewayFromNode))
-                            gatewayFromNode = gatewayFromNode[0];
-                        splits = gatewayFromNode.toString().split("/");
-                        ipfsGatewayUrl = "http://".concat(splits[2], ":").concat(splits[4]);
-                        log.trace("plebbit.ipfsGatewayUrl (".concat(ipfsGatewayUrl, ") retrieved from IPFS node (").concat(ipfsClient._clientOptions.url, ")"));
-                        this.clients.ipfsGateways[ipfsGatewayUrl] = {};
-                        return [3 /*break*/, 8];
-                    case 7:
-                        e_1 = _e.sent();
-                        log("Failed to retrieve gateway url from ipfs node (".concat(ipfsClient._clientOptions.url, ")"));
-                        return [3 /*break*/, 8];
-                    case 8:
-                        _b++;
-                        return [3 /*break*/, 4];
-                    case 9: return [3 /*break*/, 11];
-                    case 10:
-                        for (_d = 0, fallbackGateways_1 = fallbackGateways; _d < fallbackGateways_1.length; _d++) {
-                            gatewayUrl = fallbackGateways_1[_d];
-                            this.clients.ipfsGateways[gatewayUrl] = {};
-                        }
-                        _e.label = 11;
-                    case 11:
+                        if (options.ipfsGatewayUrls)
+                            for (_i = 0, _a = options.ipfsGatewayUrls; _i < _a.length; _i++) {
+                                gatewayUrl = _a[_i];
+                                this.clients.ipfsGateways[gatewayUrl] = {};
+                            }
+                        else if (fallbackGateways)
+                            for (_b = 0, fallbackGateways_1 = fallbackGateways; _b < fallbackGateways_1.length; _b++) {
+                                gatewayUrl = fallbackGateways_1[_b];
+                                this.clients.ipfsGateways[gatewayUrl] = {};
+                            }
                         // Init cache
                         this._storage = new storage_1.default({ dataPath: this.dataPath, noData: this.noData });
                         return [4 /*yield*/, this._storage.init()];
-                    case 12:
-                        _e.sent();
+                    case 3:
+                        _c.sent();
                         // Init stats
                         this.stats = new stats_1.default({ _storage: this._storage, clients: this.clients });
                         // Init resolver
@@ -284,33 +278,25 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getSubplebbit = function (subplebbitAddress) {
         return __awaiter(this, void 0, void 0, function () {
-            var resolvedSubplebbitAddress, subplebbitJson, _a, _b, signatureValidity, subplebbit;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var subplebbit, updatePromise, error, errorPromise;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
-                            (0, util_2.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
-                        if ((0, util_2.doesEnsAddressHaveCapitalLetter)(subplebbitAddress))
-                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: subplebbitAddress });
-                        return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
-                    case 1:
-                        resolvedSubplebbitAddress = _c.sent();
-                        if (!resolvedSubplebbitAddress)
-                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._clientsManager.fetchSubplebbitIpns(resolvedSubplebbitAddress)];
-                    case 2:
-                        subplebbitJson = _b.apply(_a, [_c.sent()]);
-                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subplebbitJson, this.resolveAuthorAddresses, this._clientsManager, true)];
-                    case 3:
-                        signatureValidity = _c.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
-                        constants_1.subplebbitForPublishingCache.set(subplebbitAddress, lodash_1.default.pick(subplebbitJson, ["encryption", "address", "pubsubTopic"]));
                         subplebbit = new subplebbit_1.Subplebbit(this);
-                        return [4 /*yield*/, subplebbit.initSubplebbit(subplebbitJson)];
-                    case 4:
-                        _c.sent();
+                        return [4 /*yield*/, subplebbit.initSubplebbit({ address: subplebbitAddress })];
+                    case 1:
+                        _a.sent();
+                        subplebbit.update();
+                        updatePromise = new Promise(function (resolve) { return subplebbit.once("update", resolve); });
+                        errorPromise = new Promise(function (resolve) { return subplebbit.once("error", function (err) { return resolve((error = err)); }); });
+                        return [4 /*yield*/, Promise.race([updatePromise, errorPromise])];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, subplebbit.stop()];
+                    case 3:
+                        _a.sent();
+                        if (error)
+                            throw error;
                         return [2 /*return*/, subplebbit];
                 }
             });
@@ -318,22 +304,33 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.getComment = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
-            var commentJson, _a, _b, signatureValidity;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var log, comment, originalLoadMethod, updatePromise, error, errorPromise;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        if (!is_ipfs_1.default.cid(cid))
-                            (0, util_2.throwWithErrorCode)("ERR_CID_IS_INVALID", "getComment: cid (".concat(cid, ") is invalid as a CID"));
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this.fetchCid(cid)];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:getComment");
+                        return [4 /*yield*/, this.createComment({ cid: cid })];
                     case 1:
-                        commentJson = _b.apply(_a, [_c.sent()]);
-                        return [4 /*yield*/, (0, signer_1.verifyComment)(commentJson, this.resolveAuthorAddresses, this._clientsManager, true)];
+                        comment = _a.sent();
+                        originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
+                        //@ts-expect-error
+                        comment._retryLoadingCommentUpdate = function () { };
+                        comment.update();
+                        updatePromise = new Promise(function (resolve) { return comment.once("update", resolve); });
+                        errorPromise = new Promise(function (resolve) { return comment.once("error", function (err) { return resolve((error = err)); }); });
+                        return [4 /*yield*/, Promise.race([updatePromise, errorPromise])];
                     case 2:
-                        signatureValidity = _c.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_2.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { cid: cid, signatureValidity: signatureValidity });
-                        return [2 /*return*/, this.createComment(__assign(__assign({}, commentJson), { cid: cid }))];
+                        _a.sent();
+                        return [4 /*yield*/, comment.stop()];
+                    case 3:
+                        _a.sent();
+                        //@ts-expect-error
+                        comment._retryLoadingCommentUpdate = originalLoadMethod;
+                        if (error) {
+                            log.error("Failed to load comment (".concat(cid, ") due to error: ").concat(error));
+                            throw error;
+                        }
+                        return [2 /*return*/, comment];
                 }
             });
         });
@@ -392,6 +389,8 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createComment");
+                        if (options["cid"] && !is_ipfs_1.default.cid(options["cid"]))
+                            (0, util_2.throwWithErrorCode)("ERR_CID_IS_INVALID", { cid: options["cid"] });
                         formattedOptions = options instanceof comment_1.Comment ? options.toJSON() : options;
                         formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || version_1.default.PROTOCOL_VERSION;
                         if (!(options["signature"] || options["cid"])) return [3 /*break*/, 1];
@@ -408,7 +407,7 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Plebbit.prototype._canRunSub = function () {
+    Plebbit.prototype._canCreateNewLocalSub = function () {
         try {
             //@ts-ignore
             util_1.nativeFunctions.createDbHandler({ address: "", plebbit: this });
@@ -417,92 +416,122 @@ var Plebbit = /** @class */ (function (_super) {
         catch (_a) { }
         return false;
     };
+    Plebbit.prototype._createSubplebbitRpc = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, rpcSubs, isSubLocal, newLocalSub;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        if (!(options.address && !options.signer)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.listSubplebbits()];
+                    case 1:
+                        rpcSubs = _a.sent();
+                        isSubLocal = rpcSubs.includes(options.address);
+                        if (isSubLocal)
+                            return [2 /*return*/, this.getSubplebbit(options.address)]; // getSubplebbit will fetch the local sub through RPC subplebbitUpdate
+                        else
+                            return [2 /*return*/, this._createRemoteSubplebbitInstance(options)];
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, this.plebbitRpcClient.createSubplebbit(options)];
+                    case 3:
+                        newLocalSub = _a.sent();
+                        log("Created local-RPC subplebbit (".concat(newLocalSub.address, ") with props:"), newLocalSub.toJSON());
+                        return [2 /*return*/, newLocalSub];
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Plebbit.prototype._createRemoteSubplebbitInstance = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, subplebbit;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        subplebbit = new subplebbit_1.Subplebbit(this);
+                        return [4 /*yield*/, subplebbit.initSubplebbit(options)];
+                    case 1:
+                        _a.sent();
+                        log.trace("Created remote subplebbit instance (".concat(subplebbit.address, ")"));
+                        return [2 /*return*/, subplebbit];
+                }
+            });
+        });
+    };
+    Plebbit.prototype._createLocalSub = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, canCreateLocalSub, isLocalSub, subplebbit;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        canCreateLocalSub = this._canCreateNewLocalSub();
+                        if (!canCreateLocalSub)
+                            throw new plebbit_error_1.PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+                        return [4 /*yield*/, this.listSubplebbits()];
+                    case 1:
+                        isLocalSub = (_a.sent()).includes(options === null || options === void 0 ? void 0 : options.address);
+                        subplebbit = new subplebbit_1.Subplebbit(this);
+                        return [4 /*yield*/, subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options)];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, subplebbit.prePublish()];
+                    case 3:
+                        _a.sent(); // May fail because sub is already being created (locked)
+                        log("Created ".concat(isLocalSub ? "" : "new", " local subplebbit (").concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
+                        return [2 /*return*/, subplebbit];
+                }
+            });
+        });
+    };
     Plebbit.prototype.createSubplebbit = function (options) {
         if (options === void 0) { options = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var log, canRunSub, localSub, remoteSub, dbHandler, isSubLocal, _a, signer;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var log, canCreateLocalSub, localSubs, isSubLocal, _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
-                        canRunSub = this._canRunSub();
                         if ((options === null || options === void 0 ? void 0 : options.address) && (0, util_2.doesEnsAddressHaveCapitalLetter)(options === null || options === void 0 ? void 0 : options.address))
                             throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options === null || options === void 0 ? void 0 : options.address });
-                        localSub = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var subplebbit;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (!canRunSub)
-                                            (0, util_2.throwWithErrorCode)("ERR_PLEBBIT_MISSING_NATIVE_FUNCTIONS", { canRunSub: canRunSub, dataPath: this.dataPath });
-                                        subplebbit = new subplebbit_1.Subplebbit(this);
-                                        return [4 /*yield*/, subplebbit.initSubplebbit(options)];
-                                    case 1:
-                                        _a.sent();
-                                        return [4 /*yield*/, subplebbit.prePublish()];
-                                    case 2:
-                                        _a.sent(); // May fail because sub is already being created (locked)
-                                        log("Created subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
-                                        return [2 /*return*/, subplebbit];
-                                }
-                            });
-                        }); };
-                        remoteSub = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var subplebbit;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        subplebbit = new subplebbit_1.Subplebbit(this);
-                                        return [4 /*yield*/, subplebbit.initSubplebbit(options)];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/, subplebbit];
-                                }
-                            });
-                        }); };
-                        if (!(options.address && !options.signer)) return [3 /*break*/, 1];
-                        if (!canRunSub)
-                            return [2 /*return*/, remoteSub()];
-                        else {
-                            dbHandler = util_1.nativeFunctions.createDbHandler({ address: options.address, plebbit: this });
-                            isSubLocal = dbHandler.subDbExists();
-                            if (isSubLocal)
-                                return [2 /*return*/, localSub()];
-                            else
-                                return [2 /*return*/, remoteSub()];
-                        }
-                        return [3 /*break*/, 8];
+                        if (this.plebbitRpcClient)
+                            return [2 /*return*/, this._createSubplebbitRpc(options)];
+                        canCreateLocalSub = this._canCreateNewLocalSub();
+                        if (options.signer && !canCreateLocalSub)
+                            throw new plebbit_error_1.PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+                        if (!canCreateLocalSub)
+                            return [2 /*return*/, this._createRemoteSubplebbitInstance(options)];
+                        if (!(options.address && !options.signer)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.listSubplebbits()];
                     case 1:
-                        if (!(!options.address && !options.signer)) return [3 /*break*/, 5];
-                        if (!!canRunSub) return [3 /*break*/, 2];
-                        throw Error("missing nativeFunctions required to create a subplebbit");
+                        localSubs = _c.sent();
+                        isSubLocal = localSubs.includes(options.address);
+                        if (isSubLocal)
+                            return [2 /*return*/, this._createLocalSub(options)];
+                        else
+                            return [2 /*return*/, this._createRemoteSubplebbitInstance(options)];
+                        return [3 /*break*/, 7];
                     case 2:
+                        if (!(!options.address && !options.signer)) return [3 /*break*/, 4];
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
                     case 3:
-                        _a.signer = _b.sent();
+                        _a.signer = _c.sent();
                         options.address = options.signer.address;
                         log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.address, ")"));
-                        return [2 /*return*/, localSub()];
-                    case 4: return [3 /*break*/, 8];
-                    case 5:
-                        if (!(!options.address && options.signer)) return [3 /*break*/, 7];
-                        if (!canRunSub)
-                            throw Error("missing nativeFunctions required to create a subplebbit");
+                        return [2 /*return*/, this._createLocalSub(options)];
+                    case 4:
+                        if (!(!options.address && options.signer)) return [3 /*break*/, 6];
+                        _b = options;
                         return [4 /*yield*/, this.createSigner(options.signer)];
-                    case 6:
-                        signer = _b.sent();
-                        options.address = signer.address;
-                        options.signer = signer;
-                        return [2 /*return*/, localSub()];
-                    case 7:
-                        if (!canRunSub)
-                            return [2 /*return*/, remoteSub()];
-                        else
-                            return [2 /*return*/, localSub()];
-                        _b.label = 8;
-                    case 8: return [2 /*return*/];
+                    case 5:
+                        _b.signer = _c.sent();
+                        options.address = options.signer.address;
+                        return [2 /*return*/, this._createLocalSub(options)];
+                    case 6: return [2 /*return*/, this._createLocalSub(options)];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
@@ -558,10 +587,12 @@ var Plebbit = /** @class */ (function (_super) {
     };
     Plebbit.prototype.listSubplebbits = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var canRunSub;
+            var canCreateSubs;
             return __generator(this, function (_a) {
-                canRunSub = this._canRunSub();
-                if (!canRunSub || !this.dataPath)
+                if (this.plebbitRpcClient)
+                    return [2 /*return*/, this.plebbitRpcClient.listSubplebbits()];
+                canCreateSubs = this._canCreateNewLocalSub();
+                if (!canCreateSubs || !this.dataPath)
                     return [2 /*return*/, []];
                 return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
             });
@@ -570,7 +601,11 @@ var Plebbit = /** @class */ (function (_super) {
     Plebbit.prototype.fetchCid = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this._clientsManager.fetchCid(cid)];
+                if (this.plebbitRpcClient)
+                    return [2 /*return*/, this.plebbitRpcClient.fetchCid(cid)];
+                else
+                    return [2 /*return*/, this._clientsManager.fetchCid(cid)];
+                return [2 /*return*/];
             });
         });
     };

@@ -45,7 +45,7 @@ var optionInputs = [
         placeholder: '1'
     }
 ];
-var type = 'text';
+var type = "text/plain";
 var description = 'Ask a plain text math question, insecure, use ONLY for testing.';
 var getRandomNumber = function (minNumber, maxNumber) { return Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber); };
 var getChallengeString = function (minNumber, maxNumber, operators) {
@@ -66,14 +66,11 @@ var getChallengeString = function (minNumber, maxNumber, operators) {
     return "".concat(firstNumber, " ").concat(operator, " ").concat(secondNumber);
 };
 var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) { return __awaiter(void 0, void 0, void 0, function () {
-    var difficulty, challenge, verify;
+    var difficultyString, difficulty, challenge, verify;
     var _a;
     return __generator(this, function (_b) {
-        difficulty = (_a = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _a === void 0 ? void 0 : _a.difficulty;
-        if (!difficulty) {
-            difficulty = '1';
-        }
-        difficulty = Number(difficulty);
+        difficultyString = ((_a = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _a === void 0 ? void 0 : _a.difficulty) || "1";
+        difficulty = Number(difficultyString);
         if (difficulty === 1) {
             challenge = getChallengeString(1, 10, ['+', '-']);
         }

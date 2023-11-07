@@ -14,11 +14,12 @@ export declare class BasePages implements PagesType {
     _clientsManager: BasePagesClientsManager;
     _plebbit: Plebbit;
     _subplebbitAddress: string;
-    private _parentCid;
+    _parentCid: CommentIpfsType["parentCid"];
     private _pagesIpfs?;
     constructor(props: ConstructorProps);
     updateProps(props: ConstructorProps): void;
     protected _initClientsManager(): void;
+    _fetchAndVerifyPage(pageCid: string): Promise<import("./types").PageIpfs>;
     getPage(pageCid: string): Promise<PageType>;
     toJSON(): PagesTypeJson | undefined;
     toJSONIpfs(): PagesTypeIpfs | undefined;
@@ -27,6 +28,7 @@ export declare class RepliesPages extends BasePages {
     pages: Partial<Record<ReplySortName, PageType>>;
     pageCids: Partial<Record<ReplySortName, string>>;
     clients: RepliesPagesClientsManager["clients"];
+    _parentCid: string;
     _clientsManager: RepliesPagesClientsManager;
     constructor(props: ConstructorProps & {
         parentCid: string;

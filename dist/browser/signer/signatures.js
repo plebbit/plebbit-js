@@ -68,7 +68,6 @@ var cborg = __importStar(require("cborg"));
 var to_string_1 = require("uint8arrays/to-string");
 var from_string_1 = require("uint8arrays/from-string");
 var ed = __importStar(require("@noble/ed25519"));
-var sha1_uint8array_1 = require("sha1-uint8array");
 var peer_id_1 = __importDefault(require("peer-id"));
 var util_2 = require("../util");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
@@ -76,7 +75,6 @@ var lodash_1 = __importDefault(require("lodash"));
 var errors_1 = require("../errors");
 var assert_1 = __importDefault(require("assert"));
 var constants_1 = require("./constants");
-var constants_2 = require("../constants");
 var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
 var signBufferEd25519 = function (bufferToSign, privateKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
     var privateKeyBuffer, signature;
@@ -394,10 +392,12 @@ var _verifyPubsubSignature = function (msg) { return __awaiter(void 0, void 0, v
     });
 }); };
 var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) { return __awaiter(void 0, void 0, void 0, function () {
-    var authorSignatureValidity, signatureValidity;
+    var log, authorSignatureValidity, signatureValidity;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager)];
+            case 0:
+                log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyPublicationWithAUthor");
+                return [4 /*yield*/, _verifyAuthor(publicationJson, resolveAuthorAddresses, clientsManager)];
             case 1:
                 authorSignatureValidity = _a.sent();
                 if (authorSignatureValidity.useDerivedAddress && !overrideAuthorAddressIfInvalid)
@@ -407,8 +407,10 @@ var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddre
                 signatureValidity = _a.sent();
                 if (!signatureValidity)
                     return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
-                if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress)
+                if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress) {
+                    log("Will override publication.author.address (".concat(publicationJson.author.address, ") with signer address (").concat(authorSignatureValidity.derivedAddress, ")"));
                     publicationJson.author.address = authorSignatureValidity.derivedAddress;
+                }
                 return [2 /*return*/, { valid: true }];
         }
     });
@@ -447,17 +449,14 @@ function verifyCommentEdit(edit, resolveAuthorAddresses, clientsManager, overrid
 exports.verifyCommentEdit = verifyCommentEdit;
 function verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var hash, validation;
+        var validation;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
-                    return [4 /*yield*/, _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
+                case 0: return [4 /*yield*/, _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
                 case 1:
                     validation = _a.sent();
                     if (!validation.valid)
                         return [2 /*return*/, validation];
-                    constants_2.commentValidationCache.set(hash, true);
                     return [2 /*return*/, { valid: true }];
             }
         });
@@ -466,14 +465,8 @@ function verifyComment(comment, resolveAuthorAddresses, clientsManager, override
 exports.verifyComment = verifyComment;
 function verifyCommentWithCache(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var hash;
         return __generator(this, function (_a) {
-            hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(comment)).digest("hex").slice(0, 12);
-            if (constants_2.commentValidationCache.get(hash))
-                return [2 /*return*/, { valid: true }];
-            else
-                return [2 /*return*/, verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
-            return [2 /*return*/];
+            return [2 /*return*/, verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
         });
     });
 }
@@ -557,12 +550,11 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var log, hash, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation;
+        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
-                    hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
                     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
                     return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
@@ -592,7 +584,6 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     jsonValidation = _a.sent();
                     if (!jsonValidation.valid)
                         return [2 /*return*/, jsonValidation];
-                    constants_2.commentUpdateValidationCache.set(hash, true);
                     return [2 /*return*/, { valid: true }];
             }
         });
@@ -601,14 +592,8 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
 exports.verifyCommentUpdate = verifyCommentUpdate;
 function verifyCommentUpdateWithCache(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var hash;
         return __generator(this, function (_a) {
-            hash = (0, sha1_uint8array_1.createHash)().update(JSON.stringify(update)).digest("hex").slice(0, 12);
-            if (constants_2.commentUpdateValidationCache.get(hash))
-                return [2 /*return*/, { valid: true }];
-            else
-                return [2 /*return*/, verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid)];
-            return [2 /*return*/];
+            return [2 /*return*/, verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid)];
         });
     });
 }

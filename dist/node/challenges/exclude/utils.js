@@ -8,11 +8,11 @@ exports.testScore = testScore;
 // firstCommentTimestamp value first needs to be put through Date.now() - firstCommentTimestamp
 var testFirstCommentTimestamp = function (excludeTime, authorFirstCommentTimestamp) { return excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity); };
 exports.testFirstCommentTimestamp = testFirstCommentTimestamp;
-var isVote = function (publication) { return publication.vote !== undefined && publication.commentCid; };
+var isVote = function (publication) { return Boolean(publication["vote"] !== undefined && publication["commentCid"]); };
 exports.isVote = isVote;
-var isReply = function (publication) { return publication.parentCid && !publication.commentCid; };
+var isReply = function (publication) { return Boolean(publication["parentCid"] && !publication["commentCid"]); };
 exports.isReply = isReply;
-var isPost = function (publication) { return !publication.parentCid && !publication.commentCid; };
+var isPost = function (publication) { return Boolean(!publication["parentCid"] && !publication["commentCid"]); };
 exports.isPost = isPost;
 // boilerplate function to test if an exclude of a specific publication type passes
 var testType = function (excludePublicationType, publication, isType) {

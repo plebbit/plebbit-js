@@ -1,14 +1,16 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { Chain, CommentIpfsType, CommentUpdate, SubplebbitIpfsType } from "../types";
-import { Subplebbit } from "../subplebbit";
+import { Chain, CommentIpfsType, CommentUpdate } from "../types";
+import { Subplebbit } from "../subplebbit/subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
 import { GenericChainProviderClient } from "./chain-provider-client";
 import { CommentIpfsGatewayClient, GenericIpfsGatewayClient, PublicationIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "./ipfs-gateway-client";
 import { BaseClientsManager, LoadType } from "./base-client-manager";
+import { CommentPlebbitRpcStateClient, GenericPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
+import { SubplebbitIpfsType } from "../subplebbit/types";
 export declare class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
     clients: {
@@ -24,12 +26,16 @@ export declare class ClientsManager extends BaseClientsManager {
         chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
+        plebbitRpcClients: {
+            [plebbitRpcClientUrl: string]: GenericPlebbitRpcStateClient;
+        };
     };
     constructor(plebbit: Plebbit);
     protected _initIpfsGateways(): void;
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initChainProviders(): void;
+    protected _initPlebbitRpcClients(): void;
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
@@ -60,12 +66,14 @@ export declare class PublicationClientsManager extends ClientsManager {
         chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
+        plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
     _publication: Publication;
     _attemptingToResolve: boolean;
     constructor(publication: Publication);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
+    protected _initPlebbitRpcClients(): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string): void;
     emitError(e: PlebbitError): void;
     fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
@@ -87,10 +95,12 @@ export declare class CommentClientsManager extends PublicationClientsManager {
         chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
+        plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
     private _comment;
     constructor(comment: Comment);
     protected _initIpfsClients(): void;
+    protected _initPlebbitRpcClients(): void;
     fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate>;
     fetchCommentCid(cid: string): Promise<CommentIpfsType>;
     updateIpfsState(newState: CommentIpfsClient["state"]): void;
@@ -109,11 +119,13 @@ export declare class SubplebbitClientsManager extends ClientsManager {
         chainProviders: Record<Chain, {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
+        plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
     private _subplebbit;
     constructor(subplebbit: Subplebbit);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
+    protected _initPlebbitRpcClients(): void;
     fetchSubplebbit(ipnsName: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: SubplebbitIpfsClient["state"]): void;
     updatePubsubState(newState: SubplebbitPubsubClient["state"], pubsubProvider: string | undefined): void;
