@@ -129,6 +129,7 @@ export class DbHandler {
     async destoryConnection() {
         if (this.isDbInMemory()) return;
         await this._knex?.destroy();
+        await this._keyv.disconnect()
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);

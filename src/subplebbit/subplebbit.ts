@@ -137,15 +137,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private sortHandler: SortHandler;
     private _updateTimeout?: NodeJS.Timeout;
     private _syncInterval?: any; // TODO change "sync" to "publish"
-    private _sync: boolean;
-    private _ipfsNodeKeys: IpfsKey[];
     private _subplebbitUpdateTrigger: boolean;
+    private _isSubRunningLocally: boolean;
+    private _ipfsNodeKeys: IpfsKey[];
     private _loadingOperation: RetryOperation;
     private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
     private _updateRpcSubscriptionId?: number;
     private _startRpcSubscriptionId?: number;
-    private _isUpdating: boolean;
     private _cidsToUnPin: string[] = [];
 
     // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
@@ -169,7 +168,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setState("stopped");
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
-        this._sync = this._isUpdating = false;
+        this._isSubRunningLocally = false;
         this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
 
         // these functions might get separated from their `this` when used
@@ -215,6 +214,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.signature = mergedProps.signature;
         this.settings = mergedProps.settings;
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+        this._setStartedState(mergedProps.startedState);
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
         if (newProps["posts"]) {
@@ -276,13 +276,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             posts: this.posts?.toJSONIpfs(),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
-            settings: this.settings
+            settings: this.settings,
+            startedState: this.startedState
         };
     }
 
     toJSONInternalRpc(): InternalSubplebbitRpcType {
         return {
-            ...lodash.omit(this.toJSONInternal(), ["signer", "_subplebbitUpdateTrigger"])
+            ...lodash.omit(this.toJSONInternal(), ["signer"])
         };
     }
 
@@ -396,7 +397,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             return this;
         }
 
+        if (Array.isArray(newSubplebbitOptions?.settings?.challenges))
+            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(
+                getSubplebbitChallengeFromSubplebbitChallengeSettings
+            );
+
         await this.dbHandler.initDestroyedConnection();
+        this._subplebbitUpdateTrigger = true;
+        const newProps = {
+            ...newSubplebbitOptions,
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+        };
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
                 throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
@@ -405,32 +416,27 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 this.emit("error", err);
             });
             log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
-            await this._updateDbInternalState(lodash.pick(newSubplebbitOptions, "address"));
-            await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
-                address: newSubplebbitOptions.address,
-                plebbit: {
-                    dataPath: this.plebbit.dataPath,
-                    noData: this.plebbit.noData
-                }
-            });
-            await this._switchDbIfNeeded();
+
+            await this._updateDbInternalState(newProps);
+            if (!(await this.dbHandler.isSubStartLocked())) {
+                log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
+                await this.dbHandler.destoryConnection();
+                await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
+                    address: newSubplebbitOptions.address,
+                    plebbit: {
+                        dataPath: this.plebbit.dataPath,
+                        noData: this.plebbit.noData
+                    }
+                });
+            }
+        } else {
+            await this._updateDbInternalState(newProps);
+            if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
         }
 
-        if (Array.isArray(newSubplebbitOptions?.settings?.challenges))
-            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(
-                getSubplebbitChallengeFromSubplebbitChallengeSettings
-            );
+        await this.initSubplebbit(newProps);
 
-        const newSubProps = {
-            ...lodash.omit(newSubplebbitOptions, "address"),
-            _subplebbitUpdateTrigger: true
-        };
-        await this._updateDbInternalState(newSubProps);
-        await this.initSubplebbit(newSubProps);
-
-        log(`Subplebbit (${this.address}) props (${Object.keys(newSubplebbitOptions)}) has been edited`);
-
-        if (!this._sync) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
 
         return this;
     }
@@ -572,7 +578,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     async update() {
-        if (this._isUpdating || this._sync || this._updateRpcSubscriptionId || this._startRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
+        if (this.state !== "stopped" || this._updateRpcSubscriptionId || this._startRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         const log = Logger("plebbit-js:subplebbit:update");
         if (this.plebbit.plebbitRpcClient) {
@@ -603,15 +609,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
             return;
         }
-
         const updateLoop = (async () => {
-            if (this._isUpdating)
+            if (this.state === "updating")
                 this.updateOnce()
                     .catch((e) => log.error(`Failed to update subplebbit`, e))
                     .finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
         }).bind(this);
 
-        this._isUpdating = true;
         this._setState("updating");
 
         this.updateOnce()
@@ -628,7 +632,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._loadingOperation?.stop();
         clearTimeout(this._updateTimeout);
         this._updateTimeout = undefined;
-        this._isUpdating = false;
         if (this.plebbit.plebbitRpcClient && this._updateRpcSubscriptionId) {
             // We're updating a remote sub here
             await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
@@ -643,16 +646,18 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._setRpcClientState("stopped");
             this._startRpcSubscriptionId = undefined;
             log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
-        } else if (this._sync) {
+        } else if (this._isSubRunningLocally) {
             // Subplebbit is running locally
             await this._clientsManager
                 .getDefaultPubsub()
                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+            this._setStartedState("stopped");
+            await this._updateDbInternalState({ startedState: this.startedState });
+            this._isSubRunningLocally = false;
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
-            this._sync = false;
+
             this._syncInterval = clearInterval(this._syncInterval);
-            this._setStartedState("stopped");
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
             if (this.dbHandler) await this.dbHandler.destoryConnection();
@@ -660,18 +665,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
         this._setUpdatingState("stopped");
         this._setState("stopped");
-    }
-
-    private async _validateLocalSignature(newSignature: SubplebbitIpfsType["signature"], record: Omit<SubplebbitIpfsType, "signature">) {
-        const log = Logger("plebbit-js:subplebbit:_validateLocalSignature");
-        const ipnsRecord: SubplebbitIpfsType = JSON.parse(JSON.stringify({ ...record, signature: newSignature })); // stringify it so it would be of the same content as IPNS or pubsub
-        await this._clientsManager.resolveSubplebbitAddressIfNeeded(ipnsRecord.address); // Resolve before validation so we wouldn't have multiple resolves running concurrently
-        const signatureValidation = await verifySubplebbit(ipnsRecord, false, this._clientsManager, false);
-        if (!signatureValidation.valid) {
-            const error = new PlebbitError("ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID", { signatureValidation });
-            log.error(String(error));
-            this.emit("error", error);
-        }
     }
 
     private async _unpinStaleCids() {
@@ -690,11 +683,22 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log(`unpinned ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
         }
     }
+
+    private _isCurrentSubplebbitEqualToLatestPublishedRecord(): boolean {
+        const fieldsToOmit = ["posts", "updatedAt"];
+        const rawSubplebbitTypeFiltered = lodash.omit(this._rawSubplebbitType, fieldsToOmit);
+        const currentSubplebbitFiltered = lodash.omit(this.toJSONIpfs(), fieldsToOmit);
+        return lodash.isEqual(rawSubplebbitTypeFiltered, currentSubplebbitFiltered);
+    }
     private async updateSubplebbitIpnsIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
-
+        const dbInstance = await this._getDbInternalState(true);
+        this._subplebbitUpdateTrigger =
+            this._subplebbitUpdateTrigger ||
+            dbInstance._subplebbitUpdateTrigger ||
+            !this._isCurrentSubplebbitEqualToLatestPublishedRecord();
         if (!this._subplebbitUpdateTrigger && !lastPublishTooOld) return; // No reason to update
 
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
@@ -709,7 +713,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (subplebbitPosts && this.posts?.pageCids) {
             const newPageCids = lodash.uniq(Object.values(subplebbitPosts.pageCids));
-            const pageCidsToUnPin = lodash.uniq(Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
+            const pageCidsToUnPin = lodash.uniq(
+                Object.values(this.posts.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
+            );
 
             this._cidsToUnPin.push(...pageCidsToUnPin);
         }
@@ -742,6 +748,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 "statsCid",
                 "updatedAt",
                 "signature",
+                "startedState",
                 "_subplebbitUpdateTrigger"
             ])
         );
@@ -1333,12 +1340,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         });
     }
 
-    private async _validateCommentUpdate(update: CommentUpdate, comment: Pick<CommentWithCommentUpdate, "cid" | "signature">) {
-        const simUpdate = JSON.parse(deterministicStringify(update)); // We need to stringify the update, so it will have the same shape as if it were sent by pubsub or IPNS
-        const signatureValidity = await verifyCommentUpdate(simUpdate, false, this._clientsManager, this.address, comment, false);
-        assert(signatureValidity.valid, `Comment Update signature is invalid. Reason (${signatureValidity.reason})`);
-    }
-
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
@@ -1354,9 +1355,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         ]);
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
-        if (storedCommentUpdate?.replies?.pageCids && generatedPages){
+        if (storedCommentUpdate?.replies?.pageCids && generatedPages) {
             const newPageCids = lodash.uniq(Object.values(generatedPages.pageCids));
-            const pageCidsToUnPin = lodash.uniq(Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid)));
+            const pageCidsToUnPin = lodash.uniq(
+                Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
+            );
             this._cidsToUnPin.push(...pageCidsToUnPin);
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
@@ -1401,27 +1404,31 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.initSubplebbit({ ...currentDbState, ...overrideProps });
     }
 
-    private async _switchDbIfNeeded() {
+    private async _switchDbWhileRunningIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:_switchDbIfNeeded");
 
         // Will check if address has been changed, and if so connect to the new db with the new address
-        const internalState = await this._getDbInternalState(false);
-        const potentialNewAddresses = lodash.uniq([internalState.address, this.dbHandler.subAddress(), this.address]);
+        const internalState = await this._getDbInternalState(true);
 
+        const currentDbAddress = this.dbHandler.subAddress();
         if (this.dbHandler.isDbInMemory()) this.setAddress(this.dbHandler.subAddress());
-        else if (potentialNewAddresses.length > 1) {
-            const wasSubRunning = (await Promise.all(potentialNewAddresses.map(this.dbHandler.isSubStartLocked))).some(Boolean);
-            const newAddresses = potentialNewAddresses.filter((address) => this.dbHandler.subDbExists(address));
-            if (newAddresses.length > 1) throw Error(`There are multiple dbs of the same sub`);
-            const newAddress = newAddresses[0];
-            log(`Updating to a new address (${newAddress}) `);
+        else if (internalState.address !== currentDbAddress) {
+            // That means a call has been made to edit the sub's address while it's running
+            // We need to stop the sub from running, change its file name, then establish a connection to the new DB
+            log(`Running sub (${this.address}) has received a new address (${internalState.address}) to change to`);
+            await this.dbHandler.destoryConnection();
+            this.setAddress(internalState.address);
+            await this.dbHandler.changeDbFilename(internalState.address, {
+                address: internalState.address,
+                plebbit: {
+                    dataPath: this.plebbit.dataPath,
+                    noData: this.plebbit.noData
+                }
+            });
+            await this.dbHandler.initDestroyedConnection();
+            this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
             this._subplebbitUpdateTrigger = true;
-            await Promise.all(potentialNewAddresses.map(this.dbHandler.unlockSubStart));
-            if (wasSubRunning) await this.dbHandler.lockSubStart(newAddress);
-            this.setAddress(newAddress);
-            this.dbHandler = this.sortHandler = undefined;
-            await this.initDbHandlerIfNeeded();
-            await this.dbHandler.initDbIfNeeded();
+            await this.dbHandler.lockSubStart();
         }
     }
 
@@ -1477,7 +1484,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
-        await this._switchDbIfNeeded();
+        await this._switchDbWhileRunningIfNeeded();
 
         try {
             await this._mergeInstanceStateWithDbState({});
@@ -1510,7 +1517,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _syncLoop(syncIntervalMs: number) {
         const loop = async () => {
-            if (this._sync) {
+            if (this._isSubRunningLocally) {
                 await this.syncIpnsWithDb();
                 await this._syncLoop(syncIntervalMs);
             }
@@ -1580,7 +1587,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.dbHandler.initDestroyedConnection();
 
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
-        this._sync = true;
+        this._setState("started");
+        this._setStartedState("publishing-ipns");
+        this._isSubRunningLocally = true;
         await this.dbHandler.initDbIfNeeded();
 
         // Import subplebbit keys onto ipfs node
@@ -1601,9 +1610,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
 
         this._subplebbitUpdateTrigger = true;
-        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
-
-        this._setState("started");
+        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
 
         await this._repinCommentsIPFSIfNeeded();
 
