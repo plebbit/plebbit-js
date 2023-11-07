@@ -31,7 +31,7 @@ jobs:
       - run: cd rpc && npm run build
 
       # NOTE: doesn't work if `git add dist --force` is removed
-      - run: git add dist rpc/dist --force
+      - run: git add dist --force
       - run: git status
 
       # commit and push dist folder

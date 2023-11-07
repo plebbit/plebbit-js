@@ -69,10 +69,6 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run webpack
-      # Setup RPC deps
-      - run: cd rpc/ && npm ci
-      - run: cd rpc/ && npm run build
-      - run: cd rpc/ && npm run webpack
       # disable hosts we shouldn't use
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts

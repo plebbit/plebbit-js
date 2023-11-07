@@ -1,4 +1,0 @@
-import { DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageType, EncodedDecryptedChallengeVerificationMessageType } from '../../dist/node/types';
-export declare const clone: (obj: any) => any;
-export declare const generateSubscriptionId: () => number;
-export declare const encodePubsubMsg: (pubsubMsg: DecryptedChallengeMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeRequestMessageType | DecryptedChallengeVerificationMessageType) => EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageType | EncodedDecryptedChallengeVerificationMessageType;

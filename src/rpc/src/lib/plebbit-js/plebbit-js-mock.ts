@@ -79,7 +79,7 @@ export class Plebbit extends EventEmitter {
   }
 
   async listSubplebbits() {
-    return [...new Set(['list subplebbit address 1', 'list subplebbit address 2', ...Object.keys(createdOwnerSubplebbits)])]
+    return ['list subplebbit address 1', 'list subplebbit address 2', ...Object.keys(createdOwnerSubplebbits)]
   }
 
   async createComment(createCommentOptions: any) {

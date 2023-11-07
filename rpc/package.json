@@ -11,70 +11,15 @@
   },
   "version": "0.0.1",
   "files": [
-    "dist"
+    "../dist/node/rpc/src"
   ],
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "main":  "../dist/node/rpc/src/index.js",
+  "typings": "../dist/node/rpc/src/index.d.ts",
   "scripts": {
-    "prebuild": "rm -rf dist",
-    "build": "tsc --project config/tsconfig.json",
-    "build:watch": "tsc --project config/tsconfig.json --watch",
-    "webpack": "webpack --mode development --config config/webpack.config.js",
-    "webpack:watch": "while true; do webpack watch --mode development --config config/webpack.config.js; sleep 1; done",
     "test": "mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
     "test:browser": "karma start config/karma.conf.js",
     "test:server": "rm -rf .plebbit/ && DEBUG=plebbit-js-rpc:* nodemon --watch dist test/test-server",
     "test:server:wait-on": "wait-on http://localhost:59281 --timeout 120000",
     "prettier": "prettier {src,test,config}/**/*.{cjs,js,jsx,ts,tsx} --config config/prettier.config.js --write"
-  },
-  "dependencies": {
-    "rpc-websockets": "7.5.1",
-    "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger"
-  },
-  "devDependencies": {
-    "@babel/plugin-transform-runtime": "7.17.12",
-    "@babel/preset-env": "7.17.12",
-    "@tsconfig/recommended": "1.0.1",
-    "@types/node": "16.9.0",
-    "@types/ws": "^8.5.5",
-    "@typescript-eslint/eslint-plugin": "5.7.0",
-    "@typescript-eslint/parser": "5.7.0",
-    "babel-loader": "8.2.5",
-    "chai": "4.3.6",
-    "chokidar": "3.5.3",
-    "dotenv": "16.0.1",
-    "eslint": "8.4.1",
-    "eslint-plugin-tsdoc": "0.2.14",
-    "fs-extra": "10.1.0",
-    "go-ipfs": "0.16.0",
-    "husky": "4.3.8",
-    "karma": "6.3.20",
-    "karma-chai": "0.1.0",
-    "karma-chrome-launcher": "3.1.1",
-    "karma-firefox-launcher": "2.1.2",
-    "karma-mocha": "2.0.1",
-    "karma-sinon": "1.0.5",
-    "karma-spec-reporter": "0.0.34",
-    "lint-staged": "12.3.8",
-    "mocha": "10.0.0",
-    "nodemon": "^2.0.22",
-    "prettier": "2.3.2",
-    "sinon": "14.0.0",
-    "tempy": "1.0.1",
-    "typescript": "5.1.3",
-    "wait-on": "6.0.1",
-    "webpack": "5.72.1",
-    "webpack-cli": "4.9.2",
-    "webpack-watch-files-plugin": "1.2.1"
-  },
-  "lint-staged": {
-    "{src,test,config}/**/*.{cjs,js,jsx,ts,tsx}": [
-      "prettier --config config/prettier.config.js --write"
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   }
 }

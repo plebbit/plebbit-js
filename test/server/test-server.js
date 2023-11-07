@@ -160,7 +160,7 @@ const startIpfsNodes = async () => {
     if (process.env["USE_RPC"] === "1") {
         // run RPC here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
-        const PlebbitRpc = require("../../rpc/dist/index");
+        const PlebbitRpc = require("../../rpc");
         const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
