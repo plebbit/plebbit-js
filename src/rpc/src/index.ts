@@ -62,7 +62,7 @@ class PlebbitWsServer extends EventEmitter {
             this.emit("error", error);
         });
 
-        this.emit("error", (err) => {
+        this.on("error", (err) => {
             log.error(err);
         });
 
