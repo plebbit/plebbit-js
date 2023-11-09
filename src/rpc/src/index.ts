@@ -5,7 +5,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types";
-import { Plebbit } from "../../plebbit"
+import { Plebbit } from "../../plebbit";
 import {
     CommentEditPubsubMessage,
     CommentPubsubMessage,
@@ -18,7 +18,7 @@ import {
 import { WebSocket } from "ws";
 import Publication from "../../publication";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types";
-import { Subplebbit } from "../../subplebbit/subplebbit"
+import { Subplebbit } from "../../subplebbit/subplebbit";
 import lodash from "lodash";
 
 // store started subplebbits  to be able to stop them
@@ -43,6 +43,7 @@ class PlebbitWsServer extends EventEmitter {
 
     constructor({ port, plebbit, plebbitOptions }: PlebbitWsServerClassOptions) {
         super();
+        const log = Logger("plebbit:PlebbitWsServer");
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
         this.rpcWebsockets = new RpcWebsocketsServer({
@@ -59,6 +60,10 @@ class PlebbitWsServer extends EventEmitter {
         });
         this.plebbit.on("error", (error: any) => {
             this.emit("error", error);
+        });
+
+        this.emit("error", (err) => {
+            log.error(err);
         });
 
         // save connections to send messages to them later
@@ -295,7 +300,9 @@ class PlebbitWsServer extends EventEmitter {
     async setSettings(params: any) {
         const settings = <PlebbitWsServerSettings>params[0];
         this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
-
+        this.plebbit.on("error", (error: any) => {
+            this.emit("error", error);
+        });
         // restart all started subplebbits with new plebbit options
         for (const address in startedSubplebbits) {
             const startedSubplebbit = await getStartedSubplebbit(address);

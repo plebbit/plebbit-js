@@ -138,6 +138,7 @@ export default class PlebbitRpcClient {
     }
 
     async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<Subplebbit> {
+        // This is gonna create a new local sub. Not an instance of an existing sub
         const subProps = <SubplebbitType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
         const subplebbit = new Subplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
         await subplebbit.initSubplebbit(subProps);
