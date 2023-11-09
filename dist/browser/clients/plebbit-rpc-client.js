@@ -158,6 +158,17 @@ var PlebbitRpcClient = /** @class */ (function () {
             });
         });
     };
+    PlebbitRpcClient.prototype.destroy = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                this._webSocketClient.close();
+                this._webSocketClient = undefined;
+                this._subscriptionEvents = undefined;
+                this._pendingSubscriptionMsgs = undefined;
+                return [2 /*return*/];
+            });
+        });
+    };
     PlebbitRpcClient.prototype.getSubscription = function (subscriptionId) {
         if (!this._subscriptionEvents[subscriptionId])
             throw Error("No subscription to RPC with id (".concat(subscriptionId, ")"));

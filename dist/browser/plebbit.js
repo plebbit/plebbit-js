@@ -423,7 +423,8 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
-                        if (!(options.address && !options.signer)) return [3 /*break*/, 2];
+                        if (!(options.address && !options["signer"])) return [3 /*break*/, 2];
+                        options = options;
                         return [4 /*yield*/, this.listSubplebbits()];
                     case 1:
                         rpcSubs = _a.sent();
@@ -499,11 +500,11 @@ var Plebbit = /** @class */ (function (_super) {
                         if (this.plebbitRpcClient)
                             return [2 /*return*/, this._createSubplebbitRpc(options)];
                         canCreateLocalSub = this._canCreateNewLocalSub();
-                        if (options.signer && !canCreateLocalSub)
+                        if (options["signer"] && !canCreateLocalSub)
                             throw new plebbit_error_1.PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
                         if (!canCreateLocalSub)
                             return [2 /*return*/, this._createRemoteSubplebbitInstance(options)];
-                        if (!(options.address && !options.signer)) return [3 /*break*/, 2];
+                        if (!(options.address && !options["signer"])) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.listSubplebbits()];
                     case 1:
                         localSubs = _c.sent();
@@ -514,7 +515,8 @@ var Plebbit = /** @class */ (function (_super) {
                             return [2 /*return*/, this._createRemoteSubplebbitInstance(options)];
                         return [3 /*break*/, 7];
                     case 2:
-                        if (!(!options.address && !options.signer)) return [3 /*break*/, 4];
+                        if (!(!options.address && !options["signer"])) return [3 /*break*/, 4];
+                        options = options;
                         _a = options;
                         return [4 /*yield*/, this.createSigner()];
                     case 3:
@@ -523,7 +525,8 @@ var Plebbit = /** @class */ (function (_super) {
                         log("Did not provide CreateSubplebbitOptions.signer, generated random signer with address (".concat(options.address, ")"));
                         return [2 /*return*/, this._createLocalSub(options)];
                     case 4:
-                        if (!(!options.address && options.signer)) return [3 /*break*/, 6];
+                        if (!(!options.address && options["signer"])) return [3 /*break*/, 6];
+                        options = options;
                         _b = options;
                         return [4 /*yield*/, this.createSigner(options.signer)];
                     case 5:
@@ -653,6 +656,21 @@ var Plebbit = /** @class */ (function (_super) {
                     case 1:
                         resolved = _a.sent();
                         return [2 /*return*/, resolved];
+                }
+            });
+        });
+    };
+    Plebbit.prototype.destroy = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!this.plebbitRpcClient) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.plebbitRpcClient.destroy()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
                 }
             });
         });
