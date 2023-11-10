@@ -368,7 +368,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const isLocalSub = (await this.listSubplebbits()).includes(options?.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options);
-        await subplebbit.prePublish(); // May fail because sub is already being created (locked)
+        if (isLocalSub) await subplebbit._loadLocalSubDb();
+        else await subplebbit._createNewLocalSubDb();
         log(
             `Created ${isLocalSub ? "" : "new"} local subplebbit (${subplebbit.address}) with props:`,
             removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))

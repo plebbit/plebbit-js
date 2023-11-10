@@ -22,15 +22,12 @@ describe(`subplebbit.settings.challenges`, async () => {
     it(`default challenge is captcha-canvas-v3`, async () => {
         // Should be set to default on subplebbit.start()
         const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit?.settings?.challenges).to.be.undefined;
-        expect(subplebbit.challenges).to.be.undefined;
-
-        await subplebbit.start();
         // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
-        await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit?.settings.challenges).to.deep.equal([{ name: "captcha-canvas-v3" }]);
 
+        await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges[0].type).to.equal("image/png");
@@ -44,12 +41,7 @@ describe(`subplebbit.settings.challenges`, async () => {
 
     it(`settings.challenges as null or undefined is parsed as []`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit?.settings?.challenges).to.be.undefined;
-        expect(subplebbit.challenges).to.be.undefined;
-
-        await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        expect(subplebbit?.settings?.challenges).to.not.be.undefined; // Should default to captcha
+        expect(subplebbit?.settings?.challenges).to.not.be.undefined; // Should default to captcha-canvas-v3
 
         for (const noChallengeValue of [null, undefined, []]) {
             await subplebbit.edit({ settings: { challenges: noChallengeValue } });

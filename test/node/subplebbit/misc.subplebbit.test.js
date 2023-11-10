@@ -172,16 +172,14 @@ describe(`subplebbit.pubsubTopic`, async () => {
         await subplebbit.delete();
     });
 
-    it(`subplebbit.pubsubTopic is defaulted to address when start() is called`, async () => {
-        expect(subplebbit.pubsubTopic).to.be.undefined;
-        await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+    it(`subplebbit.pubsubTopic is defaulted to address when subplebbit is first created`, async () => {
         expect(subplebbit.pubsubTopic).to.equal(subplebbit.address);
     });
     it(`Publications can be published to a sub with pubsubTopic=undefined`, async () => {
         await subplebbit.edit({ pubsubTopic: undefined });
         if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
             expect.fail("subplebbit.pubsubTopic should be null or undefined");
+        await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
         if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
             expect.fail("subplebbit.pubsubTopic should be null or undefined");

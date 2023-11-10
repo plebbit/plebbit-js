@@ -93,7 +93,11 @@ import {
     SubplebbitSuggested,
     SubplebbitType
 } from "./types";
-import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "../runtime/node/challenges";
+import {
+    GetChallengeAnswers,
+    getChallengeVerification,
+    getSubplebbitChallengeFromSubplebbitChallengeSettings
+} from "../runtime/node/challenges";
 import { sha256 } from "js-sha256";
 import LRUCache from "lru-cache";
 
@@ -342,28 +346,40 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return signerInNode;
     }
 
-    // TODO rename and make this private
-    async prePublish() {
-        const log = Logger("plebbit-js:subplebbit:prePublish");
-
+    async _createNewLocalSubDb() {
+        // We're creating a totally new subplebbit here with a new db
+        // This function should be called only once per sub
+        const log = Logger("plebbit-js:subplebbit:_createNewLocalSubDb");
         await this.initDbHandlerIfNeeded();
-        await this.dbHandler.lockSubCreation();
         await this.dbHandler.initDbIfNeeded();
-
-        if (await this.dbHandler.keyvHas(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT])) {
-            log(`Merging internal subplebbit state from DB and createSubplebbitOptions`);
-            await this._mergeInstanceStateWithDbState({});
-        }
 
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         await this._initSignerProps();
 
-        if (!(await this.dbHandler.keyvHas(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]))) {
-            log(`Updating the internal state of subplebbit in DB with createSubplebbitOptions`);
-            await this._updateDbInternalState(this.toJSONInternal());
+        // Default props here
+        if (!this.settings?.challenges) {
+            this.settings = { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] };
+            this.challenges = this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+            log(`Defaulted the challenges of subplebbit (${this.address}) to captcha-canvas-v3`);
         }
 
-        await this.dbHandler.unlockSubCreation();
+        if (!this.pubsubTopic) this.pubsubTopic = lodash.clone(this.signer.address);
+        if (typeof this.createdAt !== "number") this.createdAt = timestamp();
+
+        await this._updateDbInternalState(this.toJSONInternal());
+
+        await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+    }
+
+    async _loadLocalSubDb() {
+        // This function will load the InternalSubplebbit props from the local db and update its props with it
+        await this.initDbHandlerIfNeeded();
+        await this.dbHandler.initDbIfNeeded();
+
+        await this._mergeInstanceStateWithDbState({}); // Load InternalSubplebbit from DB here
+        if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+        await this._initSignerProps();
+
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
 
@@ -1595,19 +1611,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         // Import subplebbit keys onto ipfs node
 
         await this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey });
-
-        if (!this.settings?.challenges) await this.edit({ settings: { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] } });
-
-        if (typeof this.pubsubTopic !== "string") {
-            this.pubsubTopic = lodash.clone(this.signer.address);
-            log(`Defaulted subplebbit (${this.address}) pubsub topic to ${this.pubsubTopic} since sub owner hasn't provided any`);
-            await this._updateDbInternalState(lodash.pick(this, "pubsubTopic"));
-        }
-        if (typeof this.createdAt !== "number") {
-            this.createdAt = timestamp();
-            log(`Subplebbit (${this.address}) createdAt has been set to ${this.createdAt}`);
-            await this._updateDbInternalState(lodash.pick(this, "createdAt"));
-        }
 
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });

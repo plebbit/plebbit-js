@@ -8,10 +8,7 @@ const {
     isRpcFlagOn
 } = require("../../../dist/node/test/test-util");
 const { timestamp } = require("../../../dist/node/util");
-const path = require("path");
 const { messages } = require("../../../dist/node/errors");
-const fs = require("fs");
-const { default: waitUntil } = require("async-wait-until");
 
 const stringify = require("safe-stable-stringify");
 
@@ -135,40 +132,3 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: "testEth.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
     });
 });
-
-if (!isRpcFlagOn())
-    describe("Create lock", async () => {
-        let plebbit;
-        before(async () => {
-            plebbit = await mockPlebbit();
-        });
-
-        it(`Can create subplebbit as soon as create lock is unlocked`, async () => {
-            const subSigner = await plebbit.createSigner();
-            const subDbLockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.create.lock`);
-            plebbit.createSubplebbit({ signer: subSigner });
-            await waitUntil(() => fs.existsSync(subDbLockPath), { timeout: 60000, intervalBetweenAttempts: 10 });
-            const watcher = fs.promises.watch(subDbLockPath, {});
-            let eventCount = 0;
-            for await (const event of watcher) {
-                eventCount++;
-                if (eventCount === 2) break;
-            }
-            expect(fs.existsSync(subDbLockPath)).to.be.false;
-            await assert.isFulfilled(plebbit.createSubplebbit({ address: subSigner.address }));
-        });
-
-        it(`Can create subplebbit if create lock is stale (10s)`, async () => {
-            // Lock is considered stale if lock has not been updated in 10000 ms (10s)
-            const sub = await plebbit.createSubplebbit();
-
-            const lockPath = path.join(plebbit.dataPath, "subplebbits", `${sub.address}.create.lock`);
-            await fs.promises.mkdir(lockPath); // Artifically create a create lock
-
-            const timeBefore = Date.now();
-            await assert.isFulfilled(plebbit.createSubplebbit({ address: sub.address }));
-            const elapsedTime = Date.now() - timeBefore;
-            expect(elapsedTime).to.be.greaterThan(10000); // It should take more than 10s because plebbit-js will keep trying to acquire lock until it's stale
-            await sub.delete();
-        });
-    });
