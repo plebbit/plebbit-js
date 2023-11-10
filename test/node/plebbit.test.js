@@ -30,3 +30,10 @@ describe("plebbit", () => {
         await newSubplebbit.stop();
     });
 });
+
+describe(`Plebbit.challenges`, async () => {
+    it(`Plebbit.challenges contains default challenges`, async () => {
+        const challenges = Object.keys(Plebbit.challenges);
+        expect(challenges).to.deep.equal(["text-math", "captcha-canvas-v3", "fail", "blacklist", "question", "evm-contract-call"]);
+    });
+});

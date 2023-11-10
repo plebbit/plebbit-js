@@ -14,3 +14,9 @@ describe("plebbit", () => {
         expect(plebbit.dataPath).to.equal(undefined);
     });
 });
+
+describe(`Plebbit.challenges`, async () => {
+    it(`Plebbit.challenges = {} in browser environments`, async () => {
+        expect(Plebbit.challenges).to.deep.equal({});
+    });
+});
