@@ -68,7 +68,9 @@ class PlebbitWsServer extends EventEmitter {
 
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
+            //@ts-expect-error
             this.connections[ws._id] = ws;
+            //@ts-expect-error
             this.subscriptionCleanups[ws._id] = {};
         });
 
