@@ -393,6 +393,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
     ): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        log.trace("Received options: ", options);
 
         if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
