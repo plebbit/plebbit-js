@@ -1,5 +1,5 @@
 const {EventEmitter} = require('events')
-const {plebbitJsChallenges} = require('../../../dist/node/challenges')
+const {plebbitJsChallenges} = require('../../../dist/node/runtime/node/challenges')
 
 // define mock Author instances
 const highKarmaAuthor = {

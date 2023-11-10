@@ -4,7 +4,7 @@ const {
     getChallengeVerification,
     plebbitJsChallenges,
     getSubplebbitChallengeFromSubplebbitChallengeSettings
-} = require("../../dist/node/challenges");
+} = require("../../dist/node/runtime/node/challenges");
 const { expect } = require("chai");
 const {
     Plebbit,
