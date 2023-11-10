@@ -338,6 +338,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private async _createSubplebbitRpc(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType) {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
 
+        if (!options.address)
+            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
+                options
+            });
         if (options.address && !options["signer"]) {
             options = options as CreateSubplebbitOptions;
             const rpcSubs = await this.listSubplebbits();
@@ -355,6 +359,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private async _createRemoteSubplebbitInstance(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
 
+        if (!options.address)
+            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
+                options
+            });
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
@@ -365,7 +373,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         const canCreateLocalSub = this._canCreateNewLocalSub();
         if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
-        const isLocalSub = (await this.listSubplebbits()).includes(options?.address); // Sub exists already, only pass address so we don't override other props
+        if (!options.address)
+            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
+                options
+            });
+        const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new Subplebbit(this);
         await subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options);
         if (isLocalSub) await subplebbit._loadLocalSubDb();
@@ -377,7 +389,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return subplebbit;
     }
 
-    async createSubplebbit(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}): Promise<Subplebbit> {
+    async createSubplebbit(
+        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
+    ): Promise<Subplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
 
         if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
