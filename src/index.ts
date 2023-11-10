@@ -2,11 +2,11 @@ import polyfill from "./runtime/node/polyfill";
 polyfill();
 import * as PlebbitClass from "./plebbit";
 import { PlebbitOptions } from "./types";
-import { setNativeFunctions } from "./runtime/node/util";
+import { setNativeFunctions} from "./runtime/node/util";
 import nodeNativeFunctions from "./runtime/node/native-functions";
 import browserNativeFunctions from "./runtime/browser/native-functions";
 import { shortifyAddress, shortifyCid } from "./util";
-import { plebbitJsChallenges } from "./challenges";
+import { plebbitJsChallenges } from "./runtime/node/challenges";
 
 const Plebbit = async function Plebbit(plebbitOptions: PlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
     //@ts-expect-error

@@ -1,6 +1,5 @@
 import TinyCache from 'tinycache'
 import QuickLRU from 'quick-lru'
-import {RateLimiter} from 'limiter'
 import {
   testVote, 
   testReply,
@@ -10,11 +9,10 @@ import {
   testRole
 } from './utils'
 import {testRateLimit} from './rate-limiter'
-import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../subplebbit/types'
-import {  CommentUpdate, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../types'
-import { Subplebbit } from '../../subplebbit/subplebbit'
-import { Plebbit } from '../../plebbit'
-import { Comment } from '../../comment'
+import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../../../subplebbit/types'
+import {   DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types'
+import { Subplebbit } from '../../../../subplebbit/subplebbit'
+import { Comment } from '../../../../comment'
 
 const shouldExcludePublication = (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: Subplebbit) => {
   if (!subplebbitChallenge) {

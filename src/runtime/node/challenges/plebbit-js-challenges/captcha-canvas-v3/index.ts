@@ -1,9 +1,9 @@
 // import {createCaptcha} from 'captcha-canvas'
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants"
-import nodeNativeFunctions from "../../../runtime/node/native-functions"
+import nodeNativeFunctions from "../../../../../runtime/node/native-functions"
 
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../subplebbit/types"
-import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../types"
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types"
+import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../types"
 
 
 const optionInputs = [

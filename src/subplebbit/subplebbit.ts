@@ -93,7 +93,7 @@ import {
     SubplebbitSuggested,
     SubplebbitType
 } from "./types";
-import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "../challenges";
+import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "../runtime/node/challenges";
 import { sha256 } from "js-sha256";
 import LRUCache from "lru-cache";
 

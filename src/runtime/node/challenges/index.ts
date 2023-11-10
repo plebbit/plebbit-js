@@ -7,10 +7,10 @@ import fail from './plebbit-js-challenges/fail'
 import blacklist from './plebbit-js-challenges/blacklist'
 import question from './plebbit-js-challenges/question'
 import evmContractCall from './plebbit-js-challenges/evm-contract-call'
-import { Subplebbit } from '../subplebbit/subplebbit'
-import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../types'
-import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../subplebbit/types'
-import { ChallengeVerificationMessage } from '../challenge'
+import { Subplebbit } from '../../../subplebbit/subplebbit'
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../types'
+import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../subplebbit/types'
+import { ChallengeVerificationMessage } from '../../../challenge'
 
 
 type PendingChallenge = Challenge & {index: number};

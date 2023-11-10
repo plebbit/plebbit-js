@@ -1,5 +1,5 @@
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../subplebbit/types"
-import { DecryptedChallengeRequestMessageType } from "../../types"
+import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../../../types"
 
 const optionInputs = [
 {

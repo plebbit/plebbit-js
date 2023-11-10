@@ -1,6 +1,6 @@
-import { Subplebbit } from "../../subplebbit/subplebbit"
-import { SubplebbitRole } from "../../subplebbit/types"
-import { DecryptedChallengeRequestMessageType } from "../../types"
+import { Subplebbit } from "../../../../subplebbit/subplebbit"
+import { SubplebbitRole } from "../../../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../../../types"
 
 // e.g. secondsToGoBack = 60 would return the timestamp 1 minute ago
 const getTimestampSecondsAgo = (secondsToGoBack: number) => Math.round(Date.now() / 1000) - secondsToGoBack
