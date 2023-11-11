@@ -337,11 +337,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private async _createSubplebbitRpc(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType) {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
-
-        if (!options.address)
-            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
-                options
-            });
+        log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
         if (options.address && !options["signer"]) {
             options = options as CreateSubplebbitOptions;
             const rpcSubs = await this.listSubplebbits();
