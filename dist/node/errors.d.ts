@@ -4,6 +4,7 @@ export declare enum messages {
     ERR_PUBLICATION_MISSING_FIELD = "Publication is missing field(s)",
     ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
+    ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS = "The options sent to plebbit.createSubplebbit() is missing address or signer",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
     ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD = "The ENS address has no subplebbit-address text record that points to IPNS name",
     ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS = "plebbit-author-address resolves to an invalid IPNS",

@@ -66,7 +66,8 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _toJSONBase;
     toJSONIpfs(): SubplebbitIpfsType;
     private _importSignerIntoIpfsIfNeeded;
-    prePublish(): Promise<void>;
+    _createNewLocalSubDb(): Promise<void>;
+    _loadLocalSubDb(): Promise<void>;
     private assertDomainResolvesCorrectly;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<Subplebbit>;
     _setState(newState: Subplebbit["state"]): void;

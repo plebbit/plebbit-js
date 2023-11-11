@@ -423,6 +423,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
                         if (!(options.address && !options["signer"])) return [3 /*break*/, 2];
                         options = options;
                         return [4 /*yield*/, this.listSubplebbits()];
@@ -450,7 +451,12 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createRemoteSubplebbit");
+                        log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
+                        if (!options.address)
+                            throw new plebbit_error_1.PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
+                                options: options
+                            });
                         subplebbit = new subplebbit_1.Subplebbit(this);
                         return [4 /*yield*/, subplebbit.initSubplebbit(options)];
                     case 1:
@@ -467,20 +473,32 @@ var Plebbit = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createLocalSubplebbit");
+                        log.trace("Received subplebbit options to create a local subplebbit instance:", options);
                         canCreateLocalSub = this._canCreateNewLocalSub();
                         if (!canCreateLocalSub)
                             throw new plebbit_error_1.PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
+                        if (!options.address)
+                            throw new plebbit_error_1.PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
+                                options: options
+                            });
                         return [4 /*yield*/, this.listSubplebbits()];
                     case 1:
-                        isLocalSub = (_a.sent()).includes(options === null || options === void 0 ? void 0 : options.address);
+                        isLocalSub = (_a.sent()).includes(options.address);
                         subplebbit = new subplebbit_1.Subplebbit(this);
                         return [4 /*yield*/, subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options)];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, subplebbit.prePublish()];
+                        if (!isLocalSub) return [3 /*break*/, 4];
+                        return [4 /*yield*/, subplebbit._loadLocalSubDb()];
                     case 3:
-                        _a.sent(); // May fail because sub is already being created (locked)
+                        _a.sent();
+                        return [3 /*break*/, 6];
+                    case 4: return [4 /*yield*/, subplebbit._createNewLocalSubDb()];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6:
                         log("Created ".concat(isLocalSub ? "" : "new", " local subplebbit (").concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                         return [2 /*return*/, subplebbit];
                 }
@@ -495,6 +513,7 @@ var Plebbit = /** @class */ (function (_super) {
                 switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:plebbit:createSubplebbit");
+                        log.trace("Received options: ", options);
                         if ((options === null || options === void 0 ? void 0 : options.address) && (0, util_2.doesEnsAddressHaveCapitalLetter)(options === null || options === void 0 ? void 0 : options.address))
                             throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options === null || options === void 0 ? void 0 : options.address });
                         if (this.plebbitRpcClient)

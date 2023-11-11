@@ -119,6 +119,7 @@ var PlebbitWsServer = /** @class */ (function (_super) {
         _this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
         _this.publishing = {};
+        var log = (0, plebbit_logger_1.default)("plebbit:PlebbitWsServer");
         // don't instantiate plebbit in constructor because it's an async function
         _this.plebbit = plebbit;
         _this.rpcWebsockets = new rpc_websockets_1.Server({
@@ -134,6 +135,9 @@ var PlebbitWsServer = /** @class */ (function (_super) {
         });
         _this.plebbit.on("error", function (error) {
             _this.emit("error", error);
+        });
+        _this.on("error", function (err) {
+            log.error(err);
         });
         // save connections to send messages to them later
         _this.ws.on("connection", function (ws) {
@@ -482,6 +486,7 @@ var PlebbitWsServer = /** @class */ (function (_super) {
     PlebbitWsServer.prototype.setSettings = function (params) {
         return __awaiter(this, void 0, void 0, function () {
             var settings, _a, _b, _c, _d, _i, address, startedSubplebbit, error_1, _e, _f, error_2;
+            var _this = this;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
@@ -490,6 +495,9 @@ var PlebbitWsServer = /** @class */ (function (_super) {
                         return [4 /*yield*/, plebbit_js_1.default.Plebbit(settings.plebbitOptions)];
                     case 1:
                         _a.plebbit = _g.sent();
+                        this.plebbit.on("error", function (error) {
+                            _this.emit("error", error);
+                        });
                         _b = startedSubplebbits;
                         _c = [];
                         for (_d in _b)

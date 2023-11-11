@@ -90,9 +90,6 @@ export declare class DbHandler {
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;
     isSubStartLocked(subAddress?: string): Promise<any>;
-    lockSubCreation(subAddress?: string): Promise<void>;
-    unlockSubCreation(subAddress?: string): Promise<void>;
-    isSubCreationLocked(subAddress?: string): Promise<any>;
     lockSubState(subAddress?: string): Promise<void>;
     unlockSubState(subAddress?: string): Promise<void>;
     subDbExists(subAddress?: string): boolean;

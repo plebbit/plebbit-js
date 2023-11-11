@@ -68,7 +68,7 @@ var util_1 = require("./runtime/browser/util");
 var native_functions_1 = __importDefault(require("./runtime/browser/native-functions"));
 var native_functions_2 = __importDefault(require("./runtime/browser/native-functions"));
 var util_2 = require("./util");
-var challenges_1 = require("./challenges");
+var challenges_1 = require("./runtime/browser/challenges");
 var Plebbit = function Plebbit(plebbitOptions) {
     if (plebbitOptions === void 0) { plebbitOptions = {}; }
     return __awaiter(this, void 0, void 0, function () {
