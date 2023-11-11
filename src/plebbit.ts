@@ -357,8 +357,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createRemoteSubplebbitInstance(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
-        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
 
+        log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
         if (!options.address)
             throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
                 options
@@ -370,7 +371,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createLocalSub(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
-        const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        const log = Logger("plebbit-js:plebbit:createLocalSubplebbit");
+        log.trace("Received subplebbit options to create a local subplebbit instance:", options);
+
         const canCreateLocalSub = this._canCreateNewLocalSub();
         if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
         if (!options.address)
