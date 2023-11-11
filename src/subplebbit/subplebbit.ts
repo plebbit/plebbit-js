@@ -1607,6 +1607,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setStartedState("publishing-ipns");
         this._isSubRunningLocally = true;
         await this.dbHandler.initDbIfNeeded();
+        await this.dbHandler.initDestroyedConnection();
 
         // Import subplebbit keys onto ipfs node
 
