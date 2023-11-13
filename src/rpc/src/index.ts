@@ -211,7 +211,6 @@ class PlebbitWsServer extends EventEmitter {
 
             // cleanup function
             this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-                subplebbit.stop().catch((error: any) => log.error("subplebbit stop error", { error, params }));
                 subplebbit.removeAllListeners("update");
                 subplebbit.removeAllListeners("startedstatechange");
                 subplebbit.removeAllListeners("challenge");
