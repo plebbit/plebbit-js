@@ -3,6 +3,7 @@ import { Signer } from "../signer";
 import { PostsPages } from "../pages";
 import { Plebbit } from "../plebbit";
 import { DbHandlerPublicAPI, ProtocolVersion, SubplebbitEvents } from "../types";
+import Logger from "@plebbit/plebbit-logger";
 import { JsonSignature } from "../signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { SubplebbitClientsManager } from "../clients/client-manager";
@@ -66,6 +67,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _toJSONBase;
     toJSONIpfs(): SubplebbitIpfsType;
     private _importSignerIntoIpfsIfNeeded;
+    _defaultSettingsOfChallenges(log: Logger): Promise<void>;
     _createNewLocalSubDb(): Promise<void>;
     _loadLocalSubDb(): Promise<void>;
     private assertDomainResolvesCorrectly;

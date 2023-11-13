@@ -364,41 +364,56 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._createNewLocalSubDb = function () {
+    Subplebbit.prototype._defaultSettingsOfChallenges = function (log) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log;
             return __generator(this, function (_b) {
                 switch (_b.label) {
+                    case 0:
+                        if (!!((_a = this.settings) === null || _a === void 0 ? void 0 : _a.challenges)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.edit({ settings: __assign(__assign({}, this.settings), { challenges: [{ name: "captcha-canvas-v3" }] }) })];
+                    case 1:
+                        _b.sent();
+                        log("Defaulted the challenges of subplebbit (".concat(this.address, ") to captcha-canvas-v3"));
+                        _b.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Subplebbit.prototype._createNewLocalSubDb = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var log;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_createNewLocalSubDb");
                         return [4 /*yield*/, this.initDbHandlerIfNeeded()];
                     case 1:
-                        _b.sent();
+                        _a.sent();
                         return [4 /*yield*/, this.dbHandler.initDbIfNeeded()];
                     case 2:
-                        _b.sent();
+                        _a.sent();
                         if (!this.signer)
                             (0, util_1.throwWithErrorCode)("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
                         return [4 /*yield*/, this._initSignerProps()];
                     case 3:
-                        _b.sent();
+                        _a.sent();
                         // Default props here
-                        if (!((_a = this.settings) === null || _a === void 0 ? void 0 : _a.challenges)) {
-                            this.settings = __assign(__assign({}, this.settings), { challenges: [{ name: "captcha-canvas-v3" }] });
-                            this.challenges = this.settings.challenges.map(challenges_1.getSubplebbitChallengeFromSubplebbitChallengeSettings);
-                            log("Defaulted the challenges of subplebbit (".concat(this.address, ") to captcha-canvas-v3"));
-                        }
+                        return [4 /*yield*/, this._defaultSettingsOfChallenges(log)];
+                    case 4:
+                        // Default props here
+                        _a.sent();
                         if (!this.pubsubTopic)
                             this.pubsubTopic = lodash_1.default.clone(this.signer.address);
                         if (typeof this.createdAt !== "number")
                             this.createdAt = (0, util_1.timestamp)();
                         return [4 /*yield*/, this._updateDbInternalState(this.toJSONInternal())];
-                    case 4:
-                        _b.sent();
-                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
                     case 5:
-                        _b.sent(); // Need to destory connection so process wouldn't hang
+                        _a.sent();
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 6:
+                        _a.sent(); // Need to destory connection so process wouldn't hang
                         return [2 /*return*/];
                 }
             });
@@ -2138,17 +2153,20 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 9:
                         _c.sent();
+                        return [4 /*yield*/, this._defaultSettingsOfChallenges(log)];
+                    case 10:
+                        _c.sent();
                         // Import subplebbit keys onto ipfs node
                         return [4 /*yield*/, this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey })];
-                    case 10:
+                    case 11:
                         // Import subplebbit keys onto ipfs node
                         _c.sent();
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState })];
-                    case 11:
+                    case 12:
                         _c.sent();
                         return [4 /*yield*/, this._repinCommentsIPFSIfNeeded()];
-                    case 12:
+                    case 13:
                         _c.sent();
                         this.syncIpnsWithDb()
                             .then(function () { return _this._syncLoop(_this.plebbit.publishInterval); })
