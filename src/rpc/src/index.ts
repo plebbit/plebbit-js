@@ -233,12 +233,10 @@ class PlebbitWsServer extends EventEmitter {
     async stopSubplebbit(params: any) {
         const address = <string>params[0];
 
-        if (!(await getStartedSubplebbit(address))) {
-            return true;
-        }
+        const startedSubplebbit = await getStartedSubplebbit(address);
+        if (!startedSubplebbit) return true;
 
-        const subplebbit = await this.plebbit.createSubplebbit({ address });
-        await subplebbit.stop();
+        await startedSubplebbit.stop();
         delete startedSubplebbits[address];
 
         return true;
