@@ -553,6 +553,16 @@ class PlebbitWsServer extends EventEmitter {
         delete this.subscriptionCleanups[connectionId][subscriptionId];
         return true;
     }
+
+    async destroy(){
+        for (const subplebbitAddress of Object.keys(startedSubplebbits)) {
+            const startedSub = await getStartedSubplebbit(subplebbitAddress);
+            await startedSub.stop();
+            delete startedSubplebbits[subplebbitAddress];
+        }
+        this.ws.close();
+        await this.plebbit.destroy();
+    }
 }
 
 const createPlebbitWsServer = async ({ port, plebbitOptions }: PlebbitWsServerOptions) => {
