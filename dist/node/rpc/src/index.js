@@ -829,6 +829,38 @@ var PlebbitWsServer = /** @class */ (function (_super) {
             });
         });
     };
+    PlebbitWsServer.prototype.destroy = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _i, _a, subplebbitAddress, startedSub;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _i = 0, _a = Object.keys(startedSubplebbits);
+                        _b.label = 1;
+                    case 1:
+                        if (!(_i < _a.length)) return [3 /*break*/, 5];
+                        subplebbitAddress = _a[_i];
+                        return [4 /*yield*/, getStartedSubplebbit(subplebbitAddress)];
+                    case 2:
+                        startedSub = _b.sent();
+                        return [4 /*yield*/, startedSub.stop()];
+                    case 3:
+                        _b.sent();
+                        delete startedSubplebbits[subplebbitAddress];
+                        _b.label = 4;
+                    case 4:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 5:
+                        this.ws.close();
+                        return [4 /*yield*/, this.plebbit.destroy()];
+                    case 6:
+                        _b.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
     return PlebbitWsServer;
 }(events_1.EventEmitter));
 var createPlebbitWsServer = function (_a) {

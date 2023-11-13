@@ -69,6 +69,7 @@ declare class PlebbitWsServer extends EventEmitter {
     publishChallengeAnswers(params: any): Promise<boolean>;
     resolveAuthorAddress(params: any): Promise<string>;
     unsubscribe(params: any, connectionId: string): Promise<boolean>;
+    destroy(): Promise<void>;
 }
 declare const PlebbitRpc: {
     PlebbitWsServer: ({ port, plebbitOptions }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
