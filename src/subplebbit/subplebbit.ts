@@ -346,6 +346,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return signerInNode;
     }
 
+    async _defaultSettingsOfChallenges(log: Logger) {
+        if (!this.settings?.challenges) {
+            await this.edit({ settings: { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] } });
+            log(`Defaulted the challenges of subplebbit (${this.address}) to captcha-canvas-v3`);
+        }
+    }
+
     async _createNewLocalSubDb() {
         // We're creating a totally new subplebbit here with a new db
         // This function should be called only once per sub
@@ -357,11 +364,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._initSignerProps();
 
         // Default props here
-        if (!this.settings?.challenges) {
-            this.settings = { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] };
-            this.challenges = this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
-            log(`Defaulted the challenges of subplebbit (${this.address}) to captcha-canvas-v3`);
-        }
+        await this._defaultSettingsOfChallenges(log);
 
         if (!this.pubsubTopic) this.pubsubTopic = lodash.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
@@ -1609,6 +1612,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.dbHandler.initDbIfNeeded();
         await this.dbHandler.initDestroyedConnection();
 
+        await this._defaultSettingsOfChallenges(log);
         // Import subplebbit keys onto ipfs node
 
         await this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey });
