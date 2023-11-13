@@ -338,7 +338,6 @@ var PlebbitWsServer = /** @class */ (function (_super) {
                         subplebbit_1.on("error", function (error) { return sendEvent("error", error); });
                         // cleanup function
                         this.subscriptionCleanups[connectionId][subscriptionId] = function () {
-                            subplebbit_1.stop().catch(function (error) { return log.error("subplebbit stop error", { error: error, params: params }); });
                             subplebbit_1.removeAllListeners("update");
                             subplebbit_1.removeAllListeners("startedstatechange");
                             subplebbit_1.removeAllListeners("challenge");
@@ -365,21 +364,18 @@ var PlebbitWsServer = /** @class */ (function (_super) {
     };
     PlebbitWsServer.prototype.stopSubplebbit = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, subplebbit;
+            var address, startedSubplebbit;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         address = params[0];
                         return [4 /*yield*/, getStartedSubplebbit(address)];
                     case 1:
-                        if (!(_a.sent())) {
+                        startedSubplebbit = _a.sent();
+                        if (!startedSubplebbit)
                             return [2 /*return*/, true];
-                        }
-                        return [4 /*yield*/, this.plebbit.createSubplebbit({ address: address })];
+                        return [4 /*yield*/, startedSubplebbit.stop()];
                     case 2:
-                        subplebbit = _a.sent();
-                        return [4 /*yield*/, subplebbit.stop()];
-                    case 3:
                         _a.sent();
                         delete startedSubplebbits[address];
                         return [2 /*return*/, true];

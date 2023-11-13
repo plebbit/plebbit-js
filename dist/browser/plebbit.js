@@ -493,14 +493,14 @@ var Plebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, subplebbit._loadLocalSubDb()];
                     case 3:
                         _a.sent();
+                        log.trace("Created instance of existing local subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                         return [3 /*break*/, 6];
                     case 4: return [4 /*yield*/, subplebbit._createNewLocalSubDb()];
                     case 5:
                         _a.sent();
+                        log.trace("Created a new local subplebbit (".concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
                         _a.label = 6;
-                    case 6:
-                        log("Created ".concat(isLocalSub ? "" : "new", " local subplebbit (").concat(subplebbit.address, ") with props:"), (0, util_2.removeKeysWithUndefinedValues)(lodash_1.default.omit(subplebbit.toJSON(), ["signer"])));
-                        return [2 /*return*/, subplebbit];
+                    case 6: return [2 /*return*/, subplebbit];
                 }
             });
         });
