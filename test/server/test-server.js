@@ -60,28 +60,32 @@ const startIpfsNodes = async () => {
     await Promise.all(
         [offlineNodeArgs, pubsubNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs].map(async (nodeArgs) => {
             try {
-                execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} init`, { stdio: "ignore" });
+                execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
             } catch {}
 
-            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`, {
-                stdio: "inherit"
+            execSync(` ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`, {
+                stdio: "inherit",
+                env: { IPFS_PATH: nodeArgs.dir }
             });
-            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`, {
-                stdio: "inherit"
+            execSync(`${ipfsPath} config  Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`, {
+                stdio: "inherit",
+                env: { IPFS_PATH: nodeArgs.dir }
             });
-            execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} config Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
-                stdio: "inherit"
+            execSync(`${ipfsPath} config Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
+                stdio: "inherit",
+                env: { IPFS_PATH: nodeArgs.dir }
             });
 
             if (nodeArgs.extraCommands)
                 for (const extraCommand of nodeArgs.extraCommands)
-                    execSync(`IPFS_PATH=${nodeArgs.dir} ${ipfsPath} ${extraCommand}`, {
-                        stdio: "inherit"
+                    execSync(`${ipfsPath} ${extraCommand}`, {
+                        stdio: "inherit",
+                        env: { IPFS_PATH: nodeArgs.dir }
                     });
 
-            const ipfsCmd = `IPFS_PATH=${nodeArgs.dir} ${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+            const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
             console.log(ipfsCmd);
-            const ipfsProcess = exec(ipfsCmd);
+            const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
             ipfsProcess.stderr.on("data", console.error);
             ipfsProcess.stdin.on("data", console.log);
             ipfsProcess.stdout.on("data", console.log);
@@ -153,7 +157,6 @@ const startIpfsNodes = async () => {
     }).listen(33417);
 
     require("./pubsub-mock-server");
-
 
     if (process.env["USE_RPC"] === "1") {
         // run RPC here
