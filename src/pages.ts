@@ -17,6 +17,7 @@ import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
 import { Plebbit } from "./plebbit";
 import { PlebbitError } from "./plebbit-error";
+import Logger from "@plebbit/plebbit-logger";
 
 type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
@@ -97,7 +98,12 @@ export class BasePages implements PagesType {
 
     toJSONIpfs(): PagesTypeIpfs | undefined {
         if (!this.pages) return undefined;
-        assert(this._pagesIpfs);
+        if (!this._pagesIpfs) {
+            Logger("plebbit-js:pages:toJSONIpfs").error(
+                "toJSONIpfs() is called even though _pagesIpfs is undefined. This error should not persist"
+            );
+            return;
+        }
         return {
             pages: this._pagesIpfs,
             pageCids: this.pageCids
