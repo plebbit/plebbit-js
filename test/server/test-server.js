@@ -63,7 +63,7 @@ const startIpfsNodes = async () => {
                 execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
             } catch {}
 
-            execSync(` ${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'`, {
+            execSync(`${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin \'["*"]\'`, {
                 stdio: "inherit",
                 env: { IPFS_PATH: nodeArgs.dir }
             });
