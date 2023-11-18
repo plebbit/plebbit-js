@@ -1,0 +1,25 @@
+# CI for testing node tests on Windows
+name: Test Plebbit-js on windows
+
+on: workflow_call
+
+jobs:
+    test-plebbit-node-windows:
+        runs-on: windows-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-node@v3
+              with:
+                  node-version: 16
+                  cache: "npm"
+
+            # Setup plebbit-js deps
+            - run: npm ci
+            - run: npm run build
+            - run: npm run webpack
+            - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
+            - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
+            - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:remote
