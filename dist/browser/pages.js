@@ -61,6 +61,7 @@ var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_client_manager_1 = require("./clients/pages-client-manager");
 var plebbit_error_1 = require("./plebbit-error");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var BasePages = /** @class */ (function () {
     function BasePages(props) {
         this._plebbit = props.plebbit;
@@ -134,7 +135,10 @@ var BasePages = /** @class */ (function () {
     BasePages.prototype.toJSONIpfs = function () {
         if (!this.pages)
             return undefined;
-        (0, assert_1.default)(this._pagesIpfs);
+        if (!this._pagesIpfs) {
+            (0, plebbit_logger_1.default)("plebbit-js:pages:toJSONIpfs").error("toJSONIpfs() is called even though _pagesIpfs is undefined. This error should not persist");
+            return;
+        }
         return {
             pages: this._pagesIpfs,
             pageCids: this.pageCids
