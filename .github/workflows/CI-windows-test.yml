@@ -8,6 +8,9 @@ jobs:
     test-plebbit-node-windows:
         runs-on: windows-latest
         timeout-minutes: 20
+        defaults:
+            run:
+                shell: bash
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-node@v3
