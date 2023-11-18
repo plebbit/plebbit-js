@@ -690,7 +690,6 @@ An object which may have the following keys:
 | ---- | ---- | ------- | ----------- |
 | address | `string` or `undefined` | `undefined` | `Address` of the subplebbit |
 | signer | `Signer` or `undefined` | `undefined` | (Subplebbit owners only) Optional `Signer` of the subplebbit to create a subplebbit with a specific private key |
-| database | `KnexConfig` or `undefined` | SQLite database at `${plebbit.dataPath}/subplebbits/${subplebbit.address}` | (Subplebbit owners only) Optional [KnexConfig](https://www.npmjs.com/package/knex#examples) |
 | ...subplebbit | `any` | `undefined` | `CreateSubplebbitOptions` can also initialize any property on the `Subplebbit` instance |
 
 #### Returns
@@ -1012,7 +1011,7 @@ const signerFromPrivateKey = await plebbit.createSigner({privateKey: '-----BEGIN
 
 ### `plebbit.listSubplebbits()`
 
-> (Node only) Get all the subplebbit addresses in the `${plebbit.dataPath}/subplebbits` folder. Same as doing `ls ${plebbit.dataPath}/subplebbits`.
+> (Only for Node or over RPC) Get all the subplebbit addresses in the `${plebbit.dataPath}/subplebbits` folder. Same as doing `ls ${plebbit.dataPath}/subplebbits`.
 
 #### Returns
 
