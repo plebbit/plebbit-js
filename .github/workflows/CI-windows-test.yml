@@ -21,7 +21,6 @@ jobs:
             # Setup plebbit-js deps
             - run: npm ci
             - run: npm run build
-            - run: npm run webpack
             - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
             - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
             - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
