@@ -63,21 +63,14 @@ const startIpfsNodes = async () => {
                 execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
             } catch {}
 
-            execSync(`${ipfsPath} config Addresses.API /ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`, {
-                stdio: "inherit",
-                env: { IPFS_PATH: nodeArgs.dir }
-            });
-            execSync(`${ipfsPath} config Addresses.Gateway /ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`, {
-                stdio: "inherit",
-                env: { IPFS_PATH: nodeArgs.dir }
-            });
+            const ipfsConfigPath = path.join(nodeArgs.dir, "config");
+            const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
 
-            const command = `${ipfsPath} config --json API.HTTPHeaders.Access-Control-Allow-Origin '${JSON.stringify(["*"])}'`;
-            console.log(command);
-            execSync(command, {
-                stdio: "inherit",
-                env: { IPFS_PATH: nodeArgs.dir }
-            });
+            ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
+            ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+            ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+
+            fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
             if (nodeArgs.extraCommands)
                 for (const extraCommand of nodeArgs.extraCommands)
