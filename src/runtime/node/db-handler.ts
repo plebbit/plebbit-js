@@ -129,7 +129,7 @@ export class DbHandler {
     async destoryConnection() {
         if (this.isDbInMemory()) return;
         await this._knex?.destroy();
-        await this._keyv.disconnect()
+        await this._keyv.disconnect();
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
@@ -930,7 +930,9 @@ export class DbHandler {
 
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
 
-        await fs.promises.rename(oldPathString, newPath);
+        await fs.promises.cp(oldPathString, newPath);
+        await fs.promises.rm(oldPathString, { force: true });
+
         this._dbConfig = {
             ...this._dbConfig,
             connection: {
@@ -993,7 +995,6 @@ export class DbHandler {
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         return lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
     }
-
 
     // Subplebbit state lock
 
