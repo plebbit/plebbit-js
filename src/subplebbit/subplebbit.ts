@@ -679,7 +679,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._syncInterval = clearInterval(this._syncInterval);
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
-            if (this.dbHandler) await this.dbHandler.destoryConnection();
+            await this.dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
         }
         this._setUpdatingState("stopped");
@@ -1434,7 +1434,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         else if (internalState.address !== currentDbAddress) {
             // That means a call has been made to edit the sub's address while it's running
             // We need to stop the sub from running, change its file name, then establish a connection to the new DB
-            log(`Running sub (${this.address}) has received a new address (${internalState.address}) to change to`);
+            log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
+            await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.destoryConnection();
             this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(internalState.address, {
