@@ -1438,6 +1438,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // That means a call has been made to edit the sub's address while it's running
             // We need to stop the sub from running, change its file name, then establish a connection to the new DB
             log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
+            await this.dbHandler.unlockSubStart();
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.destoryConnection();
             this.setAddress(internalState.address);
@@ -1451,7 +1452,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this.dbHandler.initDestroyedConnection();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
             this._subplebbitUpdateTrigger = true;
-            await this.dbHandler.lockSubStart();
+            await this.dbHandler.lockSubStart(); // Lock the new address start 
         }
     }
 
