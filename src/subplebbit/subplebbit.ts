@@ -143,6 +143,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _syncInterval?: any; // TODO change "sync" to "publish"
     private _subplebbitUpdateTrigger: boolean;
     private _isSubRunningLocally: boolean;
+    private _publishLoopPromise: Promise<void>;
     private _ipfsNodeKeys: IpfsKey[];
     private _loadingOperation: RetryOperation;
     private _commentUpdateIpnsLifetimeSeconds: number;
@@ -667,12 +668,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
         } else if (this._isSubRunningLocally) {
             // Subplebbit is running locally
+            this._isSubRunningLocally = false;
+            if (this._publishLoopPromise) await this._publishLoopPromise;
             await this._clientsManager
                 .getDefaultPubsub()
                 ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
+
             this._setStartedState("stopped");
             await this._updateDbInternalState({ startedState: this.startedState });
-            this._isSubRunningLocally = false;
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubStart();
 
@@ -1536,11 +1539,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     }
 
     private async _syncLoop(syncIntervalMs: number) {
+        if (!this._isSubRunningLocally) return;
         const loop = async () => {
-            if (this._isSubRunningLocally) {
-                await this.syncIpnsWithDb();
-                await this._syncLoop(syncIntervalMs);
-            }
+            this._publishLoopPromise = this.syncIpnsWithDb();
+            await this._publishLoopPromise;
+            await this._syncLoop(syncIntervalMs);
         };
         this._syncInterval = setTimeout(loop.bind(this), syncIntervalMs);
     }
