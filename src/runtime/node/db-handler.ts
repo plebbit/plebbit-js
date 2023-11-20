@@ -930,6 +930,8 @@ export class DbHandler {
 
         await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
 
+        delete this["_knex"];
+        delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
         await fs.promises.rm(oldPathString, { force: true, maxRetries: 10 });
 
