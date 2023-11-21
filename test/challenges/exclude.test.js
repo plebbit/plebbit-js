@@ -1,7 +1,7 @@
 const {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess} = require('../../dist/node/runtime/node/challenges/exclude')
 const {testRateLimit, addToRateLimiter} = require('../../dist/node/runtime/node/challenges/exclude/rate-limiter')
 const {expect} = require('chai')
-const {Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results} = require('./fixtures/fixtures')
+const {Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results, excludeModsChallegeSubplebbit} = require('./fixtures/fixtures')
 
 // sometimes use random addresses because the rate limiter 
 // is based on author addresses and doesn't reset between tests
@@ -139,6 +139,20 @@ describe("shouldExcludePublication", () => {
     expect(shouldExcludePublication(subplebbitChallenge, post)).to.equal(false)
     expect(shouldExcludePublication(subplebbitChallenge, reply)).to.equal(false)
     expect(shouldExcludePublication(subplebbitChallenge, vote)).to.equal(false)
+  })
+
+  // Exclude based on roles
+  it("Moderator edits are excluded from challenges", async () => {
+    const subplebbitChallenge = {
+      exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+    }
+
+    const commentEdit = {
+      commentCid: 'Qm...',
+      author: {address:"high-karma.eth"}
+    }
+
+    expect(shouldExcludePublication(subplebbitChallenge, commentEdit, excludeModsChallegeSubplebbit)).to.equal(true);
   })
 
   it("rateLimit", () => {
@@ -526,4 +540,6 @@ describe("shouldExcludeChallengeCommentCids", () => {
     expect(await shouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsWrongSubplebbitAddress, plebbit)).to.equal(false)
     expect(await shouldExcludeChallengeCommentCids(subplebbitChallenge, commentCidsMoreThanMax, plebbit)).to.equal(false)
   })
+
+  
 })
