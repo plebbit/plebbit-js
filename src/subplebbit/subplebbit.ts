@@ -349,7 +349,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     async _defaultSettingsOfChallenges(log: Logger) {
         if (!this.settings?.challenges) {
-            await this.edit({ settings: { ...this.settings, challenges: [{ name: "captcha-canvas-v3" }] } });
+            await this.edit({
+                settings: {
+                    challenges: [
+                        {
+                            name: "captcha-canvas-v3",
+                            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+                        }
+                    ]
+                }
+            });
             log(`Defaulted the challenges of subplebbit (${this.address}) to captcha-canvas-v3`);
         }
     }
@@ -1452,7 +1461,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this.dbHandler.initDestroyedConnection();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
             this._subplebbitUpdateTrigger = true;
-            await this.dbHandler.lockSubStart(); // Lock the new address start 
+            await this.dbHandler.lockSubStart(); // Lock the new address start
         }
     }
 
