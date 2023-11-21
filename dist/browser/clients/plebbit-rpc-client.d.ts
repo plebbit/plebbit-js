@@ -15,6 +15,7 @@ export default class PlebbitRpcClient {
     constructor(plebbit: Plebbit);
     _init(): Promise<void>;
     destroy(): Promise<void>;
+    toJSON(): any;
     getSubscription(subscriptionId: number): EventEmitter;
     unsubscribe(subscriptionId: number): Promise<void>;
     emitAllPendingMessages(subscriptionId: number): void;

@@ -694,6 +694,9 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Plebbit.prototype.toJSON = function () {
+        return undefined;
+    };
     return Plebbit;
 }(tiny_typed_emitter_1.TypedEmitter));
 exports.Plebbit = Plebbit;

@@ -1456,14 +1456,19 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.mkdir(path_1.default.dirname(newPath), { recursive: true })];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, fs_1.default.promises.rename(oldPathString, newPath)];
+                        delete this["_knex"];
+                        delete this["_keyv"];
+                        return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
                     case 2:
+                        _a.sent();
+                        return [4 /*yield*/, fs_1.default.promises.rm(oldPathString, { force: true, maxRetries: 10 })];
+                    case 3:
                         _a.sent();
                         this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
                         //@ts-ignore
                         this._knex = this._keyv = undefined;
                         return [4 /*yield*/, this.initDbIfNeeded()];
-                    case 3:
+                    case 4:
                         _a.sent();
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];

@@ -169,6 +169,9 @@ var PlebbitRpcClient = /** @class */ (function () {
             });
         });
     };
+    PlebbitRpcClient.prototype.toJSON = function () {
+        return undefined;
+    };
     PlebbitRpcClient.prototype.getSubscription = function (subscriptionId) {
         if (!this._subscriptionEvents[subscriptionId])
             throw Error("No subscription to RPC with id (".concat(subscriptionId, ")"));

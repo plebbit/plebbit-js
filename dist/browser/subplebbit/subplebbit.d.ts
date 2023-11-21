@@ -46,6 +46,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _syncInterval?;
     private _subplebbitUpdateTrigger;
     private _isSubRunningLocally;
+    private _publishLoopPromise;
     private _ipfsNodeKeys;
     private _loadingOperation;
     private _commentUpdateIpnsLifetimeSeconds;

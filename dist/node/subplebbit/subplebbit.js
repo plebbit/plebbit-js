@@ -804,7 +804,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setRpcClientState("stopped");
                         this._updateRpcSubscriptionId = undefined;
                         log.trace("Stopped the update of remote subplebbit (".concat(this.address, ") via RPC"));
-                        return [3 /*break*/, 12];
+                        return [3 /*break*/, 13];
                     case 2:
                         if (!(this.plebbit.plebbitRpcClient && this._startRpcSubscriptionId)) return [3 /*break*/, 5];
                         // Subplebbit is running over RPC
@@ -819,39 +819,40 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._setRpcClientState("stopped");
                         this._startRpcSubscriptionId = undefined;
                         log("Stopped the running of local subplebbit (".concat(this.address, ") via RPC"));
-                        return [3 /*break*/, 12];
+                        return [3 /*break*/, 13];
                     case 5:
-                        if (!this._isSubRunningLocally) return [3 /*break*/, 12];
+                        if (!this._isSubRunningLocally) return [3 /*break*/, 13];
                         // Subplebbit is running locally
-                        return [4 /*yield*/, this._clientsManager
-                                .getDefaultPubsub()
-                                ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                        this._isSubRunningLocally = false;
+                        if (!this._publishLoopPromise) return [3 /*break*/, 7];
+                        return [4 /*yield*/, this._publishLoopPromise];
                     case 6:
-                        // Subplebbit is running locally
+                        _b.sent();
+                        _b.label = 7;
+                    case 7: return [4 /*yield*/, this._clientsManager
+                            .getDefaultPubsub()
+                            ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                    case 8:
                         _b.sent();
                         this._setStartedState("stopped");
                         return [4 /*yield*/, this._updateDbInternalState({ startedState: this.startedState })];
-                    case 7:
+                    case 9:
                         _b.sent();
-                        this._isSubRunningLocally = false;
                         return [4 /*yield*/, this.dbHandler.rollbackAllTransactions()];
-                    case 8:
+                    case 10:
                         _b.sent();
                         return [4 /*yield*/, this.dbHandler.unlockSubStart()];
-                    case 9:
+                    case 11:
                         _b.sent();
                         this._syncInterval = clearInterval(this._syncInterval);
                         this._clientsManager.updateIpfsState("stopped");
                         this._clientsManager.updatePubsubState("stopped", undefined);
-                        if (!this.dbHandler) return [3 /*break*/, 11];
                         return [4 /*yield*/, this.dbHandler.destoryConnection()];
-                    case 10:
-                        _b.sent();
-                        _b.label = 11;
-                    case 11:
-                        log("Stopped the running of local subplebbit (".concat(this.address, ")"));
-                        _b.label = 12;
                     case 12:
+                        _b.sent();
+                        log("Stopped the running of local subplebbit (".concat(this.address, ")"));
+                        _b.label = 13;
+                    case 13:
                         this._setUpdatingState("stopped");
                         this._setState("stopped");
                         return [2 /*return*/];
@@ -1843,14 +1844,20 @@ var Subplebbit = /** @class */ (function (_super) {
                         currentDbAddress = this.dbHandler.subAddress();
                         if (!this.dbHandler.isDbInMemory()) return [3 /*break*/, 2];
                         this.setAddress(this.dbHandler.subAddress());
-                        return [3 /*break*/, 7];
+                        return [3 /*break*/, 9];
                     case 2:
-                        if (!(internalState.address !== currentDbAddress)) return [3 /*break*/, 7];
+                        if (!(internalState.address !== currentDbAddress)) return [3 /*break*/, 9];
                         // That means a call has been made to edit the sub's address while it's running
                         // We need to stop the sub from running, change its file name, then establish a connection to the new DB
-                        log("Running sub (".concat(this.address, ") has received a new address (").concat(internalState.address, ") to change to"));
-                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                        log("Running sub (".concat(currentDbAddress, ") has received a new address (").concat(internalState.address, ") to change to"));
+                        return [4 /*yield*/, this.dbHandler.unlockSubStart()];
                     case 3:
+                        _a.sent();
+                        return [4 /*yield*/, this.dbHandler.rollbackAllTransactions()];
+                    case 4:
+                        _a.sent();
+                        return [4 /*yield*/, this.dbHandler.destoryConnection()];
+                    case 5:
                         _a.sent();
                         this.setAddress(internalState.address);
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(internalState.address, {
@@ -1860,18 +1867,18 @@ var Subplebbit = /** @class */ (function (_super) {
                                     noData: this.plebbit.noData
                                 }
                             })];
-                    case 4:
+                    case 6:
                         _a.sent();
                         return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
-                    case 5:
+                    case 7:
                         _a.sent();
                         this.sortHandler = new sort_handler_1.SortHandler(lodash_1.default.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this.dbHandler.lockSubStart()];
-                    case 6:
-                        _a.sent();
-                        _a.label = 7;
-                    case 7: return [2 /*return*/];
+                    case 8:
+                        _a.sent(); // Lock the new address start 
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -2045,19 +2052,20 @@ var Subplebbit = /** @class */ (function (_super) {
             var loop;
             var _this = this;
             return __generator(this, function (_a) {
+                if (!this._isSubRunningLocally)
+                    return [2 /*return*/];
                 loop = function () { return __awaiter(_this, void 0, void 0, function () {
                     return __generator(this, function (_a) {
                         switch (_a.label) {
                             case 0:
-                                if (!this._isSubRunningLocally) return [3 /*break*/, 3];
-                                return [4 /*yield*/, this.syncIpnsWithDb()];
+                                this._publishLoopPromise = this.syncIpnsWithDb();
+                                return [4 /*yield*/, this._publishLoopPromise];
                             case 1:
                                 _a.sent();
                                 return [4 /*yield*/, this._syncLoop(syncIntervalMs)];
                             case 2:
                                 _a.sent();
-                                _a.label = 3;
-                            case 3: return [2 /*return*/];
+                                return [2 /*return*/];
                         }
                     });
                 }); };
