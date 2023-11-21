@@ -24,7 +24,9 @@ describe(`subplebbit.settings.challenges`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
-        expect(subplebbit?.settings.challenges).to.deep.equal([{ name: "captcha-canvas-v3" }]);
+        expect(subplebbit?.settings.challenges).to.deep.equal([
+            { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
+        ]);
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -33,9 +35,11 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].type).to.equal("image/png");
             expect(_subplebbit.challenges[0].challenge).to.be.undefined;
             expect(_subplebbit.challenges[0].description).to.equal("make custom image captcha");
-            expect(_subplebbit.challenges[0].exclude).to.be.undefined;
+            expect(_subplebbit.challenges[0].exclude).to.deep.equal([
+                { role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }
+            ]);
         }
-
+        // clean up
         await subplebbit.delete();
     });
 
