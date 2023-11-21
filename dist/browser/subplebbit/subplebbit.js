@@ -371,7 +371,16 @@ var Subplebbit = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0:
                         if (!!((_a = this.settings) === null || _a === void 0 ? void 0 : _a.challenges)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.edit({ settings: __assign(__assign({}, this.settings), { challenges: [{ name: "captcha-canvas-v3" }] }) })];
+                        return [4 /*yield*/, this.edit({
+                                settings: {
+                                    challenges: [
+                                        {
+                                            name: "captcha-canvas-v3",
+                                            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+                                        }
+                                    ]
+                                }
+                            })];
                     case 1:
                         _b.sent();
                         log("Defaulted the challenges of subplebbit (".concat(this.address, ") to captcha-canvas-v3"));
@@ -1876,7 +1885,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this._subplebbitUpdateTrigger = true;
                         return [4 /*yield*/, this.dbHandler.lockSubStart()];
                     case 8:
-                        _a.sent(); // Lock the new address start 
+                        _a.sent(); // Lock the new address start
                         _a.label = 9;
                     case 9: return [2 /*return*/];
                 }
