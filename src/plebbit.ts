@@ -496,4 +496,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         // Clean up connections
         if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
     }
+
+    toJSON(){
+        return undefined;
+    }
 }

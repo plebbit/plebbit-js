@@ -103,6 +103,10 @@ export default class PlebbitRpcClient {
         this._pendingSubscriptionMsgs = undefined;
     }
 
+    toJSON() {
+        return undefined;
+    }
+
     getSubscription(subscriptionId: number) {
         if (!this._subscriptionEvents[subscriptionId]) throw Error(`No subscription to RPC with id (${subscriptionId})`);
         else return this._subscriptionEvents[subscriptionId];
