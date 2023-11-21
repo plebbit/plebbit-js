@@ -12,6 +12,7 @@ describe("plebbit", () => {
 
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);
+        JSON.stringify(plebbit); // Will throw an error if circular json
     });
 });
 

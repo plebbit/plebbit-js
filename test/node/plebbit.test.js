@@ -16,6 +16,8 @@ describe("plebbit", () => {
         expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic"]);
 
         expect(plebbit.dataPath).to.match(/\.plebbit$/);
+
+        JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
     it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
@@ -28,6 +30,8 @@ describe("plebbit", () => {
         const listedSubplebbits = await plebbit.listSubplebbits();
         expect(listedSubplebbits).to.include(newSubplebbit.address);
         await newSubplebbit.stop();
+
+        JSON.stringify(plebbit); // Will throw an error if circular json
     });
 });
 

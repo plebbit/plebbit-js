@@ -29,6 +29,7 @@ describe("Plebbit options", async () => {
         } else {
             expect(defaultPlebbit.dataPath).to.equal(undefined);
         }
+        JSON.stringify(defaultPlebbit); // Will throw an error if circular json
     });
 
     it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
@@ -43,6 +44,7 @@ describe("Plebbit options", async () => {
         expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
+        JSON.stringify(testPlebbit); // Will throw an error if circular json
     });
 
     it(`Plebbit({ipfsHttpClientOptions}) uses specified node even if ipfs node is down`, async () => {
@@ -56,6 +58,7 @@ describe("Plebbit options", async () => {
 
         expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url }]);
         expect(plebbit.ipfsHttpClientsOptions).to.deep.equal([{ url }]);
+        JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
     //prettier-ignore
@@ -72,6 +75,7 @@ describe("Plebbit options", async () => {
         expect(plebbit.clients.ipfsClients).to.deep.equal({});
         expect(plebbit.clients.pubsubClients).to.deep.equal({});
         expect(plebbit.clients.ipfsGateways).to.deep.equal({});        
+        JSON.stringify(plebbit); // Will throw an error if circular json
 });
 
     //prettier-ignore
