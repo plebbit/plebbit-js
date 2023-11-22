@@ -168,7 +168,8 @@ const nativeFunctions: NativeFunctions = {
         const oldPath = path.join(dataPath, "subplebbits", subplebbitAddress);
         const newPath = path.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
         await fs.mkdir(path.join(dataPath, "subplebbits", "deleted"), { recursive: true });
-        await fs.rename(oldPath, newPath);
+        await fs.cp(oldPath, newPath);
+        await fs.rm(oldPath, { force: true, maxRetries: 100 });
     }
 };
 
