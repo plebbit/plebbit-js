@@ -1461,12 +1461,10 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, fs_1.default.promises.rm(oldPathString, { force: true, maxRetries: 10 })];
+                        return [4 /*yield*/, fs_1.default.promises.rm(oldPathString, { force: true, maxRetries: 100 })];
                     case 3:
                         _a.sent();
                         this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
-                        //@ts-ignore
-                        this._knex = this._keyv = undefined;
                         return [4 /*yield*/, this.initDbIfNeeded()];
                     case 4:
                         _a.sent();

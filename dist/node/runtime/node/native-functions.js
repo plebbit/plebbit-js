@@ -362,8 +362,11 @@ var nativeFunctions = {
                     return [4 /*yield*/, promises_1.default.mkdir(path_1.default.join(dataPath, "subplebbits", "deleted"), { recursive: true })];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, promises_1.default.rename(oldPath, newPath)];
+                    return [4 /*yield*/, promises_1.default.cp(oldPath, newPath)];
                 case 2:
+                    _a.sent();
+                    return [4 /*yield*/, promises_1.default.rm(oldPath, { force: true, maxRetries: 100 })];
+                case 3:
                     _a.sent();
                     return [2 /*return*/];
             }

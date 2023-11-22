@@ -838,9 +838,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 6:
                         _b.sent();
                         _b.label = 7;
-                    case 7: return [4 /*yield*/, this._clientsManager
-                            .getDefaultPubsub()
-                            ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
+                    case 7: return [4 /*yield*/, this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange)];
                     case 8:
                         _b.sent();
                         this._setStartedState("stopped");
