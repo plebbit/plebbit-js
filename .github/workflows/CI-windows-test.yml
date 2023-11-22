@@ -22,5 +22,5 @@ jobs:
             - run: npm ci
             - run: npm run build
             - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
-            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:local
-            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:remote
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:local
+            - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:remote
