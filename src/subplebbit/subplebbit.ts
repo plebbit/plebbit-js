@@ -679,10 +679,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // Subplebbit is running locally
             this._isSubRunningLocally = false;
             if (this._publishLoopPromise) await this._publishLoopPromise;
-            await this._clientsManager
-                .getDefaultPubsub()
-                ._client.pubsub.unsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
-
+            await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this._updateDbInternalState({ startedState: this.startedState });
             await this.dbHandler.rollbackAllTransactions();

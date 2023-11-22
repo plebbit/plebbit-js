@@ -933,7 +933,7 @@ export class DbHandler {
         delete this["_knex"];
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        await fs.promises.rm(oldPathString, { force: true, maxRetries: 10 });
+        await fs.promises.rm(oldPathString, { force: true, maxRetries: 100 });
 
         this._dbConfig = {
             ...this._dbConfig,
@@ -942,8 +942,6 @@ export class DbHandler {
                 filename: newPath
             }
         };
-        //@ts-ignore
-        this._knex = this._keyv = undefined;
         await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
