@@ -83,8 +83,8 @@ describe(`subplebbit.edit`, async () => {
 
     it(`Start locks are moved to the new address`, async () => {
         // Check for locks
-        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.signer.address))).to.be.false;
-        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", ethAddress))).to.be.true;
+        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", `${subplebbit.signer.address}.start.lock`))).to.be.false;
+        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", `${ethAddress}.start.lock`))).to.be.true;
     });
 
     it(`Can load a subplebbit with ENS domain as address`, async () => {
