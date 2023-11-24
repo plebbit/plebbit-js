@@ -237,7 +237,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
         };
 }
 
-export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false) {
+export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true) {
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -259,8 +259,10 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         else return null;
     };
 
-    plebbit._storage.getItem = () => undefined;
-    plebbit._storage.setItem = () => undefined;
+    if (stubStorage) {
+        plebbit._storage.getItem = () => undefined;
+        plebbit._storage.setItem = () => undefined;
+    }
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)

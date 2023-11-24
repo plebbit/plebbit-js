@@ -27,7 +27,7 @@ if (!isRpcFlagOn())
 describe(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbit({}, true, false);
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${v4()}.eth`;
         const originalPlebbit = await mockPlebbit();

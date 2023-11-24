@@ -51,7 +51,7 @@ describe("plebbit.listSubplebbits", async () => {
 describe(`subplebbit.delete`, async () => {
     let plebbit, sub;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockPlebbit({}, true, false);
         sub = await plebbit.createSubplebbit();
     });
 
