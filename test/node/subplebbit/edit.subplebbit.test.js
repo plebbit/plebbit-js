@@ -70,6 +70,12 @@ describe(`subplebbit.edit`, async () => {
         expect(subplebbit.address).to.equal(ethAddress);
     });
 
+    it(`plebbit.listSubplebbit includes the new ENS address, and not the old address`, async () => {
+        const subs = await plebbit.listSubplebbits();
+        expect(subs).to.include(ethAddress);
+        expect(subs).to.not.include(subplebbit.signer.address);
+    })
+
     it(`Local subplebbit resets posts after changing address`, async () => {
         expect(subplebbit.posts.pages).to.be.undefined;
         expect(subplebbit.posts.pageCids).to.undefined;
