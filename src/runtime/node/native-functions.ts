@@ -2,6 +2,8 @@ import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions } from "..
 import fs from "fs/promises";
 import path from "path";
 import assert from "assert";
+import os from "os";
+import lodash from "lodash";
 
 import { DbHandler } from "./db-handler";
 import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
@@ -20,6 +22,10 @@ import FormData from "form-data";
 import { Multiaddr } from "multiaddr";
 import * as fileType from "file-type";
 import { throwWithErrorCode } from "../../util";
+import { Plebbit } from "../../plebbit";
+import { deleteOldSubplebbitInWindows } from "./util";
+import { CACHE_KEYS } from "../../constants";
+import Logger from "@plebbit/plebbit-logger";
 
 const nativeFunctions: NativeFunctions = {
     createImageCaptcha: async (...args): Promise<{ image: string; text: string }> => {
@@ -29,11 +35,43 @@ const nativeFunctions: NativeFunctions = {
 
         return { image: imageBase64, text };
     },
-    listSubplebbits: async (dataPath: string): Promise<string[]> => {
+    listSubplebbits: async (dataPath: string, plebbit: Plebbit): Promise<string[]> => {
         assert(typeof dataPath === "string", "Data path is not defined");
+        const log = Logger("plebbit-js:listSubplebbits");
         const subplebbitsPath = path.join(dataPath, "subplebbits");
 
         await fs.mkdir(subplebbitsPath, { recursive: true });
+
+        const deletedPersistentSubs = <string[] | undefined>(
+            await plebbit._storage.getItem(CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
+        );
+
+        if (Array.isArray(deletedPersistentSubs)) {
+            // Attempt to delete them
+            const subsThatWereDeletedSuccessfully: string[] = [];
+            await Promise.all(
+                deletedPersistentSubs.map(async (subAddress) => {
+                    const subPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
+                    try {
+                        await fs.rm(subPath, { force: true });
+                        log(`Succeeded in deleting old db path (${subAddress})`);
+                        subsThatWereDeletedSuccessfully.push(subAddress);
+                    } catch (e) {
+                        log.error(
+                            `Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`
+                        );
+                    }
+                    const newPersistentDeletedSubplebbits = lodash.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+                    if (newPersistentDeletedSubplebbits.length === 0)
+                        await plebbit._storage.removeItem(CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+                    else
+                        await plebbit._storage.setItem(
+                            CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS],
+                            newPersistentDeletedSubplebbits
+                        );
+                })
+            );
+        }
 
         const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
             .filter((file) => file.isFile()) // Filter directories out
@@ -42,6 +80,7 @@ const nativeFunctions: NativeFunctions = {
 
         const filterResults = await Promise.all(
             files.map(async (address) => {
+                if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address)) return false;
                 const typeOfFile = await fileType.fromFile(path.join(subplebbitsPath, address));
                 return typeOfFile?.mime === "application/x-sqlite3";
             })
@@ -163,13 +202,14 @@ const nativeFunctions: NativeFunctions = {
 
         return { id: resJson.Id, name: resJson.Name };
     },
-    deleteSubplebbit: async (subplebbitAddress: string, dataPath: string) => {
+    deleteSubplebbit: async (subplebbitAddress: string, dataPath: string, plebbit: Plebbit) => {
         // Delete subplebbit will just move the sub db file to another directory
         const oldPath = path.join(dataPath, "subplebbits", subplebbitAddress);
         const newPath = path.join(dataPath, "subplebbits", "deleted", subplebbitAddress);
         await fs.mkdir(path.join(dataPath, "subplebbits", "deleted"), { recursive: true });
         await fs.cp(oldPath, newPath);
-        await fs.rm(oldPath, { force: true, maxRetries: 100 });
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPath, plebbit);
+        else await fs.rm(oldPath);
     }
 };
 

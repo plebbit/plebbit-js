@@ -4,6 +4,7 @@ import { Subplebbit } from "../../subplebbit/subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
+import os from "os";
 import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
@@ -28,7 +29,7 @@ import {
     VotesTableRowInsert
 } from "../../types";
 import Logger from "@plebbit/plebbit-logger";
-import { getDefaultSubplebbitDbConfig } from "./util";
+import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
 import sumBy from "lodash/sumBy";
@@ -54,7 +55,7 @@ const TABLES = Object.freeze({
 export class DbHandler {
     private _knex: Knex;
     private _subplebbit: Pick<Subplebbit, "address"> & {
-        plebbit: Pick<Plebbit, "dataPath" | "noData">;
+        plebbit: Pick<Plebbit, "dataPath" | "noData" | "_storage">;
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: Knex.Config<any>;
@@ -933,7 +934,8 @@ export class DbHandler {
         delete this["_knex"];
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        await fs.promises.rm(oldPathString, { force: true, maxRetries: 100 });
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, newSubplebbit.plebbit);
+        else await fs.promises.rm(oldPathString);
 
         this._dbConfig = {
             ...this._dbConfig,

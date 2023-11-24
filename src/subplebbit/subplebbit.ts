@@ -265,10 +265,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
-                plebbit: {
-                    dataPath: this.plebbit.dataPath,
-                    noData: this.plebbit.noData
-                }
+                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
             });
             await this.dbHandler.initDbConfigIfNeeded();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
@@ -452,10 +449,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 await this.dbHandler.destoryConnection();
                 await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                     address: newSubplebbitOptions.address,
-                    plebbit: {
-                        dataPath: this.plebbit.dataPath,
-                        noData: this.plebbit.noData
-                    }
+                    plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
                 });
             }
         } else {
@@ -1450,10 +1444,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(internalState.address, {
                 address: internalState.address,
-                plebbit: {
-                    dataPath: this.plebbit.dataPath,
-                    noData: this.plebbit.noData
-                }
+                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
             });
             await this.dbHandler.initDestroyedConnection();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
@@ -1652,7 +1643,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const ipfsClient = this._clientsManager.getDefaultIpfs();
         if (!ipfsClient) throw Error("Ipfs client is not defined");
 
-        await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath);
+        await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath, this.plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {

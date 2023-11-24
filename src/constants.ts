@@ -2,7 +2,8 @@ import LRUCache from "lru-cache";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 export enum CACHE_KEYS {
     SUBPLEBBIT_IPNS,
-    INTERNAL_SUBPLEBBIT
+    INTERNAL_SUBPLEBBIT,
+    PERSISTENT_DELETED_SUBPLEBBITS // These are basically sub db files that we're unable to remove for some reason on windows
 }
 
 export const subplebbitForPublishingCache = new LRUCache<string, Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">>({

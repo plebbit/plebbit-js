@@ -11,6 +11,8 @@ import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error";
 import probe from "probe-image-size";
+import { Plebbit } from "../../plebbit";
+import { CACHE_KEYS } from "../../constants";
 
 export const mkdir = fs.mkdir;
 
@@ -100,6 +102,25 @@ export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
     if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
+};
+
+export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pick<Plebbit, "_storage">) => {
+    const log = Logger("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
+    const subAddress = path.basename(subPath);
+    try {
+        await fs.rm(subPath);
+        log(`Succeeded in deleting old subplebbit (${subAddress})`);
+    } catch (e) {
+        // Assume it's because of EBUSY
+        log.error(
+            `Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`
+        );
+        // Put subAddress in storage
+        const cacheKey = CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
+        const subsThatWeFailedToDelete: string[] = (await plebbit._storage.getItem(cacheKey)) || [];
+        if (!subsThatWeFailedToDelete.includes(subAddress)) subsThatWeFailedToDelete.push(subAddress);
+        await plebbit._storage.setItem(cacheKey, subsThatWeFailedToDelete);
+    }
 };
 
 export default {

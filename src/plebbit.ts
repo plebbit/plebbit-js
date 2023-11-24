@@ -465,7 +465,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.plebbitRpcClient) return this.plebbitRpcClient.listSubplebbits();
         const canCreateSubs = this._canCreateNewLocalSub();
         if (!canCreateSubs || !this.dataPath) return [];
-        return nativeFunctions.listSubplebbits(this.dataPath);
+        return nativeFunctions.listSubplebbits(this.dataPath, this);
     }
 
     async fetchCid(cid: string) {
