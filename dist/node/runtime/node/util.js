@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setNativeFunctions = exports.nativeFunctions = exports.getThumbnailUrlOfLink = exports.getDefaultSubplebbitDbConfig = exports.getDefaultDataPath = exports.mkdir = void 0;
+exports.deleteOldSubplebbitInWindows = exports.setNativeFunctions = exports.nativeFunctions = exports.getThumbnailUrlOfLink = exports.getDefaultSubplebbitDbConfig = exports.getDefaultDataPath = exports.mkdir = void 0;
 var fs_1 = require("fs");
 var native_functions_1 = __importDefault(require("./native-functions"));
 var path_1 = __importDefault(require("path"));
@@ -50,6 +50,7 @@ var hpagent_1 = require("hpagent");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var plebbit_error_1 = require("../../plebbit-error");
 var probe_image_size_1 = __importDefault(require("probe-image-size"));
+var constants_1 = require("../../constants");
 exports.mkdir = fs_1.promises.mkdir;
 var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
 exports.getDefaultDataPath = getDefaultDataPath;
@@ -163,6 +164,40 @@ var setNativeFunctions = function (newNativeFunctions) {
         exports.nativeFunctions[i] = newNativeFunctions[i];
 };
 exports.setNativeFunctions = setNativeFunctions;
+var deleteOldSubplebbitInWindows = function (subPath, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
+    var log, subAddress, e_2, cacheKey, subsThatWeFailedToDelete;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
+                subAddress = path_1.default.basename(subPath);
+                _a.label = 1;
+            case 1:
+                _a.trys.push([1, 3, , 6]);
+                return [4 /*yield*/, fs_1.promises.rm(subPath)];
+            case 2:
+                _a.sent();
+                log("Succeeded in deleting old subplebbit (".concat(subAddress, ")"));
+                return [3 /*break*/, 6];
+            case 3:
+                e_2 = _a.sent();
+                // Assume it's because of EBUSY
+                log.error("Failed to delete old subplebbit (".concat(subAddress, "). Restarting the node process or daemon should make this error disappear"));
+                cacheKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
+                return [4 /*yield*/, plebbit._storage.getItem(cacheKey)];
+            case 4:
+                subsThatWeFailedToDelete = (_a.sent()) || [];
+                if (!subsThatWeFailedToDelete.includes(subAddress))
+                    subsThatWeFailedToDelete.push(subAddress);
+                return [4 /*yield*/, plebbit._storage.setItem(cacheKey, subsThatWeFailedToDelete)];
+            case 5:
+                _a.sent();
+                return [3 /*break*/, 6];
+            case 6: return [2 /*return*/];
+        }
+    });
+}); };
+exports.deleteOldSubplebbitInWindows = deleteOldSubplebbitInWindows;
 exports.default = {
     getDefaultDataPath: exports.getDefaultDataPath,
     nativeFunctions: exports.nativeFunctions,

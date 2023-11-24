@@ -388,8 +388,9 @@ function mockDefaultOptionsForNodeAndBrowserTests() {
         };
 }
 exports.mockDefaultOptionsForNodeAndBrowserTests = mockDefaultOptionsForNodeAndBrowserTests;
-function mockPlebbit(plebbitOptions, forceMockPubsub) {
+function mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage) {
     if (forceMockPubsub === void 0) { forceMockPubsub = false; }
+    if (stubStorage === void 0) { stubStorage = true; }
     return __awaiter(this, void 0, void 0, function () {
         var plebbit, _i, _a, pubsubUrl;
         var _this = this;
@@ -424,8 +425,10 @@ function mockPlebbit(plebbitOptions, forceMockPubsub) {
                             }
                         });
                     }); };
-                    plebbit._storage.getItem = function () { return undefined; };
-                    plebbit._storage.setItem = function () { return undefined; };
+                    if (stubStorage) {
+                        plebbit._storage.getItem = function () { return undefined; };
+                        plebbit._storage.setItem = function () { return undefined; };
+                    }
                     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
                     if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions) || forceMockPubsub)
                         for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {

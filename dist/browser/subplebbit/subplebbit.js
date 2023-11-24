@@ -279,10 +279,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (!!this.dbHandler) return [3 /*break*/, 2];
                         this.dbHandler = util_3.nativeFunctions.createDbHandler({
                             address: this.address,
-                            plebbit: {
-                                dataPath: this.plebbit.dataPath,
-                                noData: this.plebbit.noData
-                            }
+                            plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
                         });
                         return [4 /*yield*/, this.dbHandler.initDbConfigIfNeeded()];
                     case 1:
@@ -532,10 +529,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.sent();
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
-                                plebbit: {
-                                    dataPath: this.plebbit.dataPath,
-                                    noData: this.plebbit.noData
-                                }
+                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
                             })];
                     case 8:
                         _b.sent();
@@ -1869,10 +1863,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.setAddress(internalState.address);
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(internalState.address, {
                                 address: internalState.address,
-                                plebbit: {
-                                    dataPath: this.plebbit.dataPath,
-                                    noData: this.plebbit.noData
-                                }
+                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
                             })];
                     case 6:
                         _a.sent();
@@ -2211,7 +2202,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         ipfsClient = this._clientsManager.getDefaultIpfs();
                         if (!ipfsClient)
                             throw Error("Ipfs client is not defined");
-                        return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath)];
+                        return [4 /*yield*/, util_3.nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath, this.plebbit)];
                     case 2:
                         _c.sent();
                         if (!(typeof ((_a = this.signer) === null || _a === void 0 ? void 0 : _a.ipnsKeyName) === "string")) return [3 /*break*/, 6];

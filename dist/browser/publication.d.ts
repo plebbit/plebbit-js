@@ -52,7 +52,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> implements Pub
     protected _updateState(newState: Publication["state"]): void;
     protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]): void;
     private _pubsubTopicWithfallback;
-    _getSubplebbitCache(): Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">;
+    _getSubplebbitCache(): Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     stop(): Promise<void>;
     _isAllAttemptsExhausted(): boolean;
     _setProviderToFailIfNoResponse(providerIndex: number): void;

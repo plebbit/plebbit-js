@@ -83,6 +83,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var promises_1 = __importDefault(require("fs/promises"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
+var os_1 = __importDefault(require("os"));
+var lodash_1 = __importDefault(require("lodash"));
 var db_handler_1 = require("./db-handler");
 var node_fetch_1 = __importDefault(require("node-fetch"));
 var ipfs_http_client_1 = require("ipfs-http-client");
@@ -97,6 +99,9 @@ var form_data_1 = __importDefault(require("form-data"));
 var multiaddr_1 = require("multiaddr");
 var fileType = __importStar(require("file-type"));
 var util_1 = require("../../util");
+var util_2 = require("./util");
+var constants_1 = require("../../constants");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var nativeFunctions = {
     createImageCaptcha: function () {
         var args = [];
@@ -117,18 +122,61 @@ var nativeFunctions = {
             });
         });
     },
-    listSubplebbits: function (dataPath) { return __awaiter(void 0, void 0, void 0, function () {
-        var subplebbitsPath, files, filterResults, filtered_results;
+    listSubplebbits: function (dataPath, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
+        var log, subplebbitsPath, deletedPersistentSubs, subsThatWereDeletedSuccessfully_1, files, filterResults, filtered_results;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     (0, assert_1.default)(typeof dataPath === "string", "Data path is not defined");
+                    log = (0, plebbit_logger_1.default)("plebbit-js:listSubplebbits");
                     subplebbitsPath = path_1.default.join(dataPath, "subplebbits");
                     return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, promises_1.default.readdir(subplebbitsPath, { withFileTypes: true })];
+                    return [4 /*yield*/, plebbit._storage.getItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
                 case 2:
+                    deletedPersistentSubs = (_a.sent());
+                    if (!Array.isArray(deletedPersistentSubs)) return [3 /*break*/, 4];
+                    subsThatWereDeletedSuccessfully_1 = [];
+                    return [4 /*yield*/, Promise.all(deletedPersistentSubs.map(function (subAddress) { return __awaiter(void 0, void 0, void 0, function () {
+                            var subPath, e_1, newPersistentDeletedSubplebbits;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        subPath = path_1.default.join(plebbit.dataPath, "subplebbits", subAddress);
+                                        _a.label = 1;
+                                    case 1:
+                                        _a.trys.push([1, 3, , 4]);
+                                        return [4 /*yield*/, promises_1.default.rm(subPath, { force: true })];
+                                    case 2:
+                                        _a.sent();
+                                        log("Succeeded in deleting old db path (".concat(subAddress, ")"));
+                                        subsThatWereDeletedSuccessfully_1.push(subAddress);
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        e_1 = _a.sent();
+                                        log.error("Failed to delete stale db (".concat(subAddress, "). This error should go away after restarting the daemon or process"));
+                                        return [3 /*break*/, 4];
+                                    case 4:
+                                        newPersistentDeletedSubplebbits = lodash_1.default.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully_1);
+                                        if (!(newPersistentDeletedSubplebbits.length === 0)) return [3 /*break*/, 6];
+                                        return [4 /*yield*/, plebbit._storage.removeItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
+                                    case 5:
+                                        _a.sent();
+                                        return [3 /*break*/, 8];
+                                    case 6: return [4 /*yield*/, plebbit._storage.setItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits)];
+                                    case 7:
+                                        _a.sent();
+                                        _a.label = 8;
+                                    case 8: return [2 /*return*/];
+                                }
+                            });
+                        }); }))];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4: return [4 /*yield*/, promises_1.default.readdir(subplebbitsPath, { withFileTypes: true })];
+                case 5:
                     files = (_a.sent())
                         .filter(function (file) { return file.isFile(); }) // Filter directories out
                         .filter(function (file) { return !/-journal$/.test(file.name); }) // Filter SQLite3 journal files out
@@ -137,14 +185,17 @@ var nativeFunctions = {
                             var typeOfFile;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0: return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, address))];
+                                    case 0:
+                                        if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address))
+                                            return [2 /*return*/, false];
+                                        return [4 /*yield*/, fileType.fromFile(path_1.default.join(subplebbitsPath, address))];
                                     case 1:
                                         typeOfFile = _a.sent();
                                         return [2 /*return*/, (typeOfFile === null || typeOfFile === void 0 ? void 0 : typeOfFile.mime) === "application/x-sqlite3"];
                                 }
                             });
                         }); }))];
-                case 3:
+                case 6:
                     filterResults = _a.sent();
                     filtered_results = files.filter(function (_, i) { return filterResults[i]; });
                     return [2 /*return*/, filtered_results];
@@ -225,9 +276,9 @@ var nativeFunctions = {
                 args[_i] = arguments[_i];
             }
             return __awaiter(void 0, void 0, void 0, function () {
-                var rmResults, _a, _b, _c, res, e_1_1;
+                var rmResults, _a, _b, _c, res, e_2_1;
                 var _d;
-                var _e, e_1, _f, _g;
+                var _e, e_2, _f, _g;
                 return __generator(this, function (_h) {
                     switch (_h.label) {
                         case 0:
@@ -250,8 +301,8 @@ var nativeFunctions = {
                             return [3 /*break*/, 2];
                         case 5: return [3 /*break*/, 12];
                         case 6:
-                            e_1_1 = _h.sent();
-                            e_1 = { error: e_1_1 };
+                            e_2_1 = _h.sent();
+                            e_2 = { error: e_2_1 };
                             return [3 /*break*/, 12];
                         case 7:
                             _h.trys.push([7, , 10, 11]);
@@ -262,7 +313,7 @@ var nativeFunctions = {
                             _h.label = 9;
                         case 9: return [3 /*break*/, 11];
                         case 10:
-                            if (e_1) throw e_1.error;
+                            if (e_2) throw e_2.error;
                             return [7 /*endfinally*/];
                         case 11: return [7 /*endfinally*/];
                         case 12: return [2 /*return*/, rmResults];
@@ -352,7 +403,7 @@ var nativeFunctions = {
             }
         });
     }); },
-    deleteSubplebbit: function (subplebbitAddress, dataPath) { return __awaiter(void 0, void 0, void 0, function () {
+    deleteSubplebbit: function (subplebbitAddress, dataPath, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
         var oldPath, newPath;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -365,10 +416,16 @@ var nativeFunctions = {
                     return [4 /*yield*/, promises_1.default.cp(oldPath, newPath)];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, promises_1.default.rm(oldPath, { force: true, maxRetries: 100 })];
+                    if (!(os_1.default.type() === "Windows_NT")) return [3 /*break*/, 4];
+                    return [4 /*yield*/, (0, util_2.deleteOldSubplebbitInWindows)(oldPath, plebbit)];
                 case 3:
                     _a.sent();
-                    return [2 /*return*/];
+                    return [3 /*break*/, 6];
+                case 4: return [4 /*yield*/, promises_1.default.rm(oldPath)];
+                case 5:
+                    _a.sent();
+                    _a.label = 6;
+                case 6: return [2 /*return*/];
             }
         });
     }); }

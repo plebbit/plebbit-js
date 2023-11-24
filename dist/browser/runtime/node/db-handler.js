@@ -88,6 +88,7 @@ var knex_1 = __importDefault(require("knex"));
 var path_1 = __importDefault(require("path"));
 var assert_1 = __importDefault(require("assert"));
 var fs_1 = __importDefault(require("fs"));
+var os_1 = __importDefault(require("os"));
 var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
@@ -1461,12 +1462,19 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, fs_1.default.promises.cp(oldPathString, newPath)];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, fs_1.default.promises.rm(oldPathString, { force: true, maxRetries: 100 })];
+                        if (!(os_1.default.type() === "Windows_NT")) return [3 /*break*/, 4];
+                        return [4 /*yield*/, (0, util_2.deleteOldSubplebbitInWindows)(oldPathString, newSubplebbit.plebbit)];
                     case 3:
                         _a.sent();
+                        return [3 /*break*/, 6];
+                    case 4: return [4 /*yield*/, fs_1.default.promises.rm(oldPathString)];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6:
                         this._dbConfig = __assign(__assign({}, this._dbConfig), { connection: __assign(__assign({}, this._dbConfig.connection), { filename: newPath }) });
                         return [4 /*yield*/, this.initDbIfNeeded()];
-                    case 4:
+                    case 7:
                         _a.sent();
                         log("Changed db path from (".concat(oldPathString, ") to (").concat(newPath, ")"));
                         return [2 /*return*/];

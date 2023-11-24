@@ -9,6 +9,7 @@ var CACHE_KEYS;
 (function (CACHE_KEYS) {
     CACHE_KEYS[CACHE_KEYS["SUBPLEBBIT_IPNS"] = 0] = "SUBPLEBBIT_IPNS";
     CACHE_KEYS[CACHE_KEYS["INTERNAL_SUBPLEBBIT"] = 1] = "INTERNAL_SUBPLEBBIT";
+    CACHE_KEYS[CACHE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 2] = "PERSISTENT_DELETED_SUBPLEBBITS"; // These are basically sub db files that we're unable to remove for some reason on windows
 })(CACHE_KEYS || (exports.CACHE_KEYS = CACHE_KEYS = {}));
 exports.subplebbitForPublishingCache = new lru_cache_1.default({
     max: 100,

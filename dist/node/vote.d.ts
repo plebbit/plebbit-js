@@ -22,11 +22,11 @@ declare class Vote extends Publication implements VoteType {
         };
         signature: import("./signer/constants").JsonSignature;
         protocolVersion: "1.0.0";
-        vote: 0 | 1 | -1;
-        subplebbitAddress: string;
         timestamp: number;
         challengeAnswers?: string[];
         challengeCommentCids?: string[];
+        vote: 0 | 1 | -1;
+        subplebbitAddress: string;
         commentCid: string;
     };
     getType(): PublicationTypeName;

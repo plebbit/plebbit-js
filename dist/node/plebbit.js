@@ -616,7 +616,7 @@ var Plebbit = /** @class */ (function (_super) {
                 canCreateSubs = this._canCreateNewLocalSub();
                 if (!canCreateSubs || !this.dataPath)
                     return [2 /*return*/, []];
-                return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath)];
+                return [2 /*return*/, util_1.nativeFunctions.listSubplebbits(this.dataPath, this)];
             });
         });
     };

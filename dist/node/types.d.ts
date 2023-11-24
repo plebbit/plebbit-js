@@ -12,6 +12,7 @@ import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 import { ChallengeFile, Flair } from "./subplebbit/types";
+import { Plebbit } from "./plebbit";
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
 export type ChainProvider = {
@@ -365,7 +366,7 @@ export type IpfsHttpClientPublicAPI = {
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
 };
 export type NativeFunctions = {
-    listSubplebbits: (dataPath: string) => Promise<string[]>;
+    listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
     createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
@@ -377,7 +378,7 @@ export type NativeFunctions = {
         url: string;
         headers?: Object;
     }) => Promise<IpfsKey>;
-    deleteSubplebbit(subplebbitAddress: string, dataPath: string): Promise<void>;
+    deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 export type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
