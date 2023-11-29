@@ -707,16 +707,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 })
             );
 
-            try {
-                await this._clientsManager.getDefaultIpfs()._client.block.rm(
-                    this._cidsToUnPin.map((cid) => CID.parse(cid)),
-                    { force: true }
-                );
-            } catch (e) {
-                log.error(`Failed to block rm cids ${this._cidsToUnPin} due to error `, e);
-            }
-
-            log(`unpinned and block removed ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
+            log(`unpinned ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
         }
     }
 
