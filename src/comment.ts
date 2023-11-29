@@ -24,7 +24,6 @@ import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
 import { messages } from "./errors";
 import { Flair } from "./subplebbit/types";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -45,9 +44,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     parentCid?: string;
     content?: string;
     // Props that get defined after challengeverification
-    ipnsKeyName?: string;
     previousCid?: string;
-    ipnsName?: string;
     depth?: number;
     postCid?: string;
 
@@ -108,8 +105,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         super._initProps(props);
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
-        this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
         this.title = props.title;
@@ -229,12 +224,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONIpfs(): CommentIpfsType {
-        if (typeof this.ipnsName !== "string") throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
         return {
             ...this.toJSONPubsubMessagePublication(),
             previousCid: this.previousCid,
-            ipnsName: this.ipnsName,
             postCid: this.depth === 0 ? undefined : this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl,
@@ -262,20 +255,19 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
 
-    toJSONCommentsTableRowInsert(challengeRequestId: CommentsTableRowInsert["challengeRequestId"]): CommentsTableRowInsert {
-        assert(this.ipnsKeyName && this.cid && this.postCid);
+    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"]): CommentsTableRowInsert {
+        assert(this.cid && this.postCid);
         return {
             ...this.toJSONIpfs(),
             postCid: this.postCid,
             cid: this.cid,
             authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId,
-            ipnsKeyName: this.ipnsKeyName
+            challengeRequestPublicationSha256: publicationHash
         };
     }
 
     toJSONMerged(): CommentWithCommentUpdate {
-        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
+        assert(typeof this.updatedAt === "number" && this.original && this.shortCid);
         return {
             ...this.toJSONAfterChallengeVerification(),
             shortCid: this.shortCid,
@@ -299,12 +291,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             lastChildCid: this.lastChildCid,
             lastReplyTimestamp: this.lastReplyTimestamp
         };
-    }
-
-    setCommentIpnsKey(ipnsKey: IpfsKey) {
-        // Contains name and id
-        this.ipnsName = ipnsKey.id;
-        this.ipnsKeyName = ipnsKey.name;
     }
 
     setPostCid(newPostCid: string) {

@@ -1,19 +1,11 @@
 import {
     ChallengeAnswerMessageType,
-    ChallengeAnswersTableRowInsert,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeRequestsTableRowInsert,
-    ChallengesTableRow,
-    ChallengesTableRowInsert,
     ChallengeVerificationMessageType,
-    ChallengeVerificationsTableRowInsert,
-    DecryptedChallengeAnswerMessageType,
     ProtocolVersion
 } from "./types";
-import lodash from "lodash";
 import { Encrypted, PubsubSignature } from "./signer/constants";
-import assert from "assert";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encrypted: Encrypted;
@@ -45,15 +37,6 @@ export class ChallengeRequestMessage implements ChallengeRequestMessageType {
             userAgent: this.userAgent,
             protocolVersion: this.protocolVersion,
             timestamp: this.timestamp
-        };
-    }
-
-    toJSONForDb(challengeAnswers: string[] | undefined, challengeCommentCids: string[] | undefined): ChallengeRequestsTableRowInsert {
-        return {
-            ...lodash.omit(this.toJSON(), ["type", "encrypted"]),
-            acceptedChallengeTypes: Array.isArray(this.acceptedChallengeTypes) ? JSON.stringify(this.acceptedChallengeTypes) : undefined,
-            challengeAnswers: Array.isArray(challengeAnswers) ? JSON.stringify(challengeAnswers) : undefined,
-            challengeCommentCids: Array.isArray(challengeCommentCids) ? JSON.stringify(challengeCommentCids) : undefined
         };
     }
 }
@@ -88,15 +71,6 @@ export class ChallengeMessage implements ChallengeMessageType {
             timestamp: this.timestamp
         };
     }
-
-    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRowInsert {
-        assert(Array.isArray(challengeTypes), `Challenge types need to be array, (${challengeTypes}) is not an array`);
-
-        const challengeTypesFormattedForDb = JSON.stringify(challengeTypes);
-        if (challengeTypesFormattedForDb === "[object Object]") throw Error(`challengeTypes  shouldn't be [object Object]`);
-
-        return { ...lodash.omit(this.toJSON(), ["type", "encrypted"]), challengeTypes: challengeTypesFormattedForDb };
-    }
 }
 
 export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
@@ -127,14 +101,6 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
             userAgent: this.userAgent,
             timestamp: this.timestamp
         };
-    }
-
-    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert {
-        assert(Array.isArray(challengeAnswers), `Challenge answers need to be array, (${challengeAnswers}) is not an array`);
-        const challengeAnswersFormattedForDb = JSON.stringify(challengeAnswers);
-        if (challengeAnswersFormattedForDb === "[object Object]") throw Error(`challengeAnswers  shouldn't be [object Object]`);
-
-        return { ...lodash.omit(this.toJSON(), ["type", "encrypted"]), challengeAnswers: challengeAnswersFormattedForDb };
     }
 }
 
@@ -175,13 +141,6 @@ export class ChallengeVerificationMessage implements ChallengeVerificationMessag
             protocolVersion: this.protocolVersion,
             userAgent: this.userAgent,
             timestamp: this.timestamp
-        };
-    }
-
-    toJSONForDb(): ChallengeVerificationsTableRowInsert {
-        return {
-            ...lodash.omit(this.toJSON(), ["type", "encrypted"]),
-            challengeErrors: Array.isArray(this.challengeErrors) ? JSON.stringify(this.challengeErrors) : undefined
         };
     }
 }

@@ -1,5 +1,4 @@
 import assert from "assert";
-import { SingersTableRowInsert } from "../types";
 import { CreateSignerOptions, SignerType } from "./constants";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
 import { shortifyAddress } from "../util";
@@ -29,11 +28,6 @@ export class Signer implements SignerType {
                 : props.ipfsKey
                 ? new Uint8Array(props.ipfsKey)
                 : undefined;
-    }
-
-    toJSONSignersTableRow(): SingersTableRowInsert {
-        assert(this.type && this.privateKey && this.ipnsKeyName);
-        return { type: this.type, privateKey: this.privateKey, ipnsKeyName: this.ipnsKeyName };
     }
 }
 

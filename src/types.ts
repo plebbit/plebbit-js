@@ -531,61 +531,10 @@ export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "chal
 
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
 
-// Challenge Request table
-
-export interface ChallengeRequestsTableRow
-    extends Omit<DecryptedChallengeRequestMessageType, "type" | "encrypted" | "publication" | "challengeAnswers" | "challengeCommentCids"> {
-    insertedAt: number;
-    challengeAnswers?: string; // Needs to stringify from string[]
-    challengeCommentCids?: string; // Needs to stringify from string[]
-}
-
-export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
-    acceptedChallengeTypes?: string; // Need to stringify arrays before inserting into DB
-}
-
-// Challenges table
-export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encrypted"> {
-    challengeTypes: ChallengeType["type"][];
-    insertedAt: number;
-}
-
-export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt" | "challengeTypes"> {
-    challengeTypes: string; // must stringify array before inserting into DB
-}
-
-// Challenge answers table
-
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encrypted"> {
-    insertedAt: number;
-}
-
-export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt" | "challengeAnswers"> {
-    challengeAnswers: string; // must stringify array before inserting into DB
-}
-
-// Challenge verifications table
-export interface ChallengeVerificationsTableRow
-    extends Omit<DecryptedChallengeVerificationMessageType, "type" | "encrypted" | "publication"> {
-    insertedAt: number;
-}
-
-export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt" | "challengeErrors"> {
-    challengeErrors?: string; // Must stringify array before inserting into DB
-}
-
-// Signers table
-export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {
-    insertedAt: number;
-}
-
-export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt"> {}
-
 // Comment edits table
 
 export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
 }
 
@@ -600,11 +549,6 @@ declare module "knex/types/tables" {
             Omit<CommentUpdatesTableRowInsert, "cid">
         >;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
-        challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRowInsert, null, null>;
-        challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRowInsert, null, null>;
-        challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRowInsert, null, null>;
-        challengeVerifications: Knex.CompositeTableType<ChallengeVerificationsTableRow, ChallengeVerificationsTableRowInsert, null, null>;
-        signers: Knex.CompositeTableType<SignersTableRow, SingersTableRowInsert, null, null>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
     }
 }

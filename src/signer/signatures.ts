@@ -54,7 +54,6 @@ import {
     VoteSignedPropertyNames
 } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
-import { commentUpdateValidationCache, commentValidationCache } from "../constants";
 import { SubplebbitIpfsType } from "../subplebbit/types";
 
 export interface ValidationResult {
