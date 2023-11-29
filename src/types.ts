@@ -367,7 +367,6 @@ export interface CommentUpdate {
     reason?: string; // reason the mod took a mod action
     updatedAt: number; // timestamp in seconds the IPNS record was updated
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
     author?: {
         // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
         subplebbit: SubplebbitAuthor;
@@ -444,7 +443,7 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     signer?: SignerType;
 }
 
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit";
 
 export interface CommentPubsubMessage
     extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}

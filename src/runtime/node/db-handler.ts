@@ -212,7 +212,6 @@ export class DbHandler {
             table.text("reason");
             table.timestamp("updatedAt").notNullable().checkPositive();
             table.text("protocolVersion").notNullable();
-            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable();
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
@@ -427,7 +426,7 @@ export class DbHandler {
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
         //prettier-ignore
-        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
+        const commentUpdateColumns: (keyof CommentUpdate)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);

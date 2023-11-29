@@ -43,7 +43,6 @@ import {
     ChallengeVerificationMessageSignedPropertyNames,
     CommentEditSignedPropertyNames,
     CommentSignedPropertyNames,
-    CommentUpdateSignedPropertyNames,
     JsonSignature,
     PublicationsToSign,
     PublicationToVerify,
@@ -152,12 +151,6 @@ export async function signCommentEdit(edit: CreateCommentEditOptions, signer: Si
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
     return _signJson(CommentEditSignedPropertyNames, edit, signer, log);
-}
-
-export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
-    const log = Logger("plebbit-js:signatures:signCommentUpdate");
-    // Not sure, should we validate update.authorEdit here?
-    return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
 }
 
 export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {
@@ -397,15 +390,6 @@ export async function verifyCommentUpdate(
     if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
         return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
 
-    const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
-    const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-    if (updateSignatureAddress !== subplebbitResolvedAddress) {
-        log.error(
-            `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`
-        );
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
-    }
-
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
     if (update.replies) {
@@ -418,10 +402,6 @@ export async function verifyCommentUpdate(
         const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
         if (invalidPageValidity) return invalidPageValidity;
     }
-
-    const jsonValidation = await _getJsonValidationResult(update);
-
-    if (!jsonValidation.valid) return jsonValidation;
 
     return { valid: true };
 }

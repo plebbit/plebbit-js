@@ -112,25 +112,6 @@ export const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "s
     "commentCid"
 ] as const;
 
-export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] = [
-    "author",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "flair",
-    "upvoteCount",
-    "downvoteCount",
-    "replies",
-    "updatedAt",
-    "replyCount",
-    "edit",
-    "cid",
-    "lastChildCid",
-    "lastReplyTimestamp"
-] as const;
-
 export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[] = [
     "title",
     "description",
@@ -184,7 +165,6 @@ export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof Ch
 export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
 export type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
 export type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
-export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
 
 // ---------------------------
 // Signing
@@ -193,7 +173,6 @@ export type PublicationsToSign =
     | CreateCommentEditOptions
     | CreateVoteOptions
     | CreateCommentOptions
-    | Omit<CommentUpdate, "signature">
     | Omit<SubplebbitIpfsType, "signature">;
 
 export type PubsubMsgsToSign =
@@ -204,4 +183,4 @@ export type PubsubMsgsToSign =
 
 // ---------------------------
 // Verifying
-export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;
+export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType;
