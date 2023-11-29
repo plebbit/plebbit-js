@@ -476,6 +476,10 @@ export class DbHandler {
         return parents;
     }
 
+    async queryAllComments(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS);
+    }
+
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);

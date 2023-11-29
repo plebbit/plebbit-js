@@ -428,6 +428,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch post timestamp");
         const timestampRange = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
         const folderCid = subIpns.postUpdates[timestampRange];
+        if (!folderCid) throw Error("Timestamp range for subplebbit has no folder cid");
         const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
         this._comment._setUpdatingState("fetching-update-ipfs");
         if (this._defaultIpfsProviderUrl) {

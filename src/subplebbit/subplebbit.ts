@@ -1458,12 +1458,20 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _updateCommentsThatNeedToBeUpdated() {
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
-        // TODO should check if CommentUpdate exists in IPFS files API
-
-        // const files = await this._clientsManager.getDefaultIpfs()._client.files.stat(``);
+        let shouldUpdateAllComments = false;
+        try {
+            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`, { hash: true });
+        } catch (e) {
+            if (e.message === "file does not exist") {
+                shouldUpdateAllComments = true;
+                log.error(`PostUpdates folder does not exist on IPFS files. Will recalculate all CommentUpdate and publish them`);
+            }
+        }
 
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
-        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(trx);
+        const commentsToUpdate = shouldUpdateAllComments
+            ? await this.dbHandler.queryAllComments(trx)
+            : await this.dbHandler!.queryCommentsToBeUpdated(trx);
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
 
@@ -1474,8 +1482,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const commentsGroupedByDepth = lodash.groupBy(commentsToUpdate, "depth");
 
         const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
-
-        // TODO we should unpin old cids of comment ipns here
 
         for (const depthKey of depthsKeySorted) for (const comment of commentsGroupedByDepth[depthKey]) await this._updateComment(comment);
     }
