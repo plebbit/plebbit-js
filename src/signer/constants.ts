@@ -128,7 +128,8 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "rules",
     "address",
     "flairs",
-    "encryption"
+    "encryption",
+    "postUpdates"
 ] as const;
 
 export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
