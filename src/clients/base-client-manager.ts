@@ -295,13 +295,16 @@ export class BaseClientsManager {
         }
     }
 
+    // TODO rename this to _fetchPathP2P
     async _fetchCidP2P(cid: string): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-        const calculatedCid: string = await Hash.of(fileContent);
-        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
+            const calculatedCid: string = await Hash.of(fileContent);
+            if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        }
+
         return fileContent;
     }
 

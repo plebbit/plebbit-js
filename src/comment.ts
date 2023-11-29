@@ -357,9 +357,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && !this.ipnsName && !this._rawCommentIpfs) {
+        if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            // plebbit-js should be able to retrieve ipnsName from the IPFS file
             this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
@@ -417,7 +416,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         } else if (commentUpdate) {
             log.trace(`Comment (${this.cid}) has no new update`);
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(commentUpdate);
+            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
         }
     }
 
