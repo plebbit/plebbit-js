@@ -28,6 +28,7 @@ import { BasePages } from "./pages";
 import { PlebbitError } from "./plebbit-error";
 import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import { SubplebbitIpfsType } from "./subplebbit/types";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -271,4 +272,16 @@ export function decodePubsubMsgFromRpc(
     parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
 
     return parsedPubsubMsg;
+}
+
+export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number) {
+    if (!postUpdates) throw Error("subplebbit has no post updates");
+    if (!postTimestamp) throw Error("post has no timestamp");
+    return (
+        Object.keys(postUpdates)
+            // sort from smallest to biggest
+            .sort((a, b) => Number(a) - Number(b))
+            // find the smallest timestamp range where comment.timestamp is newer
+            .find((timestampRange) => Date.now() / 1000 - Number(timestampRange) <= postTimestamp)
+    );
 }

@@ -384,7 +384,6 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     replies?: PagesTypeJson;
     postCid?: string;
     previousCid?: string; // each post is a linked list
-    ipnsKeyName?: string;
     depth?: number;
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
@@ -394,7 +393,6 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     thumbnailUrlHeight?: number;
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortCid?: string;
-    ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortSubplebbitAddress: string;
 }
 
@@ -411,7 +409,6 @@ export interface CommentWithCommentUpdate
             | "shortCid"
             | "postCid"
             | "depth"
-            | "ipnsKeyName"
             | "signer"
         >,
         Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>,
@@ -423,7 +420,7 @@ export interface CommentIpfsType
     extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,
         PublicationType,
         Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">,
-        Pick<Required<CommentType>, "depth" | "ipnsName"> {
+        Pick<Required<CommentType>, "depth"> {
     author: AuthorIpfsType;
 }
 
@@ -481,6 +478,7 @@ export type IpfsHttpClientPublicAPI = {
 
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
+    files: IPFSHTTPClient["files"];
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
@@ -502,21 +500,22 @@ export type OnlyDefinedProperties<T> = Pick<
 
 // Define database tables and fields here
 
-export interface CommentsTableRow
-    extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids">,
-        Required<Pick<CommentType, "ipnsKeyName">> {
+export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    challengeRequestPublicationSha256: string;
     id: number;
     insertedAt: number;
 }
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
+    challengeRequestPublicationSha256: string;
+}
 
 // CommentUpdates table
 
 export interface CommentUpdatesRow extends CommentUpdate {
     insertedAt: number;
+    ipfsPath: string;
 }
 
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
@@ -525,7 +524,6 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 
 export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
 }
 

@@ -71,8 +71,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         | "stopped"
         | "resolving-author-address"
         | "fetching-ipfs"
-        | "fetching-update-ipns"
         | "fetching-update-ipfs"
+        | "resolving-subplebbit-address"
+        | "fetching-subplebbit-ipns"
+        | "fetching-subplebbit-ipfs"
         | "failed"
         | "succeeded";
 
@@ -337,9 +339,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load comment ipns (${this.ipnsName}) for the ${curAttempt}th time`);
+                log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
+                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate();
                     resolve(update);
                 } catch (e) {
                     if (e["details"]) e.details.commentCid = this.cid;
@@ -390,7 +392,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
-            log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
+            log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             // Can potentially throw if resolver if not working
@@ -413,7 +415,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             await this._initCommentUpdate(commentUpdate);
             this.emit("update", this);
         } else if (commentUpdate) {
-            log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+            log.trace(`Comment (${this.cid}) has no new update`);
             this._setUpdatingState("succeeded");
             await this._initCommentUpdate(commentUpdate);
         }
@@ -518,7 +520,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     private async _validateSignature() {
-        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub and IPNS
+        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
         const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }

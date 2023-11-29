@@ -31,6 +31,7 @@ import lodash from "lodash";
 import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../subplebbit/sort-handler";
 import { SubplebbitStats } from "../../subplebbit/types";
+import { v4 as uuidV4 } from "uuid";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -176,10 +177,9 @@ export class DbHandler {
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
-            table.text("ipnsName").notNullable().unique();
-            table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.text("challengeRequestPublicationSha256").notNullable().unique();
 
             table.json("flair").nullable();
 
@@ -218,6 +218,9 @@ export class DbHandler {
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.timestamp("lastReplyTimestamp").nullable();
 
+            // Not part of CommentUpdate
+            table.text("ipfsPath").notNullable().unique();
+
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
@@ -228,7 +231,6 @@ export class DbHandler {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
-            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
 
             table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
@@ -331,12 +333,15 @@ export class DbHandler {
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
             const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
-            for (const srcRecord of srcRecordFiltered)
+            for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of Object.keys(srcRecord))
                     if (Array.isArray(srcRecord[srcRecordKey])) {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                     }
+                if (srcTable === "comments" && !srcRecord["challengeRequestPublicationSha256"])
+                    srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. The new comments will have a correct hash
+            }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
@@ -457,6 +462,10 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }
 
+    async queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("challengeRequestPublicationSha256", publicationHash).first();
+    }
+
     async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;
@@ -468,7 +477,7 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
             this._needToUpdateCommentUpdates = false;
@@ -476,11 +485,8 @@ export class DbHandler {
         }
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
-        // 2 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API OR
-        // 3 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
-
-        // 4 - Comments that new votes, CommentEdit or other comments were published under them
-        // 5 - CommentUpdate IPNS has expired (timestamp() >= updatedAt + lifetime + 100)
+        // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
+        // 3 - Comments that new votes, CommentEdit or other comments were published under them
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
 
@@ -491,14 +497,10 @@ export class DbHandler {
         // timestamp() + buffer > updatedAt + ipnsLifetimeSeconds
         // timestamp() + buffer - ipnsLifetimeSeconds > updatedAt
 
-        const ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
-
         const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", timestamp() + ipnsBufferSeconds - ipnsLifetimeSeconds);
+            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)

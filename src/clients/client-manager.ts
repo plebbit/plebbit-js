@@ -1,9 +1,9 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { throwWithErrorCode } from "../util";
+import { getPostUpdateTimestampRange, throwWithErrorCode } from "../util";
 import assert from "assert";
-import { Chain, CommentIpfsType, CommentUpdate } from "../types";
+import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types";
 import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
@@ -20,7 +20,7 @@ import {
 } from "./ipfs-gateway-client";
 
 import { BaseClientsManager, LoadType } from "./base-client-manager";
-import { subplebbitForPublishingCache } from "../constants";
+import { commentPostUpdatesParentsPathCache, postTimestampCache, subplebbitForPublishingCache } from "../constants";
 import {
     CommentPlebbitRpcStateClient,
     GenericPlebbitRpcStateClient,
@@ -320,19 +320,124 @@ export class CommentClientsManager extends PublicationClientsManager {
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
     }
 
-    async fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate> {
-        this._comment._setUpdatingState("fetching-update-ipns");
+    // Resolver methods here
+    preResolveTextRecord(
+        address: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        resolvedTextRecord: string,
+        chain: string
+    ): void {
+        super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
+        if (txtRecordName === "subplebbit-address")
+            this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for CommentUpdate
+        else if (txtRecordName === "plebbit-author-address") this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
+    }
+
+    async _fetchSubplebbitForCommentUpdate() {
+        const subIpns = await this.resolveSubplebbitAddressIfNeeded(this._comment.subplebbitAddress);
+        if (!subIpns)
+            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", {
+                ensAddress: this._comment.subplebbitAddress
+            });
+
+        this._comment._setUpdatingState("fetching-subplebbit-ipns");
         if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-update-ipns");
-            const updateCid = await this.resolveIpnsToCidP2P(ipnsName);
-            this._comment._setUpdatingState("fetching-update-ipfs");
+            this.updateIpfsState("fetching-subplebbit-ipns");
+            const subplebbitCid = await this.resolveIpnsToCidP2P(subIpns);
+            this._comment._setUpdatingState("fetching-subplebbit-ipfs");
+            this.updateIpfsState("fetching-subplebbit-ipfs");
+            const subplebbit: SubplebbitIpfsType = JSON.parse(await this._fetchCidP2P(subplebbitCid));
+            return subplebbit;
+        } else {
+            // States of gateways should be updated by fetchFromMultipleGateways
+            const subplebbit: SubplebbitIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit"));
+            return subplebbit;
+        }
+    }
+
+    _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string) {
+        if (!subIpns.posts) return undefined;
+        const findInCommentAndChildren = (comment: PageIpfs["comments"][0]): PageIpfs["comments"][0]["comment"] => {
+            if (comment.comment.cid === cid) return comment.comment;
+            if (!comment.update.replies) return undefined;
+            for (const childComment of comment.update.replies.pages.new.comments) {
+                const commentInChild = findInCommentAndChildren(childComment);
+                if (commentInChild) return commentInChild;
+            }
+            return undefined;
+        };
+        for (const post of subIpns.posts.pages.hot.comments) {
+            const commentInChild = findInCommentAndChildren(post);
+            if (commentInChild) return commentInChild;
+        }
+        return undefined;
+    }
+
+    async _fetchParentCommentForCommentUpdate(parentCid: string) {
+        if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
-            const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(updateCid));
+            this._comment._setUpdatingState("fetching-update-ipfs");
+            const commentContent: CommentIpfsWithCid = { cid: parentCid, ...JSON.parse(await this._fetchCidP2P(parentCid)) };
+            this.updateIpfsState("stopped");
+            return commentContent;
+        } else {
+            const commentContent: CommentIpfsWithCid = {
+                cid: parentCid,
+                ...JSON.parse(await this.fetchFromMultipleGateways({ cid: parentCid }, "comment"))
+            };
+            return commentContent;
+        }
+    }
+
+    async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
+        if (commentPostUpdatesParentsPathCache.has(this._comment.cid))
+            return commentPostUpdatesParentsPathCache.get(this._comment.cid).split("/").reverse().join("/");
+
+        if (this._comment.depth === 0 && !postTimestampCache.has(this._comment.cid))
+            postTimestampCache.set(this._comment.cid, this._comment.timestamp);
+        let parentCid = this._comment.parentCid;
+        let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
+        while (parentCid) {
+            // should attempt to fetch cache here
+            // Also should we set updatingState everytime we fetch a parent Comment?
+            if (commentPostUpdatesParentsPathCache.has(parentCid)) {
+                reversedPath += commentPostUpdatesParentsPathCache.get(parentCid);
+                break;
+            } else {
+                const parent =
+                    this._findCommentInSubplebbitPosts(subIpns, parentCid) || (await this._fetchParentCommentForCommentUpdate(parentCid));
+                if (parent.depth === 0 && !postTimestampCache.has(parent.cid)) postTimestampCache.set(parent.cid, parent.timestamp);
+
+                reversedPath += `/${parentCid}`;
+                parentCid = parent.parentCid;
+            }
+        }
+
+        commentPostUpdatesParentsPathCache.set(this._comment.cid, reversedPath);
+
+        const finalParentsPath = reversedPath.split("/").reverse().join("/"); // will be postCid/replyCid/nestedReplyCid
+
+        return finalParentsPath;
+    }
+
+    async fetchCommentUpdate(): Promise<CommentUpdate> {
+        // Caching should eventually be moved to storage with TTL instead of in-memory
+        const subIpns = await this._fetchSubplebbitForCommentUpdate();
+        const parentsPostUpdatePath = await this._getParentsPath(subIpns);
+        const postTimestamp = postTimestampCache.get(this._comment.postCid);
+        if (typeof postTimestamp !== "number") throw Error("Failed to fetch post timestamp");
+        const timestampRange = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
+        const folderCid = subIpns.postUpdates[timestampRange];
+        const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+        this._comment._setUpdatingState("fetching-update-ipfs");
+        if (this._defaultIpfsProviderUrl) {
+            this.updateIpfsState("fetching-update-ipfs"); // Need to change
+            const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
             this.updateIpfsState("stopped");
             return commentUpdate;
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "comment-update"));
+            const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"));
             return update;
         }
     }

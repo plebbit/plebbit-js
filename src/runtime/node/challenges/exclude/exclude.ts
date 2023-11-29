@@ -128,7 +128,7 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge: SubplebbitChallenge,
 }
 
 // cache for fetching comment cids, never expire
-const commentCache = new QuickLRU<string, Pick<Comment, "ipnsName" | "subplebbitAddress"> & {author: {address: Comment["author"]["address"]}}>({maxSize: 10000})
+const commentCache = new QuickLRU<string, Pick<Comment, "subplebbitAddress"> & {author: {address: Comment["author"]["address"]}}>({maxSize: 10000})
 const invalidIpnsName = 'i'
 // cache for fetching comment updates, expire after 1 day
 const commentUpdateCache = new TinyCache()
@@ -163,14 +163,11 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
       comment = await plebbit.getComment(commentCid)
       // only cache useful values
       const author = {address: comment?.author?.address}
-      cachedComment = {ipnsName: comment.ipnsName || invalidIpnsName, subplebbitAddress: comment.subplebbitAddress, author}
+      cachedComment = {invalidIpnsName, subplebbitAddress: comment.subplebbitAddress, author}
       commentCache.set(commentCid, cachedComment)
     }
 
-    // comment has no ipns name
-    if (cachedComment?.ipnsName === invalidIpnsName) {
-      throw Error('comment has invalid ipns name')
-    }
+    
 
     // subplebbit address doesn't match filter
     if (!addressesSet.has(cachedComment.subplebbitAddress)) {
