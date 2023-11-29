@@ -1357,7 +1357,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const pathParts = storedCommentUpdate.ipfsPath.split("/");
             return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
         } else {
-            const parentsCids = (await this.dbHandler.queryParents(dbComment)).map((parent) => parent.cid);
+            const parentsCids = (await this.dbHandler.queryParents(dbComment)).map((parent) => parent.cid).reverse();
             return ["/" + this.address, "postUpdates", timestampRange, ...parentsCids, dbComment.cid, "update"].join("/");
         }
     }
@@ -1368,7 +1368,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         // If we're here that means we're gonna calculate the new update and publish it
         log(`Attempting to update Comment (${comment.cid})`);
 
-        // This comment will have the local new CommentUpdate, which we will publish over IPNS
+        // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
             this.dbHandler.queryCalculatedCommentUpdate(comment),
@@ -1386,7 +1386,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
-        const newCommentUpdate = {
+        const newCommentUpdate: CommentUpdate = {
             ...calculatedCommentUpdate,
             replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
             updatedAt: newUpdatedAt,
