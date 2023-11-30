@@ -1356,6 +1356,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
+    private async _writeCommentUpdateToIpfsFilePath(newCommentUpdate: CommentUpdate, ipfsPath: string, oldIpfsPath?: string) {
+        // TODO need to exclude reply.replies here
+        await this._clientsManager
+            .getDefaultIpfs()
+            ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
+        if (oldIpfsPath && oldIpfsPath !== ipfsPath) await this._clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
+
+        await this.dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
+    }
+
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:subplebbit:sync:syncComment");
 
@@ -1389,14 +1399,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         const ipfsPath = await this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate);
 
-        // TODO need to exclude reply.replies here
-        await this._clientsManager
-            .getDefaultIpfs()
-            ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
-        if (storedCommentUpdate?.ipfsPath && storedCommentUpdate?.ipfsPath !== ipfsPath)
-            await this._clientsManager.getDefaultIpfs()._client.files.rm(storedCommentUpdate.ipfsPath);
-
-        await this.dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
+        await this._writeCommentUpdateToIpfsFilePath(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
     }
 
     private async _listenToIncomingRequests() {
@@ -1469,24 +1472,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _updateCommentsThatNeedToBeUpdated() {
         const log = Logger(`plebbit-js:subplebbit:_updateCommentsThatNeedToBeUpdated`);
 
-        let shouldUpdateAllComments = false;
-        try {
-            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`);
-        } catch (e) {
-            if (e.message === "file does not exist") {
-                shouldUpdateAllComments = true;
-            }
-        }
-
         const trx = await this.dbHandler.createTransaction("_updateCommentsThatNeedToBeUpdated");
-        const commentsToUpdate = shouldUpdateAllComments
-            ? await this.dbHandler.queryAllComments(trx)
-            : await this.dbHandler!.queryCommentsToBeUpdated(trx);
+        const commentsToUpdate = await this.dbHandler!.queryCommentsToBeUpdated(trx);
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
-
-        if (shouldUpdateAllComments)
-            log.error(`PostUpdates folder does not exist on IPFS files. Will recalculate all CommentUpdate and publish them`);
 
         this._subplebbitUpdateTrigger = true;
 
@@ -1522,6 +1511,26 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
 
         log(`${unpinnedComments.length} comments' IPFS have been repinned`);
+    }
+
+    private async _repinCommentUpdateIfNeeded() {
+        const log = Logger("plebbit-js:start:_repinCommentUpdateIfNeeded");
+        let shouldUpdateAllComments = false;
+        try {
+            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`);
+        } catch (e) {
+            if (e.message === "file does not exist") shouldUpdateAllComments = true;
+        }
+
+        if (shouldUpdateAllComments) {
+            const storedCommentUpdates = await this.dbHandler.queryAllStoredCommentUpdates();
+            if (storedCommentUpdates.length > 0)
+                log.error(
+                    `PostUpdates folder (/${this.address}) does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files`
+                );
+            for (const commentUpdateRaw of storedCommentUpdates)
+                await this._writeCommentUpdateToIpfsFilePath(commentUpdateRaw, commentUpdateRaw.ipfsPath, undefined);
+        }
     }
 
     private async syncIpnsWithDb() {
@@ -1643,6 +1652,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
 
         await this._repinCommentsIPFSIfNeeded();
+        await this._repinCommentUpdateIfNeeded();
 
         this.syncIpnsWithDb()
             .then(() => this._syncLoop(this.plebbit.publishInterval))
