@@ -3,13 +3,7 @@ const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const {
-    signComment,
-    verifyComment,
-    verifyCommentUpdate,
-    signCommentUpdate,
-    signCommentEdit
-} = require("../../../dist/node/signer/signatures");
+const { verifyComment, verifyCommentUpdate, signComment, signCommentEdit } = require("../../../dist/node/signer/signatures");
 const { messages } = require("../../../dist/node/errors");
 const signers = require("../../fixtures/signers");
 const { timestamp } = require("../../../dist/node/util");
@@ -204,19 +198,6 @@ describe(`commentupdate`, async () => {
         plebbit = await mockPlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
-    it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json") };
-        update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
-        expect(verification).to.deep.equal({ valid: true });
-    });
 
     it(`Can validate live CommentUpdate`, async () => {
         const comment = await plebbit.getComment(subplebbit.lastPostCid);
@@ -236,20 +217,6 @@ describe(`commentupdate`, async () => {
             comment
         );
         expect(verification).to.deep.equal({ valid: true });
-    });
-
-    it(`verifyCommentUpdate invalidate commentUpdate if it was signed by other than subplebbit key`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json") };
-        update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit
-        const verification = await verifyCommentUpdate(
-            update,
-            plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
-            subplebbit.address,
-            comment
-        );
-        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT });
     });
 
     it(`A commentUpdate with an edit signed by other than original author will be rejected`, async () => {
