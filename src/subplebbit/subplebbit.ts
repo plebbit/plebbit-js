@@ -333,10 +333,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _importSubplebbitSignerIntoIpfsIfNeeded() {
         if (!this.signer) throw Error("subplebbit.signer is not defined");
 
-        await nativeFunctions.importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-            url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
-            headers: this.plebbit.ipfsHttpClientsOptions[0].headers
-        });
+        const ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+        if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
+            await nativeFunctions.importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+                url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
+                headers: this.plebbit.ipfsHttpClientsOptions[0].headers
+            });
     }
 
     async _defaultSettingsOfChallenges(log: Logger) {
