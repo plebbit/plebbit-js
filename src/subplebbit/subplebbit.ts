@@ -1400,7 +1400,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._clientsManager
             .getDefaultIpfs()
             ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
-        if (storedCommentUpdate?.ipfsPath) await this._clientsManager.getDefaultIpfs()._client.files.rm(storedCommentUpdate.ipfsPath);
+        if (storedCommentUpdate?.ipfsPath && storedCommentUpdate?.ipfsPath !== ipfsPath)
+            await this._clientsManager.getDefaultIpfs()._client.files.rm(storedCommentUpdate.ipfsPath);
 
         await this.dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
     }

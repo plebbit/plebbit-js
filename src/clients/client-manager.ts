@@ -421,7 +421,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentUpdate(): Promise<CommentUpdate> {
-        // Caching should eventually be moved to storage with TTL instead of in-memory
+        // Caching should eventually be moved to storage instead of in-memory
         const subIpns = await this._fetchSubplebbitForCommentUpdate();
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
         const postTimestamp = postTimestampCache.get(this._comment.postCid);
@@ -432,7 +432,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
         this._comment._setUpdatingState("fetching-update-ipfs");
         if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-update-ipfs"); // Need to change
+            this.updateIpfsState("fetching-update-ipfs"); 
             const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
             this.updateIpfsState("stopped");
             return commentUpdate;
