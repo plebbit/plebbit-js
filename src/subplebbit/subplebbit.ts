@@ -443,8 +443,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._updateDbInternalState(newProps);
             if (!(await this.dbHandler.isSubStartLocked())) {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
-                await this.dbHandler.destoryConnection();
                 await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
+                await this.dbHandler.destoryConnection();
                 await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                     address: newSubplebbitOptions.address,
                     plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
@@ -1426,6 +1426,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _movePostUpdatesFolderToNewAddress(oldAddress: string, newAddress: string) {
         try {
             await this._clientsManager.getDefaultIpfs()._client.files.mv(`/${oldAddress}`, `/${newAddress}`); // Could throw
+            const commentUpdates = await this.dbHandler.queryAllStoredCommentUpdates();
+            for (const commentUpdate of commentUpdates) {
+                const pathParts = commentUpdate.ipfsPath.split("/");
+                pathParts[1] = newAddress;
+                const newIpfsPath = pathParts.join("/");
+                await this.dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
+            }
         } catch (e) {
             if (e.message !== "file does not exist") throw e; // A critical error
         }
@@ -1445,8 +1452,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
             await this.dbHandler.unlockSubStart();
             await this.dbHandler.rollbackAllTransactions();
-            await this.dbHandler.destoryConnection();
             await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
+            await this.dbHandler.destoryConnection();
             this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(internalState.address, {
                 address: internalState.address,
