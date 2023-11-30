@@ -8,7 +8,8 @@ const {
     publishVote,
     generateMockPost,
     publishWithExpectedResult,
-    isRpcFlagOn
+    isRpcFlagOn,
+    mockRemotePlebbitIpfsOnly
 } = require("../../../dist/node/test/test-util");
 const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
 
@@ -281,7 +282,7 @@ describe(`subplebbit.startedState`, async () => {
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit.plebbit.clients.ipfsClients = undefined; // Should cause a failure
+            subplebbit.plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -466,7 +467,7 @@ describe(`Migration to a new IPFS repo`, async () => {
     let subAddress;
     let plebbitDifferentIpfs;
     before(async () => {
-        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        const plebbit = await mockPlebbit();
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
@@ -475,10 +476,7 @@ describe(`Migration to a new IPFS repo`, async () => {
 
         await sub.stop();
 
-        plebbitDifferentIpfs = await mockPlebbit({
-            dataPath: globalThis["window"]?.plebbitDataPath,
-            ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"]
-        }); // Different IPFS repo
+        plebbitDifferentIpfs = await mockPlebbit({ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"]}); // Different IPFS repo
 
         const subDifferentIpfs = await createSubWithNoChallenge({ address: sub.address }, plebbitDifferentIpfs);
         await subDifferentIpfs.start();
@@ -508,41 +506,18 @@ describe(`Migration to a new IPFS repo`, async () => {
     it(`Comments' CommentUpdate are republished`, async () => {
         const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
         const postFromPage = subLoaded.posts.pages.hot.comments[0];
+        const remotePlebbit = await mockRemotePlebbitIpfsOnly();
 
-        const ipnsLoaded = JSON.parse(
-            await plebbitDifferentIpfs._clientsManager.fetchSubplebbitIpns(postFromPage.ipnsName, plebbitDifferentIpfs)
-        );
-        expect(ipnsLoaded.cid).to.equal(postFromPage.cid); // Make sure it was loaded correctly
+        const postWithRemotePlebbit = await remotePlebbit.createComment({cid: postFromPage.cid});
+        postWithRemotePlebbit.update();
+        await new Promise(resolve => postWithRemotePlebbit.once("update", resolve)); // CommentIpfs update
+        expect(postWithRemotePlebbit.replyCount).to.be.undefined;
+        await new Promise(resolve => postWithRemotePlebbit.once("update", resolve)); // CommentUpdate update
+        expect(postWithRemotePlebbit.replyCount).to.be.a("number");
+        expect(postWithRemotePlebbit.upvoteCount).to.be.a("number");
+        await postWithRemotePlebbit.stop();
     });
 
-    it(`Comments' commentUpdate IPNS is republished after expiring`, async () => {
-        const plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
-        const sub = await createSubWithNoChallenge({}, plebbit);
-        sub._commentUpdateIpnsLifetimeSeconds = 2; // Republish IPNS every 2 seconds
-        await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        const post = await publishRandomPost(sub.address, plebbit, {}, false);
-
-        await post.update();
-
-        const updatedAtArray = [];
-
-        await new Promise((resolve) => {
-            post.on("update", () => {
-                updatedAtArray.push(post.updatedAt);
-                if (updatedAtArray.length === 8) {
-                    resolve();
-                }
-            });
-        });
-        await sub.stop();
-        await post.stop();
-
-        const bufferSeconds = 1;
-        for (let i = 0; i < updatedAtArray.length - 1; i++)
-            if (updatedAtArray[i + 1] - updatedAtArray[i] > sub._commentUpdateIpnsLifetimeSeconds + bufferSeconds)
-                expect.fail(`Sub should be publishing a new comment update every ${sub._commentUpdateIpnsLifetimeSeconds}`);
-    });
 });
 
 describe(`subplebbit.clients (Local)`, async () => {
