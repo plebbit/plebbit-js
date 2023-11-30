@@ -387,9 +387,12 @@ export async function verifyCommentUpdate(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
-    if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
-        return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
-
+    if (update.edit) {
+        if (update.edit.signature.publicKey !== comment.signature.publicKey)
+            return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
+        const editSignatureValidation = await _getJsonValidationResult(update.edit);
+        if (!editSignatureValidation.valid) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+    }
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
     if (update.replies) {
