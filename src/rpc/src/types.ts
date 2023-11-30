@@ -5,11 +5,13 @@ export type PlebbitWsServerClassOptions = {
     port: number;
     plebbit: Plebbit;
     plebbitOptions?: PlebbitOptions;
+    authKey?: string;
 };
 
 export type PlebbitWsServerOptions = {
     port: number;
     plebbitOptions?: PlebbitOptions;
+    authKey?: string;
 };
 
 export type JsonRpcSendNotificationOptions = {

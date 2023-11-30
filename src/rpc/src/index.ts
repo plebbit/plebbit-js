@@ -40,10 +40,12 @@ class PlebbitWsServer extends EventEmitter {
     subscriptionCleanups: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
+    authKey: string | undefined;
 
-    constructor({ port, plebbit, plebbitOptions }: PlebbitWsServerClassOptions) {
+    constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions) {
         super();
         const log = Logger("plebbit:PlebbitWsServer");
+        this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
         this.rpcWebsockets = new RpcWebsocketsServer({
@@ -65,6 +67,23 @@ class PlebbitWsServer extends EventEmitter {
         this.on("error", (err) => {
             log.error(err);
         });
+
+        // block non-localhost requests without auth key for security
+        // @ts-ignore
+        this.ws._server.on('upgrade', (req) => {
+            const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === 'x-forwarded-for' && i % 2 === 0));
+
+            // client is on localhost and server is not forwarded by a proxy
+            const isLocalhost = req.socket.remoteAddress === '::1' && !xForwardedFor;
+
+            // the request path is the auth key, e.g. localhost:9138/some-random-auth-key (not secure on http)
+            const hasAuth = this.authKey && `/${this.authKey}` === req.url;
+
+            // if isn't localhost and doesn't have auth, block access
+            if (!isLocalhost && !hasAuth) {
+                req.destroy();
+            }
+        })
 
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
@@ -131,6 +150,11 @@ class PlebbitWsServer extends EventEmitter {
             }
         };
         this.rpcWebsockets.register(method, callbackWithErrorHandled);
+
+        // register localhost:9138/<auth-key> to bypass block on non-localhost requests, using /<auth-key> as namespace
+        if (this.authKey) {
+            this.rpcWebsockets.register(method, callbackWithErrorHandled, `/${this.authKey}`);
+        }
     }
 
     // send json rpc notification message (no id field, but must have subscription id)
@@ -565,14 +589,14 @@ class PlebbitWsServer extends EventEmitter {
     }
 }
 
-const createPlebbitWsServer = async ({ port, plebbitOptions }: PlebbitWsServerOptions) => {
+const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }: PlebbitWsServerOptions) => {
     if (typeof port !== "number") {
         throw Error(`createPlebbitWsServer port '${port}' not a number`);
     }
 
     const plebbit = await PlebbitJs.Plebbit(plebbitOptions);
 
-    const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions });
+    const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions, authKey });
     return plebbitWss;
 };
 
