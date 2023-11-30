@@ -451,6 +451,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (!(await this.dbHandler.isSubStartLocked())) {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
                 await this.dbHandler.destoryConnection();
+                await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
                 await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                     address: newSubplebbitOptions.address,
                     plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
@@ -1428,6 +1429,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.initSubplebbit({ ...currentDbState, ...overrideProps });
     }
 
+    private async _movePostUpdatesFolderToNewAddress(oldAddress: string, newAddress: string) {
+        try {
+            await this._clientsManager.getDefaultIpfs()._client.files.mv(`/${oldAddress}`, `/${newAddress}`); // Could throw
+        } catch (e) {
+            if (e.message !== "file does not exist") throw e; // A critical error
+        }
+    }
+
     private async _switchDbWhileRunningIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:_switchDbIfNeeded");
 
@@ -1443,6 +1452,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this.dbHandler.unlockSubStart();
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.destoryConnection();
+            await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
             this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(internalState.address, {
                 address: internalState.address,
@@ -1460,11 +1470,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         let shouldUpdateAllComments = false;
         try {
-            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`, { hash: true });
+            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`);
         } catch (e) {
             if (e.message === "file does not exist") {
                 shouldUpdateAllComments = true;
-                log.error(`PostUpdates folder does not exist on IPFS files. Will recalculate all CommentUpdate and publish them`);
             }
         }
 
@@ -1474,6 +1483,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             : await this.dbHandler!.queryCommentsToBeUpdated(trx);
         await this.dbHandler.commitTransaction("_updateCommentsThatNeedToBeUpdated");
         if (commentsToUpdate.length === 0) return;
+
+        if (shouldUpdateAllComments)
+            log.error(`PostUpdates folder does not exist on IPFS files. Will recalculate all CommentUpdate and publish them`);
 
         this._subplebbitUpdateTrigger = true;
 
