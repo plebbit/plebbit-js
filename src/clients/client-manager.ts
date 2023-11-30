@@ -401,7 +401,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             // should attempt to fetch cache here
             // Also should we set updatingState everytime we fetch a parent Comment?
             if (commentPostUpdatesParentsPathCache.has(parentCid)) {
-                reversedPath += commentPostUpdatesParentsPathCache.get(parentCid);
+                reversedPath += "/" + commentPostUpdatesParentsPathCache.get(parentCid);
                 break;
             } else {
                 const parent =
@@ -432,7 +432,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
         this._comment._setUpdatingState("fetching-update-ipfs");
         if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-update-ipfs"); 
+            this.updateIpfsState("fetching-update-ipfs");
             const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
             this.updateIpfsState("stopped");
             return commentUpdate;
