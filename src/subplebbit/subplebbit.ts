@@ -220,6 +220,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.signature = mergedProps.signature;
         this.settings = mergedProps.settings;
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+        this.postUpdates = mergedProps.postUpdates;
         this._setStartedState(mergedProps.startedState);
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
 
@@ -317,8 +318,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             features: this.features,
             suggested: this.suggested,
             rules: this.rules,
-            flairs: this.flairs
-            // postUpdates: this.postUpdates
+            flairs: this.flairs,
+            postUpdates: this.postUpdates
         };
     }
 
