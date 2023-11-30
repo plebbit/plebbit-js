@@ -146,9 +146,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _subplebbitUpdateTrigger: boolean;
     private _isSubRunningLocally: boolean;
     private _publishLoopPromise: Promise<void>;
-    private _ipfsNodeKeys: IpfsKey[];
     private _loadingOperation: RetryOperation;
-    private _commentUpdateIpnsLifetimeSeconds: number;
     _clientsManager: SubplebbitClientsManager;
     private _updateRpcSubscriptionId?: number;
     private _startRpcSubscriptionId?: number;
@@ -178,7 +176,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._setStartedState("stopped");
         this._setUpdatingState("stopped");
         this._isSubRunningLocally = false;
-        this._commentUpdateIpnsLifetimeSeconds = 8640000; // 100 days, arbitrary number
 
         // these functions might get separated from their `this` when used
         this.start = this.start.bind(this);
@@ -321,6 +318,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             suggested: this.suggested,
             rules: this.rules,
             flairs: this.flairs
+            // postUpdates: this.postUpdates
         };
     }
 
@@ -331,21 +329,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         };
     }
 
-    private async _importSignerIntoIpfsIfNeeded(signer: Required<Pick<SignerType, "ipnsKeyName" | "privateKey">>) {
-        assert(signer.ipnsKeyName);
-        if (!this._ipfsNodeKeys) this._ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
+    private async _importSubplebbitSignerIntoIpfsIfNeeded() {
+        if (!this.signer) throw Error("subplebbit.signer is not defined");
 
-        const signerInNode = this._ipfsNodeKeys.find((key) => key.name === signer.ipnsKeyName);
-        if (!signerInNode) {
-            const ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
-            const res = await nativeFunctions.importSignerIntoIpfsNode(signer.ipnsKeyName, ipfsKey, {
-                url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
-                headers: this.plebbit.ipfsHttpClientsOptions[0].headers
-            });
-            this._ipfsNodeKeys.push(res);
-            return res;
-        }
-        return signerInNode;
+        await nativeFunctions.importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+            url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
+            headers: this.plebbit.ipfsHttpClientsOptions[0].headers
+        });
     }
 
     async _defaultSettingsOfChallenges(log: Logger) {
@@ -1530,7 +1520,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         try {
             await this._mergeInstanceStateWithDbState({});
-            this._ipfsNodeKeys = await this._clientsManager.getDefaultIpfs()._client.key.list();
             await this._listenToIncomingRequests();
             this._setStartedState("publishing-ipns");
             this._clientsManager.updateIpfsState("publishing-ipns");
@@ -1638,7 +1627,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._defaultSettingsOfChallenges(log);
         // Import subplebbit keys onto ipfs node
 
-        await this._importSignerIntoIpfsIfNeeded({ ipnsKeyName: this.signer.ipnsKeyName, privateKey: this.signer.privateKey });
+        await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
