@@ -201,7 +201,7 @@ describe(`comment.update`, async () => {
 
         const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
 
-        invalidCommentUpdateJson.upvoteCount += 1234; // Invalidate signature
+        invalidCommentUpdateJson.cid += 1234; // Invalidate CommentUpdate
 
         expect(
             await verifyCommentUpdate(
@@ -214,7 +214,7 @@ describe(`comment.update`, async () => {
             )
         ).to.deep.equal({
             valid: false,
-            reason: messages.ERR_SIGNATURE_IS_INVALID
+            reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT
         });
 
         const createdComment = await plebbit.createComment({
@@ -236,6 +236,7 @@ describe(`comment.update`, async () => {
         await new Promise((resolve) =>
             createdComment.on("error", (err) => {
                 expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
+                expect(err.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
                 errorsEmittedCount++;
                 resolve();
             })
@@ -562,7 +563,13 @@ describe("comment.updatingState", async () => {
     if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
+        const expectedStates = [
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "fetching-update-ipfs",
+            "succeeded",
+            "stopped",
+          ];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -572,13 +579,13 @@ describe("comment.updatingState", async () => {
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - 5)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     //prettier-ignore
     if (!isRpcFlagOn())
-    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
+    it.only(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
         const expectedStates = ["fetching-update-ipns", "succeeded", "stopped"];
@@ -620,6 +627,8 @@ describe("comment.updatingState", async () => {
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
 
     });
+
+    it(`Add a test for updatingState with resolving-author-address`);
 });
 
 describe(`comment.clients`, async () => {
