@@ -282,6 +282,6 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
             // sort from smallest to biggest
             .sort((a, b) => Number(a) - Number(b))
             // find the smallest timestamp range where comment.timestamp is newer
-            .find((timestampRange) => Date.now() / 1000 - Number(timestampRange) <= postTimestamp)
+            .filter((timestampRange) => timestamp() - Number(timestampRange) <= postTimestamp)
     );
 }

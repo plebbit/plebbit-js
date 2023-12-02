@@ -28,6 +28,7 @@ import {
     SubplebbitPlebbitRpcStateClient
 } from "./plebbit-rpc-state-client";
 import { SubplebbitIpfsType } from "../subplebbit/types";
+import Logger from "@plebbit/plebbit-logger";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -422,25 +423,41 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async fetchCommentUpdate(): Promise<CommentUpdate> {
         // Caching should eventually be moved to storage instead of in-memory
+        const log = Logger("plebbit-js:comment:update");
         const subIpns = await this._fetchSubplebbitForCommentUpdate();
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
         const postTimestamp = postTimestampCache.get(this._comment.postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch post timestamp");
-        const timestampRange = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
-        const folderCid = subIpns.postUpdates[timestampRange];
-        if (!folderCid) throw Error("Timestamp range for subplebbit has no folder cid");
-        const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
-        this._comment._setUpdatingState("fetching-update-ipfs");
-        if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-update-ipfs");
-            const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
-            this.updateIpfsState("stopped");
-            return commentUpdate;
-        } else {
-            // States of gateways should be updated by fetchFromMultipleGateways
-            const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"));
-            return update;
+        const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
+        if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
+
+        for (const timestampRange of timestampRanges) {
+            const folderCid = subIpns.postUpdates[timestampRange];
+            const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+            this._comment._setUpdatingState("fetching-update-ipfs");
+            if (this._defaultIpfsProviderUrl) {
+                this.updateIpfsState("fetching-update-ipfs");
+                try {
+                    const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
+                    this.updateIpfsState("stopped");
+                    return commentUpdate;
+                } catch (e) {
+                    // if does not exist, try the next timestamp range
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                }
+            } else {
+                // States of gateways should be updated by fetchFromMultipleGateways
+                try {
+                    const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"));
+                    return update;
+                } catch (e) {
+                    // if does not exist, try the next timestamp range
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                }
+            }
         }
+
+        throw Error(`CommentUpdate of comment (${this._comment.cid}) does not exist on all timestamp ranges: ${timestampRanges}`);
     }
 
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
