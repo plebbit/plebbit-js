@@ -167,7 +167,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         ttl: 600000
     }); // Will be a list of challenge request ids
 
-    private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years
+    private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
     constructor(plebbit: Plebbit) {
         super();
@@ -716,10 +716,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const postUpdates = {};
         for (const timeBucket of this._postUpdatesBuckets) {
             try {
-                const { cid: folderCid } = await this._clientsManager
+                const statRes = await this._clientsManager
                     .getDefaultIpfs()
-                    ._client.files.stat(`/${this.address}/postUpdates/${timeBucket}`, { hash: true });
-                postUpdates[String(timeBucket)] = String(folderCid);
+                    ._client.files.stat(`/${this.address}/postUpdates/${timeBucket}`);
+                if (statRes.blocks !== 0) postUpdates[String(timeBucket)] = String(statRes.cid);
             } catch {}
         }
         if (Object.keys(postUpdates).length === 0) return undefined;
@@ -1343,14 +1343,18 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
+    private _calculatePostUpdatePathForExistingCommentUpdate(timestampRange: number, currentIpfsPath: string) {
+        const pathParts = currentIpfsPath.split("/");
+        return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
+    }
+
     private async _calculateIpfsPathForCommentUpdate(dbComment: CommentsTableRow, storedCommentUpdate?: CommentUpdatesRow) {
         const postTimestamp =
             dbComment.depth === 0 ? dbComment.timestamp : (await this.dbHandler.queryComment(dbComment.postCid)).timestamp;
         const timestampRange = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= postTimestamp);
-        if (storedCommentUpdate?.ipfsPath) {
-            const pathParts = storedCommentUpdate.ipfsPath.split("/");
-            return ["/" + this.address, "postUpdates", timestampRange, ...pathParts.slice(4)].join("/");
-        } else {
+        if (storedCommentUpdate?.ipfsPath)
+            return this._calculatePostUpdatePathForExistingCommentUpdate(timestampRange, storedCommentUpdate.ipfsPath);
+        else {
             const parentsCids = (await this.dbHandler.queryParents(dbComment)).map((parent) => parent.cid).reverse();
             return ["/" + this.address, "postUpdates", timestampRange, ...parentsCids, dbComment.cid, "update"].join("/");
         }
@@ -1533,6 +1537,45 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
+    private async _adjustPostUpdatesBucketsIfNeeded() {
+        // This function will be ran a lot, maybe we should move it out of the sync loop or try to limit its execution
+        if (!this.postUpdates) return;
+        // TODO if there are any changes then we set _subplebbitUpdateTrigger = true
+        // Look for posts whose buckets should be changed
+
+        const log = Logger("plebbit-js:subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
+        const commentUpdateOfPosts = await this.dbHandler.queryCommentUpdatesOfPosts();
+        for (const post of commentUpdateOfPosts) {
+            const currentTimestampBucketOfPost = Number(post.ipfsPath.split("/")[3]);
+            const newTimestampBucketOfPost = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= post.timestamp);
+            if (currentTimestampBucketOfPost !== newTimestampBucketOfPost) {
+                log(
+                    `Post (${post.cid}) current postUpdates timestamp bucket (${currentTimestampBucketOfPost}) is outdated. Will move it to bucket (${newTimestampBucketOfPost})`
+                );
+                // ipfs files mv to new timestamp bucket
+                // also update the value of ipfs path for this post and children
+                const newPostIpfsPath = this._calculatePostUpdatePathForExistingCommentUpdate(newTimestampBucketOfPost, post.ipfsPath);
+                const newPostIpfsPathWithoutUpdate = newPostIpfsPath.replace("/update", "");
+                const currentPostIpfsPathWithoutUpdate = post.ipfsPath.replace("/update", "");
+                const newTimestampBucketPath = newPostIpfsPathWithoutUpdate.split("/").slice(0, 4).join("/");
+                await this._clientsManager.getDefaultIpfs()._client.files.mkdir(newTimestampBucketPath, { parents: true });
+
+                await this._clientsManager
+                    .getDefaultIpfs()
+                    ._client.files.mv(currentPostIpfsPathWithoutUpdate, newPostIpfsPathWithoutUpdate); // should move post and its children
+                const commentUpdatesWithOutdatedIpfsPath = await this.dbHandler.queryCommentsUpdatesWithPostCid(post.cid);
+                for (const commentUpdate of commentUpdatesWithOutdatedIpfsPath) {
+                    const newIpfsPath = this._calculatePostUpdatePathForExistingCommentUpdate(
+                        newTimestampBucketOfPost,
+                        commentUpdate.ipfsPath
+                    );
+                    await this.dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
+                }
+                this._subplebbitUpdateTrigger = true;
+            }
+        }
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:subplebbit:sync");
         await this._switchDbWhileRunningIfNeeded();
@@ -1540,6 +1583,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         try {
             await this._mergeInstanceStateWithDbState({});
             await this._listenToIncomingRequests();
+            await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedState("publishing-ipns");
             this._clientsManager.updateIpfsState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();

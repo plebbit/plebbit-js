@@ -451,6 +451,19 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
     }
 
+    async queryCommentUpdatesOfPosts(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .where("depth", 0);
+    }
+
+    async queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .where(`${TABLES.COMMENTS}.postCid`, postCid)
+            .select(`${TABLES.COMMENT_UPDATES}.*`);
+    }
+
     async queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction) {
         if (!Array.isArray(authorAddresses)) authorAddresses = [authorAddresses];
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
