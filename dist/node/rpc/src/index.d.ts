@@ -22,7 +22,8 @@ declare class PlebbitWsServer extends EventEmitter {
     publishing: {
         [subscriptionId: number]: Publication;
     };
-    constructor({ port, plebbit, plebbitOptions }: PlebbitWsServerClassOptions);
+    authKey: string | undefined;
+    constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions);
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<{
@@ -72,7 +73,7 @@ declare class PlebbitWsServer extends EventEmitter {
     destroy(): Promise<void>;
 }
 declare const PlebbitRpc: {
-    PlebbitWsServer: ({ port, plebbitOptions }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
+    PlebbitWsServer: ({ port, plebbitOptions, authKey }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
     setPlebbitJs: typeof setPlebbitJs;
 };
 export = PlebbitRpc;

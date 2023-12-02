@@ -113,13 +113,14 @@ var getStartedSubplebbit = function (address) { return __awaiter(void 0, void 0,
 var PlebbitWsServer = /** @class */ (function (_super) {
     __extends(PlebbitWsServer, _super);
     function PlebbitWsServer(_a) {
-        var port = _a.port, plebbit = _a.plebbit, plebbitOptions = _a.plebbitOptions;
+        var port = _a.port, plebbit = _a.plebbit, plebbitOptions = _a.plebbitOptions, authKey = _a.authKey;
         var _this = _super.call(this) || this;
         _this.connections = {};
         _this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
         _this.publishing = {};
         var log = (0, plebbit_logger_1.default)("plebbit:PlebbitWsServer");
+        _this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         _this.plebbit = plebbit;
         _this.rpcWebsockets = new rpc_websockets_1.Server({
@@ -138,6 +139,19 @@ var PlebbitWsServer = /** @class */ (function (_super) {
         });
         _this.on("error", function (err) {
             log.error(err);
+        });
+        // block non-localhost requests without auth key for security
+        // @ts-ignore
+        _this.ws._server.on("upgrade", function (req) {
+            var xForwardedFor = Boolean(req.rawHeaders.find(function (item, i) { return item.toLowerCase() === "x-forwarded-for" && i % 2 === 0; }));
+            // client is on localhost and server is not forwarded by a proxy
+            var localHostUrls = ["::1", "::ffff:127.0.0.1"];
+            var isLocalhost = localHostUrls.includes(req.socket.remoteAddress) && !xForwardedFor;
+            // the request path is the auth key, e.g. localhost:9138/some-random-auth-key (not secure on http)
+            var hasAuth = _this.authKey && "/".concat(_this.authKey) === req.url;
+            // if isn't localhost and doesn't have auth, block access
+            if (!isLocalhost && !hasAuth)
+                req.destroy();
         });
         // save connections to send messages to them later
         _this.ws.on("connection", function (ws) {
@@ -213,6 +227,10 @@ var PlebbitWsServer = /** @class */ (function (_super) {
             });
         }); };
         this.rpcWebsockets.register(method, callbackWithErrorHandled);
+        // register localhost:9138/<auth-key> to bypass block on non-localhost requests, using /<auth-key> as namespace
+        if (this.authKey) {
+            this.rpcWebsockets.register(method, callbackWithErrorHandled, "/".concat(this.authKey));
+        }
     };
     // send json rpc notification message (no id field, but must have subscription id)
     PlebbitWsServer.prototype.jsonRpcSendNotification = function (_a) {
@@ -864,7 +882,7 @@ var PlebbitWsServer = /** @class */ (function (_super) {
     return PlebbitWsServer;
 }(events_1.EventEmitter));
 var createPlebbitWsServer = function (_a) {
-    var port = _a.port, plebbitOptions = _a.plebbitOptions;
+    var port = _a.port, plebbitOptions = _a.plebbitOptions, authKey = _a.authKey;
     return __awaiter(void 0, void 0, void 0, function () {
         var plebbit, plebbitWss;
         return __generator(this, function (_b) {
@@ -876,7 +894,7 @@ var createPlebbitWsServer = function (_a) {
                     return [4 /*yield*/, plebbit_js_1.default.Plebbit(plebbitOptions)];
                 case 1:
                     plebbit = _b.sent();
-                    plebbitWss = new PlebbitWsServer({ plebbit: plebbit, port: port, plebbitOptions: plebbitOptions });
+                    plebbitWss = new PlebbitWsServer({ plebbit: plebbit, port: port, plebbitOptions: plebbitOptions, authKey: authKey });
                     return [2 /*return*/, plebbitWss];
             }
         });
