@@ -70,20 +70,19 @@ class PlebbitWsServer extends EventEmitter {
 
         // block non-localhost requests without auth key for security
         // @ts-ignore
-        this.ws._server.on('upgrade', (req) => {
-            const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === 'x-forwarded-for' && i % 2 === 0));
+        this.ws._server.on("upgrade", (req) => {
+            const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === "x-forwarded-for" && i % 2 === 0));
 
             // client is on localhost and server is not forwarded by a proxy
-            const isLocalhost = req.socket.remoteAddress === '::1' && !xForwardedFor;
+            const localHostUrls = ["::1", "::ffff:127.0.0.1"];
+            const isLocalhost = localHostUrls.includes(req.socket.remoteAddress) && !xForwardedFor;
 
             // the request path is the auth key, e.g. localhost:9138/some-random-auth-key (not secure on http)
             const hasAuth = this.authKey && `/${this.authKey}` === req.url;
 
             // if isn't localhost and doesn't have auth, block access
-            if (!isLocalhost && !hasAuth) {
-                req.destroy();
-            }
-        })
+            if (!isLocalhost && !hasAuth) req.destroy();
+        });
 
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
@@ -578,7 +577,7 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
 
-    async destroy(){
+    async destroy() {
         for (const subplebbitAddress of Object.keys(startedSubplebbits)) {
             const startedSub = await getStartedSubplebbit(subplebbitAddress);
             await startedSub.stop();

@@ -17,6 +17,8 @@ const rpcPort = 39652;
 const path = require("path");
 const fs = require("fs");
 
+const rpcAuthKey = "123456";
+
 // allow * origin on ipfs api to bypass cors browser error
 // very insecure do not do this in production
 const offlineNodeArgs = {
@@ -159,7 +161,7 @@ const startIpfsNodes = async () => {
         // run RPC here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
         const PlebbitRpc = require("../../rpc");
-        const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort });
+        const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
         // debug raw JSON RPC messages in console (optional)
