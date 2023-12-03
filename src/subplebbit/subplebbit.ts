@@ -1524,6 +1524,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`);
         } catch (e) {
             if (e.message === "file does not exist") shouldUpdateAllComments = true;
+            else throw e;
         }
 
         if (shouldUpdateAllComments) {
@@ -1532,8 +1533,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 log.error(
                     `PostUpdates folder (/${this.address}) does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files`
                 );
-            for (const commentUpdateRaw of storedCommentUpdates)
-                await this._writeCommentUpdateToIpfsFilePath(commentUpdateRaw, commentUpdateRaw.ipfsPath, undefined);
+            for (const commentUpdateRaw of storedCommentUpdates) {
+                // We should calculate new ipfs path
+                const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(
+                    await this.dbHandler.queryComment(commentUpdateRaw.cid),
+                    undefined
+                );
+                await this._writeCommentUpdateToIpfsFilePath(commentUpdateRaw, newIpfsPath, undefined);
+                await this.dbHandler.upsertCommentUpdate({ ...commentUpdateRaw, ipfsPath: newIpfsPath });
+                log(`Added the CommentUpdate of (${commentUpdateRaw.cid}) to IPFS files`);
+            }
         }
     }
 
