@@ -187,17 +187,6 @@ export class ClientsManager extends BaseClientsManager {
     protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs" {
         return "fetching-subplebbit-ipfs";
     }
-
-    async fetchSubplebbitIpns(ipnsAddress: string): Promise<string> {
-        if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
-            const subCid = await this.resolveIpnsToCidP2P(ipnsAddress);
-            this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpfs());
-            const content = await this._fetchCidP2P(subCid);
-            this.updateIpfsState("stopped");
-            return content;
-        } else return this.fetchFromMultipleGateways({ ipns: ipnsAddress }, "subplebbit");
-    }
 }
 
 export class PublicationClientsManager extends ClientsManager {
@@ -259,8 +248,6 @@ export class PublicationClientsManager extends ClientsManager {
         const subIpns = await this.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
         this._attemptingToResolve = false;
         if (!subIpns) throw new PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
-
-        assert(typeof subIpns === "string", `Failed to resolve subplebbit address (${subplebbitAddress})`);
 
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
         let subJson: SubplebbitIpfsType;
@@ -342,18 +329,19 @@ export class CommentClientsManager extends PublicationClientsManager {
             });
 
         this._comment._setUpdatingState("fetching-subplebbit-ipns");
+        let subJson: SubplebbitIpfsType;
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-subplebbit-ipns");
             const subplebbitCid = await this.resolveIpnsToCidP2P(subIpns);
             this._comment._setUpdatingState("fetching-subplebbit-ipfs");
             this.updateIpfsState("fetching-subplebbit-ipfs");
-            const subplebbit: SubplebbitIpfsType = JSON.parse(await this._fetchCidP2P(subplebbitCid));
-            return subplebbit;
+            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            const subplebbit: SubplebbitIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit"));
-            return subplebbit;
+            subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit"));
         }
+        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+        return subJson;
     }
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string) {
@@ -513,19 +501,22 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     async fetchSubplebbit(ipnsName: string) {
         this._subplebbit._setUpdatingState("fetching-ipns");
+        let subJson: SubplebbitIpfsType;
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipns");
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this._subplebbit._setUpdatingState("fetching-ipfs");
             this.updateIpfsState("fetching-ipfs");
-            const subplebbit: SubplebbitIpfsType = JSON.parse(await this._fetchCidP2P(subplebbitCid));
+            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
             this.updateIpfsState("stopped");
-            return subplebbit;
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            const update: SubplebbitIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit"));
-            return update;
+            subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit"));
         }
+
+        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+
+        return subJson;
     }
 
     updateIpfsState(newState: SubplebbitIpfsClient["state"]) {
