@@ -64,7 +64,7 @@ import {
     verifySubplebbit,
     verifyVote
 } from "../signer/signatures";
-import { CACHE_KEYS, subplebbitForPublishingCache } from "../constants";
+import { STORAGE_KEYS, subplebbitForPublishingCache } from "../constants";
 import assert from "assert";
 import version from "../version";
 import { JsonSignature, SignerType } from "../signer/constants";
@@ -1420,7 +1420,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _getDbInternalState(lock = true) {
         if (lock) await this.dbHandler.lockSubState();
-        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
         if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }
@@ -1610,8 +1610,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (Object.keys(props).length === 0) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT]);
-        await this.dbHandler.keyvSet(CACHE_KEYS[CACHE_KEYS.INTERNAL_SUBPLEBBIT], {
+        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+        await this.dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
         });

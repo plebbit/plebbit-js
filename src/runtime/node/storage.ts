@@ -3,11 +3,13 @@ import { StorageInterface } from "../../types";
 import path from "path";
 import fs from "fs";
 import Keyv from "keyv";
+import SqliteCache from "cache-sqlite-lru-ttl";
 
-export default class Cache implements StorageInterface {
+// Storage is for long term items, no eviction based on ttl or anything like that
+export default class Storage implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _keyv: Keyv;
-    constructor(plebbit: Cache["_plebbit"]) {
+    constructor(plebbit: Storage["_plebbit"]) {
         this._plebbit = plebbit;
     }
 
@@ -44,5 +46,9 @@ export default class Cache implements StorageInterface {
         const keys = [];
         for await (const [key, value] of this._keyv.iterator()) keys.push(key);
         return keys;
+    }
+
+    async destroy(){
+        await this._keyv.disconnect();
     }
 }

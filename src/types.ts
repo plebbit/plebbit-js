@@ -665,6 +665,7 @@ export interface StorageInterface {
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;
     keys: () => Promise<string[]>;
+    destroy: () => Promise<void>;
 }
 
 // RPC types

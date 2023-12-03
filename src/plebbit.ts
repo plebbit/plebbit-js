@@ -216,7 +216,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
 
-        // Init cache
+        // Init storage
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
         await this._storage.init();
 
@@ -495,9 +495,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async destroy() {
         // Clean up connections
         if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
+        await this._storage.destroy();
     }
 
-    toJSON(){
+    toJSON() {
         return undefined;
     }
 }

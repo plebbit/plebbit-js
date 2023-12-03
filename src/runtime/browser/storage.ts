@@ -3,10 +3,11 @@ import { StorageInterface } from "../../types";
 import { Plebbit } from "../../plebbit";
 import lodash from "lodash";
 
-export default class Cache implements StorageInterface {
+// Storage is for long term items, no eviction based on ttl or anything like that
+export default class Storage implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
     private _store: LocalForage;
-    constructor(plebbit: Cache["_plebbit"]) {
+    constructor(plebbit: Storage["_plebbit"]) {
         this._plebbit = plebbit;
     }
 
@@ -15,9 +16,9 @@ export default class Cache implements StorageInterface {
     }
 
     async init() {
-        const cacheName = this._plebbit.noData ? lodash.uniqueId() : "plebbit-cache";
+        const storageName = this._plebbit.noData ? lodash.uniqueId() : "plebbit-storage";
         this._store = localForage.createInstance({
-            name: cacheName
+            name: storageName
         });
     }
     async getItem(key: string): Promise<any> {
@@ -40,4 +41,6 @@ export default class Cache implements StorageInterface {
     async keys(): Promise<string[]> {
         return await this._store.keys();
     }
+
+    async destroy() {}
 }
