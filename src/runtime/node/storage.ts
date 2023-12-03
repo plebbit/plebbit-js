@@ -3,7 +3,6 @@ import { StorageInterface } from "../../types";
 import path from "path";
 import fs from "fs";
 import Keyv from "keyv";
-import SqliteCache from "cache-sqlite-lru-ttl";
 
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage implements StorageInterface {
@@ -22,7 +21,7 @@ export default class Storage implements StorageInterface {
             this._keyv = new Keyv(`sqlite://:memory:`);
         } else {
             fs.mkdirSync(this._plebbit.dataPath, { recursive: true });
-            const dbPath = path.join(this._plebbit.dataPath, "cache");
+            const dbPath = path.join(this._plebbit.dataPath, "storage");
             this._keyv = new Keyv(`sqlite://${dbPath}`);
         }
     }
@@ -48,7 +47,7 @@ export default class Storage implements StorageInterface {
         return keys;
     }
 
-    async destroy(){
+    async destroy() {
         await this._keyv.disconnect();
     }
 }
