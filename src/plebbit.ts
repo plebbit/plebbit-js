@@ -497,10 +497,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return resolved;
     }
 
-    async createStorageLRU(opts: LRUStorageConstructor) {
+    async createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">) {
         // should add the storage LRU to an array, so we can destroy all of them on plebbit.destroy
         if (!this._storageLRUs[opts.cacheName]) {
-            this._storageLRUs[opts.cacheName] = new LRUStorage(opts);
+            this._storageLRUs[opts.cacheName] = new LRUStorage({ ...opts, plebbit: this });
             await this._storageLRUs[opts.cacheName].init();
         }
         return this._storageLRUs[opts.cacheName];

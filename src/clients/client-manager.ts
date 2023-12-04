@@ -20,7 +20,7 @@ import {
 } from "./ipfs-gateway-client";
 
 import { BaseClientsManager, LoadType } from "./base-client-manager";
-import { subplebbitForPublishingCache } from "../constants";
+import { commentPostUpdatesParentsPathConfig, postTimestampConfig, subplebbitForPublishingCache } from "../constants";
 import {
     CommentPlebbitRpcStateClient,
     GenericPlebbitRpcStateClient,
@@ -379,19 +379,11 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
-        const parentsPathCache = await this._plebbit.createStorageLRU({
-            cacheName: "commentPostUpdatesParentsPath",
-            maxItems: 500,
-            plebbit: this._plebbit
-        });
+        const parentsPathCache = await this._plebbit.createStorageLRU(commentPostUpdatesParentsPathConfig);
         const pathCache: string = await parentsPathCache.getItem(this._comment.cid);
         if (pathCache) return pathCache.split("/").reverse().join("/");
 
-        const postTimestampCache = await this._plebbit.createStorageLRU({
-            cacheName: "postTimestamp",
-            maxItems: 500,
-            plebbit: this._plebbit
-        });
+        const postTimestampCache = await this._plebbit.createStorageLRU(postTimestampConfig);
         if (this._comment.depth === 0) await postTimestampCache.setItem(this._comment.cid, this._comment.timestamp);
         let parentCid = this._comment.parentCid;
         let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
@@ -425,9 +417,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = await this._fetchSubplebbitForCommentUpdate();
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
-        const postTimestamp = await (
-            await this._plebbit.createStorageLRU({ cacheName: "postTimestamp", maxItems: 500, plebbit: this._plebbit })
-        ).getItem(this._comment.postCid);
+        const postTimestamp = await (await this._plebbit.createStorageLRU(postTimestampConfig)).getItem(this._comment.postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch post timestamp");
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
