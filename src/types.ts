@@ -660,7 +660,25 @@ export interface GatewayClient {
 // Storage interface, will be used to set up storage cache using localforage (for browser) or key-v SQLite (Node)
 export interface StorageInterface {
     init: () => Promise<void>;
-    getItem: (key: string) => Promise<any>;
+    getItem: (key: string) => Promise<any | undefined>;
+    setItem: (key: string, value: any) => Promise<void>;
+    removeItem: (key: string) => Promise<boolean>;
+    clear: () => Promise<void>;
+    keys: () => Promise<string[]>;
+    destroy: () => Promise<void>;
+}
+
+type LRUStorageCacheNames = "postTimestamp" | "commentPostUpdatesParentsPath";
+
+export interface LRUStorageConstructor {
+    maxItems?: number; // Will start evicting after this number of items is stored
+    cacheName: LRUStorageCacheNames; // The cache name will be used as the name of the table in sqlite. For browser it will be used as the name of the local forage instance
+    plebbit: Pick<Plebbit, "dataPath" | "noData">;
+}
+
+export interface LRUStorageInterface {
+    init: () => Promise<void>;
+    getItem: (key: string) => Promise<any | undefined>;
     setItem: (key: string, value: any) => Promise<void>;
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;

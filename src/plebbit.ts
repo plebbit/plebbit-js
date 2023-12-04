@@ -18,7 +18,9 @@ import {
     PubsubClient,
     VotePubsubMessage,
     VoteType,
-    ParsedPlebbitOptions
+    ParsedPlebbitOptions,
+    LRUStorageInterface,
+    LRUStorageConstructor
 } from "./types";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit/subplebbit";
@@ -45,6 +47,7 @@ import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import { PlebbitError } from "./plebbit-error";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
 import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
+import LRUStorage from "./runtime/node/lru-storage";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -72,6 +75,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     updateInterval: number;
     noData: boolean;
     private _userPlebbitOptions: PlebbitOptions;
+
+    private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to interface
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -492,10 +497,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return resolved;
     }
 
+    async createStorageLRU(opts: LRUStorageConstructor) {
+        // should add the storage LRU to an array, so we can destroy all of them on plebbit.destroy
+        if (!this._storageLRUs[opts.cacheName]) {
+            this._storageLRUs[opts.cacheName] = new LRUStorage(opts);
+            await this._storageLRUs[opts.cacheName].init();
+        }
+        return this._storageLRUs[opts.cacheName];
+    }
+
     async destroy() {
         // Clean up connections
         if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
         await this._storage.destroy();
+        await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
     }
 
     toJSON() {
