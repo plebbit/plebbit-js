@@ -3,7 +3,7 @@ import { GenericClientEvents } from "../types";
 
 // Client states
 type PublicationGatewayState = "stopped" | "fetching-subplebbit-ipns";
-type CommentGatewayState = PublicationGatewayState | "fetching-update-ipns" | "fetching-ipfs";
+type CommentGatewayState = PublicationGatewayState | "fetching-update-ipfs" | "fetching-ipfs";
 type SubplebbitGatewayState = "stopped" | "fetching-ipns";
 type PagesGatewayState = "fetching-ipfs" | "stopped";
 type GenericGatewayState = PublicationGatewayState | CommentGatewayState | SubplebbitGatewayState;

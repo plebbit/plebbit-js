@@ -90,7 +90,7 @@ export class ClientsManager extends BaseClientsManager {
             loadType === "subplebbit"
                 ? this._getStatePriorToResolvingSubplebbitIpns()
                 : loadType === "comment-update"
-                ? "fetching-update-ipns"
+                ? "fetching-update-ipfs"
                 : loadType === "comment" || loadType === "generic-ipfs"
                 ? "fetching-ipfs"
                 : undefined;

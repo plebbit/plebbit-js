@@ -2,7 +2,6 @@ export enum messages {
     ERR_SUB_SIGNER_NOT_DEFINED = "Subplebbit signer is not defined",
     ERR_SUB_CAN_EITHER_RUN_OR_UPDATE = "Subplebbit can either sync through .start() or update, but not both",
     ERR_PUBLICATION_MISSING_FIELD = "Publication is missing field(s)",
-    ERR_COMMENT_UPDATE_MISSING_IPNS_NAME = "Can't update comment without a defined IPNS name (comment.ipnsName)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS = "The options sent to plebbit.createSubplebbit() is missing address or signer",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
