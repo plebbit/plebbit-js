@@ -1,5 +1,4 @@
 import Database from "better-sqlite3";
-import z from "zod";
 import cbor from "cbor";
 import debounce from "debounce";
 
@@ -27,13 +26,6 @@ export interface SqliteCacheConfiguration {
      */
     readonly cacheTableName: string;
 }
-
-const configurationSchema = z.object({
-    database: z.string(),
-    defaultTtlMs: z.number().positive().optional(),
-    maxItems: z.number().positive().optional(),
-    cacheTableName: z.string()
-});
 
 async function initSqliteCache(configuration: SqliteCacheConfiguration) {
     const db = new Database(configuration.database, {});
@@ -83,13 +75,14 @@ function now() {
 
 export class SqliteCache<TData = any> {
     private readonly db: ReturnType<typeof initSqliteCache>;
+    private _config: SqliteCacheConfiguration;
     private readonly checkInterval: NodeJS.Timeout;
+    private;
     private isClosed: boolean = false;
 
-    constructor(private readonly configuration: SqliteCacheConfiguration) {
-        const config = configurationSchema.parse(configuration);
-        //@ts-expect-error
-        this.db = initSqliteCache(config);
+    constructor(configuration: SqliteCacheConfiguration) {
+        this._config = configuration;
+        this.db = initSqliteCache(configuration);
         this.checkInterval = setInterval(this.checkForExpiredItems, 1000);
     }
 
@@ -179,9 +172,9 @@ export class SqliteCache<TData = any> {
                 const db = await this.db;
                 db.cleanupExpiredStatement.run({ now: now() });
 
-                if (this.configuration.maxItems) {
+                if (this._config.maxItems) {
                     db.cleanupLruStatement.run({
-                        maxItems: this.configuration.maxItems
+                        maxItems: this._config.maxItems
                     });
                 }
             } catch (ex) {
