@@ -105,9 +105,7 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     const forbiddenFieldsWithValue = [
         { cid: "Qm12345" },
         { signer: signers[1] },
-        { ipnsKeyName: "adwad2" },
         { previousCid: "Qm12345" },
-        { ipnsName: "Qm12345" },
         { depth: 0 },
         { postCid: "Qm12345" },
         { upvoteCount: 1 },

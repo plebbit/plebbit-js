@@ -150,7 +150,6 @@ describe("plebbit.getComment", async () => {
         expect(expectedCommentProps.postCid).to.be.a("string");
         expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
         expect(expectedCommentProps.protocolVersion).to.be.a("string");
-        expect(expectedCommentProps.ipnsName).to.be.a("string");
         expect(expectedCommentProps.depth).to.equal(1);
         expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
         expect(expectedCommentProps.timestamp).to.be.a("number");
