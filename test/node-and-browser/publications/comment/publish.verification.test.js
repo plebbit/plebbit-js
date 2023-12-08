@@ -35,7 +35,7 @@ describe(`Client side verification`, async () => {
     if (!isRpcFlagOn())
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockPlebbit();
-        const subJson = JSON.parse(await customPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
+        const subJson = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
         subJson.updatedAt += 1; // should invalidate the signature
         expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
             valid: false,

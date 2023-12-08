@@ -585,7 +585,7 @@ describe("comment.updatingState", async () => {
 
     //prettier-ignore
     if (!isRpcFlagOn())
-    it.only(`updating states is in correct order upon updating a comment with gateway`, async () => {
+    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
         const expectedStates = ["fetching-update-ipns", "succeeded", "stopped"];
@@ -740,7 +740,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-            const expectedStates = ["fetching-ipfs", "stopped", "fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs","stopped"];
 
             const actualStates = [];
 
@@ -760,7 +760,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await plebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-            const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+            const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs","stopped"];
 
             const actualStates = [];
 

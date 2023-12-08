@@ -5,7 +5,6 @@ const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 const { messages } = require("../../../dist/node/errors");
-const { commentValidationCache } = require("../../../dist/node/constants");
 const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
 const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
 const lodash = require("lodash");
@@ -92,7 +91,6 @@ describe("Verify subplebbit", async () => {
         const getLatestComment = () => subJson.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
 
         const tempPlebbit = await mockPlebbit();
-        commentValidationCache.clear();
 
         const originalResolveAuthor = plebbit._clientsManager.resolveAuthorAddressIfNeeded;
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
