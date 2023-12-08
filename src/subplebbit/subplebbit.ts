@@ -55,6 +55,7 @@ import {
     ValidationResult,
     signChallengeMessage,
     signChallengeVerification,
+    signCommentUpdate,
     signSubplebbit,
     verifyChallengeAnswer,
     verifyChallengeRequest,
@@ -1394,11 +1395,17 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
-        const newCommentUpdate: CommentUpdate = {
+        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
             ...calculatedCommentUpdate,
             replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
             updatedAt: newUpdatedAt,
             protocolVersion: version.PROTOCOL_VERSION
+        };
+
+        const newCommentUpdate: CommentUpdate = {
+
+            ...commentUpdatePriorToSigning,
+            signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
 
         const ipfsPath = await this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate);

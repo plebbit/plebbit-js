@@ -373,6 +373,7 @@ export interface CommentUpdate {
     };
     lastChildCid?: string; // The cid of the most recent direct child of the comment
     lastReplyTimestamp?: number; // The timestamp of the most recent direct or indirect child of the comment
+    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
 }
 
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
@@ -443,7 +444,7 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     signer?: SignerType;
 }
 
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit";
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
 export interface CommentPubsubMessage
     extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
