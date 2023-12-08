@@ -150,14 +150,8 @@ export const createInstance = (localForageLruOptions: ForageOptions) => {
     if (typeof localForageLruOptions?.name !== "string") {
         throw Error(`LocalForageLru.createInstance localForageLruOptions.name '${localForageLruOptions?.name}' not a string`);
     }
-    if (instances[localForageLruOptions.name]) {
-        if (localForageLruOptions.size) {
-            throw Error(
-                `LocalForageLru.createInstance with name '${localForageLruOptions.name}' already created, remove localForageLruOptions.size, size cannot be changed`
-            );
-        }
-        return instances[localForageLruOptions.name];
-    }
+    if (instances[localForageLruOptions.name]) return instances[localForageLruOptions.name];
+
     instances[localForageLruOptions.name] = createLocalForageInstance(localForageLruOptions);
     return instances[localForageLruOptions.name];
 };
