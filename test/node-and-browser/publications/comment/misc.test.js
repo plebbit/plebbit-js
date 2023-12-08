@@ -577,7 +577,8 @@ describe("comment.updatingState", async () => {
         const expectedStates = [
             "fetching-ipfs",
             "succeeded",
-            "fetching-update-ipns",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
             "fetching-update-ipfs",
             "succeeded",
             "stopped",
@@ -1014,7 +1015,8 @@ describe(`comment.clients`, async () => {
             const expectedStates = [
                 "fetching-ipfs",
                 "stopped",
-                "fetching-update-ipns",
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs",
                 "fetching-update-ipfs",
                 "stopped",
               ]

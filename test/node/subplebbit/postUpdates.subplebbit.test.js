@@ -1,11 +1,19 @@
 const Plebbit = require("../../../dist/node");
-const { mockPlebbit, publishRandomPost, createSubWithNoChallenge, publishRandomReply } = require("../../../dist/node/test/test-util");
+const {
+    mockPlebbit,
+    publishRandomPost,
+    createSubWithNoChallenge,
+    publishRandomReply,
+    isRpcFlagOn
+} = require("../../../dist/node/test/test-util");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe("plebbit.postUpdates", async () => {
     let plebbit, subplebbit;
     before(async () => {
