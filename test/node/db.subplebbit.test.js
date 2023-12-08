@@ -121,6 +121,11 @@ describe("DB Migration", () => {
 
             await publishWithExpectedResult(mockPost, true);
 
+            await mockPost.update();
+            await new Promise(resolve => mockPost.once("update", resolve));
+            expect(mockPost.updatedAt).to.be.a("number");
+            await mockPost.stop();
+
             await subplebbit.delete();
         }).timeout(400000)
     );
