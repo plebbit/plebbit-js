@@ -503,6 +503,7 @@ export type OnlyDefinedProperties<T> = Pick<
 export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestPublicationSha256: string;
+    ipnsName?: string;
     id: number;
     insertedAt: number;
 }

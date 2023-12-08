@@ -176,6 +176,7 @@ export class DbHandler {
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.text("ipnsName").nullable(); // Kept for compatibility purposes, will not be used from db version 11 and onward
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.text("title").nullable();
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
@@ -277,10 +278,19 @@ export class DbHandler {
     async createTablesIfNeeded() {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
 
-        const priorDbVersion = await this.getDbVersion();
+        const currentDbVersion = await this.getDbVersion();
 
-        log.trace(`current db version: ${priorDbVersion}`);
-        const needToMigrate = priorDbVersion < env.DB_VERSION;
+        if (currentDbVersion === 10) {
+            // Remove unneeded tables
+            await Promise.all(
+                ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
+                    this._knex.schema.dropTableIfExists(tableName)
+                )
+            );
+        }
+
+        log.trace(`current db version: ${currentDbVersion}`);
+        const needToMigrate = currentDbVersion < env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -297,12 +307,13 @@ export class DbHandler {
                     log(`Table ${table} does not exist. Will create schema`);
                     await createTableFunctions[i].bind(this)(table);
                 } else if (tableExists && needToMigrate) {
+                    // We need to update the schema of the currently existing table
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${env.DB_VERSION}`;
                     await this._knex.schema.dropTableIfExists(tempTableName);
                     await createTableFunctions[i].bind(this)(tempTableName);
-                    await this._copyTable(table, tempTableName);
+                    await this._copyTable(table, tempTableName, currentDbVersion);
                     await this._knex.schema.dropTable(table);
                     await this._knex.schema.renameTable(tempTableName, table);
                 }
@@ -324,7 +335,7 @@ export class DbHandler {
         return this._dbConfig.connection.filename === ":memory:";
     }
 
-    private async _copyTable(srcTable: string, dstTable: string) {
+    private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());
         const srcRecords: Object[] = await this._knex(srcTable).select("*");
@@ -339,8 +350,14 @@ export class DbHandler {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                     }
-                if (srcTable === "comments" && !srcRecord["challengeRequestPublicationSha256"])
-                    srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. The new comments will have a correct hash
+                // Migration from version 10 to 11
+                if (currentDbVersion === 10) {
+                    if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
+                        srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`;
+                    // We just need the copy to work. The new comments will have a correct hash
+                    else if (srcTable === TABLES.COMMENT_UPDATES && !srcRecord["ipfsPath"])
+                        srcRecord["ipfsPath"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. Eventually it will be updated to have the correct ipfsPath
+                }
             }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
@@ -450,6 +467,10 @@ export class DbHandler {
 
     async queryAllStoredCommentUpdates(trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
+    }
+
+    async queryCommentUpdatesWithPlaceHolderForIpfsPath(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).whereLike("ipfsPath", "%random-place-holder%");
     }
 
     async queryCommentUpdatesOfPostsForBucketAdjustment(

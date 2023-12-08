@@ -1403,7 +1403,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         };
 
         const newCommentUpdate: CommentUpdate = {
-
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
@@ -1510,18 +1509,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         log(`There are ${unpinnedCommentsCids.length} comments that need to be repinned`);
 
-        const unpinnedComments = await Promise.all(
-            (await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids)).map((dbRes) => this.plebbit.createComment(dbRes))
-        );
+        const unpinnedCommentsFromDb = await this.dbHandler.queryCommentsByCids(unpinnedCommentsCids);
 
-        for (const comment of unpinnedComments) {
-            const commentIpfsContent = deterministicStringify(comment.toJSONIpfs());
+        for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
+            const commentInstance = await this.plebbit.createComment(unpinnedCommentRow);
+            const commentIpfsJson = commentInstance.toJSONIpfs();
+            if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName;
+            const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash: string = await Hash.of(commentIpfsContent);
-            assert.equal(contentHash, comment.cid);
+            assert.equal(contentHash, unpinnedCommentRow.cid);
             await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
         }
 
-        log(`${unpinnedComments.length} comments' IPFS have been repinned`);
+        log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
 
     private async _repinCommentUpdateIfNeeded() {
@@ -1534,13 +1534,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             else throw e;
         }
 
-        if (shouldUpdateAllComments) {
-            const storedCommentUpdates = await this.dbHandler.queryAllStoredCommentUpdates();
-            if (storedCommentUpdates.length > 0)
-                log.error(
-                    `PostUpdates folder (/${this.address}) does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files`
-                );
-            for (const commentUpdateRaw of storedCommentUpdates) {
+        const commentUpdatesToRepin = shouldUpdateAllComments
+            ? await this.dbHandler.queryAllStoredCommentUpdates()
+            : await this.dbHandler.queryCommentUpdatesWithPlaceHolderForIpfsPath();
+
+        if (commentUpdatesToRepin.length > 0) {
+            log.error(
+                `PostUpdates folder (/${this.address}) does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files`
+            );
+            for (const commentUpdateRaw of commentUpdatesToRepin) {
                 // We should calculate new ipfs path
                 const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(
                     await this.dbHandler.queryComment(commentUpdateRaw.cid),
