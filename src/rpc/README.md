@@ -102,8 +102,8 @@ new Subscription(subscriptionId).on('message', console.log)
 - `method: listSubplebbits, params: []`
 - `method: getDefaults, params: []`
 - `method: fetchCid, params: [cid: string]`
-- `method: getPlebbitOptions, params: []`
-- `method: setPlebbitOptions, params: [plebbitOptions]`
+- `method: getSettings, params: []`
+- `method: setSettings, params: [plebbitRpcSettings]`
 - `method: getPeers, params: []`
 - `method: getStats, params: []`
 
@@ -384,4 +384,38 @@ Unsubscribe from notifications
 
 ```json
 { "jsonrpc": "2.0", "result": true, "id": 1 }
+```
+
+## getSettings
+
+Get the current plebbit rpc settings
+
+### Result:
+
+`<PlebbitRpcSettings>` - Current plebbit rpc settings
+
+### Code sample:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "getSettings",
+  "params": []
+}
+```
+
+### Response:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "plebbitOptions": {...},
+    "challenges": {
+      "challenge-name": {...}
+    }
+  }, 
+}
 ```
