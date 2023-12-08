@@ -129,7 +129,6 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge: SubplebbitChallenge,
 
 // cache for fetching comment cids, never expire
 const commentCache = new QuickLRU<string, Pick<Comment, "subplebbitAddress"> & {author: {address: Comment["author"]["address"]}}>({maxSize: 10000})
-const invalidIpnsName = 'i'
 // cache for fetching comment updates, expire after 1 day
 const commentUpdateCache = new TinyCache()
 const commentUpdateCacheTime = 1000 * 60 * 60
@@ -163,11 +162,9 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
       comment = await plebbit.getComment(commentCid)
       // only cache useful values
       const author = {address: comment?.author?.address}
-      cachedComment = {invalidIpnsName, subplebbitAddress: comment.subplebbitAddress, author}
+      cachedComment = {subplebbitAddress: comment.subplebbitAddress, author}
       commentCache.set(commentCid, cachedComment)
     }
-
-    
 
     // subplebbit address doesn't match filter
     if (!addressesSet.has(cachedComment.subplebbitAddress)) {
@@ -180,12 +177,12 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     }
 
     // comment hasn't been updated yet
-    let cachedCommentUpdate = commentUpdateCache.get(cachedComment.ipnsName)
+    let cachedCommentUpdate = commentUpdateCache.get(commentCid)
     if (!cachedCommentUpdate) {
       let commentUpdate = comment
       if (!commentUpdate) {
         // @ts-ignore
-        commentUpdate = await plebbit.createComment({cid: commentCid, ipnsName: commentCache.ipnsName})
+        commentUpdate = await plebbit.createComment({cid: commentCid})
       }
       const commentUpdatePromise = new Promise((resolve) => commentUpdate.once('update', resolve))
       await commentUpdate.update()
@@ -196,8 +193,8 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
       if (commentUpdate?.author?.subplebbit) {
         cachedCommentUpdate.author = {subplebbit: commentUpdate?.author?.subplebbit}
       }
-      commentUpdateCache.put(cachedComment.ipnsName, cachedCommentUpdate, commentUpdateCacheTime)
-      commentUpdateCache._timeouts[cachedComment.ipnsName].unref?.()
+      commentUpdateCache.put(commentCid, cachedCommentUpdate, commentUpdateCacheTime)
+      commentUpdateCache._timeouts[commentCid].unref?.()
     }
 
     return {...cachedComment, ...cachedCommentUpdate}
