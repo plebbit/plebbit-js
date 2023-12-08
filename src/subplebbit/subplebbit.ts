@@ -1556,11 +1556,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _adjustPostUpdatesBucketsIfNeeded() {
         // This function will be ran a lot, maybe we should move it out of the sync loop or try to limit its execution
         if (!this.postUpdates) return;
-        if (Math.random() > 0.05) return; // Only run it 5% of time
         // Look for posts whose buckets should be changed
 
         const log = Logger("plebbit-js:subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
-        const commentUpdateOfPosts = await this.dbHandler.queryCommentUpdatesOfPosts();
+        const commentUpdateOfPosts = await this.dbHandler.queryCommentUpdatesOfPostsForBucketAdjustment();
         for (const post of commentUpdateOfPosts) {
             const currentTimestampBucketOfPost = Number(post.ipfsPath.split("/")[3]);
             const newTimestampBucketOfPost = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= post.timestamp);

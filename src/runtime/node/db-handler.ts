@@ -452,9 +452,12 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
     }
 
-    async queryCommentUpdatesOfPosts(trx?: Transaction) {
+    async queryCommentUpdatesOfPostsForBucketAdjustment(
+        trx?: Transaction
+    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]> {
         return this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .select(`${TABLES.COMMENT_UPDATES}.ipfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
             .where("depth", 0);
     }
 
