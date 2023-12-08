@@ -212,7 +212,7 @@ export class BaseClientsManager {
         log.trace(`Fetching url (${url})`);
 
         const timeBefore = Date.now();
-        const isCid = path.includes("/ipfs/"); // If false, then IPNS
+        const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
         this.preFetchGateway(gateway, path, loadType);
         try {
@@ -220,7 +220,7 @@ export class BaseClientsManager {
             if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
             this.postFetchGatewaySuccess(gateway, path, loadType);
             const timeElapsedMs = Date.now() - timeBefore;
-            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
+            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid || loadType === "comment-update" ? "cid" : "ipns", timeElapsedMs);
             return resText;
         } catch (e) {
             if (e?.details?.error?.type === "aborted") {
