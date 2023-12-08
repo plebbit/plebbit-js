@@ -35,7 +35,7 @@ describe(`Client side verification`, async () => {
     if (!isRpcFlagOn())
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
         const customPlebbit = await mockPlebbit();
-        const subJson = JSON.parse(await customPlebbit._clientsManager.fetchSubplebbitIpns(subplebbitAddress));
+        const subJson = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
         subJson.updatedAt += 1; // should invalidate the signature
         expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
             valid: false,
@@ -105,9 +105,7 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
     const forbiddenFieldsWithValue = [
         { cid: "Qm12345" },
         { signer: signers[1] },
-        { ipnsKeyName: "adwad2" },
         { previousCid: "Qm12345" },
-        { ipnsName: "Qm12345" },
         { depth: 0 },
         { postCid: "Qm12345" },
         { upvoteCount: 1 },

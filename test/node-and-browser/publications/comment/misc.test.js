@@ -126,37 +126,6 @@ describe(`comment.update`, async () => {
         plebbit = await mockPlebbit();
     });
 
-    it(`Comment instance can retrieve ipnsName from just cid`, async () => {
-        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false); // Full comment instance with all props except CommentUpdate
-        expect(comment.shortCid).to.be.a("string").with.length(12);
-        expect(comment.author.shortAddress).to.be.a("string").with.length(12);
-
-        const recreatedComment = await plebbit.createComment({ cid: comment.cid });
-        expect(recreatedComment.cid).to.equal(comment.cid);
-        expect(recreatedComment.shortCid).to.equal(comment.shortCid);
-
-        let eventNum = 0;
-        recreatedComment.on("update", (_) => {
-            if (eventNum === 0) {
-                // This is the update where CommentIpfs props are loaded (postCid, title, content, etc)
-                expect(recreatedComment.cid).to.equal(comment.cid);
-                expect(recreatedComment.shortCid).to.equal(comment.shortCid);
-                expect(recreatedComment.toJSONIpfs()).to.deep.equal(comment.toJSONIpfs());
-                expect(recreatedComment.updatedAt).to.be.undefined;
-            } else if (eventNum === 1) {
-                // The update where CommentUpdate props are loaded
-                expect(recreatedComment.updatedAt).to.be.a("number");
-                recreatedComment.removeAllListeners("update");
-            }
-            eventNum++;
-        });
-
-        recreatedComment.update();
-
-        await waitUntil(() => eventNum >= 2, { timeout: 20000 });
-        await recreatedComment.stop();
-    });
-
     it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
@@ -186,7 +155,6 @@ describe(`comment.update`, async () => {
             })
         );
 
-        expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
         expect(createdComment.state).to.equal("stopped");
         expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
         expect(updateHasBeenEmitted).to.be.false;
@@ -201,7 +169,7 @@ describe(`comment.update`, async () => {
 
         const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
 
-        invalidCommentUpdateJson.upvoteCount += 1234; // Invalidate signature
+        invalidCommentUpdateJson.cid += 1234; // Invalidate CommentUpdate
 
         expect(
             await verifyCommentUpdate(
@@ -214,7 +182,7 @@ describe(`comment.update`, async () => {
             )
         ).to.deep.equal({
             valid: false,
-            reason: messages.ERR_SIGNATURE_IS_INVALID
+            reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT
         });
 
         const createdComment = await plebbit.createComment({
@@ -236,6 +204,7 @@ describe(`comment.update`, async () => {
         await new Promise((resolve) =>
             createdComment.on("error", (err) => {
                 expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
+                expect(err.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
                 errorsEmittedCount++;
                 resolve();
             })
@@ -562,7 +531,13 @@ describe("comment.updatingState", async () => {
     if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
         const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "succeeded", "stopped"];
+        const expectedStates = [
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
+            "fetching-update-ipfs",
+            "succeeded",
+            "stopped",
+          ];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -572,7 +547,7 @@ describe("comment.updatingState", async () => {
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 4)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - 5)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
@@ -581,7 +556,7 @@ describe("comment.updatingState", async () => {
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
-        const expectedStates = ["fetching-update-ipns", "succeeded", "stopped"];
+        const expectedStates = ["fetching-subplebbit-ipns", "fetching-update-ipfs","succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
@@ -590,7 +565,7 @@ describe("comment.updatingState", async () => {
         await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 3)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
@@ -602,7 +577,8 @@ describe("comment.updatingState", async () => {
         const expectedStates = [
             "fetching-ipfs",
             "succeeded",
-            "fetching-update-ipns",
+            "fetching-subplebbit-ipns",
+            "fetching-subplebbit-ipfs",
             "fetching-update-ipfs",
             "succeeded",
             "stopped",
@@ -620,6 +596,8 @@ describe("comment.updatingState", async () => {
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
 
     });
+
+    it(`Add a test for updatingState with resolving-author-address`);
 });
 
 describe(`comment.clients`, async () => {
@@ -644,7 +622,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-            const expectedStates = ["fetching-ipfs", "stopped", "fetching-update-ipns", "stopped"];
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "stopped", "fetching-update-ipfs", "stopped"];
 
             const actualStates = [];
 
@@ -664,7 +642,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await gatewayPlebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-            const expectedStates = ["fetching-update-ipns", "stopped"];
+            const expectedStates = ["fetching-subplebbit-ipns", "stopped", "fetching-update-ipfs", "stopped"];
 
             const actualStates = [];
 
@@ -731,7 +709,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await plebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-            const expectedStates = ["fetching-ipfs", "stopped", "fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+            const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs","stopped"];
 
             const actualStates = [];
 
@@ -751,7 +729,7 @@ describe(`comment.clients`, async () => {
 
             const mockPost = await plebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-            const expectedStates = ["fetching-update-ipns", "fetching-update-ipfs", "stopped"];
+            const expectedStates = ["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs","stopped"];
 
             const actualStates = [];
 
@@ -1037,7 +1015,8 @@ describe(`comment.clients`, async () => {
             const expectedStates = [
                 "fetching-ipfs",
                 "stopped",
-                "fetching-update-ipns",
+                "fetching-subplebbit-ipns",
+                "fetching-subplebbit-ipfs",
                 "fetching-update-ipfs",
                 "stopped",
               ]

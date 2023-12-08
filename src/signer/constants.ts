@@ -112,25 +112,6 @@ export const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "s
     "commentCid"
 ] as const;
 
-export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] = [
-    "author",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "flair",
-    "upvoteCount",
-    "downvoteCount",
-    "replies",
-    "updatedAt",
-    "replyCount",
-    "edit",
-    "cid",
-    "lastChildCid",
-    "lastReplyTimestamp"
-] as const;
-
 export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[] = [
     "title",
     "description",
@@ -147,7 +128,8 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "rules",
     "address",
     "flairs",
-    "encryption"
+    "encryption",
+    "postUpdates"
 ] as const;
 
 export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
@@ -179,6 +161,25 @@ export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof Ch
     "timestamp"
 ] as const;
 
+export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] = [
+    "author",
+    "spoiler",
+    "pinned",
+    "locked",
+    "removed",
+    "reason",
+    "flair",
+    "upvoteCount",
+    "downvoteCount",
+    "replies",
+    "updatedAt",
+    "replyCount",
+    "edit",
+    "cid",
+    "lastChildCid",
+    "lastReplyTimestamp"
+] as const;
+
 // ---------------------------
 // SignedPropertyNames union (different representation)
 export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
@@ -204,4 +205,4 @@ export type PubsubMsgsToSign =
 
 // ---------------------------
 // Verifying
-export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;
+export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;

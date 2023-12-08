@@ -367,13 +367,13 @@ export interface CommentUpdate {
     reason?: string; // reason the mod took a mod action
     updatedAt: number; // timestamp in seconds the IPNS record was updated
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
     author?: {
         // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
         subplebbit: SubplebbitAuthor;
     };
     lastChildCid?: string; // The cid of the most recent direct child of the comment
     lastReplyTimestamp?: number; // The timestamp of the most recent direct or indirect child of the comment
+    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
 }
 
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
@@ -384,7 +384,6 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     replies?: PagesTypeJson;
     postCid?: string;
     previousCid?: string; // each post is a linked list
-    ipnsKeyName?: string;
     depth?: number;
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
@@ -394,7 +393,6 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     thumbnailUrlHeight?: number;
     cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortCid?: string;
-    ipnsName?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
     shortSubplebbitAddress: string;
 }
 
@@ -411,7 +409,6 @@ export interface CommentWithCommentUpdate
             | "shortCid"
             | "postCid"
             | "depth"
-            | "ipnsKeyName"
             | "signer"
         >,
         Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>,
@@ -423,7 +420,7 @@ export interface CommentIpfsType
     extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,
         PublicationType,
         Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">,
-        Pick<Required<CommentType>, "depth" | "ipnsName"> {
+        Pick<Required<CommentType>, "depth"> {
     author: AuthorIpfsType;
 }
 
@@ -447,7 +444,7 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     signer?: SignerType;
 }
 
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "commentupdate" | "subplebbit";
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
 export interface CommentPubsubMessage
     extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
@@ -481,6 +478,7 @@ export type IpfsHttpClientPublicAPI = {
 
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
     swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
+    files: IPFSHTTPClient["files"];
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
@@ -502,21 +500,23 @@ export type OnlyDefinedProperties<T> = Pick<
 
 // Define database tables and fields here
 
-export interface CommentsTableRow
-    extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids">,
-        Required<Pick<CommentType, "ipnsKeyName">> {
+export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
+    challengeRequestPublicationSha256: string;
+    ipnsName?: string;
     id: number;
     insertedAt: number;
 }
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
+    challengeRequestPublicationSha256: string;
+}
 
 // CommentUpdates table
 
 export interface CommentUpdatesRow extends CommentUpdate {
     insertedAt: number;
+    ipfsPath: string;
 }
 
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {}
@@ -525,67 +525,15 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 
 export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
 }
 
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
 
-// Challenge Request table
-
-export interface ChallengeRequestsTableRow
-    extends Omit<DecryptedChallengeRequestMessageType, "type" | "encrypted" | "publication" | "challengeAnswers" | "challengeCommentCids"> {
-    insertedAt: number;
-    challengeAnswers?: string; // Needs to stringify from string[]
-    challengeCommentCids?: string; // Needs to stringify from string[]
-}
-
-export interface ChallengeRequestsTableRowInsert extends Omit<ChallengeRequestsTableRow, "insertedAt" | "acceptedChallengeTypes"> {
-    acceptedChallengeTypes?: string; // Need to stringify arrays before inserting into DB
-}
-
-// Challenges table
-export interface ChallengesTableRow extends Omit<ChallengeMessageType, "type" | "encrypted"> {
-    challengeTypes: ChallengeType["type"][];
-    insertedAt: number;
-}
-
-export interface ChallengesTableRowInsert extends Omit<ChallengesTableRow, "insertedAt" | "challengeTypes"> {
-    challengeTypes: string; // must stringify array before inserting into DB
-}
-
-// Challenge answers table
-
-export interface ChallengeAnswersTableRow extends Omit<DecryptedChallengeAnswerMessageType, "type" | "encrypted"> {
-    insertedAt: number;
-}
-
-export interface ChallengeAnswersTableRowInsert extends Omit<ChallengeAnswersTableRow, "insertedAt" | "challengeAnswers"> {
-    challengeAnswers: string; // must stringify array before inserting into DB
-}
-
-// Challenge verifications table
-export interface ChallengeVerificationsTableRow
-    extends Omit<DecryptedChallengeVerificationMessageType, "type" | "encrypted" | "publication"> {
-    insertedAt: number;
-}
-
-export interface ChallengeVerificationsTableRowInsert extends Omit<ChallengeVerificationsTableRow, "insertedAt" | "challengeErrors"> {
-    challengeErrors?: string; // Must stringify array before inserting into DB
-}
-
-// Signers table
-export interface SignersTableRow extends Required<Pick<SignerType, "privateKey" | "ipnsKeyName" | "type">> {
-    insertedAt: number;
-}
-
-export interface SingersTableRowInsert extends Omit<SignersTableRow, "insertedAt"> {}
-
 // Comment edits table
 
 export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
     insertedAt: number;
 }
 
@@ -600,11 +548,6 @@ declare module "knex/types/tables" {
             Omit<CommentUpdatesTableRowInsert, "cid">
         >;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
-        challengeRequests: Knex.CompositeTableType<ChallengeRequestsTableRow, ChallengeRequestsTableRowInsert, null, null>;
-        challenges: Knex.CompositeTableType<ChallengesTableRow, ChallengesTableRowInsert, null, null>;
-        challengeAnswers: Knex.CompositeTableType<ChallengeAnswersTableRow, ChallengeAnswersTableRowInsert, null, null>;
-        challengeVerifications: Knex.CompositeTableType<ChallengeVerificationsTableRow, ChallengeVerificationsTableRowInsert, null, null>;
-        signers: Knex.CompositeTableType<SignersTableRow, SingersTableRowInsert, null, null>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
     }
 }
@@ -719,11 +662,30 @@ export interface GatewayClient {
 // Storage interface, will be used to set up storage cache using localforage (for browser) or key-v SQLite (Node)
 export interface StorageInterface {
     init: () => Promise<void>;
-    getItem: (key: string) => Promise<any>;
+    getItem: (key: string) => Promise<any | undefined>;
     setItem: (key: string, value: any) => Promise<void>;
     removeItem: (key: string) => Promise<boolean>;
     clear: () => Promise<void>;
     keys: () => Promise<string[]>;
+    destroy: () => Promise<void>;
+}
+
+type LRUStorageCacheNames = "postTimestamp" | "commentPostUpdatesParentsPath";
+
+export interface LRUStorageConstructor {
+    maxItems?: number; // Will start evicting after this number of items is stored
+    cacheName: LRUStorageCacheNames; // The cache name will be used as the name of the table in sqlite. For browser it will be used as the name of the local forage instance
+    plebbit: Pick<Plebbit, "dataPath" | "noData">;
+}
+
+export interface LRUStorageInterface {
+    init: () => Promise<void>;
+    getItem: (key: string) => Promise<any | undefined>;
+    setItem: (key: string, value: any) => Promise<void>;
+    removeItem: (key: string) => Promise<boolean>;
+    clear: () => Promise<void>;
+    keys: () => Promise<string[]>;
+    destroy: () => Promise<void>;
 }
 
 // RPC types

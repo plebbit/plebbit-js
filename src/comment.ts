@@ -24,7 +24,6 @@ import { PlebbitError } from "./plebbit-error";
 import { CommentClientsManager } from "./clients/client-manager";
 import { messages } from "./errors";
 import { Flair } from "./subplebbit/types";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -45,9 +44,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     parentCid?: string;
     content?: string;
     // Props that get defined after challengeverification
-    ipnsKeyName?: string;
     previousCid?: string;
-    ipnsName?: string;
     depth?: number;
     postCid?: string;
 
@@ -74,8 +71,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         | "stopped"
         | "resolving-author-address"
         | "fetching-ipfs"
-        | "fetching-update-ipns"
         | "fetching-update-ipfs"
+        | "resolving-subplebbit-address"
+        | "fetching-subplebbit-ipns"
+        | "fetching-subplebbit-ipfs"
         | "failed"
         | "succeeded";
 
@@ -108,8 +107,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         super._initProps(props);
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
-        this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
         this.title = props.title;
@@ -229,12 +226,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONIpfs(): CommentIpfsType {
-        if (typeof this.ipnsName !== "string") throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
         return {
             ...this.toJSONPubsubMessagePublication(),
             previousCid: this.previousCid,
-            ipnsName: this.ipnsName,
             postCid: this.depth === 0 ? undefined : this.postCid,
             depth: this.depth,
             thumbnailUrl: this.thumbnailUrl,
@@ -262,20 +257,19 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
 
-    toJSONCommentsTableRowInsert(challengeRequestId: CommentsTableRowInsert["challengeRequestId"]): CommentsTableRowInsert {
-        assert(this.ipnsKeyName && this.cid && this.postCid);
+    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"]): CommentsTableRowInsert {
+        assert(this.cid && this.postCid);
         return {
             ...this.toJSONIpfs(),
             postCid: this.postCid,
             cid: this.cid,
             authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId,
-            ipnsKeyName: this.ipnsKeyName
+            challengeRequestPublicationSha256: publicationHash
         };
     }
 
     toJSONMerged(): CommentWithCommentUpdate {
-        assert(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
+        assert(typeof this.updatedAt === "number" && this.original && this.shortCid);
         return {
             ...this.toJSONAfterChallengeVerification(),
             shortCid: this.shortCid,
@@ -299,12 +293,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             lastChildCid: this.lastChildCid,
             lastReplyTimestamp: this.lastReplyTimestamp
         };
-    }
-
-    setCommentIpnsKey(ipnsKey: IpfsKey) {
-        // Contains name and id
-        this.ipnsName = ipnsKey.id;
-        this.ipnsKeyName = ipnsKey.name;
     }
 
     setPostCid(newPostCid: string) {
@@ -351,9 +339,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load comment ipns (${this.ipnsName}) for the ${curAttempt}th time`);
+                log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate(this.ipnsName);
+                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate();
                     resolve(update);
                 } catch (e) {
                     if (e["details"]) e.details.commentCid = this.cid;
@@ -369,9 +357,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && !this.ipnsName && !this._rawCommentIpfs) {
+        if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            // plebbit-js should be able to retrieve ipnsName from the IPFS file
             this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
@@ -404,7 +391,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
-            log(`Comment (${this.cid}) IPNS (${this.ipnsName}) received a new update. Will verify signature`);
+            log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
             //@ts-expect-error
             const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             // Can potentially throw if resolver if not working
@@ -427,9 +414,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             await this._initCommentUpdate(commentUpdate);
             this.emit("update", this);
         } else if (commentUpdate) {
-            log.trace(`Comment (${this.cid}) IPNS (${this.ipnsName}) has no new update`);
+            log.trace(`Comment (${this.cid}) has no new update`);
             this._setUpdatingState("succeeded");
-            await this._initCommentUpdate(commentUpdate);
+            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
         }
     }
 
@@ -532,7 +519,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     private async _validateSignature() {
-        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub and IPNS
+        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
         const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }

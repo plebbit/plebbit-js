@@ -9,10 +9,6 @@ import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
     AuthorCommentEdit,
-    ChallengeAnswersTableRowInsert,
-    ChallengeRequestsTableRowInsert,
-    ChallengesTableRowInsert,
-    ChallengeVerificationsTableRowInsert,
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
     CommentEditType,
@@ -22,8 +18,6 @@ import {
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
     CommentWithCommentUpdate,
-    SignersTableRow,
-    SingersTableRowInsert,
     SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
@@ -32,23 +26,17 @@ import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "./util";
 import env from "../../version";
 import { Plebbit } from "../../plebbit";
-import sumBy from "lodash/sumBy";
 import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../subplebbit/sort-handler";
 import { SubplebbitStats } from "../../subplebbit/types";
+import { v4 as uuidV4 } from "uuid";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
     VOTES: "votes",
-    CHALLENGE_REQUESTS: "challengeRequests",
-    CHALLENGES: "challenges",
-    CHALLENGE_ANSWERS: "challengeAnswers",
-    CHALLENGE_VERIFICATIONS: "challengeVerifications",
-
-    SIGNERS: "signers", // To store private keys of subplebbit and comments' IPNS,
     COMMENT_EDITS: "commentEdits"
 });
 
@@ -184,16 +172,15 @@ export class DbHandler {
             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.text("ipnsName").nullable(); // Kept for compatibility purposes, will not be used from db version 11 and onward
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
-            table.text("ipnsName").notNullable().unique();
-            table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
             table.text("title").nullable();
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.text("challengeRequestPublicationSha256").notNullable().unique();
 
             table.json("flair").nullable();
 
@@ -232,6 +219,9 @@ export class DbHandler {
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.timestamp("lastReplyTimestamp").nullable();
 
+            // Not part of CommentUpdate
+            table.text("ipfsPath").notNullable().unique();
+
             // Columns with defaults
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
         });
@@ -242,7 +232,6 @@ export class DbHandler {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
-            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
 
             table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
@@ -255,94 +244,11 @@ export class DbHandler {
         });
     }
 
-    private async _createChallengeRequestsTable(tableName: string) {
-        await this._knex.schema.createTable(tableName, (table) => {
-            table.binary("challengeRequestId").notNullable().primary().unique();
-            table.text("userAgent").notNullable();
-            table.text("protocolVersion").notNullable();
-            table.json("signature").notNullable().unique();
-            table.json("acceptedChallengeTypes").nullable(); // string[]
-            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-            table.json("challengeCommentCids").nullable(); // string[]
-            table.json("challengeAnswers").nullable(); // string[]
-        });
-    }
-
-    private async _createChallengesTable(tableName: string) {
-        await this._knex.schema.createTable(tableName, (table) => {
-            table
-                .binary("challengeRequestId")
-                .notNullable()
-                .primary()
-                .unique()
-                .references("challengeRequestId")
-                .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.text("userAgent").notNullable();
-            table.text("protocolVersion").notNullable();
-            table.json("signature").notNullable().unique();
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-
-            // Might store the challenge here in the future. For now we're not because it would take too much storage
-            table.json("challengeTypes").notNullable(); // string[]
-            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-        });
-    }
-
-    private async _createChallengeAnswersTable(tableName: string) {
-        await this._knex.schema.createTable(tableName, (table) => {
-            table
-                .binary("challengeRequestId")
-                .notNullable()
-                .primary()
-                .unique()
-                .references("challengeRequestId")
-                .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.text("userAgent").notNullable();
-            table.text("protocolVersion").notNullable();
-            table.json("challengeAnswers").notNullable(); // Decrypted
-            table.json("signature").notNullable().unique();
-            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-        });
-    }
-
-    private async _createChallengeVerificationsTable(tableName: string) {
-        await this._knex.schema.createTable(tableName, (table) => {
-            table
-                .binary("challengeRequestId")
-                .notNullable()
-                .primary()
-                .unique()
-                .references("challengeRequestId")
-                .inTable(TABLES.CHALLENGE_REQUESTS);
-            table.boolean("challengeSuccess").notNullable();
-            table.json("challengeErrors").nullable(); // string[]
-            table.text("reason").nullable();
-            table.json("signature").notNullable().unique();
-
-            table.text("userAgent").notNullable();
-            table.text("protocolVersion").notNullable();
-            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-        });
-    }
-
-    private async _createSignersTable(tableName: string) {
-        await this._knex.schema.createTable(tableName, (table) => {
-            table.text("ipnsKeyName").notNullable().unique().primary();
-            table.text("privateKey").notNullable().unique();
-            table.text("type").notNullable(); // ed25519 or any other type
-            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-        });
-    }
-
     private async _createCommentEditsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
             table.json("author").notNullable();
-            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
             table.increments("id"); // Used for sorts
@@ -372,19 +278,23 @@ export class DbHandler {
     async createTablesIfNeeded() {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
 
-        const priorDbVersion = await this.getDbVersion();
+        const currentDbVersion = await this.getDbVersion();
 
-        log.trace(`current db version: ${priorDbVersion}`);
-        const needToMigrate = priorDbVersion < env.DB_VERSION;
+        if (currentDbVersion === 10) {
+            // Remove unneeded tables
+            await Promise.all(
+                ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
+                    this._knex.schema.dropTableIfExists(tableName)
+                )
+            );
+        }
+
+        log.trace(`current db version: ${currentDbVersion}`);
+        const needToMigrate = currentDbVersion < env.DB_VERSION;
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
             this._createVotesTable,
-            this._createChallengeRequestsTable,
-            this._createChallengesTable,
-            this._createChallengeAnswersTable,
-            this._createChallengeVerificationsTable,
-            this._createSignersTable,
             this._createCommentEditsTable
         ];
         const tables = Object.values(TABLES);
@@ -397,12 +307,13 @@ export class DbHandler {
                     log(`Table ${table} does not exist. Will create schema`);
                     await createTableFunctions[i].bind(this)(table);
                 } else if (tableExists && needToMigrate) {
+                    // We need to update the schema of the currently existing table
                     log(`Migrating table ${table} to new schema`);
                     await this._knex.raw("PRAGMA foreign_keys = OFF");
                     const tempTableName = `${table}${env.DB_VERSION}`;
                     await this._knex.schema.dropTableIfExists(tempTableName);
                     await createTableFunctions[i].bind(this)(tempTableName);
-                    await this._copyTable(table, tempTableName);
+                    await this._copyTable(table, tempTableName, currentDbVersion);
                     await this._knex.schema.dropTable(table);
                     await this._knex.schema.renameTable(tempTableName, table);
                 }
@@ -424,7 +335,7 @@ export class DbHandler {
         return this._dbConfig.connection.filename === ":memory:";
     }
 
-    private async _copyTable(srcTable: string, dstTable: string) {
+    private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());
         const srcRecords: Object[] = await this._knex(srcTable).select("*");
@@ -433,12 +344,21 @@ export class DbHandler {
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
             const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
-            for (const srcRecord of srcRecordFiltered)
+            for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of Object.keys(srcRecord))
                     if (Array.isArray(srcRecord[srcRecordKey])) {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                     }
+                // Migration from version 10 to 11
+                if (currentDbVersion === 10) {
+                    if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
+                        srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`;
+                    // We just need the copy to work. The new comments will have a correct hash
+                    else if (srcTable === TABLES.COMMENT_UPDATES && !srcRecord["ipfsPath"])
+                        srcRecord["ipfsPath"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. Eventually it will be updated to have the correct ipfsPath
+                }
+            }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
@@ -465,26 +385,6 @@ export class DbHandler {
 
     async insertEdit(edit: CommentEditsTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
-    }
-
-    async insertChallengeRequest(request: ChallengeRequestsTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).insert(request);
-    }
-
-    async insertChallenge(challenge: ChallengesTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.CHALLENGES).insert(challenge);
-    }
-
-    async insertChallengeAnswer(answer: ChallengeAnswersTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.CHALLENGE_ANSWERS).insert(answer);
-    }
-
-    async insertChallengeVerification(verification: ChallengeVerificationsTableRowInsert, trx?: Transaction) {
-        await this._baseTransaction(trx)(TABLES.CHALLENGE_VERIFICATIONS).insert(verification);
-    }
-
-    async queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).where("challengeRequestId", requestId).first();
     }
 
     async getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined> {
@@ -544,7 +444,7 @@ export class DbHandler {
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
         //prettier-ignore
-        const commentUpdateColumns: (keyof CommentUpdatesRow)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
+        const commentUpdateColumns: (keyof CommentUpdate)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp", "signature"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
@@ -561,8 +461,32 @@ export class DbHandler {
         return comments;
     }
 
-    async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined> {
+    async queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first();
+    }
+
+    async queryAllStoredCommentUpdates(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
+    }
+
+    async queryCommentUpdatesWithPlaceHolderForIpfsPath(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).whereLike("ipfsPath", "%random-place-holder%");
+    }
+
+    async queryCommentUpdatesOfPostsForBucketAdjustment(
+        trx?: Transaction
+    ): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .select(`${TABLES.COMMENT_UPDATES}.ipfsPath`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
+            .where("depth", 0);
+    }
+
+    async queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]> {
+        return this._baseTransaction(trx)(TABLES.COMMENTS)
+            .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
+            .where(`${TABLES.COMMENTS}.postCid`, postCid)
+            .select(`${TABLES.COMMENT_UPDATES}.*`);
     }
 
     async queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction) {
@@ -579,6 +503,10 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }
 
+    async queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("challengeRequestPublicationSha256", publicationHash).first();
+    }
+
     async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;
@@ -590,7 +518,11 @@ export class DbHandler {
         return parents;
     }
 
-    async queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryAllComments(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS);
+    }
+
+    async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         if (this._needToUpdateCommentUpdates) {
             const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
             this._needToUpdateCommentUpdates = false;
@@ -598,11 +530,8 @@ export class DbHandler {
         }
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
-        // 2 - comment.ipnsKeyName is not part of /key/list of IPFS RPC API OR
-        // 3 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
-
-        // 4 - Comments that new votes, CommentEdit or other comments were published under them
-        // 5 - CommentUpdate IPNS has expired (timestamp() >= updatedAt + lifetime + 100)
+        // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
+        // 3 - Comments that new votes, CommentEdit or other comments were published under them
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
 
@@ -613,14 +542,10 @@ export class DbHandler {
         // timestamp() + buffer > updatedAt + ipnsLifetimeSeconds
         // timestamp() + buffer - ipnsLifetimeSeconds > updatedAt
 
-        const ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
-
         const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
-            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`)
-            .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
-            .orWhere(`${TABLES.COMMENT_UPDATES}.updatedAt`, "<=", timestamp() + ipnsBufferSeconds - ipnsLifetimeSeconds);
+            .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
         const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
@@ -855,14 +780,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
     }
 
-    async insertSigner(signer: SingersTableRowInsert, trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer);
-    }
-
-    async querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignersTableRow | undefined> {
-        return this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName }).first();
-    }
-
     async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
         const authorComments: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select("cid")
@@ -896,10 +813,11 @@ export class DbHandler {
         const authorPosts = authorComments.filter((comment) => comment.depth === 0);
         const authorReplies = authorComments.filter((comment) => comment.depth > 0);
 
-        const postScore: number = sumBy(authorPosts, (post) => post.upvoteCount) - sumBy(authorPosts, (post) => post.downvoteCount);
+        const postScore: number =
+            lodash.sumBy(authorPosts, (post) => post.upvoteCount) - lodash.sumBy(authorPosts, (post) => post.downvoteCount);
 
         const replyScore: number =
-            sumBy(authorReplies, (reply) => reply.upvoteCount) - sumBy(authorReplies, (reply) => reply.downvoteCount);
+            lodash.sumBy(authorReplies, (reply) => reply.upvoteCount) - lodash.sumBy(authorReplies, (reply) => reply.downvoteCount);
 
         const lastCommentCid = lodash.maxBy(authorComments, (comment) => comment.id).cid;
 

@@ -19,7 +19,6 @@ const testCommentFields = (comment) => {
     if (!comment.link) expect(comment.content).to.be.a("string");
     expect(comment.depth).to.be.a("number");
 
-    expect(comment.ipnsName).to.be.a("string");
     if (comment.depth === 0) {
         // A post
         expect(comment.postCid).to.equal(comment.cid);

@@ -54,7 +54,6 @@ import {
     VoteSignedPropertyNames
 } from "./constants";
 import { BaseClientsManager } from "../clients/base-client-manager";
-import { commentUpdateValidationCache, commentValidationCache } from "../constants";
 import { SubplebbitIpfsType } from "../subplebbit/types";
 
 export interface ValidationResult {
@@ -143,6 +142,12 @@ export async function signComment(comment: CreateCommentOptions, signer: SignerT
     return _signJson(CommentSignedPropertyNames, comment, signer, log);
 }
 
+export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
+    const log = Logger("plebbit-js:signatures:signCommentUpdate");
+    // Not sure, should we validate update.authorEdit here?
+    return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
+}
+
 export async function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorIpns(vote.author, signer, plebbit);
@@ -153,12 +158,6 @@ export async function signCommentEdit(edit: CreateCommentEditOptions, signer: Si
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorIpns(edit.author, signer, plebbit);
     return _signJson(CommentEditSignedPropertyNames, edit, signer, log);
-}
-
-export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
-    const log = Logger("plebbit-js:signatures:signCommentUpdate");
-    // Not sure, should we validate update.authorEdit here?
-    return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
 }
 
 export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {
@@ -395,18 +394,12 @@ export async function verifyCommentUpdate(
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
-    if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
-        return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
-
-    const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
-    const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
-    if (updateSignatureAddress !== subplebbitResolvedAddress) {
-        log.error(
-            `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`
-        );
-        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
+    if (update.edit) {
+        if (update.edit.signature.publicKey !== comment.signature.publicKey)
+            return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
+        const editSignatureValidation = await _getJsonValidationResult(update.edit);
+        if (!editSignatureValidation.valid) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     }
-
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
     if (update.replies) {
@@ -423,6 +416,14 @@ export async function verifyCommentUpdate(
     const jsonValidation = await _getJsonValidationResult(update);
 
     if (!jsonValidation.valid) return jsonValidation;
+    const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
+    const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+    if (updateSignatureAddress !== subplebbitResolvedAddress) {
+        log.error(
+            `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`
+        );
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT };
+    }
 
     return { valid: true };
 }

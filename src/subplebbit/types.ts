@@ -82,6 +82,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     statsCid?: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     posts?: PagesTypeJson;
+    postUpdates?: { [timestampRange: string]: string }; // Timestamp range to cid of folder
 }
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings" | "signer"> {
@@ -92,7 +93,7 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shor
 export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
-    startedState: Subplebbit["startedState"]
+    startedState: Subplebbit["startedState"];
 }
 
 export interface InternalSubplebbitRpcType

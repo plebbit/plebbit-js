@@ -212,7 +212,7 @@ export class BaseClientsManager {
         log.trace(`Fetching url (${url})`);
 
         const timeBefore = Date.now();
-        const isCid = path.includes("/ipfs/"); // If false, then IPNS
+        const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
         this.preFetchGateway(gateway, path, loadType);
         try {
@@ -220,7 +220,7 @@ export class BaseClientsManager {
             if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
             this.postFetchGatewaySuccess(gateway, path, loadType);
             const timeElapsedMs = Date.now() - timeBefore;
-            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs);
+            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid || loadType === "comment-update" ? "cid" : "ipns", timeElapsedMs);
             return resText;
         } catch (e) {
             if (e?.details?.error?.type === "aborted") {
@@ -295,13 +295,16 @@ export class BaseClientsManager {
         }
     }
 
+    // TODO rename this to _fetchPathP2P
     async _fetchCidP2P(cid: string): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-        const calculatedCid: string = await Hash.of(fileContent);
-        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
-            throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
+            const calculatedCid: string = await Hash.of(fileContent);
+            if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+        }
+
         return fileContent;
     }
 

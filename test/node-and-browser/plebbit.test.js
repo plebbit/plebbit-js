@@ -80,15 +80,9 @@ describe("Plebbit options", async () => {
 
     //prettier-ignore
     if(isRpcFlagOn())
-    it("Error is emitted to plebbit instance if RPC is down", async () => {
-
+    it("Error is thrown if RPC is down", async () => {
         const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
-
-        await new Promise(resolve => plebbit.once("error", err => {
-            expect(err.message).to.equal('connect ECONNREFUSED 127.0.0.1:39650');
-            resolve();
-        }))
-
+        await assert.isRejected(plebbit.listSubplebbits(), messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]); // Use the rpc so it would detect it's not loading
     });
 });
 
@@ -150,7 +144,6 @@ describe("plebbit.getComment", async () => {
         expect(expectedCommentProps.postCid).to.be.a("string");
         expect(expectedCommentProps.postCid).to.equal(expectedCommentProps.parentCid);
         expect(expectedCommentProps.protocolVersion).to.be.a("string");
-        expect(expectedCommentProps.ipnsName).to.be.a("string");
         expect(expectedCommentProps.depth).to.equal(1);
         expect(expectedCommentProps.subplebbitAddress).to.equal(subplebbit.address);
         expect(expectedCommentProps.timestamp).to.be.a("number");

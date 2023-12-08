@@ -85,7 +85,7 @@ const comment = await webSocketClient.call('getComment', [commentCid])
 console.log(comment)
 
 // get comment updates
-const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid, comment.ipnsName])
+const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid])
 new Subscription(subscriptionId).on('message', console.log)
 ```
 
@@ -109,7 +109,7 @@ new Subscription(subscriptionId).on('message', console.log)
 
 # JSON-RPC Pubsub Websocket API
 
-- [`method: commentUpdate, params: [cid: string, ipnsName: string]`](#commentupdate)
+- [`method: commentUpdate, params: [cid: string]`](#commentupdate)
 - [`method: subplebbitUpdate, params: [address: string]`](#subplebbitupdate)
 - [`method: publishComment, params: [comment]`](#publishcomment)
 - `method: publishVote, params: [vote]`
@@ -126,7 +126,6 @@ Subscribe to a comment update to receive notifications when the comment is updat
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | cid | `string` | CID of the comment |
-| ipnsName | `string` | IPNS name of the comment |
 
 ### Result:
 

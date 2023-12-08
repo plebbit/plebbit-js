@@ -72,7 +72,8 @@ const nativeFunctions: NativeFunctions = {
             },
             pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
             block: { rm: blockRm },
-            swarm: { peers: ipfsClient.swarm.peers }
+            swarm: { peers: ipfsClient.swarm.peers },
+            files: ipfsClient.files
         };
     },
     importSignerIntoIpfsNode: async () => {

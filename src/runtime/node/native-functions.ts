@@ -24,7 +24,7 @@ import * as fileType from "file-type";
 import { throwWithErrorCode } from "../../util";
 import { Plebbit } from "../../plebbit";
 import { deleteOldSubplebbitInWindows } from "./util";
-import { CACHE_KEYS } from "../../constants";
+import { STORAGE_KEYS } from "../../constants";
 import Logger from "@plebbit/plebbit-logger";
 
 const nativeFunctions: NativeFunctions = {
@@ -43,7 +43,7 @@ const nativeFunctions: NativeFunctions = {
         await fs.mkdir(subplebbitsPath, { recursive: true });
 
         const deletedPersistentSubs = <string[] | undefined>(
-            await plebbit._storage.getItem(CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
+            await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
         );
 
         if (Array.isArray(deletedPersistentSubs)) {
@@ -63,10 +63,10 @@ const nativeFunctions: NativeFunctions = {
                     }
                     const newPersistentDeletedSubplebbits = lodash.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
                     if (newPersistentDeletedSubplebbits.length === 0)
-                        await plebbit._storage.removeItem(CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+                        await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
                     else
                         await plebbit._storage.setItem(
-                            CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS],
+                            STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS],
                             newPersistentDeletedSubplebbits
                         );
                 })
@@ -149,7 +149,6 @@ const nativeFunctions: NativeFunctions = {
         const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
             return all(ipfsClient.pin.addAll(...args));
         };
-
         return {
             add: ipfsClient.add,
             cat: cat,
@@ -173,7 +172,8 @@ const nativeFunctions: NativeFunctions = {
             },
             pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
             block: { rm: blockRm },
-            swarm: { peers: ipfsClient.swarm.peers }
+            swarm: { peers: ipfsClient.swarm.peers },
+            files: ipfsClient.files
         };
     },
     importSignerIntoIpfsNode: async (

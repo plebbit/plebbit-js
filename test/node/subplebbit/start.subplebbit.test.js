@@ -172,6 +172,20 @@ describe(`Publish loop resiliency`, async () => {
         expect(loadedSub.posts.pages.hot.comments[0].cid).to.equal(mockPost.cid);
     });
 
+    it(`Subplebbit isn't publishing updates needlessly`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        sub.on("update", () => {
+            reject("Subplebbit should not publish update needlesly");
+            expect.fail("Subplebbit should not publish update needlesly");
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 5));
+        await sub.delete();
+    });
+
     //prettier-ignore
     if (!isRpcFlagOn())
     it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {

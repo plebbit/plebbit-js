@@ -12,7 +12,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error";
 import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit";
-import { CACHE_KEYS } from "../../constants";
+import { STORAGE_KEYS } from "../../constants";
 
 export const mkdir = fs.mkdir;
 
@@ -116,10 +116,10 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
             `Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`
         );
         // Put subAddress in storage
-        const cacheKey = CACHE_KEYS[CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
-        const subsThatWeFailedToDelete: string[] = (await plebbit._storage.getItem(cacheKey)) || [];
+        const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
+        const subsThatWeFailedToDelete: string[] = (await plebbit._storage.getItem(storageKey)) || [];
         if (!subsThatWeFailedToDelete.includes(subAddress)) subsThatWeFailedToDelete.push(subAddress);
-        await plebbit._storage.setItem(cacheKey, subsThatWeFailedToDelete);
+        await plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete);
     }
 };
 

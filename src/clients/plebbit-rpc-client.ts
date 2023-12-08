@@ -23,61 +23,74 @@ export default class PlebbitRpcClient {
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions);
         this._plebbit = plebbit;
-        this._webSocketClient = new WebSocketClient(plebbit.plebbitRpcClientsOptions[0]);
         this._timeoutSeconds = 20;
-        // Set up events here
-        // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
-        // NOTE: it is possible to receive a subscription message before receiving the subscription id
+
+        // temporary place holder because we don't want to initialize the web socket client until we call
         //@ts-expect-error
-        this._webSocketClient.socket.on("message", (jsonMessage) => {
-            const message = JSON.parse(jsonMessage);
-            const subscriptionId = message?.params?.subscription;
-            if (subscriptionId) {
-                this._initSubscriptionEvent(subscriptionId);
-
-                // We need to parse error props into PlebbitErrors
-                if (message?.params?.event === "error") {
-                    message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
-                    delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
-                }
-                if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
-                    this._pendingSubscriptionMsgs[subscriptionId].push(message);
-                else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
-            }
-        });
-
-        // debug raw JSON RPC messages in console (optional)
-        //@ts-expect-error
-        this._webSocketClient.socket.on("message", (message) => log.trace("from RPC server:", message.toString()));
-
-        // forward errors to Plebbit
-        this._webSocketClient.on("error", (error) => {
-            this._plebbit.emit("error", error);
-        });
-
-        this._webSocketClient.on("close", () => {
-            log.error("connection with web socket has been closed");
-            this._openConnectionPromise = undefined;
-        });
-
-        // Process error JSON from server into a PlebbitError instance
-        const originalWebsocketCall = this._webSocketClient.call.bind(this._webSocketClient);
-        this._webSocketClient.call = async (...args) => {
-            await this._init();
-            try {
-                return await originalWebsocketCall(...args);
-            } catch (e) {
-                //e is an error json representation of PlebbitError
-                if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
-                if (e?.code) throw new PlebbitError(e?.code, e?.details);
-                else throw new Error(e.message);
+        this._webSocketClient = {
+            call: async (...args) => {
+                await this._init();
+                return this._webSocketClient.call(...args);
             }
         };
     }
 
     async _init() {
         // wait for websocket connection to open
-        //@ts-expect-error
+        if (!(this._webSocketClient instanceof WebSocketClient)) {
+            // Set up events here
+            // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
+            // NOTE: it is possible to receive a subscription message before receiving the subscription id
+
+            this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions[0]);
+            //@ts-expect-error
+            this._webSocketClient.socket.on("message", (jsonMessage) => {
+                const message = JSON.parse(jsonMessage);
+                const subscriptionId = message?.params?.subscription;
+                if (subscriptionId) {
+                    this._initSubscriptionEvent(subscriptionId);
+
+                    // We need to parse error props into PlebbitErrors
+                    if (message?.params?.event === "error") {
+                        message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
+                        delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
+                    }
+                    if (this._subscriptionEvents[subscriptionId].listenerCount(message?.params?.event) === 0)
+                        this._pendingSubscriptionMsgs[subscriptionId].push(message);
+                    else this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
+                }
+            });
+
+            // debug raw JSON RPC messages in console (optional)
+            //@ts-expect-error
+            this._webSocketClient.socket.on("message", (message) => log.trace("from RPC server:", message.toString()));
+
+            // forward errors to Plebbit
+            this._webSocketClient.on("error", (error) => {
+                this._plebbit.emit("error", error);
+            });
+
+            this._webSocketClient.on("close", () => {
+                log.error("connection with web socket has been closed");
+                this._openConnectionPromise = undefined;
+            });
+
+            // Process error JSON from server into a PlebbitError instance
+            const originalWebsocketCall = this._webSocketClient.call.bind(this._webSocketClient);
+
+            this._webSocketClient.call = async (...args) => {
+                try {
+                    await this._init();
+                    return await originalWebsocketCall(...args);
+                } catch (e) {
+                    //e is an error json representation of PlebbitError
+                    if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
+                    if (e?.code) throw new PlebbitError(e?.code, e?.details);
+                    else throw new Error(e.message);
+                }
+            };
+        }
+        // @ts-expect-error
         if (this._webSocketClient.ready) return;
         if (!this._openConnectionPromise)
             this._openConnectionPromise = pTimeout(

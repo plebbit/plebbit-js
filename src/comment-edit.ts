@@ -103,12 +103,11 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert {
+    toJSONForDb(): CommentEditsTableRowInsert {
         return {
             ...this.toJSONPubsubMessagePublication(),
             author: this.author.toJSONIpfs(),
-            authorAddress: this.author.address,
-            challengeRequestId: challengeRequestId
+            authorAddress: this.author.address
         };
     }
 
