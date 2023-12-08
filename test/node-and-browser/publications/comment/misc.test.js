@@ -186,7 +186,7 @@ describe(`comment.update`, async () => {
             })
         );
 
-        expect(createdComment.subplebbitAddress).to.be.undefined; // Make sure it didn't use the props from the invalid commentIpfs
+        expect(createdComment.ipnsName).to.be.undefined; // Make sure it didn't use the props from the invalid comment
         expect(createdComment.state).to.equal("stopped");
         expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
         expect(updateHasBeenEmitted).to.be.false;
