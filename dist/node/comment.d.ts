@@ -4,7 +4,6 @@ import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMe
 import { Plebbit } from "./plebbit";
 import { CommentClientsManager } from "./clients/client-manager";
 import { Flair } from "./subplebbit/types";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
     shortCid?: string;
     clients: CommentClientsManager["clients"];
@@ -19,9 +18,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     cid?: string;
     parentCid?: string;
     content?: string;
-    ipnsKeyName?: string;
     previousCid?: string;
-    ipnsName?: string;
     depth?: number;
     postCid?: string;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
@@ -40,7 +37,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     reason?: string;
     lastChildCid?: string;
     lastReplyTimestamp?: number;
-    updatingState: "stopped" | "resolving-author-address" | "fetching-ipfs" | "fetching-update-ipns" | "fetching-update-ipfs" | "failed" | "succeeded";
+    updatingState: "stopped" | "resolving-author-address" | "fetching-ipfs" | "fetching-update-ipfs" | "resolving-subplebbit-address" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs" | "failed" | "succeeded";
     private _updateInterval?;
     private _isUpdating;
     private _rawCommentUpdate?;
@@ -61,9 +58,8 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     toJSONIpfs(): CommentIpfsType;
     toJSONPubsubMessagePublication(): CommentPubsubMessage;
     toJSONAfterChallengeVerification(): CommentIpfsWithCid;
-    toJSONCommentsTableRowInsert(challengeRequestId: CommentsTableRowInsert["challengeRequestId"]): CommentsTableRowInsert;
+    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"]): CommentsTableRowInsert;
     toJSONMerged(): CommentWithCommentUpdate;
-    setCommentIpnsKey(ipnsKey: IpfsKey): void;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;
     setPreviousCid(newPreviousCid?: string): void;

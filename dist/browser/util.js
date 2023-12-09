@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decodePubsubMsgFromRpc = exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.getPostUpdateTimestampRange = exports.decodePubsubMsgFromRpc = exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var errors_1 = require("./errors");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
@@ -326,4 +326,16 @@ function decodePubsubMsgFromRpc(pubsubMsg) {
     return parsedPubsubMsg;
 }
 exports.decodePubsubMsgFromRpc = decodePubsubMsgFromRpc;
+function getPostUpdateTimestampRange(postUpdates, postTimestamp) {
+    if (!postUpdates)
+        throw Error("subplebbit has no post updates");
+    if (!postTimestamp)
+        throw Error("post has no timestamp");
+    return (Object.keys(postUpdates)
+        // sort from smallest to biggest
+        .sort(function (a, b) { return Number(a) - Number(b); })
+        // find the smallest timestamp range where comment.timestamp is newer
+        .filter(function (timestampRange) { return timestamp() - Number(timestampRange) <= postTimestamp; }));
+}
+exports.getPostUpdateTimestampRange = getPostUpdateTimestampRange;
 //# sourceMappingURL=util.js.map

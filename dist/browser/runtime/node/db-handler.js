@@ -93,18 +93,13 @@ var keyv_1 = __importDefault(require("keyv"));
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_2 = require("./util");
 var version_1 = __importDefault(require("../../version"));
-var sumBy_1 = __importDefault(require("lodash/sumBy"));
 var lodash_1 = __importDefault(require("lodash"));
 var lockfile = __importStar(require("@plebbit/proper-lockfile"));
+var uuid_1 = require("uuid");
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
     VOTES: "votes",
-    CHALLENGE_REQUESTS: "challengeRequests",
-    CHALLENGES: "challenges",
-    CHALLENGE_ANSWERS: "challengeAnswers",
-    CHALLENGE_VERIFICATIONS: "challengeVerifications",
-    SIGNERS: "signers",
     COMMENT_EDITS: "commentEdits"
 });
 var DbHandler = /** @class */ (function () {
@@ -337,15 +332,14 @@ var DbHandler = /** @class */ (function () {
                             table.text("parentCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("postCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("previousCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.text("subplebbitAddress").notNullable();
                             table.text("content").nullable();
                             table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                            table.text("ipnsName").nullable(); // Kept for compatibility purposes, will not be used from db version 11 and onward
                             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
-                            table.text("ipnsName").notNullable().unique();
-                            table.text("ipnsKeyName").notNullable().unique().references("ipnsKeyName").inTable(TABLES.SIGNERS);
                             table.text("title").nullable();
                             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                            table.text("challengeRequestPublicationSha256").notNullable().unique();
                             table.json("flair").nullable();
                             table.boolean("spoiler");
                             table.text("protocolVersion").notNullable();
@@ -386,6 +380,8 @@ var DbHandler = /** @class */ (function () {
                                 table.json("replies").nullable();
                                 table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
                                 table.timestamp("lastReplyTimestamp").nullable();
+                                // Not part of CommentUpdate
+                                table.text("ipfsPath").notNullable().unique();
                                 // Columns with defaults
                                 table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
                             })];
@@ -405,7 +401,6 @@ var DbHandler = /** @class */ (function () {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable();
                             table.json("author").notNullable();
-                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.timestamp("timestamp").checkPositive().notNullable();
                             table.text("subplebbitAddress").notNullable();
                             table.integer("vote").checkBetween([-1, 1]).notNullable();
@@ -413,131 +408,6 @@ var DbHandler = /** @class */ (function () {
                             table.text("protocolVersion").notNullable();
                             table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
                             table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype._createChallengeRequestsTable = function (tableName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table.binary("challengeRequestId").notNullable().primary().unique();
-                            table.text("userAgent").notNullable();
-                            table.text("protocolVersion").notNullable();
-                            table.json("signature").notNullable().unique();
-                            table.json("acceptedChallengeTypes").nullable(); // string[]
-                            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                            table.json("challengeCommentCids").nullable(); // string[]
-                            table.json("challengeAnswers").nullable(); // string[]
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype._createChallengesTable = function (tableName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table
-                                .binary("challengeRequestId")
-                                .notNullable()
-                                .primary()
-                                .unique()
-                                .references("challengeRequestId")
-                                .inTable(TABLES.CHALLENGE_REQUESTS);
-                            table.text("userAgent").notNullable();
-                            table.text("protocolVersion").notNullable();
-                            table.json("signature").notNullable().unique();
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                            // Might store the challenge here in the future. For now we're not because it would take too much storage
-                            table.json("challengeTypes").notNullable(); // string[]
-                            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype._createChallengeAnswersTable = function (tableName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table
-                                .binary("challengeRequestId")
-                                .notNullable()
-                                .primary()
-                                .unique()
-                                .references("challengeRequestId")
-                                .inTable(TABLES.CHALLENGE_REQUESTS);
-                            table.text("userAgent").notNullable();
-                            table.text("protocolVersion").notNullable();
-                            table.json("challengeAnswers").notNullable(); // Decrypted
-                            table.json("signature").notNullable().unique();
-                            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype._createChallengeVerificationsTable = function (tableName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table
-                                .binary("challengeRequestId")
-                                .notNullable()
-                                .primary()
-                                .unique()
-                                .references("challengeRequestId")
-                                .inTable(TABLES.CHALLENGE_REQUESTS);
-                            table.boolean("challengeSuccess").notNullable();
-                            table.json("challengeErrors").nullable(); // string[]
-                            table.text("reason").nullable();
-                            table.json("signature").notNullable().unique();
-                            table.text("userAgent").notNullable();
-                            table.text("protocolVersion").notNullable();
-                            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                        })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype._createSignersTable = function (tableName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                            table.text("ipnsKeyName").notNullable().unique().primary();
-                            table.text("privateKey").notNullable().unique();
-                            table.text("type").notNullable(); // ed25519 or any other type
-                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
                         })];
                     case 1:
                         _a.sent();
@@ -555,7 +425,6 @@ var DbHandler = /** @class */ (function () {
                             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
                             table.text("authorAddress").notNullable();
                             table.json("author").notNullable();
-                            table.binary("challengeRequestId").notNullable().references("challengeRequestId").inTable(TABLES.CHALLENGE_REQUESTS);
                             table.json("signature").notNullable().unique();
                             table.text("protocolVersion").notNullable();
                             table.increments("id"); // Used for sorts
@@ -596,7 +465,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, priorDbVersion, needToMigrate, createTableFunctions, tables, newDbVersion;
+            var log, currentDbVersion, needToMigrate, createTableFunctions, tables, newDbVersion;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -604,18 +473,23 @@ var DbHandler = /** @class */ (function () {
                         log = (0, plebbit_logger_1.default)("plebbit-js:db-handler:createTablesIfNeeded");
                         return [4 /*yield*/, this.getDbVersion()];
                     case 1:
-                        priorDbVersion = _a.sent();
-                        log.trace("current db version: ".concat(priorDbVersion));
-                        needToMigrate = priorDbVersion < version_1.default.DB_VERSION;
+                        currentDbVersion = _a.sent();
+                        if (!(currentDbVersion === 10)) return [3 /*break*/, 3];
+                        // Remove unneeded tables
+                        return [4 /*yield*/, Promise.all(["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map(function (tableName) {
+                                return _this._knex.schema.dropTableIfExists(tableName);
+                            }))];
+                    case 2:
+                        // Remove unneeded tables
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        log.trace("current db version: ".concat(currentDbVersion));
+                        needToMigrate = currentDbVersion < version_1.default.DB_VERSION;
                         createTableFunctions = [
                             this._createCommentsTable,
                             this._createCommentUpdatesTable,
                             this._createVotesTable,
-                            this._createChallengeRequestsTable,
-                            this._createChallengesTable,
-                            this._createChallengeAnswersTable,
-                            this._createChallengeVerificationsTable,
-                            this._createSignersTable,
                             this._createCommentEditsTable
                         ];
                         tables = Object.values(TABLES);
@@ -636,6 +510,7 @@ var DbHandler = /** @class */ (function () {
                                             return [3 /*break*/, 10];
                                         case 3:
                                             if (!(tableExists && needToMigrate)) return [3 /*break*/, 10];
+                                            // We need to update the schema of the currently existing table
                                             log("Migrating table ".concat(table, " to new schema"));
                                             return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
                                         case 4:
@@ -647,7 +522,7 @@ var DbHandler = /** @class */ (function () {
                                             return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
                                         case 6:
                                             _a.sent();
-                                            return [4 /*yield*/, this._copyTable(table, tempTableName)];
+                                            return [4 /*yield*/, this._copyTable(table, tempTableName, currentDbVersion)];
                                         case 7:
                                             _a.sent();
                                             return [4 /*yield*/, this._knex.schema.dropTable(table)];
@@ -661,18 +536,18 @@ var DbHandler = /** @class */ (function () {
                                     }
                                 });
                             }); }))];
-                    case 2:
-                        _a.sent();
-                        if (!needToMigrate) return [3 /*break*/, 5];
-                        return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = ON")];
-                    case 3:
-                        _a.sent();
-                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(version_1.default.DB_VERSION))];
                     case 4:
                         _a.sent();
-                        _a.label = 5;
-                    case 5: return [4 /*yield*/, this.getDbVersion()];
+                        if (!needToMigrate) return [3 /*break*/, 7];
+                        return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = ON")];
+                    case 5:
+                        _a.sent();
+                        return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(version_1.default.DB_VERSION))];
                     case 6:
+                        _a.sent();
+                        _a.label = 7;
+                    case 7: return [4 /*yield*/, this.getDbVersion()];
+                    case 8:
                         newDbVersion = _a.sent();
                         assert_1.default.equal(newDbVersion, version_1.default.DB_VERSION);
                         this._createdTables = true;
@@ -686,7 +561,7 @@ var DbHandler = /** @class */ (function () {
         //@ts-expect-error
         return this._dbConfig.connection.filename === ":memory:";
     };
-    DbHandler.prototype._copyTable = function (srcTable, dstTable) {
+    DbHandler.prototype._copyTable = function (srcTable, dstTable, currentDbVersion) {
         return __awaiter(this, void 0, void 0, function () {
             var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord, _c, _d, srcRecordKey, _e, srcRecordFiltered_2, srcRecord;
             return __generator(this, function (_f) {
@@ -712,6 +587,14 @@ var DbHandler = /** @class */ (function () {
                                     srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                                     (0, assert_1.default)(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                                 }
+                            }
+                            // Migration from version 10 to 11
+                            if (currentDbVersion === 10) {
+                                if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
+                                    srcRecord["challengeRequestPublicationSha256"] = "random-place-holder-".concat((0, uuid_1.v4)());
+                                // We just need the copy to work. The new comments will have a correct hash
+                                else if (srcTable === TABLES.COMMENT_UPDATES && !srcRecord["ipfsPath"])
+                                    srcRecord["ipfsPath"] = "random-place-holder-".concat((0, uuid_1.v4)()); // We just need the copy to work. Eventually it will be updated to have the correct ipfsPath
                             }
                         }
                         _e = 0, srcRecordFiltered_2 = srcRecordFiltered;
@@ -790,61 +673,6 @@ var DbHandler = /** @class */ (function () {
                         _a.sent();
                         return [2 /*return*/];
                 }
-            });
-        });
-    };
-    DbHandler.prototype.insertChallengeRequest = function (request, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).insert(request)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.insertChallenge = function (challenge, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGES).insert(challenge)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.insertChallengeAnswer = function (answer, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGE_ANSWERS).insert(answer)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.insertChallengeVerification = function (verification, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.CHALLENGE_VERIFICATIONS).insert(verification)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    DbHandler.prototype.queryChallengeRequest = function (requestId, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this._baseTransaction(trx)(TABLES.CHALLENGE_REQUESTS).where("challengeRequestId", requestId).first()];
             });
         });
     };
@@ -951,7 +779,7 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        commentUpdateColumns = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "signature", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp"];
+                        commentUpdateColumns = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp", "signature"];
                         aliasSelect = commentUpdateColumns.map(function (col) { return "".concat(TABLES.COMMENT_UPDATES, ".").concat(col, " AS commentUpdate_").concat(col); });
                         return [4 /*yield*/, this._basePageQuery(options, trx).select(__spreadArray(["".concat(TABLES.COMMENTS, ".*")], aliasSelect, true))];
                     case 1:
@@ -969,6 +797,40 @@ var DbHandler = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).where("cid", comment.cid).first()];
+            });
+        });
+    };
+    DbHandler.prototype.queryAllStoredCommentUpdates = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENT_UPDATES)];
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentUpdatesWithPlaceHolderForIpfsPath = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).whereLike("ipfsPath", "%random-place-holder%")];
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentUpdatesOfPostsForBucketAdjustment = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                        .innerJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
+                        .select("".concat(TABLES.COMMENT_UPDATES, ".ipfsPath"), "".concat(TABLES.COMMENTS, ".timestamp"), "".concat(TABLES.COMMENTS, ".cid"))
+                        .where("depth", 0)];
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentsUpdatesWithPostCid = function (postCid, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                        .innerJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
+                        .where("".concat(TABLES.COMMENTS, ".postCid"), postCid)
+                        .select("".concat(TABLES.COMMENT_UPDATES, ".*"))];
             });
         });
     };
@@ -1001,6 +863,13 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
+    DbHandler.prototype.queryCommentByRequestPublicationHash = function (publicationHash, trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS).where("challengeRequestPublicationSha256", publicationHash).first()];
+            });
+        });
+    };
     DbHandler.prototype.queryParents = function (rootComment, trx) {
         return __awaiter(this, void 0, void 0, function () {
             var parents, curParentCid, parent_1;
@@ -1024,9 +893,16 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.queryCommentsToBeUpdated = function (ipnsKeyNames, ipnsLifetimeSeconds, trx) {
+    DbHandler.prototype.queryAllComments = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var allComments, ipnsBufferSeconds, criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, this._baseTransaction(trx)(TABLES.COMMENTS)];
+            });
+        });
+    };
+    DbHandler.prototype.queryCommentsToBeUpdated = function (trx) {
+        return __awaiter(this, void 0, void 0, function () {
+            var allComments, criteriaOneTwoThree, lastUpdatedAtWithBuffer, criteriaFour, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -1037,14 +913,10 @@ var DbHandler = /** @class */ (function () {
                         allComments = _c.sent();
                         this._needToUpdateCommentUpdates = false;
                         return [2 /*return*/, allComments];
-                    case 2:
-                        ipnsBufferSeconds = ipnsLifetimeSeconds * 0.01;
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
-                                .select("".concat(TABLES.COMMENTS, ".*"))
-                                .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
-                                .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))
-                                .orWhereNotIn("ipnsKeyName", ipnsKeyNames)
-                                .orWhere("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"), "<=", (0, util_1.timestamp)() + ipnsBufferSeconds - ipnsLifetimeSeconds)];
+                    case 2: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                            .select("".concat(TABLES.COMMENTS, ".*"))
+                            .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
+                            .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))];
                     case 3:
                         criteriaOneTwoThree = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
@@ -1349,20 +1221,6 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.insertSigner = function (signer, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this._baseTransaction(trx)(TABLES.SIGNERS).insert(signer)];
-            });
-        });
-    };
-    DbHandler.prototype.querySigner = function (ipnsKeyName, trx) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this._baseTransaction(trx)(TABLES.SIGNERS).where({ ipnsKeyName: ipnsKeyName }).first()];
-            });
-        });
-    };
     DbHandler.prototype.queryAuthorModEdits = function (authorAddress, trx) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
@@ -1426,8 +1284,8 @@ var DbHandler = /** @class */ (function () {
                     case 7:
                         authorPosts = authorComments.filter(function (comment) { return comment.depth === 0; });
                         authorReplies = authorComments.filter(function (comment) { return comment.depth > 0; });
-                        postScore = (0, sumBy_1.default)(authorPosts, function (post) { return post.upvoteCount; }) - (0, sumBy_1.default)(authorPosts, function (post) { return post.downvoteCount; });
-                        replyScore = (0, sumBy_1.default)(authorReplies, function (reply) { return reply.upvoteCount; }) - (0, sumBy_1.default)(authorReplies, function (reply) { return reply.downvoteCount; });
+                        postScore = lodash_1.default.sumBy(authorPosts, function (post) { return post.upvoteCount; }) - lodash_1.default.sumBy(authorPosts, function (post) { return post.downvoteCount; });
+                        replyScore = lodash_1.default.sumBy(authorReplies, function (reply) { return reply.upvoteCount; }) - lodash_1.default.sumBy(authorReplies, function (reply) { return reply.downvoteCount; });
                         lastCommentCid = lodash_1.default.maxBy(authorComments, function (comment) { return comment.id; }).cid;
                         firstCommentTimestamp = lodash_1.default.minBy(authorComments, function (comment) { return comment.id; }).timestamp;
                         return [4 /*yield*/, this.queryAuthorModEdits(authorAddress, trx)];

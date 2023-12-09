@@ -2,6 +2,7 @@ import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageTyp
 import { messages } from "./errors";
 import { BasePages } from "./pages";
 import { Plebbit } from "./plebbit";
+import { SubplebbitIpfsType } from "./subplebbit/types";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
@@ -42,4 +43,5 @@ export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
 export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;
-export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
+export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeRequestMessageType | DecryptedChallengeMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
+export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];

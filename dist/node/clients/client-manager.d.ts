@@ -1,7 +1,7 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { Chain, CommentIpfsType, CommentUpdate } from "../types";
+import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate } from "../types";
 import { Subplebbit } from "../subplebbit/subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
@@ -50,7 +50,6 @@ export declare class ClientsManager extends BaseClientsManager {
     fetchCid(cid: string): Promise<string>;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
     protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
-    fetchSubplebbitIpns(ipnsAddress: string): Promise<string>;
 }
 export declare class PublicationClientsManager extends ClientsManager {
     clients: {
@@ -101,7 +100,12 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     constructor(comment: Comment);
     protected _initIpfsClients(): void;
     protected _initPlebbitRpcClients(): void;
-    fetchCommentUpdate(ipnsName: string): Promise<CommentUpdate>;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string): void;
+    _fetchSubplebbitForCommentUpdate(): Promise<SubplebbitIpfsType>;
+    _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string): CommentIpfsWithCid;
+    _fetchParentCommentForCommentUpdate(parentCid: string): Promise<CommentIpfsWithCid>;
+    _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string>;
+    fetchCommentUpdate(): Promise<CommentUpdate>;
     fetchCommentCid(cid: string): Promise<CommentIpfsType>;
     updateIpfsState(newState: CommentIpfsClient["state"]): void;
 }

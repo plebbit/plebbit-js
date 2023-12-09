@@ -73,6 +73,9 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
     statsCid?: string;
     protocolVersion: ProtocolVersion;
     posts?: PagesTypeJson;
+    postUpdates?: {
+        [timestampRange: string]: string;
+    };
 }
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings" | "signer"> {
     posts?: PagesTypeIpfs;

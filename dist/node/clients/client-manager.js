@@ -79,6 +79,7 @@ var ipfs_gateway_client_1 = require("./ipfs-gateway-client");
 var base_client_manager_1 = require("./base-client-manager");
 var constants_1 = require("../constants");
 var plebbit_rpc_state_client_1 = require("./plebbit-rpc-state-client");
+var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var ClientsManager = /** @class */ (function (_super) {
     __extends(ClientsManager, _super);
     function ClientsManager(plebbit) {
@@ -138,7 +139,7 @@ var ClientsManager = /** @class */ (function (_super) {
         var gatewayState = loadType === "subplebbit"
             ? this._getStatePriorToResolvingSubplebbitIpns()
             : loadType === "comment-update"
-                ? "fetching-update-ipns"
+                ? "fetching-update-ipfs"
                 : loadType === "comment" || loadType === "generic-ipfs"
                     ? "fetching-ipfs"
                     : undefined;
@@ -219,28 +220,6 @@ var ClientsManager = /** @class */ (function (_super) {
     ClientsManager.prototype._getStatePriorToResolvingSubplebbitIpfs = function () {
         return "fetching-subplebbit-ipfs";
     };
-    ClientsManager.prototype.fetchSubplebbitIpns = function (ipnsAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            var subCid, content;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
-                        this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpns());
-                        return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsAddress)];
-                    case 1:
-                        subCid = _a.sent();
-                        this.updateIpfsState(this._getStatePriorToResolvingSubplebbitIpfs());
-                        return [4 /*yield*/, this._fetchCidP2P(subCid)];
-                    case 2:
-                        content = _a.sent();
-                        this.updateIpfsState("stopped");
-                        return [2 /*return*/, content];
-                    case 3: return [2 /*return*/, this.fetchFromMultipleGateways({ ipns: ipnsAddress }, "subplebbit")];
-                }
-            });
-        });
-    };
     return ClientsManager;
 }(base_client_manager_1.BaseClientsManager));
 exports.ClientsManager = ClientsManager;
@@ -297,7 +276,6 @@ var PublicationClientsManager = /** @class */ (function (_super) {
                         this._attemptingToResolve = false;
                         if (!subIpns)
                             throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
-                        (0, assert_1.default)(typeof subIpns === "string", "Failed to resolve subplebbit address (".concat(subplebbitAddress, ")"));
                         this._publication._updatePublishingState("fetching-subplebbit-ipns");
                         if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
                         this.updateIpfsState("fetching-subplebbit-ipns");
@@ -363,32 +341,228 @@ var CommentClientsManager = /** @class */ (function (_super) {
             this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.CommentPlebbitRpcStateClient("stopped"), _a));
         }
     };
-    CommentClientsManager.prototype.fetchCommentUpdate = function (ipnsName) {
+    // Resolver methods here
+    CommentClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
+        _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
+        if (txtRecordName === "subplebbit-address")
+            this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for CommentUpdate
+        else if (txtRecordName === "plebbit-author-address")
+            this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
+    };
+    CommentClientsManager.prototype._fetchSubplebbitForCommentUpdate = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var updateCid, commentUpdate, _a, _b, update, _c, _d;
+            var subIpns, subJson, subplebbitCid, _a, _b, _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0: return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(this._comment.subplebbitAddress)];
+                    case 1:
+                        subIpns = _e.sent();
+                        if (!subIpns)
+                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", {
+                                ensAddress: this._comment.subplebbitAddress
+                            });
+                        this._comment._setUpdatingState("fetching-subplebbit-ipns");
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
+                        this.updateIpfsState("fetching-subplebbit-ipns");
+                        return [4 /*yield*/, this.resolveIpnsToCidP2P(subIpns)];
+                    case 2:
+                        subplebbitCid = _e.sent();
+                        this._comment._setUpdatingState("fetching-subplebbit-ipfs");
+                        this.updateIpfsState("fetching-subplebbit-ipfs");
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this._fetchCidP2P(subplebbitCid)];
+                    case 3:
+                        subJson = _b.apply(_a, [_e.sent()]);
+                        return [3 /*break*/, 6];
+                    case 4:
+                        _d = (_c = JSON).parse;
+                        return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit")];
+                    case 5:
+                        // States of gateways should be updated by fetchFromMultipleGateways
+                        subJson = _d.apply(_c, [_e.sent()]);
+                        _e.label = 6;
+                    case 6:
+                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+                        return [2 /*return*/, subJson];
+                }
+            });
+        });
+    };
+    CommentClientsManager.prototype._findCommentInSubplebbitPosts = function (subIpns, cid) {
+        if (!subIpns.posts)
+            return undefined;
+        var findInCommentAndChildren = function (comment) {
+            if (comment.comment.cid === cid)
+                return comment.comment;
+            if (!comment.update.replies)
+                return undefined;
+            for (var _i = 0, _a = comment.update.replies.pages.new.comments; _i < _a.length; _i++) {
+                var childComment = _a[_i];
+                var commentInChild = findInCommentAndChildren(childComment);
+                if (commentInChild)
+                    return commentInChild;
+            }
+            return undefined;
+        };
+        for (var _i = 0, _a = subIpns.posts.pages.hot.comments; _i < _a.length; _i++) {
+            var post = _a[_i];
+            var commentInChild = findInCommentAndChildren(post);
+            if (commentInChild)
+                return commentInChild;
+        }
+        return undefined;
+    };
+    CommentClientsManager.prototype._fetchParentCommentForCommentUpdate = function (parentCid) {
+        return __awaiter(this, void 0, void 0, function () {
+            var commentContent, _a, _b, _c, commentContent, _d, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
+                    case 0:
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 2];
+                        this.updateIpfsState("fetching-update-ipfs");
+                        this._comment._setUpdatingState("fetching-update-ipfs");
+                        _a = [{ cid: parentCid }];
+                        _c = (_b = JSON).parse;
+                        return [4 /*yield*/, this._fetchCidP2P(parentCid)];
+                    case 1:
+                        commentContent = __assign.apply(void 0, _a.concat([_c.apply(_b, [_g.sent()])]));
+                        this.updateIpfsState("stopped");
+                        return [2 /*return*/, commentContent];
+                    case 2:
+                        _d = [{ cid: parentCid }];
+                        _f = (_e = JSON).parse;
+                        return [4 /*yield*/, this.fetchFromMultipleGateways({ cid: parentCid }, "comment")];
+                    case 3:
+                        commentContent = __assign.apply(void 0, _d.concat([_f.apply(_e, [_g.sent()])]));
+                        return [2 /*return*/, commentContent];
+                }
+            });
+        });
+    };
+    CommentClientsManager.prototype._getParentsPath = function (subIpns) {
+        return __awaiter(this, void 0, void 0, function () {
+            var parentsPathCache, pathCache, postTimestampCache, parentCid, reversedPath, parentPathCache, parent_1, _a, finalParentsPath;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, this._plebbit.createStorageLRU(constants_1.commentPostUpdatesParentsPathConfig)];
+                    case 1:
+                        parentsPathCache = _b.sent();
+                        return [4 /*yield*/, parentsPathCache.getItem(this._comment.cid)];
+                    case 2:
+                        pathCache = _b.sent();
+                        if (pathCache)
+                            return [2 /*return*/, pathCache.split("/").reverse().join("/")];
+                        return [4 /*yield*/, this._plebbit.createStorageLRU(constants_1.postTimestampConfig)];
+                    case 3:
+                        postTimestampCache = _b.sent();
+                        if (!(this._comment.depth === 0)) return [3 /*break*/, 5];
+                        return [4 /*yield*/, postTimestampCache.setItem(this._comment.cid, this._comment.timestamp)];
+                    case 4:
+                        _b.sent();
+                        _b.label = 5;
+                    case 5:
+                        parentCid = this._comment.parentCid;
+                        reversedPath = "".concat(this._comment.cid);
+                        _b.label = 6;
+                    case 6:
+                        if (!parentCid) return [3 /*break*/, 14];
+                        return [4 /*yield*/, parentsPathCache.getItem(parentCid)];
+                    case 7:
+                        parentPathCache = _b.sent();
+                        if (!parentPathCache) return [3 /*break*/, 8];
+                        reversedPath += "/" + parentPathCache;
+                        return [3 /*break*/, 14];
+                    case 8:
+                        _a = this._findCommentInSubplebbitPosts(subIpns, parentCid);
+                        if (_a) return [3 /*break*/, 10];
+                        return [4 /*yield*/, this._fetchParentCommentForCommentUpdate(parentCid)];
+                    case 9:
+                        _a = (_b.sent());
+                        _b.label = 10;
+                    case 10:
+                        parent_1 = _a;
+                        if (!(parent_1.depth === 0)) return [3 /*break*/, 12];
+                        return [4 /*yield*/, postTimestampCache.setItem(parent_1.cid, parent_1.timestamp)];
+                    case 11:
+                        _b.sent();
+                        _b.label = 12;
+                    case 12:
+                        reversedPath += "/".concat(parentCid);
+                        parentCid = parent_1.parentCid;
+                        _b.label = 13;
+                    case 13: return [3 /*break*/, 6];
+                    case 14: return [4 /*yield*/, parentsPathCache.setItem(this._comment.cid, reversedPath)];
+                    case 15:
+                        _b.sent();
+                        finalParentsPath = reversedPath.split("/").reverse().join("/");
+                        return [2 /*return*/, finalParentsPath];
+                }
+            });
+        });
+    };
+    CommentClientsManager.prototype.fetchCommentUpdate = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, subIpns, parentsPostUpdatePath, postTimestamp, timestampRanges, _i, timestampRanges_1, timestampRange, folderCid, path, commentUpdate, _a, _b, e_1, update, _c, _d, e_2;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        this._comment._setUpdatingState("fetching-update-ipns");
-                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
-                        this.updateIpfsState("fetching-update-ipns");
-                        return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
+                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
+                        return [4 /*yield*/, this._fetchSubplebbitForCommentUpdate()];
                     case 1:
-                        updateCid = _e.sent();
-                        this._comment._setUpdatingState("fetching-update-ipfs");
-                        this.updateIpfsState("fetching-update-ipfs");
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._fetchCidP2P(updateCid)];
+                        subIpns = _e.sent();
+                        return [4 /*yield*/, this._getParentsPath(subIpns)];
                     case 2:
+                        parentsPostUpdatePath = _e.sent();
+                        return [4 /*yield*/, this._plebbit.createStorageLRU(constants_1.postTimestampConfig)];
+                    case 3: return [4 /*yield*/, (_e.sent()).getItem(this._comment.postCid)];
+                    case 4:
+                        postTimestamp = _e.sent();
+                        if (typeof postTimestamp !== "number")
+                            throw Error("Failed to fetch post timestamp");
+                        timestampRanges = (0, util_1.getPostUpdateTimestampRange)(subIpns.postUpdates, postTimestamp);
+                        if (timestampRanges.length === 0)
+                            throw Error("Post has no timestamp range bucket");
+                        _i = 0, timestampRanges_1 = timestampRanges;
+                        _e.label = 5;
+                    case 5:
+                        if (!(_i < timestampRanges_1.length)) return [3 /*break*/, 14];
+                        timestampRange = timestampRanges_1[_i];
+                        folderCid = subIpns.postUpdates[timestampRange];
+                        path = "".concat(folderCid, "/") + parentsPostUpdatePath + "/update";
+                        this._comment._setUpdatingState("fetching-update-ipfs");
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 10];
+                        this.updateIpfsState("fetching-update-ipfs");
+                        _e.label = 6;
+                    case 6:
+                        _e.trys.push([6, 8, , 9]);
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this._fetchCidP2P(path)];
+                    case 7:
                         commentUpdate = _b.apply(_a, [_e.sent()]);
                         this.updateIpfsState("stopped");
                         return [2 /*return*/, commentUpdate];
-                    case 3:
+                    case 8:
+                        e_1 = _e.sent();
+                        // if does not exist, try the next timestamp range
+                        log.error(e_1, "Failed to fetch CommentUpdate from path (".concat(path, "). Trying the next timestamp range"));
+                        return [3 /*break*/, 9];
+                    case 9: return [3 /*break*/, 13];
+                    case 10:
+                        _e.trys.push([10, 12, , 13]);
                         _d = (_c = JSON).parse;
-                        return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: ipnsName }, "comment-update")];
-                    case 4:
+                        return [4 /*yield*/, this.fetchFromMultipleGateways({ cid: path }, "comment-update")];
+                    case 11:
                         update = _d.apply(_c, [_e.sent()]);
                         return [2 /*return*/, update];
+                    case 12:
+                        e_2 = _e.sent();
+                        // if does not exist, try the next timestamp range
+                        log.error(e_2, "Failed to fetch CommentUpdate from path (".concat(path, "). Trying the next timestamp range"));
+                        return [3 /*break*/, 13];
+                    case 13:
+                        _i++;
+                        return [3 /*break*/, 5];
+                    case 14: throw Error("CommentUpdate of comment (".concat(this._comment.cid, ") does not exist on all timestamp ranges: ").concat(timestampRanges));
                 }
             });
         });
@@ -454,7 +628,7 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
     };
     SubplebbitClientsManager.prototype.fetchSubplebbit = function (ipnsName) {
         return __awaiter(this, void 0, void 0, function () {
-            var subplebbitCid, subplebbit, _a, _b, update, _c, _d;
+            var subJson, subplebbitCid, _a, _b, _c, _d;
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
@@ -469,15 +643,19 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
                         _b = (_a = JSON).parse;
                         return [4 /*yield*/, this._fetchCidP2P(subplebbitCid)];
                     case 2:
-                        subplebbit = _b.apply(_a, [_e.sent()]);
+                        subJson = _b.apply(_a, [_e.sent()]);
                         this.updateIpfsState("stopped");
-                        return [2 /*return*/, subplebbit];
+                        return [3 /*break*/, 5];
                     case 3:
                         _d = (_c = JSON).parse;
                         return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit")];
                     case 4:
-                        update = _d.apply(_c, [_e.sent()]);
-                        return [2 /*return*/, update];
+                        // States of gateways should be updated by fetchFromMultipleGateways
+                        subJson = _d.apply(_c, [_e.sent()]);
+                        _e.label = 5;
+                    case 5:
+                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+                        return [2 /*return*/, subJson];
                 }
             });
         });

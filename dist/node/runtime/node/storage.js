@@ -49,14 +49,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var path_1 = __importDefault(require("path"));
 var fs_1 = __importDefault(require("fs"));
 var keyv_1 = __importDefault(require("keyv"));
-var Cache = /** @class */ (function () {
-    function Cache(plebbit) {
+// Storage is for long term items, no eviction based on ttl or anything like that
+var Storage = /** @class */ (function () {
+    function Storage(plebbit) {
         this._plebbit = plebbit;
     }
-    Cache.prototype.toJSON = function () {
+    Storage.prototype.toJSON = function () {
         return undefined;
     };
-    Cache.prototype.init = function () {
+    Storage.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
             var dbPath;
             return __generator(this, function (_a) {
@@ -65,21 +66,21 @@ var Cache = /** @class */ (function () {
                 }
                 else {
                     fs_1.default.mkdirSync(this._plebbit.dataPath, { recursive: true });
-                    dbPath = path_1.default.join(this._plebbit.dataPath, "cache");
+                    dbPath = path_1.default.join(this._plebbit.dataPath, "storage");
                     this._keyv = new keyv_1.default("sqlite://".concat(dbPath));
                 }
                 return [2 /*return*/];
             });
         });
     };
-    Cache.prototype.getItem = function (key) {
+    Storage.prototype.getItem = function (key) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this._keyv.get(key)];
             });
         });
     };
-    Cache.prototype.setItem = function (key, value) {
+    Storage.prototype.setItem = function (key, value) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -91,14 +92,14 @@ var Cache = /** @class */ (function () {
             });
         });
     };
-    Cache.prototype.removeItem = function (key) {
+    Storage.prototype.removeItem = function (key) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this._keyv.delete(key)];
             });
         });
     };
-    Cache.prototype.clear = function () {
+    Storage.prototype.clear = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -110,7 +111,7 @@ var Cache = /** @class */ (function () {
             });
         });
     };
-    Cache.prototype.keys = function () {
+    Storage.prototype.keys = function () {
         var _a, e_1, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
             var keys, _d, _e, _f, key, value, e_1_1;
@@ -156,7 +157,19 @@ var Cache = /** @class */ (function () {
             });
         });
     };
-    return Cache;
+    Storage.prototype.destroy = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this._keyv.disconnect()];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    return Storage;
 }());
-exports.default = Cache;
+exports.default = Storage;
 //# sourceMappingURL=storage.js.map

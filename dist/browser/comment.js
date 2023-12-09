@@ -98,8 +98,6 @@ var Comment = /** @class */ (function (_super) {
         _super.prototype._initProps.call(this, props);
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
-        this.ipnsName = props.ipnsName; // each post needs its own IPNS record for its mutable data like edits, vote counts, comments
-        this.ipnsKeyName = props.ipnsKeyName;
         this.depth = props.depth;
         this.link = props.link;
         this.title = props.title;
@@ -205,11 +203,9 @@ var Comment = /** @class */ (function (_super) {
         };
     };
     Comment.prototype.toJSONIpfs = function () {
-        if (typeof this.ipnsName !== "string")
-            throw Error("comment.ipnsName should be defined before calling toJSONIpfs");
         if (typeof this.depth !== "number")
             throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, ipnsName: this.ipnsName, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, thumbnailUrlWidth: this.thumbnailUrlWidth, thumbnailUrlHeight: this.thumbnailUrlHeight });
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, thumbnailUrlWidth: this.thumbnailUrlWidth, thumbnailUrlHeight: this.thumbnailUrlHeight });
     };
     Comment.prototype.toJSONPubsubMessagePublication = function () {
         return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, linkWidth: this.linkWidth, linkHeight: this.linkHeight, title: this.title });
@@ -218,19 +214,14 @@ var Comment = /** @class */ (function (_super) {
         (0, assert_1.default)(this.cid && this.postCid);
         return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid });
     };
-    Comment.prototype.toJSONCommentsTableRowInsert = function (challengeRequestId) {
-        (0, assert_1.default)(this.ipnsKeyName && this.cid && this.postCid);
-        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid, authorAddress: this.author.address, challengeRequestId: challengeRequestId, ipnsKeyName: this.ipnsKeyName });
+    Comment.prototype.toJSONCommentsTableRowInsert = function (publicationHash) {
+        (0, assert_1.default)(this.cid && this.postCid);
+        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid, authorAddress: this.author.address, challengeRequestPublicationSha256: publicationHash });
     };
     Comment.prototype.toJSONMerged = function () {
         var _a;
-        (0, assert_1.default)(this.ipnsName && typeof this.updatedAt === "number" && this.original && this.shortCid);
+        (0, assert_1.default)(typeof this.updatedAt === "number" && this.original && this.shortCid);
         return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(), lastChildCid: this.lastChildCid, lastReplyTimestamp: this.lastReplyTimestamp });
-    };
-    Comment.prototype.setCommentIpnsKey = function (ipnsKey) {
-        // Contains name and id
-        this.ipnsName = ipnsKey.id;
-        this.ipnsKeyName = ipnsKey.name;
     };
     Comment.prototype.setPostCid = function (newPostCid) {
         this.postCid = newPostCid;
@@ -297,11 +288,11 @@ var Comment = /** @class */ (function (_super) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
-                                        log.trace("Retrying to load comment ipns (".concat(this.ipnsName, ") for the ").concat(curAttempt, "th time"));
+                                        log.trace("Retrying to load CommentUpdate (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
                                         _a.label = 1;
                                     case 1:
                                         _a.trys.push([1, 3, , 4]);
-                                        return [4 /*yield*/, this._clientsManager.fetchCommentUpdate(this.ipnsName)];
+                                        return [4 /*yield*/, this._clientsManager.fetchCommentUpdate()];
                                     case 2:
                                         update = _a.sent();
                                         resolve(update);
@@ -331,14 +322,12 @@ var Comment = /** @class */ (function (_super) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
                         this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
-                        if (!(this.cid && !this.ipnsName && !this._rawCommentIpfs)) return [3 /*break*/, 5];
+                        if (!(this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs)) return [3 /*break*/, 5];
                         // User may have attempted to call plebbit.createComment({cid}).update
-                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
                         _a = this;
                         return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
                     case 1:
                         // User may have attempted to call plebbit.createComment({cid}).update
-                        // plebbit-js should be able to retrieve ipnsName from the IPFS file
                         _a._rawCommentIpfs = _b.sent(); // Will keep retrying to load until comment.stop() is called
                         return [4 /*yield*/, (0, signatures_1.verifyComment)(this._rawCommentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
                     case 2:
@@ -366,7 +355,7 @@ var Comment = /** @class */ (function (_super) {
                     case 6:
                         commentUpdate = _b.sent();
                         if (!(commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt)) return [3 /*break*/, 9];
-                        log("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") received a new update. Will verify signature"));
+                        log("Comment (".concat(this.cid, ") received a new CommentUpdate. Will verify signature"));
                         commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
                         return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
                     case 7:
@@ -383,16 +372,15 @@ var Comment = /** @class */ (function (_super) {
                     case 8:
                         _b.sent();
                         this.emit("update", this);
-                        return [3 /*break*/, 11];
+                        return [3 /*break*/, 10];
                     case 9:
-                        if (!commentUpdate) return [3 /*break*/, 11];
-                        log.trace("Comment (".concat(this.cid, ") IPNS (").concat(this.ipnsName, ") has no new update"));
-                        this._setUpdatingState("succeeded");
-                        return [4 /*yield*/, this._initCommentUpdate(commentUpdate)];
-                    case 10:
-                        _b.sent();
-                        _b.label = 11;
-                    case 11: return [2 /*return*/];
+                        if (commentUpdate) {
+                            log.trace("Comment (".concat(this.cid, ") has no new update"));
+                            this._setUpdatingState("succeeded");
+                            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
+                        }
+                        _b.label = 10;
+                    case 10: return [2 /*return*/];
                 }
             });
         });

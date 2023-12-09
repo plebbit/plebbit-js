@@ -1,7 +1,7 @@
 "use strict";
 // Signer section
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChallengeVerificationMessageSignedPropertyNames = exports.ChallengeAnswerMessageSignedPropertyNames = exports.ChallengeMessageSignedPropertyNames = exports.ChallengeRequestMessageSignedPropertyNames = exports.SubplebbitSignedPropertyNames = exports.CommentUpdateSignedPropertyNames = exports.VoteSignedPropertyNames = exports.CommentEditSignedPropertyNames = exports.CommentSignedPropertyNames = void 0;
+exports.CommentUpdateSignedPropertyNames = exports.ChallengeVerificationMessageSignedPropertyNames = exports.ChallengeAnswerMessageSignedPropertyNames = exports.ChallengeMessageSignedPropertyNames = exports.ChallengeRequestMessageSignedPropertyNames = exports.SubplebbitSignedPropertyNames = exports.VoteSignedPropertyNames = exports.CommentEditSignedPropertyNames = exports.CommentSignedPropertyNames = void 0;
 // ---------------------------
 // SignedPropertyNames
 exports.CommentSignedPropertyNames = [
@@ -36,24 +36,6 @@ exports.VoteSignedPropertyNames = [
     "vote",
     "commentCid"
 ];
-exports.CommentUpdateSignedPropertyNames = [
-    "author",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "flair",
-    "upvoteCount",
-    "downvoteCount",
-    "replies",
-    "updatedAt",
-    "replyCount",
-    "edit",
-    "cid",
-    "lastChildCid",
-    "lastReplyTimestamp"
-];
 exports.SubplebbitSignedPropertyNames = [
     "title",
     "description",
@@ -70,7 +52,8 @@ exports.SubplebbitSignedPropertyNames = [
     "rules",
     "address",
     "flairs",
-    "encryption"
+    "encryption",
+    "postUpdates"
 ];
 exports.ChallengeRequestMessageSignedPropertyNames = [
     "type",
@@ -99,5 +82,23 @@ exports.ChallengeVerificationMessageSignedPropertyNames = [
     "challengeSuccess",
     "challengeErrors",
     "timestamp"
+];
+exports.CommentUpdateSignedPropertyNames = [
+    "author",
+    "spoiler",
+    "pinned",
+    "locked",
+    "removed",
+    "reason",
+    "flair",
+    "upvoteCount",
+    "downvoteCount",
+    "replies",
+    "updatedAt",
+    "replyCount",
+    "edit",
+    "cid",
+    "lastChildCid",
+    "lastReplyTimestamp"
 ];
 //# sourceMappingURL=constants.js.map

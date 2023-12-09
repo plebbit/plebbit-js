@@ -35,6 +35,9 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     settings?: SubplebbitSettings;
     _rawSubplebbitType?: SubplebbitIpfsType;
     challenges?: SubplebbitType["challenges"];
+    postUpdates?: {
+        [timestampRange: string]: string;
+    };
     state: "stopped" | "updating" | "started";
     startedState: "stopped" | "publishing-ipns" | "failed" | "succeeded";
     updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
@@ -47,9 +50,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _subplebbitUpdateTrigger;
     private _isSubRunningLocally;
     private _publishLoopPromise;
-    private _ipfsNodeKeys;
     private _loadingOperation;
-    private _commentUpdateIpnsLifetimeSeconds;
     _clientsManager: SubplebbitClientsManager;
     private _updateRpcSubscriptionId?;
     private _startRpcSubscriptionId?;
@@ -57,6 +58,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _challengeAnswerPromises;
     private _challengeAnswerResolveReject;
     private _ongoingChallengeExchanges;
+    private _postUpdatesBuckets;
     constructor(plebbit: Plebbit);
     initSubplebbit(newProps: InternalSubplebbitType | SubplebbitEditOptions | SubplebbitIpfsType): Promise<void>;
     private setAddress;
@@ -67,7 +69,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     toJSON(): SubplebbitType;
     private _toJSONBase;
     toJSONIpfs(): SubplebbitIpfsType;
-    private _importSignerIntoIpfsIfNeeded;
+    private _importSubplebbitSignerIntoIpfsIfNeeded;
     _defaultSettingsOfChallenges(log: Logger): Promise<void>;
     _createNewLocalSubDb(): Promise<void>;
     _loadLocalSubDb(): Promise<void>;
@@ -86,6 +88,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     stop(): Promise<void>;
     private _unpinStaleCids;
     private _isCurrentSubplebbitEqualToLatestPublishedRecord;
+    private _calculateNewPostUpdates;
     private updateSubplebbitIpnsIfNeeded;
     private storeCommentEdit;
     private storeVote;
@@ -105,14 +108,19 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _cleanUpChallengeAnswerPromise;
     handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage): Promise<void>;
     private handleChallengeExchange;
-    private _publishCommentIpns;
+    private _calculatePostUpdatePathForExistingCommentUpdate;
+    private _calculateIpfsPathForCommentUpdate;
+    private _writeCommentUpdateToIpfsFilePath;
     private _updateComment;
     private _listenToIncomingRequests;
     private _getDbInternalState;
     private _mergeInstanceStateWithDbState;
+    private _movePostUpdatesFolderToNewAddress;
     private _switchDbWhileRunningIfNeeded;
     private _updateCommentsThatNeedToBeUpdated;
     private _repinCommentsIPFSIfNeeded;
+    private _repinCommentUpdateIfNeeded;
+    private _adjustPostUpdatesBucketsIfNeeded;
     private syncIpnsWithDb;
     private _updateDbInternalState;
     private _syncLoop;

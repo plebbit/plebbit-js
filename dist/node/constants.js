@@ -3,19 +3,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.commentUpdateValidationCache = exports.commentValidationCache = exports.pageCidToSortTypesCache = exports.subplebbitForPublishingCache = exports.CACHE_KEYS = void 0;
+exports.pageCidToSortTypesCache = exports.subplebbitForPublishingCache = exports.commentPostUpdatesParentsPathConfig = exports.postTimestampConfig = exports.STORAGE_KEYS = void 0;
 var lru_cache_1 = __importDefault(require("lru-cache"));
-var CACHE_KEYS;
-(function (CACHE_KEYS) {
-    CACHE_KEYS[CACHE_KEYS["SUBPLEBBIT_IPNS"] = 0] = "SUBPLEBBIT_IPNS";
-    CACHE_KEYS[CACHE_KEYS["INTERNAL_SUBPLEBBIT"] = 1] = "INTERNAL_SUBPLEBBIT";
-    CACHE_KEYS[CACHE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 2] = "PERSISTENT_DELETED_SUBPLEBBITS"; // These are basically sub db files that we're unable to remove for some reason on windows
-})(CACHE_KEYS || (exports.CACHE_KEYS = CACHE_KEYS = {}));
+var STORAGE_KEYS;
+(function (STORAGE_KEYS) {
+    STORAGE_KEYS[STORAGE_KEYS["INTERNAL_SUBPLEBBIT"] = 0] = "INTERNAL_SUBPLEBBIT";
+    STORAGE_KEYS[STORAGE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 1] = "PERSISTENT_DELETED_SUBPLEBBITS"; // These are basically sub db files that we're unable to remove for some reason on windows
+})(STORAGE_KEYS || (exports.STORAGE_KEYS = STORAGE_KEYS = {}));
+// Configs for LRU storage
+exports.postTimestampConfig = { cacheName: "postTimestamp", maxItems: 500 };
+exports.commentPostUpdatesParentsPathConfig = {
+    cacheName: "commentPostUpdatesParentsPath",
+    maxItems: 500
+};
+// Memory caches
 exports.subplebbitForPublishingCache = new lru_cache_1.default({
     max: 100,
     ttl: 600000
-}); // Cache for only 10 mins
+}); // Cache for only 10 mins, should  be moved to LRU+storage
 exports.pageCidToSortTypesCache = new lru_cache_1.default({ max: 500 });
-exports.commentValidationCache = new lru_cache_1.default({ max: 50000 });
-exports.commentUpdateValidationCache = new lru_cache_1.default({ max: 10000 });
 //# sourceMappingURL=constants.js.map

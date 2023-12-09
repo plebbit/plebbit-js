@@ -1,4 +1,4 @@
-import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, VotePubsubMessage, VoteType, ParsedPlebbitOptions } from "./types";
+import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, VotePubsubMessage, VoteType, ParsedPlebbitOptions, LRUStorageInterface, LRUStorageConstructor } from "./types";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit/subplebbit";
 import Vote from "./vote";
@@ -50,6 +50,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     updateInterval: number;
     noData: boolean;
     private _userPlebbitOptions;
+    private _storageLRUs;
     constructor(options?: PlebbitOptions);
     private _initIpfsClients;
     private _initPubsubClients;
@@ -75,6 +76,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     pubsubSubscribe(subplebbitAddress: string): Promise<void>;
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
     resolveAuthorAddress(authorAddress: string): Promise<string>;
+    createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">): Promise<LRUStorageInterface>;
     destroy(): Promise<void>;
     toJSON(): any;
 }

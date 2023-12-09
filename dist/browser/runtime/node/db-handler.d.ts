@@ -1,6 +1,6 @@
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
-import { AuthorCommentEdit, ChallengeAnswersTableRowInsert, ChallengeRequestsTableRowInsert, ChallengesTableRowInsert, ChallengeVerificationsTableRowInsert, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, SignersTableRow, SingersTableRowInsert, SubplebbitAuthor, VotesTableRow, VotesTableRowInsert } from "../../types";
+import { AuthorCommentEdit, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, SubplebbitAuthor, VotesTableRow, VotesTableRowInsert } from "../../types";
 import { PageOptions } from "../../subplebbit/sort-handler";
 import { SubplebbitStats } from "../../subplebbit/types";
 export declare class DbHandler {
@@ -31,11 +31,6 @@ export declare class DbHandler {
     private _createCommentsTable;
     private _createCommentUpdatesTable;
     private _createVotesTable;
-    private _createChallengeRequestsTable;
-    private _createChallengesTable;
-    private _createChallengeAnswersTable;
-    private _createChallengeVerificationsTable;
-    private _createSignersTable;
     private _createCommentEditsTable;
     getDbVersion(): Promise<number>;
     createTablesIfNeeded(): Promise<void>;
@@ -46,11 +41,6 @@ export declare class DbHandler {
     insertComment(comment: CommentsTableRowInsert, trx?: Transaction): Promise<void>;
     upsertCommentUpdate(update: CommentUpdatesTableRowInsert, trx?: Transaction): Promise<void>;
     insertEdit(edit: CommentEditsTableRowInsert, trx?: Transaction): Promise<void>;
-    insertChallengeRequest(request: ChallengeRequestsTableRowInsert, trx?: Transaction): Promise<void>;
-    insertChallenge(challenge: ChallengesTableRowInsert, trx?: Transaction): Promise<void>;
-    insertChallengeAnswer(answer: ChallengeAnswersTableRowInsert, trx?: Transaction): Promise<void>;
-    insertChallengeVerification(verification: ChallengeVerificationsTableRowInsert, trx?: Transaction): Promise<void>;
-    queryChallengeRequest(requestId: ChallengeRequestsTableRowInsert["challengeRequestId"], trx?: Transaction): Promise<import("../../types").ChallengeRequestsTableRow>;
     getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined>;
     private _basePageQuery;
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;
@@ -59,12 +49,18 @@ export declare class DbHandler {
         comment: CommentsTableRow;
         update: CommentUpdatesRow;
     }[]>;
-    queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: any): Promise<CommentUpdatesRow | undefined>;
+    queryStoredCommentUpdate(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction): Promise<CommentUpdatesRow | undefined>;
+    queryAllStoredCommentUpdates(trx?: Transaction): Promise<CommentUpdatesRow[]>;
+    queryCommentUpdatesWithPlaceHolderForIpfsPath(trx?: Transaction): Promise<CommentUpdatesRow[]>;
+    queryCommentUpdatesOfPostsForBucketAdjustment(trx?: Transaction): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]>;
+    queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]>;
     queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction): Promise<CommentsTableRow>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryCommentsToBeUpdated(ipnsKeyNames: string[], ipnsLifetimeSeconds: number, trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryAllComments(trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]>;
     private _calcActiveUserCount;
     private _calcPostCount;
     querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats>;
@@ -82,8 +78,6 @@ export declare class DbHandler {
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "author" | "timestamp">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;
     queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
     queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
-    insertSigner(signer: SingersTableRowInsert, trx?: Transaction): Promise<number[]>;
-    querySigner(ipnsKeyName: string, trx?: Transaction): Promise<SignersTableRow | undefined>;
     queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
     querySubplebbitAuthor(authorAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
     changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]): Promise<void>;

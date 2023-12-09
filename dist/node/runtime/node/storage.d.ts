@@ -1,8 +1,8 @@
 import { StorageInterface } from "../../types";
-export default class Cache implements StorageInterface {
+export default class Storage implements StorageInterface {
     private _plebbit;
     private _keyv;
-    constructor(plebbit: Cache["_plebbit"]);
+    constructor(plebbit: Storage["_plebbit"]);
     toJSON(): any;
     init(): Promise<void>;
     getItem(key: string): Promise<any>;
@@ -10,4 +10,5 @@ export default class Cache implements StorageInterface {
     removeItem(key: string): Promise<boolean>;
     clear(): Promise<void>;
     keys(): Promise<string[]>;
+    destroy(): Promise<void>;
 }

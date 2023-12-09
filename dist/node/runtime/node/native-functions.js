@@ -133,7 +133,7 @@ var nativeFunctions = {
                     return [4 /*yield*/, promises_1.default.mkdir(subplebbitsPath, { recursive: true })];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, plebbit._storage.getItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
+                    return [4 /*yield*/, plebbit._storage.getItem(constants_1.STORAGE_KEYS[constants_1.STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
                 case 2:
                     deletedPersistentSubs = (_a.sent());
                     if (!Array.isArray(deletedPersistentSubs)) return [3 /*break*/, 4];
@@ -160,11 +160,11 @@ var nativeFunctions = {
                                     case 4:
                                         newPersistentDeletedSubplebbits = lodash_1.default.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully_1);
                                         if (!(newPersistentDeletedSubplebbits.length === 0)) return [3 /*break*/, 6];
-                                        return [4 /*yield*/, plebbit._storage.removeItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
+                                        return [4 /*yield*/, plebbit._storage.removeItem(constants_1.STORAGE_KEYS[constants_1.STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])];
                                     case 5:
                                         _a.sent();
                                         return [3 /*break*/, 8];
-                                    case 6: return [4 /*yield*/, plebbit._storage.setItem(constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits)];
+                                    case 6: return [4 /*yield*/, plebbit._storage.setItem(constants_1.STORAGE_KEYS[constants_1.STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits)];
                                     case 7:
                                         _a.sent();
                                         _a.label = 8;
@@ -368,7 +368,8 @@ var nativeFunctions = {
             },
             pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
             block: { rm: blockRm },
-            swarm: { peers: ipfsClient.swarm.peers }
+            swarm: { peers: ipfsClient.swarm.peers },
+            files: ipfsClient.files
         };
     },
     importSignerIntoIpfsNode: function (ipnsKeyName, ipfsKey, ipfsNode) { return __awaiter(void 0, void 0, void 0, function () {

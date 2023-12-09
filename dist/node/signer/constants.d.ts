@@ -43,16 +43,16 @@ export type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "
 export declare const CommentSignedPropertyNames: readonly (keyof Omit<CreateCommentOptions, "signer">)[];
 export declare const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentEditOptions, "signer">)[];
 export declare const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer">)[];
-export declare const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[];
 export declare const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[];
 export declare const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[];
 export declare const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[];
 export declare const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[];
 export declare const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[];
+export declare const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[];
 export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
 export type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
 export type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
 export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
 export type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
 export type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
-export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | CommentUpdate | SubplebbitIpfsType;
+export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;

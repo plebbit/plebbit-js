@@ -10,9 +10,9 @@ export interface ValidationResult {
 export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBase64: string) => Promise<Uint8Array>;
 export declare const verifyBufferEd25519: (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => Promise<boolean>;
 export declare function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
+export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<JsonSignature>;
 export declare function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
 export declare function signCommentEdit(edit: CreateCommentEditOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
-export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<JsonSignature>;
 export declare function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<JsonSignature>;
 export declare function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;
 export declare function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType): Promise<PubsubSignature>;

@@ -35,12 +35,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createSigner = exports.Signer = exports.decryptEd25519AesGcmPublicKeyBuffer = exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcm = exports.verifyVote = exports.verifySubplebbit = exports.verifyComment = void 0;
-var assert_1 = __importDefault(require("assert"));
 var util_1 = require("./util");
 var util_2 = require("../util");
 var signatures_1 = require("./signatures");
@@ -67,10 +63,6 @@ var Signer = /** @class */ (function () {
                     ? new Uint8Array(props.ipfsKey)
                     : undefined;
     }
-    Signer.prototype.toJSONSignersTableRow = function () {
-        (0, assert_1.default)(this.type && this.privateKey && this.ipnsKeyName);
-        return { type: this.type, privateKey: this.privateKey, ipnsKeyName: this.ipnsKeyName };
-    };
     return Signer;
 }());
 exports.Signer = Signer;

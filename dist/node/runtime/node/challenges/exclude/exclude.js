@@ -163,7 +163,6 @@ var shouldExcludeChallengeSuccess = function (subplebbitChallenge, challengeResu
 exports.shouldExcludeChallengeSuccess = shouldExcludeChallengeSuccess;
 // cache for fetching comment cids, never expire
 var commentCache = new quick_lru_1.default({ maxSize: 10000 });
-var invalidIpnsName = 'i';
 // cache for fetching comment updates, expire after 1 day
 var commentUpdateCache = new tinycache_1.default();
 var commentUpdateCacheTime = 1000 * 60 * 60;
@@ -205,14 +204,10 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                             case 1:
                                 comment = _g.sent();
                                 author_1 = { address: (_a = comment === null || comment === void 0 ? void 0 : comment.author) === null || _a === void 0 ? void 0 : _a.address };
-                                cachedComment = { ipnsName: comment.ipnsName || invalidIpnsName, subplebbitAddress: comment.subplebbitAddress, author: author_1 };
+                                cachedComment = { subplebbitAddress: comment.subplebbitAddress, author: author_1 };
                                 commentCache.set(commentCid, cachedComment);
                                 _g.label = 2;
                             case 2:
-                                // comment has no ipns name
-                                if ((cachedComment === null || cachedComment === void 0 ? void 0 : cachedComment.ipnsName) === invalidIpnsName) {
-                                    throw Error('comment has invalid ipns name');
-                                }
                                 // subplebbit address doesn't match filter
                                 if (!addressesSet.has(cachedComment.subplebbitAddress)) {
                                     throw Error("comment doesn't have subplebbit address");
@@ -221,11 +216,11 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                                 if (((_b = cachedComment === null || cachedComment === void 0 ? void 0 : cachedComment.author) === null || _b === void 0 ? void 0 : _b.address) !== author.address) {
                                     throw Error("comment author address doesn't match publication author address");
                                 }
-                                cachedCommentUpdate = commentUpdateCache.get(cachedComment.ipnsName);
+                                cachedCommentUpdate = commentUpdateCache.get(commentCid);
                                 if (!!cachedCommentUpdate) return [3 /*break*/, 8];
                                 commentUpdate_1 = comment;
                                 if (!!commentUpdate_1) return [3 /*break*/, 4];
-                                return [4 /*yield*/, plebbit.createComment({ cid: commentCid, ipnsName: commentCache.ipnsName })];
+                                return [4 /*yield*/, plebbit.createComment({ cid: commentCid })];
                             case 3:
                                 // @ts-ignore
                                 commentUpdate_1 = _g.sent();
@@ -248,8 +243,8 @@ var shouldExcludeChallengeCommentCids = function (subplebbitChallenge, challenge
                                 if ((_c = commentUpdate_1 === null || commentUpdate_1 === void 0 ? void 0 : commentUpdate_1.author) === null || _c === void 0 ? void 0 : _c.subplebbit) {
                                     cachedCommentUpdate.author = { subplebbit: (_d = commentUpdate_1 === null || commentUpdate_1 === void 0 ? void 0 : commentUpdate_1.author) === null || _d === void 0 ? void 0 : _d.subplebbit };
                                 }
-                                commentUpdateCache.put(cachedComment.ipnsName, cachedCommentUpdate, commentUpdateCacheTime);
-                                (_f = (_e = commentUpdateCache._timeouts[cachedComment.ipnsName]).unref) === null || _f === void 0 ? void 0 : _f.call(_e);
+                                commentUpdateCache.put(commentCid, cachedCommentUpdate, commentUpdateCacheTime);
+                                (_f = (_e = commentUpdateCache._timeouts[commentCid]).unref) === null || _f === void 0 ? void 0 : _f.call(_e);
                                 _g.label = 8;
                             case 8: return [2 /*return*/, __assign(__assign({}, cachedComment), cachedCommentUpdate)];
                         }

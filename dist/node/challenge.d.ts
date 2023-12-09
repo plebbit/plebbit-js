@@ -1,4 +1,4 @@
-import { ChallengeAnswerMessageType, ChallengeAnswersTableRowInsert, ChallengeMessageType, ChallengeRequestMessageType, ChallengeRequestsTableRowInsert, ChallengesTableRow, ChallengesTableRowInsert, ChallengeVerificationMessageType, ChallengeVerificationsTableRowInsert, DecryptedChallengeAnswerMessageType, ProtocolVersion } from "./types";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, ProtocolVersion } from "./types";
 import { Encrypted, PubsubSignature } from "./signer/constants";
 export declare class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encrypted: Encrypted;
@@ -11,7 +11,6 @@ export declare class ChallengeRequestMessage implements ChallengeRequestMessageT
     timestamp: number;
     constructor(props: Omit<ChallengeRequestMessageType, "type">);
     toJSON(): ChallengeRequestMessageType;
-    toJSONForDb(challengeAnswers: string[] | undefined, challengeCommentCids: string[] | undefined): ChallengeRequestsTableRowInsert;
 }
 export declare class ChallengeMessage implements ChallengeMessageType {
     encrypted: Encrypted;
@@ -23,7 +22,6 @@ export declare class ChallengeMessage implements ChallengeMessageType {
     timestamp: number;
     constructor(props: Omit<ChallengeMessageType, "type">);
     toJSON(): ChallengeMessageType;
-    toJSONForDb(challengeTypes: ChallengesTableRow["challengeTypes"]): ChallengesTableRowInsert;
 }
 export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
     type: "CHALLENGEANSWER";
@@ -35,7 +33,6 @@ export declare class ChallengeAnswerMessage implements ChallengeAnswerMessageTyp
     timestamp: number;
     constructor(props: Omit<ChallengeAnswerMessageType, "type">);
     toJSON(): ChallengeAnswerMessageType;
-    toJSONForDb(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]): ChallengeAnswersTableRowInsert;
 }
 export declare class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
     type: "CHALLENGEVERIFICATION";
@@ -50,5 +47,4 @@ export declare class ChallengeVerificationMessage implements ChallengeVerificati
     timestamp: number;
     constructor(props: Omit<ChallengeVerificationMessageType, "type">);
     toJSON(): ChallengeVerificationMessageType;
-    toJSONForDb(): ChallengeVerificationsTableRowInsert;
 }

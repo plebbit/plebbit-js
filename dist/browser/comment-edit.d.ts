@@ -1,4 +1,3 @@
-import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { Flair } from "./subplebbit/types";
@@ -35,13 +34,13 @@ export declare class CommentEdit extends Publication implements CommentEditType 
         signature: import("./signer/constants").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;
-        challengeAnswers?: string[];
-        challengeCommentCids?: string[];
         reason?: string;
         content?: string;
         spoiler?: boolean;
         flair?: Flair;
         subplebbitAddress: string;
+        challengeAnswers?: string[];
+        challengeCommentCids?: string[];
         commentCid: string;
         deleted?: boolean;
         pinned?: boolean;
@@ -49,7 +48,7 @@ export declare class CommentEdit extends Publication implements CommentEditType 
         removed?: boolean;
         commentAuthor?: CommentAuthorEditOptions;
     };
-    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): CommentEditsTableRowInsert;
+    toJSONForDb(): CommentEditsTableRowInsert;
     getType(): PublicationTypeName;
     private _validateSignature;
     publish(): Promise<void>;

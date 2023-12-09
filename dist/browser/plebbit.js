@@ -88,11 +88,13 @@ var client_manager_1 = require("./clients/client-manager");
 var plebbit_rpc_client_1 = __importDefault(require("./clients/plebbit-rpc-client"));
 var plebbit_error_1 = require("./plebbit-error");
 var plebbit_rpc_state_client_1 = require("./clients/plebbit-rpc-state-client");
+var lru_storage_1 = __importDefault(require("./runtime/browser/lru-storage"));
 var Plebbit = /** @class */ (function (_super) {
     __extends(Plebbit, _super);
     function Plebbit(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
+        _this._storageLRUs = {}; // Cache name to interface
         var acceptedOptions = [
             "chainProviders",
             "dataPath",
@@ -260,7 +262,7 @@ var Plebbit = /** @class */ (function (_super) {
                                 gatewayUrl = fallbackGateways_1[_b];
                                 this.clients.ipfsGateways[gatewayUrl] = {};
                             }
-                        // Init cache
+                        // Init storage
                         this._storage = new storage_1.default({ dataPath: this.dataPath, noData: this.noData });
                         return [4 /*yield*/, this._storage.init()];
                     case 3:
@@ -679,6 +681,22 @@ var Plebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Plebbit.prototype.createStorageLRU = function (opts) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!this._storageLRUs[opts.cacheName]) return [3 /*break*/, 2];
+                        this._storageLRUs[opts.cacheName] = new lru_storage_1.default(__assign(__assign({}, opts), { plebbit: this }));
+                        return [4 /*yield*/, this._storageLRUs[opts.cacheName].init()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/, this._storageLRUs[opts.cacheName]];
+                }
+            });
+        });
+    };
     Plebbit.prototype.destroy = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -689,7 +707,13 @@ var Plebbit = /** @class */ (function (_super) {
                     case 1:
                         _a.sent();
                         _a.label = 2;
-                    case 2: return [2 /*return*/];
+                    case 2: return [4 /*yield*/, this._storage.destroy()];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, Promise.all(Object.values(this._storageLRUs).map(function (storage) { return storage.destroy(); }))];
+                    case 4:
+                        _a.sent();
+                        return [2 /*return*/];
                 }
             });
         });

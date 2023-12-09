@@ -353,7 +353,7 @@ var BaseClientsManager = /** @class */ (function () {
                         url = "".concat(gateway).concat(path);
                         log.trace("Fetching url (".concat(url, ")"));
                         timeBefore = Date.now();
-                        isCid = path.includes("/ipfs/");
+                        isCid = loadType === "comment" || loadType === "generic-ipfs";
                         this.preFetchGateway(gateway, path, loadType);
                         _c.label = 1;
                     case 1:
@@ -369,7 +369,7 @@ var BaseClientsManager = /** @class */ (function () {
                     case 4:
                         this.postFetchGatewaySuccess(gateway, path, loadType);
                         timeElapsedMs = Date.now() - timeBefore;
-                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(gateway, isCid ? "cid" : "ipns", timeElapsedMs)];
+                        return [4 /*yield*/, this._plebbit.stats.recordGatewaySuccess(gateway, isCid || loadType === "comment-update" ? "cid" : "ipns", timeElapsedMs)];
                     case 5:
                         _c.sent();
                         return [2 /*return*/, resText];
@@ -476,6 +476,7 @@ var BaseClientsManager = /** @class */ (function () {
             });
         });
     };
+    // TODO rename this to _fetchPathP2P
     BaseClientsManager.prototype._fetchCidP2P = function (cid) {
         return __awaiter(this, void 0, void 0, function () {
             var ipfsClient, fileContent, calculatedCid;
@@ -488,12 +489,14 @@ var BaseClientsManager = /** @class */ (function () {
                         fileContent = _a.sent();
                         if (typeof fileContent !== "string")
                             (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid: cid });
+                        if (!(fileContent.length === DOWNLOAD_LIMIT_BYTES)) return [3 /*break*/, 3];
                         return [4 /*yield*/, ipfs_only_hash_1.default.of(fileContent)];
                     case 2:
                         calculatedCid = _a.sent();
-                        if (fileContent.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
+                        if (calculatedCid !== cid)
                             (0, util_1.throwWithErrorCode)("ERR_OVER_DOWNLOAD_LIMIT", { cid: cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-                        return [2 /*return*/, fileContent];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/, fileContent];
                 }
             });
         });

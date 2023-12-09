@@ -62,7 +62,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdateWithCache = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyCommentWithCache = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentUpdate = exports.signCommentEdit = exports.signVote = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
+exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdateWithCache = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyCommentWithCache = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentEdit = exports.signVote = exports.signCommentUpdate = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
 var util_1 = require("./util");
 var cborg = __importStar(require("cborg"));
 var to_string_1 = require("uint8arrays/to-string");
@@ -197,6 +197,17 @@ function signComment(comment, signer, plebbit) {
     });
 }
 exports.signComment = signComment;
+function signCommentUpdate(update, signer) {
+    return __awaiter(this, void 0, void 0, function () {
+        var log;
+        return __generator(this, function (_a) {
+            log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signCommentUpdate");
+            // Not sure, should we validate update.authorEdit here?
+            return [2 /*return*/, _signJson(constants_1.CommentUpdateSignedPropertyNames, update, signer, log)];
+        });
+    });
+}
+exports.signCommentUpdate = signCommentUpdate;
 function signVote(vote, signer, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var log;
@@ -229,17 +240,6 @@ function signCommentEdit(edit, signer, plebbit) {
     });
 }
 exports.signCommentEdit = signCommentEdit;
-function signCommentUpdate(update, signer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var log;
-        return __generator(this, function (_a) {
-            log = (0, plebbit_logger_1.default)("plebbit-js:signatures:signCommentUpdate");
-            // Not sure, should we validate update.authorEdit here?
-            return [2 /*return*/, _signJson(constants_1.CommentUpdateSignedPropertyNames, update, signer, log)];
-        });
-    });
-}
-exports.signCommentUpdate = signCommentUpdate;
 function signSubplebbit(subplebbit, signer) {
     return __awaiter(this, void 0, void 0, function () {
         var log;
@@ -550,23 +550,21 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var log, updateSignatureAddress, subplebbitResolvedAddress, pagesValidity, invalidPageValidity, jsonValidation;
+        var log, editSignatureValidation, pagesValidity, invalidPageValidity, jsonValidation, updateSignatureAddress, subplebbitResolvedAddress;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
-                    if (update.edit && update.edit.signature.publicKey !== comment.signature.publicKey)
+                    if (!update.edit) return [3 /*break*/, 2];
+                    if (update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
-                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
+                    return [4 /*yield*/, _getJsonValidationResult(update.edit)];
                 case 1:
-                    updateSignatureAddress = _a.sent();
-                    return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
+                    editSignatureValidation = _a.sent();
+                    if (!editSignatureValidation.valid)
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                    _a.label = 2;
                 case 2:
-                    subplebbitResolvedAddress = _a.sent();
-                    if (updateSignatureAddress !== subplebbitResolvedAddress) {
-                        log.error("Comment (".concat(update.cid, "), CommentUpdate's signature address (").concat(updateSignatureAddress, ") is not the same as the B58 address of the subplebbit (").concat(subplebbitResolvedAddress, ")"));
-                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT }];
-                    }
                     if (update.cid !== comment.cid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT }];
                     if (!update.replies) return [3 /*break*/, 4];
@@ -584,6 +582,16 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                     jsonValidation = _a.sent();
                     if (!jsonValidation.valid)
                         return [2 /*return*/, jsonValidation];
+                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
+                case 6:
+                    updateSignatureAddress = _a.sent();
+                    return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
+                case 7:
+                    subplebbitResolvedAddress = _a.sent();
+                    if (updateSignatureAddress !== subplebbitResolvedAddress) {
+                        log.error("Comment (".concat(update.cid, "), CommentUpdate's signature address (").concat(updateSignatureAddress, ") is not the same as the B58 address of the subplebbit (").concat(subplebbitResolvedAddress, ")"));
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT }];
+                    }
                     return [2 /*return*/, { valid: true }];
             }
         });

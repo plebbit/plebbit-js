@@ -165,7 +165,7 @@ var setNativeFunctions = function (newNativeFunctions) {
 };
 exports.setNativeFunctions = setNativeFunctions;
 var deleteOldSubplebbitInWindows = function (subPath, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var log, subAddress, e_2, cacheKey, subsThatWeFailedToDelete;
+    var log, subAddress, e_2, storageKey, subsThatWeFailedToDelete;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -183,13 +183,13 @@ var deleteOldSubplebbitInWindows = function (subPath, plebbit) { return __awaite
                 e_2 = _a.sent();
                 // Assume it's because of EBUSY
                 log.error("Failed to delete old subplebbit (".concat(subAddress, "). Restarting the node process or daemon should make this error disappear"));
-                cacheKey = constants_1.CACHE_KEYS[constants_1.CACHE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
-                return [4 /*yield*/, plebbit._storage.getItem(cacheKey)];
+                storageKey = constants_1.STORAGE_KEYS[constants_1.STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
+                return [4 /*yield*/, plebbit._storage.getItem(storageKey)];
             case 4:
                 subsThatWeFailedToDelete = (_a.sent()) || [];
                 if (!subsThatWeFailedToDelete.includes(subAddress))
                     subsThatWeFailedToDelete.push(subAddress);
-                return [4 /*yield*/, plebbit._storage.setItem(cacheKey, subsThatWeFailedToDelete)];
+                return [4 /*yield*/, plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete)];
             case 5:
                 _a.sent();
                 return [3 /*break*/, 6];

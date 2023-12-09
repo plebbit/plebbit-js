@@ -1,7 +1,6 @@
 import Publication from "./publication";
 import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
-import { ChallengeRequestMessage } from "./challenge";
 declare class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
@@ -23,14 +22,14 @@ declare class Vote extends Publication implements VoteType {
         signature: import("./signer/constants").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;
-        challengeAnswers?: string[];
-        challengeCommentCids?: string[];
         vote: 0 | 1 | -1;
         subplebbitAddress: string;
+        challengeAnswers?: string[];
+        challengeCommentCids?: string[];
         commentCid: string;
     };
     getType(): PublicationTypeName;
-    toJSONForDb(challengeRequestId: ChallengeRequestMessage["challengeRequestId"]): VotesTableRowInsert;
+    toJSONForDb(): VotesTableRowInsert;
     private _validateSignature;
     publish(): Promise<void>;
 }

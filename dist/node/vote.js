@@ -88,8 +88,8 @@ var Vote = /** @class */ (function (_super) {
     Vote.prototype.getType = function () {
         return "vote";
     };
-    Vote.prototype.toJSONForDb = function (challengeRequestId) {
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { authorAddress: this.author.address, challengeRequestId: challengeRequestId });
+    Vote.prototype.toJSONForDb = function () {
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { authorAddress: this.author.address });
     };
     Vote.prototype._validateSignature = function () {
         return __awaiter(this, void 0, void 0, function () {

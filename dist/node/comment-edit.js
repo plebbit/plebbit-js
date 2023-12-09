@@ -132,8 +132,8 @@ var CommentEdit = /** @class */ (function (_super) {
     CommentEdit.prototype.toJSON = function () {
         return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
     };
-    CommentEdit.prototype.toJSONForDb = function (challengeRequestId) {
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, challengeRequestId: challengeRequestId });
+    CommentEdit.prototype.toJSONForDb = function () {
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address });
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";
