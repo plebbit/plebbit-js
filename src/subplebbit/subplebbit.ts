@@ -876,8 +876,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
-
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash));
+                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
                 log(`(${request.challengeRequestId.toString()}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             } else {
@@ -893,7 +894,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash));
+                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
                 log(
                     `(${request.challengeRequestId.toString()}): `,
