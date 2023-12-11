@@ -1514,13 +1514,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
             const commentInstance = await this.plebbit.createComment(unpinnedCommentRow);
             const commentIpfsJson = commentInstance.toJSONIpfs();
-            if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName;
+            if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash: string = await Hash.of(commentIpfsContent);
             assert.equal(contentHash, unpinnedCommentRow.cid);
             await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
         }
 
+        await this.dbHandler.deleteAllCommentUpdateRows(); // delete CommentUpdate rows to force a new production of CommentUpdate
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
 
@@ -1540,7 +1541,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
         if (commentUpdatesToRepin.length > 0) {
             log.error(
-                `PostUpdates folder (/${this.address}) does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files`
+                `CommentUpdates are not added under PostUpdates folder (/${this.address}). Will add all stored CommentUpdate to IPFS files`
             );
             for (const commentUpdateRaw of commentUpdatesToRepin) {
                 // We should calculate new ipfs path

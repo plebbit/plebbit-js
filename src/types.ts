@@ -365,7 +365,7 @@ export interface CommentUpdate {
     locked?: boolean;
     removed?: boolean; // mod deleted a comment
     reason?: string; // reason the mod took a mod action
-    updatedAt: number; // timestamp in seconds the IPNS record was updated
+    updatedAt: number; // timestamp in seconds the CommentUpdate was updated
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
     author?: {
         // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
@@ -508,9 +508,7 @@ export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAns
     insertedAt: number;
 }
 
-export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
-    challengeRequestPublicationSha256: string;
-}
+export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
 
 // CommentUpdates table
 

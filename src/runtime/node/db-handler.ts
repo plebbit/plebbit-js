@@ -482,6 +482,10 @@ export class DbHandler {
             .where("depth", 0);
     }
 
+    async deleteAllCommentUpdateRows(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).del();
+    }
+
     async queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]> {
         return this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
@@ -534,20 +538,14 @@ export class DbHandler {
         // 3 - Comments that new votes, CommentEdit or other comments were published under them
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
+        // Also for each comment, add the previous comments of its author to update them too
 
-        // Also add all comments of each author to the list
-
-        // updatedAt + ipnsLifetimeSeconds = expiry
-        // timestamp() > expiry - buffer => we should update the IPNS
-        // timestamp() + buffer > updatedAt + ipnsLifetimeSeconds
-        // timestamp() + buffer - ipnsLifetimeSeconds > updatedAt
-
-        const criteriaOneTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const criteriaOne: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
-        const criteriaFour: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const criteriaTwoThree: CommentsTableRow[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
@@ -564,7 +562,7 @@ export class DbHandler {
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
-        const comments = lodash.uniqBy([...criteriaOneTwoThree, ...criteriaFour], (comment) => comment.cid);
+        const comments = lodash.uniqBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
 
         const parents = lodash.flattenDeep(
             await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
