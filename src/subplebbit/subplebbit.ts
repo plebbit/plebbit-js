@@ -796,9 +796,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._unpinStaleCids();
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(this._rawSubplebbitType));
         this._cidsToUnPin = [file.path];
+        // If this._isSubRunningLocally = false, then this is the last publish before stopping
+        const ttl = this._isSubRunningLocally ? `${this.plebbit.publishInterval * 3}ms` : undefined;
+        const lifetime = this._isSubRunningLocally ? `${this.plebbit.publishInterval * 1000}ms` : `24h`;
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
-            allowOffline: true
+            allowOffline: true,
+            ttl,
+            lifetime
         });
         this.emit("update", this);
         log(
