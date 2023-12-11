@@ -345,11 +345,11 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string) {
-        if (!subIpns.posts) return undefined;
+        if (!subIpns.posts?.pages?.hot) return undefined;
         const findInCommentAndChildren = (comment: PageIpfs["comments"][0]): PageIpfs["comments"][0]["comment"] => {
             if (comment.comment.cid === cid) return comment.comment;
-            if (!comment.update.replies) return undefined;
-            for (const childComment of comment.update.replies.pages.new.comments) {
+            if (!comment.update.replies?.pages?.topAll) return undefined;
+            for (const childComment of comment.update.replies.pages.topAll.comments) {
                 const commentInChild = findInCommentAndChildren(childComment);
                 if (commentInChild) return commentInChild;
             }
