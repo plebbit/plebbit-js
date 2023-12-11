@@ -389,23 +389,25 @@ var CommentClientsManager = /** @class */ (function (_super) {
         });
     };
     CommentClientsManager.prototype._findCommentInSubplebbitPosts = function (subIpns, cid) {
-        if (!subIpns.posts)
+        var _a, _b;
+        if (!((_b = (_a = subIpns.posts) === null || _a === void 0 ? void 0 : _a.pages) === null || _b === void 0 ? void 0 : _b.hot))
             return undefined;
         var findInCommentAndChildren = function (comment) {
+            var _a, _b;
             if (comment.comment.cid === cid)
                 return comment.comment;
-            if (!comment.update.replies)
+            if (!((_b = (_a = comment.update.replies) === null || _a === void 0 ? void 0 : _a.pages) === null || _b === void 0 ? void 0 : _b.topAll))
                 return undefined;
-            for (var _i = 0, _a = comment.update.replies.pages.new.comments; _i < _a.length; _i++) {
-                var childComment = _a[_i];
+            for (var _i = 0, _c = comment.update.replies.pages.topAll.comments; _i < _c.length; _i++) {
+                var childComment = _c[_i];
                 var commentInChild = findInCommentAndChildren(childComment);
                 if (commentInChild)
                     return commentInChild;
             }
             return undefined;
         };
-        for (var _i = 0, _a = subIpns.posts.pages.hot.comments; _i < _a.length; _i++) {
-            var post = _a[_i];
+        for (var _i = 0, _c = subIpns.posts.pages.hot.comments; _i < _c.length; _i++) {
+            var post = _c[_i];
             var commentInChild = findInCommentAndChildren(post);
             if (commentInChild)
                 return commentInChild;

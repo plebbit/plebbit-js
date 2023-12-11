@@ -390,7 +390,6 @@ export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAns
     insertedAt: number;
 }
 export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
-    challengeRequestPublicationSha256: string;
 }
 export interface CommentUpdatesRow extends CommentUpdate {
     insertedAt: number;

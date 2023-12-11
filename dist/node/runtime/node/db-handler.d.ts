@@ -53,6 +53,7 @@ export declare class DbHandler {
     queryAllStoredCommentUpdates(trx?: Transaction): Promise<CommentUpdatesRow[]>;
     queryCommentUpdatesWithPlaceHolderForIpfsPath(trx?: Transaction): Promise<CommentUpdatesRow[]>;
     queryCommentUpdatesOfPostsForBucketAdjustment(trx?: Transaction): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]>;
+    deleteAllCommentUpdateRows(trx?: Transaction): Promise<number>;
     queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]>;
     queryCommentsOfAuthor(authorAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
