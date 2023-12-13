@@ -117,21 +117,40 @@ describe("subplebbit.update (remote)", async () => {
 
     //prettier-ignore
     if (!isRpcFlagOn())
-    it(`subplebbit.update emits error if signature of subplebbit is invalid`, async () => {
+    it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs P2P)`, async () => {
         const remotePlebbit = await mockRemotePlebbit();
         const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
         const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address))._rawSubplebbitType;
         rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
-        tempSubplebbit._clientsManager.fetchSubplebbit = () => rawSubplebbitJson;
+        tempSubplebbit._clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
         tempSubplebbit.update();
         await new Promise(resolve => {
             tempSubplebbit.once("error", err =>{
-                expect(err.code).to.equal("ERR_SIGNATURE_IS_INVALID");
+                expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
                 resolve();
             })
         });
         await tempSubplebbit.stop();
     });
+
+     //prettier-ignore
+     if (!isRpcFlagOn())
+     it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs gateway)`, async () => {
+         const remoteGatewayPlebbit = await mockGatewayPlebbit();
+         const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
+         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address))._rawSubplebbitType;
+         rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
+         tempSubplebbit._clientsManager._fetchWithGateway = async () => JSON.stringify(rawSubplebbitJson);
+         tempSubplebbit.update();
+         await new Promise(resolve => {
+             tempSubplebbit.once("error", err =>{
+                 expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                 resolve();
+             })
+         });
+         await tempSubplebbit.stop();
+     });
+
     it(`subplebbit.update emits error if address of ENS and has no subplebbit-address`, async () => {
         const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
         sub.update();
