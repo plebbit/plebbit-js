@@ -234,20 +234,21 @@ export class BaseClientsManager {
         }
     }
 
+    protected _firstResolve(promises: Promise<string | { error: PlebbitError }>[]) {
+        if (promises.length === 0) throw Error("No promises to find the first resolve");
+        return new Promise<{ res: string; i: number }>((resolve) =>
+            promises.forEach((promise, i) =>
+                promise.then((res) => {
+                    if (typeof res === "string") resolve({ res, i });
+                })
+            )
+        );
+    }
+
     async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
         assert(loadOpts.cid || loadOpts.ipns);
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
-
-        const _firstResolve = (promises: Promise<string | { error: PlebbitError }>[]) => {
-            return new Promise<string>((resolve) =>
-                promises.forEach((promise) =>
-                    promise.then((res) => {
-                        if (typeof res === "string") resolve(res);
-                    })
-                )
-            );
-        };
 
         const type = loadOpts.cid ? "cid" : "ipns";
 
@@ -266,12 +267,8 @@ export class BaseClientsManager {
             queueLimit(() => this._fetchWithGateway(gateway, path, loadType, controllers[i]))
         );
 
-        const res = await Promise.race([_firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
-        if (typeof res === "string") {
-            queueLimit.clearQueue();
-            controllers.forEach((control) => control.abort());
-            return res;
-        } else {
+        const res = await Promise.race([this._firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
+        if (Array.isArray(res)) {
             const gatewayToError: Record<string, PlebbitError> = {};
             for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
 
@@ -279,6 +276,10 @@ export class BaseClientsManager {
             const combinedError = new PlebbitError(errorCode, { loadOpts, gatewayToError });
 
             throw combinedError;
+        } else {
+            queueLimit.clearQueue();
+            controllers.forEach((control) => control.abort());
+            return res.res;
         }
     }
 

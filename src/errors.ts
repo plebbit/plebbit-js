@@ -51,6 +51,7 @@ export enum messages {
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
     ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID = "CommentIpfs signature is invalid",
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
+    ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Subplebbit signature is invalid",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

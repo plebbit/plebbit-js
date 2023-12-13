@@ -569,21 +569,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
 
             if ((this.updatedAt || 0) < this._rawSubplebbitType.updatedAt) {
-                const updateValidity = await verifySubplebbit(
-                    this._rawSubplebbitType,
-                    this.plebbit.resolveAuthorAddresses,
-                    this._clientsManager,
-                    true
-                );
-                if (!updateValidity.valid) {
-                    this._setUpdatingState("failed");
-                    const error = new PlebbitError("ERR_SIGNATURE_IS_INVALID", {
-                        signatureValidity: updateValidity,
-                        subplebbitIpns: this._rawSubplebbitType
-                    });
-                    this.emit("error", error);
-                    return;
-                }
                 await this.initSubplebbit(this._rawSubplebbitType);
                 this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);

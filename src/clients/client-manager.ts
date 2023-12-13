@@ -1,7 +1,7 @@
 import Publication from "../publication";
 import { Plebbit } from "../plebbit";
 import { Comment } from "../comment";
-import { getPostUpdateTimestampRange, throwWithErrorCode } from "../util";
+import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util";
 import assert from "assert";
 import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types";
 import { Subplebbit } from "../subplebbit/subplebbit";
@@ -29,6 +29,7 @@ import {
 } from "./plebbit-rpc-state-client";
 import { SubplebbitIpfsType } from "../subplebbit/types";
 import Logger from "@plebbit/plebbit-logger";
+import pLimit from "p-limit";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -468,6 +469,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 }
 
+type SubplebbitGatewayFetch = { [gateway: string]: { abortController: AbortController; promise: Promise<any> } };
+
 export class SubplebbitClientsManager extends ClientsManager {
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
@@ -502,7 +505,23 @@ export class SubplebbitClientsManager extends ClientsManager {
             };
     }
 
+    private async _verifySignatureOfSubplebbit(subIpfs: SubplebbitIpfsType) {
+        const updateValidity = await verifySubplebbit(subIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        if (!updateValidity.valid) {
+            this._subplebbit._setUpdatingState("failed");
+            const error = new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
+                signatureValidity: updateValidity,
+                subplebbitIpns: subIpfs
+            });
+            this._subplebbit.emit("error", error);
+            return updateValidity;
+        }
+        return undefined; // no problem here
+    }
+
     async fetchSubplebbit(ipnsName: string) {
+        // This function should fetch SubplebbitIpfs, parse it and verify its signature
+        // Then return SubplebbitIpfs
         this._subplebbit._setUpdatingState("fetching-ipns");
         let subJson: SubplebbitIpfsType;
         if (this._defaultIpfsProviderUrl) {
@@ -512,14 +531,77 @@ export class SubplebbitClientsManager extends ClientsManager {
             this.updateIpfsState("fetching-ipfs");
             subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
             this.updateIpfsState("stopped");
+            const subRecordInvalidity = await this._verifySignatureOfSubplebbit(subJson);
+            if (subRecordInvalidity)
+                throw new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
+                    signatureValidity: subRecordInvalidity,
+                    subplebbitIpns: subJson
+                });
         } else {
             // States of gateways should be updated by fetchFromMultipleGateways
-            subJson = JSON.parse(await this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit"));
+            subJson = await this.fetchSubplebbitFromGateways(ipnsName);
         }
 
         subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
 
         return subJson;
+    }
+
+    async fetchSubplebbitFromGateways(ipnsName: string) {
+        const concurrencyLimit = 3;
+
+        const path = `/ipns/${ipnsName}`;
+
+        const queueLimit = pLimit(concurrencyLimit);
+
+        // Only sort if we have more than 3 gateways
+        const gatewaysSorted =
+            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
+                ? Object.keys(this._plebbit.clients.ipfsGateways)
+                : await this._plebbit.stats.sortGatewaysAccordingToScore("ipns");
+
+        const gatewayFetches: SubplebbitGatewayFetch = {};
+        for (const gateway of gatewaysSorted) {
+            const abortController = new AbortController();
+            gatewayFetches[gateway] = {
+                abortController,
+                promise: queueLimit(() => this._fetchWithGateway(gateway, path, "subplebbit", abortController))
+            };
+        }
+
+        const promisesToIterate = Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise);
+
+        // We need to get the first resolved subplebbit, and if its updatedAt is less or equal to 1.5min
+        // If yes, then we return it, else we look for another
+
+        let latestResolve: { res: string; i: number };
+        const fetchedSubplebbits: SubplebbitIpfsType[] = [];
+        while ((latestResolve = await this._firstResolve(promisesToIterate))) {
+            const subRecord: SubplebbitIpfsType = JSON.parse(latestResolve.res);
+            const subRecordInvaliditiy = await this._verifySignatureOfSubplebbit(subRecord);
+            if (subRecordInvaliditiy) {
+                // TODO add a punishment for returning invalid record
+                promisesToIterate.splice(latestResolve.i, 1);
+                continue;
+            }
+            if (timestamp() - subRecord.updatedAt <= 90) return subRecord;
+            fetchedSubplebbits.push(subRecord);
+
+            if (promisesToIterate.length === 1) break;
+            promisesToIterate.splice(latestResolve.i, 1); // remove this promise because it gave us an outdated record
+        }
+
+        if (fetchedSubplebbits.length > 0) return lodash.maxBy(fetchedSubplebbits, (sub) => sub.updatedAt);
+        else {
+            const res = await Promise.allSettled(Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise));
+            const gatewayToError: Record<string, PlebbitError> = {};
+            for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
+
+            const errorCode = Object.values(gatewayToError)[0].code;
+            const combinedError = new PlebbitError(errorCode, { ipnsName, gatewayToError });
+
+            throw combinedError;
+        }
     }
 
     updateIpfsState(newState: SubplebbitIpfsClient["state"]) {
