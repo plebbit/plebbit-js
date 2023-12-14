@@ -610,12 +610,8 @@ export class SubplebbitClientsManager extends ClientsManager {
                 }
             }
             // We weren't able to find a very recent subplebbit record
-            if (gatewaysWithError.length === totalGateways) {
-                // All gateways failed to fetch
-                log.error(`All gateways failed to fetch subplebbit record ` + ipnsName);
-                throw Error("All gateways failed to fetch subplebbit record " + ipnsName);
-            }
-            else if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
+            if (gatewaysWithSub.length === 0) return undefined;
+            if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
                 // we find the gateway with the max updatedAt
                 const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
                 return gatewayFetches[bestGatewayUrl].subplebbitRecord;
@@ -628,7 +624,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
         let suitableSubplebbit: SubplebbitIpfsType;
         try {
-            suitableSubplebbit = await new Promise<SubplebbitIpfsType>((resolve) =>
+            suitableSubplebbit = await new Promise<SubplebbitIpfsType>((resolve, reject) =>
                 promisesToIterate.map((gatewayPromise, i) =>
                     gatewayPromise.then(async (res) => {
                         if (typeof res === "string")
@@ -645,6 +641,10 @@ export class SubplebbitClientsManager extends ClientsManager {
                             cleanUp();
                             resolve(recentSubplebbit);
                         }
+                        const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+                        if (gatewaysWithError.length === gatewaysSorted.length)
+                            // All gateways failed
+                            reject("All gateways failed to fetch subplebbit record " + ipnsName);
                     })
                 )
             );
