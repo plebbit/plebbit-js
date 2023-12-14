@@ -304,6 +304,10 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
+export async function mockMultipleGatewaysPlebbit(plebbitOptions?: PlebbitOptions) {
+    return mockGatewayPlebbit({ipfsGatewayUrls: [], ...plebbitOptions});
+}
+
 export async function publishRandomReply(
     parentComment: Comment,
     plebbit: Plebbit,

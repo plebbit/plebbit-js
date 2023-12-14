@@ -205,7 +205,7 @@ export class BaseClientsManager {
         path: string,
         loadType: LoadType,
         abortController: AbortController
-    ): Promise<string | { error: PlebbitError }> {
+    ): Promise<string | undefined | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 

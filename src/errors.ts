@@ -22,6 +22,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
     ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
+    ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS = "Failed to fetch Subplebbit IPNS record from gateway(s)",
     ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS = "Failed to resolve IPNS through IPFS P2P",
     ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
