@@ -972,7 +972,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this._clientsManager.updatePubsubState("publishing-challenge", undefined);
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
-        log(
+        log.trace(
             `(${request.challengeRequestId.toString()}): `,
             `Published ${challengeMessage.type} over pubsub: `,
             removeNullAndUndefinedValuesRecursively(lodash.omit(toSignChallenge, ["encrypted"]))

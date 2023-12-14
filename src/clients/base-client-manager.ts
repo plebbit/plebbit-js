@@ -147,6 +147,7 @@ export class BaseClientsManager {
 
     // Gateway methods
 
+    // TODO should combine requests under different urls
     private async _fetchWithLimit(url: string, options?): Promise<string> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;

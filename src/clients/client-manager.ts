@@ -604,12 +604,15 @@ export class SubplebbitClientsManager extends ClientsManager {
         const _findRecentSubplebbit = () => {
             // Try to find a very recent subplebbit
             // If not then go with the most recent subplebbit record after fetching from 3 gateways
+            const gatewaysWithSub = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord);
+            if (gatewaysWithSub.length === 0) return undefined;
+
             const totalGateways = gatewaysSorted.length;
 
             const quorm = totalGateways <= 3 ? totalGateways : 3;
 
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
-            const gatewaysWithSub = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord);
+
             for (const gatewayUrl of gatewaysWithSub) {
                 if (timestamp() - gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt <= 120) {
                     // A very recent subplebbit, a good thing
@@ -619,7 +622,6 @@ export class SubplebbitClientsManager extends ClientsManager {
                 }
             }
             // We weren't able to find a very recent subplebbit record
-            if (gatewaysWithSub.length === 0) return undefined;
             if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
                 // we find the gateway with the max updatedAt
                 const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
@@ -644,16 +646,16 @@ export class SubplebbitClientsManager extends ClientsManager {
                             Object.values(gatewayFetches)[i].error = res
                                 ? res.error
                                 : new Error("Fetching from gateway has been aborted/timed out");
+                            const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+                            if (gatewaysWithError.length === gatewaysSorted.length)
+                                // All gateways failed
+                                reject("All gateways failed to fetch subplebbit record " + ipnsName);
                         }
                         const recentSubplebbit = _findRecentSubplebbit();
                         if (recentSubplebbit) {
                             cleanUp();
                             resolve(recentSubplebbit);
                         }
-                        const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
-                        if (gatewaysWithError.length === gatewaysSorted.length)
-                            // All gateways failed
-                            reject("All gateways failed to fetch subplebbit record " + ipnsName);
                     })
                 )
             );
@@ -667,6 +669,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             throw combinedError;
         }
 
+        // TODO add punishment for gateway that returns old ipns record
         // TODO add punishment for gateway that returns invalid subplebbit
         return suitableSubplebbit;
     }
