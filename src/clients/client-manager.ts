@@ -514,6 +514,15 @@ export class SubplebbitClientsManager extends ClientsManager {
     }
 
     private async _verifySignatureOfSubplebbit(subIpfs: SubplebbitIpfsType) {
+        if (this._subplebbit.address !== subIpfs.address) {
+            const error = new PlebbitError("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT", {
+                actualAddress: this._subplebbit.address,
+                addressFromGateway: subIpfs.address,
+                subplebbitIpnsFromGateway: subIpfs
+            });
+            this._subplebbit.emit("error", error);
+            return error;
+        }
         const updateValidity = await verifySubplebbit(subIpfs, this._plebbit.resolveAuthorAddresses, this, true);
         if (!updateValidity.valid) {
             this._subplebbit._setUpdatingState("failed");
