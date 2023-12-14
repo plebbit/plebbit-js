@@ -1,6 +1,6 @@
 // use this file to launch an ipfs node and some subplebbits
 // that can be used during node and browser tests
-const getIpfsPath = require("go-ipfs").path;
+const getIpfsPath = require("kubo").path;
 const { execSync, exec } = require("child_process");
 const { startSubplebbits, mockRpcServerPlebbit } = require("../../dist/node/test/test-util");
 const signers = require("../fixtures/signers");
