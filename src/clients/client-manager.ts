@@ -513,36 +513,30 @@ export class SubplebbitClientsManager extends ClientsManager {
             };
     }
 
-    private async _verifySignatureOfSubplebbit(subIpfs: SubplebbitIpfsType) {
-        if (this._subplebbit.address !== subIpfs.address) {
+    private async _throwIfSignatureOfSubplebbitIsInvalid(subJson: SubplebbitIpfsType, ipnsNameOfSub: string) {
+        if (subJson.address !== this._subplebbit.address) {
+            // Did the gateway supply us with a different subplebbit's ipns
+
             const error = new PlebbitError("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT", {
-                actualAddress: this._subplebbit.address,
-                addressFromGateway: subIpfs.address,
-                subplebbitIpnsFromGateway: subIpfs
+                addressFromSubplebbitInstance: this._subplebbit.address,
+                ipnsName: ipnsNameOfSub,
+                addressFromGateway: subJson.address,
+                subplebbitIpnsFromGateway: subJson
             });
             this._subplebbit.emit("error", error);
-            return error;
+            throw error;
         }
-        const updateValidity = await verifySubplebbit(subIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        const updateValidity = await verifySubplebbit(subJson, this._plebbit.resolveAuthorAddresses, this, true);
         if (!updateValidity.valid) {
             this._subplebbit._setUpdatingState("failed");
             const error = new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
                 signatureValidity: updateValidity,
-                subplebbitIpns: subIpfs
-            });
-            this._subplebbit.emit("error", error);
-            return updateValidity;
-        }
-        return undefined; // no problem here
-    }
-
-    private async _throwIfSignatureOfSubplebbitIsInvalid(subJson: SubplebbitIpfsType) {
-        const subRecordInvalidity = await this._verifySignatureOfSubplebbit(subJson);
-        if (subRecordInvalidity)
-            throw new PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
-                signatureValidity: subRecordInvalidity,
+                actualIpnsName: ipnsNameOfSub,
                 subplebbitIpns: subJson
             });
+            this._subplebbit.emit("error", error);
+            throw error;
+        }
     }
 
     async fetchSubplebbit(ipnsName: string) {
@@ -557,11 +551,11 @@ export class SubplebbitClientsManager extends ClientsManager {
             this.updateIpfsState("fetching-ipfs");
             subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
             this.updateIpfsState("stopped");
-        } else {
-            // States of gateways should be updated by fetchFromMultipleGateways
-            subJson = await this.fetchSubplebbitFromGateways(ipnsName);
         }
-        await this._throwIfSignatureOfSubplebbitIsInvalid(subJson);
+        // States of gateways should be updated by fetchFromMultipleGateways
+        else subJson = await this.fetchSubplebbitFromGateways(ipnsName);
+
+        await this._throwIfSignatureOfSubplebbitIsInvalid(subJson, ipnsName);
 
         subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
 
