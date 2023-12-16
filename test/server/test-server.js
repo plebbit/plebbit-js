@@ -2,7 +2,8 @@
 // that can be used during node and browser tests
 const getIpfsPath = require("kubo").path;
 const { execSync, exec } = require("child_process");
-const { startSubplebbits, mockRpcServerPlebbit } = require("../../dist/node/test/test-util");
+const { startSubplebbits, mockRpcServerPlebbit, mockPlebbit } = require("../../dist/node/test/test-util");
+const { signSubplebbit } = require("../../dist/node/signer/signatures");
 const signers = require("../fixtures/signers");
 const http = require("http");
 
@@ -110,24 +111,7 @@ const startIpfsNodes = async () => {
     );
 };
 
-(async () => {
-    // do more stuff here, like start some subplebbits
-
-    const dirsToDelete = [
-        ".plebbit",
-        ".plebbit2",
-        ".plebbit-rpc-server",
-        ".test-ipfs-offline",
-        ".test-ipfs-offline2",
-        ".test-ipfs-online",
-        ".test-ipfs-pubsub",
-        ".test-ipfs-pubsub2"
-    ];
-
-    await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
-
-    await startIpfsNodes();
-
+const setUpMockGateways = async () => {
     // Create a server that mocks an ipfs gateway
     // Will return valid content for one cid and invalid content for another
     // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
@@ -154,6 +138,77 @@ const startIpfsNodes = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end("Yes");
     }).listen(33417);
+
+    // Set up mock gateways for subplebbit gateway fetching tests
+    const plebbit = await mockPlebbit();
+    const fetchLatestSubplebbitJson = async () => {
+        const subRecord = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        return subRecord;
+    };
+
+    // This gateaway will wait for 11s then respond
+    http.createServer(async (req, res) => {
+        await new Promise((resolve) => setTimeout(resolve, 11000));
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+    }).listen(44000);
+
+    // This gateway will fetch from normal gateway, await some time (3s) than respond
+    http.createServer(async (req, res) => {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
+    }).listen(44002);
+
+    // this gateway will respond with an error immedietly
+    http.createServer((req, res) => {
+        res.statusCode = 430;
+        res.statusMessage = "Error";
+        res.end();
+    }).listen(44003);
+
+    // This gateway will respond immedietly with subplebbit IPNS record that is 30 minutes old
+    http.createServer(async (req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
+        subplebbitRecordThirtyMinuteOld.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
+
+        res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
+    }).listen(44004);
+
+    // This gateway will respond immedietly with subplebbit IPNS record that is 60 minutes old
+    http.createServer(async (req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
+        subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+
+        res.end(JSON.stringify(subplebbitRecordHourOld));
+    }).listen(44005);
+};
+
+(async () => {
+    // do more stuff here, like start some subplebbits
+
+    const dirsToDelete = [
+        ".plebbit",
+        ".plebbit2",
+        ".plebbit-rpc-server",
+        ".test-ipfs-offline",
+        ".test-ipfs-offline2",
+        ".test-ipfs-online",
+        ".test-ipfs-pubsub",
+        ".test-ipfs-pubsub2"
+    ];
+
+    await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
+
+    await startIpfsNodes();
+
+    await setUpMockGateways();
 
     require("./pubsub-mock-server");
 

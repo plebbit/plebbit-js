@@ -5,7 +5,6 @@ const { messages } = require("../../dist/node/errors");
 const { mockPlebbit, publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
-
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
 chai.use(chaiAsPromised);
@@ -133,8 +132,8 @@ describe("subplebbit.update (remote)", async () => {
         await tempSubplebbit.stop();
     });
 
-     //prettier-ignore
-     if (!isRpcFlagOn())
+    //prettier-ignore
+    if (!isRpcFlagOn())
      it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs gateway)`, async () => {
          const remoteGatewayPlebbit = await mockGatewayPlebbit();
          const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
@@ -220,29 +219,39 @@ describe("subplebbit.update (remote)", async () => {
 });
 
 describe("plebbit.getSubplebbit (Remote)", async () => {
-    let plebbit;
+    let plebbit, gatewayPlebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
+        gatewayPlebbit = await mockGatewayPlebbit();
     });
-    it("Can load subplebbit via IPNS address", async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
-        const _subplebbitIpns = loadedSubplebbit._rawSubplebbitType;
-        expect(_subplebbitIpns.lastPostCid).to.be.a.string;
-        expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
-        expect(_subplebbitIpns.address).to.be.a.string;
-        expect(_subplebbitIpns.statsCid).to.be.a.string;
-        expect(_subplebbitIpns.createdAt).to.be.a("number");
-        expect(_subplebbitIpns.updatedAt).to.be.a("number");
-        expect(_subplebbitIpns.encryption).to.be.a("object");
-        expect(_subplebbitIpns.roles).to.be.a("object");
-        expect(_subplebbitIpns.signature).to.be.a("object");
-        expect(_subplebbitIpns.posts).to.be.a("object");
-        // Remove undefined keys from json
-        expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
+    it("Can load subplebbit via IPNS address (ipfs P2P and gateway)", async () => {
+        const loadedSubplebbitP2p = await plebbit.getSubplebbit(subplebbitSigner.address);
+        const loadedSubplebbitGateway = await gatewayPlebbit.getSubplebbit(subplebbitSigner.address);
+        for (const loadedSubplebbit of [loadedSubplebbitP2p, loadedSubplebbitGateway]) {
+            const _subplebbitIpns = loadedSubplebbit._rawSubplebbitType;
+            expect(_subplebbitIpns.lastPostCid).to.be.a.string;
+            expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
+            expect(_subplebbitIpns.address).to.be.a.string;
+            expect(_subplebbitIpns.statsCid).to.be.a.string;
+            expect(_subplebbitIpns.createdAt).to.be.a("number");
+            expect(_subplebbitIpns.updatedAt).to.be.a("number");
+            expect(_subplebbitIpns.encryption).to.be.a("object");
+            expect(_subplebbitIpns.roles).to.be.a("object");
+            expect(_subplebbitIpns.signature).to.be.a("object");
+            expect(_subplebbitIpns.posts).to.be.a("object");
+            // Remove undefined keys from json
+            expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
+        }
     });
 
-    it("can load subplebbit with ENS domain via plebbit.getSubplebbit", async () => {
+    it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs P2P)", async () => {
         const subplebbit = await plebbit.getSubplebbit(ensSubplebbitAddress);
+        expect(subplebbit.address).to.equal(ensSubplebbitAddress);
+        expect(subplebbit.updatedAt).to.be.a("number");
+    });
+
+    it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
+        const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
         expect(subplebbit.address).to.equal(ensSubplebbitAddress);
         expect(subplebbit.updatedAt).to.be.a("number");
     });
@@ -259,6 +268,98 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
         };
         await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
         expect(updatedHasBeenCalled).to.be.false;
+    });
+});
+
+describe(`Test fetching subplebbit record from multiple gateways`, async () => {
+    // these test gateways will be set in test-server.js
+    const stallingGateway = "http://localhost:44000"; // This gateaway will wait for 11s then respond
+    const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record
+    const errorGateway = `http://localhost:33416`; // this gateway will respond with an error immedietly
+    const normalWithStallingGateway = `http://localhost:44002`; // This gateway will fetch from normal gateway, await some time (less than 10s) than respond
+    const errorGateway2 = `http://localhost:44003`; // this gateway will respond with an error immedietly
+
+    // These two gateways will respond with old record
+    const thirtyMinuteLateGateway = `http://localhost:44004`; // This gateway will respond immedietly with subplebbitRecordThirtyMinuteOld
+    const hourLateGateway = `http://localhost:44005`; // This gateway will respond immedietly with subplebbitRecordHourOld;
+
+    const subAddress = signers[0].address;
+    let plebbit;
+
+    const fetchLatestSubplebbitJson = async () => {
+        const subRecord = (await plebbit.getSubplebbit(subAddress)).toJSONIpfs();
+        return subRecord;
+    };
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    it(`Updating a subplebbit through a single gateway that is not responding (timeout)`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [stallingGateway] });
+        try {
+            await customPlebbit.getSubplebbit(subAddress);
+            assert.fails("Should not fulfill");
+        } catch (e) {
+            expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
+            expect(e.details.gatewayToError[stallingGateway].message).to.equal("Fetching from gateway has been aborted/timed out");
+        }
+    });
+    it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, stallingGateway] });
+        // should succeed and return the result from normalGateway
+        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+        expect(sub.updatedAt).to.be.a("number");
+    });
+    it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, errorGateway] });
+        // should succeed and return the result from normalGateway
+        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+        expect(sub.updatedAt).to.be.a("number");
+    });
+
+    it(`all gateways are throwing an error`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] });
+        // should faill
+        await assert.isRejected(customPlebbit.getSubplebbit(subAddress), messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
+    });
+
+    it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 2 min`, async () => {
+        await publishRandomPost(subAddress, plebbit, {}, true); // Force sub to publish a new update
+        // normalWithStallingGateway gateway will return the latest SubplebbitIpfs
+
+        // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
+        // gateway that respondes after taking sometime with updatedAt < 2 min => normalWithStallingGateway
+        // Should go with maximum updatedAt
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, thirtyMinuteLateGateway] });
+
+        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+    });
+
+    it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 2 min`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [thirtyMinuteLateGateway, hourLateGateway] });
+        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+
+        // should go with the thirty minute old, not the one hour old
+        const timestampThirtyMinuteAgo = Math.round(Date.now() / 1000) - 30 * 60;
+        const bufferSeconds = 2;
+
+        expect(sub.updatedAt)
+            .to.greaterThanOrEqual(timestampThirtyMinuteAgo - bufferSeconds)
+            .lessThanOrEqual(timestampThirtyMinuteAgo + bufferSeconds);
+    });
+    it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
+        await publishRandomPost(subplebbitAddress, plebbit, {}, true); // should publish a new record after
+        const customPlebbit = await mockGatewayPlebbit({
+            ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
+        });
+        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
     });
 });
 
