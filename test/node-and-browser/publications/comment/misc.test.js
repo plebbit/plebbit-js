@@ -547,7 +547,7 @@ describe("comment.updatingState", async () => {
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
 
-        expect(recordedStates.slice(recordedStates.length - 5)).to.deep.equal(expectedStates);
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 

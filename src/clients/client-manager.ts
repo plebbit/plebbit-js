@@ -218,14 +218,13 @@ export class ClientsManager extends BaseClientsManager {
         // This function should fetch SubplebbitIpfs, parse it and verify its signature
         // Then return SubplebbitIpfs
         this.preResolveSubplebbitIpns(ipnsName);
-        // this._subplebbit._setUpdatingState("fetching-ipns"); // should be moved to the above function
         let subJson: SubplebbitIpfsType;
         if (this._defaultIpfsProviderUrl) {
             this.preResolveSubplebbitIpnsP2P(ipnsName);
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
             subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
-            this.updateIpfsState("stopped");
+            this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
         }
         // States of gateways should be updated by fetchFromMultipleGateways
         else subJson = await this._fetchSubplebbitFromGateways(ipnsName);
@@ -233,7 +232,7 @@ export class ClientsManager extends BaseClientsManager {
         const subError = await this._findErrorInSubplebbitRecord(subJson, ipnsName);
         if (subError) this.postFetchSubplebbitInvalidRecord(subJson, subError);
 
-        this.postFetchSubplebbitJson(subJson); // We successfully fetched the json
+        this.postFetchSubplebbitJsonSuccess(subJson); // We successfully fetched the json
 
         subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
 
@@ -374,7 +373,11 @@ export class ClientsManager extends BaseClientsManager {
         throw Error("Should be implemented");
     }
 
-    protected postFetchSubplebbitJson(subJson: SubplebbitIpfsType) {
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
+        throw Error("Should be implemented");
+    }
+
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {
         throw Error("Should be implemented");
     }
 }
@@ -484,7 +487,11 @@ export class PublicationClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-subplebbit-ipfs");
     }
 
-    protected postFetchSubplebbitJson(subJson: SubplebbitIpfsType) {}
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
+        this.updateIpfsState("stopped");
+    }
+
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {}
 }
 
 export class CommentClientsManager extends PublicationClientsManager {
@@ -650,7 +657,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     protected _isPublishing() {
-        return this._comment.publishingState !== "stopped" && this._comment.publishingState !== "failed";
+        return this._comment.state === "publishing";
     }
 
     protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void {
@@ -695,16 +702,19 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     protected preResolveSubplebbitIpnsP2P(subIpnsName: string) {
-        if (this._isPublishing()) this.updateIpfsState("fetching-subplebbit-ipns");
-        else this.updateIpfsState("fetching-update-ipns");
+        this.updateIpfsState("fetching-subplebbit-ipns");
     }
 
     protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string) {
-        if (this._isPublishing()) this.updateIpfsState("fetching-subplebbit-ipfs");
-        else this.updateIpfsState("fetching-update-ipfs");
+        this.updateIpfsState("fetching-subplebbit-ipfs");
+        if (!this._isPublishing()) this._comment._setUpdatingState("fetching-subplebbit-ipfs");
     }
 
-    protected postFetchSubplebbitJson(subJson: SubplebbitIpfsType) {}
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
+        if (this._isPublishing()) this.updateIpfsState("stopped");
+    }
+
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {}
 }
 
 type SubplebbitGatewayFetch = {
@@ -817,5 +827,8 @@ export class SubplebbitClientsManager extends ClientsManager {
         this.updateIpfsState("fetching-ipfs");
     }
 
-    protected postFetchSubplebbitJson(subJson: SubplebbitIpfsType) {}
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
+        this.updateIpfsState("stopped");
+    }
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {}
 }
