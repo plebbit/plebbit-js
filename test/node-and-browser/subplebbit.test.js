@@ -105,12 +105,14 @@ describe("subplebbit.update (remote)", async () => {
         await subplebbit.stop();
     });
 
-    it(`subplebbit.update() loads the correct subplebbit IPNS record with its ipns address even if its address is ENS`, async () => {
+    it(`subplebbit.update() emits error if user supplied {address: ipnsName} if the actual address was ENS`, async () => {
         const loadedSubplebbit = await plebbit.createSubplebbit({ address: ensSubplebbitSigner.address });
         loadedSubplebbit.update();
-        await new Promise((resolve) => loadedSubplebbit.once("update", resolve));
-        expect(loadedSubplebbit.address).to.equal("plebbit.eth");
-        expect(loadedSubplebbit.updatedAt).to.be.a("number");
+        const error = await new Promise((resolve) => loadedSubplebbit.once("error", resolve));
+        expect(error.code).to.equal("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT");
+        // should not update
+        expect(loadedSubplebbit.updatedAt).to.be.undefined;
+        expect(loadedSubplebbit.address).to.equal(ensSubplebbitSigner.address);
         await loadedSubplebbit.stop();
     });
 
