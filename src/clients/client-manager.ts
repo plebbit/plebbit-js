@@ -434,6 +434,7 @@ export class PublicationClientsManager extends ClientsManager {
         chainProviderUrl: string
     ): void {
         // TODO should check for regex of ipns eventually
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         if (!resolvedTextRecord) {
             this._publication._updatePublishingState("failed");
             const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
@@ -672,6 +673,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         chain: string,
         chainProviderUrl: string
     ): void {
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord) {
             // need to check if publishing or updating
@@ -786,6 +788,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         chain: string,
         chainProviderUrl: string
     ): void {
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord) {
             this._subplebbit._setUpdatingState("failed");
