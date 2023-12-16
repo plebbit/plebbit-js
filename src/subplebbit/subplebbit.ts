@@ -546,27 +546,9 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 subplebbitForPublishingCache.set(subState.address, lodash.pick(subState, ["encryption", "address", "pubsubTopic"]));
             }
         } else {
-            let ipnsAddress: string;
-            if (this.address.includes(".")) {
-                // It's a domain
-                this._setUpdatingState("resolving-address");
-                ipnsAddress = await this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
-                // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
-                if (!ipnsAddress) {
-                    this._setUpdatingState("failed");
-                    const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
-                        subplebbitAddress: this.address,
-                        textRecord: "subplebbit-address"
-                    });
-                    log.error(String(error));
-                    this.emit("error", error);
-                    return;
-                }
-            } else ipnsAddress = this.address;
-
             this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
-            this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, ipnsAddress);
+            this._rawSubplebbitType = await this._retryLoadingSubplebbitIpns(log, this.address);
 
             if ((this.updatedAt || 0) < this._rawSubplebbitType.updatedAt) {
                 await this.initSubplebbit(this._rawSubplebbitType);

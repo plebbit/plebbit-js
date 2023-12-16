@@ -514,8 +514,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         const options = { acceptedChallengeTypes: [] };
         try {
-            this.subplebbit =
-                this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress));
+            this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbit(this.subplebbitAddress));
         } catch (e) {
             this._updateState("stopped");
             this._updatePublishingState("failed");
