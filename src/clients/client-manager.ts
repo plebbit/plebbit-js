@@ -391,7 +391,6 @@ export class PublicationClientsManager extends ClientsManager {
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
     _publication: Publication;
-    _attemptingToResolve: boolean;
 
     constructor(publication: Publication) {
         super(publication._plebbit);
@@ -425,7 +424,8 @@ export class PublicationClientsManager extends ClientsManager {
         chain: string
     ): void {
         super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
-        if (this._publication.publishingState === "stopped" && this._attemptingToResolve)
+        const isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
+        if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish)
             this._publication._updatePublishingState("resolving-subplebbit-address");
     }
 
@@ -485,6 +485,7 @@ export class PublicationClientsManager extends ClientsManager {
 
     protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string) {
         this.updateIpfsState("fetching-subplebbit-ipfs");
+        this._publication._updatePublishingState("fetching-subplebbit-ipfs");
     }
 
     protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
@@ -528,9 +529,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         chain: string
     ): void {
         super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
-        if (txtRecordName === "subplebbit-address")
-            this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for CommentUpdate
-        else if (txtRecordName === "plebbit-author-address") this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
+        if (this._comment.state === "updating") {
+            if (txtRecordName === "subplebbit-address")
+                this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for Subplebbit
+            else if (txtRecordName === "plebbit-author-address") this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
+        }
     }
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string) {
@@ -707,7 +710,8 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string) {
         this.updateIpfsState("fetching-subplebbit-ipfs");
-        if (!this._isPublishing()) this._comment._setUpdatingState("fetching-subplebbit-ipfs");
+        if (this._isPublishing()) this._comment._updatePublishingState("fetching-subplebbit-ipfs");
+        else this._comment._setUpdatingState("fetching-subplebbit-ipfs");
     }
 
     protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
