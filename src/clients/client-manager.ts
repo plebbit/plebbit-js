@@ -239,10 +239,14 @@ export class ClientsManager extends BaseClientsManager {
         return subJson;
     }
 
+    private _getTimeoutMsForGatewaySubplebbit() {
+        return 5 * 60 * 1000; // 5 mins
+    }
+
     private async _fetchSubplebbitFromGateways(ipnsName: string) {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
-        const timeoutMs = 10 * 1000; // 5s to timeout a gateway
+        const timeoutMs = this._plebbit._clientsManager._getTimeoutMsForGatewaySubplebbit();
 
         const path = `/ipns/${ipnsName}`;
 
