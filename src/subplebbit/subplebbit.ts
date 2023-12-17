@@ -552,17 +552,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             if ((this.updatedAt || 0) < this._rawSubplebbitType.updatedAt) {
                 await this.initSubplebbit(this._rawSubplebbitType);
-                this._setUpdatingState("succeeded");
                 log(`Remote Subplebbit received a new update. Will emit an update event`);
                 this.emit("update", this);
                 subplebbitForPublishingCache.set(
                     this._rawSubplebbitType.address,
                     lodash.pick(this._rawSubplebbitType, ["encryption", "address", "pubsubTopic"])
                 );
-            } else {
-                log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
-                this._setUpdatingState("succeeded");
-            }
+            } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
         }
     }
 

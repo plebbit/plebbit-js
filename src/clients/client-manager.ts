@@ -230,7 +230,10 @@ export class ClientsManager extends BaseClientsManager {
         else subJson = await this._fetchSubplebbitFromGateways(ipnsName);
 
         const subError = await this._findErrorInSubplebbitRecord(subJson, ipnsName);
-        if (subError) this.postFetchSubplebbitInvalidRecord(subJson, subError);
+        if (subError) {
+            this.postFetchSubplebbitInvalidRecord(subJson, subError); // should throw here
+            throw subError; // in case we forgot to throw at postFetchSubplebbitInvalidRecord
+        }
 
         this.postFetchSubplebbitJsonSuccess(subJson); // We successfully fetched the json
 
@@ -351,10 +354,6 @@ export class ClientsManager extends BaseClientsManager {
 
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns" {
         return "fetching-subplebbit-ipns";
-    }
-
-    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs" {
-        return "fetching-subplebbit-ipfs";
     }
 
     protected _getSubplebbitAddressFromInstance(): string {
@@ -788,14 +787,25 @@ export class SubplebbitClientsManager extends ClientsManager {
         return "fetching-ipns";
     }
 
-    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs" {
-        return "fetching-ipfs";
-    }
-
     protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void {
         this._subplebbit._setUpdatingState("failed");
         this._subplebbit.emit("error", subError);
         throw subError;
+    }
+
+    preResolveTextRecord(
+        address: string,
+        txtRecordName: "subplebbit-address" | "plebbit-author-address",
+        chain: string,
+        chainProviderUrl: string
+    ): void {
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
+        if (
+            this._subplebbit.state === "updating" &&
+            txtRecordName === "subplebbit-address" &&
+            this._subplebbit.updatingState !== "fetching-ipfs" // we don't state to be resolving-address when verifying signature
+        )
+            this._subplebbit._setUpdatingState("resolving-address");
     }
 
     postResolveTextRecordSuccess(
@@ -838,5 +848,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
         this.updateIpfsState("stopped");
     }
-    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {}
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType) {
+        this._subplebbit._setUpdatingState("succeeded");
+    }
 }

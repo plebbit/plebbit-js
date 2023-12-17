@@ -343,6 +343,7 @@ export class BaseClientsManager {
             return fileContent;
         };
 
+        // TODO the caching of subplebbit ipns should extend to its signature, it's a waste of processing power to verify a subplebbit multiple times
         try {
             if (p2pCidPromiseCache.has(cid)) return await p2pCidPromiseCache.get(cid);
             else {
