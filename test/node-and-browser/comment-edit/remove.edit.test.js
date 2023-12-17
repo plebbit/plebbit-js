@@ -3,12 +3,11 @@ const signers = require("../../fixtures/signers");
 const {
     publishRandomPost,
     publishRandomReply,
-    mockPlebbit,
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    loadAllPages,
-    findCommentInPage
+    findCommentInPage,
+    mockRemotePlebbit
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -25,7 +24,7 @@ const roles = [
 describe(`Removing post`, async () => {
     let plebbit, postToRemove, postReply;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         postToRemove = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         postReply = await publishRandomReply(postToRemove, plebbit, {}, false);
         await postToRemove.update();
@@ -51,20 +50,23 @@ describe(`Removing post`, async () => {
         expect(postToRemove.reason).to.equal("To remove a post");
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const isPostInPage = async () => {
-            const pageComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-            return pageComments.some((comment) => comment.cid === postToRemove.cid);
-        };
-        if (!(await isPostInPage())) return;
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        sub.update();
 
-        await sub.update();
         await new Promise((resolve) =>
             sub.on("update", async () => {
-                if (!(await isPostInPage())) resolve();
+                const removedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                if (!removedPostInPage) resolve();
             })
         );
-        sub.stop();
+
+        await sub.stop();
+
+        for (const pageCid of Object.values(sub.posts.pageCids)) {
+            const removedPostInPage = await findCommentInPage(postToRemove.cid, pageCid, sub.posts);
+
+            expect(removedPostInPage).to.be.undefined;
+        }
     });
 
     it(`Sub rejects votes on removed post`, async () => {
@@ -117,21 +119,22 @@ describe(`Removing post`, async () => {
     });
 
     it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        const isUnremovedInPage = async () => {
-            const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-            return newComments.some((comment) => comment.cid === postToRemove.cid);
-        };
-        await sub.update();
-        await waitUntil(isUnremovedInPage, { timeout: 200000 });
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const unremovedPostInPage = await findCommentInPage(postToRemove.cid, sub.posts.pageCids.new, sub.posts);
+                if (unremovedPostInPage) resolve();
+            })
+        );
         await sub.stop();
 
         for (const pageCid of Object.values(sub.posts.pageCids)) {
-            const pageComments = await loadAllPages(pageCid, sub.posts);
-            const postInPage = pageComments.find((comment) => comment.cid === postToRemove.cid);
-            expect(postInPage).to.exist;
-            expect(postInPage.removed).to.equal(false);
-            expect(postInPage.reason).to.equal("To unremove a post");
+            const unremovedPostInPage = await findCommentInPage(postToRemove.cid, pageCid, sub.posts);
+            expect(unremovedPostInPage).to.exist;
+            expect(unremovedPostInPage.removed).to.equal(false);
+            expect(unremovedPostInPage.reason).to.equal("To unremove a post");
         }
     });
 
@@ -152,7 +155,7 @@ describe(`Removing post`, async () => {
 describe(`Removing reply`, async () => {
     let plebbit, post, replyToBeRemoved, replyUnderRemovedReply;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         replyToBeRemoved = await publishRandomReply(post, plebbit, {}, false);
         replyUnderRemovedReply = await publishRandomReply(replyToBeRemoved, plebbit, {}, false);
@@ -182,19 +185,27 @@ describe(`Removing reply`, async () => {
         expect(replyToBeRemoved.reason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
-        const pageCid = () => post.replies?.pageCids?.topAll;
-        await waitUntil(
-            async () => pageCid() && (await findCommentInPage(replyToBeRemoved.cid, pageCid(), post.replies)).removed === true,
-            {
-                timeout: 200000
-            }
+        const recreatedPost = await plebbit.createComment({ cid: post.cid });
+
+        recreatedPost.update();
+
+        await new Promise((resolve) =>
+            recreatedPost.on("update", async () => {
+                const removedReply = await findCommentInPage(
+                    replyToBeRemoved.cid,
+                    recreatedPost.replies.pageCids.new,
+                    recreatedPost.replies
+                );
+                if (removedReply.removed === true) resolve();
+            })
         );
-        const repliesPages = await Promise.all(Object.values(post.replies.pageCids).map((cid) => loadAllPages(cid, post.replies)));
-        for (const comments of repliesPages) {
-            const commentInPage = comments.find((comment) => comment.cid === replyToBeRemoved.cid);
-            expect(commentInPage).to.exist;
-            expect(commentInPage.removed).to.be.true;
-            expect(commentInPage.reason).to.equal("To remove a reply");
+
+        await recreatedPost.stop();
+        for (const pageCid of Object.values(recreatedPost.replies.pageCids)) {
+            const removedReplyInPage = await findCommentInPage(replyToBeRemoved.cid, pageCid, recreatedPost.replies);
+            expect(removedReplyInPage).to.exist;
+            expect(removedReplyInPage.removed).to.be.true;
+            expect(removedReplyInPage.reason).to.equal("To remove a reply");
         }
     });
 

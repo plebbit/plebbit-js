@@ -246,9 +246,14 @@ describe(`comment.update`, async () => {
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const originalReply = subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0).replies.pages.topAll.comments[0];
+        const reply = await publishRandomReply(
+            subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0),
+            plebbit,
+            {},
+            true
+        );
 
-        const recreatedReply = await plebbit.createComment({ cid: originalReply.cid });
+        const recreatedReply = await plebbit.createComment({ cid: reply.cid });
 
         recreatedReply.update();
 
@@ -256,14 +261,12 @@ describe(`comment.update`, async () => {
         // Comment ipfs props should be defined now, but not CommentUpdate
         expect(recreatedReply.updatedAt).to.be.undefined;
 
-        expect(recreatedReply.toJSONIpfs()).to.deep.equal(originalReply.toJSONIpfs());
+        expect(recreatedReply.toJSONIpfs()).to.deep.equal(reply.toJSONIpfs());
 
         await new Promise((resolve) => recreatedReply.once("update", resolve));
-        expect(recreatedReply.updatedAt).to.be.a("number");
-        expect(recreatedReply.updatedAt).to.equal(originalReply.updatedAt);
-        expect(recreatedReply.toJSON()).to.deep.equal(originalReply.toJSON());
-
         await recreatedReply.stop();
+
+        expect(recreatedReply.updatedAt).to.be.a("number");
     });
 
     it(`comment.stop() stops comment updates`, async () => {

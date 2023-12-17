@@ -139,7 +139,7 @@ describe("Test pages sorting", async () => {
     let plebbit, newPost;
     before(async () => {
         plebbit = await mockPlebbit();
-        newPost = await publishRandomPost(subplebbitAddress, plebbit); // After publishing this post the subplebbit should have all pages
+        newPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true); // After publishing this post the subplebbit should have all pages
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
     });
 

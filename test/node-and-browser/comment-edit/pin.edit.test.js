@@ -5,7 +5,9 @@ const {
     publishRandomPost,
     publishWithExpectedResult,
     loadAllPages,
-    publishRandomReply
+    publishRandomReply,
+    mockRemotePlebbit,
+    findCommentInPage
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -42,7 +44,7 @@ describe(`Pinning posts`, async () => {
     let plebbit, postToPin, secondPostToPin, sub;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         await sub.update();
 
@@ -51,7 +53,8 @@ describe(`Pinning posts`, async () => {
 
         await postToPin.update();
         await secondPostToPin.update();
-        await removeAllPins(await loadAllPages(sub.posts.pageCids.new, sub.posts), plebbit);
+        const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
+        await removeAllPins(postsComments, plebbit);
     });
 
     after(async () => {
@@ -97,29 +100,26 @@ describe(`Pinning posts`, async () => {
         expect(postToPin.reason).to.equal("To pin a post");
     });
     it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
-        const sub = await plebbit.getSubplebbit(subplebbitAddress);
-        await sub.update();
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        sub.update();
 
-        // Seems like all pages don't get updated at the same time, so waitUntil will stop until all pages include the pinned post
-        await waitUntil(
-            async () => {
-                const pageComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-                return pageComments.find((comment) => comment.cid === postToPin.cid)?.pinned;
-            },
-            {
-                timeout: 300000,
-                intervalBetweenAttempts: 100
-            }
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const postInPage = await findCommentInPage(postToPin.cid, sub.posts.pageCids.new, sub.posts);
+                if (postInPage.pinned) resolve();
+            })
         );
 
         expect(Object.keys(sub.posts.pageCids).every((key) => Object.keys(POSTS_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
         await sub.stop();
         for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
-            const pageComments = await loadAllPages(pageCid, sub.posts);
+            const pageComments = (await sub.posts.getPage(pageCid)).comments; // Get 50 comments, pinned posts should always be on top
             const postInPage = pageComments.find((comment) => comment.cid === postToPin.cid);
             expect(postInPage).to.exist;
             expect(postInPage.pinned).to.be.true;
             expect(postInPage.reason).to.equal("To pin a post");
+            for (let i = 0; i < pageComments.length - 1; i++)
+                if (!pageComments[i].pinned && pageComments[i + 1].pinned) expect.fail("Pinned posts should always be on top");
         }
     });
 
@@ -136,18 +136,17 @@ describe(`Pinning posts`, async () => {
     it(`Pinned posts are sorted according to the page sort they're in`, async () => {
         // We're gonna test whether posts.new has pinned posts on top
         // 'postToPin' should be the first on the list, since it's pinned and has a higher timestamp
-        await waitUntil(
-            async () => {
-                const pageComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-                const postInPage = pageComments.find((comment) => comment.cid === secondPostToPin.cid);
-                return postInPage.pinned;
-            },
-            {
-                timeout: 300000,
-                intervalBetweenAttempts: 200
-            }
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                if (postInPage.pinned) resolve();
+            })
         );
 
+        await sub.stop();
         for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
             const pageComments = await loadAllPages(pageCid, sub.posts);
             const pinnedComments = pageComments.filter((comment) => comment.pinned);
@@ -188,16 +187,16 @@ describe(`Pinning posts`, async () => {
         });
     });
     it(`Unpinned posts is sorted like regular posts`, async () => {
-        await waitUntil(
-            async () =>
-                (
-                    await loadAllPages(sub.posts.pageCids.new, sub.posts)
-                ).some((comment) => comment.cid === secondPostToPin.cid && !comment.pinned),
-            {
-                timeout: 300000,
-                intervalBetweenAttempts: 200
-            }
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const postInPage = await findCommentInPage(secondPostToPin.cid, sub.posts.pageCids.new, sub.posts);
+                if (!postInPage.pinned) resolve();
+            })
         );
+        await sub.stop();
 
         for (const [sortName, pageCid] of Object.entries(sub.posts.pageCids)) {
             const pageComments = await loadAllPages(pageCid, sub.posts);
@@ -236,7 +235,7 @@ describe(`Pinning replies`, async () => {
     let plebbit, post, replyToPin, sub;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
         post = await plebbit.createComment(lodash.maxBy(allPosts, (c) => c.replyCount));
@@ -261,25 +260,28 @@ describe(`Pinning replies`, async () => {
 
     it(`A pinned reply is on the top of every page in parentComment.replies`, async () => {
         // Seems like all pages don't get updated at the same time, so waitUntil will stop until all pages include the pinned post
-        await waitUntil(
-            async () => {
-                return (await loadAllPages(post.replies.pageCids.topAll, post.replies)).some(
-                    (comment) => comment.cid === replyToPin.cid && comment.pinned
-                );
-            },
-            {
-                timeout: 300000,
-                intervalBetweenAttempts: 100
-            }
+        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const replyInPage = await findCommentInPage(replyToPin.cid, post.replies.pageCids.new, post.replies);
+                if (replyInPage?.pinned) resolve();
+            })
         );
+
+        await sub.stop();
 
         expect(Object.keys(post.replies.pageCids).every((key) => Object.keys(REPLIES_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
         for (const [sortName, pageCid] of Object.entries(post.replies.pageCids)) {
-            const pageComments = await loadAllPages(pageCid, post.replies);
+            const pageComments = (await post.replies.getPage(pageCid)).comments;
             const replyInPage = pageComments.find((comment) => comment.cid === replyToPin.cid);
             expect(replyInPage).to.exist;
             expect(replyInPage.pinned).to.be.true;
             expect(replyInPage.reason).to.equal("To pin the reply");
+            for (let i = 0; i < pageComments.length - 1; i++)
+                if (!pageComments[i].pinned && pageComments[i + 1].pinned) expect.fail("Pinned replies should always be on top");
         }
     });
 });

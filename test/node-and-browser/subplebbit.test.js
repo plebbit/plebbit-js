@@ -390,8 +390,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
     it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, errorGateway] });
         // should succeed and return the result from normalGateway
-        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
-        const latestSub = await fetchLatestSubplebbitJson();
+        const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)])
         expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
         expect(sub.updatedAt).to.be.a("number");
     });
@@ -441,8 +440,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         });
         customPlebbit._clientsManager._getTimeoutMsForGatewaySubplebbit = () => 5 * 1000; // change timeout from 5min to 5s
 
-        const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
-        const latestSub = await fetchLatestSubplebbitJson();
+        const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)]);
         expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
     });
 });

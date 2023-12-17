@@ -1,13 +1,13 @@
 const Plebbit = require("../../../dist/node");
 const signers = require("../../fixtures/signers");
 const {
-    mockPlebbit,
     publishRandomPost,
     generateMockComment,
     generateMockVote,
     publishRandomReply,
     publishWithExpectedResult,
-    loadAllPages
+    mockRemotePlebbit,
+    findCommentInPage
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -23,7 +23,7 @@ const roles = [
 describe(`Locking posts`, async () => {
     let plebbit, postToBeLocked, replyUnderPostToBeLocked, sub;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         await sub.update();
         postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
@@ -82,13 +82,21 @@ describe(`Locking posts`, async () => {
         expect(postToBeLocked.reason).to.equal("To lock a post");
     });
     it(`subplebbit.posts includes locked post with locked=true`, async () => {
-        await waitUntil(
-            async () => (await loadAllPages(sub.posts.pageCids.new, sub.posts)).some((c) => c.cid === postToBeLocked.cid && c.locked),
-            { timeout: 200000 }
+        const sub = await plebbit.createSubplebbit({ address: postToBeLocked.subplebbitAddress });
+
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, sub.posts.pageCids.new, sub.posts);
+                if (lockedPostInPage.locked === true) resolve();
+            })
         );
 
+        await sub.stop();
+
         for (const pageCid of Object.values(sub.posts.pageCids)) {
-            const lockedPostInPage = (await loadAllPages(pageCid, sub.posts)).find((c) => c.cid === postToBeLocked.cid);
+            const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, pageCid, sub.posts);
             expect(lockedPostInPage.locked).to.be.true;
             expect(lockedPostInPage.reason).to.equal("To lock a post");
         }

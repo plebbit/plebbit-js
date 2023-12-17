@@ -3,12 +3,11 @@ const signers = require("../../fixtures/signers");
 const {
     publishRandomPost,
     publishRandomReply,
-    mockPlebbit,
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
-    loadAllPages,
-    findCommentInPage
+    findCommentInPage,
+    mockRemotePlebbit
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -25,7 +24,7 @@ describe("Deleting a post", async () => {
     let plebbit, postToDelete, modPostToDelete, postReply;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         [postToDelete, modPostToDelete] = await Promise.all([
             publishRandomPost(subplebbitAddress, plebbit, {}, false),
             publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false)
@@ -63,20 +62,20 @@ describe("Deleting a post", async () => {
     });
 
     it(`Deleted post is omitted from subplebbit.posts`, async () => {
-        const sub = await plebbit.getSubplebbit(postToDelete.subplebbitAddress);
-        const isPostInPages = async () => {
-            const newComments = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-            return newComments.some((comment) => comment.cid === postToDelete.cid);
-        };
-        if (await isPostInPages()) {
-            sub.update();
-            if (await isPostInPages()) await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
-            sub.stop();
-        }
+        const sub = await plebbit.createSubplebbit({ address: postToDelete.subplebbitAddress });
+        sub.update();
+
+        await new Promise((resolve) =>
+            sub.on("update", async () => {
+                const postInPage = await findCommentInPage(postToDelete.cid, sub.posts.pageCids.new, sub.posts);
+                if (!postInPage) resolve();
+            })
+        );
+        await sub.stop();
 
         for (const pageCid of Object.values(sub.posts.pageCids)) {
-            const pageComments = await loadAllPages(pageCid, sub.posts);
-            const postInPage = pageComments.find((comment) => comment.cid === postToDelete.cid);
+            const postInPage = await findCommentInPage(postToDelete.cid, pageCid, sub.posts);
+
             expect(postInPage).to.be.undefined;
         }
     });
@@ -133,7 +132,7 @@ describe("Deleting a reply", async () => {
     let plebbit, replyToDelete, post, replyUnderDeletedReply;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         replyToDelete = await publishRandomReply(post, plebbit, {}, false);
         replyUnderDeletedReply = await publishRandomReply(replyToDelete, plebbit, {}, false);
@@ -157,10 +156,27 @@ describe("Deleting a reply", async () => {
         await waitUntil(() => replyToDelete.deleted === true, { timeout: 200000 });
     });
     it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
-        const pageCid = () => post.replies?.pageCids?.new;
-        await waitUntil(async () => pageCid() && (await findCommentInPage(replyToDelete.cid, pageCid(), post.replies)).deleted === true, {
-            timeout: 200000
-        });
+        const parentComment = await plebbit.createComment({ cid: replyToDelete.parentCid });
+        parentComment.update();
+
+        await new Promise((resolve) =>
+            parentComment.on("update", async () => {
+                const deletedReplyUnderPost = await findCommentInPage(
+                    replyToDelete.cid,
+                    parentComment.replies.pageCids.new,
+                    parentComment.replies
+                );
+                if (deletedReplyUnderPost.deleted === true) resolve();
+            })
+        );
+
+        // Need to test for all pages here
+
+        await parentComment.stop();
+        for (const pageCid of Object.values(parentComment.replies.pageCids)) {
+            const replyInPage = await findCommentInPage(replyToDelete.cid, pageCid, parentComment.replies);
+            expect(replyInPage.deleted).to.be.true;
+        }
     });
 
     it(`Can publish a reply or vote under a reply of a deleted reply`, async () => {
