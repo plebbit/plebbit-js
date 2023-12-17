@@ -358,7 +358,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
         await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
-        await new Promise((resolve) => post.once("update", resolve));
+        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
         expect(post.replyCount).to.equal(2);
         expect(post.lastChildCid).to.equal(post.replies.pages.topAll.comments[0].cid);
     });
@@ -380,8 +380,7 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
 
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
-        await new Promise((resolve) => post.once("update", resolve));
-        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        await waitUntil(() => post.replyCount === 1, { timeout: 50000 });
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
