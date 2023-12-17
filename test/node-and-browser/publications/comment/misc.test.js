@@ -11,7 +11,8 @@ const {
     mockRemotePlebbitIpfsOnly,
     publishVote,
     generatePostToAnswerMathQuestion,
-    isRpcFlagOn
+    isRpcFlagOn,
+    mockRemotePlebbit
 } = require("../../../../dist/node/test/test-util");
 const lodash = require("lodash");
 const { messages } = require("../../../../dist/node/errors");
@@ -521,7 +522,7 @@ describe(`comment.state`, async () => {
 describe("comment.updatingState", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`updatingState is stopped by default`, async () => {
@@ -529,10 +530,14 @@ describe("comment.updatingState", async () => {
         expect(mockPost.updatingState).to.equal("stopped");
     });
 
+    // We're using Math CLI subplebbit because the default subplebbit may contain comments with ENS for author address
+    // Which will change the expected states
+    // We should probably add a test for state when a comment with ENS for author address is in pages
     //prettier-ignore
     if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with IPFS client`, async () => {
-        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress}, plebbit);
+        await publishWithExpectedResult(mockPost, true);
         const expectedStates = [
             "fetching-subplebbit-ipns",
             "fetching-subplebbit-ipfs",
@@ -557,7 +562,8 @@ describe("comment.updatingState", async () => {
     if (!isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
-        const mockPost = await publishRandomPost(subplebbitAddress, gatewayPlebbit, {}, false);
+        const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress}, gatewayPlebbit);
+        await publishWithExpectedResult(mockPost, true);
         const expectedStates = ["fetching-subplebbit-ipns", "fetching-update-ipfs","succeeded", "stopped"];
         const recordedStates = [];
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
