@@ -941,7 +941,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.updateSubplebbitIpnsIfNeeded = function () {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var log, lastPublishTooOld, dbInstance, trx, latestPost, latestComment, _b, stats, subplebbitPosts, newPageCids_1, pageCidsToUnPin, newPostUpdates, statsCid, updatedAt, newIpns, signature, file, publishRes;
+            var log, lastPublishTooOld, dbInstance, trx, latestPost, latestComment, _b, stats, subplebbitPosts, newPageCids_1, pageCidsToUnPin, newPostUpdates, statsCid, updatedAt, newIpns, signature, file, ttl, lifetime, publishRes;
             var _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
@@ -1023,9 +1023,13 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 14:
                         file = _d.sent();
                         this._cidsToUnPin = [file.path];
+                        ttl = this._isSubRunningLocally ? "".concat(this.plebbit.publishInterval * 3, "ms") : undefined;
+                        lifetime = this._isSubRunningLocally ? "".concat(this.plebbit.publishInterval * 1000, "ms") : "24h";
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
                                 key: this.signer.ipnsKeyName,
-                                allowOffline: true
+                                allowOffline: true,
+                                ttl: ttl,
+                                lifetime: lifetime
                             })];
                     case 15:
                         publishRes = _d.sent();
@@ -1095,7 +1099,7 @@ var Subplebbit = /** @class */ (function (_super) {
     Subplebbit.prototype.storePublication = function (request) {
         var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            var log, publication, publicationHash, commentToInsert, thumbnailInfo, trx, _d, _e, file, trx, _f, commentsUnderParent, parent_1, file;
+            var log, publication, publicationHash, commentToInsert, thumbnailInfo, trx, _d, _e, file, trxForInsert, trx, _f, commentsUnderParent, parent_1, file, trxForInsert;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
@@ -1121,7 +1125,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         _g.label = 5;
                     case 5:
-                        if (!this.isPublicationPost(commentToInsert)) return [3 /*break*/, 11];
+                        if (!this.isPublicationPost(commentToInsert)) return [3 /*break*/, 13];
                         return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
                     case 6:
                         trx = _g.sent();
@@ -1138,36 +1142,48 @@ var Subplebbit = /** @class */ (function (_super) {
                         file = _g.sent();
                         commentToInsert.setPostCid(file.path);
                         commentToInsert.setCid(file.path);
-                        return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash))];
+                        return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
                     case 10:
+                        trxForInsert = _g.sent();
+                        return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert)];
+                    case 11:
+                        _g.sent();
+                        return [4 /*yield*/, this.dbHandler.commitTransaction(request.challengeRequestId.toString())];
+                    case 12:
                         _g.sent();
                         log("(".concat(request.challengeRequestId.toString(), "): "), "New post with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
-                        return [3 /*break*/, 17];
-                    case 11: return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
-                    case 12:
+                        return [3 /*break*/, 21];
+                    case 13: return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
+                    case 14:
                         trx = _g.sent();
                         return [4 /*yield*/, Promise.all([
                                 this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),
                                 this.dbHandler.queryComment(commentToInsert.parentCid, trx)
                             ])];
-                    case 13:
+                    case 15:
                         _f = _g.sent(), commentsUnderParent = _f[0], parent_1 = _f[1];
                         return [4 /*yield*/, this.dbHandler.commitTransaction(request.challengeRequestId.toString())];
-                    case 14:
+                    case 16:
                         _g.sent();
                         commentToInsert.setPreviousCid((_c = commentsUnderParent[0]) === null || _c === void 0 ? void 0 : _c.cid);
                         commentToInsert.setDepth(parent_1.depth + 1);
                         commentToInsert.setPostCid(parent_1.postCid);
                         return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.add((0, safe_stable_stringify_1.stringify)(commentToInsert.toJSONIpfs()))];
-                    case 15:
+                    case 17:
                         file = _g.sent();
                         commentToInsert.setCid(file.path);
-                        return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash))];
-                    case 16:
+                        return [4 /*yield*/, this.dbHandler.createTransaction(request.challengeRequestId.toString())];
+                    case 18:
+                        trxForInsert = _g.sent();
+                        return [4 /*yield*/, this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert)];
+                    case 19:
+                        _g.sent();
+                        return [4 /*yield*/, this.dbHandler.commitTransaction(request.challengeRequestId.toString())];
+                    case 20:
                         _g.sent();
                         log("(".concat(request.challengeRequestId.toString(), "): "), "New comment with cid ".concat(commentToInsert.cid, " has been inserted into DB"));
-                        _g.label = 17;
-                    case 17: return [2 /*return*/, commentToInsert.toJSONAfterChallengeVerification()];
+                        _g.label = 21;
+                    case 21: return [2 /*return*/, commentToInsert.toJSONAfterChallengeVerification()];
                 }
             });
         });
@@ -2032,7 +2048,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         commentInstance = _a.sent();
                         commentIpfsJson = commentInstance.toJSONIpfs();
                         if (unpinnedCommentRow.ipnsName)
-                            commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName;
+                            commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
                         commentIpfsContent = (0, safe_stable_stringify_1.stringify)(commentIpfsJson);
                         return [4 /*yield*/, ipfs_only_hash_1.default.of(commentIpfsContent)];
                     case 6:
@@ -2045,7 +2061,9 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 8:
                         _i++;
                         return [3 /*break*/, 4];
-                    case 9:
+                    case 9: return [4 /*yield*/, this.dbHandler.deleteAllCommentUpdateRows()];
+                    case 10:
+                        _a.sent(); // delete CommentUpdate rows to force a new production of CommentUpdate
                         log("".concat(unpinnedCommentsFromDb.length, " comments' IPFS have been repinned"));
                         return [2 /*return*/];
                 }
@@ -2087,7 +2105,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 8:
                         commentUpdatesToRepin = _a;
                         if (!(commentUpdatesToRepin.length > 0)) return [3 /*break*/, 15];
-                        log.error("PostUpdates folder (/".concat(this.address, ") does not exist on IPFS files. Will add all stored CommentUpdate to IPFS files"));
+                        log.error("CommentUpdates are not added under PostUpdates folder (/".concat(this.address, "). Will add all stored CommentUpdate to IPFS files"));
                         _i = 0, commentUpdatesToRepin_1 = commentUpdatesToRepin;
                         _c.label = 9;
                     case 9:
