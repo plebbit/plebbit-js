@@ -128,7 +128,7 @@ describe("publishing comments", async () => {
             const post = await generateMockPost(subplebbitAddress, downPlebbit);
             post._getSubplebbitCache = () => undefined;
 
-            await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
+            await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
         });
 
     it(`publish() can be caught if subplebbit failed to load (P2P or RPC)`);
@@ -141,7 +141,7 @@ describe("publishing comments", async () => {
 
             const post = await generateMockPost(subAddress, gatewayPlebbit);
 
-            await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY);
+            await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
         });
 
     it(`Can publish a comment whose signature is defined prior to plebbit.createComment()`, async () => {

@@ -74,13 +74,19 @@ describe("Comments with Authors as domains", async () => {
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const mockPost = await plebbit.createComment({
+        const tempPlebbit = await mockPlebbit();
+
+        const mockPost = await tempPlebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
             content: `Mock comment - ${Date.now()}`,
             title: "Mock post Title",
             subplebbitAddress: signers[0].address
         });
+
+        tempPlebbit.resolver.resolveTxtRecord = () => {
+            return signers[6].address;
+        };
 
         expect(mockPost.author.address).to.equal("testgibbreish.eth");
 
@@ -112,7 +118,8 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const vote = await plebbit.createVote({
+        const tempPlebbit = await mockPlebbit();
+        const vote = await tempPlebbit.createVote({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
             commentCid: comment.cid,
@@ -120,6 +127,10 @@ describe(`Vote with authors as domains`, async () => {
             subplebbitAddress: subplebbit.address
         });
         expect(vote.author.address).to.equal("testgibbreish.eth");
+
+        tempPlebbit.resolver.resolveTxtRecord = () => {
+            return signers[6].address;
+        };
         await publishWithExpectedResult(vote, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
         expect(vote.author.address).to.equal("testgibbreish.eth");
     });

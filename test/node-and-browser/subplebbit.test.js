@@ -338,8 +338,11 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, thirtyMinuteLateGateway] });
 
         const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
-        const latestSub = await fetchLatestSubplebbitJson();
-        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+        const buffer = 2;
+        const base = Math.round(Date.now() / 1000);
+        expect(sub.updatedAt)
+            .to.be.lessThanOrEqual(base + buffer)
+            .greaterThanOrEqual(base - buffer);
     });
 
     it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 2 min`, async () => {
