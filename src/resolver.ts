@@ -59,8 +59,10 @@ export class Resolver {
     }
 
     async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null> {
+        // TODO should cache this method
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
+        log.trace(`Attempting to resolve text record (${txtRecordName}) of address (${address}) with chain provider (${chainProviderUrl})`);
         let txtRecordResult: string | null;
         if (chainProviderUrl === "ethers.js" && chain === "eth")
             txtRecordResult = await this._resolveViaEthers(chain, address, txtRecordName);
@@ -70,7 +72,7 @@ export class Resolver {
             txtRecordResult = await chainProvider.getEnsText({ name: lib.normalize(address), key: txtRecordName });
         }
 
-        log.trace(
+        log(
             `Resolved text record name (${txtRecordName}) of address (${address}) to ${txtRecordResult} with chainProvider (${chainProviderUrl})`
         );
 

@@ -305,7 +305,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
 }
 
 export async function mockMultipleGatewaysPlebbit(plebbitOptions?: PlebbitOptions) {
-    return mockGatewayPlebbit({ipfsGatewayUrls: [], ...plebbitOptions});
+    return mockGatewayPlebbit({ ipfsGatewayUrls: [], ...plebbitOptions });
 }
 
 export async function publishRandomReply(

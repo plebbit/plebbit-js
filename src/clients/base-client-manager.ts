@@ -375,12 +375,20 @@ export class BaseClientsManager {
     ) {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl);
         const timeBefore = Date.now();
+        const cacheKey = sha256(address + txtRecordName + chain + chainproviderUrl);
         try {
-            const resolvedTextRecord = await this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
+            let resolvedTextRecord: string | null;
+            if (ensResolverPromiseCache.has(cacheKey)) resolvedTextRecord = await ensResolverPromiseCache.get(cacheKey);
+            else {
+                const resolvePromise = this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
+                ensResolverPromiseCache.set(cacheKey, resolvePromise);
+                resolvedTextRecord = await resolvePromise;
+            }
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
             await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
+            ensResolverPromiseCache.delete(cacheKey);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
             await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };

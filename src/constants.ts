@@ -19,6 +19,8 @@ export const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "p
 export const subplebbitForPublishingCache = new LRUCache<string, Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic">>({
     max: 100,
     ttl: 600000
-}); // Cache for only 10 mins, should  be moved to LRU+storage
+}); // Cache for only 10 mins
 
 export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500 });
+
+export const ensResolverPromiseCache = new LRUCache<string, Promise<string | null>>({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
