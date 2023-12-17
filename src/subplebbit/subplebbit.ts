@@ -61,8 +61,6 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
-    verifyCommentUpdate,
-    verifySubplebbit,
     verifyVote
 } from "../signer/signatures";
 import { STORAGE_KEYS, subplebbitForPublishingCache } from "../constants";

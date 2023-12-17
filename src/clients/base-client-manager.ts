@@ -16,7 +16,15 @@ const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 
-export const resolvePromises: Record<string, Promise<string | null>> = {};
+type GenericGatewayFetch = {
+    [gatewayUrl: string]: {
+        abortController: AbortController;
+        promise: Promise<any>;
+        response?: string;
+        error?: Error;
+        timeoutId: any;
+    };
+};
 
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
@@ -269,12 +277,24 @@ export class BaseClientsManager {
         );
     }
 
+    getGatewayTimeoutMs(loadType: LoadType) {
+        return loadType === "subplebbit"
+            ? 5 * 60 * 1000 // 5min
+            : loadType === "comment"
+            ? 60 * 1000 // 1 min
+            : loadType === "comment-update"
+            ? 2 * 60 * 1000 // 2min
+            : 30 * 1000; // 30s
+    }
+
     async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
         assert(loadOpts.cid || loadOpts.ipns);
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
 
         const type = loadOpts.cid ? "cid" : "ipns";
+
+        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadType);
 
         const concurrencyLimit = 3;
 
@@ -286,13 +306,30 @@ export class BaseClientsManager {
                 ? Object.keys(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
-        const controllers = new Array(gatewaysSorted.length).fill(null).map((x) => new AbortController());
-        const gatewayPromises = gatewaysSorted.map((gateway, i) =>
-            queueLimit(() => this._fetchWithGateway(gateway, path, loadType, controllers[i]))
-        );
+        const gatewayFetches: GenericGatewayFetch = {};
+
+        const cleanUp = () => {
+            queueLimit.clearQueue();
+            Object.values(gatewayFetches).map((gateway) => {
+                if (!gateway.response && !gateway.error) gateway.abortController.abort();
+                clearTimeout(gateway.timeoutId);
+            });
+        };
+
+        for (const gateway of gatewaysSorted) {
+            const abortController = new AbortController();
+            gatewayFetches[gateway] = {
+                abortController,
+                promise: queueLimit(() => this._fetchWithGateway(gateway, path, loadType, abortController)),
+                timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
+            };
+        }
+
+        const gatewayPromises = Object.values(gatewayFetches).map((fetching) => fetching.promise);
 
         const res = await Promise.race([this._firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
         if (Array.isArray(res)) {
+            cleanUp();
             const gatewayToError: Record<string, PlebbitError> = {};
             for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
 
@@ -301,8 +338,7 @@ export class BaseClientsManager {
 
             throw combinedError;
         } else {
-            queueLimit.clearQueue();
-            controllers.forEach((control) => control.abort());
+            cleanUp();
             return res.res;
         }
     }
