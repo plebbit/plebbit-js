@@ -609,7 +609,6 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     async fetchCommentUpdate(): Promise<CommentUpdate> {
-        // Caching should eventually be moved to storage instead of in-memory
         const log = Logger("plebbit-js:comment:update");
         const subIpns = await this.fetchSubplebbit(this._comment.subplebbitAddress);
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);

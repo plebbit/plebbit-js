@@ -9,6 +9,8 @@ import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";
 import { Chain, PubsubMessage } from "../types";
 import * as cborg from "cborg";
+import { ensResolverPromiseCache, gatewayFetchPromiseCache } from "../constants";
+import { sha256 } from "js-sha256";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -147,7 +149,6 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    // TODO should combine requests under different urls
     private async _fetchWithLimit(url: string, options?): Promise<string> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
@@ -201,6 +202,15 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
 
+    private async _fetchFromGatewayAndVerifyIfNeeded(loadType: LoadType, url: string, abortController: AbortController, log: Logger) {
+        log.trace(`Fetching url (${url})`);
+
+        const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
+
+        const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
+        if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]); // TODO verify cid has been split correctly
+        return resText;
+    }
     protected async _fetchWithGateway(
         gateway: string,
         path: string,
@@ -210,26 +220,39 @@ export class BaseClientsManager {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
-        log.trace(`Fetching url (${url})`);
-
         const timeBefore = Date.now();
         const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
         this.preFetchGateway(gateway, path, loadType);
+        const cacheKey = url;
+        let isUsingCache = true;
         try {
-            const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
-            if (isCid) await this._verifyContentIsSameAsCid(resText, path.split("/ipfs/")[1]);
+            let resText: string;
+            if (gatewayFetchPromiseCache.has(cacheKey)) resText = await gatewayFetchPromiseCache.get(cacheKey);
+            else {
+                isUsingCache = false;
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(loadType, url, abortController, log);
+                gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
+                resText = await fetchPromise;
+                if (loadType === "subplebbit") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
+            }
             this.postFetchGatewaySuccess(gateway, path, loadType);
-            const timeElapsedMs = Date.now() - timeBefore;
-            await this._plebbit.stats.recordGatewaySuccess(gateway, isCid || loadType === "comment-update" ? "cid" : "ipns", timeElapsedMs);
+            if (!isUsingCache)
+                await this._plebbit.stats.recordGatewaySuccess(
+                    gateway,
+                    isCid || loadType === "comment-update" ? "cid" : "ipns",
+                    Date.now() - timeBefore
+                );
             return resText;
         } catch (e) {
+            gatewayFetchPromiseCache.delete(cacheKey);
+
             if (e?.details?.error?.type === "aborted") {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, e);
-                await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
+                if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
                 return { error: e };
             }
         }
@@ -286,6 +309,7 @@ export class BaseClientsManager {
 
     // IPFS P2P methods
     async resolveIpnsToCidP2P(ipns: string): Promise<string> {
+        // TODO should cache this promise
         const ipfsClient = this.getDefaultIpfs();
         try {
             const cid = await ipfsClient._client.name.resolve(ipns);
@@ -299,6 +323,8 @@ export class BaseClientsManager {
 
     // TODO rename this to _fetchPathP2P
     async _fetchCidP2P(cid: string): Promise<string> {
+        // TODO should cache this promise
+
         const ipfsClient = this.getDefaultIpfs();
         const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
         if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
@@ -376,21 +402,23 @@ export class BaseClientsManager {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl);
         const timeBefore = Date.now();
         const cacheKey = sha256(address + txtRecordName + chain + chainproviderUrl);
+        let isUsingCache = true;
         try {
             let resolvedTextRecord: string | null;
             if (ensResolverPromiseCache.has(cacheKey)) resolvedTextRecord = await ensResolverPromiseCache.get(cacheKey);
             else {
+                isUsingCache = false;
                 const resolvePromise = this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
                 ensResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
-            await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
+            if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
             ensResolverPromiseCache.delete(cacheKey);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
-            await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
+            if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };
         }
     }
