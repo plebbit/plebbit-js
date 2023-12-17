@@ -140,25 +140,22 @@ describe(`Vote with authors as domains`, async () => {
 if (!isRpcFlagOn()) // This code won't run in rpc clients
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
-        const regularPlebbit = await mockPlebbit();
-
-        regularPlebbit.resolver.resolveTxtRecord  = () => {
-            throw Error("Failed just because");
-        };
         const plebbit = await mockPlebbit();
 
-        const originalResolveFunction = plebbit.resolver.resolveTxtRecord;
 
         let resolveHit = 0;
 
+        const address = "madeupname" + Math.round(Date.now()) + ".eth"
+
+        const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
         plebbit.resolver.resolveTxtRecord = (...args) => {
             resolveHit++;
-            if (resolveHit < 4) return regularPlebbit.resolver.resolveTxtRecord(...args);
-            else return originalResolveFunction(...args);
+            if (resolveHit < 4) throw Error("failed to resolve because whatever");
+            else return subplebbitTextRecordOfAddress;
         };
 
-        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("plebbit.eth");
-        expect(resolvedAuthorAddress).to.equal("12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y");
+        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);
+        expect(resolvedAuthorAddress).to.equal(subplebbitTextRecordOfAddress);
         expect(resolveHit).to.equal(4);
     });
 });
