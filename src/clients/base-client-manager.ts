@@ -9,7 +9,7 @@ import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";
 import { Chain, PubsubMessage } from "../types";
 import * as cborg from "cborg";
-import { ensResolverPromiseCache, gatewayFetchPromiseCache } from "../constants";
+import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
 import { sha256 } from "js-sha256";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
@@ -208,7 +208,7 @@ export class BaseClientsManager {
         const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
         const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
-        if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]); // TODO verify cid has been split correctly
+        if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
         return resText;
     }
     protected async _fetchWithGateway(
@@ -308,32 +308,52 @@ export class BaseClientsManager {
     }
 
     // IPFS P2P methods
-    async resolveIpnsToCidP2P(ipns: string): Promise<string> {
-        // TODO should cache this promise
+    async resolveIpnsToCidP2P(ipnsName: string): Promise<string> {
         const ipfsClient = this.getDefaultIpfs();
+
         try {
-            const cid = await ipfsClient._client.name.resolve(ipns);
-            if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns });
+            let cid: string;
+            if (p2pIpnsPromiseCache.has(ipnsName)) cid = await p2pIpnsPromiseCache.get(ipnsName);
+            else {
+                const cidPromise = ipfsClient._client.name.resolve(ipnsName);
+                p2pIpnsPromiseCache.set(ipnsName, cidPromise);
+                cid = await cidPromise;
+                p2pIpnsPromiseCache.delete(ipnsName);
+            }
+            if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName });
             return cid;
         } catch (error) {
+            p2pIpnsPromiseCache.delete(ipnsName);
             if (error?.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipns, error });
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName, error });
         }
     }
 
     // TODO rename this to _fetchPathP2P
     async _fetchCidP2P(cid: string): Promise<string> {
-        // TODO should cache this promise
-
         const ipfsClient = this.getDefaultIpfs();
-        const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
-        if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
-        if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
-            const calculatedCid: string = await Hash.of(fileContent);
-            if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
-        }
 
-        return fileContent;
+        const fetchPromise = async () => {
+            const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
+            if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
+            if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
+                const calculatedCid: string = await Hash.of(fileContent);
+                if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
+            }
+            return fileContent;
+        };
+
+        try {
+            if (p2pCidPromiseCache.has(cid)) return await p2pCidPromiseCache.get(cid);
+            else {
+                const promise = fetchPromise();
+                p2pCidPromiseCache.set(cid, promise);
+                return await promise;
+            }
+        } catch (e) {
+            p2pCidPromiseCache.delete(cid);
+            throw e;
+        }
     }
 
     private async _verifyContentIsSameAsCid(content: string, cid: string) {
