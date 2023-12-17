@@ -515,13 +515,13 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const options = { acceptedChallengeTypes: [] };
         try {
             this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbit(this.subplebbitAddress));
+            this._validateSubFields();
         } catch (e) {
             this._updateState("stopped");
             this._updatePublishingState("failed");
             if (this._clientsManager._defaultIpfsProviderUrl) this._clientsManager.updateIpfsState("stopped");
             throw e;
         }
-        this._validateSubFields();
 
         const pubsubMessageSigner = await this._plebbit.createSigner();
 
