@@ -71,6 +71,8 @@ describe("Comments with Authors as domains", async () => {
         mockComments.push(mockPost);
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
@@ -117,6 +119,8 @@ describe(`Vote with authors as domains`, async () => {
         comment = await publishRandomPost(subplebbit.address, plebbit, {}, false);
     });
 
+    //prettier-ignore
+    if (!isRpcFlagOn())
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
         const tempPlebbit = await mockPlebbit();
         const vote = await tempPlebbit.createVote({

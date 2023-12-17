@@ -2,7 +2,14 @@ const Plebbit = require("../../dist/node");
 const signers = require("../fixtures/signers");
 const { messages } = require("../../dist/node/errors");
 
-const { mockPlebbit, publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
+const {
+    mockPlebbit,
+    publishRandomPost,
+    mockRemotePlebbit,
+    mockGatewayPlebbit,
+    isRpcFlagOn,
+    mockRemotePlebbitIpfsOnly
+} = require("../../dist/node/test/test-util");
 
 const lodash = require("lodash");
 const chai = require("chai");
@@ -220,6 +227,69 @@ describe("subplebbit.update (remote)", async () => {
     });
 });
 
+describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
+    it(`subplebbit.updatingState defaults to stopped`, async () => {
+        const plebbit = await mockRemotePlebbit();
+        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        expect(subplebbit.updatingState).to.equal("stopped");
+    });
+
+    it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
+        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const subplebbit = await plebbit.getSubplebbit(signers[0].address);
+        const recordedStates = [];
+        const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.update();
+
+        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    it(`subplebbit.updatingState is in correct order upon updating  with IPFS client (ENS)`, async () => {
+        const plebbit = await mockRemotePlebbit();
+        const subplebbit = await plebbit.getSubplebbit("plebbit.eth");
+        const recordedStates = [];
+        const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.update();
+
+        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+
+    //prettier-ignore
+    if (!isRpcFlagOn())
+    it(`updating states is in correct order upon updating with gateway`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+
+        const subplebbit = await gatewayPlebbit.getSubplebbit(signers[0].address);
+
+        const expectedStates = ["fetching-ipns", "succeeded", "stopped"];
+        const recordedStates = [];
+        subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
+
+        await subplebbit.update();
+
+        publishRandomPost(subplebbit.address, gatewayPlebbit, {}, false); // To force trigger an update
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+
+        expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
+        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
+    });
+});
+
 describe("plebbit.getSubplebbit (Remote)", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
@@ -273,6 +343,8 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js
     const stallingGateway = "http://localhost:44000"; // This gateaway will wait for 11s then respond
@@ -300,7 +372,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         customPlebbit._clientsManager._getTimeoutMsForGatewaySubplebbit = () => 5 * 1000; // change timeout from 5min to 5s
         try {
             await customPlebbit.getSubplebbit(subAddress);
-            assert.fails("Should not fulfill");
+            expect.fails("Should not fulfill");
         } catch (e) {
             expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
             expect(e.details.gatewayToError[stallingGateway].message).to.equal("Fetching from gateway has been aborted/timed out");
@@ -500,9 +572,9 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
-            const actualStates = [];
+            const recordedStates = [];
 
-            sub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
+            sub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => recordedStates.push(newState));
 
             sub.update();
 
@@ -510,7 +582,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             await sub.stop();
 
-            expect(actualStates.slice(0, 2)).to.deep.equal(expectedStates);
+            expect(recordedStates.slice(0, 2)).to.deep.equal(expectedStates);
         });
     });
 
@@ -561,9 +633,9 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             await new Promise(resolve => sub.once("update", resolve));
 
+            await sub.stop();
             expect(recordedStates).to.deep.equal(expectedStates);
 
-            await sub.stop();
         })
     })
 

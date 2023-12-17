@@ -287,7 +287,7 @@ describe(`subplebbit.startedState`, async () => {
     });
 });
 
-describe(`subplebbit.updatingState`, async () => {
+describe(`subplebbit.updatingState (remote sub - node)`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {
         const plebbit = await mockPlebbit();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
