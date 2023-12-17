@@ -69,8 +69,8 @@ describe("Deleting a post", async () => {
             return newComments.some((comment) => comment.cid === postToDelete.cid);
         };
         if (await isPostInPages()) {
-            await sub.update();
-            await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
+            sub.update();
+            if (await isPostInPages()) await new Promise((resolve) => sub.on("update", async () => !(await isPostInPages()) && resolve()));
             sub.stop();
         }
 
