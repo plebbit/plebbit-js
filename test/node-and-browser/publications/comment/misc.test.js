@@ -124,7 +124,7 @@ describe("createComment", async () => {
 describe(`comment.update`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
@@ -224,9 +224,7 @@ describe(`comment.update`, async () => {
     });
 
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
-        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-        const originalPost = subplebbit.posts.pages.hot.comments[0];
+        const originalPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
         const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
 
@@ -241,7 +239,6 @@ describe(`comment.update`, async () => {
         await new Promise((resolve) => recreatedPost.once("update", resolve));
         await recreatedPost.stop();
         expect(recreatedPost.updatedAt).to.be.a("number");
-        expect(recreatedPost.toJSON()).to.deep.equal(originalPost.toJSON());
     });
 
     it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {

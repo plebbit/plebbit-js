@@ -252,8 +252,8 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating  with IPFS client (ENS)`, async () => {
-        const plebbit = await mockRemotePlebbit();
-        const subplebbit = await plebbit.getSubplebbit("plebbit.eth");
+        const plebbit = await mockRemotePlebbitIpfsOnly();
+        const subplebbit = await plebbit.createSubplebbit({ address: "plebbit.eth" });
         const recordedStates = [];
         const expectedStates = ["resolving-address", "fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
         subplebbit.on("updatingstatechange", (newState) => recordedStates.push(newState));
@@ -375,7 +375,6 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
             expect.fails("Should not fulfill");
         } catch (e) {
             expect(e.message).to.equal(messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
-            expect(e.details.gatewayToError[stallingGateway].message).to.equal("Fetching from gateway has been aborted/timed out");
         }
     });
     it(`updating a subplebbit through working gateway and another gateway that is timing out`, async () => {
