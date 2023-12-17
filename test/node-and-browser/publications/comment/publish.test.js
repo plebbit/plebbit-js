@@ -31,7 +31,7 @@ describe("publishing comments", async () => {
         plebbit = await mockPlebbit();
     });
 
-    it("Can publish a post", async function () {
+    it("Can publish a post", async () => {
         await publishRandomPost(subplebbitAddress, plebbit, {});
     });
 

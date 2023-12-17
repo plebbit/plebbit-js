@@ -3,7 +3,7 @@ const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
 const { expect } = require("chai");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/subplebbit/sort-handler");
 const signers = require("../fixtures/signers");
-const { loadAllPages, publishRandomPost, mockPlebbit } = require("../../dist/node/test/test-util");
+const { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } = require("../../dist/node/test/test-util");
 const lodash = require("lodash");
 
 let subplebbit;
@@ -138,7 +138,7 @@ const testRepliesSort = async (parentComments, replySortName) => {
 describe("Test pages sorting", async () => {
     let plebbit, newPost;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         newPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true); // After publishing this post the subplebbit should have all pages
         subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
     });
@@ -153,8 +153,8 @@ describe("Test pages sorting", async () => {
         });
         it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
             for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                const pageComments = await loadAllPages(pageCid, subplebbit.posts);
-                expect(pageComments.some((c) => c.cid === newPost.cid)).to.be.true;
+                const postInPage = await findCommentInPage(newPost.cid, pageCid, subplebbit.posts);
+                expect(postInPage).to.exist;
             }
         });
         it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
@@ -186,7 +186,7 @@ describe("Test pages sorting", async () => {
     describe("comment.replies", async () => {
         let posts;
         before(async () => {
-            posts = await loadAllPages(subplebbit.posts.pageCids.new, subplebbit.posts);
+            posts = (await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)).comments;
             expect(posts.length).to.be.greaterThan(0);
         });
 

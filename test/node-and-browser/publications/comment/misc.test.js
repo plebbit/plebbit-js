@@ -1113,12 +1113,13 @@ describe(`comment.clients`, async () => {
                 // RPC exception
                 const gateways = [
                     "http://localhost:33417", // This gateway will take 10s to respond
-                    "http://127.0.0.1:18080" // This one is immediate
+                    "http://localhost:18080" // This one is immediate
                 ];
                 const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: gateways });
 
                 const comment = await multipleGatewayPlebbit.getComment(commentCid);
-                await comment.update();
+                comment.update();
+                if (!comment.updatedAt)
                 await new Promise((resolve) => comment.once("update", resolve));
                 await comment.stop();
 
@@ -1139,6 +1140,7 @@ describe(`comment.clients`, async () => {
                         actualStates[gatewayUrl].push(newState);
                     });
 
+                multipleGatewayPlebbit._clientsManager.getGatewayTimeoutMs = () => 10 * 1000; // Change timeout to 10s
                 const timeBefore = Date.now();
                 await comment.replies.getPage(comment.replies.pageCids.new);
                 const timeItTookInMs = Date.now() - timeBefore;
