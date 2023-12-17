@@ -804,7 +804,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         // TODO should check for regex of ipns eventually
-        if (!resolvedTextRecord) {
+        if (!resolvedTextRecord && this._subplebbit.state === "updating") {
             this._subplebbit._setUpdatingState("failed");
             const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
@@ -829,6 +829,7 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string) {
         this.updateIpfsState("fetching-ipfs");
+        this._subplebbit._setUpdatingState("fetching-ipfs");
     }
 
     protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType) {
