@@ -1,7 +1,6 @@
 const Plebbit = require("../../../dist/node");
 const signers = require("../../fixtures/signers");
 const {
-    mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     loadAllPages,
@@ -260,22 +259,28 @@ describe(`Pinning replies`, async () => {
 
     it(`A pinned reply is on the top of every page in parentComment.replies`, async () => {
         // Seems like all pages don't get updated at the same time, so waitUntil will stop until all pages include the pinned post
-        const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
+        const postToRecreate = await plebbit.createComment({ cid: post.cid });
 
-        sub.update();
+        postToRecreate.update();
 
         await new Promise((resolve) =>
-            sub.on("update", async () => {
-                const replyInPage = await findCommentInPage(replyToPin.cid, post.replies.pageCids.new, post.replies);
-                if (replyInPage?.pinned) resolve();
+            postToRecreate.on("update", async () => {
+                if (postToRecreate.replies?.pageCids) {
+                    const replyInPage = await findCommentInPage(
+                        replyToPin.cid,
+                        postToRecreate.replies.pageCids.new,
+                        postToRecreate.replies
+                    );
+                    if (replyInPage?.pinned) resolve();
+                }
             })
         );
 
-        await sub.stop();
+        await postToRecreate.stop();
 
-        expect(Object.keys(post.replies.pageCids).every((key) => Object.keys(REPLIES_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
-        for (const [sortName, pageCid] of Object.entries(post.replies.pageCids)) {
-            const pageComments = (await post.replies.getPage(pageCid)).comments;
+        expect(Object.keys(postToRecreate.replies.pageCids).every((key) => Object.keys(REPLIES_SORT_TYPES).includes(key))).to.be.true; // Should include pages with timeframes
+        for (const [sortName, pageCid] of Object.entries(postToRecreate.replies.pageCids)) {
+            const pageComments = (await postToRecreate.replies.getPage(pageCid)).comments;
             const replyInPage = pageComments.find((comment) => comment.cid === replyToPin.cid);
             expect(replyInPage).to.exist;
             expect(replyInPage.pinned).to.be.true;

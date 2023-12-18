@@ -179,7 +179,7 @@ describe(`Comment with author.address as domain`, async () => {
             authorAddress === "testDomain.eth" ? signers[6].address : authorAddress; // testDomain.eth no longer points to the same author
 
         const verificaiton = await verifyComment(signedPublication, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true);
-        expect(verificaiton).to.deep.equal({ valid: true });
+        expect(verificaiton).to.deep.equal({ valid: true, derivedAddress: signers[1].address });
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
     it(`Comment with invalid author domain address will will be invalidated (overrideAuthorAddressIfInvalid=false)`, async () => {
@@ -267,6 +267,6 @@ describe(`commentupdate`, async () => {
             subplebbit.address,
             comment
         );
-        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR });
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 });

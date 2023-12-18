@@ -4,13 +4,16 @@ const { messages } = require("../../../dist/node/errors");
 const { expect } = require("chai");
 const signers = require("../../fixtures/signers");
 const lodash = require("lodash");
+const { v4 } = require("uuid");
 
 const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
 
 const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
+    // randomize pageCid so that we don't rely on cache
     const pageObjRes = await verifyPage(
+        v4(),
         JSON.parse(JSON.stringify(pageJson)),
         plebbit.resolveAuthorAddresses,
         plebbit._clientsManager,
@@ -19,6 +22,7 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
         overrideAuthorAddressIsInvalid
     );
     const pageJsonRes = await verifyPage(
+        v4(),
         pageJson,
         plebbit.resolveAuthorAddresses,
         plebbit._clientsManager,
@@ -41,7 +45,7 @@ describe(`verify pages`, async () => {
 
     it(`Can validate page from live subplebbit`, async () => {
         const page = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new, plebbit));
-        const pageVerification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
+        const pageVerification = await verifyPageJsonAlongWithObject( page, plebbit, subplebbit, undefined);
         expect(pageVerification).to.deep.equal({ valid: true });
     });
 
@@ -87,7 +91,7 @@ describe(`verify pages`, async () => {
                 : authorAddress; // Resolve to wrong address intentionally. Correct address would be signers[6].address
 
         const overrideAuthorAddress = false;
-        const verification = await verifyPageJsonAlongWithObject(invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
+        const verification = await verifyPageJsonAlongWithObject( invalidPage, tempPlebbit, subplebbit, undefined, overrideAuthorAddress); // comments[commentWithDomainAddressIndex] author address should be modified after
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
         expect(invalidPage.comments[commentWithDomainAddressIndex].comment.author.address).to.equal("plebbit.eth");
     });
@@ -161,7 +165,7 @@ describe(`verify pages`, async () => {
             expect(commentWithRepliesIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithRepliesIndex].update.replies.pages.topAll.comments[0].comment.parentCid += "123"; // Should invalidate page
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
-            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED });
+            expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it(`comment.subplebbitAddress`, async () => {
             const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));

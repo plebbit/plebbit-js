@@ -12,6 +12,7 @@ const path = require("path");
 const fs = require("fs");
 const signers = require("../../fixtures/signers");
 const { default: waitUntil } = require("async-wait-until");
+const { subplebbitVerificationCache } = require("../../../dist/node/constants");
 
 const chai = require("chai");
 const chaiAsPromised = require("chai-as-promised");
@@ -211,13 +212,14 @@ describe(`Publish loop resiliency`, async () => {
         await publishRandomPost(subplebbit.address ,plebbit); // Stimulate an update
 
         for (const resolveAuthorAddresses of [true, false]) {
+            subplebbitVerificationCache.clear();
             const remotePlebbit = await mockRemotePlebbitIpfsOnly({resolveAuthorAddresses});
             const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); 
             const mockPostInPage = loadedSub.posts.pages.hot.comments.find(comment => comment.cid === mockPost.cid);
             if (resolveAuthorAddresses)
                 expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
             else 
-                expect(mockPostInPage.author.address).to.equal(mockPost.author.address);
+                expect(mockPostInPage.author.address).to.equal("plebbit.eth");
         }
 
     });

@@ -183,7 +183,7 @@ describe(`comment.update`, async () => {
             )
         ).to.deep.equal({
             valid: false,
-            reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT
+            reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
         const createdComment = await plebbit.createComment({
@@ -205,7 +205,6 @@ describe(`comment.update`, async () => {
         await new Promise((resolve) =>
             createdComment.on("error", (err) => {
                 expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
-                expect(err.details.signatureValidity.reason).to.equal(messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT);
                 errorsEmittedCount++;
                 resolve();
             })
