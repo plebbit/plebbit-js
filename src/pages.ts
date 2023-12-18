@@ -63,6 +63,7 @@ export class BasePages implements PagesType {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit.plebbitRpcClient) {
             const signatureValidity = await verifyPage(
+                pageCid,
                 pageIpfs,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,

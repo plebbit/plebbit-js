@@ -31,3 +31,9 @@ export const gatewayFetchPromiseCache = new LRUCache<string, Promise<string>>({ 
 export const p2pIpnsPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 200 }); // cache key will be ipnsName and the result will be a promise of cid
 
 export const p2pCidPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 50, ttl: 60 * 1000 }); // cache key will be cid and the result will be a promise of content of cid
+
+// Caches for signature validation
+
+export const subplebbitVerificationCache = new LRUCache<string, boolean>({ max: 100, ttl: 5 * 60 * 100 });
+export const pageVerificationCache = new LRUCache<string, boolean>({ max: 300 });
+export const commentUpdateVerificationCache = new LRUCache<string, boolean>({ max: 300 });
