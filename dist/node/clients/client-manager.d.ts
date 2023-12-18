@@ -48,8 +48,18 @@ export declare class ClientsManager extends BaseClientsManager {
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
     updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string, chainProviderUrl: string): void;
     fetchCid(cid: string): Promise<string>;
+    private _findErrorInSubplebbitRecord;
+    fetchSubplebbit(subAddress: string): Promise<SubplebbitIpfsType>;
+    private _fetchSubplebbitIpns;
+    private _fetchSubplebbitFromGateways;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
-    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
+    protected _getSubplebbitAddressFromInstance(): string;
+    protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void;
+    protected preResolveSubplebbitIpns(subIpnsName: string): void;
+    protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;
+    protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string): void;
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType): void;
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType): void;
 }
 export declare class PublicationClientsManager extends ClientsManager {
     clients: {
@@ -68,17 +78,23 @@ export declare class PublicationClientsManager extends ClientsManager {
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
     _publication: Publication;
-    _attemptingToResolve: boolean;
     constructor(publication: Publication);
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initPlebbitRpcClients(): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string, chainProviderUrl: string): void;
     emitError(e: PlebbitError): void;
-    fetchSubplebbitForPublishing(subplebbitAddress: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]): void;
     updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateGatewayState(newState: PublicationIpfsGatewayClient["state"], gateway: string): void;
+    protected _getSubplebbitAddressFromInstance(): string;
+    protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void;
+    protected preResolveSubplebbitIpns(subIpnsName: string): void;
+    protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;
+    protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string): void;
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType): void;
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType): void;
 }
 export declare class CommentClientsManager extends PublicationClientsManager {
     clients: {
@@ -101,13 +117,20 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     protected _initIpfsClients(): void;
     protected _initPlebbitRpcClients(): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string): void;
-    _fetchSubplebbitForCommentUpdate(): Promise<SubplebbitIpfsType>;
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string): CommentIpfsWithCid;
     _fetchParentCommentForCommentUpdate(parentCid: string): Promise<CommentIpfsWithCid>;
     _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string>;
     fetchCommentUpdate(): Promise<CommentUpdate>;
     fetchCommentCid(cid: string): Promise<CommentIpfsType>;
     updateIpfsState(newState: CommentIpfsClient["state"]): void;
+    protected _isPublishing(): boolean;
+    protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string, chainProviderUrl: string): void;
+    protected preResolveSubplebbitIpns(subIpnsName: string): void;
+    protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;
+    protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string): void;
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType): void;
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType): void;
 }
 export declare class SubplebbitClientsManager extends ClientsManager {
     clients: {
@@ -130,11 +153,18 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initPlebbitRpcClients(): void;
-    fetchSubplebbit(ipnsName: string): Promise<SubplebbitIpfsType>;
     updateIpfsState(newState: SubplebbitIpfsClient["state"]): void;
     updatePubsubState(newState: SubplebbitPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void;
     emitError(e: PlebbitError): void;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
-    protected _getStatePriorToResolvingSubplebbitIpfs(): "fetching-subplebbit-ipfs" | "fetching-ipfs";
+    protected postFetchSubplebbitInvalidRecord(subJson: SubplebbitIpfsType, subError: PlebbitError): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: string, chainProviderUrl: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: string, chainProviderUrl: string): void;
+    protected _getSubplebbitAddressFromInstance(): string;
+    protected preResolveSubplebbitIpns(subIpnsName: string): void;
+    protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;
+    protected postResolveSubplebbitIpnsP2P(subIpnsName: string, subplebbitCid: string): void;
+    protected postFetchSubplebbitJsonP2P(subJson: SubplebbitIpfsType): void;
+    protected postFetchSubplebbitJsonSuccess(subJson: SubplebbitIpfsType): void;
 }

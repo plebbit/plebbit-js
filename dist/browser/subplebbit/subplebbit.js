@@ -631,7 +631,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.updateOnce = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, subState, ipnsAddress, error, _a, updateValidity, error;
+            var log, subState, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -650,62 +650,25 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.emit("update", this);
                         constants_1.subplebbitForPublishingCache.set(subState.address, lodash_1.default.pick(subState, ["encryption", "address", "pubsubTopic"]));
                         _b.label = 3;
-                    case 3: return [3 /*break*/, 12];
+                    case 3: return [3 /*break*/, 8];
                     case 4:
-                        ipnsAddress = void 0;
-                        if (!this.address.includes(".")) return [3 /*break*/, 6];
-                        // It's a domain
-                        this._setUpdatingState("resolving-address");
-                        return [4 /*yield*/, this._clientsManager.resolveSubplebbitAddressIfNeeded(this.address)];
-                    case 5:
-                        ipnsAddress = _b.sent();
-                        // if ipnsAddress is undefined that means ENS record has no subplebbit-address text record
-                        if (!ipnsAddress) {
-                            this._setUpdatingState("failed");
-                            error = new plebbit_error_1.PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
-                                subplebbitAddress: this.address,
-                                textRecord: "subplebbit-address"
-                            });
-                            log.error(String(error));
-                            this.emit("error", error);
-                            return [2 /*return*/];
-                        }
-                        return [3 /*break*/, 7];
-                    case 6:
-                        ipnsAddress = this.address;
-                        _b.label = 7;
-                    case 7:
                         this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
                         _a = this;
-                        return [4 /*yield*/, this._retryLoadingSubplebbitIpns(log, ipnsAddress)];
-                    case 8:
+                        return [4 /*yield*/, this._retryLoadingSubplebbitIpns(log, this.address)];
+                    case 5:
                         _a._rawSubplebbitType = _b.sent();
-                        if (!((this.updatedAt || 0) < this._rawSubplebbitType.updatedAt)) return [3 /*break*/, 11];
-                        return [4 /*yield*/, (0, signatures_1.verifySubplebbit)(this._rawSubplebbitType, this.plebbit.resolveAuthorAddresses, this._clientsManager, true)];
-                    case 9:
-                        updateValidity = _b.sent();
-                        if (!updateValidity.valid) {
-                            this._setUpdatingState("failed");
-                            error = new plebbit_error_1.PlebbitError("ERR_SIGNATURE_IS_INVALID", {
-                                signatureValidity: updateValidity,
-                                subplebbitIpns: this._rawSubplebbitType
-                            });
-                            this.emit("error", error);
-                            return [2 /*return*/];
-                        }
+                        if (!((this.updatedAt || 0) < this._rawSubplebbitType.updatedAt)) return [3 /*break*/, 7];
                         return [4 /*yield*/, this.initSubplebbit(this._rawSubplebbitType)];
-                    case 10:
+                    case 6:
                         _b.sent();
-                        this._setUpdatingState("succeeded");
                         log("Remote Subplebbit received a new update. Will emit an update event");
                         this.emit("update", this);
                         constants_1.subplebbitForPublishingCache.set(this._rawSubplebbitType.address, lodash_1.default.pick(this._rawSubplebbitType, ["encryption", "address", "pubsubTopic"]));
-                        return [3 /*break*/, 12];
-                    case 11:
+                        return [3 /*break*/, 8];
+                    case 7:
                         log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
-                        this._setUpdatingState("succeeded");
-                        _b.label = 12;
-                    case 12: return [2 /*return*/];
+                        _b.label = 8;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -1287,7 +1250,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage)];
                     case 3:
                         _e.sent();
-                        log("(".concat(request.challengeRequestId.toString(), "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.omit(toSignChallenge, ["encrypted"])));
+                        log.trace("(".concat(request.challengeRequestId.toString(), "): "), "Published ".concat(challengeMessage.type, " over pubsub: "), (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.omit(toSignChallenge, ["encrypted"])));
                         this._clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
                         this.emit("challenge", __assign(__assign({}, challengeMessage), { challenges: challenges }));
                         return [2 /*return*/];

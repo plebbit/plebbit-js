@@ -62,7 +62,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdateWithCache = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyCommentWithCache = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentEdit = exports.signVote = exports.signCommentUpdate = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
+exports.verifyPage = exports.verifyChallengeVerification = exports.verifyChallengeAnswer = exports.verifyChallengeMessage = exports.verifyChallengeRequest = exports.verifyCommentUpdate = exports.verifySubplebbit = exports.verifyComment = exports.verifyCommentEdit = exports.verifyVote = exports.signChallengeVerification = exports.signChallengeAnswer = exports.signChallengeMessage = exports.signChallengeRequest = exports.signSubplebbit = exports.signCommentEdit = exports.signVote = exports.signCommentUpdate = exports.signComment = exports.verifyBufferEd25519 = exports.signBufferEd25519 = void 0;
 var util_1 = require("./util");
 var cborg = __importStar(require("cborg"));
 var to_string_1 = require("uint8arrays/to-string");
@@ -75,6 +75,8 @@ var lodash_1 = __importDefault(require("lodash"));
 var errors_1 = require("../errors");
 var assert_1 = __importDefault(require("assert"));
 var constants_1 = require("./constants");
+var constants_2 = require("../constants");
+var js_sha256_1 = require("js-sha256");
 var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
 var signBufferEd25519 = function (bufferToSign, privateKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
     var privateKeyBuffer, signature;
@@ -392,7 +394,7 @@ var _verifyPubsubSignature = function (msg) { return __awaiter(void 0, void 0, v
     });
 }); };
 var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) { return __awaiter(void 0, void 0, void 0, function () {
-    var log, authorSignatureValidity, signatureValidity;
+    var log, authorSignatureValidity, signatureValidity, res;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -411,7 +413,10 @@ var _verifyPublicationWithAuthor = function (publicationJson, resolveAuthorAddre
                     log("Will override publication.author.address (".concat(publicationJson.author.address, ") with signer address (").concat(authorSignatureValidity.derivedAddress, ")"));
                     publicationJson.author.address = authorSignatureValidity.derivedAddress;
                 }
-                return [2 /*return*/, { valid: true }];
+                res = { valid: true };
+                if (authorSignatureValidity.derivedAddress)
+                    res.derivedAddress = authorSignatureValidity.derivedAddress;
+                return [2 /*return*/, res];
         }
     });
 }); };
@@ -457,24 +462,16 @@ function verifyComment(comment, resolveAuthorAddresses, clientsManager, override
                     validation = _a.sent();
                     if (!validation.valid)
                         return [2 /*return*/, validation];
-                    return [2 /*return*/, { valid: true }];
+                    return [2 /*return*/, validation];
             }
         });
     });
 }
 exports.verifyComment = verifyComment;
-function verifyCommentWithCache(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
-        });
-    });
-}
-exports.verifyCommentWithCache = verifyCommentWithCache;
 function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var log, signatureValidity, _i, _b, pageName, pageValidity, resolvedSubAddress, subPeerId, signaturePeerId;
+        var log, signatureValidity, cacheKey, _i, _b, pageSortName, pageValidity, resolvedSubAddress, subPeerId, signaturePeerId;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0:
@@ -484,17 +481,20 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, ov
                     signatureValidity = _c.sent();
                     if (!signatureValidity)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                    cacheKey = (0, js_sha256_1.sha256)(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid);
+                    if (constants_2.subplebbitVerificationCache.has(cacheKey))
+                        return [2 /*return*/, { valid: true }];
                     if (!((_a = subplebbit.posts) === null || _a === void 0 ? void 0 : _a.pages)) return [3 /*break*/, 5];
                     _i = 0, _b = Object.keys(subplebbit.posts.pages);
                     _c.label = 2;
                 case 2:
                     if (!(_i < _b.length)) return [3 /*break*/, 5];
-                    pageName = _b[_i];
-                    return [4 /*yield*/, verifyPage(subplebbit.posts.pages[pageName], resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid)];
+                    pageSortName = _b[_i];
+                    return [4 /*yield*/, verifyPage(subplebbit.posts.pageCids[pageSortName], subplebbit.posts.pages[pageSortName], resolveAuthorAddresses, clientsManager, subplebbit.address, undefined, overrideAuthorAddressIfInvalid)];
                 case 3:
                     pageValidity = _c.sent();
                     if (!pageValidity.valid) {
-                        log.error("Subplebbit (".concat(subplebbit.address, ") page (").concat(pageName, " - ").concat(subplebbit.posts.pageCids[pageName], ") has an invalid signature due to reason (").concat(pageValidity.reason, ")"));
+                        log.error("Subplebbit (".concat(subplebbit.address, ") page (").concat(pageSortName, " - ").concat(subplebbit.posts.pageCids[pageSortName], ") has an invalid signature due to reason (").concat(pageValidity.reason, ")"));
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SUBPLEBBIT_POSTS_INVALID }];
                     }
                     _c.label = 4;
@@ -512,6 +512,7 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, ov
                     signaturePeerId = _c.sent();
                     if (!subPeerId.equals(signaturePeerId))
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY }];
+                    constants_2.subplebbitVerificationCache.set(cacheKey, true);
                     return [2 /*return*/, { valid: true }];
             }
         });
@@ -550,39 +551,42 @@ function _getBinaryValidationResult(publication) {
 }
 function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var log, editSignatureValidation, pagesValidity, invalidPageValidity, jsonValidation, updateSignatureAddress, subplebbitResolvedAddress;
+        var log, jsonValidation, cacheKey, editSignatureValidation, pagesValidity, invalidPageValidity, updateSignatureAddress, subplebbitResolvedAddress;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     log = (0, plebbit_logger_1.default)("plebbit-js:signatures:verifyCommentUpdate");
-                    if (!update.edit) return [3 /*break*/, 2];
+                    return [4 /*yield*/, _getJsonValidationResult(update)];
+                case 1:
+                    jsonValidation = _a.sent();
+                    if (!jsonValidation.valid)
+                        return [2 /*return*/, jsonValidation];
+                    cacheKey = (0, js_sha256_1.sha256)(update.signature.signature + resolveAuthorAddresses + subplebbitAddress + JSON.stringify(comment) + overrideAuthorAddressIfInvalid);
+                    if (constants_2.commentUpdateVerificationCache.has(cacheKey))
+                        return [2 /*return*/, { valid: true }];
+                    if (!update.edit) return [3 /*break*/, 3];
                     if (update.edit.signature.publicKey !== comment.signature.publicKey)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR }];
                     return [4 /*yield*/, _getJsonValidationResult(update.edit)];
-                case 1:
+                case 2:
                     editSignatureValidation = _a.sent();
                     if (!editSignatureValidation.valid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
-                    _a.label = 2;
-                case 2:
+                    _a.label = 3;
+                case 3:
                     if (update.cid !== comment.cid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT }];
-                    if (!update.replies) return [3 /*break*/, 4];
-                    return [4 /*yield*/, Promise.all(Object.values(update.replies.pages).map(function (page) {
-                            return verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid);
+                    if (!update.replies) return [3 /*break*/, 5];
+                    return [4 /*yield*/, Promise.all(Object.keys(update.replies.pages).map(function (sortName) {
+                            return verifyPage(update.replies.pageCids[sortName], update.replies.pages[sortName], resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid);
                         }))];
-                case 3:
+                case 4:
                     pagesValidity = _a.sent();
                     invalidPageValidity = pagesValidity.find(function (validity) { return !validity.valid; });
                     if (invalidPageValidity)
                         return [2 /*return*/, invalidPageValidity];
-                    _a.label = 4;
-                case 4: return [4 /*yield*/, _getJsonValidationResult(update)];
-                case 5:
-                    jsonValidation = _a.sent();
-                    if (!jsonValidation.valid)
-                        return [2 /*return*/, jsonValidation];
-                    return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
+                    _a.label = 5;
+                case 5: return [4 /*yield*/, (0, util_1.getPlebbitAddressFromPublicKey)(update.signature.publicKey)];
                 case 6:
                     updateSignatureAddress = _a.sent();
                     return [4 /*yield*/, clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
@@ -592,20 +596,13 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                         log.error("Comment (".concat(update.cid, "), CommentUpdate's signature address (").concat(updateSignatureAddress, ") is not the same as the B58 address of the subplebbit (").concat(subplebbitResolvedAddress, ")"));
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_IS_NOT_SIGNED_BY_SUBPLEBBIT }];
                     }
+                    constants_2.commentUpdateVerificationCache.set(cacheKey, true);
                     return [2 /*return*/, { valid: true }];
             }
         });
     });
 }
 exports.verifyCommentUpdate = verifyCommentUpdate;
-function verifyCommentUpdateWithCache(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid)];
-        });
-    });
-}
-exports.verifyCommentUpdateWithCache = verifyCommentUpdateWithCache;
 // -5 mins
 function _minimumTimestamp() {
     return (0, util_2.timestamp)() - 5 * 60;
@@ -703,12 +700,16 @@ function verifyChallengeVerification(verification, pubsubTopic, validateTimestam
     });
 }
 exports.verifyChallengeVerification = verifyChallengeVerification;
-function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddress, parentCommentCid, overrideAuthorAddressIfInvalid) {
+function verifyPage(pageCid, page, resolveAuthorAddresses, clientsManager, subplebbitAddress, parentCommentCid, overrideAuthorAddressIfInvalid) {
     return __awaiter(this, void 0, void 0, function () {
-        var _i, _a, pageComment, commentSignatureValidity, commentUpdateSignatureValidity;
+        var cacheKey, shouldCache, _i, _a, pageComment, commentSignatureValidity, commentUpdateSignatureValidity;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    cacheKey = (0, js_sha256_1.sha256)(pageCid + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + subplebbitAddress + parentCommentCid);
+                    if (constants_2.pageVerificationCache.has(cacheKey))
+                        return [2 /*return*/, { valid: true }];
+                    shouldCache = true;
                     _i = 0, _a = page.comments;
                     _b.label = 1;
                 case 1:
@@ -718,12 +719,14 @@ function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddr
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB }];
                     if (parentCommentCid !== pageComment.comment.parentCid)
                         return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_PARENT_CID_NOT_AS_EXPECTED }];
-                    return [4 /*yield*/, verifyCommentWithCache(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
+                    return [4 /*yield*/, verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid)];
                 case 2:
                     commentSignatureValidity = _b.sent();
                     if (!commentSignatureValidity.valid)
                         return [2 /*return*/, commentSignatureValidity];
-                    return [4 /*yield*/, verifyCommentUpdateWithCache(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid)];
+                    if (commentSignatureValidity.derivedAddress)
+                        shouldCache = false;
+                    return [4 /*yield*/, verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid)];
                 case 3:
                     commentUpdateSignatureValidity = _b.sent();
                     if (!commentUpdateSignatureValidity.valid)
@@ -732,7 +735,10 @@ function verifyPage(page, resolveAuthorAddresses, clientsManager, subplebbitAddr
                 case 4:
                     _i++;
                     return [3 /*break*/, 1];
-                case 5: return [2 /*return*/, { valid: true }];
+                case 5:
+                    if (shouldCache)
+                        constants_2.pageVerificationCache.set(cacheKey, true);
+                    return [2 /*return*/, { valid: true }];
             }
         });
     });

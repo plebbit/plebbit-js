@@ -128,6 +128,7 @@ var Resolver = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:resolver:_resolveEnsTxtRecord");
+                        log.trace("Attempting to resolve text record (".concat(txtRecordName, ") of address (").concat(address, ") with chain provider (").concat(chainProviderUrl, ")"));
                         if (!(chainProviderUrl === "ethers.js" && chain === "eth")) return [3 /*break*/, 2];
                         return [4 /*yield*/, this._resolveViaEthers(chain, address, txtRecordName)];
                     case 1:
@@ -140,7 +141,7 @@ var Resolver = /** @class */ (function () {
                         txtRecordResult = _a.sent();
                         _a.label = 4;
                     case 4:
-                        log.trace("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
+                        log("Resolved text record name (".concat(txtRecordName, ") of address (").concat(address, ") to ").concat(txtRecordResult, " with chainProvider (").concat(chainProviderUrl, ")"));
                         return [2 /*return*/, txtRecordResult];
                 }
             });

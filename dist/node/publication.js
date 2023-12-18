@@ -611,12 +611,13 @@ var Publication = /** @class */ (function (_super) {
                         _e = this;
                         _f = this._getSubplebbitCache();
                         if (_f) return [3 /*break*/, 16];
-                        return [4 /*yield*/, this._clientsManager.fetchSubplebbitForPublishing(this.subplebbitAddress)];
+                        return [4 /*yield*/, this._clientsManager.fetchSubplebbit(this.subplebbitAddress)];
                     case 15:
                         _f = (_k.sent());
                         _k.label = 16;
                     case 16:
                         _e.subplebbit = _f;
+                        this._validateSubFields();
                         return [3 /*break*/, 18];
                     case 17:
                         e_2 = _k.sent();
@@ -625,9 +626,7 @@ var Publication = /** @class */ (function (_super) {
                         if (this._clientsManager._defaultIpfsProviderUrl)
                             this._clientsManager.updateIpfsState("stopped");
                         throw e_2;
-                    case 18:
-                        this._validateSubFields();
-                        return [4 /*yield*/, this._plebbit.createSigner()];
+                    case 18: return [4 /*yield*/, this._plebbit.createSigner()];
                     case 19:
                         pubsubMessageSigner = _k.sent();
                         return [4 /*yield*/, (0, signer_1.encryptEd25519AesGcm)(JSON.stringify(this.toJSONPubsubMessage()), pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey)];

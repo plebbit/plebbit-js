@@ -50,7 +50,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRpcFlagOn = exports.generatePostToAnswerMathQuestion = exports.createSubWithNoChallenge = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockGatewayPlebbit = exports.mockRpcServerPlebbit = exports.mockRemotePlebbitIpfsOnly = exports.mockRemotePlebbit = exports.mockPlebbit = exports.mockDefaultOptionsForNodeAndBrowserTests = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
+exports.isRpcFlagOn = exports.generatePostToAnswerMathQuestion = exports.createSubWithNoChallenge = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockMultipleGatewaysPlebbit = exports.mockGatewayPlebbit = exports.mockRpcServerPlebbit = exports.mockRemotePlebbitIpfsOnly = exports.mockRemotePlebbit = exports.mockPlebbit = exports.mockDefaultOptionsForNodeAndBrowserTests = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
 var util_1 = require("../util");
 var comment_1 = require("../comment");
 var index_1 = __importDefault(require("../index"));
@@ -504,6 +504,14 @@ function mockGatewayPlebbit(plebbitOptions) {
     });
 }
 exports.mockGatewayPlebbit = mockGatewayPlebbit;
+function mockMultipleGatewaysPlebbit(plebbitOptions) {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2 /*return*/, mockGatewayPlebbit(__assign({ ipfsGatewayUrls: [] }, plebbitOptions))];
+        });
+    });
+}
+exports.mockMultipleGatewaysPlebbit = mockMultipleGatewaysPlebbit;
 function publishRandomReply(parentComment, plebbit, commentProps, verifyCommentPropsInParentPages) {
     if (verifyCommentPropsInParentPages === void 0) { verifyCommentPropsInParentPages = true; }
     return __awaiter(this, void 0, void 0, function () {

@@ -80,6 +80,7 @@ var base_client_manager_1 = require("./base-client-manager");
 var constants_1 = require("../constants");
 var plebbit_rpc_state_client_1 = require("./plebbit-rpc-state-client");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
+var p_limit_1 = __importDefault(require("p-limit"));
 var ClientsManager = /** @class */ (function (_super) {
     __extends(ClientsManager, _super);
     function ClientsManager(plebbit) {
@@ -214,11 +215,238 @@ var ClientsManager = /** @class */ (function (_super) {
             });
         });
     };
+    // fetchSubplebbit should be here
+    ClientsManager.prototype._findErrorInSubplebbitRecord = function (subJson, ipnsNameOfSub) {
+        return __awaiter(this, void 0, void 0, function () {
+            var subInstanceAddress, error, updateValidity, error;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        subInstanceAddress = this._getSubplebbitAddressFromInstance();
+                        if (subJson.address !== subInstanceAddress) {
+                            error = new plebbit_error_1.PlebbitError("ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT", {
+                                addressFromSubplebbitInstance: subInstanceAddress,
+                                ipnsName: ipnsNameOfSub,
+                                addressFromGateway: subJson.address,
+                                subplebbitIpnsFromGateway: subJson
+                            });
+                            return [2 /*return*/, error];
+                        }
+                        return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._plebbit.resolveAuthorAddresses, this, true)];
+                    case 1:
+                        updateValidity = _a.sent();
+                        if (!updateValidity.valid) {
+                            error = new plebbit_error_1.PlebbitError("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID", {
+                                signatureValidity: updateValidity,
+                                actualIpnsName: ipnsNameOfSub,
+                                subplebbitIpns: subJson
+                            });
+                            return [2 /*return*/, error];
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ClientsManager.prototype.fetchSubplebbit = function (subAddress) {
+        return __awaiter(this, void 0, void 0, function () {
+            var ipnsName;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(subAddress)];
+                    case 1:
+                        ipnsName = _a.sent();
+                        // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
+                        return [2 /*return*/, this._fetchSubplebbitIpns(ipnsName)];
+                }
+            });
+        });
+    };
+    ClientsManager.prototype._fetchSubplebbitIpns = function (ipnsName) {
+        return __awaiter(this, void 0, void 0, function () {
+            var subJson, subplebbitCid, _a, _b, subError;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        // This function should fetch SubplebbitIpfs, parse it and verify its signature
+                        // Then return SubplebbitIpfs
+                        this.preResolveSubplebbitIpns(ipnsName);
+                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
+                        this.preResolveSubplebbitIpnsP2P(ipnsName);
+                        return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
+                    case 1:
+                        subplebbitCid = _c.sent();
+                        this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, this._fetchCidP2P(subplebbitCid)];
+                    case 2:
+                        subJson = _b.apply(_a, [_c.sent()]);
+                        this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
+                        return [3 /*break*/, 5];
+                    case 3: return [4 /*yield*/, this._fetchSubplebbitFromGateways(ipnsName)];
+                    case 4:
+                        subJson = _c.sent();
+                        _c.label = 5;
+                    case 5: return [4 /*yield*/, this._findErrorInSubplebbitRecord(subJson, ipnsName)];
+                    case 6:
+                        subError = _c.sent();
+                        if (subError) {
+                            this.postFetchSubplebbitInvalidRecord(subJson, subError); // should throw here
+                            throw subError; // in case we forgot to throw at postFetchSubplebbitInvalidRecord
+                        }
+                        this.postFetchSubplebbitJsonSuccess(subJson); // We successfully fetched the json
+                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+                        return [2 /*return*/, subJson];
+                }
+            });
+        });
+    };
+    ClientsManager.prototype._fetchSubplebbitFromGateways = function (ipnsName) {
+        return __awaiter(this, void 0, void 0, function () {
+            var log, concurrencyLimit, timeoutMs, path, queueLimit, gatewaysSorted, _a, gatewayFetches, _loop_1, _i, gatewaysSorted_1, gateway, cleanUp, _findRecentSubplebbit, promisesToIterate, suitableSubplebbit, _b, gatewayToError, _c, _d, gatewayUrl, combinedError;
+            var _this = this;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
+                        concurrencyLimit = 3;
+                        timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs("subplebbit");
+                        path = "/ipns/".concat(ipnsName);
+                        queueLimit = (0, p_limit_1.default)(concurrencyLimit);
+                        if (!(Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit)) return [3 /*break*/, 1];
+                        _a = Object.keys(this._plebbit.clients.ipfsGateways);
+                        return [3 /*break*/, 3];
+                    case 1: return [4 /*yield*/, this._plebbit.stats.sortGatewaysAccordingToScore("ipns")];
+                    case 2:
+                        _a = _e.sent();
+                        _e.label = 3;
+                    case 3:
+                        gatewaysSorted = _a;
+                        gatewayFetches = {};
+                        _loop_1 = function (gateway) {
+                            var abortController = new AbortController();
+                            gatewayFetches[gateway] = {
+                                abortController: abortController,
+                                promise: queueLimit(function () { return _this._fetchWithGateway(gateway, path, "subplebbit", abortController); }),
+                                timeoutId: setTimeout(function () { return abortController.abort(); }, timeoutMs)
+                            };
+                        };
+                        for (_i = 0, gatewaysSorted_1 = gatewaysSorted; _i < gatewaysSorted_1.length; _i++) {
+                            gateway = gatewaysSorted_1[_i];
+                            _loop_1(gateway);
+                        }
+                        cleanUp = function () {
+                            queueLimit.clearQueue();
+                            Object.values(gatewayFetches).map(function (gateway) {
+                                if (!gateway.subplebbitRecord && !gateway.error)
+                                    gateway.abortController.abort();
+                                clearTimeout(gateway.timeoutId);
+                            });
+                        };
+                        _findRecentSubplebbit = function () {
+                            // Try to find a very recent subplebbit
+                            // If not then go with the most recent subplebbit record after fetching from 3 gateways
+                            var gatewaysWithSub = Object.keys(gatewayFetches).filter(function (gatewayUrl) { return gatewayFetches[gatewayUrl].subplebbitRecord; });
+                            if (gatewaysWithSub.length === 0)
+                                return undefined;
+                            var totalGateways = gatewaysSorted.length;
+                            var quorm = totalGateways <= 3 ? totalGateways : 3;
+                            var gatewaysWithError = Object.keys(gatewayFetches).filter(function (gatewayUrl) { return gatewayFetches[gatewayUrl].error; });
+                            for (var _i = 0, gatewaysWithSub_1 = gatewaysWithSub; _i < gatewaysWithSub_1.length; _i++) {
+                                var gatewayUrl = gatewaysWithSub_1[_i];
+                                if ((0, util_1.timestamp)() - gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt <= 120) {
+                                    // A very recent subplebbit, a good thing
+                                    // TODO reward this gateway
+                                    log("Gateway (".concat(gatewayUrl, ") was able to find a very recent subplebbit (").concat(ipnsName, ") record "));
+                                    return gatewayFetches[gatewayUrl].subplebbitRecord;
+                                }
+                            }
+                            // We weren't able to find a very recent subplebbit record
+                            if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
+                                // we find the gateway with the max updatedAt
+                                var bestGatewayUrl = lodash_1.default.maxBy(gatewaysWithSub, function (gatewayUrl) { return gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt; });
+                                return gatewayFetches[bestGatewayUrl].subplebbitRecord;
+                            }
+                            else
+                                return undefined;
+                        };
+                        promisesToIterate = (Object.values(gatewayFetches).map(function (gatewayFetch) { return gatewayFetch.promise; }));
+                        _e.label = 4;
+                    case 4:
+                        _e.trys.push([4, 6, , 7]);
+                        return [4 /*yield*/, new Promise(function (resolve, reject) {
+                                return promisesToIterate.map(function (gatewayPromise, i) {
+                                    return gatewayPromise.then(function (res) { return __awaiter(_this, void 0, void 0, function () {
+                                        var gatewaysWithError, recentSubplebbit;
+                                        return __generator(this, function (_a) {
+                                            if (typeof res === "string")
+                                                Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
+                                            else {
+                                                // The fetching failed, if res === undefined then it's because it was aborted
+                                                // else then there's plebbitError
+                                                Object.values(gatewayFetches)[i].error = res
+                                                    ? res.error
+                                                    : new Error("Fetching from gateway has been aborted/timed out");
+                                                gatewaysWithError = Object.keys(gatewayFetches).filter(function (gatewayUrl) { return gatewayFetches[gatewayUrl].error; });
+                                                if (gatewaysWithError.length === gatewaysSorted.length)
+                                                    // All gateways failed
+                                                    reject("All gateways failed to fetch subplebbit record " + ipnsName);
+                                            }
+                                            recentSubplebbit = _findRecentSubplebbit();
+                                            if (recentSubplebbit) {
+                                                cleanUp();
+                                                resolve(recentSubplebbit);
+                                            }
+                                            return [2 /*return*/];
+                                        });
+                                    }); });
+                                });
+                            })];
+                    case 5:
+                        suitableSubplebbit = _e.sent();
+                        return [3 /*break*/, 7];
+                    case 6:
+                        _b = _e.sent();
+                        cleanUp();
+                        gatewayToError = {};
+                        for (_c = 0, _d = Object.keys(gatewayFetches); _c < _d.length; _c++) {
+                            gatewayUrl = _d[_c];
+                            if (gatewayFetches[gatewayUrl].error)
+                                gatewayToError[gatewayUrl] = gatewayFetches[gatewayUrl].error;
+                        }
+                        combinedError = new plebbit_error_1.PlebbitError("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", { ipnsName: ipnsName, gatewayToError: gatewayToError });
+                        throw combinedError;
+                    case 7: 
+                    // TODO add punishment for gateway that returns old ipns record
+                    // TODO add punishment for gateway that returns invalid subplebbit
+                    return [2 /*return*/, suitableSubplebbit];
+                }
+            });
+        });
+    };
     ClientsManager.prototype._getStatePriorToResolvingSubplebbitIpns = function () {
         return "fetching-subplebbit-ipns";
     };
-    ClientsManager.prototype._getStatePriorToResolvingSubplebbitIpfs = function () {
-        return "fetching-subplebbit-ipfs";
+    ClientsManager.prototype._getSubplebbitAddressFromInstance = function () {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.postFetchSubplebbitInvalidRecord = function (subJson, subError) {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.preResolveSubplebbitIpns = function (subIpnsName) {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.preResolveSubplebbitIpnsP2P = function (subIpnsName) {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.postResolveSubplebbitIpnsP2P = function (subIpnsName, subplebbitCid) {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.postFetchSubplebbitJsonP2P = function (subJson) {
+        throw Error("Should be implemented");
+    };
+    ClientsManager.prototype.postFetchSubplebbitJsonSuccess = function (subJson) {
+        throw Error("Should be implemented");
     };
     return ClientsManager;
 }(base_client_manager_1.BaseClientsManager));
@@ -255,57 +483,25 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     // Resolver methods here
     PublicationClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
         _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
-        if (this._publication.publishingState === "stopped" && this._attemptingToResolve)
+        var isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
+        if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish)
             this._publication._updatePublishingState("resolving-subplebbit-address");
+    };
+    PublicationClientsManager.prototype.postResolveTextRecordSuccess = function (address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
+        // TODO should check for regex of ipns eventually
+        _super.prototype.postResolveTextRecordSuccess.call(this, address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+        if (!resolvedTextRecord) {
+            this._publication._updatePublishingState("failed");
+            var error = new plebbit_error_1.PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+                subplebbitAddress: address,
+                textRecord: txtRecordName
+            });
+            this._publication.emit("error", error);
+            throw error;
+        }
     };
     PublicationClientsManager.prototype.emitError = function (e) {
         this._publication.emit("error", e);
-    };
-    PublicationClientsManager.prototype.fetchSubplebbitForPublishing = function (subplebbitAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            var subIpns, subJson, subCid, _a, _b, _c, _d, signatureValidity;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0:
-                        if (typeof subplebbitAddress !== "string" || subplebbitAddress.length === 0)
-                            (0, util_1.throwWithErrorCode)("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: subplebbitAddress });
-                        this._attemptingToResolve = true;
-                        return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(subplebbitAddress)];
-                    case 1:
-                        subIpns = _e.sent();
-                        this._attemptingToResolve = false;
-                        if (!subIpns)
-                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", { ensAddress: subplebbitAddress });
-                        this._publication._updatePublishingState("fetching-subplebbit-ipns");
-                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
-                        this.updateIpfsState("fetching-subplebbit-ipns");
-                        return [4 /*yield*/, this.resolveIpnsToCidP2P(subIpns)];
-                    case 2:
-                        subCid = _e.sent();
-                        this._publication._updatePublishingState("fetching-subplebbit-ipfs");
-                        this.updateIpfsState("fetching-subplebbit-ipfs");
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._fetchCidP2P(subCid)];
-                    case 3:
-                        subJson = _b.apply(_a, [_e.sent()]);
-                        this.updateIpfsState("stopped");
-                        return [3 /*break*/, 6];
-                    case 4:
-                        _d = (_c = JSON).parse;
-                        return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit")];
-                    case 5:
-                        subJson = _d.apply(_c, [_e.sent()]);
-                        _e.label = 6;
-                    case 6: return [4 /*yield*/, (0, signer_1.verifySubplebbit)(subJson, this._plebbit.resolveAuthorAddresses, this, false)];
-                    case 7:
-                        signatureValidity = _e.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, subplebbitAddress: subplebbitAddress, subJson: subJson });
-                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
-                        return [2 /*return*/, subJson];
-                }
-            });
-        });
     };
     PublicationClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
@@ -316,6 +512,28 @@ var PublicationClientsManager = /** @class */ (function (_super) {
     PublicationClientsManager.prototype.updateGatewayState = function (newState, gateway) {
         _super.prototype.updateGatewayState.call(this, newState, gateway);
     };
+    PublicationClientsManager.prototype._getSubplebbitAddressFromInstance = function () {
+        return this._publication.subplebbitAddress;
+    };
+    PublicationClientsManager.prototype.postFetchSubplebbitInvalidRecord = function (subJson, subError) {
+        this._publication._updatePublishingState("failed");
+        this._publication.emit("error", subError);
+        throw subError;
+    };
+    PublicationClientsManager.prototype.preResolveSubplebbitIpns = function (subIpnsName) {
+        this._publication._updatePublishingState("fetching-subplebbit-ipns");
+    };
+    PublicationClientsManager.prototype.preResolveSubplebbitIpnsP2P = function (subIpnsName) {
+        this.updateIpfsState("fetching-subplebbit-ipns");
+    };
+    PublicationClientsManager.prototype.postResolveSubplebbitIpnsP2P = function (subIpnsName, subplebbitCid) {
+        this.updateIpfsState("fetching-subplebbit-ipfs");
+        this._publication._updatePublishingState("fetching-subplebbit-ipfs");
+    };
+    PublicationClientsManager.prototype.postFetchSubplebbitJsonP2P = function (subJson) {
+        this.updateIpfsState("stopped");
+    };
+    PublicationClientsManager.prototype.postFetchSubplebbitJsonSuccess = function (subJson) { };
     return PublicationClientsManager;
 }(ClientsManager));
 exports.PublicationClientsManager = PublicationClientsManager;
@@ -344,49 +562,12 @@ var CommentClientsManager = /** @class */ (function (_super) {
     // Resolver methods here
     CommentClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, resolvedTextRecord, chain) {
         _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, resolvedTextRecord, chain);
-        if (txtRecordName === "subplebbit-address")
-            this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for CommentUpdate
-        else if (txtRecordName === "plebbit-author-address")
-            this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
-    };
-    CommentClientsManager.prototype._fetchSubplebbitForCommentUpdate = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var subIpns, subJson, subplebbitCid, _a, _b, _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0: return [4 /*yield*/, this.resolveSubplebbitAddressIfNeeded(this._comment.subplebbitAddress)];
-                    case 1:
-                        subIpns = _e.sent();
-                        if (!subIpns)
-                            throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD", {
-                                ensAddress: this._comment.subplebbitAddress
-                            });
-                        this._comment._setUpdatingState("fetching-subplebbit-ipns");
-                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 4];
-                        this.updateIpfsState("fetching-subplebbit-ipns");
-                        return [4 /*yield*/, this.resolveIpnsToCidP2P(subIpns)];
-                    case 2:
-                        subplebbitCid = _e.sent();
-                        this._comment._setUpdatingState("fetching-subplebbit-ipfs");
-                        this.updateIpfsState("fetching-subplebbit-ipfs");
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._fetchCidP2P(subplebbitCid)];
-                    case 3:
-                        subJson = _b.apply(_a, [_e.sent()]);
-                        return [3 /*break*/, 6];
-                    case 4:
-                        _d = (_c = JSON).parse;
-                        return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: subIpns }, "subplebbit")];
-                    case 5:
-                        // States of gateways should be updated by fetchFromMultipleGateways
-                        subJson = _d.apply(_c, [_e.sent()]);
-                        _e.label = 6;
-                    case 6:
-                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
-                        return [2 /*return*/, subJson];
-                }
-            });
-        });
+        if (this._comment.state === "updating") {
+            if (txtRecordName === "subplebbit-address")
+                this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for Subplebbit
+            else if (txtRecordName === "plebbit-author-address")
+                this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
+        }
     };
     CommentClientsManager.prototype._findCommentInSubplebbitPosts = function (subIpns, cid) {
         var _a, _b;
@@ -509,7 +690,7 @@ var CommentClientsManager = /** @class */ (function (_super) {
                 switch (_e.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                        return [4 /*yield*/, this._fetchSubplebbitForCommentUpdate()];
+                        return [4 /*yield*/, this.fetchSubplebbit(this._comment.subplebbitAddress)];
                     case 1:
                         subIpns = _e.sent();
                         return [4 /*yield*/, this._getParentsPath(subIpns)];
@@ -596,6 +777,61 @@ var CommentClientsManager = /** @class */ (function (_super) {
     CommentClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
     };
+    CommentClientsManager.prototype._isPublishing = function () {
+        return this._comment.state === "publishing";
+    };
+    CommentClientsManager.prototype.postFetchSubplebbitInvalidRecord = function (subJson, subError) {
+        // are we updating or publishing?
+        if (this._isPublishing()) {
+            // we're publishing
+            this._comment._updatePublishingState("failed");
+        }
+        else {
+            // we're updating
+            this._comment._setUpdatingState("failed");
+        }
+        this._comment.emit("error", subError);
+        throw subError;
+    };
+    CommentClientsManager.prototype.postResolveTextRecordSuccess = function (address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
+        _super.prototype.postResolveTextRecordSuccess.call(this, address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+        // TODO should check for regex of ipns eventually
+        if (!resolvedTextRecord) {
+            // need to check if publishing or updating
+            if (this._isPublishing()) {
+                this._comment._updatePublishingState("failed");
+            }
+            else
+                this._comment._setUpdatingState("failed");
+            var error = new plebbit_error_1.PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+                subplebbitAddress: address,
+                textRecord: txtRecordName
+            });
+            this._comment.emit("error", error);
+            throw error;
+        }
+    };
+    CommentClientsManager.prototype.preResolveSubplebbitIpns = function (subIpnsName) {
+        if (this._isPublishing())
+            this._comment._updatePublishingState("fetching-subplebbit-ipns");
+        else
+            this._comment._setUpdatingState("fetching-subplebbit-ipns");
+    };
+    CommentClientsManager.prototype.preResolveSubplebbitIpnsP2P = function (subIpnsName) {
+        this.updateIpfsState("fetching-subplebbit-ipns");
+    };
+    CommentClientsManager.prototype.postResolveSubplebbitIpnsP2P = function (subIpnsName, subplebbitCid) {
+        this.updateIpfsState("fetching-subplebbit-ipfs");
+        if (this._isPublishing())
+            this._comment._updatePublishingState("fetching-subplebbit-ipfs");
+        else
+            this._comment._setUpdatingState("fetching-subplebbit-ipfs");
+    };
+    CommentClientsManager.prototype.postFetchSubplebbitJsonP2P = function (subJson) {
+        if (this._isPublishing())
+            this.updateIpfsState("stopped");
+    };
+    CommentClientsManager.prototype.postFetchSubplebbitJsonSuccess = function (subJson) { };
     return CommentClientsManager;
 }(PublicationClientsManager));
 exports.CommentClientsManager = CommentClientsManager;
@@ -628,40 +864,6 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
             this.clients.plebbitRpcClients = __assign(__assign({}, this.clients.plebbitRpcClients), (_a = {}, _a[rpcUrl] = new plebbit_rpc_state_client_1.SubplebbitPlebbitRpcStateClient("stopped"), _a));
         }
     };
-    SubplebbitClientsManager.prototype.fetchSubplebbit = function (ipnsName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var subJson, subplebbitCid, _a, _b, _c, _d;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
-                    case 0:
-                        this._subplebbit._setUpdatingState("fetching-ipns");
-                        if (!this._defaultIpfsProviderUrl) return [3 /*break*/, 3];
-                        this.updateIpfsState("fetching-ipns");
-                        return [4 /*yield*/, this.resolveIpnsToCidP2P(ipnsName)];
-                    case 1:
-                        subplebbitCid = _e.sent();
-                        this._subplebbit._setUpdatingState("fetching-ipfs");
-                        this.updateIpfsState("fetching-ipfs");
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, this._fetchCidP2P(subplebbitCid)];
-                    case 2:
-                        subJson = _b.apply(_a, [_e.sent()]);
-                        this.updateIpfsState("stopped");
-                        return [3 /*break*/, 5];
-                    case 3:
-                        _d = (_c = JSON).parse;
-                        return [4 /*yield*/, this.fetchFromMultipleGateways({ ipns: ipnsName }, "subplebbit")];
-                    case 4:
-                        // States of gateways should be updated by fetchFromMultipleGateways
-                        subJson = _d.apply(_c, [_e.sent()]);
-                        _e.label = 5;
-                    case 5:
-                        constants_1.subplebbitForPublishingCache.set(subJson.address, lodash_1.default.pick(subJson, ["encryption", "pubsubTopic", "address"]));
-                        return [2 /*return*/, subJson];
-                }
-            });
-        });
-    };
     SubplebbitClientsManager.prototype.updateIpfsState = function (newState) {
         _super.prototype.updateIpfsState.call(this, newState);
     };
@@ -677,8 +879,50 @@ var SubplebbitClientsManager = /** @class */ (function (_super) {
     SubplebbitClientsManager.prototype._getStatePriorToResolvingSubplebbitIpns = function () {
         return "fetching-ipns";
     };
-    SubplebbitClientsManager.prototype._getStatePriorToResolvingSubplebbitIpfs = function () {
-        return "fetching-ipfs";
+    SubplebbitClientsManager.prototype.postFetchSubplebbitInvalidRecord = function (subJson, subError) {
+        this._subplebbit._setUpdatingState("failed");
+        this._subplebbit.emit("error", subError);
+        throw subError;
+    };
+    SubplebbitClientsManager.prototype.preResolveTextRecord = function (address, txtRecordName, chain, chainProviderUrl) {
+        _super.prototype.preResolveTextRecord.call(this, address, txtRecordName, chain, chainProviderUrl);
+        if (this._subplebbit.state === "updating" &&
+            txtRecordName === "subplebbit-address" &&
+            this._subplebbit.updatingState !== "fetching-ipfs" // we don't state to be resolving-address when verifying signature
+        )
+            this._subplebbit._setUpdatingState("resolving-address");
+    };
+    SubplebbitClientsManager.prototype.postResolveTextRecordSuccess = function (address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
+        _super.prototype.postResolveTextRecordSuccess.call(this, address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+        // TODO should check for regex of ipns eventually
+        if (!resolvedTextRecord && this._subplebbit.state === "updating") {
+            this._subplebbit._setUpdatingState("failed");
+            var error = new plebbit_error_1.PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+                subplebbitAddress: address,
+                textRecord: txtRecordName
+            });
+            this._subplebbit.emit("error", error);
+            throw error;
+        }
+    };
+    SubplebbitClientsManager.prototype._getSubplebbitAddressFromInstance = function () {
+        return this._subplebbit.address;
+    };
+    SubplebbitClientsManager.prototype.preResolveSubplebbitIpns = function (subIpnsName) {
+        this._subplebbit._setUpdatingState("fetching-ipns");
+    };
+    SubplebbitClientsManager.prototype.preResolveSubplebbitIpnsP2P = function (subIpnsName) {
+        this.updateIpfsState("fetching-ipns");
+    };
+    SubplebbitClientsManager.prototype.postResolveSubplebbitIpnsP2P = function (subIpnsName, subplebbitCid) {
+        this.updateIpfsState("fetching-ipfs");
+        this._subplebbit._setUpdatingState("fetching-ipfs");
+    };
+    SubplebbitClientsManager.prototype.postFetchSubplebbitJsonP2P = function (subJson) {
+        this.updateIpfsState("stopped");
+    };
+    SubplebbitClientsManager.prototype.postFetchSubplebbitJsonSuccess = function (subJson) {
+        this._subplebbit._setUpdatingState("succeeded");
     };
     return SubplebbitClientsManager;
 }(ClientsManager));

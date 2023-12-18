@@ -24,6 +24,7 @@ var messages;
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"] = "Failed to fetch IPFS file via gateway";
     messages["ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS"] = "Failed to fetch an IPFS via IPFS P2P";
     messages["ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"] = "Failed to fetch IPNS through gateway";
+    messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"] = "Failed to fetch Subplebbit IPNS record from gateway(s)";
     messages["ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS"] = "Failed to resolve IPNS through IPFS P2P";
     messages["ERR_FAILED_TO_FETCH_GENERIC"] = "Failed to fetch";
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
@@ -36,6 +37,7 @@ var messages;
     messages["ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58"] = "The public key of the signature is not B58";
     // Verify Signature errors
     messages["ERR_SIGNATURE_IS_INVALID"] = "Signature of publication is invalid";
+    messages["ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT"] = "The gateway has responded with a subplebbit record that does not correspond to the requested subplebbit";
     messages["ERR_AUTHOR_NOT_MATCHING_SIGNATURE"] = "comment.author.address doesn't match comment.signature.publicKey";
     messages["ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY"] = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey";
     messages["ERR_COMMENT_SHOULD_BE_THE_LATEST_EDIT"] = "comment.content is not set to the latest comment.authorEdit.content";
@@ -51,6 +53,7 @@ var messages;
     messages["ERR_SUBPLEBBIT_POSTS_INVALID"] = "subplebbit.posts signature is invalid";
     messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"] = "CommentIpfs signature is invalid";
     messages["ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID"] = "CommentUpdate signature is invalid";
+    messages["ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"] = "Subplebbit signature is invalid";
     // getPage errors
     messages["ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB"] = "Comment in page should be under the same subplebbit";
     messages["ERR_PARENT_CID_NOT_AS_EXPECTED"] = "Comment under parent comment/post should have parentCid initialized";

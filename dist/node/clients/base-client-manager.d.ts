@@ -3,7 +3,6 @@ import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription
 import { PlebbitError } from "../plebbit-error";
 import { Chain, PubsubMessage } from "../types";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
-export declare const resolvePromises: Record<string, Promise<string | null>>;
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string;
@@ -27,14 +26,22 @@ export declare class BaseClientsManager {
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError): void;
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
-    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController): Promise<string | {
+    private _fetchFromGatewayAndVerifyIfNeeded;
+    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController): Promise<string | undefined | {
         error: PlebbitError;
     }>;
+    protected _firstResolve(promises: Promise<string | {
+        error: PlebbitError;
+    }>[]): Promise<{
+        res: string;
+        i: number;
+    }>;
+    getGatewayTimeoutMs(loadType: LoadType): number;
     fetchFromMultipleGateways(loadOpts: {
         cid?: string;
         ipns?: string;
     }, loadType: LoadType): Promise<string>;
-    resolveIpnsToCidP2P(ipns: string): Promise<string>;
+    resolveIpnsToCidP2P(ipnsName: string): Promise<string>;
     _fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;
     private _getCachedTextRecord;

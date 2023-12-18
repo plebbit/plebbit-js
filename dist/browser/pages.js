@@ -92,7 +92,7 @@ var BasePages = /** @class */ (function () {
                     case 1:
                         pageIpfs = _a.sent();
                         if (!!this._plebbit.plebbitRpcClient) return [3 /*break*/, 3];
-                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid, true)];
+                        return [4 /*yield*/, (0, signatures_1.verifyPage)(pageCid, pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid, true)];
                     case 2:
                         signatureValidity = _a.sent();
                         if (!signatureValidity.valid)

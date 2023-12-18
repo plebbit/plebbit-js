@@ -33,6 +33,7 @@ export declare function mockRemotePlebbit(plebbitOptions?: PlebbitOptions): Prom
 export declare function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
+export declare function mockMultipleGatewaysPlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function publishRandomReply(parentComment: Comment, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
 export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<PostType>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<VoteType>): Promise<Vote>;
