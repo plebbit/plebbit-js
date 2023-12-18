@@ -289,7 +289,9 @@ const _verifyPublicationWithAuthor = async (
         publicationJson.author.address = authorSignatureValidity.derivedAddress;
     }
 
-    return { valid: true, derivedAddress: authorSignatureValidity.derivedAddress };
+    const res: ValidationResult & { derivedAddress?: string } = { valid: true };
+    if (authorSignatureValidity.derivedAddress) res.derivedAddress = authorSignatureValidity.derivedAddress;
+    return res;
 };
 
 export async function verifyVote(
