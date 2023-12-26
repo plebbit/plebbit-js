@@ -4,6 +4,7 @@ const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require(".
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
 const { default: waitUntil } = require("async-wait-until");
+const { verifyComment, verifyCommentUpdate } = require("../../../dist/node/signer/signatures");
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -11,7 +12,7 @@ const roles = [
     { role: "admin", signer: signers[2] },
     { role: "mod", signer: signers[3] }
 ];
-describe(`Marking comment as spoiler`, async () => {
+describe(`Authors can mark their own comment as spoiler`, async () => {
     let plebbit, authorPost;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -47,9 +48,36 @@ describe(`Marking comment as spoiler`, async () => {
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
         await waitUntil(() => authorPost.spoiler, { timeout: 100000 });
         expect(authorPost.edit.spoiler).to.be.true;
+        expect(authorPost._rawCommentUpdate.edit).to.exist;
+        expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.true;
+
         expect(authorPost.spoiler).to.be.true;
     });
-    it(`Author can unspoiler their comment`, async () => {
+
+    it(`The new Comment with spoiler=true has valid signature`, async () => {
+        const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
+        recreatedPost.update();
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+
+        await recreatedPost.stop();
+        expect(recreatedPost.spoiler).to.be.true;
+
+        const commentIpfsValidity = await verifyComment(recreatedPost._rawCommentIpfs, true, recreatedPost._clientsManager, false);
+        expect(commentIpfsValidity).to.deep.equal({ valid: true });
+
+        const commentUpdateValidity = await verifyCommentUpdate(
+            recreatedPost._rawCommentUpdate,
+            true,
+            recreatedPost._clientsManager,
+            recreatedPost.subplebbitAddress,
+            recreatedPost,
+            false
+        );
+        expect(commentUpdateValidity).to.deep.equal({ valid: true });
+    });
+
+    it(`Author can unspoiler their own comment`, async () => {
         const unspoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: authorPost.subplebbitAddress,
             commentCid: authorPost.cid,
@@ -63,19 +91,68 @@ describe(`Marking comment as spoiler`, async () => {
         expect(authorPost.edit.spoiler).to.be.false;
         expect(authorPost.spoiler).to.be.false;
     });
+});
+
+describe(`Mods marking an author comment as spoiler`, async () => {
+    let plebbit, randomPost;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        randomPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        randomPost.update();
+    });
+
+    after(async () => {
+        await randomPost.stop();
+    });
+
     it(`Mod can mark an author comment as spoiler`, async () => {
-        const randomPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const spoilerEdit = await plebbit.createCommentEdit({
+        const modSpoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: randomPost.subplebbitAddress,
             commentCid: randomPost.cid,
             spoiler: true,
             signer: roles[2].signer
         });
-        await publishWithExpectedResult(spoilerEdit, true);
+        await publishWithExpectedResult(modSpoilerEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with spoiler=true`, async () => {
+        await waitUntil(() => randomPost.spoiler === true, { timeout: 100000 });
+        expect(randomPost.spoiler).to.be.true;
+        expect(randomPost._rawCommentUpdate.spoiler).to.be.true;
+    });
+
+    it(`Mod can mark unspoiler author comment `, async () => {
+        const unspoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: randomPost.subplebbitAddress,
+            commentCid: randomPost.cid,
+            spoiler: false,
+            signer: roles[2].signer
+        });
+        await publishWithExpectedResult(unspoilerEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with spoiler=false`, async () => {
+        await waitUntil(() => !randomPost.spoiler, { timeout: 100000 });
+        expect(randomPost._rawCommentUpdate.spoiler).to.be.false;
+        expect(randomPost.spoiler).to.be.false;
+    });
+});
+
+describe(`Mods marking their own comment as spoiler`, async () => {
+    let plebbit, modPost;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
+        modPost.update();
+    });
+
+    after(async () => {
+        await modPost.stop();
     });
 
     it(`Mod can mark their own comment as spoiler`, async () => {
-        const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
         const spoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: modPost.subplebbitAddress,
             commentCid: modPost.cid,
@@ -85,22 +162,25 @@ describe(`Marking comment as spoiler`, async () => {
         await publishWithExpectedResult(spoilerEdit, true);
     });
 
-    it(`A comment that was published with spoiler=true can be edited to spoiler=false`, async () => {
-        const spoilerPost = await publishRandomPost(subplebbitAddress, plebbit, { spoiler: true }, false);
-        expect(spoilerPost.spoiler).to.be.true;
-        expect(spoilerPost.edit?.spoiler).to.be.undefined;
-        await spoilerPost.update();
+    it(`A new CommentUpdate is published with spoiler=true`, async () => {
+        await waitUntil(() => modPost.spoiler === true, { timeout: 100000 });
+        expect(modPost.spoiler).to.be.true;
+        expect(modPost._rawCommentUpdate.spoiler).to.be.true;
+    });
 
-        const spoilerEdit = await plebbit.createCommentEdit({
-            subplebbitAddress: spoilerPost.subplebbitAddress,
-            commentCid: spoilerPost.cid,
+    it(`Mod can mark unspoiler their own `, async () => {
+        const unspoilerEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: modPost.subplebbitAddress,
+            commentCid: modPost.cid,
             spoiler: false,
-            signer: spoilerPost.signer
+            signer: roles[2].signer
         });
-        await publishWithExpectedResult(spoilerEdit, true);
-        await waitUntil(() => spoilerPost.spoiler === false, { timeout: 200000 });
-        spoilerPost.stop();
-        expect(spoilerPost.spoiler).to.be.false;
-        expect(spoilerPost.edit.spoiler).to.be.false;
+        await publishWithExpectedResult(unspoilerEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with spoiler=false`, async () => {
+        await waitUntil(() => !modPost.spoiler, { timeout: 100000 });
+        expect(modPost._rawCommentUpdate.spoiler).to.be.false;
+        expect(modPost.spoiler).to.be.false;
     });
 });
