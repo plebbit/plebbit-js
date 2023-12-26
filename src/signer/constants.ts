@@ -98,7 +98,6 @@ export const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentE
     "pinned",
     "locked",
     "removed",
-    "reason",
     "flair",
     "reason",
     "commentAuthor"
