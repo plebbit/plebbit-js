@@ -39,7 +39,7 @@ describe(`Client side verification`, async () => {
         subJson.updatedAt += 1; // should invalidate the signature
         expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
             valid: false,
-            reason: messages.ERR_SIGNATURE_IS_INVALID
+            reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID
         });
 
         const mockPost = await generateMockPost(subplebbitAddress, customPlebbit);

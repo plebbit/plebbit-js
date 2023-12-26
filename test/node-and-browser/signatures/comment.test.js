@@ -269,4 +269,23 @@ describe(`commentupdate`, async () => {
         );
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
+
+    it(`commentUpdate.edit is invalidated if any prop is changed and not signed by original author`, async () => {
+        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json"));
+        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json") };
+        expect(
+            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
+        ).to.deep.equal({ valid: true });
+        update.edit.content += "12345"; // Invalidate signature
+        update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit and author
+
+        const verification = await verifyCommentUpdate(
+            update,
+            plebbit.resolveAuthorAddresses,
+            subplebbit._clientsManager,
+            subplebbit.address,
+            comment
+        );
+        expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID });
+    });
 });

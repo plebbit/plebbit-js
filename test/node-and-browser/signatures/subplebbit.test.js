@@ -77,7 +77,7 @@ describe("Verify subplebbit", async () => {
         subJson.posts.pages.hot.comments[0].comment.content += "1234"; // Invalidate signature
         expect(await verifySubplebbit(subJson, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false)).to.deep.equal({
             valid: false,
-            reason: messages.ERR_SIGNATURE_IS_INVALID
+            reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID
         });
     });
 

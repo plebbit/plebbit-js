@@ -336,7 +336,7 @@ export async function verifySubplebbit(
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     const signatureValidity = await _verifyJsonSignature(subplebbit);
-    if (!signatureValidity) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+    if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
     const cacheKey = sha256(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid);
     if (subplebbitVerificationCache.has(cacheKey)) return { valid: true };
 
@@ -406,7 +406,7 @@ export async function verifyCommentUpdate(
         if (update.edit.signature.publicKey !== comment.signature.publicKey)
             return { valid: false, reason: messages.ERR_AUTHOR_EDIT_IS_NOT_SIGNED_BY_AUTHOR };
         const editSignatureValidation = await _getJsonValidationResult(update.edit);
-        if (!editSignatureValidation.valid) return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
+        if (!editSignatureValidation.valid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID };
     }
     if (update.cid !== comment.cid) return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
 
