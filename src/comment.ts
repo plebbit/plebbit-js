@@ -148,7 +148,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.reason = props.reason;
+        this.reason = props.reason || props.edit?.reason;
         this.edit = props.edit;
         this.protocolVersion = props.protocolVersion;
 
