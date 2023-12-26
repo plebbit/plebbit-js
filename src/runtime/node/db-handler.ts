@@ -656,6 +656,7 @@ export class DbHandler {
                 "deleted",
                 "flair",
                 "spoiler",
+                "removed", // in case mod remove their own post, we include it here even though it's not a field of AuthorCommentEdit to make sure the signature will be validated correctly
                 "reason",
                 "author",
                 "signature",
