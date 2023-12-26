@@ -7,7 +7,8 @@ const {
     generateMockVote,
     publishWithExpectedResult,
     findCommentInPage,
-    mockRemotePlebbit
+    mockRemotePlebbit,
+    mockPlebbit
 } = require("../../../dist/node/test/test-util");
 const { expect } = require("chai");
 const { messages } = require("../../../dist/node/errors");
@@ -137,18 +138,39 @@ describe(`Removing post`, async () => {
             expect(unremovedPostInPage.reason).to.equal("To unremove a post");
         }
     });
+});
 
-    it(`Mods can remove their own comments`, async () => {
-        const post = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
+describe(`Mods removing their own posts`, async () => {
+    let plebbit, modPost;
 
+    before(async () => {
+        plebbit = await mockRemotePlebbit();
+        modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
+        modPost.update();
+    });
+
+    after(async () => {
+        await modPost.stop();
+    });
+
+    it(`Mods can remove their own posts`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
-            subplebbitAddress: post.subplebbitAddress,
-            commentCid: post.cid,
+            subplebbitAddress: modPost.subplebbitAddress,
+            commentCid: modPost.cid,
             reason: "For mods to remove their own post",
             removed: true,
             signer: roles[2].signer
         });
         await publishWithExpectedResult(removeEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with removed=true`, async () => {
+        await waitUntil(() => modPost.removed === true, { timeout: 200000 });
+        expect(modPost.removed).to.be.true;
+        expect(modPost._rawCommentUpdate.removed).to.be.true;
+        expect(modPost._rawCommentUpdate.edit.removed).to.be.true;
+        expect(modPost.reason).to.equal("For mods to remove their own post");
+        expect(modPost.edit.reason).to.equal("For mods to remove their own post");
     });
 });
 
