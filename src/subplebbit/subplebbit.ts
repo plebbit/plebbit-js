@@ -1496,31 +1496,23 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private async _repinCommentUpdateIfNeeded() {
         const log = Logger("plebbit-js:start:_repinCommentUpdateIfNeeded");
-        let shouldUpdateAllComments = false;
-        try {
-            await this._clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`);
-        } catch (e) {
-            if (e.message === "file does not exist") shouldUpdateAllComments = true;
-            else throw e;
-        }
 
-        const commentUpdatesToRepin = shouldUpdateAllComments
-            ? await this.dbHandler.queryAllStoredCommentUpdates()
-            : await this.dbHandler.queryCommentUpdatesWithPlaceHolderForIpfsPath();
+        const storedCommentUpdates = await this.dbHandler.queryAllStoredCommentUpdates();
 
-        if (commentUpdatesToRepin.length > 0) {
-            log.error(
-                `CommentUpdates are not added under PostUpdates folder (/${this.address}). Will add all stored CommentUpdate to IPFS files`
-            );
-            for (const commentUpdateRaw of commentUpdatesToRepin) {
+        for (const commentUpdate of storedCommentUpdates) {
+            try {
+                await this._clientsManager.getDefaultIpfs()._client.files.stat(commentUpdate.ipfsPath);
+            } catch (e) {
+                // means the comment update is not on the ipfs node, need to add it
                 // We should calculate new ipfs path
+                if (e.message !== "file does not exist") throw e;
                 const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(
-                    await this.dbHandler.queryComment(commentUpdateRaw.cid),
+                    await this.dbHandler.queryComment(commentUpdate.cid),
                     undefined
                 );
-                await this._writeCommentUpdateToIpfsFilePath(commentUpdateRaw, newIpfsPath, undefined);
-                await this.dbHandler.upsertCommentUpdate({ ...commentUpdateRaw, ipfsPath: newIpfsPath });
-                log(`Added the CommentUpdate of (${commentUpdateRaw.cid}) to IPFS files`);
+                await this._writeCommentUpdateToIpfsFilePath(commentUpdate, newIpfsPath, undefined);
+                await this.dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
+                log(`Added the CommentUpdate of (${commentUpdate.cid}) to IPFS files`);
             }
         }
     }
