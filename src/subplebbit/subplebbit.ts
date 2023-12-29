@@ -1146,7 +1146,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
 
         if (this.isPublicationVote(request.publication)) {
-            const lastVote = await this.dbHandler.getLastVoteOfAuthor(
+            if (![1, 0, -1].includes(request.publication["vote"])) return messages.INCORRECT_VOTE_VALUE;
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(
                 request.publication["commentCid"],
                 request.publication.author.address
             );

@@ -89,6 +89,7 @@ export enum messages {
     ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
     UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE = "An author attempted to change another author's vote",
     COMMENT_LINK_LENGTH_IS_OVER_LIMIT = "comment.link length is over the limit",
+    INCORRECT_VOTE_VALUE = "The vote can only be 1 or 0 or -1",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
