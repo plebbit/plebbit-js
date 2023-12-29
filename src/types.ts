@@ -178,9 +178,11 @@ interface AuthorCommentEditOptions {
     spoiler?: boolean;
     reason?: string;
 }
-export interface AuthorCommentEdit extends AuthorCommentEditOptions, PublicationType {}
+export interface AuthorCommentEdit extends AuthorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {}
 
-export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {}
+export interface ModeratorCommentEdit
+    extends ModeratorCommentEditOptions,
+        Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {}
 export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
     signer: SignerType | Pick<SignerType, "privateKey" | "type">;

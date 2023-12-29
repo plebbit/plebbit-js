@@ -16,7 +16,7 @@ import {
 import { throwWithErrorCode } from "./util";
 import isIPFS from "is-ipfs";
 
-const PUBLICATION_FIELDS: (keyof Required<PublicationType>)[] = [
+const PUBLICATION_FIELDS: (keyof Required<Omit<PublicationType, "challengeCommentCids" | "challengeAnswers">>)[] = [
     "author",
     "protocolVersion",
     "signature",
