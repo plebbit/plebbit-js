@@ -387,7 +387,7 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
     }
 
-    async getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined> {
+    async getStoredVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined> {
         return this._baseTransaction(trx)(TABLES.VOTES)
             .where({
                 commentCid: commentCid,
