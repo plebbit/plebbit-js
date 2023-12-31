@@ -14,7 +14,7 @@ const lodash = require("lodash");
 const { default: waitUntil } = require("async-wait-until");
 const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
 
-const subplebbitAddress = signers[0].address;
+const subplebbitAddress = "plebbit.eth";
 const roles = [
     { role: "owner", signer: signers[1] },
     { role: "admin", signer: signers[2] },
@@ -42,6 +42,12 @@ const removeAllPins = async (allComments, plebbit) => {
 describe(`Pinning posts`, async () => {
     let plebbit, postToPin, secondPostToPin, sub;
 
+    const populateSub = async (subplebbit) => {
+        if (!subplebbit.posts.pageCids) {
+            await Promise.all(new Array(5).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false)));
+            await new Promise((resolve) => subplebbit.once("update", resolve));
+        }
+    };
     before(async () => {
         plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
@@ -52,6 +58,7 @@ describe(`Pinning posts`, async () => {
 
         await postToPin.update();
         await secondPostToPin.update();
+        await populateSub(sub);
         const postsComments = (await sub.posts.getPage(sub.posts.pageCids.new)).comments;
         await removeAllPins(postsComments, plebbit);
     });
@@ -96,7 +103,10 @@ describe(`Pinning posts`, async () => {
     it(`A new CommentUpdate is published with pinned=true`, async () => {
         await waitUntil(() => postToPin.pinned === true, { timeout: 200000 });
         expect(postToPin.pinned).to.be.true;
+        expect(postToPin._rawCommentUpdate.pinned).to.be.true;
+        expect(postToPin._rawCommentUpdate.edit).to.be.undefined;
         expect(postToPin.reason).to.equal("To pin a post");
+        expect(postToPin._rawCommentUpdate.reason).to.equal("To pin a post");
     });
     it(`A pinned post is on the top of every page in subplebbit.posts`, async () => {
         const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
@@ -184,6 +194,11 @@ describe(`Pinning posts`, async () => {
         await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.reason === "To unpin the second post", {
             timeout: 200000
         });
+        expect(secondPostToPin.pinned).to.be.false;
+        expect(secondPostToPin._rawCommentUpdate.pinned).to.be.false;
+        expect(secondPostToPin._rawCommentUpdate.edit).to.be.undefined;
+        expect(secondPostToPin.reason).to.equal("To unpin the second post");
+        expect(secondPostToPin._rawCommentUpdate.reason).to.equal("To unpin the second post");
     });
     it(`Unpinned posts is sorted like regular posts`, async () => {
         const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
@@ -233,12 +248,19 @@ describe(`Pinning posts`, async () => {
 describe(`Pinning replies`, async () => {
     let plebbit, post, replyToPin, sub;
 
+    const populatePost = async () => {
+        if (post.replyCount < 5) {
+            await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit, {}, false)));
+            await new Promise((resolve) => post.once("update", resolve));
+        }
+    };
     before(async () => {
         plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
         post = await plebbit.createComment(lodash.maxBy(allPosts, (c) => c.replyCount));
         await post.update();
+        await populatePost();
         expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
         replyToPin = await publishRandomReply(post, plebbit);
         await removeAllPins(await loadAllPages(post.replies.pageCids.topAll, post.replies), plebbit);

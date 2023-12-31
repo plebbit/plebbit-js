@@ -30,6 +30,15 @@ describe("Deleting a post", async () => {
             publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false)
         ]);
         postReply = await publishRandomReply(postToDelete, plebbit, {}, false);
+        postToDelete.update();
+        modPostToDelete.update();
+        postReply.update();
+    });
+
+    after(async () => {
+        await postToDelete.stop();
+        await modPostToDelete.stop();
+        await postReply.stop();
     });
     it(`Regular author can't mark a post that is not theirs as deleted`, async () => {
         const deleteEdit = await plebbit.createCommentEdit({
@@ -48,7 +57,7 @@ describe("Deleting a post", async () => {
             deleted: true,
             signer: roles[2].signer
         });
-        await publishWithExpectedResult(deleteEdit, false, messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD);
+        await publishWithExpectedResult(deleteEdit, false, messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD);
     });
 
     it(`Author of post can delete their own post`, async () => {
@@ -56,9 +65,21 @@ describe("Deleting a post", async () => {
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
             deleted: true,
-            signer: postToDelete.signer
+            signer: postToDelete.signer,
+            reason: "To test delete for author"
         });
         await publishWithExpectedResult(deleteEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
+        await waitUntil(() => postToDelete.deleted === true, { timeout: 200000 });
+        expect(postToDelete.deleted).to.be.true;
+        expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
+        expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
+        expect(postToDelete.reason).to.equal("To test delete for author");
+        expect(postToDelete.edit.reason).to.equal("To test delete for author");
+        expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("To test delete for author");
+        expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
     });
 
     it(`Deleted post is omitted from subplebbit.posts`, async () => {
@@ -104,27 +125,64 @@ describe("Deleting a post", async () => {
             subplebbitAddress: modPostToDelete.subplebbitAddress,
             commentCid: modPostToDelete.cid,
             deleted: true,
-            signer: modPostToDelete.signer
+            signer: modPostToDelete.signer,
+            reason: "For mod to test deleting their own post"
         });
         await publishWithExpectedResult(deleteEdit, true);
     });
+
+    it(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
+        await waitUntil(() => modPostToDelete.deleted === true, { timeout: 200000 });
+        expect(modPostToDelete.deleted).to.be.true;
+        expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
+        expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.true;
+        expect(modPostToDelete.reason).to.equal("For mod to test deleting their own post");
+        expect(modPostToDelete.edit.reason).to.equal("For mod to test deleting their own post");
+        expect(modPostToDelete._rawCommentUpdate.edit.reason).to.equal("For mod to test deleting their own post");
+        expect(modPostToDelete._rawCommentUpdate.reason).to.be.undefined;
+    });
+
     it(`Author can undelete their own post`, async () => {
         const undeleteEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
             deleted: false,
-            signer: postToDelete.signer
+            signer: postToDelete.signer,
+            reason: "For author to test undelete their own post"
         });
         await publishWithExpectedResult(undeleteEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with deleted=false for author undeleted post`, async () => {
+        await waitUntil(() => postToDelete.deleted === false, { timeout: 200000 });
+        expect(postToDelete.deleted).to.be.false;
+        expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
+        expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.false;
+        expect(postToDelete.reason).to.equal("For author to test undelete their own post");
+        expect(postToDelete.edit.reason).to.equal("For author to test undelete their own post");
+        expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("For author to test undelete their own post");
+        expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
     });
     it(`Mod can undelete their own post`, async () => {
         const undeleteEdit = await plebbit.createCommentEdit({
             subplebbitAddress: modPostToDelete.subplebbitAddress,
             commentCid: modPostToDelete.cid,
             deleted: false,
-            signer: modPostToDelete.signer
+            signer: modPostToDelete.signer,
+            reason: "For mod to test undeleting their own post"
         });
         await publishWithExpectedResult(undeleteEdit, true);
+    });
+
+    it(`A new CommentUpdate is published with deleted=false for mod undeleted post`, async () => {
+        await waitUntil(() => modPostToDelete.deleted === false, { timeout: 200000 });
+        expect(modPostToDelete.deleted).to.be.false;
+        expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
+        expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.false;
+        expect(modPostToDelete.reason).to.equal("For mod to test undeleting their own post");
+        expect(modPostToDelete.edit.reason).to.equal("For mod to test undeleting their own post");
+        expect(modPostToDelete._rawCommentUpdate.edit.reason).to.equal("For mod to test undeleting their own post");
+        expect(modPostToDelete._rawCommentUpdate.reason).to.be.undefined;
     });
 });
 

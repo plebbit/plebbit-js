@@ -54,6 +54,9 @@ describe("Editing comment.content", async () => {
         await publishWithExpectedResult(commentEdit, true);
         await waitUntil(() => commentToBeEdited.content === editedText, { timeout: 200000 });
         expect(commentToBeEdited.edit.content).to.equal(editedText);
+        expect(commentToBeEdited._rawCommentUpdate.edit.content).to.equal(editedText);
+        expect(commentToBeEdited._rawCommentUpdate.edit.reason).to.equal(editReason);
+
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
         expect(commentToBeEdited.edit.reason).to.equal(editReason);
@@ -121,7 +124,7 @@ describe("Editing comment.content", async () => {
                 content: editedText,
                 signer: roleTest.signer
             });
-            await publishWithExpectedResult(commentEdit, false, messages.ERR_SUB_COMMENT_EDIT_MOD_INVALID_FIELD);
+            await publishWithExpectedResult(commentEdit, false, messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD);
         })
     );
 });

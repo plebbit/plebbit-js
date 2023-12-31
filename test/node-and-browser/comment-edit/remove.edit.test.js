@@ -34,7 +34,7 @@ describe(`Removing post`, async () => {
         postToRemove.stop();
     });
 
-    it(`Mod can mark a post as removed`, async () => {
+    it(`Mod can mark an author post as removed`, async () => {
         const removeEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
@@ -49,6 +49,9 @@ describe(`Removing post`, async () => {
         await waitUntil(() => postToRemove.removed, { timeout: 200000 });
         expect(postToRemove.removed).to.be.true;
         expect(postToRemove.reason).to.equal("To remove a post");
+        expect(postToRemove._rawCommentUpdate.removed).to.be.true;
+        expect(postToRemove._rawCommentUpdate.reason).to.equal("To remove a post");
+        expect(postToRemove._rawCommentUpdate.edit).to.be.undefined;
     });
     it(`Removed post don't show in subplebbit.posts`, async () => {
         const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
@@ -117,6 +120,9 @@ describe(`Removing post`, async () => {
         await waitUntil(() => postToRemove.removed === false, { timeout: 200000 });
         expect(postToRemove.removed).to.be.false;
         expect(postToRemove.reason).to.equal("To unremove a post");
+        expect(postToRemove._rawCommentUpdate.removed).to.be.false;
+        expect(postToRemove._rawCommentUpdate.reason).to.equal("To unremove a post");
+        expect(postToRemove._rawCommentUpdate.edit).to.be.undefined;
     });
 
     it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
@@ -168,9 +174,9 @@ describe(`Mods removing their own posts`, async () => {
         await waitUntil(() => modPost.removed === true, { timeout: 200000 });
         expect(modPost.removed).to.be.true;
         expect(modPost._rawCommentUpdate.removed).to.be.true;
-        expect(modPost._rawCommentUpdate.edit.removed).to.be.true;
+        expect(modPost._rawCommentUpdate.edit).to.be.undefined;
         expect(modPost.reason).to.equal("For mods to remove their own post");
-        expect(modPost.edit.reason).to.equal("For mods to remove their own post");
+        expect(modPost._rawCommentUpdate.reason).to.equal("For mods to remove their own post");
     });
 });
 
@@ -205,6 +211,9 @@ describe(`Removing reply`, async () => {
 
         expect(replyToBeRemoved.removed).to.be.true;
         expect(replyToBeRemoved.reason).to.equal("To remove a reply");
+        expect(replyToBeRemoved._rawCommentUpdate.removed).to.be.true;
+        expect(replyToBeRemoved._rawCommentUpdate.edit).to.be.undefined;
+        expect(replyToBeRemoved._rawCommentUpdate.reason).to.equal("To remove a reply");
     });
     it(`Removed replies show in parent comment pages with 'removed' = true`, async () => {
         const recreatedPost = await plebbit.createComment({ cid: post.cid });
@@ -268,5 +277,8 @@ describe(`Removing reply`, async () => {
         await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 300000 });
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.reason).to.equal("To unremove a reply");
+        expect(replyToBeRemoved._rawCommentUpdate.removed).to.be.false;
+        expect(replyToBeRemoved._rawCommentUpdate.edit).to.be.undefined;
+        expect(replyToBeRemoved._rawCommentUpdate.reason).to.equal("To unremove a reply");
     });
 });

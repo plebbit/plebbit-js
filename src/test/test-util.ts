@@ -134,6 +134,13 @@ async function _startMathCliSubplebbit(signers: SignerType[], plebbit: Plebbit) 
 async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[3]);
     const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
+    await subplebbit.edit({
+        roles: {
+            [signers[1].address]: { role: "owner" },
+            [signers[2].address]: { role: "admin" },
+            [signers[3].address]: { role: "moderator" }
+        }
+    });
     await subplebbit.start();
     await subplebbit.edit({ address: "plebbit.eth" });
     assert.equal(subplebbit.address, "plebbit.eth");

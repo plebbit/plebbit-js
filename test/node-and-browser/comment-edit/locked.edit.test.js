@@ -21,18 +21,21 @@ const roles = [
 ];
 
 describe(`Locking posts`, async () => {
-    let plebbit, postToBeLocked, replyUnderPostToBeLocked, sub;
+    let plebbit, postToBeLocked, replyUnderPostToBeLocked, modPost, sub;
     before(async () => {
         plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         await sub.update();
         postToBeLocked = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
 
-        await postToBeLocked.update();
+        postToBeLocked.update();
         replyUnderPostToBeLocked = await publishRandomReply(postToBeLocked, plebbit, {}, false);
+        modPost.update();
     });
     after(async () => {
         await postToBeLocked.stop();
+        await modPost.stop();
         await sub.stop();
     });
     it(`Author can't lock their own post`, async () => {
@@ -65,12 +68,12 @@ describe(`Locking posts`, async () => {
         await publishWithExpectedResult(lockedEdit, false, messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY);
     });
 
-    it(`Mod can lock a post`, async () => {
+    it(`Mod can lock an author post`, async () => {
         const lockedEdit = await plebbit.createCommentEdit({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: true,
-            reason: "To lock a post",
+            reason: "To lock an author post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(lockedEdit, true);
@@ -79,7 +82,10 @@ describe(`Locking posts`, async () => {
     it(`A new CommentUpdate with locked=true is published`, async () => {
         await waitUntil(() => postToBeLocked.locked, { timeout: 200000 });
         expect(postToBeLocked.locked).to.be.true;
-        expect(postToBeLocked.reason).to.equal("To lock a post");
+        expect(postToBeLocked.reason).to.equal("To lock an author post");
+        expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To lock an author post");
+        expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
+        expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
     });
     it(`subplebbit.posts includes locked post with locked=true`, async () => {
         const sub = await plebbit.createSubplebbit({ address: postToBeLocked.subplebbitAddress });
@@ -98,8 +104,28 @@ describe(`Locking posts`, async () => {
         for (const pageCid of Object.values(sub.posts.pageCids)) {
             const lockedPostInPage = await findCommentInPage(postToBeLocked.cid, pageCid, sub.posts);
             expect(lockedPostInPage.locked).to.be.true;
-            expect(lockedPostInPage.reason).to.equal("To lock a post");
+            expect(lockedPostInPage.reason).to.equal("To lock an author post");
         }
+    });
+
+    it(`Mod can lock their own post`, async () => {
+        const lockedEdit = await plebbit.createCommentEdit({
+            subplebbitAddress: modPost.subplebbitAddress,
+            commentCid: modPost.cid,
+            locked: true,
+            reason: "To lock a mod post",
+            signer: modPost.signer
+        });
+        await publishWithExpectedResult(lockedEdit, true);
+    });
+
+    it(`A new CommentUpdate with locked=true is published`, async () => {
+        await waitUntil(() => modPost.locked === true, { timeout: 200000 });
+        expect(modPost.locked).to.be.true;
+        expect(modPost.reason).to.equal("To lock a mod post");
+        expect(modPost._rawCommentUpdate.reason).to.equal("To lock a mod post");
+        expect(postToBeLocked._rawCommentUpdate.locked).to.be.true;
+        expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
     });
 
     it(`Can't publish a reply on a locked post`, async () => {
@@ -127,10 +153,19 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: false,
-            reason: "To unlock a post",
+            reason: "To unlock an author post",
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unlockEdit, true);
+    });
+
+    it(`A new CommentUpdate with locked=false is published`, async () => {
+        await waitUntil(() => postToBeLocked.locked === false, { timeout: 200000 });
+        expect(postToBeLocked.locked).to.be.false;
+        expect(postToBeLocked.reason).to.equal("To unlock an author post");
+        expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To unlock an author post");
+        expect(postToBeLocked._rawCommentUpdate.locked).to.be.false;
+        expect(postToBeLocked._rawCommentUpdate.edit).to.be.undefined;
     });
 
     it(`Unlocked post can receive replies`, async () => {
