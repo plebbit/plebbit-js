@@ -782,9 +782,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
-        const editHasAuthorFields = this._commentEditIncludesAuthorFields(commentEditRaw);
 
-        const isAuthorEdit = editHasAuthorFields && editSignedByOriginalAuthor;
+        const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
 
         await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit));
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
@@ -1072,6 +1071,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
+    private _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
+        if (this._commentEditIncludesModFields(request)) return false;
+        if (this._commentEditIncludesAuthorFields(request)) return true;
+        // The request has fields that are used in both mod and author, namely [spoiler, flair]
+        if (editHasBeenSignedByOriginalAuthor) return true;
+        return false;
+    }
+
     private async _checkPublicationValidity(
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ): Promise<messages | undefined> {
@@ -1181,18 +1188,14 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
             const editorModRole = this.roles && this.roles[commentEdit.author.address];
             //@ts-expect-error
-            const editHasAuthorFields = this._commentEditIncludesAuthorFields(request.publication);
-            //@ts-expect-error
             const editHasModFields = this._commentEditIncludesModFields(request.publication);
 
-            if (editHasAuthorFields && editHasModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
+            //@ts-expect-error
+            const isAuthorEdit = this._isAuthorEdit(request.publication, editSignedByOriginalAuthor);
 
-            const allowedEditFields =
-                editSignedByOriginalAuthor && editHasAuthorFields
-                    ? AUTHOR_EDIT_FIELDS
-                    : editorModRole && editHasModFields
-                    ? MOD_EDIT_FIELDS
-                    : undefined;
+            if (isAuthorEdit && editHasModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
+
+            const allowedEditFields = isAuthorEdit ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
                 if (!allowedEditFields.includes(<any>editField)) {
