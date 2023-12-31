@@ -1,18 +1,19 @@
 "use strict";
 // Signer section
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommentUpdateSignedPropertyNames = exports.ChallengeVerificationMessageSignedPropertyNames = exports.ChallengeAnswerMessageSignedPropertyNames = exports.ChallengeMessageSignedPropertyNames = exports.ChallengeRequestMessageSignedPropertyNames = exports.SubplebbitSignedPropertyNames = exports.VoteSignedPropertyNames = exports.CommentEditSignedPropertyNames = exports.CommentSignedPropertyNames = void 0;
+exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = exports.CommentUpdateSignedPropertyNames = exports.ChallengeVerificationMessageSignedPropertyNames = exports.ChallengeAnswerMessageSignedPropertyNames = exports.ChallengeMessageSignedPropertyNames = exports.ChallengeRequestMessageSignedPropertyNames = exports.SubplebbitSignedPropertyNames = exports.VoteSignedPropertyNames = exports.CommentEditSignedPropertyNames = exports.CommentSignedPropertyNames = void 0;
 // ---------------------------
 // SignedPropertyNames
-exports.CommentSignedPropertyNames = [
-    "subplebbitAddress",
-    "author",
-    "timestamp",
-    "content",
-    "title",
-    "link",
-    "parentCid"
-];
+exports.CommentSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"];
 exports.CommentEditSignedPropertyNames = [
     "author",
     "timestamp",
@@ -24,7 +25,6 @@ exports.CommentEditSignedPropertyNames = [
     "pinned",
     "locked",
     "removed",
-    "reason",
     "flair",
     "reason",
     "commentAuthor"
@@ -101,4 +101,31 @@ exports.CommentUpdateSignedPropertyNames = [
     "lastChildCid",
     "lastReplyTimestamp"
 ];
+// Export constants of CommentType fields
+// Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
+var PUBLICATION_FIELDS = [
+    "author",
+    "protocolVersion",
+    "signature",
+    "subplebbitAddress",
+    "timestamp"
+];
+exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+    "commentCid",
+    "flair",
+    "spoiler",
+    "pinned",
+    "locked",
+    "removed",
+    "reason",
+    "commentAuthor"
+], false);
+exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+    "commentCid",
+    "content",
+    "flair",
+    "spoiler",
+    "reason",
+    "deleted"
+], false);
 //# sourceMappingURL=constants.js.map

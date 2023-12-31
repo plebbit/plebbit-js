@@ -136,7 +136,7 @@ var BasePages = /** @class */ (function () {
         if (!this.pages)
             return undefined;
         if (!this._pagesIpfs) {
-            (0, plebbit_logger_1.default)("plebbit-js:pages:toJSONIpfs").error("toJSONIpfs() is called even though _pagesIpfs is undefined. This error should not persist");
+            (0, plebbit_logger_1.default)("plebbit-js:pages:toJSONIpfs").error("toJSONIpfs() is called on sub(".concat(this._subplebbitAddress, ") and parentCid (").concat(this._parentCid, ") even though _pagesIpfs is undefined. This error should not persist"));
             return;
         }
         return {

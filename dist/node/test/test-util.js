@@ -234,20 +234,30 @@ function _startMathCliSubplebbit(signers, plebbit) {
 function _startEnsSubplebbit(signers, plebbit) {
     return __awaiter(this, void 0, void 0, function () {
         var signer, subplebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0: return [4 /*yield*/, plebbit.createSigner(signers[3])];
                 case 1:
-                    signer = _a.sent();
+                    signer = _b.sent();
                     return [4 /*yield*/, createSubWithNoChallenge({ signer: signer }, plebbit)];
                 case 2:
-                    subplebbit = _a.sent();
-                    return [4 /*yield*/, subplebbit.start()];
+                    subplebbit = _b.sent();
+                    return [4 /*yield*/, subplebbit.edit({
+                            roles: (_a = {},
+                                _a[signers[1].address] = { role: "owner" },
+                                _a[signers[2].address] = { role: "admin" },
+                                _a[signers[3].address] = { role: "moderator" },
+                                _a)
+                        })];
                 case 3:
-                    _a.sent();
-                    return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
+                    _b.sent();
+                    return [4 /*yield*/, subplebbit.start()];
                 case 4:
-                    _a.sent();
+                    _b.sent();
+                    return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
+                case 5:
+                    _b.sent();
                     assert_1.default.equal(subplebbit.address, "plebbit.eth");
                     return [2 /*return*/, subplebbit];
             }

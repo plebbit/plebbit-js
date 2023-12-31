@@ -96,6 +96,7 @@ var version_1 = __importDefault(require("../../version"));
 var lodash_1 = __importDefault(require("lodash"));
 var lockfile = __importStar(require("@plebbit/proper-lockfile"));
 var uuid_1 = require("uuid");
+var constants_1 = require("../../signer/constants");
 var TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -107,7 +108,6 @@ var DbHandler = /** @class */ (function () {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
-        this._needToUpdateCommentUpdates = false;
     }
     DbHandler.prototype.initDbConfigIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -125,6 +125,9 @@ var DbHandler = /** @class */ (function () {
                 }
             });
         });
+    };
+    DbHandler.prototype.toJSON = function () {
+        return undefined;
     };
     DbHandler.prototype.initDbIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -358,33 +361,31 @@ var DbHandler = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        this._needToUpdateCommentUpdates = true;
-                        return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
-                                table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
-                                table.json("edit").nullable();
-                                table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                                table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                                // We're not storing replies here because it would take too much storage, and is not needed
-                                table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-                                table.json("flair").nullable();
-                                table.boolean("spoiler");
-                                table.boolean("pinned");
-                                table.boolean("locked");
-                                table.boolean("removed");
-                                table.text("reason");
-                                table.timestamp("updatedAt").notNullable().checkPositive();
-                                table.text("protocolVersion").notNullable();
-                                table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
-                                table.json("author").nullable();
-                                table.json("replies").nullable();
-                                table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
-                                table.timestamp("lastReplyTimestamp").nullable();
-                                // Not part of CommentUpdate
-                                table.text("ipfsPath").notNullable().unique();
-                                // Columns with defaults
-                                table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-                            })];
+                    case 0: return [4 /*yield*/, this._knex.schema.createTable(tableName, function (table) {
+                            table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
+                            table.json("edit").nullable();
+                            table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                            table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                            // We're not storing replies here because it would take too much storage, and is not needed
+                            table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+                            table.json("flair").nullable();
+                            table.boolean("spoiler");
+                            table.boolean("pinned");
+                            table.boolean("locked");
+                            table.boolean("removed");
+                            table.text("reason");
+                            table.timestamp("updatedAt").notNullable().checkPositive();
+                            table.text("protocolVersion").notNullable();
+                            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
+                            table.json("author").nullable();
+                            table.json("replies").nullable();
+                            table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
+                            table.timestamp("lastReplyTimestamp").nullable();
+                            // Not part of CommentUpdate
+                            table.text("ipfsPath").notNullable().unique();
+                            // Columns with defaults
+                            table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+                        })];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -438,8 +439,8 @@ var DbHandler = /** @class */ (function () {
                             table.boolean("pinned").nullable();
                             table.boolean("locked").nullable();
                             table.boolean("removed").nullable();
-                            table.text("moderatorReason").nullable();
                             table.json("commentAuthor").nullable();
+                            table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
                             table.timestamp("insertedAt").defaultTo(_this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
                             table.primary(["id", "commentCid"]);
                         })];
@@ -465,7 +466,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.createTablesIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, currentDbVersion, needToMigrate, createTableFunctions, tables, newDbVersion;
+            var log, currentDbVersion, needToMigrate, createTableFunctions, tables, i, tableName, tableExists, tempTableName, newDbVersion;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -474,7 +475,7 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this.getDbVersion()];
                     case 1:
                         currentDbVersion = _a.sent();
-                        if (!(currentDbVersion === 10)) return [3 /*break*/, 3];
+                        if (!(currentDbVersion <= 10)) return [3 /*break*/, 3];
                         // Remove unneeded tables
                         return [4 /*yield*/, Promise.all(["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map(function (tableName) {
                                 return _this._knex.schema.dropTableIfExists(tableName);
@@ -486,6 +487,12 @@ var DbHandler = /** @class */ (function () {
                     case 3:
                         log.trace("current db version: ".concat(currentDbVersion));
                         needToMigrate = currentDbVersion < version_1.default.DB_VERSION;
+                        if (!needToMigrate) return [3 /*break*/, 5];
+                        return [4 /*yield*/, this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES)];
+                    case 4:
+                        _a.sent(); // To trigger an update
+                        _a.label = 5;
+                    case 5:
                         createTableFunctions = [
                             this._createCommentsTable,
                             this._createCommentUpdatesTable,
@@ -493,61 +500,58 @@ var DbHandler = /** @class */ (function () {
                             this._createCommentEditsTable
                         ];
                         tables = Object.values(TABLES);
-                        return [4 /*yield*/, Promise.all(tables.map(function (table) { return __awaiter(_this, void 0, void 0, function () {
-                                var i, tableExists, tempTableName;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            i = tables.indexOf(table);
-                                            return [4 /*yield*/, this._knex.schema.hasTable(table)];
-                                        case 1:
-                                            tableExists = _a.sent();
-                                            if (!!tableExists) return [3 /*break*/, 3];
-                                            log("Table ".concat(table, " does not exist. Will create schema"));
-                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(table)];
-                                        case 2:
-                                            _a.sent();
-                                            return [3 /*break*/, 10];
-                                        case 3:
-                                            if (!(tableExists && needToMigrate)) return [3 /*break*/, 10];
-                                            // We need to update the schema of the currently existing table
-                                            log("Migrating table ".concat(table, " to new schema"));
-                                            return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
-                                        case 4:
-                                            _a.sent();
-                                            tempTableName = "".concat(table).concat(version_1.default.DB_VERSION);
-                                            return [4 /*yield*/, this._knex.schema.dropTableIfExists(tempTableName)];
-                                        case 5:
-                                            _a.sent();
-                                            return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
-                                        case 6:
-                                            _a.sent();
-                                            return [4 /*yield*/, this._copyTable(table, tempTableName, currentDbVersion)];
-                                        case 7:
-                                            _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.dropTable(table)];
-                                        case 8:
-                                            _a.sent();
-                                            return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, table)];
-                                        case 9:
-                                            _a.sent();
-                                            _a.label = 10;
-                                        case 10: return [2 /*return*/];
-                                    }
-                                });
-                            }); }))];
-                    case 4:
+                        i = 0;
+                        _a.label = 6;
+                    case 6:
+                        if (!(i < tables.length)) return [3 /*break*/, 17];
+                        tableName = tables[i];
+                        return [4 /*yield*/, this._knex.schema.hasTable(tableName)];
+                    case 7:
+                        tableExists = _a.sent();
+                        if (!!tableExists) return [3 /*break*/, 9];
+                        log("Table ".concat(tableName, " does not exist. Will create schema"));
+                        return [4 /*yield*/, createTableFunctions[i].bind(this)(tableName)];
+                    case 8:
                         _a.sent();
-                        if (!needToMigrate) return [3 /*break*/, 7];
+                        return [3 /*break*/, 16];
+                    case 9:
+                        if (!(tableExists && needToMigrate)) return [3 /*break*/, 16];
+                        // We need to update the schema of the currently existing table
+                        log("Migrating table ".concat(tableName, " to new schema"));
+                        return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = OFF")];
+                    case 10:
+                        _a.sent();
+                        tempTableName = "".concat(tableName).concat(version_1.default.DB_VERSION);
+                        return [4 /*yield*/, this._knex.schema.dropTableIfExists(tempTableName)];
+                    case 11:
+                        _a.sent();
+                        return [4 /*yield*/, createTableFunctions[i].bind(this)(tempTableName)];
+                    case 12:
+                        _a.sent();
+                        return [4 /*yield*/, this._copyTable(tableName, tempTableName, currentDbVersion)];
+                    case 13:
+                        _a.sent();
+                        return [4 /*yield*/, this._knex.schema.dropTable(tableName)];
+                    case 14:
+                        _a.sent();
+                        return [4 /*yield*/, this._knex.schema.renameTable(tempTableName, tableName)];
+                    case 15:
+                        _a.sent();
+                        _a.label = 16;
+                    case 16:
+                        i++;
+                        return [3 /*break*/, 6];
+                    case 17:
+                        if (!needToMigrate) return [3 /*break*/, 20];
                         return [4 /*yield*/, this._knex.raw("PRAGMA foreign_keys = ON")];
-                    case 5:
+                    case 18:
                         _a.sent();
                         return [4 /*yield*/, this._knex.raw("PRAGMA user_version = ".concat(version_1.default.DB_VERSION))];
-                    case 6:
+                    case 19:
                         _a.sent();
-                        _a.label = 7;
-                    case 7: return [4 /*yield*/, this.getDbVersion()];
-                    case 8:
+                        _a.label = 20;
+                    case 20: return [4 /*yield*/, this.getDbVersion()];
+                    case 21:
                         newDbVersion = _a.sent();
                         assert_1.default.equal(newDbVersion, version_1.default.DB_VERSION);
                         this._createdTables = true;
@@ -563,7 +567,7 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype._copyTable = function (srcTable, dstTable, currentDbVersion) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord, _c, _d, srcRecordKey, _e, srcRecordFiltered_2, srcRecord;
+            var log, dstTableColumns, _a, _b, srcRecords, srcRecordFiltered, _i, srcRecordFiltered_1, srcRecord, _c, _d, srcRecordKey, editWithType, commentToBeEdited, editHasBeenSignedByOriginalAuthor, _e, srcRecordFiltered_2, srcRecord;
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
@@ -575,41 +579,50 @@ var DbHandler = /** @class */ (function () {
                         return [4 /*yield*/, this._knex(srcTable).select("*")];
                     case 2:
                         srcRecords = _f.sent();
-                        if (!(srcRecords.length > 0)) return [3 /*break*/, 6];
+                        if (!(srcRecords.length > 0)) return [3 /*break*/, 10];
                         log("Attempting to copy ".concat(srcRecords.length, " ").concat(srcTable));
                         srcRecordFiltered = srcRecords.map(function (record) { return lodash_1.default.pick(record, dstTableColumns); });
-                        // Need to make sure that array fields are json strings
-                        for (_i = 0, srcRecordFiltered_1 = srcRecordFiltered; _i < srcRecordFiltered_1.length; _i++) {
-                            srcRecord = srcRecordFiltered_1[_i];
-                            for (_c = 0, _d = Object.keys(srcRecord); _c < _d.length; _c++) {
-                                srcRecordKey = _d[_c];
-                                if (Array.isArray(srcRecord[srcRecordKey])) {
-                                    srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
-                                    (0, assert_1.default)(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
-                                }
-                            }
-                            // Migration from version 10 to 11
-                            if (currentDbVersion === 10) {
-                                if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
-                                    srcRecord["challengeRequestPublicationSha256"] = "random-place-holder-".concat((0, uuid_1.v4)());
-                                // We just need the copy to work. The new comments will have a correct hash
-                                else if (srcTable === TABLES.COMMENT_UPDATES && !srcRecord["ipfsPath"])
-                                    srcRecord["ipfsPath"] = "random-place-holder-".concat((0, uuid_1.v4)()); // We just need the copy to work. Eventually it will be updated to have the correct ipfsPath
-                            }
-                        }
-                        _e = 0, srcRecordFiltered_2 = srcRecordFiltered;
+                        _i = 0, srcRecordFiltered_1 = srcRecordFiltered;
                         _f.label = 3;
                     case 3:
-                        if (!(_e < srcRecordFiltered_2.length)) return [3 /*break*/, 6];
-                        srcRecord = srcRecordFiltered_2[_e];
-                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecord)];
+                        if (!(_i < srcRecordFiltered_1.length)) return [3 /*break*/, 6];
+                        srcRecord = srcRecordFiltered_1[_i];
+                        for (_c = 0, _d = Object.keys(srcRecord); _c < _d.length; _c++) {
+                            srcRecordKey = _d[_c];
+                            if (Array.isArray(srcRecord[srcRecordKey])) {
+                                srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
+                                (0, assert_1.default)(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
+                            }
+                        }
+                        // Migration from version 10 to 11
+                        if (currentDbVersion <= 10 && srcTable === TABLES.COMMENTS) {
+                            srcRecord["challengeRequestPublicationSha256"] = "random-place-holder-".concat((0, uuid_1.v4)()); // We just need the copy to work. The new comments will have a correct hash
+                        }
+                        if (!(currentDbVersion <= 11 && srcTable === TABLES.COMMENT_EDITS)) return [3 /*break*/, 5];
+                        editWithType = srcRecord;
+                        return [4 /*yield*/, this.queryComment(editWithType.commentCid)];
                     case 4:
-                        _f.sent();
+                        commentToBeEdited = _f.sent();
+                        editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
+                        srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
                         _f.label = 5;
                     case 5:
-                        _e++;
+                        _i++;
                         return [3 /*break*/, 3];
                     case 6:
+                        _e = 0, srcRecordFiltered_2 = srcRecordFiltered;
+                        _f.label = 7;
+                    case 7:
+                        if (!(_e < srcRecordFiltered_2.length)) return [3 /*break*/, 10];
+                        srcRecord = srcRecordFiltered_2[_e];
+                        return [4 /*yield*/, this._knex(dstTable).insert(srcRecord)];
+                    case 8:
+                        _f.sent();
+                        _f.label = 9;
+                    case 9:
+                        _e++;
+                        return [3 /*break*/, 7];
+                    case 10:
                         log("copied table ".concat(srcTable, " to table ").concat(dstTable));
                         return [2 /*return*/];
                 }
@@ -676,7 +689,7 @@ var DbHandler = /** @class */ (function () {
             });
         });
     };
-    DbHandler.prototype.getLastVoteOfAuthor = function (commentCid, authorAddress, trx) {
+    DbHandler.prototype.getStoredVoteOfAuthor = function (commentCid, authorAddress, trx) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this._baseTransaction(trx)(TABLES.VOTES)
@@ -909,22 +922,15 @@ var DbHandler = /** @class */ (function () {
     };
     DbHandler.prototype.queryCommentsToBeUpdated = function (trx) {
         return __awaiter(this, void 0, void 0, function () {
-            var allComments, criteriaOne, lastUpdatedAtWithBuffer, criteriaTwoThree, comments, parents, _a, _b, authorComments, uniqComments;
+            var criteriaOne, lastUpdatedAtWithBuffer, criteriaTwoThree, comments, parents, _a, _b, authorComments, uniqComments;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0:
-                        if (!this._needToUpdateCommentUpdates) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)];
-                    case 1:
-                        allComments = _c.sent();
-                        this._needToUpdateCommentUpdates = false;
-                        return [2 /*return*/, allComments];
-                    case 2: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
+                    case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
                             .select("".concat(TABLES.COMMENTS, ".*"))
                             .leftJoin(TABLES.COMMENT_UPDATES, "".concat(TABLES.COMMENTS, ".cid"), "".concat(TABLES.COMMENT_UPDATES, ".cid"))
                             .whereNull("".concat(TABLES.COMMENT_UPDATES, ".updatedAt"))];
-                    case 3:
+                    case 1:
                         criteriaOne = _c.sent();
                         lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
                         return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -943,15 +949,15 @@ var DbHandler = /** @class */ (function () {
                                 .having("voteLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("editLastInsertedAt", ">=", lastUpdatedAtWithBuffer)
                                 .orHaving("childCommentLastInsertedAt", ">=", lastUpdatedAtWithBuffer)];
-                    case 4:
+                    case 2:
                         criteriaTwoThree = _c.sent();
                         comments = lodash_1.default.uniqBy(__spreadArray(__spreadArray([], criteriaOne, true), criteriaTwoThree, true), function (comment) { return comment.cid; });
                         _b = (_a = lodash_1.default).flattenDeep;
                         return [4 /*yield*/, Promise.all(comments.filter(function (comment) { return comment.parentCid; }).map(function (comment) { return _this.queryParents(comment, trx); }))];
-                    case 5:
+                    case 3:
                         parents = _b.apply(_a, [_c.sent()]);
                         return [4 /*yield*/, this.queryCommentsOfAuthor(lodash_1.default.uniq(comments.map(function (comment) { return comment.authorAddress; })), trx)];
-                    case 6:
+                    case 4:
                         authorComments = _c.sent();
                         uniqComments = lodash_1.default.uniqBy(__spreadArray(__spreadArray(__spreadArray([], comments, true), parents, true), authorComments, true), function (comment) { return comment.cid; });
                         return [2 /*return*/, uniqComments];
@@ -1072,9 +1078,9 @@ var DbHandler = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-                            .select("commentCid", "content", "deleted", "flair", "spoiler", "reason", "author", "signature", "protocolVersion", "subplebbitAddress", "timestamp")
-                            .where({ commentCid: cid, authorAddress: authorAddress })
-                            .orderBy("timestamp", "desc")
+                            .select(constants_1.AUTHOR_EDIT_FIELDS)
+                            .where({ commentCid: cid, authorAddress: authorAddress, isAuthorEdit: true })
+                            .orderBy("id", "desc")
                             .first()];
                     case 1:
                         authorEdit = _a.sent();
@@ -1091,9 +1097,9 @@ var DbHandler = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
                             .select("reason")
                             .where("commentCid", comment.cid)
-                            .whereNot("authorAddress", comment.author.address)
+                            .where({ isAuthorEdit: false })
                             .whereNotNull("reason")
-                            .orderBy("timestamp", "desc")
+                            .orderBy("id", "desc")
                             .first()];
                     case 1:
                         moderatorReason = _a.sent();
@@ -1117,7 +1123,8 @@ var DbHandler = /** @class */ (function () {
                                     .select(field)
                                     .where("commentCid", cid)
                                     .whereNotNull(field)
-                                    .orderBy("timestamp", "desc")
+                                    .where("isAuthorEdit", false)
+                                    .orderBy("id", "desc")
                                     .first();
                             }))];
                     case 1:
@@ -1136,7 +1143,7 @@ var DbHandler = /** @class */ (function () {
                             .select("deleted")
                             .where("commentCid", cid)
                             .whereNotNull("deleted")
-                            .orderBy("timestamp", "desc")
+                            .orderBy("id", "desc")
                             .first()];
                     case 1:
                         deleted = _a.sent();
@@ -1154,8 +1161,8 @@ var DbHandler = /** @class */ (function () {
                             .select("flair")
                             .where("commentCid", comment.cid)
                             .whereNotNull("flair")
-                            .whereNot("authorAddress", comment.author.address)
-                            .orderBy("timestamp", "desc")
+                            .where({ isAuthorEdit: false })
+                            .orderBy("id", "desc")
                             .first()];
                     case 1:
                         latestFlair = _a.sent();
@@ -1245,7 +1252,7 @@ var DbHandler = /** @class */ (function () {
                                 .select("commentAuthor")
                                 .whereIn("commentCid", authorComments.map(function (c) { return c.cid; }))
                                 .whereNotNull("commentAuthor")
-                                .orderBy("timestamp", "desc")];
+                                .orderBy("id", "desc")];
                     case 2:
                         commentAuthorEdits = _c.sent();
                         banAuthor = (_a = commentAuthorEdits.find(function (edit) { var _a; return typeof ((_a = edit.commentAuthor) === null || _a === void 0 ? void 0 : _a.banExpiresAt) === "number"; })) === null || _a === void 0 ? void 0 : _a.commentAuthor;

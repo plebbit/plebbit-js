@@ -1,9 +1,7 @@
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { Flair } from "./subplebbit/types";
-import { AuthorCommentEdit, CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, ModeratorCommentEdit, PublicationTypeName } from "./types";
-export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
-export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];
+import { CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, PublicationTypeName } from "./types";
 export declare class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
     content?: string;
@@ -39,8 +37,6 @@ export declare class CommentEdit extends Publication implements CommentEditType 
         spoiler?: boolean;
         flair?: Flair;
         subplebbitAddress: string;
-        challengeAnswers?: string[];
-        challengeCommentCids?: string[];
         commentCid: string;
         deleted?: boolean;
         pinned?: boolean;
@@ -48,7 +44,7 @@ export declare class CommentEdit extends Publication implements CommentEditType 
         removed?: boolean;
         commentAuthor?: CommentAuthorEditOptions;
     };
-    toJSONForDb(): CommentEditsTableRowInsert;
+    toJSONForDb(isAuthorEdit: boolean): CommentEditsTableRowInsert;
     getType(): PublicationTypeName;
     private _validateSignature;
     publish(): Promise<void>;

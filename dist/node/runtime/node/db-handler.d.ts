@@ -10,9 +10,9 @@ export declare class DbHandler {
     private _dbConfig;
     private _keyv;
     private _createdTables;
-    private _needToUpdateCommentUpdates;
     constructor(subplebbit: DbHandler["_subplebbit"]);
     initDbConfigIfNeeded(): Promise<void>;
+    toJSON(): any;
     initDbIfNeeded(): Promise<void>;
     getDbConfig(): Knex.Config;
     keyvGet(key: string, options?: {
@@ -41,7 +41,7 @@ export declare class DbHandler {
     insertComment(comment: CommentsTableRowInsert, trx?: Transaction): Promise<void>;
     upsertCommentUpdate(update: CommentUpdatesTableRowInsert, trx?: Transaction): Promise<void>;
     insertEdit(edit: CommentEditsTableRowInsert, trx?: Transaction): Promise<void>;
-    getLastVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined>;
+    getStoredVoteOfAuthor(commentCid: string, authorAddress: string, trx?: Transaction): Promise<VotesTableRow | undefined>;
     private _basePageQuery;
     queryReplyCount(commentCid: string, trx?: Transaction): Promise<number>;
     queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number>;

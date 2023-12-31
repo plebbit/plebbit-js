@@ -124,11 +124,11 @@ var Comment = /** @class */ (function (_super) {
             });
     };
     Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         return __awaiter(this, void 0, void 0, function () {
             var parsedPages;
-            return __generator(this, function (_m) {
-                switch (_m.label) {
+            return __generator(this, function (_o) {
+                switch (_o.label) {
                     case 0:
                         if (!this.original)
                             this.original = (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
@@ -141,25 +141,30 @@ var Comment = /** @class */ (function (_super) {
                         this.pinned = props.pinned;
                         this.locked = props.locked;
                         this.removed = props.removed;
-                        this.reason = props.reason;
+                        this.reason = props.reason || ((_b = props.edit) === null || _b === void 0 ? void 0 : _b.reason);
                         this.edit = props.edit;
                         this.protocolVersion = props.protocolVersion;
                         // Merge props from original comment and CommentUpdate
-                        this.spoiler = (_c = (_b = props.edit) === null || _b === void 0 ? void 0 : _b.spoiler) !== null && _c !== void 0 ? _c : this.spoiler;
-                        this.author.subplebbit = (_d = props.author) === null || _d === void 0 ? void 0 : _d.subplebbit;
-                        if ((_e = props.edit) === null || _e === void 0 ? void 0 : _e.content)
+                        this.spoiler =
+                            typeof props.spoiler === "boolean"
+                                ? props.spoiler
+                                : typeof ((_c = props.edit) === null || _c === void 0 ? void 0 : _c.spoiler) === "boolean"
+                                    ? (_d = props.edit) === null || _d === void 0 ? void 0 : _d.spoiler
+                                    : this.spoiler;
+                        this.author.subplebbit = (_e = props.author) === null || _e === void 0 ? void 0 : _e.subplebbit;
+                        if ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.content)
                             this.content = props.edit.content;
-                        this.flair = props.flair || ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.flair) || this.flair;
-                        this.author.flair = ((_h = (_g = props.author) === null || _g === void 0 ? void 0 : _g.subplebbit) === null || _h === void 0 ? void 0 : _h.flair) || ((_k = (_j = props.edit) === null || _j === void 0 ? void 0 : _j.author) === null || _k === void 0 ? void 0 : _k.flair) || ((_l = this.author) === null || _l === void 0 ? void 0 : _l.flair);
+                        this.flair = props.flair || ((_g = props.edit) === null || _g === void 0 ? void 0 : _g.flair) || this.flair;
+                        this.author.flair = ((_j = (_h = props.author) === null || _h === void 0 ? void 0 : _h.subplebbit) === null || _j === void 0 ? void 0 : _j.flair) || ((_l = (_k = props.edit) === null || _k === void 0 ? void 0 : _k.author) === null || _l === void 0 ? void 0 : _l.flair) || ((_m = this.author) === null || _m === void 0 ? void 0 : _m.flair);
                         this.lastChildCid = props.lastChildCid;
                         this.lastReplyTimestamp = props.lastReplyTimestamp;
                         (0, assert_1.default)(this.cid);
                         if (!props.replies) return [3 /*break*/, 2];
                         return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this._plebbit)];
                     case 1:
-                        parsedPages = _m.sent();
+                        parsedPages = _o.sent();
                         this.replies.updateProps(__assign(__assign({}, parsedPages), { plebbit: this._plebbit, subplebbitAddress: this.subplebbitAddress, pageCids: props.replies.pageCids, parentCid: this.cid }));
-                        _m.label = 2;
+                        _o.label = 2;
                     case 2: return [2 /*return*/];
                 }
             });
@@ -439,6 +444,8 @@ var Comment = /** @class */ (function (_super) {
                                     case 0:
                                         if (!updateProps.params.result.subplebbitAddress) return [3 /*break*/, 1];
                                         log("Received new CommentIpfs (".concat(this.cid, ") from RPC (").concat(this._plebbit.plebbitRpcClientsOptions[0], ")"));
+                                        //@ts-expect-error
+                                        this._rawCommentIpfs = lodash_1.default.omit(updateProps.params.result, "cid");
                                         this._initProps(updateProps.params.result);
                                         return [3 /*break*/, 3];
                                     case 1:

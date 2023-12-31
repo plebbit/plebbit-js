@@ -106,7 +106,6 @@ var pages_1 = require("../pages");
 var safe_stable_stringify_1 = require("safe-stable-stringify");
 var ipfs_only_hash_1 = __importDefault(require("ipfs-only-hash"));
 var util_2 = require("../signer/util");
-var comment_edit_1 = require("../comment-edit");
 var errors_1 = require("../errors");
 var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var util_3 = require("../runtime/browser/util");
@@ -116,6 +115,7 @@ var signatures_1 = require("../signer/signatures");
 var constants_1 = require("../constants");
 var assert_1 = __importDefault(require("assert"));
 var version_2 = __importDefault(require("../version"));
+var constants_2 = require("../signer/constants");
 var tiny_typed_emitter_1 = require("tiny-typed-emitter");
 var plebbit_error_1 = require("../plebbit-error");
 var retry_1 = __importDefault(require("retry"));
@@ -280,7 +280,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         if (!!this.dbHandler) return [3 /*break*/, 2];
                         this.dbHandler = util_3.nativeFunctions.createDbHandler({
                             address: this.address,
-                            plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                            plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                            _isAuthorEdit: this._isAuthorEdit.bind(this)
                         });
                         return [4 /*yield*/, this.dbHandler.initDbConfigIfNeeded()];
                     case 1:
@@ -526,7 +527,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         _b.sent();
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
-                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                                _isAuthorEdit: this._isAuthorEdit.bind(this)
                             })];
                     case 9:
                         _b.sent();
@@ -1005,7 +1007,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.storeCommentEdit = function (commentEditRaw, challengeRequestId) {
         return __awaiter(this, void 0, void 0, function () {
-            var log, commentEdit;
+            var log, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, isAuthorEdit;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1013,8 +1015,13 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.plebbit.createCommentEdit(commentEditRaw)];
                     case 1:
                         commentEdit = _a.sent();
-                        return [4 /*yield*/, this.dbHandler.insertEdit(commentEdit.toJSONForDb())];
+                        return [4 /*yield*/, this.dbHandler.queryComment(commentEdit.commentCid, undefined)];
                     case 2:
+                        commentToBeEdited = _a.sent();
+                        editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
+                        isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
+                        return [4 /*yield*/, this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit))];
+                    case 3:
                         _a.sent();
                         log.trace("(".concat(challengeRequestId, "): "), "Updated comment (".concat(commentEdit.commentCid, ") with CommentEdit: "), commentEditRaw);
                         return [2 /*return*/];
@@ -1362,10 +1369,28 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
+    Subplebbit.prototype._commentEditIncludesModFields = function (request) {
+        var modOnlyFields = ["pinned", "locked", "removed", "commentAuthor"];
+        return lodash_1.default.intersection(modOnlyFields, Object.keys(request)).length > 0;
+    };
+    Subplebbit.prototype._commentEditIncludesAuthorFields = function (request) {
+        var modOnlyFields = ["content", "deleted"];
+        return lodash_1.default.intersection(modOnlyFields, Object.keys(request)).length > 0;
+    };
+    Subplebbit.prototype._isAuthorEdit = function (request, editHasBeenSignedByOriginalAuthor) {
+        if (this._commentEditIncludesModFields(request))
+            return false;
+        if (this._commentEditIncludesAuthorFields(request))
+            return true;
+        // The request has fields that are used in both mod and author, namely [spoiler, flair]
+        if (editHasBeenSignedByOriginalAuthor)
+            return true;
+        return false;
+    };
     Subplebbit.prototype._checkPublicationValidity = function (request) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var log, publication, forbiddenAuthorFields, parentCid, parent_2, parentFlags, isParentDeleted, postFlags, isPostDeleted, publicationKilobyteSize, forbiddenCommentFields_1, publicationHash, publicationInDb, lastVote, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, editorModRole, allowedEditFields, _i, _c, editField;
+            var log, publication, forbiddenAuthorFields, parentCid, parent_2, parentFlags, isParentDeleted, postFlags, isPostDeleted, publicationKilobyteSize, forbiddenCommentFields_1, publicationHash, publicationInDb, lastVote, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, editorModRole, editHasModFields, isAuthorEdit, allowedEditFields, _i, _c, editField;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -1456,7 +1481,9 @@ var Subplebbit = /** @class */ (function (_super) {
                         _d.label = 8;
                     case 8:
                         if (!this.isPublicationVote(request.publication)) return [3 /*break*/, 10];
-                        return [4 /*yield*/, this.dbHandler.getLastVoteOfAuthor(request.publication["commentCid"], request.publication.author.address)];
+                        if (![1, 0, -1].includes(request.publication["vote"]))
+                            return [2 /*return*/, errors_1.messages.INCORRECT_VOTE_VALUE];
+                        return [4 /*yield*/, this.dbHandler.getStoredVoteOfAuthor(request.publication["commentCid"], request.publication.author.address)];
                     case 9:
                         lastVote = _d.sent();
                         if (lastVote && request.publication.signature.publicKey !== lastVote.signature.publicKey)
@@ -1472,18 +1499,19 @@ var Subplebbit = /** @class */ (function (_super) {
                         commentToBeEdited = _d.sent();
                         editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
                         editorModRole = this.roles && this.roles[commentEdit.author.address];
-                        allowedEditFields = editSignedByOriginalAuthor && editorModRole
-                            ? __spreadArray(__spreadArray([], comment_edit_1.AUTHOR_EDIT_FIELDS, true), comment_edit_1.MOD_EDIT_FIELDS, true) : editSignedByOriginalAuthor
-                            ? comment_edit_1.AUTHOR_EDIT_FIELDS
-                            : editorModRole
-                                ? comment_edit_1.MOD_EDIT_FIELDS
-                                : undefined;
+                        editHasModFields = this._commentEditIncludesModFields(request.publication);
+                        isAuthorEdit = this._isAuthorEdit(request.publication, editSignedByOriginalAuthor);
+                        if (isAuthorEdit && editHasModFields)
+                            return [2 /*return*/, errors_1.messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS];
+                        allowedEditFields = isAuthorEdit && editSignedByOriginalAuthor ? constants_2.AUTHOR_EDIT_FIELDS : editorModRole ? constants_2.MOD_EDIT_FIELDS : undefined;
                         if (!allowedEditFields)
                             return [2 /*return*/, errors_1.messages.ERR_UNAUTHORIZED_COMMENT_EDIT];
                         for (_i = 0, _c = Object.keys((0, util_1.removeKeysWithUndefinedValues)(request.publication)); _i < _c.length; _i++) {
                             editField = _c[_i];
-                            if (!allowedEditFields.includes(editField))
+                            if (!allowedEditFields.includes(editField)) {
+                                log("The comment edit includes a field (".concat(editField, ") that is not part of the allowed fields (").concat(allowedEditFields, ")"));
                                 return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD];
+                            }
                         }
                         if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0)
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY];
@@ -1724,10 +1752,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 2:
                         _a.sent();
                         _a.label = 3;
-                    case 3: return [4 /*yield*/, this.dbHandler.upsertCommentUpdate(__assign(__assign({}, newCommentUpdate), { ipfsPath: ipfsPath }))];
-                    case 4:
-                        _a.sent();
-                        return [2 /*return*/];
+                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -1764,12 +1789,35 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, signatures_1.signCommentUpdate)(commentUpdatePriorToSigning, this.signer)];
                     case 2:
                         newCommentUpdate = __assign.apply(void 0, _c.concat([(_e.signature = _f.sent(), _e)]));
-                        return [4 /*yield*/, this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate)];
+                        return [4 /*yield*/, this._validateCommentUpdateSignature(newCommentUpdate, comment, log)];
                     case 3:
+                        _f.sent();
+                        return [4 /*yield*/, this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate)];
+                    case 4:
                         ipfsPath = _f.sent();
                         return [4 /*yield*/, this._writeCommentUpdateToIpfsFilePath(newCommentUpdate, ipfsPath, storedCommentUpdate === null || storedCommentUpdate === void 0 ? void 0 : storedCommentUpdate.ipfsPath)];
-                    case 4:
+                    case 5:
                         _f.sent();
+                        return [4 /*yield*/, this.dbHandler.upsertCommentUpdate(__assign(__assign({}, newCommentUpdate), { ipfsPath: ipfsPath }))];
+                    case 6:
+                        _f.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Subplebbit.prototype._validateCommentUpdateSignature = function (newCommentUpdate, comment, log) {
+        return __awaiter(this, void 0, void 0, function () {
+            var validation;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(newCommentUpdate, false, this._clientsManager, this.address, comment, false)];
+                    case 1:
+                        validation = _a.sent();
+                        if (!validation.valid) {
+                            log.error("CommentUpdate (".concat(comment.cid, ") signature is invalid due to (").concat(validation.reason, "). This is a critical error"));
+                            throw new plebbit_error_1.PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
+                        }
                         return [2 /*return*/];
                 }
             });
@@ -1916,7 +1964,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.setAddress(internalState.address);
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(internalState.address, {
                                 address: internalState.address,
-                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                                plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                                _isAuthorEdit: this._isAuthorEdit.bind(this)
                             })];
                     case 7:
                         _a.sent();
@@ -2035,62 +2084,49 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype._repinCommentUpdateIfNeeded = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var log, shouldUpdateAllComments, e_9, commentUpdatesToRepin, _a, _i, commentUpdatesToRepin_1, commentUpdateRaw, newIpfsPath, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var log, storedCommentUpdates, _i, storedCommentUpdates_1, commentUpdate, e_9, newIpfsPath, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:start:_repinCommentUpdateIfNeeded");
-                        shouldUpdateAllComments = false;
-                        _c.label = 1;
-                    case 1:
-                        _c.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.files.stat("/".concat(this.address))];
-                    case 2:
-                        _c.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_9 = _c.sent();
-                        if (e_9.message === "file does not exist")
-                            shouldUpdateAllComments = true;
-                        else
-                            throw e_9;
-                        return [3 /*break*/, 4];
-                    case 4:
-                        if (!shouldUpdateAllComments) return [3 /*break*/, 6];
                         return [4 /*yield*/, this.dbHandler.queryAllStoredCommentUpdates()];
+                    case 1:
+                        storedCommentUpdates = _b.sent();
+                        _i = 0, storedCommentUpdates_1 = storedCommentUpdates;
+                        _b.label = 2;
+                    case 2:
+                        if (!(_i < storedCommentUpdates_1.length)) return [3 /*break*/, 11];
+                        commentUpdate = storedCommentUpdates_1[_i];
+                        _b.label = 3;
+                    case 3:
+                        _b.trys.push([3, 5, , 10]);
+                        return [4 /*yield*/, this._clientsManager.getDefaultIpfs()._client.files.stat(commentUpdate.ipfsPath)];
+                    case 4:
+                        _b.sent();
+                        return [3 /*break*/, 10];
                     case 5:
-                        _a = _c.sent();
-                        return [3 /*break*/, 8];
-                    case 6: return [4 /*yield*/, this.dbHandler.queryCommentUpdatesWithPlaceHolderForIpfsPath()];
+                        e_9 = _b.sent();
+                        // means the comment update is not on the ipfs node, need to add it
+                        // We should calculate new ipfs path
+                        if (e_9.message !== "file does not exist")
+                            throw e_9;
+                        _a = this._calculateIpfsPathForCommentUpdate;
+                        return [4 /*yield*/, this.dbHandler.queryComment(commentUpdate.cid)];
+                    case 6: return [4 /*yield*/, _a.apply(this, [_b.sent(), undefined])];
                     case 7:
-                        _a = _c.sent();
-                        _c.label = 8;
+                        newIpfsPath = _b.sent();
+                        return [4 /*yield*/, this._writeCommentUpdateToIpfsFilePath(commentUpdate, newIpfsPath, undefined)];
                     case 8:
-                        commentUpdatesToRepin = _a;
-                        if (!(commentUpdatesToRepin.length > 0)) return [3 /*break*/, 15];
-                        log.error("CommentUpdates are not added under PostUpdates folder (/".concat(this.address, "). Will add all stored CommentUpdate to IPFS files"));
-                        _i = 0, commentUpdatesToRepin_1 = commentUpdatesToRepin;
-                        _c.label = 9;
+                        _b.sent();
+                        return [4 /*yield*/, this.dbHandler.upsertCommentUpdate(__assign(__assign({}, commentUpdate), { ipfsPath: newIpfsPath }))];
                     case 9:
-                        if (!(_i < commentUpdatesToRepin_1.length)) return [3 /*break*/, 15];
-                        commentUpdateRaw = commentUpdatesToRepin_1[_i];
-                        _b = this._calculateIpfsPathForCommentUpdate;
-                        return [4 /*yield*/, this.dbHandler.queryComment(commentUpdateRaw.cid)];
-                    case 10: return [4 /*yield*/, _b.apply(this, [_c.sent(), undefined])];
-                    case 11:
-                        newIpfsPath = _c.sent();
-                        return [4 /*yield*/, this._writeCommentUpdateToIpfsFilePath(commentUpdateRaw, newIpfsPath, undefined)];
-                    case 12:
-                        _c.sent();
-                        return [4 /*yield*/, this.dbHandler.upsertCommentUpdate(__assign(__assign({}, commentUpdateRaw), { ipfsPath: newIpfsPath }))];
-                    case 13:
-                        _c.sent();
-                        log("Added the CommentUpdate of (".concat(commentUpdateRaw.cid, ") to IPFS files"));
-                        _c.label = 14;
-                    case 14:
+                        _b.sent();
+                        log("Added the CommentUpdate of (".concat(commentUpdate.cid, ") to IPFS files"));
+                        return [3 /*break*/, 10];
+                    case 10:
                         _i++;
-                        return [3 /*break*/, 9];
-                    case 15: return [2 /*return*/];
+                        return [3 /*break*/, 2];
+                    case 11: return [2 /*return*/];
                 }
             });
         });

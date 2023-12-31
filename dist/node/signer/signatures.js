@@ -480,7 +480,7 @@ function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, ov
                 case 1:
                     signatureValidity = _c.sent();
                     if (!signatureValidity)
-                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID }];
                     cacheKey = (0, js_sha256_1.sha256)(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid);
                     if (constants_2.subplebbitVerificationCache.has(cacheKey))
                         return [2 /*return*/, { valid: true }];
@@ -571,7 +571,7 @@ function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, sub
                 case 2:
                     editSignatureValidation = _a.sent();
                     if (!editSignatureValidation.valid)
-                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_SIGNATURE_IS_INVALID }];
+                        return [2 /*return*/, { valid: false, reason: errors_1.messages.ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID }];
                     _a.label = 3;
                 case 3:
                     if (update.cid !== comment.cid)

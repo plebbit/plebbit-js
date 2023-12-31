@@ -37,6 +37,7 @@ var messages;
     messages["ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58"] = "The public key of the signature is not B58";
     // Verify Signature errors
     messages["ERR_SIGNATURE_IS_INVALID"] = "Signature of publication is invalid";
+    messages["ERR_COMMENT_UPDATE_EDIT_SIGNATURE_IS_INVALID"] = "The author edit of comment (commentUpdate.edit) has an invalid signature";
     messages["ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT"] = "The gateway has responded with a subplebbit record that does not correspond to the requested subplebbit";
     messages["ERR_AUTHOR_NOT_MATCHING_SIGNATURE"] = "comment.author.address doesn't match comment.signature.publicKey";
     messages["ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY"] = "subplebbit.address.publicKey doesn't equal subplebbit.signature.publicKey";
@@ -63,7 +64,7 @@ var messages;
     messages["ERR_REUSED_PUBSUB_MSG_SIGNER"] = "Reusing a pubsub message signer is forbidden";
     messages["ERR_PUBSUB_MSG_TIMESTAMP_IS_OUTDATED"] = "The timestamp of the pubsub message is outdated";
     // Subplebbit rejections of publications
-    messages["ERR_UNAUTHORIZED_COMMENT_EDIT"] = "Can't edit the comment due to lack of authorization";
+    messages["ERR_UNAUTHORIZED_COMMENT_EDIT"] = "The author of this edit is not a mod/admin/owner or an author of the original comment. Can't edit";
     messages["ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT"] = "Rejecting post/comment because its timestamp is earlier than its parent";
     messages["ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST"] = "The parent of this comment does not exist";
     messages["ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED"] = "The parent cid of this comment is not defined";
@@ -84,9 +85,11 @@ var messages;
     messages["ERR_COMMENT_OVER_ALLOWED_SIZE"] = "Comment size is over the allowed size";
     messages["UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE"] = "An author attempted to change another author's vote";
     messages["COMMENT_LINK_LENGTH_IS_OVER_LIMIT"] = "comment.link length is over the limit";
+    messages["INCORRECT_VOTE_VALUE"] = "The vote can only be 1 or 0 or -1";
     // Comment Edit errors
     messages["ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
     messages["ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD"] = "CommentEdit includes a field that cannot be used";
+    messages["ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS"] = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod";
     // Resolver errors
     messages["ERR_FAILED_TO_RESOLVE_TEXT_RECORD"] = "Failed to resolve text record";
     messages["ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER"] = "no chain provider options set for chain ticker";

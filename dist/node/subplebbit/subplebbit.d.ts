@@ -2,7 +2,7 @@ import { ChallengeAnswerMessage } from "../challenge";
 import { Signer } from "../signer";
 import { PostsPages } from "../pages";
 import { Plebbit } from "../plebbit";
-import { DbHandlerPublicAPI, ProtocolVersion, SubplebbitEvents } from "../types";
+import { CommentEditPubsubMessage, DbHandlerPublicAPI, ProtocolVersion, SubplebbitEvents } from "../types";
 import Logger from "@plebbit/plebbit-logger";
 import { JsonSignature } from "../signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -103,6 +103,9 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _publishChallenges;
     private _publishFailedChallengeVerification;
     private _publishChallengeVerification;
+    private _commentEditIncludesModFields;
+    private _commentEditIncludesAuthorFields;
+    _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean): boolean;
     private _checkPublicationValidity;
     private handleChallengeRequest;
     private _cleanUpChallengeAnswerPromise;
@@ -112,6 +115,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _calculateIpfsPathForCommentUpdate;
     private _writeCommentUpdateToIpfsFilePath;
     private _updateComment;
+    private _validateCommentUpdateSignature;
     private _listenToIncomingRequests;
     private _getDbInternalState;
     private _mergeInstanceStateWithDbState;

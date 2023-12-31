@@ -1,6 +1,6 @@
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
 import { SubplebbitIpfsType } from "../subplebbit/types";
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PublicationTypeName, VotePubsubMessage } from "../types";
+import { AuthorCommentEdit, ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, ModeratorCommentEdit, PublicationTypeName, VotePubsubMessage } from "../types";
 export type CreateSignerOptions = {
     privateKey?: string;
     type?: "ed25519";
@@ -40,9 +40,9 @@ export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publ
     publicKey: string;
 }
 export type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
-export declare const CommentSignedPropertyNames: readonly (keyof Omit<CreateCommentOptions, "signer">)[];
-export declare const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentEditOptions, "signer">)[];
-export declare const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer">)[];
+export declare const CommentSignedPropertyNames: readonly (keyof Omit<CreateCommentOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[];
+export declare const CommentEditSignedPropertyNames: readonly (keyof Omit<CreateCommentEditOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[];
+export declare const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[];
 export declare const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[];
 export declare const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[];
 export declare const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[];
@@ -56,3 +56,5 @@ export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedP
 export type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
 export type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
 export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;
+export declare const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[];
+export declare const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[];

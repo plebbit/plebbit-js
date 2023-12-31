@@ -24,8 +24,6 @@ declare class Vote extends Publication implements VoteType {
         timestamp: number;
         vote: 0 | 1 | -1;
         subplebbitAddress: string;
-        challengeAnswers?: string[];
-        challengeCommentCids?: string[];
         commentCid: string;
     };
     getType(): PublicationTypeName;

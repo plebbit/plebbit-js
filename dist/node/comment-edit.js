@@ -61,50 +61,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommentEdit = exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = void 0;
+exports.CommentEdit = void 0;
 var publication_1 = __importDefault(require("./publication"));
 var signatures_1 = require("./signer/signatures");
 var util_1 = require("./util");
 var is_ipfs_1 = __importDefault(require("is-ipfs"));
-var PUBLICATION_FIELDS = [
-    "author",
-    "protocolVersion",
-    "signature",
-    "subplebbitAddress",
-    "timestamp"
-];
-// Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
-exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
-    "commentCid",
-    "flair",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "commentAuthor"
-], false);
-exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
-    "commentCid",
-    "content",
-    "flair",
-    "spoiler",
-    "reason",
-    "deleted"
-], false);
 var CommentEdit = /** @class */ (function (_super) {
     __extends(CommentEdit, _super);
     function CommentEdit(props, plebbit) {
@@ -132,8 +97,8 @@ var CommentEdit = /** @class */ (function (_super) {
     CommentEdit.prototype.toJSON = function () {
         return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
     };
-    CommentEdit.prototype.toJSONForDb = function () {
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address });
+    CommentEdit.prototype.toJSONForDb = function (isAuthorEdit) {
+        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { author: this.author.toJSONIpfs(), authorAddress: this.author.address, isAuthorEdit: isAuthorEdit });
     };
     CommentEdit.prototype.getType = function () {
         return "commentedit";

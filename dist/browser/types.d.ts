@@ -142,7 +142,7 @@ export interface ModeratorCommentEditOptions {
     reason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 }
-interface AuthorCommentEditOptions {
+export interface AuthorCommentEditOptions {
     commentCid: string;
     content?: string;
     deleted?: boolean;
@@ -150,9 +150,9 @@ interface AuthorCommentEditOptions {
     spoiler?: boolean;
     reason?: string;
 }
-export interface AuthorCommentEdit extends AuthorCommentEditOptions, PublicationType {
+export interface AuthorCommentEdit extends AuthorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {
 }
-export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, PublicationType {
+export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {
 }
 export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
 export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
@@ -406,6 +406,7 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
+    isAuthorEdit: boolean;
 }
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {
 }
