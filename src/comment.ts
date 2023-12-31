@@ -468,6 +468,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 .on("update", async (updateProps) => {
                     if (updateProps.params.result.subplebbitAddress) {
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                        //@ts-expect-error
+                        this._rawCommentIpfs = lodash.omit(updateProps.params.result, "cid");
                         this._initProps(updateProps.params.result);
                     } else {
                         log(`Received new CommentUpdate (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
