@@ -63,6 +63,7 @@ import {
     verifyChallengeRequest,
     verifyComment,
     verifyCommentEdit,
+    verifyCommentUpdate,
     verifyVote
 } from "../signer/signatures";
 import { STORAGE_KEYS, subplebbitForPublishingCache } from "../constants";
@@ -1366,8 +1367,6 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             .getDefaultIpfs()
             ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
         if (oldIpfsPath && oldIpfsPath !== ipfsPath) await this._clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
-
-        await this.dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
     }
 
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
@@ -1406,9 +1405,21 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
 
+        await this._validateCommentUpdateSignature(newCommentUpdate, comment, log);
+
         const ipfsPath = await this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate);
 
         await this._writeCommentUpdateToIpfsFilePath(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
+        await this.dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
+    }
+
+    private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdate, comment: CommentsTableRow, log: Logger) {
+        // This function should be deleted at some point, once the protocol ossifies
+        const validation = await verifyCommentUpdate(newCommentUpdate, false, this._clientsManager, this.address, comment, false);
+        if (!validation.valid) {
+            log.error(`CommentUpdate (${comment.cid}) signature is invalid due to (${validation.reason}). This is a critical error`);
+            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
+        }
     }
 
     private async _listenToIncomingRequests() {
