@@ -298,26 +298,24 @@ export class DbHandler {
         ];
         const tables = Object.values(TABLES);
 
-        await Promise.all(
-            tables.map(async (table) => {
-                const i = tables.indexOf(table);
-                const tableExists = await this._knex.schema.hasTable(table);
-                if (!tableExists) {
-                    log(`Table ${table} does not exist. Will create schema`);
-                    await createTableFunctions[i].bind(this)(table);
-                } else if (tableExists && needToMigrate) {
-                    // We need to update the schema of the currently existing table
-                    log(`Migrating table ${table} to new schema`);
-                    await this._knex.raw("PRAGMA foreign_keys = OFF");
-                    const tempTableName = `${table}${env.DB_VERSION}`;
-                    await this._knex.schema.dropTableIfExists(tempTableName);
-                    await createTableFunctions[i].bind(this)(tempTableName);
-                    await this._copyTable(table, tempTableName, currentDbVersion);
-                    await this._knex.schema.dropTable(table);
-                    await this._knex.schema.renameTable(tempTableName, table);
-                }
-            })
-        );
+        for (let i = 0; i < tables.length; i++) {
+            const tableName = tables[i];
+            const tableExists = await this._knex.schema.hasTable(tableName);
+            if (!tableExists) {
+                log(`Table ${tableName} does not exist. Will create schema`);
+                await createTableFunctions[i].bind(this)(tableName);
+            } else if (tableExists && needToMigrate) {
+                // We need to update the schema of the currently existing table
+                log(`Migrating table ${tableName} to new schema`);
+                await this._knex.raw("PRAGMA foreign_keys = OFF");
+                const tempTableName = `${tableName}${env.DB_VERSION}`;
+                await this._knex.schema.dropTableIfExists(tempTableName);
+                await createTableFunctions[i].bind(this)(tempTableName);
+                await this._copyTable(tableName, tempTableName, currentDbVersion);
+                await this._knex.schema.dropTable(tableName);
+                await this._knex.schema.renameTable(tempTableName, tableName);
+            }
+        }
 
         if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = ON");
@@ -350,10 +348,16 @@ export class DbHandler {
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                     }
                 // Migration from version 10 to 11
-                if (currentDbVersion === 10) {
-                    if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
-                        srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`;
-                    // We just need the copy to work. The new comments will have a correct hash
+                if (currentDbVersion <= 10 && srcTable === TABLES.COMMENTS) {
+                    srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. The new comments will have a correct hash
+                }
+                if (currentDbVersion <= 11 && srcTable === TABLES.COMMENT_EDITS) {
+                    // Need to compute isAuthorEdit column
+                    const editWithType = <Omit<CommentEditsTableRow, "isAuthorEdit">>srcRecord;
+                    const commentToBeEdited = await this.queryComment(editWithType.commentCid);
+                    const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
+                    //@ts-expect-error
+                    srcRecord["isAuthorEdit"] = this._subplebbit.isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
                 }
             }
 

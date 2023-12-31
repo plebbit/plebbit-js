@@ -1063,12 +1063,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private _commentEditIncludesModFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
-        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+        return lodash.intersection(modOnlyFields, lodash.compact(Object.keys(request))).length > 0;
     }
 
     private _commentEditIncludesAuthorFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
-        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+        return lodash.intersection(modOnlyFields, lodash.compact(Object.keys(request))).length > 0;
     }
 
     private _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
