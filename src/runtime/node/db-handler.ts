@@ -32,6 +32,7 @@ import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "../../subplebbit/sort-handler";
 import { SubplebbitStats } from "../../subplebbit/types";
 import { v4 as uuidV4 } from "uuid";
+import { AUTHOR_EDIT_FIELDS } from "../../signer/constants";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -49,13 +50,11 @@ export class DbHandler {
     private _dbConfig: Knex.Config<any>;
     private _keyv: Keyv;
     private _createdTables: boolean;
-    private _needToUpdateCommentUpdates: boolean;
 
     constructor(subplebbit: DbHandler["_subplebbit"]) {
         this._subplebbit = subplebbit;
         this._currentTrxs = {};
         this._createdTables = false;
-        this._needToUpdateCommentUpdates = false;
     }
 
     async initDbConfigIfNeeded() {
@@ -194,7 +193,6 @@ export class DbHandler {
     }
 
     private async _createCommentUpdatesTable(tableName: string) {
-        this._needToUpdateCommentUpdates = true;
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
 
@@ -263,8 +261,8 @@ export class DbHandler {
             table.boolean("pinned").nullable();
             table.boolean("locked").nullable();
             table.boolean("removed").nullable();
-            table.text("moderatorReason").nullable();
             table.json("commentAuthor").nullable();
+            table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
 
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
             table.primary(["id", "commentCid"]);
@@ -280,7 +278,7 @@ export class DbHandler {
 
         const currentDbVersion = await this.getDbVersion();
 
-        if (currentDbVersion === 10) {
+        if (currentDbVersion <= 10) {
             // Remove unneeded tables
             await Promise.all(
                 ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
@@ -291,6 +289,7 @@ export class DbHandler {
 
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
+        if (needToMigrate) await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -355,8 +354,6 @@ export class DbHandler {
                     if (srcTable === TABLES.COMMENTS && !srcRecord["challengeRequestPublicationSha256"])
                         srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`;
                     // We just need the copy to work. The new comments will have a correct hash
-                    else if (srcTable === TABLES.COMMENT_UPDATES && !srcRecord["ipfsPath"])
-                        srcRecord["ipfsPath"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. Eventually it will be updated to have the correct ipfsPath
                 }
             }
 
@@ -527,11 +524,6 @@ export class DbHandler {
     }
 
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
-        if (this._needToUpdateCommentUpdates) {
-            const allComments = await this._baseTransaction(trx)(TABLES.COMMENTS);
-            this._needToUpdateCommentUpdates = false;
-            return allComments;
-        }
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
         // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
@@ -650,22 +642,9 @@ export class DbHandler {
 
     private async _queryAuthorEdit(cid: string, authorAddress: string, trx?: Transaction): Promise<AuthorCommentEdit | undefined> {
         const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-            .select(
-                "commentCid",
-                "content",
-                "deleted",
-                "flair",
-                "spoiler",
-                "removed", // in case mod remove their own post, we include it here even though it's not a field of AuthorCommentEdit to make sure the signature will be validated correctly
-                "reason",
-                "author",
-                "signature",
-                "protocolVersion",
-                "subplebbitAddress",
-                "timestamp"
-            )
-            .where({ commentCid: cid, authorAddress })
-            .orderBy("timestamp", "desc")
+            .select(AUTHOR_EDIT_FIELDS)
+            .where({ commentCid: cid, authorAddress, isAuthorEdit: true })
+            .orderBy("id", "desc")
             .first();
 
         return authorEdit;
@@ -675,12 +654,12 @@ export class DbHandler {
         comment: Pick<CommentsTableRow, "cid" | "author">,
         trx?: Transaction
     ): Promise<Pick<CommentUpdate, "reason">> {
-        const moderatorReason: Pick<CommentEditType, "reason"> | undefined = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        const moderatorReason: Pick<CommentEditsTableRow, "reason"> | undefined = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("reason")
             .where("commentCid", comment.cid)
-            .whereNot("authorAddress", comment.author.address)
+            .where({ isAuthorEdit: false })
             .whereNotNull("reason")
-            .orderBy("timestamp", "desc")
+            .orderBy("id", "desc")
             .first();
         return moderatorReason;
     }
@@ -694,7 +673,8 @@ export class DbHandler {
                         .select(field)
                         .where("commentCid", cid)
                         .whereNotNull(field)
-                        .orderBy("timestamp", "desc")
+                        .where("isAuthorEdit", false)
+                        .orderBy("id", "desc")
                         .first()
                 )
             ))
@@ -707,7 +687,7 @@ export class DbHandler {
             .select("deleted")
             .where("commentCid", cid)
             .whereNotNull("deleted")
-            .orderBy("timestamp", "desc")
+            .orderBy("id", "desc")
             .first();
         return deleted;
     }
@@ -720,8 +700,8 @@ export class DbHandler {
             .select("flair")
             .where("commentCid", comment.cid)
             .whereNotNull("flair")
-            .whereNot("authorAddress", comment.author.address)
-            .orderBy("timestamp", "desc")
+            .where({ isAuthorEdit: false })
+            .orderBy("id", "desc")
             .first();
         return latestFlair;
     }
@@ -791,7 +771,7 @@ export class DbHandler {
                 authorComments.map((c) => c.cid)
             )
             .whereNotNull("commentAuthor")
-            .orderBy("timestamp", "desc");
+            .orderBy("id", "desc");
         const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number")?.commentAuthor;
         const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair)?.commentAuthor;
 

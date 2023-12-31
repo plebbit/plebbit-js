@@ -3,6 +3,7 @@
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
 import { SubplebbitIpfsType } from "../subplebbit/types";
 import {
+    AuthorCommentEdit,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
@@ -13,6 +14,8 @@ import {
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
+    ModeratorCommentEdit,
+    PublicationType,
     PublicationTypeName,
     VotePubsubMessage
 } from "../types";
@@ -203,3 +206,36 @@ export type PubsubMsgsToSign =
 // ---------------------------
 // Verifying
 export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;
+
+// Export constants of CommentType fields
+
+// Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
+const PUBLICATION_FIELDS: (keyof Required<Omit<PublicationType, "challengeCommentCids" | "challengeAnswers">>)[] = [
+    "author",
+    "protocolVersion",
+    "signature",
+    "subplebbitAddress",
+    "timestamp"
+];
+
+export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
+    ...PUBLICATION_FIELDS,
+    "commentCid",
+    "flair",
+    "spoiler",
+    "pinned",
+    "locked",
+    "removed",
+    "reason",
+    "commentAuthor"
+];
+
+export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
+    ...PUBLICATION_FIELDS,
+    "commentCid",
+    "content",
+    "flair",
+    "spoiler",
+    "reason",
+    "deleted"
+];

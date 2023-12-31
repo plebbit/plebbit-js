@@ -1,50 +1,16 @@
-import { ChallengeRequestMessage } from "./challenge";
 import { Plebbit } from "./plebbit";
 import Publication from "./publication";
 import { verifyCommentEdit } from "./signer/signatures";
 import { Flair } from "./subplebbit/types";
 import {
-    AuthorCommentEdit,
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
     CommentEditsTableRowInsert,
     CommentEditType,
-    ModeratorCommentEdit,
-    PublicationType,
     PublicationTypeName
 } from "./types";
 import { throwWithErrorCode } from "./util";
 import isIPFS from "is-ipfs";
-
-const PUBLICATION_FIELDS: (keyof Required<Omit<PublicationType, "challengeCommentCids" | "challengeAnswers">>)[] = [
-    "author",
-    "protocolVersion",
-    "signature",
-    "subplebbitAddress",
-    "timestamp"
-];
-// Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
-export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
-    ...PUBLICATION_FIELDS,
-    "commentCid",
-    "flair",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "commentAuthor"
-];
-
-export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
-    ...PUBLICATION_FIELDS,
-    "commentCid",
-    "content",
-    "flair",
-    "spoiler",
-    "reason",
-    "deleted"
-];
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
@@ -103,11 +69,12 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSONForDb(): CommentEditsTableRowInsert {
+    toJSONForDb(isAuthorEdit: boolean): CommentEditsTableRowInsert {
         return {
             ...this.toJSONPubsubMessagePublication(),
             author: this.author.toJSONIpfs(),
-            authorAddress: this.author.address
+            authorAddress: this.author.address,
+            isAuthorEdit
         };
     }
 

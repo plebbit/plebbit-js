@@ -42,10 +42,12 @@ import {
     DecryptedChallenge,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    CommentUpdatesRow
+    CommentUpdatesRow,
+    ModeratorCommentEditOptions,
+    AuthorCommentEdit,
+    AuthorCommentEditOptions
 } from "../types";
 import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../signer/util";
-import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../comment-edit";
 import { messages } from "../errors";
 import Logger from "@plebbit/plebbit-logger";
 import { getThumbnailUrlOfLink, nativeFunctions } from "../runtime/node/util";
@@ -66,7 +68,7 @@ import {
 import { STORAGE_KEYS, subplebbitForPublishingCache } from "../constants";
 import assert from "assert";
 import version from "../version";
-import { JsonSignature, SignerType } from "../signer/constants";
+import { AUTHOR_EDIT_FIELDS, JsonSignature, MOD_EDIT_FIELDS, SignerType } from "../signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error";
 import retry, { RetryOperation } from "retry";
@@ -778,7 +780,13 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     ): Promise<undefined> {
         const log = Logger("plebbit-js:subplebbit:handleCommentEdit");
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
-        await this.dbHandler.insertEdit(commentEdit.toJSONForDb());
+        const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+        const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
+        const editHasAuthorFields = this._commentEditIncludesAuthorFields(commentEditRaw);
+
+        const isAuthorEdit = editHasAuthorFields && editSignedByOriginalAuthor;
+
+        await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit));
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
     }
 
@@ -1054,6 +1062,16 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         }
     }
 
+    private _commentEditIncludesModFields(request: CommentEditPubsubMessage) {
+        const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
+        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+    }
+
+    private _commentEditIncludesAuthorFields(request: CommentEditPubsubMessage) {
+        const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
+        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+    }
+
     private async _checkPublicationValidity(
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ): Promise<messages | undefined> {
@@ -1162,18 +1180,25 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
             const editorModRole = this.roles && this.roles[commentEdit.author.address];
+            //@ts-expect-error
+            const editHasAuthorFields = this._commentEditIncludesAuthorFields(request.publication);
+            //@ts-expect-error
+            const editHasModFields = this._commentEditIncludesModFields(request.publication);
+
+            if (editHasAuthorFields && editHasModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
             const allowedEditFields =
-                editSignedByOriginalAuthor && editorModRole
-                    ? [...AUTHOR_EDIT_FIELDS, ...MOD_EDIT_FIELDS]
-                    : editSignedByOriginalAuthor
+                editSignedByOriginalAuthor && editHasAuthorFields
                     ? AUTHOR_EDIT_FIELDS
-                    : editorModRole
+                    : editorModRole && editHasModFields
                     ? MOD_EDIT_FIELDS
                     : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
-                if (!allowedEditFields.includes(<any>editField)) return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
+                if (!allowedEditFields.includes(<any>editField)) {
+                    log(`The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`);
+                    return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
+                }
 
             if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;

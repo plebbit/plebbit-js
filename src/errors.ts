@@ -68,7 +68,7 @@ export enum messages {
 
     // Subplebbit rejections of publications
 
-    ERR_UNAUTHORIZED_COMMENT_EDIT = "Can't edit the comment due to lack of authorization",
+    ERR_UNAUTHORIZED_COMMENT_EDIT = "The author of this edit is not a mod/admin/owner or an author of the original comment. Can't edit",
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
     ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
@@ -94,6 +94,7 @@ export enum messages {
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
+    ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod",
 
     // Resolver errors
     ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",

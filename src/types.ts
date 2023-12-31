@@ -170,7 +170,7 @@ export interface ModeratorCommentEditOptions {
     reason?: string;
     commentAuthor?: CommentAuthorEditOptions;
 }
-interface AuthorCommentEditOptions {
+export interface AuthorCommentEditOptions {
     commentCid: string;
     content?: string;
     deleted?: boolean;
@@ -535,6 +535,7 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
+    isAuthorEdit: boolean; // If false, then mod edit
 }
 
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
