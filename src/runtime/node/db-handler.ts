@@ -43,7 +43,7 @@ const TABLES = Object.freeze({
 
 export class DbHandler {
     private _knex: Knex;
-    private _subplebbit: Pick<Subplebbit, "address"> & {
+    private _subplebbit: Pick<Subplebbit, "address" | "_isAuthorEdit"> & {
         plebbit: Pick<Plebbit, "dataPath" | "noData" | "_storage">;
     };
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
@@ -59,6 +59,10 @@ export class DbHandler {
 
     async initDbConfigIfNeeded() {
         if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+    }
+
+    toJSON() {
+        return undefined;
     }
 
     async initDbIfNeeded() {
@@ -356,8 +360,7 @@ export class DbHandler {
                     const editWithType = <Omit<CommentEditsTableRow, "isAuthorEdit">>srcRecord;
                     const commentToBeEdited = await this.queryComment(editWithType.commentCid);
                     const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
-                    //@ts-expect-error
-                    srcRecord["isAuthorEdit"] = this._subplebbit.isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
+                    srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
                 }
             }
 

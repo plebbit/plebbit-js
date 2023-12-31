@@ -269,7 +269,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         if (!this.dbHandler) {
             this.dbHandler = nativeFunctions.createDbHandler({
                 address: this.address,
-                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                _isAuthorEdit: this._isAuthorEdit.bind(this)
             });
             await this.dbHandler.initDbConfigIfNeeded();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
@@ -449,7 +450,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
                 await this.dbHandler.destoryConnection();
                 await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                     address: newSubplebbitOptions.address,
-                    plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                    plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                    _isAuthorEdit: this._isAuthorEdit.bind(this)
                 });
             }
         } else {
@@ -1064,15 +1066,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     private _commentEditIncludesModFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
-        return lodash.intersection(modOnlyFields, lodash.compact(Object.keys(request))).length > 0;
+        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
     private _commentEditIncludesAuthorFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
-        return lodash.intersection(modOnlyFields, lodash.compact(Object.keys(request))).length > 0;
+        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
-    private _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
+    _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
         if (this._commentEditIncludesModFields(request)) return false;
         if (this._commentEditIncludesAuthorFields(request)) return true;
         // The request has fields that are used in both mod and author, namely [spoiler, flair]
@@ -1480,7 +1482,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(internalState.address, {
                 address: internalState.address,
-                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"])
+                plebbit: lodash.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
+                _isAuthorEdit: this._isAuthorEdit.bind(this)
             });
             await this.dbHandler.initDestroyedConnection();
             this.sortHandler = new SortHandler(lodash.pick(this, ["address", "plebbit", "dbHandler", "encryption", "_clientsManager"]));
