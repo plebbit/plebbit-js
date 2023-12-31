@@ -101,7 +101,7 @@ export class BasePages implements PagesType {
         if (!this.pages) return undefined;
         if (!this._pagesIpfs) {
             Logger("plebbit-js:pages:toJSONIpfs").error(
-                "toJSONIpfs() is called even though _pagesIpfs is undefined. This error should not persist"
+                `toJSONIpfs() is called on sub(${this._subplebbitAddress}) and parentCid (${this._parentCid}) even though _pagesIpfs is undefined. This error should not persist`
             );
             return;
         }

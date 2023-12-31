@@ -1195,7 +1195,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             if (isAuthorEdit && editHasModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
-            const allowedEditFields = isAuthorEdit ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
+            const allowedEditFields =
+                isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
                 if (!allowedEditFields.includes(<any>editField)) {
