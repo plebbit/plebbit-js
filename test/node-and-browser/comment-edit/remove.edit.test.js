@@ -125,7 +125,7 @@ describe(`Removing post`, async () => {
         expect(postToRemove._rawCommentUpdate.edit).to.be.undefined;
     });
 
-    it(`Unremoved post in included in subplebbit.posts with removed=false`, async () => {
+    it(`Unremoved post is included in subplebbit.posts with removed=false`, async () => {
         const sub = await plebbit.createSubplebbit({ address: subplebbitAddress });
         sub.update();
 
