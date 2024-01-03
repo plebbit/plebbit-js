@@ -20,6 +20,7 @@ import Publication from "../../publication";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types";
 import { Subplebbit } from "../../subplebbit/subplebbit";
 import lodash from "lodash";
+import { PlebbitError } from "../../plebbit-error";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -596,6 +597,21 @@ const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }: PlebbitW
     const plebbit = await PlebbitJs.Plebbit(plebbitOptions);
 
     const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions, authKey });
+
+    let error: Error;
+    const errorListener = (err) => (error = err);
+    plebbitWss.on("error", errorListener);
+
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5s to see if there are any errors
+
+    if (error)
+        throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
+            error: error,
+            options: { port, plebbitOptions, authKey }
+        });
+
+    plebbitWss.removeListener("error", errorListener);
+
     return plebbitWss;
 };
 

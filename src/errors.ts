@@ -119,5 +119,6 @@ export enum messages {
     ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER = "The challenge request has been published over the pubsub topic but no response was received",
 
     // RPC errors
-    ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC"
+    ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC",
+    ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server"
 }

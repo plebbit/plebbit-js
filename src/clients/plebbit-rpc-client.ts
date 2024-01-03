@@ -103,7 +103,8 @@ export default class PlebbitRpcClient {
         } catch (e) {
             throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
                 plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
-                timeoutSeconds: this._timeoutSeconds
+                timeoutSeconds: this._timeoutSeconds,
+                error: e
             });
         }
     }
