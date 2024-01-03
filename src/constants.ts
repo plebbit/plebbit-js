@@ -8,10 +8,10 @@ export enum STORAGE_KEYS {
 
 // Configs for LRU storage
 
-export const postTimestampConfig: Omit<LRUStorageConstructor, "plebbit"> = { cacheName: "postTimestamp", maxItems: 500 };
+export const postTimestampConfig: Omit<LRUStorageConstructor, "plebbit"> = { cacheName: "plebbit-js-lru-storage-postTimestamp", maxItems: 500 };
 
 export const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "plebbit"> = {
-    cacheName: "commentPostUpdatesParentsPath",
+    cacheName: "plebbit-js-lru-storage-commentPostUpdatesParentsPath",
     maxItems: 500
 };
 

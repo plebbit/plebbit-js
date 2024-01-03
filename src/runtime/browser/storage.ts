@@ -16,7 +16,7 @@ export default class Storage implements StorageInterface {
     }
 
     async init() {
-        const storageName = this._plebbit.noData ? lodash.uniqueId() : "plebbit-storage";
+        const storageName = this._plebbit.noData ? lodash.uniqueId() : "plebbit-js-storage";
         this._store = localForage.createInstance({
             name: storageName
         });
