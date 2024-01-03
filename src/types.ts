@@ -671,7 +671,7 @@ export interface StorageInterface {
     destroy: () => Promise<void>;
 }
 
-type LRUStorageCacheNames = "plebbit-js-lru-storage-postTimestamp" | "plebbit-js-lru-storage-commentPostUpdatesParentsPath";
+type LRUStorageCacheNames = "plebbitjs_lrustorage_postTimestamp" | "plebbitjs_lrustorage_commentPostUpdatesParentsPath";
 
 export interface LRUStorageConstructor {
     maxItems?: number; // Will start evicting after this number of items is stored

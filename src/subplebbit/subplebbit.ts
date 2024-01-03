@@ -893,7 +893,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _decryptOrRespondWithFailure(
         request: ChallengeRequestMessage | ChallengeAnswerMessage
     ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
-        const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
+        const log = Logger("plebbit-js:subplebbit:_decryptOrRespondWithFailure");
         let decrypted: DecryptedChallengeAnswer | DecryptedChallengeRequest;
         try {
             decrypted = JSON.parse(

@@ -251,7 +251,11 @@ describe(`Pinning replies`, async () => {
     const populatePost = async () => {
         if (post.replyCount < 5) {
             await Promise.all(new Array(10).fill(null).map((x) => publishRandomReply(post, plebbit, {}, false)));
-            await new Promise((resolve) => post.once("update", resolve));
+            await new Promise((resolve) =>
+                post.on("update", () => {
+                    if (post.replyCount > 5) resolve();
+                })
+            );
         }
     };
     before(async () => {
