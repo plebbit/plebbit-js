@@ -1,6 +1,7 @@
 const {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess} = require('../../dist/node/runtime/node/challenges/exclude')
 const {testRateLimit, addToRateLimiter} = require('../../dist/node/runtime/node/challenges/exclude/rate-limiter')
 const {expect} = require('chai')
+const lodash = require("lodash")
 const {Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results, excludeModsChallegeSubplebbit} = require('./fixtures/fixtures')
 
 // sometimes use random addresses because the rate limiter 
@@ -142,17 +143,29 @@ describe("shouldExcludePublication", () => {
   })
 
   // Exclude based on roles
-  it("Moderator edits are excluded from challenges", async () => {
+  it.only("Moderator edits are excluded from challenges", async () => {
     const subplebbitChallenge = {
       exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
     }
+    // high-karma.eth is a mod
+    const modAuthor = {address: "high-karma.eth"}
+    const commentEditOfMod = lodash.cloneDeep(require("../../test/fixtures/signatures/commentEdit/valid_comment_edit.json"));
+    commentEditOfMod.author = modAuthor;
 
-    const commentEdit = {
-      commentCid: 'Qm...',
-      author: {address:"high-karma.eth"}
+    const postOfMod = lodash.cloneDeep(require("../../test/fixtures/signatures/comment/commentUpdate/valid_comment.json"))
+    postOfMod.author = modAuthor;
+
+    const replyOfMod = {
+      ...postOfMod,
+      parentCid: 'Qm...',
     }
+    const voteOfMod = lodash.cloneDeep(require("../../test/fixtures/valid_vote.json"));
+    voteOfMod.author = modAuthor;
 
-    expect(shouldExcludePublication(subplebbitChallenge, commentEdit, excludeModsChallegeSubplebbit)).to.equal(true);
+    expect(shouldExcludePublication(subplebbitChallenge, commentEditOfMod)).to.equal(true);
+    expect(shouldExcludePublication(subplebbitChallenge, postOfMod)).to.equal(false);
+    expect(shouldExcludePublication(subplebbitChallenge, replyOfMod)).to.equal(false);
+    expect(shouldExcludePublication(subplebbitChallenge, voteOfMod)).to.equal(false);
   })
 
   it("rateLimit", () => {

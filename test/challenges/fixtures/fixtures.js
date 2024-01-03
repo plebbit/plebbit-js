@@ -19,7 +19,6 @@ function Comment(cid) {
   const karma = split[1]
   const age = split[2]
   this.subplebbitAddress = subplebbitAddress
-  this.ipnsName = 'ipns name ' + cid
 
   // define author
   this.author = {address: 'Qm...'}
