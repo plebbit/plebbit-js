@@ -514,7 +514,7 @@ export interface StorageInterface {
     keys: () => Promise<string[]>;
     destroy: () => Promise<void>;
 }
-type LRUStorageCacheNames = "postTimestamp" | "commentPostUpdatesParentsPath";
+type LRUStorageCacheNames = "plebbitjs_lrustorage_postTimestamp" | "plebbitjs_lrustorage_commentPostUpdatesParentsPath";
 export interface LRUStorageConstructor {
     maxItems?: number;
     cacheName: LRUStorageCacheNames;

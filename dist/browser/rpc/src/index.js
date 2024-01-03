@@ -94,6 +94,7 @@ var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
 var events_1 = require("events");
 var log = (0, plebbit_logger_1.default)("plebbit-js-rpc:plebbit-ws-server");
 var lodash_1 = __importDefault(require("lodash"));
+var plebbit_error_1 = require("../../plebbit-error");
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 var startedSubplebbits = {};
@@ -884,7 +885,7 @@ var PlebbitWsServer = /** @class */ (function (_super) {
 var createPlebbitWsServer = function (_a) {
     var port = _a.port, plebbitOptions = _a.plebbitOptions, authKey = _a.authKey;
     return __awaiter(void 0, void 0, void 0, function () {
-        var plebbit, plebbitWss;
+        var plebbit, plebbitWss, error, errorListener;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -895,6 +896,17 @@ var createPlebbitWsServer = function (_a) {
                 case 1:
                     plebbit = _b.sent();
                     plebbitWss = new PlebbitWsServer({ plebbit: plebbit, port: port, plebbitOptions: plebbitOptions, authKey: authKey });
+                    errorListener = function (err) { return (error = err); };
+                    plebbitWss.on("error", errorListener);
+                    return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 500); })];
+                case 2:
+                    _b.sent(); // Wait 0.5s to see if there are any errors
+                    if (error)
+                        throw new plebbit_error_1.PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
+                            error: error,
+                            options: { port: port, plebbitOptions: plebbitOptions, authKey: authKey }
+                        });
+                    plebbitWss.removeListener("error", errorListener);
                     return [2 /*return*/, plebbitWss];
             }
         });

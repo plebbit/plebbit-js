@@ -84,6 +84,7 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shor
 export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
+    _usingDefaultChallenge: boolean;
     startedState: Subplebbit["startedState"];
 }
 export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_rawSubplebbitType" | "_subplebbitUpdateTrigger"> {

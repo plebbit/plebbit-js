@@ -48,6 +48,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _updateTimeout?;
     private _syncInterval?;
     private _subplebbitUpdateTrigger;
+    private _usingDefaultChallenge;
     private _isSubRunningLocally;
     private _publishLoopPromise;
     private _loadingOperation;
@@ -55,6 +56,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _updateRpcSubscriptionId?;
     private _startRpcSubscriptionId?;
     private _cidsToUnPin;
+    private _defaultSubplebbitChallenges;
     private _challengeAnswerPromises;
     private _challengeAnswerResolveReject;
     private _ongoingChallengeExchanges;
@@ -70,7 +72,7 @@ export declare class Subplebbit extends TypedEmitter<SubplebbitEvents> implement
     private _toJSONBase;
     toJSONIpfs(): SubplebbitIpfsType;
     private _importSubplebbitSignerIntoIpfsIfNeeded;
-    _defaultSettingsOfChallenges(log: Logger): Promise<void>;
+    _setChallengesToDefaultIfNotDefined(log: Logger): Promise<void>;
     _createNewLocalSubDb(): Promise<void>;
     _loadLocalSubDb(): Promise<void>;
     private assertDomainResolvesCorrectly;

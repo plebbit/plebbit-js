@@ -171,7 +171,8 @@ var PlebbitRpcClient = /** @class */ (function () {
                         e_1 = _a.sent();
                         (0, util_1.throwWithErrorCode)("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
                             plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
-                            timeoutSeconds: this._timeoutSeconds
+                            timeoutSeconds: this._timeoutSeconds,
+                            error: e_1
                         });
                         return [3 /*break*/, 4];
                     case 4: return [2 /*return*/];

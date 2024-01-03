@@ -11,9 +11,9 @@ var STORAGE_KEYS;
     STORAGE_KEYS[STORAGE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 1] = "PERSISTENT_DELETED_SUBPLEBBITS"; // These are basically sub db files that we're unable to remove for some reason on windows
 })(STORAGE_KEYS || (exports.STORAGE_KEYS = STORAGE_KEYS = {}));
 // Configs for LRU storage
-exports.postTimestampConfig = { cacheName: "postTimestamp", maxItems: 500 };
+exports.postTimestampConfig = { cacheName: "plebbitjs_lrustorage_postTimestamp", maxItems: 500 };
 exports.commentPostUpdatesParentsPathConfig = {
-    cacheName: "commentPostUpdatesParentsPath",
+    cacheName: "plebbitjs_lrustorage_commentPostUpdatesParentsPath",
     maxItems: 500
 };
 // Memory caches

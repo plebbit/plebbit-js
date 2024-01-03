@@ -53,7 +53,7 @@ var Storage = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var storageName;
             return __generator(this, function (_a) {
-                storageName = this._plebbit.noData ? lodash_1.default.uniqueId() : "plebbit-storage";
+                storageName = this._plebbit.noData ? lodash_1.default.uniqueId() : "plebbitjs_storage";
                 this._store = localforage_1.default.createInstance({
                     name: storageName
                 });

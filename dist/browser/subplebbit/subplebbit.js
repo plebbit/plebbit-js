@@ -165,6 +165,12 @@ var Subplebbit = /** @class */ (function (_super) {
             return (_a = _this.plebbit).emit.apply(_a, __spreadArray(["error"], args, false));
         });
         _this._clientsManager = new client_manager_1.SubplebbitClientsManager(_this);
+        _this._defaultSubplebbitChallenges = [
+            {
+                name: "captcha-canvas-v3",
+                exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+            }
+        ];
         _this.clients = _this._clientsManager.clients;
         _this.posts = new pages_1.PostsPages({
             pageCids: undefined,
@@ -202,6 +208,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         this.signature = mergedProps.signature;
                         this.settings = mergedProps.settings;
                         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+                        this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
                         this.postUpdates = mergedProps.postUpdates;
                         this._setStartedState(mergedProps.startedState);
                         if (!this.signer && mergedProps.signer)
@@ -295,7 +302,7 @@ var Subplebbit = /** @class */ (function (_super) {
     };
     Subplebbit.prototype.toJSONInternal = function () {
         var _a;
-        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["shortAddress"])), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSONIpfs(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, settings: this.settings, startedState: this.startedState });
+        return __assign(__assign({}, lodash_1.default.omit(this.toJSON(), ["shortAddress"])), { posts: (_a = this.posts) === null || _a === void 0 ? void 0 : _a.toJSONIpfs(), signer: this.signer ? lodash_1.default.pick(this.signer, ["privateKey", "type", "address"]) : undefined, _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, settings: this.settings, startedState: this.startedState, _usingDefaultChallenge: this._usingDefaultChallenge });
     };
     Subplebbit.prototype.toJSONInternalRpc = function () {
         return __assign({}, lodash_1.default.omit(this.toJSONInternal(), ["signer"]));
@@ -356,27 +363,21 @@ var Subplebbit = /** @class */ (function (_super) {
             });
         });
     };
-    Subplebbit.prototype._defaultSettingsOfChallenges = function (log) {
-        var _a;
+    Subplebbit.prototype._setChallengesToDefaultIfNotDefined = function (log) {
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
-                        if (!!((_a = this.settings) === null || _a === void 0 ? void 0 : _a.challenges)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.edit({
-                                settings: {
-                                    challenges: [
-                                        {
-                                            name: "captcha-canvas-v3",
-                                            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
-                                        }
-                                    ]
-                                }
-                            })];
+                        if (this._usingDefaultChallenge !== false &&
+                            (!((_a = this.settings) === null || _a === void 0 ? void 0 : _a.challenges) || lodash_1.default.isEqual((_b = this.settings) === null || _b === void 0 ? void 0 : _b.challenges, this._defaultSubplebbitChallenges)))
+                            this._usingDefaultChallenge = true;
+                        if (!(this._usingDefaultChallenge && !lodash_1.default.isEqual((_c = this.settings) === null || _c === void 0 ? void 0 : _c.challenges, this._defaultSubplebbitChallenges))) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.edit({ settings: __assign(__assign({}, this.settings), { challenges: this._defaultSubplebbitChallenges }) })];
                     case 1:
-                        _b.sent();
-                        log("Defaulted the challenges of subplebbit (".concat(this.address, ") to captcha-canvas-v3"));
-                        _b.label = 2;
+                        _d.sent();
+                        log("Defaulted the challenges of subplebbit (".concat(this.address, ") to"), this._defaultSubplebbitChallenges);
+                        _d.label = 2;
                     case 2: return [2 /*return*/];
                 }
             });
@@ -401,7 +402,7 @@ var Subplebbit = /** @class */ (function (_super) {
                     case 3:
                         _a.sent();
                         // Default props here
-                        return [4 /*yield*/, this._defaultSettingsOfChallenges(log)];
+                        return [4 /*yield*/, this._setChallengesToDefaultIfNotDefined(log)];
                     case 4:
                         // Default props here
                         _a.sent();
@@ -472,12 +473,12 @@ var Subplebbit = /** @class */ (function (_super) {
         });
     };
     Subplebbit.prototype.edit = function (newSubplebbitOptions) {
-        var _a;
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
             var log, optionsParsed, newProps_1, newProps;
             var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:edit");
                         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
@@ -491,19 +492,21 @@ var Subplebbit = /** @class */ (function (_super) {
                         optionsParsed = (0, util_1.replaceXWithY)(newSubplebbitOptions, undefined, null);
                         return [4 /*yield*/, this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed)];
                     case 1:
-                        newProps_1 = _b.sent();
+                        newProps_1 = _c.sent();
                         return [4 /*yield*/, this.initSubplebbit(newProps_1)];
                     case 2:
-                        _b.sent();
+                        _c.sent();
                         return [2 /*return*/, this];
                     case 3:
-                        if (Array.isArray((_a = newSubplebbitOptions === null || newSubplebbitOptions === void 0 ? void 0 : newSubplebbitOptions.settings) === null || _a === void 0 ? void 0 : _a.challenges))
-                            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(challenges_1.getSubplebbitChallengeFromSubplebbitChallengeSettings);
-                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
-                    case 4:
-                        _b.sent();
                         this._subplebbitUpdateTrigger = true;
                         newProps = __assign(__assign({}, newSubplebbitOptions), { _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+                        if (Array.isArray((_a = newProps === null || newProps === void 0 ? void 0 : newProps.settings) === null || _a === void 0 ? void 0 : _a.challenges)) {
+                            newProps.challenges = newSubplebbitOptions.settings.challenges.map(challenges_1.getSubplebbitChallengeFromSubplebbitChallengeSettings);
+                            newProps["_usingDefaultChallenge"] = lodash_1.default.isEqual((_b = newProps === null || newProps === void 0 ? void 0 : newProps.settings) === null || _b === void 0 ? void 0 : _b.challenges, this._defaultSubplebbitChallenges);
+                        }
+                        return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
+                    case 4:
+                        _c.sent();
                         if (!(newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address)) return [3 /*break*/, 11];
                         if ((0, util_1.doesEnsAddressHaveCapitalLetter)(newSubplebbitOptions.address))
                             throw new plebbit_error_1.PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
@@ -514,37 +517,37 @@ var Subplebbit = /** @class */ (function (_super) {
                         log("Attempting to edit subplebbit.address from ".concat(this.address, " to ").concat(newSubplebbitOptions.address));
                         return [4 /*yield*/, this._updateDbInternalState(newProps)];
                     case 5:
-                        _b.sent();
+                        _c.sent();
                         return [4 /*yield*/, this.dbHandler.isSubStartLocked()];
                     case 6:
-                        if (!!(_b.sent())) return [3 /*break*/, 10];
+                        if (!!(_c.sent())) return [3 /*break*/, 10];
                         log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
                         return [4 /*yield*/, this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address)];
                     case 7:
-                        _b.sent();
+                        _c.sent();
                         return [4 /*yield*/, this.dbHandler.destoryConnection()];
                     case 8:
-                        _b.sent();
+                        _c.sent();
                         return [4 /*yield*/, this.dbHandler.changeDbFilename(newSubplebbitOptions.address, {
                                 address: newSubplebbitOptions.address,
                                 plebbit: lodash_1.default.pick(this.plebbit, ["dataPath", "noData", "_storage"]),
                                 _isAuthorEdit: this._isAuthorEdit.bind(this)
                             })];
                     case 9:
-                        _b.sent();
-                        _b.label = 10;
+                        _c.sent();
+                        _c.label = 10;
                     case 10: return [3 /*break*/, 14];
                     case 11: return [4 /*yield*/, this._updateDbInternalState(newProps)];
                     case 12:
-                        _b.sent();
+                        _c.sent();
                         if (!!this._isSubRunningLocally) return [3 /*break*/, 14];
                         return [4 /*yield*/, this.dbHandler.destoryConnection()];
                     case 13:
-                        _b.sent(); // Need to destory connection so process wouldn't hang
-                        _b.label = 14;
+                        _c.sent(); // Need to destory connection so process wouldn't hang
+                        _c.label = 14;
                     case 14: return [4 /*yield*/, this.initSubplebbit(newProps)];
                     case 15:
-                        _b.sent();
+                        _c.sent();
                         log("Subplebbit (".concat(this.address, ") props (").concat(Object.keys(newProps), ") has been edited"));
                         return [2 /*return*/, this];
                 }
@@ -1165,7 +1168,7 @@ var Subplebbit = /** @class */ (function (_super) {
             return __generator(this, function (_e) {
                 switch (_e.label) {
                     case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeExchange");
+                        log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:_decryptOrRespondWithFailure");
                         _e.label = 1;
                     case 1:
                         _e.trys.push([1, 3, , 6]);
@@ -2389,7 +2392,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.dbHandler.initDestroyedConnection()];
                     case 9:
                         _c.sent();
-                        return [4 /*yield*/, this._defaultSettingsOfChallenges(log)];
+                        return [4 /*yield*/, this._setChallengesToDefaultIfNotDefined(log)];
                     case 10:
                         _c.sent();
                         // Import subplebbit keys onto ipfs node
