@@ -77,7 +77,6 @@ import Author from "../author";
 import { SubplebbitClientsManager } from "../clients/client-manager";
 import * as cborg from "cborg";
 import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption";
 import {
     Challenge,
@@ -146,6 +145,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _updateTimeout?: NodeJS.Timeout;
     private _syncInterval?: any; // TODO change "sync" to "publish"
     private _subplebbitUpdateTrigger: boolean;
+    private _usingDefaultChallenge: boolean;
     private _isSubRunningLocally: boolean;
     private _publishLoopPromise: Promise<void>;
     private _loadingOperation: RetryOperation;
@@ -153,6 +153,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private _updateRpcSubscriptionId?: number;
     private _startRpcSubscriptionId?: number;
     private _cidsToUnPin: string[] = [];
+    private _defaultSubplebbitChallenges: SubplebbitSettings["challenges"];
 
     // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
     // Most of the time they will be delete and cleaned up automatically
@@ -189,6 +190,12 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
 
         this._clientsManager = new SubplebbitClientsManager(this);
+        this._defaultSubplebbitChallenges = [
+            {
+                name: "captcha-canvas-v3",
+                exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
+            }
+        ];
         this.clients = this._clientsManager.clients;
 
         this.posts = new PostsPages({
@@ -222,6 +229,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         this.signature = mergedProps.signature;
         this.settings = mergedProps.settings;
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+        this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
         this.postUpdates = mergedProps.postUpdates;
         this._setStartedState(mergedProps.startedState);
         if (!this.signer && mergedProps.signer) this.signer = new Signer(mergedProps.signer);
@@ -284,7 +292,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
             settings: this.settings,
-            startedState: this.startedState
+            startedState: this.startedState,
+            _usingDefaultChallenge: this._usingDefaultChallenge
         };
     }
 
@@ -344,19 +353,15 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             });
     }
 
-    async _defaultSettingsOfChallenges(log: Logger) {
-        if (!this.settings?.challenges) {
-            await this.edit({
-                settings: {
-                    challenges: [
-                        {
-                            name: "captcha-canvas-v3",
-                            exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
-                        }
-                    ]
-                }
-            });
-            log(`Defaulted the challenges of subplebbit (${this.address}) to captcha-canvas-v3`);
+    async _setChallengesToDefaultIfNotDefined(log: Logger) {
+        if (
+            this._usingDefaultChallenge !== false &&
+            (!this.settings?.challenges || lodash.isEqual(this.settings?.challenges, this._defaultSubplebbitChallenges))
+        )
+            this._usingDefaultChallenge = true;
+        if (this._usingDefaultChallenge && !lodash.isEqual(this.settings?.challenges, this._defaultSubplebbitChallenges)) {
+            await this.edit({ settings: { ...this.settings, challenges: this._defaultSubplebbitChallenges } });
+            log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
         }
     }
 
@@ -371,7 +376,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this._initSignerProps();
 
         // Default props here
-        await this._defaultSettingsOfChallenges(log);
+        await this._setChallengesToDefaultIfNotDefined(log);
 
         if (!this.pubsubTopic) this.pubsubTopic = lodash.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
@@ -423,17 +428,19 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             return this;
         }
 
-        if (Array.isArray(newSubplebbitOptions?.settings?.challenges))
-            newSubplebbitOptions.challenges = newSubplebbitOptions.settings.challenges.map(
-                getSubplebbitChallengeFromSubplebbitChallengeSettings
-            );
-
-        await this.dbHandler.initDestroyedConnection();
         this._subplebbitUpdateTrigger = true;
         const newProps = {
             ...newSubplebbitOptions,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
+
+        if (Array.isArray(newProps?.settings?.challenges)) {
+            newProps.challenges = newSubplebbitOptions.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+            newProps["_usingDefaultChallenge"] = lodash.isEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
+        }
+
+        await this.dbHandler.initDestroyedConnection();
+
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
                 throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
@@ -1710,7 +1717,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
         await this.dbHandler.initDbIfNeeded();
         await this.dbHandler.initDestroyedConnection();
 
-        await this._defaultSettingsOfChallenges(log);
+        await this._setChallengesToDefaultIfNotDefined(log);
         // Import subplebbit keys onto ipfs node
 
         await this._importSubplebbitSignerIntoIpfsIfNeeded();
