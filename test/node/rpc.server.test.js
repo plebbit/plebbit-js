@@ -1,0 +1,34 @@
+const { PlebbitWsServer } = require("../../dist/node/rpc/src/index");
+const { mockPlebbit } = require("../../dist/node/test/test-util");
+const chai = require("chai");
+const chaiAsPromised = require("chai-as-promised");
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
+
+describe(`Setting up rpc server`, async () => {
+    let plebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    it(`Rpc server throws is rpc port is already taken`, async () => {
+        const rpcServerPort = 9138;
+        const options = {
+            port: rpcServerPort,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer(options); // was able to create an rpc server
+
+        try {
+            await PlebbitWsServer(options);
+            expect.fail("Should throw an error");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_CREATE_WS_RPC_SERVER");
+            expect(e.details.error.code).to.equal("EADDRINUSE");
+        }
+        await rpcServer.destroy();
+    });
+});
