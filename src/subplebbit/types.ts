@@ -206,7 +206,8 @@ export interface ChallengeFile {
     getChallenge: (
         challenge: SubplebbitChallengeSettings,
         challengeRequest: DecryptedChallengeRequestMessageType,
-        challengeIndex: number
+        challengeIndex: number,
+        subplebbit: Subplebbit
     ) => Promise<Challenge | ChallengeResult>;
 }
 

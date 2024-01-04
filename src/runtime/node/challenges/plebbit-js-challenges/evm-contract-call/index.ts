@@ -1,5 +1,8 @@
+import { getPlebbitAddressFromPublicKey } from "../../../../../signer/util"
+import { Subplebbit } from "../../../../../subplebbit/subplebbit"
 import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types"
 import { DecryptedChallengeRequestMessageType } from "../../../../../types"
+import lodash from "lodash"
 
 const optionInputs = [
   {
@@ -44,22 +47,34 @@ const optionInputs = [
 
 const description = 'The response from an EVM contract call passes a condition, e.g. a token balance challenge.'
 
-const verifyAuthorAddress = (publication: DecryptedChallengeRequestMessageType["publication"], chainTicker: string) => {
-  const authorAddress = publication.author.wallets?.[chainTicker]?.address
+const verifyAuthorAddress = async (publication: DecryptedChallengeRequestMessageType["publication"], chainTicker: string, subplebbit: Subplebbit) => {
+  const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address // could be EVM address or .eth
   const wallet = publication.author.wallets?.[chainTicker]
   const nftAvatar = publication.author?.avatar
-  if (authorAddress.endsWith('.eth')) {
+  if (authorWalletAddress?.endsWith('.eth')) {
     // resolve plebbit-author-address and check if it matches publication.signature.publicKey
-    // return true
+    const resolvedWalletAddress = await subplebbit.plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
+    const walletSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+    if (resolvedWalletAddress !== walletSignatureAddress) return false;
   }
   if (nftAvatar?.signature) {
-    // validate if nftAvatar.signature matches authorAddress
+    // Do we need to validate the signature of NFT here? we're not validating it anywhere else
+
+    // TODO implement this
+
+    // validate if nftAvatar.signature matches authorWalletAddress (how to do that? we need to convert EVM address to public key right?)
     // validate if nftAvatar.signature matches author.wallets[chainTicker].address
     // return true
   }
   if (wallet?.signature) {
-    // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
+        // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
+
+    const expectedSignature = {domainSeparator:"plebbit-author-wallet",authorAddress:`${authorWalletAddress}`,timestamp:`${wallet.timestamp}`};
+    if (!lodash.isEqual(wallet.signature, expectedSignature)) return false;
     // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
+    const mostRecentTimestamp = await subplebbit.dbHandler.queryMostRecentTimestampOfAuthorWallet(authorWalletAddress, chainTicker);
+    if ((mostRecentTimestamp || 0) > wallet.timestamp) return false;
+
     return true
   }
   return false
@@ -76,7 +91,7 @@ const conditionHasUnsafeCharacters = (condition: string) => {
   return unsafeCharacters !== ''
 }
 
-const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number) => {
+const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSettings, challengeRequestMessage: DecryptedChallengeRequestMessageType, challengeIndex: number, subplebbit: Subplebbit) => {
   let {chainTicker, address, abi, condition, error} = subplebbitChallengeSettings?.options || {}
 
   if (!chainTicker) {
@@ -93,6 +108,10 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
     throw Error('missing option abi')
   }
 
+  if (conditionHasUnsafeCharacters(condition)) {
+    throw Error('condition has unsafe characters')
+  }
+
   const publication = challengeRequestMessage.publication
 
   const authorAddress = publication.author.wallets?.[chainTicker]?.address
@@ -103,7 +122,7 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
     }
   }
 
-  const verification = await verifyAuthorAddress(publication, chainTicker)
+  const verification = await verifyAuthorAddress(publication, chainTicker, subplebbit)
   if (!verification) {
     return {
       success: false,
@@ -122,9 +141,6 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
     }
   }
 
-  if (conditionHasUnsafeCharacters(condition)) {
-    throw Error('condition has unsafe characters')
-  }
   contractCallResponse = String(contractCallResponse)
   if (conditionHasUnsafeCharacters(contractCallResponse)) {
     throw Error('contractCallResponse has unsafe characters')
