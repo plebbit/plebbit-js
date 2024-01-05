@@ -45,3 +45,5 @@ export declare function getErrorCodeFromMessage(message: string): keyof typeof m
 export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;
 export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeRequestMessageType | DecryptedChallengeMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
 export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];
+export declare function isLinkValid(link: string): boolean;
+export declare function isLinkOfMedia(link: string): boolean;

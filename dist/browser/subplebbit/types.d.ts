@@ -38,6 +38,8 @@ export type SubplebbitFeatures = {
     noMarkdownVideos?: boolean;
     markdownImageReplies?: boolean;
     markdownVideoReplies?: boolean;
+    requirePostLink?: boolean;
+    requirePostLinkIsMedia?: boolean;
 };
 export type SubplebbitSuggested = {
     primaryColor?: string;

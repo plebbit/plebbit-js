@@ -39,13 +39,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPostUpdateTimestampRange = exports.decodePubsubMsgFromRpc = exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
+exports.isLinkOfMedia = exports.isLinkValid = exports.getPostUpdateTimestampRange = exports.decodePubsubMsgFromRpc = exports.doesEnsAddressHaveCapitalLetter = exports.getErrorCodeFromMessage = exports.firstResolve = exports.delay = exports.shortifyCid = exports.shortifyAddress = exports.parseRawPages = exports.parsePagesIpfs = exports.parsePageIpfs = exports.parseJsonStrings = exports.throwWithErrorCode = exports.removeKeysWithUndefinedValues = exports.removeNullAndUndefinedValuesRecursively = exports.removeNullAndUndefinedValues = exports.oldScore = exports.newScore = exports.topScore = exports.controversialScore = exports.hotScore = exports.replaceXWithY = exports.timestamp = exports.TIMEFRAMES_TO_SECONDS = void 0;
 var errors_1 = require("./errors");
 var lodash_1 = __importDefault(require("lodash"));
 var assert_1 = __importDefault(require("assert"));
 var pages_1 = require("./pages");
 var plebbit_error_1 = require("./plebbit-error");
 var from_string_1 = require("uint8arrays/from-string");
+var ext_name_1 = __importDefault(require("ext-name"));
 //This is temp. TODO replace this with accurate mapping
 exports.TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -338,4 +339,31 @@ function getPostUpdateTimestampRange(postUpdates, postTimestamp) {
         .filter(function (timestampRange) { return timestamp() - Number(timestampRange) <= postTimestamp; }));
 }
 exports.getPostUpdateTimestampRange = getPostUpdateTimestampRange;
+function isLinkValid(link) {
+    try {
+        var url = new URL(link);
+        if (url.protocol !== "https:")
+            throw Error("Not a valid https url");
+        return true;
+    }
+    catch (e) {
+        return false;
+    }
+}
+exports.isLinkValid = isLinkValid;
+function isLinkOfMedia(link) {
+    var _a;
+    if (!link)
+        return false;
+    var mime;
+    try {
+        mime = (_a = (0, ext_name_1.default)(new URL(link).pathname.toLowerCase().replace("/", ""))[0]) === null || _a === void 0 ? void 0 : _a.mime;
+    }
+    catch (e) {
+        return false;
+    }
+    if ((mime === null || mime === void 0 ? void 0 : mime.startsWith("image")) || (mime === null || mime === void 0 ? void 0 : mime.startsWith("video")) || (mime === null || mime === void 0 ? void 0 : mime.startsWith("audio")))
+        return true;
+}
+exports.isLinkOfMedia = isLinkOfMedia;
 //# sourceMappingURL=util.js.map

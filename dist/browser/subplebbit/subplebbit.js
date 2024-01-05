@@ -1391,11 +1391,11 @@ var Subplebbit = /** @class */ (function (_super) {
         return false;
     };
     Subplebbit.prototype._checkPublicationValidity = function (request) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         return __awaiter(this, void 0, void 0, function () {
-            var log, publication, forbiddenAuthorFields, parentCid, parent_2, parentFlags, isParentDeleted, postFlags, isPostDeleted, publicationKilobyteSize, forbiddenCommentFields_1, publicationHash, publicationInDb, lastVote, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, editorModRole, editHasModFields, isAuthorEdit, allowedEditFields, _i, _c, editField;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var log, publication, forbiddenAuthorFields, parentCid, parent_2, parentFlags, isParentDeleted, postFlags, isPostDeleted, publicationKilobyteSize, forbiddenCommentFields_1, publicationHash, publicationInDb, lastVote, commentEdit, commentToBeEdited, editSignedByOriginalAuthor, editorModRole, editHasModFields, isAuthorEdit, allowedEditFields, _i, _e, editField;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:handleChallengeRequest:checkPublicationValidity");
                         publication = lodash_1.default.cloneDeep(request.publication);
@@ -1419,34 +1419,34 @@ var Subplebbit = /** @class */ (function (_super) {
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED];
                         return [4 /*yield*/, this.dbHandler.queryComment(parentCid)];
                     case 1:
-                        parent_2 = _d.sent();
+                        parent_2 = _f.sent();
                         if (!parent_2)
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST];
                         return [4 /*yield*/, this.dbHandler.queryCommentFlags(parentCid)];
                     case 2:
-                        parentFlags = _d.sent();
+                        parentFlags = _f.sent();
                         if (parentFlags.removed && !this.isPublicationCommentEdit(publication))
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED];
                         return [4 /*yield*/, this.dbHandler.queryAuthorEditDeleted(parentCid)];
                     case 3:
-                        isParentDeleted = _d.sent();
+                        isParentDeleted = _f.sent();
                         if (isParentDeleted && !this.isPublicationCommentEdit(publication))
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED];
                         return [4 /*yield*/, this.dbHandler.queryCommentFlags(parent_2.postCid)];
                     case 4:
-                        postFlags = _d.sent();
+                        postFlags = _f.sent();
                         if (postFlags.removed && !this.isPublicationCommentEdit(publication))
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED];
                         return [4 /*yield*/, this.dbHandler.queryAuthorEditDeleted(parent_2.postCid)];
                     case 5:
-                        isPostDeleted = _d.sent();
+                        isPostDeleted = _f.sent();
                         if (isPostDeleted && !this.isPublicationCommentEdit(publication))
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED];
                         if (postFlags.locked && !this.isPublicationCommentEdit(publication))
                             return [2 /*return*/, errors_1.messages.ERR_SUB_PUBLICATION_POST_IS_LOCKED];
                         if (parent_2.timestamp > publication.timestamp)
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT];
-                        _d.label = 6;
+                        _f.label = 6;
                     case 6:
                         publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
                         if (publicationKilobyteSize > 40)
@@ -1473,33 +1473,39 @@ var Subplebbit = /** @class */ (function (_super) {
                         ];
                         if (Object.keys(publication).some(function (key) { return forbiddenCommentFields_1.includes(key); }))
                             return [2 /*return*/, errors_1.messages.ERR_FORBIDDEN_COMMENT_FIELD];
+                        if (this.isPublicationPost(publication)) {
+                            if (((_c = this.features) === null || _c === void 0 ? void 0 : _c.requirePostLink) && !(0, util_1.isLinkValid)(publication["link"]))
+                                return [2 /*return*/, errors_1.messages.ERR_POST_HAS_INVALID_LINK_FIELD];
+                            if (((_d = this.features) === null || _d === void 0 ? void 0 : _d.requirePostLinkIsMedia) && !(0, util_1.isLinkOfMedia)(publication["link"]))
+                                return [2 /*return*/, errors_1.messages.ERR_POST_LINK_IS_NOT_OF_MEDIA];
+                        }
                         publicationHash = (0, js_sha256_1.sha256)((0, safe_stable_stringify_1.stringify)(publication));
                         return [4 /*yield*/, this.dbHandler.queryCommentByRequestPublicationHash(publicationHash)];
                     case 7:
-                        publicationInDb = _d.sent();
+                        publicationInDb = _f.sent();
                         if (publicationInDb)
                             return [2 /*return*/, errors_1.messages.ERR_DUPLICATE_COMMENT];
                         if (lodash_1.default.isString(publication["link"]) && publication["link"].length > 2000)
                             return [2 /*return*/, errors_1.messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT];
-                        _d.label = 8;
+                        _f.label = 8;
                     case 8:
                         if (!this.isPublicationVote(request.publication)) return [3 /*break*/, 10];
                         if (![1, 0, -1].includes(request.publication["vote"]))
                             return [2 /*return*/, errors_1.messages.INCORRECT_VOTE_VALUE];
                         return [4 /*yield*/, this.dbHandler.getStoredVoteOfAuthor(request.publication["commentCid"], request.publication.author.address)];
                     case 9:
-                        lastVote = _d.sent();
+                        lastVote = _f.sent();
                         if (lastVote && request.publication.signature.publicKey !== lastVote.signature.publicKey)
                             return [2 /*return*/, errors_1.messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE];
-                        _d.label = 10;
+                        _f.label = 10;
                     case 10:
                         if (!this.isPublicationCommentEdit(request.publication)) return [3 /*break*/, 13];
                         return [4 /*yield*/, this.plebbit.createCommentEdit(request.publication)];
                     case 11:
-                        commentEdit = _d.sent();
+                        commentEdit = _f.sent();
                         return [4 /*yield*/, this.dbHandler.queryComment(commentEdit.commentCid, undefined)];
                     case 12:
-                        commentToBeEdited = _d.sent();
+                        commentToBeEdited = _f.sent();
                         editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
                         editorModRole = this.roles && this.roles[commentEdit.author.address];
                         editHasModFields = this._commentEditIncludesModFields(request.publication);
@@ -1509,8 +1515,8 @@ var Subplebbit = /** @class */ (function (_super) {
                         allowedEditFields = isAuthorEdit && editSignedByOriginalAuthor ? constants_2.AUTHOR_EDIT_FIELDS : editorModRole ? constants_2.MOD_EDIT_FIELDS : undefined;
                         if (!allowedEditFields)
                             return [2 /*return*/, errors_1.messages.ERR_UNAUTHORIZED_COMMENT_EDIT];
-                        for (_i = 0, _c = Object.keys((0, util_1.removeKeysWithUndefinedValues)(request.publication)); _i < _c.length; _i++) {
-                            editField = _c[_i];
+                        for (_i = 0, _e = Object.keys((0, util_1.removeKeysWithUndefinedValues)(request.publication)); _i < _e.length; _i++) {
+                            editField = _e[_i];
                             if (!allowedEditFields.includes(editField)) {
                                 log("The comment edit includes a field (".concat(editField, ") that is not part of the allowed fields (").concat(allowedEditFields, ")"));
                                 return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD];
@@ -1518,7 +1524,7 @@ var Subplebbit = /** @class */ (function (_super) {
                         }
                         if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0)
                             return [2 /*return*/, errors_1.messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY];
-                        _d.label = 13;
+                        _f.label = 13;
                     case 13: return [2 /*return*/, undefined];
                 }
             });
