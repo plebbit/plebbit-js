@@ -19,28 +19,30 @@ export type SubplebbitStats = {
 
 export type SubplebbitFeatures = {
     // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-    noVideos?: boolean;
-    noSpoilers?: boolean; // author can't comment.spoiler = true their own comments
-    noImages?: boolean;
-    noVideoReplies?: boolean;
-    noSpoilerReplies?: boolean;
-    noImageReplies?: boolean;
-    noPolls?: boolean;
-    noCrossposts?: boolean;
-    noUpvotes?: boolean;
-    noDownvotes?: boolean;
-    noAuthors?: boolean; // no authors at all, like 4chan
-    anonymousAuthors?: boolean; // authors are given anonymous ids inside threads, like 4chan
-    noNestedReplies?: boolean; // no nested replies, like old school forums and 4chan
-    safeForWork?: boolean;
-    authorFlairs?: boolean; // authors can choose their own author flairs (otherwise only mods can)
-    requireAuthorFlairs?: boolean; // force authors to choose an author flair before posting
-    postFlairs?: boolean; // authors can choose their own post flairs (otherwise only mods can)
-    requirePostFlairs?: boolean; // force authors to choose a post flair before posting
-    noMarkdownImages?: boolean; // don't embed images in text posts markdown
-    noMarkdownVideos?: boolean; // don't embed videos in text posts markdown
-    markdownImageReplies?: boolean;
-    markdownVideoReplies?: boolean;
+    noVideos?: boolean; // Not implemented
+    noSpoilers?: boolean; // Not implemented. Author can't comment.spoiler = true their own comments
+    noImages?: boolean; // Not implemented
+    noVideoReplies?: boolean; // Not implemented
+    noSpoilerReplies?: boolean; // Not implemented
+    noImageReplies?: boolean; // Not implemented
+    noPolls?: boolean; // Not impllemented
+    noCrossposts?: boolean; // Not implemented
+    noUpvotes?: boolean; // Not implemented
+    noDownvotes?: boolean; // Not implemented
+    noAuthors?: boolean; // Not implemented. No authors at all, like 4chan
+    anonymousAuthors?: boolean; // Not implemented. Authors are given anonymous ids inside threads, like 4chan
+    noNestedReplies?: boolean; // Not implemented. No nested replies, like old school forums and 4chan
+    safeForWork?: boolean; // Not implemented
+    authorFlairs?: boolean; // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
+    requireAuthorFlairs?: boolean; // Not implemented. Force authors to choose an author flair before posting
+    postFlairs?: boolean; // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
+    requirePostFlairs?: boolean; // Not implemented. Force authors to choose a post flair before posting
+    noMarkdownImages?: boolean; // Not implemented. Don't embed images in text posts markdown
+    noMarkdownVideos?: boolean; // Not implemented. Don't embed videos in text posts markdown
+    markdownImageReplies?: boolean; // Not implemented
+    markdownVideoReplies?: boolean; // Not implemented
+    requirePostLink?: boolean; // post.link must be defined and a valid https url
+    requirePostLinkIsMedia?: boolean; // post.link must be of media (audio, video, image)
 };
 
 export type SubplebbitSuggested = {

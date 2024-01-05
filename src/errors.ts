@@ -90,6 +90,8 @@ export enum messages {
     UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE = "An author attempted to change another author's vote",
     COMMENT_LINK_LENGTH_IS_OVER_LIMIT = "comment.link length is over the limit",
     INCORRECT_VOTE_VALUE = "The vote can only be 1 or 0 or -1",
+    ERR_POST_HAS_INVALID_LINK_FIELD = "Publishing to the subplebbit requires a post with a valid link field",
+    ERR_POST_LINK_IS_NOT_OF_MEDIA = "Publishing to the subplebbit requires a post with a link pointing to media (audio, video, image)",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",

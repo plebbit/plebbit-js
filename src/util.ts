@@ -29,7 +29,7 @@ import { PlebbitError } from "./plebbit-error";
 import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
-
+import extName from "ext-name";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -284,4 +284,25 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
             // find the smallest timestamp range where comment.timestamp is newer
             .filter((timestampRange) => timestamp() - Number(timestampRange) <= postTimestamp)
     );
+}
+
+export function isLinkValid(link: string) {
+    try {
+        const url = new URL(link);
+        if (url.protocol !== "https:") throw Error("Not a valid https url");
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+export function isLinkOfMedia(link: string) {
+    if (!link) return false;
+    let mime;
+    try {
+        mime = extName(new URL(link).pathname.toLowerCase().replace("/", ""))[0]?.mime;
+    } catch (e) {
+        return false;
+    }
+    if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio")) return true;
 }

@@ -10,7 +10,9 @@ import {
     doesEnsAddressHaveCapitalLetter,
     decodePubsubMsgFromRpc,
     replaceXWithY,
-    removeNullAndUndefinedValuesRecursively
+    removeNullAndUndefinedValuesRecursively,
+    isLinkValid,
+    isLinkOfMedia
 } from "../util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer } from "../signer";
 import { PostsPages } from "../pages";
@@ -1171,6 +1173,11 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
             if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
+
+            if (this.isPublicationPost(publication)){
+                if (this.features?.requirePostLink && !isLinkValid(publication["link"])) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
+                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publication["link"])) return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
+            }
 
             const publicationHash = sha256(deterministicStringify(publication));
             const publicationInDb = await this.dbHandler.queryCommentByRequestPublicationHash(publicationHash);
