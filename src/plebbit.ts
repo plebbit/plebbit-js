@@ -63,6 +63,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     pubsubHttpClientsOptions: IpfsHttpClientOptions[];
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
+    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
     _storage: StorageInterface;
@@ -123,6 +124,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             ? options.updateInterval
             : 60000; // Default to 1 minute
         this.noData = this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
+        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish = options.hasOwnProperty("browserLibp2pJsPublish")
+            ? options.browserLibp2pJsPublish
+            : false;
 
         this._initIpfsClients();
         this._initPubsubClients();
@@ -149,7 +153,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initPubsubClients() {
         this.clients.pubsubClients = {};
-        if (this.pubsubHttpClientsOptions)
+        //@ts-expect-error
+        if (this.browserLibp2pJsPublish) this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
+        else if (this.pubsubHttpClientsOptions)
             for (const clientOptions of this.pubsubHttpClientsOptions) {
                 const ipfsClient =
                     this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs

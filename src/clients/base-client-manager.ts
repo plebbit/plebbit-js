@@ -11,6 +11,7 @@ import { Chain, PubsubMessage } from "../types";
 import * as cborg from "cborg";
 import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
 import { sha256 } from "js-sha256";
+import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -36,9 +37,9 @@ export class BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]?._clientOptions?.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
+        this._defaultPubsubProviderUrl = Object.keys(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
             this.providerSubscriptions = {};
             for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
@@ -61,8 +62,16 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
+    async _initializeLibp2pClientIfNeeded() {
+        if (this._defaultPubsubProviderUrl !== "browser-libp2p-pubsub")
+            throw Error("Default pubsub should be browser-libp2p-pubsub on browser");
+        if (!this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl]?._client)
+            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createLibp2pNode();
+    }
+
     async pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
 
         const timeBefore = Date.now();
         try {
@@ -78,6 +87,7 @@ export class BaseClientsManager {
     }
 
     async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
@@ -97,6 +107,7 @@ export class BaseClientsManager {
     }
 
     async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
         this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
             (subPubsubTopic) => subPubsubTopic !== pubsubTopic
@@ -104,6 +115,7 @@ export class BaseClientsManager {
     }
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
             const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
             try {
@@ -119,6 +131,7 @@ export class BaseClientsManager {
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError) {}
 
     async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:pubsubPublish");
         const dataBinary = cborg.encode(data);
         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
@@ -135,6 +148,7 @@ export class BaseClientsManager {
     }
 
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};

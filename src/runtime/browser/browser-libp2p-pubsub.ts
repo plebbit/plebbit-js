@@ -1,0 +1,122 @@
+import { createLibp2p } from "libp2p";
+import { gossipsub } from "@chainsafe/libp2p-gossipsub";
+import { webTransport } from "@libp2p/webtransport";
+import { mplex } from "@libp2p/mplex";
+import { yamux } from "@chainsafe/libp2p-yamux";
+import { noise } from "@chainsafe/libp2p-noise";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { bootstrap } from "@libp2p/bootstrap";
+import { identifyService } from "libp2p/identify";
+import { kadDHT } from "@libp2p/kad-dht";
+import { webRTCDirect } from "@libp2p/webrtc";
+import Logger from "@plebbit/plebbit-logger";
+import { PubsubClient } from "../../types";
+import { EventEmitter } from "events";
+import { Message as PubsubMessage } from "ipfs-core-types/types/src/pubsub/index";
+
+const log = Logger("plebbit-js:browser-libp2p-pubsub");
+
+// From https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.ts
+const bootstrapConfig = {
+    list: [
+        "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+        "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+        "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+        "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+        "/ip4/104.131.131.82/tcp/4001/p2p/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ"
+    ]
+};
+
+let libp2pPubsubClient: PubsubClient;
+
+const logEvents = (node) => {
+    const events = [
+        "connection:close",
+        "connection:open",
+        "connection:prune",
+        "peer:connect",
+        "peer:disconnect",
+        "peer:discovery",
+        "peer:identify",
+        "peer:update",
+        "self:peer:update",
+        "start",
+        "stop",
+        "transport:close",
+        "transport:listening"
+    ];
+    const logEvent = (event) => log(event.type, event.detail);
+    events.forEach((event) => node.addEventListener(event, logEvent));
+};
+
+export async function createLibp2pNode(): Promise<PubsubClient> {
+    if (libp2pPubsubClient) return libp2pPubsubClient;
+    const libP2pNode = await createLibp2p({
+        // can't listen using webtransport in libp2p js
+        // addresses: {listen: []},
+        peerDiscovery: [bootstrap(bootstrapConfig)],
+        transports: [
+            webTransport(),
+            webRTCDirect()
+            // circuitRelayTransport({discoverRelays: 1}) // TODO: test this later, probably need to upgrade libp2p
+        ],
+        streamMuxers: [yamux(), mplex()],
+        connectionEncryption: [noise()],
+        connectionGater: {
+            // not sure why needed, doesn't connect without it
+            denyDialMultiaddr: async () => false
+        },
+        connectionManager: {
+            maxConnections: 10,
+            minConnections: 5
+        },
+        services: {
+            identify: identifyService(), // required for peer discovery of pubsub
+            //@ts-expect-error
+            dht: kadDHT({
+                protocolPrefix: "/plebbit"
+                //  clientMode: true // if not publicaly dialable
+            }), // p2p peer discovery
+            pubsub: gossipsub({
+                allowPublishToZeroPeers: true
+            })
+        }
+    });
+
+    log("Initialized address of Libp2p in browser", libP2pNode.getMultiaddrs());
+
+    logEvents(libP2pNode);
+
+    const pubsubEventHandler = new EventEmitter();
+
+    libP2pNode.services.pubsub.addEventListener("message", (evt) => {
+        log(
+            `Event from libp2p pubsub in browser:`, //@ts-expect-error
+            `${evt.detail.from}: ${uint8ArrayToString(evt.detail.data)} on topic ${evt.detail.topic}`
+        );
+        //@ts-expect-error
+        const msgFormatted: PubsubMessage = { data: evt.detail.data };
+        pubsubEventHandler.emit(evt.detail.topic, msgFormatted);
+    });
+
+    libp2pPubsubClient = {
+        _client: {
+            pubsub: {
+                ls: async () => libP2pNode.services.pubsub.getTopics(),
+                peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic).map((peer) => peer.toString()),
+                publish: async (topic, data, options) => {
+                    await libP2pNode.services.pubsub.publish(topic, data);
+                },
+                subscribe: async (topic, handler, options) => {
+                    pubsubEventHandler.on(topic, handler);
+                },
+                unsubscribe: async (topic, handler, options) => {
+                    pubsubEventHandler.removeListener(topic, handler);
+                }
+            }
+        },
+        _clientOptions: undefined, // TODO not sure if it should be undefined
+        peers: async () => libP2pNode.services.pubsub.getPeers().map((peer) => peer.toString())
+    };
+    return libp2pPubsubClient;
+}

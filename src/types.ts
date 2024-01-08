@@ -40,6 +40,7 @@ export interface PlebbitOptions {
     publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
     updateInterval?: number; // in ms, the time to wait for comment/subplebbit instances to check for updates
     noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
+    browserLibp2pJsPublish?: boolean; // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
 }
 
 export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
