@@ -213,7 +213,7 @@ const setUpMockGateways = async () => {
     require("./pubsub-mock-server");
 
     if (process.env["USE_RPC"] === "1") {
-        // run RPC here
+        // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
         const PlebbitRpc = require("../../rpc");
         const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
@@ -228,14 +228,20 @@ const setUpMockGateways = async () => {
         console.log(`test server plebbit wss listening on port ${rpcPort}`);
     }
 
-    if (process.env["NO_SUBPLEBBITS"] !== "1")
-        await startSubplebbits({
+    if (process.env["NO_SUBPLEBBITS"] !== "1") {
+        const subs = await startSubplebbits({
             signers: signers,
             publishInterval: 3000,
             votesPerCommentToPublish: 5,
             numOfPostsToPublish: 51,
             numOfCommentsToPublish: 10
         });
+
+        http.createServer(async (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.end(JSON.stringify(subs));
+        }).listen(14953);
+    }
 
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready

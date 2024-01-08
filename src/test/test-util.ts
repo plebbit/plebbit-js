@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
 import { CreateSubplebbitOptions } from "../subplebbit/types";
+import fetch from "node-fetch";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -201,6 +202,14 @@ async function _populateSubplebbit(
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
+type TestServerSubs = {
+    // string will be the address
+    onlineSub: string;
+    ensSub: string;
+    mainSub: string;
+    mathSub: string;
+};
+
 export async function startSubplebbits(props: {
     signers: SignerType[];
     noData: boolean;
@@ -208,29 +217,37 @@ export async function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
-}) {
+}): Promise<TestServerSubs> {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
-    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
+    const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
-    await subplebbit.start();
+    await mainSub.start();
     console.time("populate");
     const [mathSub, ensSub] = await Promise.all([
         _startMathCliSubplebbit(props.signers, plebbit),
         _startEnsSubplebbit(props.signers, plebbit),
-        _populateSubplebbit(subplebbit, props)
+        _populateSubplebbit(mainSub, props)
     ]);
     console.timeEnd("populate");
 
-    for (const sub of [mathSub, ensSub, subplebbit]) {
-        sub.on("update", () => {
-            const lastUpdatedAt = sub["lastUpdatedAt"];
-            console.log(`Sub (${sub.address}) took ${sub.updatedAt - lastUpdatedAt} seconds for update loop to complete`);
-            sub["lastUpdatedAt"] = sub.updatedAt;
-        });
-    }
+    const onlinePlebbit = await createOnlinePlebbit();
+
+    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+
+    await onlinePlebbit._storage.setItem("online-sub-address", onlineSub.address);
+
+    await onlineSub.start();
 
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+
+    return { onlineSub: onlineSub.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
+}
+
+export async function fetchTestServerSubs() {
+    const res = await fetch("http://localhost:14953");
+    const resWithType = <TestServerSubs>await res.json();
+    return resWithType;
 }
 
 export function mockDefaultOptionsForNodeAndBrowserTests() {
@@ -283,6 +300,11 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
 export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await mockPlebbit(plebbitOptions);
     plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
+
+export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
+    const plebbit = await PlebbitIndex({ ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"], ...plebbitOptions }); // use online ipfs node
     return plebbit;
 }
 

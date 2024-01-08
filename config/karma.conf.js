@@ -74,7 +74,12 @@ module.exports = function (config) {
             // then they are compiled to browser with webpack to dist/browser/test
             // you must run `npm run tsc:watch` and `npm run webpack:watch` to use the karma tests
             "test-karma-webpack/test/browser/root-hook-karma.util.js", // To load root hook in karma,
-            "test-karma-webpack/test/*browser/**/*.test.js"
+            "test-karma-webpack/test/browser/**/*.test.js"
+            // "test-karma-webpack/test/*browser/**/*.test.js"
+            // "test-karma-webpack/test/*browser/publications/**/*.test.js"
+            // "test-karma-webpack/test/*browser/comment-edit/*.test.js"
+            // "test-karma-webpack/test/node-and-browser/comment-edit/locked.edit.test.js"
+            // "test-karma-webpack/test/node-and-browser/publications/comment/publish.test.js"
         ],
         exclude: [],
 
