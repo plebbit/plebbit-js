@@ -38,7 +38,7 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
 
   const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : undefined
   const height = subplebbitChallengeSettings?.options?.height ? Number(subplebbitChallengeSettings?.options?.height) : undefined
-  const characters = subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.height) : undefined;
+  const characters = subplebbitChallengeSettings?.options?.characters ? Number(subplebbitChallengeSettings?.options?.characters) : undefined;
   const colors = subplebbitChallengeSettings?.options?.colors ? (subplebbitChallengeSettings?.options?.colors).split(",") : undefined;
 
   const setCaptchaOptions: CreateCaptchaOptions["captcha"] = {}
