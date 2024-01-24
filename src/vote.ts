@@ -1,7 +1,7 @@
 import Publication from "./publication";
 import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types";
 import { Plebbit } from "./plebbit";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid } from "is-ipfs";
 import { verifyVote } from "./signer";
 import { throwWithErrorCode } from "./util";
 
@@ -53,7 +53,7 @@ class Vote extends Publication implements VoteType {
 
     async publish(): Promise<void> {
         if (![-1, 0, 1].includes(this.vote)) throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { vote: this.vote });
-        if (!isIPFS.cid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
+        if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 
         await this._validateSignature();
 

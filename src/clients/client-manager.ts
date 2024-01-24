@@ -7,7 +7,7 @@ import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } f
 import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid, path as isIpfsPath } from "is-ipfs";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
@@ -91,10 +91,10 @@ export class ClientsManager extends BaseClientsManager {
             loadType === "subplebbit"
                 ? this._getStatePriorToResolvingSubplebbitIpns()
                 : loadType === "comment-update"
-                ? "fetching-update-ipfs"
-                : loadType === "comment" || loadType === "generic-ipfs"
-                ? "fetching-ipfs"
-                : undefined;
+                  ? "fetching-update-ipfs"
+                  : loadType === "comment" || loadType === "generic-ipfs"
+                    ? "fetching-ipfs"
+                    : undefined;
         assert(gatewayState);
         this.updateGatewayState(gatewayState, gatewayUrl);
     }
@@ -175,8 +175,8 @@ export class ClientsManager extends BaseClientsManager {
 
     async fetchCid(cid: string) {
         let finalCid = lodash.clone(cid);
-        if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
-        if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
+        if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
+        if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
         else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
     }

@@ -10,7 +10,7 @@ import {
     PublicationTypeName
 } from "./types";
 import { throwWithErrorCode } from "./util";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid } from "is-ipfs";
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
@@ -90,7 +90,7 @@ export class CommentEdit extends Publication implements CommentEditType {
 
     async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
-        if (!isIPFS.cid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
+        if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 
         await this._validateSignature();
 

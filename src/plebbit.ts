@@ -31,7 +31,7 @@ import { createSigner, Signer } from "./signer";
 import { Resolver } from "./resolver";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid } from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
@@ -154,8 +154,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initPubsubClients() {
         this.clients.pubsubClients = {};
-        //@ts-expect-error
-        if (this.browserLibp2pJsPublish) this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
+        if (this.browserLibp2pJsPublish)
+            //@ts-expect-error
+            this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
         else if (this.pubsubHttpClientsOptions)
             for (const clientOptions of this.pubsubHttpClientsOptions) {
                 const ipfsClient =
@@ -166,7 +167,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     peers: async () => {
                         const topics = await ipfsClient.pubsub.ls();
                         const topicPeers = lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
-                        const peers = lodash.uniq(topicPeers.map(topicPeer => topicPeer.toString()));
+                        const peers = lodash.uniq(topicPeers.map((topicPeer) => topicPeer.toString()));
                         return peers;
                     }
                 };
@@ -325,7 +326,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             | Pick<CommentWithCommentUpdate, "cid">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
-        if (options["cid"] && !isIPFS.cid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
+        if (options["cid"] && !isIpfsCid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
 
         const formattedOptions = options instanceof Comment ? options.toJSON() : options;
         formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;

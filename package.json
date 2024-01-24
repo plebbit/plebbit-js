@@ -21,7 +21,7 @@
         "test:node:parallel:remote": "mocha --parallel --recursive --config config/.mocharc.js test/node-and-browser",
         "test:browser:chrome": "CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN='' karma start config/karma.conf.js",
         "test:browser:firefox": "FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.js",
-        "test:server:node": "node test/server/test-server.js",
+        "test:server:node": "node --es-module-specifier-resolution=node test/server/test-server.js",
         "test:server:node:rpc": "USE_RPC=1 node test/server/test-server.js",
         "test:server:wait-on": "wait-on http://localhost:14952 --timeout 300000",
         "clean": "rimraf dist",
@@ -80,7 +80,7 @@
         "knex": "3.1.0",
         "libp2p": "1.2.0",
         "libp2p-crypto": "0.21.2",
-        "limiter": "2.1.0",
+        "limiter-es6-compat": "2.1.2",
         "localforage": "1.10.0",
         "lodash-es": "4.17.21",
         "lru-cache": "10.1.0",
@@ -150,5 +150,8 @@
     "bugs": {
         "url": "https://github.com/plebbit/plebbit-js/issues"
     },
-    "homepage": "https://github.com/plebbit/plebbit-js#readme"
+    "homepage": "https://github.com/plebbit/plebbit-js#readme",
+    "engines": {
+        "node": ">=18.0.0"
+    }
 }
