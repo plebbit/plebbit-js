@@ -1,11 +1,10 @@
-const path = require("path");
-const fs = require("fs-extra");
-const glob = require("glob");
-const chokidar = require("chokidar");
-const WatchExternalFilesPlugin = require("webpack-watch-files-plugin").default;
-
+import path from "path";
+import fs from "fs-extra";
+import glob from "glob";
+import chokidar from "chokidar";
+import WatchExternalFilesPlugin from "webpack-watch-files-plugin";
 const webpackIsWatchMode = process.argv.includes("watch");
-const rootFolder = path.resolve(__dirname, "..");
+const rootFolder = process.cwd();
 const outputFolder = path.resolve(rootFolder, "test-karma-webpack");
 const testFolder = path.resolve(rootFolder, "test");
 const lockFile = path.resolve(rootFolder, "package-lock.json");
@@ -23,7 +22,7 @@ const testEntries = testFiles.reduce((acc, file) => {
 // debug build paths if needed
 // console.log({rootFolder, testFiles, testEntries, outputFolder, testFolder, lockFile})
 
-module.exports = {
+export default {
     // each test file is its own entry
     entry: testEntries,
 
@@ -38,7 +37,7 @@ module.exports = {
 
     plugins: [
         // watch the entire test folder, not just our entries
-        new WatchExternalFilesPlugin({
+        new WatchExternalFilesPlugin.default({
             files: [testGlob]
         })
     ],
