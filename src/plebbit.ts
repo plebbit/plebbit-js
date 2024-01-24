@@ -20,7 +20,8 @@ import {
     VoteType,
     ParsedPlebbitOptions,
     LRUStorageInterface,
-    LRUStorageConstructor
+    LRUStorageConstructor,
+    PubsubSubscriptionHandler
 } from "./types";
 import { Comment } from "./comment";
 import { Subplebbit } from "./subplebbit/subplebbit";
@@ -41,7 +42,6 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Storage from "./runtime/node/storage";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import { PlebbitError } from "./plebbit-error";
@@ -70,7 +70,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     stats: Stats;
     parsedPlebbitOptions: ParsedPlebbitOptions;
 
-    private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
+    private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler>;
     _clientsManager: ClientsManager;
     publishInterval: number;
     updateInterval: number;
@@ -91,7 +91,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "plebbitRpcClientsOptions",
             "publishInterval",
             "updateInterval",
-            "noData"
+            "noData",
+            "browserLibp2pJsPublish"
         ];
         for (const option of Object.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
@@ -164,7 +165,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     _clientOptions: clientOptions,
                     peers: async () => {
                         const topics = await ipfsClient.pubsub.ls();
-                        return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
+                        const topicPeers = lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                        const peers = lodash.uniq(topicPeers.map(topicPeer => topicPeer.toString()));
+                        return peers;
                     }
                 };
             }

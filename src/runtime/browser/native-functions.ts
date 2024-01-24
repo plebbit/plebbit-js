@@ -24,6 +24,7 @@ const nativeFunctions: NativeFunctions = {
     createIpfsClient: (ipfsHttpClientOptions: Options): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
 
+
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));
             const data = uint8ArrayConcat(rawData);
@@ -41,9 +42,6 @@ const nativeFunctions: NativeFunctions = {
             return rmResults;
         };
 
-        const pinls = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["ls"]>) => {
-            return all(ipfsClient.pin.ls(...args));
-        };
 
         const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
             return all(ipfsClient.pin.addAll(...args));
@@ -70,7 +68,7 @@ const nativeFunctions: NativeFunctions = {
                 list: ipfsClient.key.list,
                 rm: ipfsClient.key.rm
             },
-            pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
+            pin: { rm: ipfsClient.pin.rm, ls: ipfsClient.pin.ls, addAll: pinAddAll },
             block: { rm: blockRm },
             swarm: { peers: ipfsClient.swarm.peers },
             files: ipfsClient.files

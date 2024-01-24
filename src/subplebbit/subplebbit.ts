@@ -12,7 +12,8 @@ import {
     replaceXWithY,
     removeNullAndUndefinedValuesRecursively,
     isLinkValid,
-    isLinkOfMedia
+    isLinkOfMedia,
+    genToArray
 } from "../util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer } from "../signer";
 import { PostsPages } from "../pages";
@@ -47,7 +48,9 @@ import {
     CommentUpdatesRow,
     ModeratorCommentEditOptions,
     AuthorCommentEdit,
-    AuthorCommentEditOptions
+    AuthorCommentEditOptions,
+    PubsubSubscriptionHandler,
+    IpfsHttpClientPubsubMessage
 } from "../types";
 import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../signer/util";
 import { messages } from "../errors";
@@ -78,7 +81,6 @@ import retry, { RetryOperation } from "retry";
 import Author from "../author";
 import { SubplebbitClientsManager } from "../clients/client-manager";
 import * as cborg from "cborg";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption";
 import {
     Challenge,
@@ -1334,7 +1336,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             .resolve(decryptedChallengeAnswer.challengeAnswers);
     }
 
-    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
+    private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:subplebbit:handleChallengeExchange");
 
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
@@ -1528,7 +1530,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
     private async _repinCommentsIPFSIfNeeded() {
         const log = Logger("plebbit-js:subplebbit:sync");
         const dbCommentsCids = await this.dbHandler.queryAllCommentsCid();
-        const pinnedCids = (await this._clientsManager.getDefaultIpfs()._client.pin.ls()).map((cid) => cid.cid.toString());
+        const pinnedCids = (await genToArray(this._clientsManager.getDefaultIpfs()._client.pin.ls())).map((cid) => String(cid.cid));
 
         const unpinnedCommentsCids = lodash.difference(dbCommentsCids, pinnedCids);
 

@@ -6,7 +6,6 @@ import os from "os";
 import lodash from "lodash";
 
 import { DbHandler } from "./db-handler";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
 
 import fetch from "node-fetch";
 import { CID, create, Options } from "ipfs-http-client";
@@ -142,9 +141,6 @@ const nativeFunctions: NativeFunctions = {
             return rmResults;
         };
 
-        const pinls = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["ls"]>) => {
-            return all(ipfsClient.pin.ls(...args));
-        };
 
         const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
             return all(ipfsClient.pin.addAll(...args));
@@ -170,7 +166,7 @@ const nativeFunctions: NativeFunctions = {
                 list: ipfsClient.key.list,
                 rm: ipfsClient.key.rm
             },
-            pin: { rm: ipfsClient.pin.rm, ls: pinls, addAll: pinAddAll },
+            pin: { rm: ipfsClient.pin.rm, ls: ipfsClient.pin.ls, addAll: pinAddAll },
             block: { rm: blockRm },
             swarm: { peers: ipfsClient.swarm.peers },
             files: ipfsClient.files
@@ -180,7 +176,7 @@ const nativeFunctions: NativeFunctions = {
         ipnsKeyName: string,
         ipfsKey: Uint8Array,
         ipfsNode: { url: string; headers?: Object }
-    ): Promise<IpfsKey> => {
+    ) => {
         const data = new FormData();
         if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
         if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)

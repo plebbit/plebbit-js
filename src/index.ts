@@ -23,4 +23,4 @@ Plebbit.getShortAddress = shortifyAddress;
 Plebbit.challenges = plebbitJsChallenges;
 // "export = " instead of "export default" fixes the commonjs
 // problem of having to do require('plebbit-js').default
-export = Plebbit;
+export default Plebbit;

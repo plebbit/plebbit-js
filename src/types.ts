@@ -1,10 +1,8 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import { PeersResult } from "ipfs-core-types/src/swarm/index";
-import { LsResult } from "ipfs-core-types/src/pin/index";
 import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
+import { IPFS as IpfsTypes } from "ipfs-core-types";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import {
@@ -476,7 +474,7 @@ export type IpfsHttpClientPublicAPI = {
     pin: {
         rm: IPFSHTTPClient["pin"]["rm"];
         addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
-        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
+        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => ReturnType<IpfsTypes["pin"]["ls"]>;
     };
 
     block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
@@ -490,7 +488,7 @@ export type NativeFunctions = {
     createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => Promise<IpfsKey>;
+    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => ReturnType<IpfsTypes["key"]["import"]>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 
@@ -638,7 +636,7 @@ export interface PubsubSubplebbitStats {
 }
 
 export interface IpfsClient {
-    peers: () => Promise<PeersResult[]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    peers: () => ReturnType<IpfsTypes["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
@@ -646,6 +644,8 @@ export interface IpfsClient {
     _clientOptions: IpfsHttpClientOptions;
 }
 
+export type PubsubSubscriptionHandler = Extract<Parameters<IpfsTypes["pubsub"]["subscribe"]>[1], Function>;
+export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"]
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later

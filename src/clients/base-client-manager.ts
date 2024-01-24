@@ -1,13 +1,12 @@
 import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/node/util";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";
-import { Chain, PubsubMessage } from "../types";
+import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types";
 import * as cborg from "cborg";
 import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
 import { sha256 } from "js-sha256";
@@ -69,7 +68,7 @@ export class BaseClientsManager {
             this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createLibp2pNode();
     }
 
-    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string) {
+    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
 
@@ -86,7 +85,7 @@ export class BaseClientsManager {
         }
     }
 
-    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
+    async pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
@@ -106,7 +105,7 @@ export class BaseClientsManager {
         throw combinedError;
     }
 
-    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn) {
+    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
         this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
@@ -114,7 +113,7 @@ export class BaseClientsManager {
         );
     }
 
-    async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
+    async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
             const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];

@@ -10,9 +10,9 @@ import { identifyService } from "libp2p/identify";
 import { kadDHT } from "@libp2p/kad-dht";
 import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
-import { PubsubClient } from "../../types";
+import { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types";
+
 import { EventEmitter } from "events";
-import { Message as PubsubMessage } from "ipfs-core-types/types/src/pubsub/index";
 
 const log = Logger("plebbit-js:browser-libp2p-pubsub");
 
@@ -94,8 +94,9 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
             `Event from libp2p pubsub in browser:`, //@ts-expect-error
             `${evt.detail.from}: ${uint8ArrayToString(evt.detail.data)} on topic ${evt.detail.topic}`
         );
+
         //@ts-expect-error
-        const msgFormatted: PubsubMessage = { data: evt.detail.data };
+        const msgFormatted: IpfsHttpClientPubsubMessage = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
         pubsubEventHandler.emit(evt.detail.topic, msgFormatted);
     });
 
@@ -103,14 +104,16 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
         _client: {
             pubsub: {
                 ls: async () => libP2pNode.services.pubsub.getTopics(),
-                peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic).map((peer) => peer.toString()),
+                peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic),
                 publish: async (topic, data, options) => {
                     await libP2pNode.services.pubsub.publish(topic, data);
                 },
                 subscribe: async (topic, handler, options) => {
+                    //@ts-expect-error
                     pubsubEventHandler.on(topic, handler);
                 },
                 unsubscribe: async (topic, handler, options) => {
+                    //@ts-expect-error
                     pubsubEventHandler.removeListener(topic, handler);
                 }
             }

@@ -1,14 +1,15 @@
 {
     "compilerOptions": {
         "outDir": "../dist/node",
-        "module": "commonjs",
+        "module": "ES2020",
         "declaration": true,
-        "target": "es5",
+        "target": "ES2020",
         "esModuleInterop": true,
+        "moduleResolution": "bundler",
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
-        "sourceMap": true
+        "sourceMap": true,
     },
     "include": ["../src/**/*"],
-    "exclude": ["../node_modules"]
+    "exclude": ["../node_modules"],
 }

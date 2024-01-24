@@ -306,3 +306,11 @@ export function isLinkOfMedia(link: string) {
     }
     if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio")) return true;
 }
+
+export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
+    const out: T[] = []
+    for await(const x of gen) {
+        out.push(x)
+    }
+    return out
+} 
