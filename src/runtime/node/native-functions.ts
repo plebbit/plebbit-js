@@ -18,7 +18,6 @@ import { createCaptcha } from "captcha-canvas";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import FormData from "form-data";
-import { Multiaddr } from "multiaddr";
 import * as fileType from "file-type";
 import { throwWithErrorCode } from "../../util";
 import { Plebbit } from "../../plebbit";
@@ -116,7 +115,7 @@ const nativeFunctions: NativeFunctions = {
             (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
             ipfsHttpClientOptions?.protocol === "https" ||
             (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-            (ipfsHttpClientOptions.url instanceof Multiaddr && ipfsHttpClientOptions.url.protoNames().includes("https"));
+            (ipfsHttpClientOptions.url?.toString()?.includes("https"));
         const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
         const ipfsClient = create({

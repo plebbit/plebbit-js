@@ -6,7 +6,7 @@ import { yamux } from "@chainsafe/libp2p-yamux";
 import { noise } from "@chainsafe/libp2p-noise";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { bootstrap } from "@libp2p/bootstrap";
-import { identifyService } from "libp2p/identify";
+import { identify as identifyService } from "@libp2p/identify";
 import { kadDHT } from "@libp2p/kad-dht";
 import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
@@ -72,9 +72,8 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
         },
         services: {
             identify: identifyService(), // required for peer discovery of pubsub
-            //@ts-expect-error
             dht: kadDHT({
-                protocolPrefix: "/plebbit"
+                protocol: "/plebbit/pubsub/0.0.1"
                 //  clientMode: true // if not publicaly dialable
             }), // p2p peer discovery
             pubsub: gossipsub({

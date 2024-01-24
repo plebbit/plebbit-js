@@ -104,8 +104,7 @@ import {
     getSubplebbitChallengeFromSubplebbitChallengeSettings
 } from "../runtime/node/challenges";
 import { sha256 } from "js-sha256";
-import LRUCache from "lru-cache";
-import { CID } from "ipfs-http-client";
+import { LRUCache } from "lru-cache";
 
 export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -161,6 +160,7 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
 
     // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
     // Most of the time they will be delete and cleaned up automatically
+    // TODO move them to local subplebbit instance
     private _challengeAnswerPromises = new LRUCache<string, Promise<string[]>>({
         max: 1000,
         ttl: 600000
@@ -1117,8 +1117,8 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             const parentCid: string | undefined = this.isPublicationReply(publication)
                 ? publication["parentCid"]
                 : this.isPublicationVote(publication) || this.isPublicationCommentEdit(publication)
-                ? publication["commentCid"]
-                : undefined;
+                  ? publication["commentCid"]
+                  : undefined;
 
             if (!parentCid) return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
 
@@ -1176,9 +1176,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
-            if (this.isPublicationPost(publication)){
+            if (this.isPublicationPost(publication)) {
                 if (this.features?.requirePostLink && !isLinkValid(publication["link"])) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
-                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publication["link"])) return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
+                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publication["link"]))
+                    return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
             }
 
             const publicationHash = sha256(deterministicStringify(publication));
@@ -1282,10 +1283,10 @@ export class Subplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<S
             // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers`
             // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers`
             await this._publishChallenges(challenges, decryptedRequestWithSubplebbitAuthor);
-            this._challengeAnswerPromises.set(
-                answerPromiseKey,
-                new Promise((resolve, reject) => this._challengeAnswerResolveReject.set(answerPromiseKey, { resolve, reject }))
+            const challengeAnswerPromise = new Promise<string[]>((resolve, reject) =>
+                this._challengeAnswerResolveReject.set(answerPromiseKey, { resolve, reject })
             );
+            this._challengeAnswerPromises.set(answerPromiseKey, challengeAnswerPromise);
             const challengeAnswers = await this._challengeAnswerPromises.get(answerPromiseKey);
             this._cleanUpChallengeAnswerPromise(answerPromiseKey);
             return challengeAnswers;

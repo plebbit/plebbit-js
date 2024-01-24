@@ -93,10 +93,9 @@ export default class PlebbitRpcClient {
         // @ts-expect-error
         if (this._webSocketClient.ready) return;
         if (!this._openConnectionPromise)
-            this._openConnectionPromise = pTimeout(
-                new Promise(async (resolve) => this._webSocketClient.once("open", resolve)),
-                this._timeoutSeconds * 1000
-            );
+            this._openConnectionPromise = pTimeout(new Promise(async (resolve) => this._webSocketClient.once("open", resolve)), {
+                milliseconds: this._timeoutSeconds * 1000
+            });
 
         try {
             await this._openConnectionPromise;

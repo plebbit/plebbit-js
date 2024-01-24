@@ -13,6 +13,7 @@ import { PlebbitError } from "../../plebbit-error";
 import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit";
 import { STORAGE_KEYS } from "../../constants";
+import lodash from "lodash";
 
 export const mkdir = fs.mkdir;
 
@@ -72,9 +73,12 @@ export async function getThumbnailUrlOfLink(
         thumbnail.thumbnailUrl = typeof res.result.ogImage === "string" ? res.result.ogImage : res.result.ogImage["url"];
         assert(thumbnail.thumbnailUrl, "thumbnailUrl needs to be defined");
 
-        thumbnail.thumbnailHeight = parseInt(res.result.ogImageHeight || res.result.ogImage["height"] || 0) || undefined;
-        thumbnail.thumbnailWidth = parseInt(res.result.ogImageWidth || res.result.ogImage["width"] || 0) || undefined;
-        if (!thumbnail.thumbnailWidth || !thumbnail.thumbnailHeight) {
+        const ogImageHeight = res.result.ogImage?.[0]?.height;
+        const ogImageWidth = res.result.ogImage?.[0]?.width;
+
+        thumbnail.thumbnailHeight = typeof ogImageHeight === "number" ? ogImageHeight :  undefined;
+        thumbnail.thumbnailWidth = typeof ogImageWidth === "number" ? ogImageWidth :  undefined;
+        if (lodash.isNil(thumbnail.thumbnailWidth) || lodash.isNil(thumbnail.thumbnailHeight)) {
             const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
             thumbnail.thumbnailHeight = dimensions?.height;
             thumbnail.thumbnailWidth = dimensions?.width;

@@ -182,7 +182,7 @@ export class SqliteCache<TData = any> {
             }
         },
         100,
-        true
+        { immediate: true }
     );
 }
 
