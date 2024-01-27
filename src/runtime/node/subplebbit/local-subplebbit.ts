@@ -125,7 +125,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     async initInternalSubplebbit(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>) {
         const mergedProps = { ...this.toJSONInternal(), ...newProps };
-        await this.initRpcInternalSubplebbit(mergedProps);
+        await this.initRpcInternalSubplebbit(newProps);
         if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
     }

@@ -1,22 +1,20 @@
 // use this file to launch an ipfs node and some subplebbits
 // that can be used during node and browser tests
-const getIpfsPath = require("kubo").path;
-const { execSync, exec } = require("child_process");
-const { startSubplebbits, mockRpcServerPlebbit, mockPlebbit } = require("../../dist/node/test/test-util");
-const { signSubplebbit } = require("../../dist/node/signer/signatures");
-const signers = require("../fixtures/signers");
-const http = require("http");
+import { path as getIpfsPath } from "kubo";
+import { execSync, exec } from "child_process";
+import { startSubplebbits, mockRpcServerPlebbit, mockPlebbit } from "../../dist/node/test/test-util";
+import { signSubplebbit } from "../../dist/node/signer/signatures";
+import signers from "../fixtures/signers";
+import http from "http";
+import path from "path";
+import fs from "fs";
 
 const ipfsPath = getIpfsPath();
 
 const rpcPort = 39652;
 
 // use the test server with the compiled version (dist/node)
-// with plain Javascript and commonjs require (not import)
 // in order to test the repo like a real user would
-
-const path = require("path");
-const fs = require("fs");
 
 const rpcAuthKey = "123456";
 
@@ -118,7 +116,8 @@ const setUpMockGateways = async () => {
 
     http.createServer((req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
-        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
+        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr")
+            res.end("Hello plebs"); // Valid content
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else res.end("Unknown CID");
@@ -210,12 +209,12 @@ const setUpMockGateways = async () => {
 
     await setUpMockGateways();
 
-    require("./pubsub-mock-server");
+    await import("./pubsub-mock-server");
 
     if (process.env["USE_RPC"] === "1") {
         // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
-        const PlebbitRpc = require("../../rpc");
+        const PlebbitRpc = import("../../rpc");
         const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 

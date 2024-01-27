@@ -308,9 +308,9 @@ export function isLinkOfMedia(link: string) {
 }
 
 export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
-    const out: T[] = []
-    for await(const x of gen) {
-        out.push(x)
+    const out: T[] = [];
+    for await (const x of gen) {
+        out.push(x);
     }
-    return out
-} 
+    return out;
+}

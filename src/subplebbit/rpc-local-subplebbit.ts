@@ -25,9 +25,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         };
     }
 
-    async initRpcInternalSubplebbit(newProps: InternalSubplebbitRpcType) {
+    async initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>) {
         const mergedProps = { ...this.toJSONInternalRpc(), newProps };
-        await super.initRemoteSubplebbitProps(mergedProps);
+        await super.initRemoteSubplebbitProps(newProps);
         this.settings = mergedProps.settings;
         this._setStartedState(mergedProps.startedState);
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;

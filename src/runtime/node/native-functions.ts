@@ -77,7 +77,8 @@ const nativeFunctions: NativeFunctions = {
         const filterResults = await Promise.all(
             files.map(async (address) => {
                 if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address)) return false;
-                const typeOfFile = await fileType.fromFile(path.join(subplebbitsPath, address));
+                //@ts-expect-error
+                const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address));
                 return typeOfFile?.mime === "application/x-sqlite3";
             })
         );
