@@ -42,24 +42,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var native_functions_1 = __importDefault(require("../../../../../runtime/node/native-functions"));
 var optionInputs = [
     {
-        option: 'characters',
-        label: 'Characters',
-        description: 'Amount of characters of the captcha.',
+        option: "characters",
+        label: "Characters",
+        description: "Amount of characters of the captcha.",
+        default: "6",
+        placeholder: "example: 6"
     },
     {
-        option: 'height',
-        label: 'Height',
-        description: 'Height of the captcha.',
+        option: "height",
+        label: "Height",
+        description: "Height of the captcha in pixels.",
+        default: "100",
+        placeholder: "example: 100"
     },
     {
-        option: 'width',
-        label: 'Width',
-        description: 'Width of the captcha.',
+        option: "width",
+        label: "Width",
+        description: "Width of the captcha in pixels.",
+        default: "300",
+        placeholder: "example: 300"
     },
     {
-        option: 'color',
-        label: 'Color',
-        description: 'Color of the captcha.',
+        option: "colors",
+        label: "Colors",
+        description: "Colors of the captcha text as hex comma separated values.",
+        default: "#32cf7e",
+        placeholder: "example: #ff0000,#00ff00,#0000ff"
     },
 ];
 var type = "image/png";
@@ -70,10 +78,10 @@ var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessag
     return __generator(this, function (_j) {
         switch (_j.label) {
             case 0:
-                width = ((_a = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _a === void 0 ? void 0 : _a.width) ? Number((_b = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _b === void 0 ? void 0 : _b.width) : undefined;
-                height = ((_c = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _c === void 0 ? void 0 : _c.height) ? Number((_d = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _d === void 0 ? void 0 : _d.height) : undefined;
-                characters = ((_e = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _e === void 0 ? void 0 : _e.characters) ? Number((_f = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _f === void 0 ? void 0 : _f.height) : undefined;
-                colors = ((_g = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _g === void 0 ? void 0 : _g.colors) ? ((_h = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _h === void 0 ? void 0 : _h.colors).split(",") : undefined;
+                width = ((_a = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _a === void 0 ? void 0 : _a.width) ? Number((_b = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _b === void 0 ? void 0 : _b.width) : 300;
+                height = ((_c = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _c === void 0 ? void 0 : _c.height) ? Number((_d = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _d === void 0 ? void 0 : _d.height) : 100;
+                characters = ((_e = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _e === void 0 ? void 0 : _e.characters) ? Number((_f = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _f === void 0 ? void 0 : _f.characters) : 6;
+                colors = ((_g = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _g === void 0 ? void 0 : _g.colors) ? ((_h = subplebbitChallengeSettings === null || subplebbitChallengeSettings === void 0 ? void 0 : subplebbitChallengeSettings.options) === null || _h === void 0 ? void 0 : _h.colors).split(",") : ["#32cf7e"];
                 setCaptchaOptions = {};
                 if (characters)
                     setCaptchaOptions.characters = characters;
@@ -89,7 +97,7 @@ var getChallenge = function (subplebbitChallengeSettings, challengeRequestMessag
                             return [2 /*return*/, { success: true }];
                         }
                         return [2 /*return*/, {
-                                success: false, error: 'Wrong captcha.'
+                                success: false, error: "Wrong captcha."
                             }];
                     });
                 }); };
