@@ -7,8 +7,8 @@ import {
   testReply,
   testPost
 } from './utils'
-import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types'
-import { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../subplebbit/types"
+import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../../types'
+import { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../../subplebbit/types"
 import { RateLimiter } from "limiter-es6-compat";
 type PublicationType = "post" | "reply" | "vote"
 // each author could have 20+ rate limiters each if the sub has

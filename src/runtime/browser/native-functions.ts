@@ -15,15 +15,10 @@ const nativeFunctions: NativeFunctions = {
         return [];
     },
 
-    createDbHandler: (subplebbit) => {
-        throw Error("Shouldn't call createDbHandler over native-functions of browser");
-    },
-
     //@ts-ignore
     fetch: (...args) => window.fetch(...args),
     createIpfsClient: (ipfsHttpClientOptions: Options): IpfsHttpClientPublicAPI => {
         const ipfsClient = create(ipfsHttpClientOptions);
-
 
         const cat = async (...args: Parameters<IpfsHttpClientPublicAPI["cat"]>): Promise<string | undefined> => {
             const rawData = await all(ipfsClient.cat(...args));
@@ -41,7 +36,6 @@ const nativeFunctions: NativeFunctions = {
 
             return rmResults;
         };
-
 
         const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
             return all(ipfsClient.pin.addAll(...args));

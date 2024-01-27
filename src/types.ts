@@ -1,5 +1,4 @@
 import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import { DbHandler } from "./runtime/node/db-handler";
 import fetch from "node-fetch";
 import { createCaptcha } from "captcha-canvas";
 import { IPFS as IpfsTypes } from "ipfs-core-types";
@@ -16,11 +15,11 @@ import {
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
-import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 import { ChallengeFile, Flair } from "./subplebbit/types";
 import { Plebbit } from "./plebbit";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
@@ -459,8 +458,6 @@ type FunctionPropertyOf<T> = {
     [P in keyof T]: T[P] extends Function ? P : never;
 }[keyof T];
 
-export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
-
 export type IpfsHttpClientPublicAPI = {
     add: IPFSHTTPClient["add"];
     cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
@@ -483,12 +480,15 @@ export type IpfsHttpClientPublicAPI = {
 };
 export type NativeFunctions = {
     listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
-    createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
     createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
     createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
     // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => ReturnType<IpfsTypes["key"]["import"]>;
+    importSignerIntoIpfsNode: (
+        ipnsKeyName: string,
+        ipfsKey: Uint8Array,
+        ipfsNode: { url: string; headers?: Object }
+    ) => ReturnType<IpfsTypes["key"]["import"]>;
     deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 
@@ -562,11 +562,11 @@ export interface SubplebbitEvents {
     error: (error: PlebbitError) => void;
 
     // State changes
-    statechange: (newState: Subplebbit["state"]) => void;
-    updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
-    startedstatechange: (newState: Subplebbit["startedState"]) => void;
+    statechange: (newState: RemoteSubplebbit["state"]) => void;
+    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
+    startedstatechange: (newState: RemoteSubplebbit["startedState"]) => void;
 
-    update: (updatedSubplebbit: Subplebbit) => void;
+    update: (updatedSubplebbit: RemoteSubplebbit) => void;
 }
 
 export interface PublicationEvents {
@@ -645,7 +645,7 @@ export interface IpfsClient {
 }
 
 export type PubsubSubscriptionHandler = Extract<Parameters<IpfsTypes["pubsub"]["subscribe"]>[1], Function>;
-export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"]
+export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later

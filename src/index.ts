@@ -6,7 +6,7 @@ import { setNativeFunctions} from "./runtime/node/util";
 import nodeNativeFunctions from "./runtime/node/native-functions";
 import browserNativeFunctions from "./runtime/browser/native-functions";
 import { shortifyAddress, shortifyCid } from "./util";
-import { plebbitJsChallenges } from "./runtime/node/challenges";
+import { plebbitJsChallenges } from "./runtime/node/subplebbit/challenges";
 
 const Plebbit = async function Plebbit(plebbitOptions: PlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
     //@ts-expect-error

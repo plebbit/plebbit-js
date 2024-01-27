@@ -3,7 +3,7 @@ import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
-import { Subplebbit } from "../subplebbit/subplebbit";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
 import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import { cid as isIpfsCid } from "is-ipfs";
 import waitUntil from "async-wait-until";
@@ -175,7 +175,7 @@ async function _publishVotes(comments: Comment[], votesPerCommentToPublish: numb
 }
 
 async function _populateSubplebbit(
-    subplebbit: Subplebbit,
+    subplebbit: RemoteSubplebbit,
     props: {
         signers: SignerType[];
         votesPerCommentToPublish: number;
@@ -431,7 +431,7 @@ export async function waitTillCommentIsInParentPages(
             ? await plebbit.getSubplebbit(comment.subplebbitAddress)
             : await plebbit.createComment({ cid: comment.parentCid });
     await parent.update();
-    const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
+    const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
     await waitUntil(
         async () => {

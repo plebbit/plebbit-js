@@ -4,12 +4,12 @@ import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import assert from "assert";
-import { Subplebbit } from "../subplebbit/subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util";
 import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -154,11 +154,11 @@ export default class PlebbitRpcClient {
         return pageIpfs;
     }
 
-    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<Subplebbit> {
+    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
-        const subProps = <SubplebbitType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
-        const subplebbit = new Subplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
-        await subplebbit.initSubplebbit(subProps);
+        const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
+        const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
+        await subplebbit.initRpcInternalSubplebbit(subProps);
         return subplebbit;
     }
 

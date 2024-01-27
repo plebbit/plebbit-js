@@ -73,7 +73,7 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
         services: {
             identify: identifyService(), // required for peer discovery of pubsub
             dht: kadDHT({
-                protocol: "/plebbit/pubsub/0.0.1"
+                protocol: "/plebbit"
                 //  clientMode: true // if not publicaly dialable
             }), // p2p peer discovery
             pubsub: gossipsub({

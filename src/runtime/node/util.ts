@@ -2,7 +2,6 @@ import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
 import { NativeFunctions, PlebbitOptions } from "../../types";
 import path from "path";
-import { Subplebbit } from "../../subplebbit/subplebbit";
 import assert from "assert";
 import { Knex } from "knex";
 import { parseJsonStrings } from "../../util";
@@ -14,13 +13,14 @@ import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit";
 import { STORAGE_KEYS } from "../../constants";
 import lodash from "lodash";
+import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
 
 export const mkdir = fs.mkdir;
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<Subplebbit, "address"> & { plebbit: Pick<PlebbitOptions, "dataPath" | "noData"> }
+    subplebbit: Pick<RemoteSubplebbit, "address"> & { plebbit: Pick<PlebbitOptions, "dataPath" | "noData"> }
 ): Promise<Knex.Config<any>> => {
     let filename: string;
     if (subplebbit.plebbit.noData) filename = ":memory:";
@@ -31,7 +31,7 @@ export const getDefaultSubplebbitDbConfig = async (
     }
 
     return {
-        client: "sqlite3",
+        client: "better-sqlite3",
         connection: { filename },
         useNullAsDefault: true,
         acquireConnectionTimeout: 120000,
@@ -44,7 +44,7 @@ export const getDefaultSubplebbitDbConfig = async (
 // Should be moved to subplebbit.ts
 export async function getThumbnailUrlOfLink(
     url: string,
-    subplebbit: Subplebbit,
+    subplebbit: RemoteSubplebbit,
     proxyHttpUrl?: string
 ): Promise<{ thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } | undefined> {
     const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
@@ -76,8 +76,8 @@ export async function getThumbnailUrlOfLink(
         const ogImageHeight = res.result.ogImage?.[0]?.height;
         const ogImageWidth = res.result.ogImage?.[0]?.width;
 
-        thumbnail.thumbnailHeight = typeof ogImageHeight === "number" ? ogImageHeight :  undefined;
-        thumbnail.thumbnailWidth = typeof ogImageWidth === "number" ? ogImageWidth :  undefined;
+        thumbnail.thumbnailHeight = typeof ogImageHeight === "number" ? ogImageHeight : undefined;
+        thumbnail.thumbnailWidth = typeof ogImageWidth === "number" ? ogImageWidth : undefined;
         if (lodash.isNil(thumbnail.thumbnailWidth) || lodash.isNil(thumbnail.thumbnailHeight)) {
             const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
             thumbnail.thumbnailHeight = dimensions?.height;

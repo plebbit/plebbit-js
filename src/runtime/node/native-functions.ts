@@ -1,11 +1,9 @@
-import { DbHandlerPublicAPI, IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
+import { IpfsHttpClientPublicAPI, NativeFunctions } from "../../types";
 import fs from "fs/promises";
 import path from "path";
 import assert from "assert";
 import os from "os";
 import lodash from "lodash";
-
-import { DbHandler } from "./db-handler";
 
 import fetch from "node-fetch";
 import { CID, create, Options } from "ipfs-http-client";
@@ -89,19 +87,6 @@ const nativeFunctions: NativeFunctions = {
         return filtered_results;
     },
 
-    createDbHandler: (subplebbit: DbHandler["_subplebbit"]): DbHandlerPublicAPI => {
-        const dbHandler = new DbHandler(subplebbit);
-
-        const dbApi = {};
-
-        for (const property in dbHandler)
-            if (typeof dbHandler[property] === "function" && !property.startsWith("_"))
-                dbApi[property] = dbHandler[property].bind(dbHandler);
-
-        //@ts-ignore
-        return dbApi;
-    },
-
     //@ts-ignore
     fetch: async (...args) => {
         const res = await fetch(...args);
@@ -115,7 +100,7 @@ const nativeFunctions: NativeFunctions = {
             (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
             ipfsHttpClientOptions?.protocol === "https" ||
             (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-            (ipfsHttpClientOptions.url?.toString()?.includes("https"));
+            ipfsHttpClientOptions.url?.toString()?.includes("https");
         const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
         const ipfsClient = create({
@@ -139,7 +124,6 @@ const nativeFunctions: NativeFunctions = {
 
             return rmResults;
         };
-
 
         const pinAddAll = async (...args: Parameters<IpfsHttpClientPublicAPI["pin"]["addAll"]>) => {
             return all(ipfsClient.pin.addAll(...args));
@@ -171,11 +155,7 @@ const nativeFunctions: NativeFunctions = {
             files: ipfsClient.files
         };
     },
-    importSignerIntoIpfsNode: async (
-        ipnsKeyName: string,
-        ipfsKey: Uint8Array,
-        ipfsNode: { url: string; headers?: Object }
-    ) => {
+    importSignerIntoIpfsNode: async (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => {
         const data = new FormData();
         if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
         if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)

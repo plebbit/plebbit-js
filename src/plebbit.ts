@@ -24,7 +24,6 @@ import {
     PubsubSubscriptionHandler
 } from "./types";
 import { Comment } from "./comment";
-import { Subplebbit } from "./subplebbit/subplebbit";
 import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer } from "./signer";
@@ -48,6 +47,10 @@ import { PlebbitError } from "./plebbit-error";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
 import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
 import LRUStorage from "./runtime/node/lru-storage";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
+import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit";
+import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -243,10 +246,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._clientsManager = new ClientsManager(this);
     }
 
-    async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit({ address: subplebbitAddress });
-        subplebbit.update();
+    async getSubplebbit(subplebbitAddress: string) {
+        const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
+        await subplebbit.update();
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
@@ -266,7 +268,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = () => {};
-        comment.update();
+        await comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
@@ -341,25 +343,38 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     _canCreateNewLocalSub(): boolean {
-        try {
-            //@ts-ignore
-            nativeFunctions.createDbHandler({ address: "", plebbit: this });
-            return true;
-        } catch {}
-
-        return false;
+        const isNode = typeof process?.versions?.node !== "undefined";
+        return isNode;
     }
 
-    private async _createSubplebbitRpc(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType) {
+    private async _createSubplebbitRpc(
+        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType
+    ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
         if (options.address && !options["signer"]) {
             options = options as CreateSubplebbitOptions;
             const rpcSubs = await this.listSubplebbits();
-            const isSubLocal = rpcSubs.includes(options.address);
-            if (isSubLocal)
-                return this.getSubplebbit(options.address); // getSubplebbit will fetch the local sub through RPC subplebbitUpdate
-            else return this._createRemoteSubplebbitInstance(options);
+            const isSubRpcLocal = rpcSubs.includes(options.address);
+            // Should actually create an instance here, instead of calling getSubplebbit
+            if (isSubRpcLocal) {
+                const sub = new RpcLocalSubplebbit(this);
+                await sub.initRemoteSubplebbitProps({ address: options.address });
+                // wait for one update here, and then stop
+                await sub.update();
+                const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+                let error: PlebbitError | undefined;
+                const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
+                await Promise.race([updatePromise, errorPromise]);
+                await sub.stop();
+                if (error) throw error;
+
+                return sub;
+            } else {
+                const remoteSub = new RpcRemoteSubplebbit(this);
+                await remoteSub.initRemoteSubplebbitProps(options);
+                return remoteSub;
+            }
         } else {
             const newLocalSub = await this.plebbitRpcClient.createSubplebbit(options);
             log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
@@ -375,13 +390,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
                 options
             });
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(options);
+        const subplebbit = new RemoteSubplebbit(this);
+        await subplebbit.initRemoteSubplebbitProps(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
 
-    private async _createLocalSub(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+    private async _createLocalSub(options: CreateSubplebbitOptions): Promise<LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createLocalSubplebbit");
         log.trace("Received subplebbit options to create a local subplebbit instance:", options);
 
@@ -392,15 +407,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options);
+        const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
+            await subplebbit.initRemoteSubplebbitProps({ address: options.address });
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
             );
         } else {
+            await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
@@ -413,7 +429,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createSubplebbit(
         options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
-    ): Promise<Subplebbit> {
+    ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
 

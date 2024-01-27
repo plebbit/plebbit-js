@@ -1,6 +1,5 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util";
 import knex, { Knex } from "knex";
-import { Subplebbit } from "../../subplebbit/subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -21,18 +20,18 @@ import {
     SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
-} from "../../types";
+} from "../../../types";
 import Logger from "@plebbit/plebbit-logger";
-import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "./util";
-import env from "../../version";
-import { Plebbit } from "../../plebbit";
+import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util";
+import env from "../../../version";
 import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "../../subplebbit/sort-handler";
-import { SubplebbitStats } from "../../subplebbit/types";
+import { PageOptions } from "./sort-handler";
+import { SubplebbitStats } from "../../../subplebbit/types";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS } from "../../signer/constants";
+import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants";
+import { LocalSubplebbit } from "./local-subplebbit";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -43,9 +42,7 @@ const TABLES = Object.freeze({
 
 export class DbHandler {
     private _knex: Knex;
-    private _subplebbit: Pick<Subplebbit, "address" | "_isAuthorEdit"> & {
-        plebbit: Pick<Plebbit, "dataPath" | "noData" | "_storage">;
-    };
+    private _subplebbit: LocalSubplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: Knex.Config<any>;
     private _keyv: Keyv;
@@ -204,8 +201,6 @@ export class DbHandler {
             table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
 
-            // We're not storing replies here because it would take too much storage, and is not needed
-
             table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.json("flair").nullable();
             table.boolean("spoiler");
@@ -217,7 +212,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
-            table.json("replies").nullable();
+            table.json("replies").nullable(); // TODO we should not be storing replies here, it takes too much storage
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.timestamp("lastReplyTimestamp").nullable();
 

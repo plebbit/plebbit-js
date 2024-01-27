@@ -9,12 +9,12 @@ import {
   testRole
 } from './utils'
 import {testRateLimit} from './rate-limiter'
-import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../../../subplebbit/types'
-import {   DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types'
-import { Subplebbit } from '../../../../subplebbit/subplebbit'
-import { Comment } from '../../../../comment'
+import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../../../../subplebbit/types'
+import {   DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../../types'
+import { Comment } from '../../../../../comment'
+import { LocalSubplebbit } from '../../local-subplebbit'
 
-const shouldExcludePublication = (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: Subplebbit) => {
+const shouldExcludePublication = (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: LocalSubplebbit) => {
   if (!subplebbitChallenge) {
     throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}'`)
   }

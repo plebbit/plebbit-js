@@ -10,7 +10,6 @@ import {
     CommentEditPubsubMessage,
     CommentPubsubMessage,
     DecryptedChallengeRequest,
-    PlebbitOptions,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized,
     VotePubsubMessage
@@ -18,19 +17,19 @@ import {
 import { WebSocket } from "ws";
 import Publication from "../../publication";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types";
-import { Subplebbit } from "../../subplebbit/subplebbit";
 import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error";
+import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
-const startedSubplebbits: { [address: string]: "pending" | Subplebbit } = {};
+const startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
 const getStartedSubplebbit = async (address: string) => {
     // if pending, wait until no longer pendng
     while (startedSubplebbits[address] === "pending") {
         await new Promise((r) => setTimeout(r, 20));
     }
-    return <Subplebbit>startedSubplebbits[address];
+    return <LocalSubplebbit>startedSubplebbits[address];
 };
 
 class PlebbitWsServer extends EventEmitter {
@@ -202,7 +201,7 @@ class PlebbitWsServer extends EventEmitter {
                 `createSubplebbitOptions?.address '${createSubplebbitOptions?.address}' must be undefined to create a new subplebbit`
             );
         }
-        const subplebbit = await this.plebbit.createSubplebbit(createSubplebbitOptions);
+        const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
         return subplebbit.toJSONInternalRpc();
     }
 
@@ -220,7 +219,7 @@ class PlebbitWsServer extends EventEmitter {
             this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
 
         try {
-            const subplebbit = await this.plebbit.createSubplebbit({ address });
+            const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
             subplebbit.on("update", () => sendEvent("update", subplebbit.toJSONInternalRpc()));
             subplebbit.on("startedstatechange", () => sendEvent("startedstatechange", subplebbit.startedState));
             subplebbit.on("challenge", (challenge: any) => sendEvent("challenge", encodePubsubMsg(challenge)));
@@ -268,7 +267,7 @@ class PlebbitWsServer extends EventEmitter {
         const address = <string>params[0];
         const editSubplebbitOptions = <SubplebbitEditOptions>params[1];
 
-        const subplebbit = await this.plebbit.createSubplebbit({ address });
+        const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
         return subplebbit.toJSONInternalRpc();
     }
@@ -331,8 +330,8 @@ class PlebbitWsServer extends EventEmitter {
                 log.error("setPlebbitOptions failed stopping subplebbit", { error, address, params });
             }
             try {
-                startedSubplebbits[address] = await this.plebbit.createSubplebbit({ address });
-                await (<Subplebbit>startedSubplebbits[address]).start();
+                startedSubplebbits[address] = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+                await (<LocalSubplebbit>startedSubplebbits[address]).start();
             } catch (error) {
                 log.error("setPlebbitOptions failed restarting subplebbit", { error, address, params });
             }
@@ -388,7 +387,7 @@ class PlebbitWsServer extends EventEmitter {
         // possibly move it to a startedSubplebbitUpdate method
         // const startedSubplebbit = await getStartedSubplebbit(address)
 
-        const subplebbit = await this.plebbit.createSubplebbit({ address });
+        const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         subplebbit.on("update", () => sendEvent("update", subplebbit.signer ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs()));
         subplebbit.on("updatingstatechange", () => sendEvent("updatingstatechange", subplebbit.updatingState));
         subplebbit.on("error", (error: any) => sendEvent("error", error));

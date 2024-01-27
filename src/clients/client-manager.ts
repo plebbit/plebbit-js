@@ -4,7 +4,6 @@ import { Comment } from "../comment";
 import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util";
 import assert from "assert";
 import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types";
-import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
 import { cid as isIpfsCid, path as isIpfsPath } from "is-ipfs";
@@ -30,6 +29,7 @@ import {
 import { SubplebbitIpfsType } from "../subplebbit/types";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -737,9 +737,9 @@ export class SubplebbitClientsManager extends ClientsManager {
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
-    private _subplebbit: Subplebbit;
+    private _subplebbit: RemoteSubplebbit;
 
-    constructor(subplebbit: Subplebbit) {
+    constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit.plebbit);
         this._subplebbit = subplebbit;
     }

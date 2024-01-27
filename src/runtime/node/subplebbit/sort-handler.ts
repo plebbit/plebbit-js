@@ -7,8 +7,8 @@ import {
     TIMEFRAMES_TO_SECONDS,
     timestamp,
     topScore
-} from "../util";
-import { Subplebbit } from "./subplebbit";
+} from "../../../util";
+import { LocalSubplebbit } from "./local-subplebbit";
 import assert from "assert";
 import {
     CommentsTableRow,
@@ -21,7 +21,7 @@ import {
     ReplySort,
     ReplySortName,
     SortProps
-} from "../types";
+} from "../../../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 
@@ -59,7 +59,7 @@ export type PageOptions = {
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
 
 export class SortHandler {
-    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption" | "_clientsManager">;
+    subplebbit: LocalSubplebbit;
 
     constructor(subplebbit: SortHandler["subplebbit"]) {
         this.subplebbit = subplebbit;
@@ -85,10 +85,9 @@ export class SortHandler {
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = removeNullAndUndefinedValuesRecursively({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
-            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
+            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
             listOfPage[i] = pageIpfs;
         }
-
         return { [sortName]: { pages: listOfPage, cids } };
     }
 
@@ -213,5 +212,9 @@ export class SortHandler {
         };
 
         return this._generateSubplebbitPosts(pageOptions);
+    }
+
+    toJSON() {
+        return undefined;
     }
 }
