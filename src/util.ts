@@ -30,9 +30,11 @@ import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 import extName from "ext-name";
-import {  create, IPFSHTTPClient, Options } from "ipfs-http-client";
+import { create, IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
+import { sha256 } from "js-sha256";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -43,6 +45,8 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
+
+const storedIpfsClients: Record<string, IPFSHTTPClient> = {};
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -320,7 +324,8 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
 }
 
 export function createIpfsClient(ipfsHttpClientOptions: Options): IPFSHTTPClient {
-    // TODO should cache clients per options, and only create an instance if necessary
+    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
+    if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
     const isHttpsAgent =
         (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
         ipfsHttpClientOptions?.protocol === "https" ||
@@ -328,10 +333,10 @@ export function createIpfsClient(ipfsHttpClientOptions: Options): IPFSHTTPClient
         ipfsHttpClientOptions.url?.toString()?.includes("https");
     const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
-    const ipfsClient = create({
+    storedIpfsClients[cacheKey] = create({
         ...ipfsHttpClientOptions,
         agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
     });
 
-    return ipfsClient;
+    return storedIpfsClients[cacheKey];
 }

@@ -1,10 +1,8 @@
 import Logger from "@plebbit/plebbit-logger";
-import { RemoteSubplebbit } from "../../../subplebbit/remote-subplebbit";
 import { Plebbit } from "../../../plebbit";
 import {
     Challenge,
     CreateSubplebbitOptions,
-    InternalSubplebbitRpcType,
     InternalSubplebbitType,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
@@ -13,7 +11,6 @@ import {
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler";
 import { DbHandler } from "./db-handler";
-import nativeFunctions from "../native-functions";
 import Hash from "ipfs-only-hash";
 
 import {
