@@ -1,6 +1,4 @@
-import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import fetch from "node-fetch";
-import { createCaptcha } from "captcha-canvas";
+import { IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { IPFS as IpfsTypes } from "ipfs-core-types";
 import { Knex } from "knex";
 import { Comment } from "./comment";

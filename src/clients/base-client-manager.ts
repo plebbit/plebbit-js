@@ -178,7 +178,6 @@ export class BaseClientsManager {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
         try {
-            //@ts-expect-error
             res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically

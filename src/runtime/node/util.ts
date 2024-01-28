@@ -14,7 +14,6 @@ import { Plebbit } from "../../plebbit";
 import { STORAGE_KEYS } from "../../constants";
 import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
-import FormData from "form-data";
 import os from "os";
 import * as fileType from "file-type";
 
@@ -194,11 +193,11 @@ export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uin
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
-    data.append("file", Buffer.from(ipfsKey));
+    data.append("file", new Blob([ipfsKey]));
     const nodeUrl = ipfsNode.url;
     if (!nodeUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
     const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
-    const res = await nativeFunctions.fetch(url, {
+    const res = await fetch(url, {
         method: "POST",
         body: data,
         headers: <Record<string, string>>ipfsNode?.headers // We're assuming that only IPFS one client will be used
