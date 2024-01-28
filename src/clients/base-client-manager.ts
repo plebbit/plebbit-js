@@ -2,7 +2,6 @@ import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util";
 import Hash from "ipfs-only-hash";
-import { nativeFunctions } from "../runtime/node/util";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";

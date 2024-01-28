@@ -1,6 +1,4 @@
-import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import fetch from "node-fetch";
-import { createCaptcha } from "captcha-canvas";
+import { IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { IPFS as IpfsTypes } from "ipfs-core-types";
 import { Knex } from "knex";
 import { Comment } from "./comment";
@@ -453,10 +451,6 @@ export interface PostPubsubMessage
 export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 export interface CommentEditPubsubMessage
     extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
-
-export type NativeFunctions = {
-    fetch: typeof fetch;
-};
 
 export type OnlyDefinedProperties<T> = Pick<
     T,

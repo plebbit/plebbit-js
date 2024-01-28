@@ -1,6 +1,5 @@
 import { promises as fs } from "fs";
-import { default as nodeNativeFunctions } from "./native-functions";
-import { NativeFunctions, PlebbitOptions } from "../../types";
+import { PlebbitOptions } from "../../types";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
@@ -14,7 +13,6 @@ import { Plebbit } from "../../plebbit";
 import { STORAGE_KEYS } from "../../constants";
 import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
-import FormData from "form-data";
 import os from "os";
 import * as fileType from "file-type";
 
@@ -103,12 +101,6 @@ async function fetchDimensionsOfImage(imageUrl: string): Promise<{ width: number
     return { width: result.width, height: result.height };
 }
 
-export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
-export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
-    if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
-    for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
-};
-
 export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pick<Plebbit, "_storage">) => {
     const log = Logger("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
     const subAddress = path.basename(subPath);
@@ -194,11 +186,11 @@ export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uin
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
         throw Error("ipfsKey needs to be defined before importing key into IPFS node");
 
-    data.append("file", Buffer.from(ipfsKey));
+    data.append("file", new Blob([ipfsKey]));
     const nodeUrl = ipfsNode.url;
     if (!nodeUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
     const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
-    const res = await nativeFunctions.fetch(url, {
+    const res = await fetch(url, {
         method: "POST",
         body: data,
         headers: <Record<string, string>>ipfsNode?.headers // We're assuming that only IPFS one client will be used
