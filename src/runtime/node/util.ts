@@ -16,7 +16,7 @@ import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
 import FormData from "form-data";
 import os from "os";
-
+import * as fileType from "file-type";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
