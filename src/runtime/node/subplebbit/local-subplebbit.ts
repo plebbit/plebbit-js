@@ -65,7 +65,7 @@ import {
     verifyCommentUpdate
 } from "../../../signer/signatures";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge";
-import { getThumbnailUrlOfLink } from "../util";
+import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util";
 import { getErrorCodeFromMessage } from "../../../util";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifyVote } from "../../../signer";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption";
@@ -153,7 +153,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const ipfsNodeKeys = await this.clientsManager.getDefaultIpfs()._client.key.list();
         if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
-            await nativeFunctions.importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
+            await importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
                 url: <string>this.plebbit.ipfsHttpClientsOptions[0].url,
                 headers: this.plebbit.ipfsHttpClientsOptions[0].headers
             });
@@ -955,6 +955,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _listenToIncomingRequests() {
         const log = Logger("plebbit-js:subplebbit:sync:_listenToIncomingRequests");
         // Make sure subplebbit listens to pubsub topic
+        // Code below is to handle in case the ipfs node restarted and the subscription got lost or something
         const subscribedTopics = await this.clientsManager.getDefaultPubsub()._client.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
@@ -1368,7 +1369,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const ipfsClient = this.clientsManager.getDefaultIpfs();
         if (!ipfsClient) throw Error("Ipfs client is not defined");
 
-        await nativeFunctions.deleteSubplebbit(this.address, this.plebbit.dataPath, this.plebbit);
+        await moveSubplebbitDbToDeletedDirectory(this.address, this.plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node
             try {

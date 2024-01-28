@@ -11,6 +11,10 @@ import * as cborg from "cborg";
 import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
 import { sha256 } from "js-sha256";
 import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub";
+import last from "it-last";
+import { concat as uint8ArrayConcat } from "uint8arrays/concat";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import all from "it-all";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -185,8 +189,8 @@ export class BaseClientsManager {
             const errorCode = url.includes("/ipfs/")
                 ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
                 : url.includes("/ipns/")
-                ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                : "ERR_FAILED_TO_FETCH_GENERIC";
+                  ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
+                  : "ERR_FAILED_TO_FETCH_GENERIC";
             throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, error: e });
 
             // If error is not related to size limit, then throw it again
@@ -294,10 +298,10 @@ export class BaseClientsManager {
         return loadType === "subplebbit"
             ? 5 * 60 * 1000 // 5min
             : loadType === "comment"
-            ? 60 * 1000 // 1 min
-            : loadType === "comment-update"
-            ? 2 * 60 * 1000 // 2min
-            : 30 * 1000; // 30s
+              ? 60 * 1000 // 1 min
+              : loadType === "comment-update"
+                ? 2 * 60 * 1000 // 2min
+                : 30 * 1000; // 30s
     }
 
     async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
@@ -364,7 +368,7 @@ export class BaseClientsManager {
             let cid: string;
             if (p2pIpnsPromiseCache.has(ipnsName)) cid = await p2pIpnsPromiseCache.get(ipnsName);
             else {
-                const cidPromise = ipfsClient._client.name.resolve(ipnsName);
+                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName));
                 p2pIpnsPromiseCache.set(ipnsName, cidPromise);
                 cid = await cidPromise;
                 p2pIpnsPromiseCache.delete(ipnsName);
@@ -383,7 +387,10 @@ export class BaseClientsManager {
         const ipfsClient = this.getDefaultIpfs();
 
         const fetchPromise = async () => {
-            const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
+            const rawData = await all(ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
+            const data = uint8ArrayConcat(rawData);
+            const fileContent = uint8ArrayToString(data);
+
             if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
             if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
                 const calculatedCid: string = await Hash.of(fileContent);

@@ -454,42 +454,8 @@ export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyName
 export interface CommentEditPubsubMessage
     extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 
-type FunctionPropertyOf<T> = {
-    [P in keyof T]: T[P] extends Function ? P : never;
-}[keyof T];
-
-export type IpfsHttpClientPublicAPI = {
-    add: IPFSHTTPClient["add"];
-    cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
-    name: {
-        resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
-        publish: IPFSHTTPClient["name"]["publish"];
-    };
-    config: Pick<IPFSHTTPClient["config"], "get">;
-    key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: {
-        rm: IPFSHTTPClient["pin"]["rm"];
-        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
-        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => ReturnType<IpfsTypes["pin"]["ls"]>;
-    };
-
-    block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
-    swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
-    files: IPFSHTTPClient["files"];
-};
 export type NativeFunctions = {
-    listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
     fetch: typeof fetch;
-    createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
-    createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
-    // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (
-        ipnsKeyName: string,
-        ipfsKey: Uint8Array,
-        ipfsNode: { url: string; headers?: Object }
-    ) => ReturnType<IpfsTypes["key"]["import"]>;
-    deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<
@@ -640,7 +606,7 @@ export interface IpfsClient {
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
+    _client: IPFSHTTPClient; // Private API, shouldn't be used by consumers
     _clientOptions: IpfsHttpClientOptions;
 }
 
@@ -651,7 +617,7 @@ export interface PubsubClient {
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
+    _client: Pick<IpfsClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
     _clientOptions: IpfsHttpClientOptions;
 }
 

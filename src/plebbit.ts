@@ -1,4 +1,4 @@
-import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
+import { getDefaultDataPath, listSubplebbit as nodeListSubplebbits, nativeFunctions } from "./runtime/node/util";
 import {
     StorageInterface,
     ChainProvider,
@@ -24,7 +24,7 @@ import {
     PubsubSubscriptionHandler
 } from "./types";
 import { Comment } from "./comment";
-import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { createIpfsClient, doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer } from "./signer";
 import { Resolver } from "./resolver";
@@ -146,7 +146,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (!nativeFunctions)
             throw Error("Native function is defined at all. Can't create ipfs client: " + JSON.stringify(this._userPlebbitOptions));
         for (const clientOptions of this.ipfsHttpClientsOptions) {
-            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            const ipfsClient = createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
                 _clientOptions: clientOptions,
@@ -162,8 +162,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
         else if (this.pubsubHttpClientsOptions)
             for (const clientOptions of this.pubsubHttpClientsOptions) {
-                const ipfsClient =
-                    this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+                const ipfsClient = this.clients.ipfsClients?.[<string>clientOptions.url]?._client || createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
                 this.clients.pubsubClients[<string>clientOptions.url] = {
                     _client: ipfsClient,
                     _clientOptions: clientOptions,
@@ -229,7 +228,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // If user did not provide ipfsGatewayUrls
         const fallbackGateways = this.plebbitRpcClient ? undefined : lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
-        if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
@@ -496,7 +494,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.plebbitRpcClient) return this.plebbitRpcClient.listSubplebbits();
         const canCreateSubs = this._canCreateNewLocalSub();
         if (!canCreateSubs || !this.dataPath) return [];
-        return nativeFunctions.listSubplebbits(this.dataPath, this);
+        return nodeListSubplebbits(this);
     }
 
     async fetchCid(cid: string) {

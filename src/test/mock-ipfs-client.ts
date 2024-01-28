@@ -1,12 +1,12 @@
 import io, { Socket } from "socket.io-client";
-import { IpfsHttpClientPublicAPI, PubsubSubscriptionHandler } from "../types";
+import {  IpfsClient, PubsubSubscriptionHandler } from "../types";
 
 const port = 25963;
 
 let ioClient: Socket;
 
 class IpfsHttpClient {
-    public pubsub: IpfsHttpClientPublicAPI["pubsub"];
+    public pubsub: IpfsClient["_client"]["pubsub"];
     private subscriptions: { topic: string; rawCallback: PubsubSubscriptionHandler; callback: (...args: any[]) => any }[];
 
     constructor(dropRate?: number) {

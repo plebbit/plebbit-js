@@ -1,9 +1,8 @@
-// import {createCaptcha} from 'captcha-canvas'
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants"
-import nodeNativeFunctions from "../../../../../../runtime/node/native-functions"
 
 import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types"
 import {  DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../types"
+import { createCaptcha } from "captcha-canvas"
 
 
 const optionInputs = [
@@ -46,13 +45,12 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
   if (colors) setCaptchaOptions.colors = colors;
 
 
-  
+  const res = createCaptcha(width, height, {captcha: setCaptchaOptions});
 
-  // const res = await createCaptcha(width, height, {captcha: setCaptchaOptions})
-  const res = await nodeNativeFunctions.createImageCaptcha(width, height, {captcha: setCaptchaOptions})
-  const answer = <string>res.text
+  const imageBase64 = (await res.image).toString("base64");
+
   const verify = async (_answer: string) => {
-    if (answer.toLowerCase() === _answer.toLowerCase().trim()) {
+    if (res.text.toLowerCase() === _answer.toLowerCase().trim()) {
       return {success: true}
     }
     return {
@@ -60,7 +58,7 @@ const getChallenge = async (subplebbitChallengeSettings: SubplebbitChallengeSett
     }
   }
   // const challenge = (await res.image).toString('base64')
-  const challenge = <string>res.image
+  const challenge = imageBase64
   return {challenge, verify, type}
 }
 

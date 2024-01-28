@@ -30,6 +30,10 @@ import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 import extName from "ext-name";
+import {  create, IPFSHTTPClient, Options } from "ipfs-http-client";
+import { Agent as HttpAgent } from "http";
+import { Agent as HttpsAgent } from "https";
+
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -313,4 +317,21 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
         out.push(x);
     }
     return out;
+}
+
+export function createIpfsClient(ipfsHttpClientOptions: Options): IPFSHTTPClient {
+    // TODO should cache clients per options, and only create an instance if necessary
+    const isHttpsAgent =
+        (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+        ipfsHttpClientOptions?.protocol === "https" ||
+        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
+        ipfsHttpClientOptions.url?.toString()?.includes("https");
+    const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
+
+    const ipfsClient = create({
+        ...ipfsHttpClientOptions,
+        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
+    });
+
+    return ipfsClient;
 }
