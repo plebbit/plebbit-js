@@ -26,7 +26,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     async initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>) {
-        const mergedProps = { ...this.toJSONInternalRpc(), newProps };
+        const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
         await super.initRemoteSubplebbitProps(newProps);
         this.settings = mergedProps.settings;
         this._setStartedState(mergedProps.startedState);

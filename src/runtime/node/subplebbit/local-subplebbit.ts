@@ -202,13 +202,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         // await this._initSignerProps();
 
-        // Default props here
-        await this._setChallengesToDefaultIfNotDefined(log);
-
         if (!this.pubsubTopic) this.pubsubTopic = lodash.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
 
         await this._updateDbInternalState(this.toJSONInternal());
+
+        await this._setChallengesToDefaultIfNotDefined(log);
 
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
@@ -343,7 +342,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async storePublication(
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ): Promise<CommentIpfsWithCid | undefined> {
-        const log = Logger("plebbit-js:subplebbit:handleChallengeExchange:storePublicationIfValid");
+        const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storePublicationIfValid");
 
         const publication = request.publication;
         const publicationHash = sha256(deterministicStringify(publication));
@@ -1262,13 +1261,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
         } else {
             await this._updateDbInternalState(newProps);
-            if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
         }
 
         const currentState = await this._getDbInternalState(true);
         await this.initRpcInternalSubplebbit(currentState);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
+        if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
 
         return this;
     }

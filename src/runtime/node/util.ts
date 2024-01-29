@@ -212,7 +212,7 @@ export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uin
 
 export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: string, plebbit: Plebbit) {
     // Delete subplebbit will just move the sub db file to another directory
-    if (plebbit.dataPath !== "string") throw Error("plebbit.dataPath is not defined");
+    if (typeof plebbit.dataPath !== "string") throw Error("plebbit.dataPath is not defined");
     const oldPath = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
     const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
     await fs.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
