@@ -6,7 +6,6 @@ import Vote from "../vote";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
 import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types";
 import { cid as isIpfsCid } from "is-ipfs";
-import waitUntil from "async-wait-until";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
@@ -16,6 +15,9 @@ import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
 import { CreateSubplebbitOptions } from "../subplebbit/types";
+import waitUntilPkg from "async-wait-until";
+//@ts-expect-error
+const waitUntil = waitUntilPkg.default;
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];

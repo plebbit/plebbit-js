@@ -1,8 +1,9 @@
-const Plebbit = require("../../../../dist/node"); // Don't delete this line, otherwise browser tests will give "Process not defined" error. No idea why it happens
-const signers = require("../../../fixtures/signers");
-const {
+// import * as test from "./../../../../dist/node/author.js";
+import Plebbit from "../../../../dist/node/index";
+import signers from "../../../fixtures/signers";
+import {
     generateMockPost,
-    mockPlebbit,
+    mockRemotePlebbit,
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
@@ -11,19 +12,19 @@ const {
     mockRemotePlebbitIpfsOnly,
     publishVote,
     generatePostToAnswerMathQuestion,
-    isRpcFlagOn,
-    mockRemotePlebbit
-} = require("../../../../dist/node/test/test-util");
-const lodash = require("lodash");
-const { messages } = require("../../../../dist/node/errors");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { createMockIpfsClient } = require("../../../../dist/node/test/mock-ipfs-client");
+    isRpcFlagOn
+} from "../../../../dist/node/test/test-util";
+import lodash from "lodash";
+import { messages } from "../../../../dist/node/errors";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 
-const { default: waitUntil } = require("async-wait-until");
-const stringify = require("safe-stable-stringify");
-const { verifyComment } = require("../../../../dist/node/signer");
-const { verifyCommentUpdate } = require("../../../../dist/node/signer/signatures");
+import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client";
+import waitUntilPkg from "async-wait-until";
+const waitUntil = waitUntilPkg.default;
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures";
+
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -33,7 +34,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 describe("createComment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`comment = await createComment(await createComment)`, async () => {
@@ -54,7 +55,7 @@ describe("createComment", async () => {
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
-        expect(stringify(comment.author)).to.equal(stringify(props.author));
+        expect(deterministicStringify(comment.author)).to.equal(deterministicStringify(props.author));
         expect(comment.timestamp).to.equal(props.timestamp);
 
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
@@ -312,7 +313,7 @@ describe(`comment.update`, async () => {
 describe(`commentUpdate.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -338,7 +339,7 @@ describe(`commentUpdate.replyCount`, async () => {
 describe(`commentUpdate.lastChildCid`, async () => {
     let post, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -367,7 +368,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 describe(`commentUpdate.lastReplyTimestamp`, async () => {
     let post, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -397,7 +398,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     let plebbit, post;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -487,7 +488,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
 describe(`comment.state`, async () => {
     let plebbit, comment;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         comment = await generateMockPost(subplebbitAddress, plebbit);
     });
 
@@ -556,7 +557,7 @@ describe("comment.updatingState", async () => {
 
     //prettier-ignore
     if (!isRpcFlagOn())
-    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
+    it.only(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress}, gatewayPlebbit);
         await publishWithExpectedResult(mockPost, true);
@@ -607,7 +608,7 @@ describe("comment.updatingState", async () => {
 describe(`comment.clients`, async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
@@ -844,7 +845,7 @@ describe(`comment.clients`, async () => {
 
         it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
             const offlinePubsubUrl = "http://localhost:13173"; // Should be down
-            const offlinePubsubPlebbit = await mockPlebbit({
+            const offlinePubsubPlebbit = await mockRemotePlebbit({
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
                 pubsubHttpClientsOptions: [offlinePubsubUrl]
             });
@@ -865,7 +866,7 @@ describe(`comment.clients`, async () => {
         it(`Correct order of pubsubClients state when failing to publish a comment on one pubsub provider and moving on to the other one`, async () => {
             const offlinePubsubUrl = "http://localhost:13173"; // Should be down
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [offlinePubsubUrl, upPubsubUrl]
             });
 
@@ -891,7 +892,7 @@ describe(`comment.clients`, async () => {
         it(`Correct order of pubsubClients state when provider 1 is not responding and moving on to the other one`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             });
 
@@ -918,7 +919,7 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge (pubsub provider 0 fail to receive a response in alotted time)`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take pubsub msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             });
 

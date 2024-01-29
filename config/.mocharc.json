@@ -1,0 +1,6 @@
+{
+    "timeout": 200000,
+    "require": "test/root-hook-mocha.js",
+    "node-option": ["experimental-specifier-resolution=node"],
+    "colors": true
+}
