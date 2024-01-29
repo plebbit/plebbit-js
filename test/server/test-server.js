@@ -214,8 +214,8 @@ const setUpMockGateways = async () => {
     if (process.env["USE_RPC"] === "1") {
         // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
-        const PlebbitRpc = import("../../rpc");
-        const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
+        const PlebbitRpc = await import("../../rpc");
+        const plebbitWebSocketServer = await PlebbitRpc.default.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
         // debug raw JSON RPC messages in console (optional)

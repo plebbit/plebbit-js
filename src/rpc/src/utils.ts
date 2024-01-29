@@ -9,7 +9,7 @@ import {
     EncodedDecryptedChallengeRequestMessageType,
     EncodedDecryptedChallengeVerificationMessageType
 } from "../../types";
-const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
 // don't pass stateful objects to JSON RPC
 export const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
