@@ -19,6 +19,8 @@ import {
     PagesTypeIpfs,
     PagesTypeJson,
     PageType,
+    PostSort,
+    ReplySort,
     Timeframe
 } from "./types";
 import { messages } from "./errors";
@@ -45,6 +47,29 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
+
+export const POSTS_SORT_TYPES: PostSort = {
+    hot: { score: (...args) => hotScore(...args) },
+    new: { score: (...args) => newScore(...args) },
+    active: { score: (...args) => undefined },
+    topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
+    topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
+    topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
+    topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
+    topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
+    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
+    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
+    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
+    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
+    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
+    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
+    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
+};
+
+export const REPLIES_SORT_TYPES: ReplySort = {
+    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    old: { score: (...args) => oldScore(...args) }
+};
 
 const storedIpfsClients: Record<string, IPFSHTTPClient> = {};
 

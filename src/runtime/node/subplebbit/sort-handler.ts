@@ -1,12 +1,9 @@
 import {
-    controversialScore,
-    hotScore,
-    newScore,
-    oldScore,
+    POSTS_SORT_TYPES,
     removeNullAndUndefinedValuesRecursively,
+    REPLIES_SORT_TYPES,
     TIMEFRAMES_TO_SECONDS,
-    timestamp,
-    topScore
+    timestamp
 } from "../../../util";
 import { LocalSubplebbit } from "./local-subplebbit";
 import assert from "assert";
@@ -16,37 +13,12 @@ import {
     CommentWithCommentUpdate,
     PageIpfs,
     PagesTypeIpfs,
-    PostSort,
     PostSortName,
-    ReplySort,
     ReplySortName,
     SortProps
 } from "../../../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-
-export const POSTS_SORT_TYPES: PostSort = {
-    hot: { score: (...args) => hotScore(...args) },
-    new: { score: (...args) => newScore(...args) },
-    active: { score: (...args) => undefined },
-    topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
-    topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
-    topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
-    topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
-    topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
-    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
-    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
-    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
-};
-
-export const REPLIES_SORT_TYPES: ReplySort = {
-    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
-    old: { score: (...args) => oldScore(...args) }
-};
 
 export type PageOptions = {
     excludeRemovedComments: boolean;

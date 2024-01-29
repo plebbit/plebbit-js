@@ -4,11 +4,11 @@ import { BaseClientsManager, LoadType } from "./base-client-manager";
 import { PagesIpfsClient } from "./ipfs-client";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
 import { PageIpfs, PostSortName, ReplySortName } from "../types";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../runtime/node/subplebbit/sort-handler";
 import lodash from "lodash";
 import { pageCidToSortTypesCache } from "../constants";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
 import Logger from "@plebbit/plebbit-logger";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../util";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
