@@ -1,5 +1,4 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     generateMockPost,
     publishWithExpectedResult,
@@ -7,10 +6,10 @@ const {
     generatePostToAnswerMathQuestion,
     publishRandomPost,
     isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
+} from "../../../dist/node/test/test-util";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -26,7 +25,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         // subplebbit?.settings?.challenges should be set to captcha-canvas-v3
         // also subplebbit.challenges should reflect subplebbit.settings.challenges
-        expect(subplebbit?.settings.challenges).to.deep.equal([
+        expect(subplebbit?.settings?.challenges).to.deep.equal([
             { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
         ]);
 
