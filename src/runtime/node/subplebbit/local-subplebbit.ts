@@ -529,11 +529,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         challengeResult: Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" | "reason">,
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
-        const log = Logger("plebbit-js:subplebbit:_publishChallengeVerification");
+        const log = Logger("plebbit-js:local-subplebbit:_publishChallengeVerification");
         if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            log.trace(`(${request.challengeRequestId.toString()}): `, `User has been answered correctly`);
+            log.trace(
+                `(${request.challengeRequestId.toString()}): `,
+                `Will attempt to publish challengeVerification with challengeSuccess=true`
+            );
             //@ts-expect-error
             const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
                 await this.storePublication(request);
@@ -582,19 +585,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private _commentEditIncludesModFields(request: CommentEditPubsubMessage) {
+    private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
         return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
-    private _commentEditIncludesAuthorFields(request: CommentEditPubsubMessage) {
+    private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
         return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
     _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
-        if (this._commentEditIncludesModFields(request)) return false;
-        if (this._commentEditIncludesAuthorFields(request)) return true;
+        if (this._commentEditIncludesUniqueAuthorFields(request)) return true;
+        if (this._commentEditIncludesUniqueModFields(request)) return false;
         // The request has fields that are used in both mod and author, namely [spoiler, flair]
         if (editHasBeenSignedByOriginalAuthor) return true;
         return false;
@@ -714,20 +717,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
             const editorModRole = this.roles && this.roles[commentEdit.author.address];
-            //@ts-expect-error
-            const editHasModFields = this._commentEditIncludesModFields(request.publication);
 
-            //@ts-expect-error
-            const isAuthorEdit = this._isAuthorEdit(request.publication, editSignedByOriginalAuthor);
+            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(<CommentEditPubsubMessage>request.publication);
+            const isAuthorEdit = this._isAuthorEdit(<CommentEditPubsubMessage>request.publication, editSignedByOriginalAuthor);
 
-            if (isAuthorEdit && editHasModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
+            if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
                 if (!allowedEditFields.includes(<any>editField)) {
-                    log(`The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`);
+                    log(
+                        `The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`,
+                        `isAuthorEdit:${isAuthorEdit}`,
+                        `editHasUniqueModFields:${editHasUniqueModFields}`,
+                        `editorModRole:${editorModRole}`,
+                        `editSignedByOriginalAuthor:${editSignedByOriginalAuthor}`
+                    );
                     return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
                 }
 
