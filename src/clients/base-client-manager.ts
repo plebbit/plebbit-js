@@ -174,11 +174,12 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(url: string, options?): Promise<string> {
+    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<string> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
+        const formattedUrl = url.replace("localhost", "127.0.0.1"); // For some reason fetch fails with localhost
         try {
-            res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
+            res = await nativeFunctions.fetch(formattedUrl, { cache, signal });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return await res.text();
@@ -231,7 +232,7 @@ export class BaseClientsManager {
 
         const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
-        const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
+        const resText = await this._fetchWithLimit(url, isCid ? "force-cache" : "no-store", abortController.signal);
         if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
         return resText;
     }
