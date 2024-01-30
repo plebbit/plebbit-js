@@ -277,18 +277,23 @@ export class DbHandler {
 
         const currentDbVersion = await this.getDbVersion();
 
-        if (currentDbVersion <= 10) {
-            // Remove unneeded tables
-            await Promise.all(
-                ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
-                    this._knex.schema.dropTableIfExists(tableName)
-                )
-            );
-        }
+        
 
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
-        if (needToMigrate) await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+        if (needToMigrate){
+            await this._knex.raw("PRAGMA foreign_keys = OFF");
+            if (currentDbVersion <= 10) {
+                // Remove unneeded tables
+                await Promise.all(
+                    ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
+                        this._knex.schema.dropTableIfExists(tableName)
+                    )
+                );
+            }
+            await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+        } 
+
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -306,7 +311,6 @@ export class DbHandler {
             } else if (tableExists && needToMigrate) {
                 // We need to update the schema of the currently existing table
                 log(`Migrating table ${tableName} to new schema`);
-                await this._knex.raw("PRAGMA foreign_keys = OFF");
                 const tempTableName = `${tableName}${env.DB_VERSION}`;
                 await this._knex.schema.dropTableIfExists(tempTableName);
                 await createTableFunctions[i].bind(this)(tempTableName);
