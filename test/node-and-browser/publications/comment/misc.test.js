@@ -1,4 +1,3 @@
-// import * as test from "./../../../../dist/node/author.js";
 import Plebbit from "../../../../dist/node/index";
 import signers from "../../../fixtures/signers";
 import {
@@ -557,7 +556,7 @@ describe("comment.updatingState", async () => {
 
     //prettier-ignore
     if (!isRpcFlagOn())
-    it.only(`updating states is in correct order upon updating a comment with gateway`, async () => {
+    it(`updating states is in correct order upon updating a comment with gateway`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit();
         const mockPost = await generatePostToAnswerMathQuestion({subplebbitAddress: mathCliSubplebbitAddress}, gatewayPlebbit);
         await publishWithExpectedResult(mockPost, true);

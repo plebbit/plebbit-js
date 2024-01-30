@@ -1,22 +1,20 @@
-const Plebbit = require("../../../dist/node");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const {
-    signComment,
-    verifyComment,
-    verifyCommentUpdate,
-    signCommentUpdate,
-    signCommentEdit
-} = require("../../../dist/node/signer/signatures");
-const { messages } = require("../../../dist/node/errors");
-const signers = require("../../fixtures/signers");
-const { timestamp } = require("../../../dist/node/util");
-const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
-const lodash = require("lodash");
-
-const fixtureComment = require("../../fixtures/publications").comment;
+import { signComment, verifyComment, verifyCommentUpdate, signCommentUpdate, signCommentEdit } from "../../../dist/node/signer/signatures";
+import { messages } from "../../../dist/node/errors";
+import signers from "../../fixtures/signers";
+import { timestamp } from "../../../dist/node/util";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import lodash from "lodash";
+import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
+import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
+import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" assert { type: "json" };
+import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
+import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json" assert { type: "json" };
+import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json" assert { type: "json" };
+import {comment as fixtureComment} from "../../fixtures/publications";
 
 const fixtureSignature = {
     signature: "0ibxT1DhPIWzCUnnxq3GCnq7fsj41D/xvArlRmBPt4Gl0+sSGjwIF7Hl8Z7gLbWAg458Kr8oZ8ZDxWQTxtawCA",
@@ -28,7 +26,7 @@ const fixtureSignature = {
 describe("sign comment", async () => {
     let plebbit, signedCommentClone;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it("Can sign a comment with randomly generated key", async () => {
         const signer = await plebbit.createSigner();
@@ -113,7 +111,7 @@ if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't v
 describe("verify Comment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`Valid signature fixture is validated correctly`, async () => {
         const fixtureWithSignature = { ...fixtureComment, signature: fixtureSignature };
@@ -131,14 +129,15 @@ describe("verify Comment", async () => {
     });
 
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
-        const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json"));
+
+        const comment = lodash.cloneDeep(validCommentFixture);
 
         const verification = await verifyComment(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
-        const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_avatar_fixture.json"));
+        const comment = lodash.cloneDeep(validCommentAvatarFixture);
         const verification = await verifyComment(comment, plebbit, true);
         expect(verification).to.deep.equal({ valid: true });
     });
@@ -166,7 +165,7 @@ describe("verify Comment", async () => {
 if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Comment with author.address as domain`, async () => {
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
         const commentWithInvalidDomain = lodash.cloneDeep(fixtureComment);
@@ -183,8 +182,8 @@ describe(`Comment with author.address as domain`, async () => {
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
     it(`Comment with invalid author domain address will will be invalidated (overrideAuthorAddressIfInvalid=false)`, async () => {
-        const comment = lodash.cloneDeep(require("../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json"));
-        const tempPlebbit = await mockPlebbit();
+        const comment = lodash.cloneDeep(validCommentAuthorAddressDomainFixture);
+        const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
@@ -201,17 +200,17 @@ if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't v
 describe(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json") };
+        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
+            subplebbit.clientsManager,
             subplebbit.address,
             comment
         );
@@ -226,12 +225,12 @@ describe(`commentupdate`, async () => {
     });
 
     it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json") };
+        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const comment = { cid: update.cid, ...validCommentFixture };
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
+            subplebbit.clientsManager,
             subplebbit.address,
             comment
         );
@@ -239,13 +238,13 @@ describe(`commentupdate`, async () => {
     });
 
     it(`verifyCommentUpdate invalidate commentUpdate if it was signed by other than subplebbit key`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate/valid_comment.json") };
+        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
+            subplebbit.clientsManager,
             subplebbit.address,
             comment
         );
@@ -253,17 +252,17 @@ describe(`commentupdate`, async () => {
     });
 
     it(`A commentUpdate with an edit signed by other than original author will be rejected`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json") };
+        const update = lodash.cloneDeep(validCommentUpdateWithAuthorEditFixture);
+        const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)
         ).to.deep.equal({ valid: true });
         update.edit.author.address = signers[7].address;
         update.edit.signature = await signCommentEdit(update.edit, signers[7], plebbit);
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
+            subplebbit.clientsManager,
             subplebbit.address,
             comment
         );
@@ -271,10 +270,10 @@ describe(`commentupdate`, async () => {
     });
 
     it(`commentUpdate.edit is invalidated if any prop is changed and not signed by original author`, async () => {
-        const update = lodash.cloneDeep(require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json"));
-        const comment = { cid: update.cid, ...require("../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json") };
+        const update = lodash.cloneDeep(validCommentUpdateWithAuthorEditFixture);
+        const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)
         ).to.deep.equal({ valid: true });
         update.edit.content += "12345"; // Invalidate signature
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit and author
@@ -282,7 +281,7 @@ describe(`commentupdate`, async () => {
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit._clientsManager,
+            subplebbit.clientsManager,
             subplebbit.address,
             comment
         );

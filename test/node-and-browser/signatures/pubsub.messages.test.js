@@ -1,5 +1,4 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     verifyChallengeRequest,
     verifyChallengeAnswer,
     signChallengeAnswer,
@@ -7,24 +6,28 @@ const {
     verifyChallengeVerification,
     signChallengeRequest,
     verifyComment
-} = require("../../../dist/node/signer/signatures");
-const {
+} from "../../../dist/node/signer/signatures";
+import {
     generateMockPost,
     mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
-const signers = require("../../fixtures/signers");
-const { expect, assert } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const { ChallengeAnswerMessage } = require("../../../dist/node/challenge");
-const lodash = require("lodash");
-const version = require("../../../dist/node/version");
-const { encode, decode } = require("cborg");
-const { getBufferedPlebbitAddressFromPublicKey } = require("../../../dist/node/signer/util");
-const { encryptEd25519AesGcm } = require("../../../dist/node/signer/index");
-const { timestamp } = require("../../../dist/node/util");
+} from "../../../dist/node/test/test-util";
+import signers from "../../fixtures/signers";
+import { expect, assert } from "chai";
+import { messages } from "../../../dist/node/errors";
+import { ChallengeAnswerMessage } from "../../../dist/node/challenge";
+import lodash from "lodash";
+import { default as PlebbitJsVersion } from "../../../dist/node/version";
+import { encode as cborgEncode, decode as cborgDecode } from "cborg";
+import { getBufferedPlebbitAddressFromPublicKey } from "../../../dist/node/signer/util";
+import { encryptEd25519AesGcm } from "../../../dist/node/signer/index";
+import { timestamp } from "../../../dist/node/util";
+import validChallengeRequestFixture from "../../fixtures/signatures/challenges/valid_challenge_request.json" assert { type: "json" };
+import validChallengeFixture from "../../fixtures/signatures/challenges/valid_challenge_message.json" assert { type: "json" };
+import validChallengeAnswerFixture from "../../fixtures/signatures/challenges/valid_challenge_answer.json" assert { type: "json" };
+import validChallengeVerificationFixture from "../../fixtures/signatures/challenges/valid_challenge_verification.json" assert { type: "json" };
 
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -48,13 +51,13 @@ describe("challengerequest", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
-        const request = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json")));
+        const request = parseMsgJson(lodash.clone(validChallengeRequestFixture));
         const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`challenge request with challengeRequestId that is not derived from signer is invalidated`, async () => {
-        const request = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_request.json")));
+        const request = parseMsgJson(lodash.clone(validChallengeRequestFixture));
         request.challengeRequestId[0] += 1; // Invalidate challengeRequestId
         const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
@@ -181,7 +184,7 @@ describe("challengerequest", async () => {
 
         await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
-                const msgParsed = decode(pubsubMsg["data"]);
+                const msgParsed = cborgDecode(pubsubMsg["data"]);
                 if (
                     msgParsed.type === "CHALLENGEVERIFICATION" &&
                     msgParsed.challengeRequestId === requestWithInvalidSignature.challengeRequestId
@@ -204,20 +207,20 @@ describe(`challengemessage`, async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
-        const challenge = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json")));
+        const challenge = parseMsgJson(lodash.clone(validChallengeFixture));
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
-        const challenge = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json")));
+        const challenge = parseMsgJson(lodash.clone(validChallengeFixture));
         challenge.timestamp -= 1234; // Should invalidate signature
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`challenge message signed by other than subplebbit.pubsubTopic is invalidated`, async () => {
-        const challenge = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_message.json")));
+        const challenge = parseMsgJson(lodash.clone(validChallengeFixture));
         const verificaiton = await verifyChallengeMessage(challenge, (await plebbit.createSigner()).address); // Random pubsub topic
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT });
     });
@@ -245,13 +248,13 @@ describe("challengeanswer", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
-        const answer = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_answer.json")));
+        const answer = parseMsgJson(lodash.clone(validChallengeAnswerFixture));
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`challenge answer with challengeRequestId that is not derived from signer is invalidated`, async () => {
-        const answer = parseMsgJson(lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_answer.json")));
+        const answer = parseMsgJson(lodash.clone(validChallengeAnswerFixture));
         answer.challengeRequestId[0] += 1; // Invalidate challenge request id
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
@@ -286,8 +289,8 @@ describe("challengeanswer", async () => {
             type: "CHALLENGEANSWER",
             challengeRequestId: comment._publishedChallengeRequests[0].challengeRequestId,
             encrypted: JSON.stringify([2]),
-            userAgent: version.default.USER_AGENT,
-            protocolVersion: version.default.PROTOCOL_VERSION
+            userAgent: PlebbitJsVersion.USER_AGENT,
+            protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION
         };
 
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
@@ -307,7 +310,7 @@ describe("challengeanswer", async () => {
         await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
 
         const subMethod = (pubsubMsg) => {
-            const msgParsed = decode(pubsubMsg["data"]);
+            const msgParsed = cborgDecode(pubsubMsg["data"]);
             if (
                 msgParsed.type === "CHALLENGEVERIFICATION" &&
                 msgParsed.challengeRequestId === comment._publishedChallengeRequests[0].challengeRequestId
@@ -362,8 +365,8 @@ describe("challengeanswer", async () => {
                     type: "CHALLENGEANSWER",
                     challengeRequestId,
                     encryptedChallengeAnswers: JSON.stringify([2]),
-                    userAgent: version.default.USER_AGENT,
-                    protocolVersion: version.default.PROTOCOL_VERSION
+                    userAgent: PlebbitJsVersion.USER_AGENT,
+                    protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION
                 };
                 const challengeAnswer = new ChallengeAnswerMessage({
                     ...toSignAnswer,
@@ -374,7 +377,7 @@ describe("challengeanswer", async () => {
                 await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
 
                 const subMethod = (pubsubMsg) => {
-                    const msgParsed = decode(pubsubMsg["data"]);
+                    const msgParsed = cborgDecode(pubsubMsg["data"]);
                     if (
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
                         lodash.isEqual(msgParsed.challengeRequestId, toSignAnswer.challengeRequestId)
@@ -405,7 +408,7 @@ describe("challengeverification", async () => {
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
         const challengeVerification = parseMsgJson(
-            lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"))
+            lodash.clone(validChallengeVerificationFixture)
         );
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: true });
@@ -424,7 +427,7 @@ describe("challengeverification", async () => {
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
         const challengeVerification = parseMsgJson(
-            lodash.clone(require("../../fixtures/signatures/challenges/valid_challenge_verification.json"))
+            lodash.clone(validChallengeVerificationFixture)
         );
         challengeVerification.timestamp -= 1234; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);

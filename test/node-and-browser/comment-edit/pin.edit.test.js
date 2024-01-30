@@ -1,18 +1,17 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const {
+import signers from "../../fixtures/signers";
+import {
     publishRandomPost,
     publishWithExpectedResult,
     loadAllPages,
     publishRandomReply,
     mockRemotePlebbit,
     findCommentInPage
-} = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const lodash = require("lodash");
-const { default: waitUntil } = require("async-wait-until");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
+} from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import lodash from "lodash";
+import { default as waitUntil } from "async-wait-until";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/util";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
@@ -101,7 +100,7 @@ describe(`Pinning posts`, async () => {
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=true`, async () => {
-        await waitUntil(() => postToPin.pinned === true, { timeout: 200000 });
+        await waitUntil.default(() => postToPin.pinned === true, { timeout: 200000 });
         expect(postToPin.pinned).to.be.true;
         expect(postToPin._rawCommentUpdate.pinned).to.be.true;
         expect(postToPin._rawCommentUpdate.edit).to.be.undefined;
@@ -191,7 +190,7 @@ describe(`Pinning posts`, async () => {
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=false`, async () => {
-        await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.reason === "To unpin the second post", {
+        await waitUntil.default(() => secondPostToPin.pinned === false && secondPostToPin.reason === "To unpin the second post", {
             timeout: 200000
         });
         expect(secondPostToPin.pinned).to.be.false;

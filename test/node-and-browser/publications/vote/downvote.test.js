@@ -1,21 +1,19 @@
-const Plebbit = require("../../../../dist/node");
-const signers = require("../../../fixtures/signers");
-const {
+import signers from "../../../fixtures/signers";
+import {
     generateMockVote,
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
-    mockPlebbit
-} = require("../../../../dist/node/test/test-util");
-const { messages } = require("../../../../dist/node/errors");
-const lodash = require("lodash");
+    mockRemotePlebbit
+} from "../../../../dist/node/test/test-util";
+import { messages } from "../../../../dist/node/errors";
+import lodash from "lodash";
 
-const chai = require("chai");
-const { expect, assert } = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { default: waitUntil } = require("async-wait-until");
+import chai from "chai";
+import { expect, assert } from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { default as waitUntil } from "async-wait-until";
 chai.use(chaiAsPromised);
-
 
 const subplebbitAddress = signers[0].address;
 
@@ -23,12 +21,14 @@ const previousVotes = [];
 describe(`Test Downvote`, async () => {
     let plebbit, postToVote, replyToVote, signer;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         signer = await plebbit.createSigner();
         postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
         replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
         await Promise.all([postToVote.update(), replyToVote.update()]);
-        await waitUntil(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", { timeout: 200000 });
+        await waitUntil.default(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", {
+            timeout: 200000
+        });
     });
     after(async () => {
         await postToVote.stop();
@@ -40,7 +40,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(postToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => postToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
+        await waitUntil.default(() => postToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
 
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(postToVote.upvoteCount).to.equal(0);
@@ -55,7 +55,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(replyToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => replyToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
+        await waitUntil.default(() => replyToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
 
         expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(replyToVote.upvoteCount).to.equal(0);
@@ -77,7 +77,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
+        await waitUntil.default(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
 
         expect(postToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(postToVote.downvoteCount).to.equal(originalDownvote - 1);
@@ -97,7 +97,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
+        await waitUntil.default(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
 
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(replyToVote.downvoteCount).to.equal(originalDownvote - 1);

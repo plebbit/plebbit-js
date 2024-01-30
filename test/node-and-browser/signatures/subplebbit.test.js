@@ -1,23 +1,24 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import signers from "../../fixtures/signers";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { messages } = require("../../../dist/node/errors");
-const { verifySubplebbit, signSubplebbit } = require("../../../dist/node/signer/signatures");
-const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
-const lodash = require("lodash");
+import { messages } from "../../../dist/node/errors";
+import { verifySubplebbit, signSubplebbit } from "../../../dist/node/signer/signatures";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import lodash from "lodash";
+import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
+import validSubplebbitWithEnsCommentsFixture from "../../fixtures/valid_subplebbit_with_ens_comments.json" assert { type: "json" };
 
 // prettier-ignore
 if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe("Sign subplebbit", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`Can sign and validate fixture subplebbit correctly`, async () => {
-        const subFixture = lodash.cloneDeep(require("../../fixtures/valid_subplebbit.json"));
+        const subFixture = lodash.cloneDeep(validSubplebbitFixture);
         const subFixtureClone = lodash.cloneDeep(subFixture);
         delete subFixtureClone["signature"];
         const signature = await signSubplebbit(subFixtureClone, signers[0]);
@@ -42,7 +43,7 @@ describe("Verify subplebbit", async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`Can validate live subplebbit`, async () => {
@@ -52,12 +53,12 @@ describe("Verify subplebbit", async () => {
         ).to.deep.equal({ valid: true });
     });
     it(`Valid subplebbit fixture is validated correctly`, async () => {
-        const sub = lodash.cloneDeep(require("../../fixtures/valid_subplebbit.json"));
+        const sub = lodash.cloneDeep(validSubplebbitFixture);
         expect(await verifySubplebbit(sub, plebbit.resolveAuthorAddresses, plebbit._clientsManager)).to.deep.equal({ valid: true });
     });
     it(`Subplebbit with domain that does not match public key will get invalidated`, async () => {
         // plebbit.eth -> signers[3]
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveSubplebbitAddressIfNeeded = (address) =>
             address === "plebbit.eth" ? signers[4].address : address;
         const sub = await plebbit.getSubplebbit("plebbit.eth");
@@ -84,13 +85,13 @@ describe("Verify subplebbit", async () => {
     it(`subplebbit signature is valid if subplebbit.posts has a comment.authorAddress who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
         // Publish a comment with ENS domain here
 
-        const subJson = lodash.cloneDeep(require("../../fixtures/valid_subplebbit_with_ens_comments.json")); // This json has only one comment with plebbit.eth
+        const subJson = lodash.cloneDeep(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
         const commentWithEnsCid = subJson.posts.pages.hot.comments.find((comment) => comment.comment.author.address === "plebbit.eth")
             .comment.cid;
 
         const getLatestComment = () => subJson.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
 
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
 
         const originalResolveAuthor = plebbit._clientsManager.resolveAuthorAddressIfNeeded;
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>

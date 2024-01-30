@@ -1,7 +1,7 @@
-const { PlebbitWsServer } = require("../../dist/node/rpc/src/index");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import PlebbitWsServer from "../../dist/node/rpc/src/index";
+import { mockPlebbit } from "../../dist/node/test/test-util";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -20,10 +20,10 @@ describe(`Setting up rpc server`, async () => {
                 dataPath: plebbit.plebbitDataPath
             }
         };
-        const rpcServer = await PlebbitWsServer(options); // was able to create an rpc server
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
         try {
-            await PlebbitWsServer(options);
+            await PlebbitWsServer.PlebbitWsServer(options);
             expect.fail("Should throw an error");
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_CREATE_WS_RPC_SERVER");

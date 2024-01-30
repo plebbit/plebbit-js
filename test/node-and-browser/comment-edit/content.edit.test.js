@@ -1,10 +1,9 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const { mockPlebbit, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const lodash = require("lodash");
-const { default: waitUntil } = require("async-wait-until");
+import signers from "../../fixtures/signers";
+import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import lodash from "lodash";
+import { default as waitUntil } from "async-wait-until";
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -16,7 +15,7 @@ describe("Editing comment.content", async () => {
     let plebbit, commentToBeEdited;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
 
         commentToBeEdited = await publishRandomPost(subplebbitAddress, plebbit);
         await commentToBeEdited.update();
@@ -52,7 +51,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await waitUntil(() => commentToBeEdited.content === editedText, { timeout: 200000 });
+        await waitUntil.default(() => commentToBeEdited.content === editedText, { timeout: 200000 });
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited._rawCommentUpdate.edit.content).to.equal(editedText);
         expect(commentToBeEdited._rawCommentUpdate.edit.reason).to.equal(editReason);
@@ -79,7 +78,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await waitUntil(() => commentToBeEdited.content === editedText, { timeout: 200000 });
+        await waitUntil.default(() => commentToBeEdited.content === editedText, { timeout: 200000 });
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
@@ -104,7 +103,7 @@ describe("Editing comment.content", async () => {
                 signer: roleTest.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await waitUntil(() => commentToEdit.edit?.content === editedText, { timeout: 200000 });
+            await waitUntil.default(() => commentToEdit.edit?.content === editedText, { timeout: 200000 });
             expect(commentToEdit.edit.content).to.equal(editedText);
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);

@@ -1,19 +1,19 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import signers from "../../fixtures/signers";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { messages } = require("../../../dist/node/errors");
-const { verifyVote, signVote } = require("../../../dist/node/signer/signatures");
-const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
-const lodash = require("lodash");
-const { timestamp } = require("../../../dist/node/util");
+import { messages } from "../../../dist/node/errors";
+import { verifyVote, signVote } from "../../../dist/node/signer/signatures";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import lodash from "lodash";
+import { timestamp } from "../../../dist/node/util";
+import validVoteFixture from "../../fixtures/valid_vote.json" assert { type: "json" };
 
 describe("Sign Vote", async () => {
     let plebbit, subplebbit, voteProps, voteSignature;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
 
         voteProps = {
@@ -53,29 +53,29 @@ if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't v
 describe("Verify vote", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`Valid vote signature fixture is validated correctly`, async () => {
-        const vote = lodash.cloneDeep(require("../../fixtures/valid_vote.json"));
+        const vote = lodash.cloneDeep(validVoteFixture);
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid vote signature gets invalidated correctly`, async () => {
-        const vote = lodash.cloneDeep(require("../../fixtures/valid_vote.json"));
+        const vote = lodash.cloneDeep(validVoteFixture);
         vote.commentCid += "1234"; // Should invalidate signature
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyVote invalidates a vote with author.address not a domain or IPNS`, async () => {
-        const vote = lodash.cloneDeep(require("../../fixtures/valid_vote.json"));
+        const vote = lodash.cloneDeep(validVoteFixture);
         vote.author.address = "gibbresish"; // Not a domain or IPNS
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyVote invalidates a vote with author.address = undefined", async () => {
-        const vote = lodash.cloneDeep(require("../../fixtures/valid_vote.json"));
+        const vote = lodash.cloneDeep(validVoteFixture);
         vote.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });

@@ -1,11 +1,10 @@
-const Plebbit = require("../../dist/node");
-const signers = require("../fixtures/signers");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import signers from "../fixtures/signers";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } = require("../../dist/node/test/test-util");
+import { messages } from "../../dist/node/errors";
+import { mockRemotePlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } from "../../dist/node/test/test-util";
 
 const mockComments = [];
 
@@ -13,7 +12,7 @@ const mockComments = [];
 if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
 describe(`Resolving text records`, async () => {
     it(`Can resolve correctly with just viem`, async () => {
-        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["viem"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["viem"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
@@ -21,21 +20,21 @@ describe(`Resolving text records`, async () => {
     });
 
     it(`Can resolve correctly with just ethers.js`, async () => {
-        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["ethers.js"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["ethers.js"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
     it(`Can resolve correctly with custom chain provider`, async () => {
-        const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
+        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: ["https://cloudflare-eth.com/"], chainId: 1 } } }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
         expect(plebbit.clients.chainProviders["eth"].urls).to.deep.equal(["https://cloudflare-eth.com/"]);
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
     it(`Can resolve correctly with viem, ethers.js and a custom chain provider`, async () => {
-        const plebbit = await mockPlebbit({
+        const plebbit = await mockRemotePlebbit({
             chainProviders: { eth: { urls: ["https://cloudflare-eth.com/", "viem", "ethers.js"], chainId: 1 } }
         }); // Should have viem defined
         plebbit._storage.setItem = plebbit._storage.getItem = () => undefined;
@@ -48,7 +47,7 @@ describe(`Resolving text records`, async () => {
 describe("Comments with Authors as domains", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
         // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
@@ -76,7 +75,7 @@ describe("Comments with Authors as domains", async () => {
     it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
 
         const mockPost = await tempPlebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
@@ -99,7 +98,7 @@ describe("Comments with Authors as domains", async () => {
     //prettier-ignore
     if (!isRpcFlagOn())
     it(`comment.update() corrects author.address to derived address in case plebbit-author-address points to another address`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
         const comment = await tempPlebbit.createComment({cid: mockComments[mockComments.length - 1].cid});
         comment._clientsManager.resolveAuthorAddressIfNeeded = async (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress;
@@ -114,7 +113,7 @@ describe("Comments with Authors as domains", async () => {
 describe(`Vote with authors as domains`, async () => {
     let plebbit, subplebbit, comment;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
         comment = await publishRandomPost(subplebbit.address, plebbit, {}, false);
     });
@@ -122,7 +121,7 @@ describe(`Vote with authors as domains`, async () => {
     //prettier-ignore
     if (!isRpcFlagOn())
     it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
         const vote = await tempPlebbit.createVote({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
             signer: signers[6],
@@ -144,7 +143,7 @@ describe(`Vote with authors as domains`, async () => {
 if (!isRpcFlagOn()) // This code won't run in rpc clients
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRemotePlebbit();
 
 
         let resolveHit = 0;

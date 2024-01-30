@@ -1,8 +1,7 @@
-const Plebbit = require("../../../dist/node");
-const { expect } = require("chai");
-const signers = require("../../fixtures/signers");
-const messages = require("../../../dist/node/errors");
-const { mockPlebbit, publishRandomPost, mockRemotePlebbit, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
+import { expect } from "chai";
+import signers from "../../fixtures/signers";
+import { messages } from "../../../dist/node/errors";
+import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
 
 const subplebbitAddress = signers[0].address;
 const commentToEditCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";
@@ -17,7 +16,7 @@ describe("CommentEdit", async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
         const props = {
@@ -74,6 +73,7 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
     });
 
     it(`A mod can't mix author and mod edit fields`, async () => {
+        // The signer is both an author and a mod
         const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
         const fieldsToChange = {
             removed: true,
@@ -354,6 +354,5 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
 
         expect(authorPost.edit.reason).to.equal(authorFieldsToChange.reason);
         expect(authorPost._rawCommentUpdate.edit.reason).to.equal(authorFieldsToChange.reason);
-
     });
 });

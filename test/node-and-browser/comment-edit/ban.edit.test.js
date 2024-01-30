@@ -1,10 +1,9 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const { mockPlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult } = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const { timestamp } = require("../../../dist/node/util");
-const { default: waitUntil } = require("async-wait-until");
+import signers from "../../fixtures/signers";
+import { mockRemotePlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import { timestamp } from "../../../dist/node/util";
+import { default as waitUntil } from "async-wait-until";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -17,7 +16,7 @@ describe(`Banning authors`, async () => {
     let plebbit, commentToBeBanned, authorBanExpiresAt;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await commentToBeBanned.update();
         authorBanExpiresAt = timestamp() + 10; // Ban stays for 10 seconds
@@ -46,7 +45,7 @@ describe(`Banning authors`, async () => {
     });
 
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-        await waitUntil(() => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number", { timeout: 200000 });
+        await waitUntil.default(() => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number", { timeout: 200000 });
         expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
     });
 

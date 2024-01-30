@@ -1,19 +1,19 @@
-const Plebbit = require("../../../dist/node");
-const { verifyPage } = require("../../../dist/node/signer/signatures");
-const { messages } = require("../../../dist/node/errors");
-const { expect } = require("chai");
-const signers = require("../../fixtures/signers");
-const lodash = require("lodash");
-const { v4 } = require("uuid");
+import { verifyPage } from "../../../dist/node/signer/signatures";
+import { messages } from "../../../dist/node/errors";
+import { expect } from "chai";
+import signers from "../../fixtures/signers";
+import lodash from "lodash";
+import { v4 as uuidV4 } from "uuid";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
 
-const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
+import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
 
 const subAddress = "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR";
 
 const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, parentCid, overrideAuthorAddressIsInvalid) => {
     // randomize pageCid so that we don't rely on cache
     const pageObjRes = await verifyPage(
-        v4(),
+        uuidV4(),
         JSON.parse(JSON.stringify(pageJson)),
         plebbit.resolveAuthorAddresses,
         plebbit._clientsManager,
@@ -22,7 +22,7 @@ const verifyPageJsonAlongWithObject = async (pageJson, plebbit, subplebbit, pare
         overrideAuthorAddressIsInvalid
     );
     const pageJsonRes = await verifyPage(
-        v4(),
+        uuidV4(),
         pageJson,
         plebbit.resolveAuthorAddresses,
         plebbit._clientsManager,
@@ -39,7 +39,7 @@ if (!isRpcFlagOn()) // RPC tests don't need to run this because clients of RPC t
 describe(`verify pages`, async () => {
     let plebbit, subplebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(subAddress);
     });
 
@@ -50,20 +50,20 @@ describe(`verify pages`, async () => {
     });
 
     it(`Page from previous plebbit-js versions can be validated`, async () => {
-        const page = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+        const page = lodash.cloneDeep(validPageFixture);
         const verification = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`verifyPage will validate a page with comment.author.address (domain) that resolves to address different than author's. It will also override the domain with actual address (overrideAuthorAddress=true)`, async () => {
         // verifyPage would override the incorrect domain
-        const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+        const invalidPage = lodash.cloneDeep(validPageFixture);
         const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
             plebbit.resolver.isDomain(comment.comment.author.address)
         );
         expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
 
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
 
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address
@@ -77,13 +77,13 @@ describe(`verify pages`, async () => {
     });
 
     it(`verifyPage will invalidate validate a page with comment.author.address (domain) that resolves to address different than author's (overrideAuthorAddress=false)`, async () => {
-        const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+        const invalidPage = lodash.cloneDeep(validPageFixture);
         const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
             plebbit.resolver.isDomain(comment.comment.author.address)
         );
         expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
 
-        const tempPlebbit = await mockPlebbit();
+        const tempPlebbit = await mockRemotePlebbit();
 
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === invalidPage.comments[commentWithDomainAddressIndex].comment.author.address
@@ -98,7 +98,7 @@ describe(`verify pages`, async () => {
 
     describe(`A sub owner changing any of comment fields in page will invalidate`, async () => {
         before(async () => {
-            const page = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const page = lodash.cloneDeep(validPageFixture);
             const verificaiton = await verifyPageJsonAlongWithObject(page, plebbit, subplebbit, undefined);
             expect(verificaiton).to.deep.equal({ valid: true });
         });
@@ -106,7 +106,7 @@ describe(`verify pages`, async () => {
         // TODO when comment.flair is implemented
         it(`comment.flair (original)`);
         it("comment.content (author has never modified comment.content before))", async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithNoEditIndex = invalidPage.comments.findIndex((comment) => !comment.update.edit?.content);
             invalidPage.comments[commentWithNoEditIndex].comment.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
@@ -114,7 +114,7 @@ describe(`verify pages`, async () => {
         });
 
         it(`comment.content (when author has modified comment.content before)`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.content);
             expect(commentWithEditIndex).to.be.greaterThanOrEqual(commentWithEditIndex);
             invalidPage.comments[commentWithEditIndex].comment.content = "Content modified by sub illegally";
@@ -123,7 +123,7 @@ describe(`verify pages`, async () => {
         });
 
         it(`commentUpdate.edit.content`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithEditIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.content);
             invalidPage.comments[commentWithEditIndex].update.edit.content = "Content modified by sub illegally";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
@@ -131,7 +131,7 @@ describe(`verify pages`, async () => {
         });
 
         it(`commentUpdate.edit.spoiler`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithSpoilerIndex = invalidPage.comments.findIndex((comment) => comment.update.edit?.spoiler);
             expect(commentWithSpoilerIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithSpoilerIndex].update.edit.spoiler =
@@ -141,7 +141,7 @@ describe(`verify pages`, async () => {
         });
 
         it(`commentUpdate.edit.deleted`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithDeletedIndex = invalidPage.comments.findIndex((comment) => comment.update.edit);
             expect(commentWithDeletedIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithDeletedIndex].update.edit.deleted = !Boolean(
@@ -152,7 +152,7 @@ describe(`verify pages`, async () => {
         });
 
         it(`comment.link`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithLinkIndex = invalidPage.comments.findIndex((comment) => comment.comment.link);
             expect(commentWithLinkIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithLinkIndex].comment.link = "https://differentLinkzz.com";
@@ -160,7 +160,7 @@ describe(`verify pages`, async () => {
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it(`comment.parentCid`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithRepliesIndex = invalidPage.comments.findIndex((comment) => comment.update.replyCount > 0);
             expect(commentWithRepliesIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithRepliesIndex].update.replies.pages.topAll.comments[0].comment.parentCid += "123"; // Should invalidate page
@@ -168,37 +168,37 @@ describe(`verify pages`, async () => {
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it(`comment.subplebbitAddress`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             invalidPage.comments[0].comment.subplebbitAddress += "1234";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB });
         });
         it("comment.timestamp", async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             invalidPage.comments[0].comment.timestamp += 1;
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it(`comment.author.address (ed25519)`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             invalidPage.comments[0].comment.author.address = "12D3KooWJJcSwMHrFvsFL7YCNDLD93kBczEfkHpPNdxcjZwR2X2Y"; // Random address
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
         });
         it(`comment.author.previousCommentCid`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             invalidPage.comments[0].comment.author.previousCommentCid += "1";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it(`comment.author.displayName`, async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             invalidPage.comments[0].comment.author.displayName += "1";
             const verification = await verifyPageJsonAlongWithObject(invalidPage, plebbit, subplebbit, undefined);
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it("comment.author.wallets", async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithWalletsIndex = invalidPage.comments.findIndex((comment) => comment.comment.author.wallets);
             expect(commentWithWalletsIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithWalletsIndex].comment.author.wallets += "12234";
@@ -206,7 +206,7 @@ describe(`verify pages`, async () => {
             expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
         });
         it("comment.author.avatar", async () => {
-            const invalidPage = lodash.cloneDeep(require("../../fixtures/valid_page.json"));
+            const invalidPage = lodash.cloneDeep(validPageFixture);
             const commentWithAvatarIndex = invalidPage.comments.findIndex((comment) => comment.comment.author.avatar);
             expect(commentWithAvatarIndex).to.be.greaterThanOrEqual(0);
             invalidPage.comments[commentWithAvatarIndex].comment.author.avatar.id += "12234";

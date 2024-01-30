@@ -1,6 +1,5 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const {
+import signers from "../../fixtures/signers";
+import {
     publishRandomPost,
     publishRandomReply,
     generateMockComment,
@@ -8,11 +7,11 @@ const {
     publishWithExpectedResult,
     findCommentInPage,
     mockRemotePlebbit
-} = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const lodash = require("lodash");
-const { default: waitUntil } = require("async-wait-until");
+} from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import lodash from "lodash";
+import { default as waitUntil } from "async-wait-until";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -72,7 +71,7 @@ describe("Deleting a post", async () => {
     });
 
     it(`A new CommentUpdate is published with deleted=true for author deleted post`, async () => {
-        await waitUntil(() => postToDelete.deleted === true, { timeout: 200000 });
+        await waitUntil.default(() => postToDelete.deleted === true, { timeout: 200000 });
         expect(postToDelete.deleted).to.be.true;
         expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
@@ -132,7 +131,7 @@ describe("Deleting a post", async () => {
     });
 
     it(`A new CommentUpdate is published with deleted=true for mod deleted post`, async () => {
-        await waitUntil(() => modPostToDelete.deleted === true, { timeout: 200000 });
+        await waitUntil.default(() => modPostToDelete.deleted === true, { timeout: 200000 });
         expect(modPostToDelete.deleted).to.be.true;
         expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.true;
@@ -154,7 +153,7 @@ describe("Deleting a post", async () => {
     });
 
     it(`A new CommentUpdate is published with deleted=false for author undeleted post`, async () => {
-        await waitUntil(() => postToDelete.deleted === false, { timeout: 200000 });
+        await waitUntil.default(() => postToDelete.deleted === false, { timeout: 200000 });
         expect(postToDelete.deleted).to.be.false;
         expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.false;
@@ -175,7 +174,7 @@ describe("Deleting a post", async () => {
     });
 
     it(`A new CommentUpdate is published with deleted=false for mod undeleted post`, async () => {
-        await waitUntil(() => modPostToDelete.deleted === false, { timeout: 200000 });
+        await waitUntil.default(() => modPostToDelete.deleted === false, { timeout: 200000 });
         expect(modPostToDelete.deleted).to.be.false;
         expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.false;
@@ -211,7 +210,7 @@ describe("Deleting a reply", async () => {
         await publishWithExpectedResult(deleteEdit, true);
     });
     it(`A new CommentUpdate is pushed for removing a reply`, async () => {
-        await waitUntil(() => replyToDelete.deleted === true, { timeout: 200000 });
+        await waitUntil.default(() => replyToDelete.deleted === true, { timeout: 200000 });
     });
     it(`Deleted replies show in parent comment pages with 'deleted' = true`, async () => {
         const parentComment = await plebbit.createComment({ cid: replyToDelete.parentCid });

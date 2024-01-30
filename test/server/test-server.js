@@ -2,7 +2,7 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import { startSubplebbits, mockRpcServerPlebbit, mockPlebbit } from "../../dist/node/test/test-util";
+import { startSubplebbits, mockRpcServerPlebbit, mockPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
 import { signSubplebbit } from "../../dist/node/signer/signatures";
 import signers from "../fixtures/signers";
 import http from "http";
@@ -139,7 +139,7 @@ const setUpMockGateways = async () => {
     }).listen(33417);
 
     // Set up mock gateways for subplebbit gateway fetching tests
-    const plebbit = await mockPlebbit();
+    const plebbit = await mockGatewayPlebbit();
     const fetchLatestSubplebbitJson = async () => {
         const subRecord = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         return subRecord;

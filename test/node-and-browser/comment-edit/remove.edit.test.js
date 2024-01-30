@@ -1,19 +1,17 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const {
+import signers from "../../fixtures/signers";
+import {
     publishRandomPost,
     publishRandomReply,
     generateMockComment,
     generateMockVote,
     publishWithExpectedResult,
     findCommentInPage,
-    mockRemotePlebbit,
-    mockPlebbit
-} = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const { default: waitUntil } = require("async-wait-until");
-const lodash = require("lodash");
+    mockRemotePlebbit
+} from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import { default as waitUntil } from "async-wait-until";
+import lodash from "lodash";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -46,7 +44,7 @@ describe(`Removing post`, async () => {
     });
 
     it(`A new CommentUpdate is published with removed=true`, async () => {
-        await waitUntil(() => postToRemove.removed, { timeout: 200000 });
+        await waitUntil.default(() => postToRemove.removed, { timeout: 200000 });
         expect(postToRemove.removed).to.be.true;
         expect(postToRemove.reason).to.equal("To remove a post");
         expect(postToRemove._rawCommentUpdate.removed).to.be.true;
@@ -117,7 +115,7 @@ describe(`Removing post`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a post`, async () => {
-        await waitUntil(() => postToRemove.removed === false, { timeout: 200000 });
+        await waitUntil.default(() => postToRemove.removed === false, { timeout: 200000 });
         expect(postToRemove.removed).to.be.false;
         expect(postToRemove.reason).to.equal("To unremove a post");
         expect(postToRemove._rawCommentUpdate.removed).to.be.false;
@@ -171,7 +169,7 @@ describe(`Mods removing their own posts`, async () => {
     });
 
     it(`A new CommentUpdate is published with removed=true`, async () => {
-        await waitUntil(() => modPost.removed === true, { timeout: 200000 });
+        await waitUntil.default(() => modPost.removed === true, { timeout: 200000 });
         expect(modPost.removed).to.be.true;
         expect(modPost._rawCommentUpdate.removed).to.be.true;
         expect(modPost._rawCommentUpdate.edit).to.be.undefined;
@@ -207,7 +205,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for removing a reply`, async () => {
-        await waitUntil(() => replyToBeRemoved.removed === true, { timeout: 200000 });
+        await waitUntil.default(() => replyToBeRemoved.removed === true, { timeout: 200000 });
 
         expect(replyToBeRemoved.removed).to.be.true;
         expect(replyToBeRemoved.reason).to.equal("To remove a reply");
@@ -274,7 +272,7 @@ describe(`Removing reply`, async () => {
     });
 
     it(`A new CommentUpdate is published for unremoving a reply`, async () => {
-        await waitUntil(() => replyToBeRemoved.removed === false, { timeout: 300000 });
+        await waitUntil.default(() => replyToBeRemoved.removed === false, { timeout: 300000 });
         expect(replyToBeRemoved.removed).to.be.false;
         expect(replyToBeRemoved.reason).to.equal("To unremove a reply");
         expect(replyToBeRemoved._rawCommentUpdate.removed).to.be.false;

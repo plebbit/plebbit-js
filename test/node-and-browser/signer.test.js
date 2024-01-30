@@ -1,28 +1,24 @@
-const Plebbit = require("../../dist/node");
-const fixtureSigners = require("../fixtures/signers");
-const authorSignerFixture = fixtureSigners[1];
-const { signBufferEd25519, verifyBufferEd25519 } = require("../../dist/node/signer/signatures");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import fixtureSigners from "../fixtures/signers";
+import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { toString } = require("uint8arrays/to-string");
-const { fromString } = require("uint8arrays/from-string");
-const { Buffer } = require("buffer");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
-
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import { mockRemotePlebbit } from "../../dist/node/test/test-util";
+const authorSignerFixture = fixtureSigners[1];
 
 describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
         randomSigner = await plebbit.createSigner();
     });
 
     describe("signBufferEd25519 and verifyBufferEd25519", () => {
         const string = "1111111111111111";
-        const uint8array = fromString(string);
+        const uint8array = uint8ArrayFromString(string);
         const buffer = Buffer.from(string);
         let bufferSignature, uint8arraySignature;
 
