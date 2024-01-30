@@ -277,11 +277,9 @@ export class DbHandler {
 
         const currentDbVersion = await this.getDbVersion();
 
-        
-
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
-        if (needToMigrate){
+        if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = OFF");
             if (currentDbVersion <= 10) {
                 // Remove unneeded tables
@@ -292,7 +290,7 @@ export class DbHandler {
                 );
             }
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
-        } 
+        }
 
         const createTableFunctions = [
             this._createCommentsTable,
@@ -819,25 +817,16 @@ export class DbHandler {
         };
     }
 
-    async changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]) {
+    async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = (<any>this._dbConfig.connection).filename;
-        assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+        const oldPathString = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", oldDbName);
+        const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         this._currentTrxs = {};
-        this._subplebbit = newSubplebbit;
-        if (oldPathString === ":memory:") {
-            log.trace(`No need to change file name of db since it's in memory`);
-            return;
-        }
-        const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
-
-        await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
-
         delete this["_knex"];
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, newSubplebbit.plebbit);
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit.plebbit);
         else await fs.promises.rm(oldPathString);
 
         this._dbConfig = {
@@ -895,10 +884,11 @@ export class DbHandler {
         }
     }
 
-    async isSubStartLocked(subAddress = this._subplebbit.address) {
+    async isSubStartLocked(subAddress = this._subplebbit.address): Promise<boolean> {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        return lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        return isLocked;
     }
 
     // Subplebbit state lock

@@ -229,9 +229,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
         const dbInstance = await this._getDbInternalState(true);
-        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger;
-        // || !this._isCurrentSubplebbitEqualToLatestPublishedRecord(this.toJSONIpfs())
-        if (!this._subplebbitUpdateTrigger && !lastPublishTooOld) return; // No reason to update
+        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;
+
+        if (!this._subplebbitUpdateTrigger) return; // No reason to update
 
         const trx: any = await this.dbHandler.createTransaction("subplebbit");
         const latestPost = await this.dbHandler.queryLatestPostCid(trx);
@@ -275,7 +275,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._subplebbitUpdateTrigger = false;
 
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
-        await this._updateDbInternalState(this.toJSONInternal());
+        await this._updateDbInternalState(lodash.omit(this.toJSONInternal(), "address"));
 
         await this._unpinStaleCids();
         const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
@@ -997,23 +997,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         // Will check if address has been changed, and if so connect to the new db with the new address
         const internalState = await this._getDbInternalState(true);
+        const listedSubs = await this.plebbit.listSubplebbits();
+        const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
 
-        const currentDbAddress = this.dbHandler.subAddress();
+        const currentDbAddress = dbIsOnOldName ? this.signer.address : this.address;
         if (this.dbHandler.isDbInMemory()) this._setAddress(this.dbHandler.subAddress());
         else if (internalState.address !== currentDbAddress) {
             // That means a call has been made to edit the sub's address while it's running
             // We need to stop the sub from running, change its file name, then establish a connection to the new DB
             log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
-            await this.dbHandler.unlockSubStart();
+            await this.dbHandler.unlockSubStart(currentDbAddress);
             await this.dbHandler.rollbackAllTransactions();
             await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
             await this.dbHandler.destoryConnection();
             this._setAddress(internalState.address);
-            await this.dbHandler.changeDbFilename(internalState.address, this);
+            await this.dbHandler.changeDbFilename(currentDbAddress, internalState.address);
             await this.dbHandler.initDestroyedConnection();
-            this._sortHandler = new SortHandler(this);
+            await this.dbHandler.lockSubStart(internalState.address); // Lock the new address start
             this._subplebbitUpdateTrigger = true;
-            await this.dbHandler.lockSubStart(); // Lock the new address start
+            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
         }
     }
 
@@ -1239,15 +1241,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     ? []
                     : newSubplebbitOptions.settings.challenges;
 
-        this._subplebbitUpdateTrigger = true;
-        const newProps = {
+        const newProps: Partial<
+            SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger">
+        > = {
             ...newSubplebbitOptions,
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+            _subplebbitUpdateTrigger: true
         };
 
         if (Array.isArray(newProps?.settings?.challenges)) {
             newProps.challenges = newSubplebbitOptions.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
-            newProps["_usingDefaultChallenge"] = lodash.isEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
+            newProps._usingDefaultChallenge = lodash.isEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
         }
 
         await this.dbHandler.initDestroyedConnection();
@@ -1266,12 +1269,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
                 await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
                 await this.dbHandler.destoryConnection();
-                await this.dbHandler.changeDbFilename(newSubplebbitOptions.address, this);
+                await this.dbHandler.changeDbFilename(this.address, newSubplebbitOptions.address);
+                this._setAddress(newProps.address);
             }
         } else {
             await this._updateDbInternalState(newProps);
         }
 
+        await this.dbHandler.initDestroyedConnection();
         const currentState = await this._getDbInternalState(true);
         await this.initRpcInternalSubplebbit(currentState);
 
