@@ -330,6 +330,8 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;
+    delete plebbit.plebbitRpcClient;
+    delete plebbit.plebbitRpcClientsOptions;
     plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
     return plebbit;
 }

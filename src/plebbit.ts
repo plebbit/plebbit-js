@@ -246,6 +246,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async getSubplebbit(subplebbitAddress: string) {
         const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
+
+        if (typeof subplebbit.createdAt === "number") return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         await subplebbit.update();
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         let error: PlebbitError | undefined;
