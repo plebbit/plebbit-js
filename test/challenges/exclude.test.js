@@ -143,7 +143,7 @@ describe("shouldExcludePublication", () => {
   })
 
   // Exclude based on roles
-  it.only("Moderator edits are excluded from challenges", async () => {
+  it("Moderator edits are excluded from challenges", async () => {
     const subplebbitChallenge = {
       exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
     }
