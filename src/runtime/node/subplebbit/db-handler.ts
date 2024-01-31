@@ -822,6 +822,7 @@ export class DbHandler {
 
         const oldPathString = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
+        await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
         delete this["_knex"];
         delete this["_keyv"];

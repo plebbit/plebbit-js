@@ -962,7 +962,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Code below is to handle in case the ipfs node restarted and the subscription got lost or something
         const subscribedTopics = await this.clientsManager.getDefaultPubsub()._client.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
-            console.log("pubsubTopic", this.pubsubTopicWithfallback(), "subscribed topics", subscribedTopics);
+            // console.log("pubsubTopic", this.pubsubTopicWithfallback(), "subscribed topics", subscribedTopics);
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
             await this.clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this.clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
@@ -1112,6 +1112,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _adjustPostUpdatesBucketsIfNeeded() {
         // This function will be ran a lot, maybe we should move it out of the sync loop or try to limit its execution
         if (!this.postUpdates) return;
+        if (Math.random() < 0.1) return; // Should not be ran very often
         // Look for posts whose buckets should be changed
 
         const log = Logger("plebbit-js:local-subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
