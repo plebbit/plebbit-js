@@ -1,5 +1,4 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     publishRandomPost,
     createSubWithNoChallenge,
@@ -11,11 +10,11 @@ const {
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly,
     mockRemotePlebbit
-} = require("../../../dist/node/test/test-util");
-const { messages } = require("../../../dist/node/errors");
+} from "../../../dist/node/test/test-util";
+import { messages } from "../../../dist/node/errors";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 

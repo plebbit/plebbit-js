@@ -1,24 +1,21 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     publishRandomPost,
     mockPlebbit,
     loadAllPages,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
     isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
-const { timestamp } = require("../../../dist/node/util");
-const lodash = require("lodash");
-const { default: waitUntil } = require("async-wait-until");
-const stringify = require("safe-stable-stringify");
-const fs = require("fs");
-const path = require("path");
-const signers = require("../../fixtures/signers");
+} from "../../../dist/node/test/test-util";
+import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
+import lodash from "lodash";
+import { default as waitUntil } from "async-wait-until";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import fs from "fs";
+import path from "path";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { POSTS_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
-const { v4 } = require("uuid");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { v4 as uuidV4 } from "uuid";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -29,12 +26,12 @@ describe(`subplebbit.edit`, async () => {
     before(async () => {
         plebbit = await mockPlebbit({}, true, false);
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
-        ethAddress = `test-edit-${v4()}.eth`;
+        ethAddress = `test-edit-${uuidV4()}.eth`;
         const originalPlebbit = await mockPlebbit();
         const subplebbitAddress = lodash.clone(subplebbit.address);
         plebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
             if (ensName === ethAddress && txtRecordName) return subplebbitAddress;
-            else return originalPlebbit.resolver._resolveEnsTxtRecord(ensName, txtRecordName);
+            else return originalPlebbit.resolver.resolveTxtRecord(ensName, txtRecordName);
         };
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -50,10 +47,10 @@ describe(`subplebbit.edit`, async () => {
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
                 const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
                 await loadedSubplebbit.update();
-                await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+                await waitUntil.default(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
                 loadedSubplebbit.stop();
                 expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
-                expect(stringify(loadedSubplebbit.toJSON())).to.equal(stringify(subplebbit.toJSON()));
+                expect(deterministicStringify(loadedSubplebbit.toJSON())).to.equal(deterministicStringify(subplebbit.toJSON()));
             })
     );
 
@@ -90,7 +87,7 @@ describe(`subplebbit.edit`, async () => {
     it(`Can load a subplebbit with ENS domain as address`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
         expect(loadedSubplebbit.address).to.equal(ethAddress);
-        expect(stringify(loadedSubplebbit)).to.equal(stringify(subplebbit));
+        expect(deterministicStringify(loadedSubplebbit)).to.equal(deterministicStringify(subplebbit));
     });
 
     it(`remote subplebbit.posts is reset after changing address`, async () => {
@@ -106,7 +103,7 @@ describe(`subplebbit.edit`, async () => {
     });
 
     it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
-        await waitUntil(() => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
+        await waitUntil.default(() => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
             timeout: 200000
         });
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
@@ -143,16 +140,16 @@ describe(`Concurrency with subplebbit.edit`, async () => {
         await new Promise((resolve) => subTwo.once("update", resolve));
 
         expect(subTwo.title).to.equal(newTitle);
-        expect(stringify(subTwo.toJSON())).to.equal(stringify(subOne.toJSON()));
+        expect(deterministicStringify(subTwo.toJSON())).to.equal(deterministicStringify(subOne.toJSON()));
 
         subOne.stop();
         subTwo.stop();
     });
 
     [
-        { address: `address-eth-${v4()}-1.eth` },
+        { address: `address-eth-${uuidV4()}-1.eth` },
         { rules: ["rule 1", "rule 2"] },
-        { address: `address-eth-${v4()}-2.eth`, rules: ["rule 1", "rule 2"] }
+        { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
             const plebbit = await mockPlebbit();
@@ -186,6 +183,7 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             );
 
             // edit subplebbit
+            console.log("editSubplebbit")
             const editedSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
             await editedSubplebbit.edit(editArgs);
 
@@ -193,28 +191,30 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             const updatedSubplebbit = await updateEventPromise;
             updatingSubplebbit.removeAllListeners("update");
             expect(editedSubplebbit.title).to.equal(subplebbitTitle);
-            for (const [editKey, editValue] of Object.entries(editArgs)) expect(editedSubplebbit[editKey]).to.equal(editValue);
+            for (const [editKey, editValue] of Object.entries(editArgs)) expect(deterministicStringify(editedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
 
             // wait for subplebbit update
             // both started and updating subplebbit should now have the subplebbit edit
+            console.log("wait for subplebbit update")
 
             expect(updatingSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
-                expect(stringify(updatingSubplebbit[editKey])).to.equal(stringify(editValue));
+                expect(deterministicStringify(updatingSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
 
             expect(updatedSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
-                expect(stringify(updatedSubplebbit[editKey])).to.equal(stringify(editValue));
+                expect(deterministicStringify(updatedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
 
             await updatingSubplebbit.stop();
 
+            console.log("Before await updateStartedSubEventPromise");
             await updateStartedSubEventPromise;
 
             expect(startedSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs)){
-                if (stringify(startedSubplebbit[editKey]) !== stringify(editValue))
+                if (deterministicStringify(startedSubplebbit[editKey]) !== deterministicStringify(editValue))
                     await new Promise(resolve => startedSubplebbit.once("update", resolve)); // Wait until the new props are included in the next update
-                expect(stringify(startedSubplebbit[editKey])).to.equal(stringify(editValue));
+                expect(deterministicStringify(startedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
             }
 
             await startedSubplebbit.stop();
@@ -224,14 +224,14 @@ describe(`Concurrency with subplebbit.edit`, async () => {
             const newlyCreatedSubplebbit = await plebbit.createSubplebbit({ address: startedSubplebbit.address });
             expect(newlyCreatedSubplebbit.title).to.equal(subplebbitTitle);
             for (const [editKey, editValue] of Object.entries(editArgs))
-                expect(stringify(newlyCreatedSubplebbit[editKey])).to.equal(stringify(editValue));
+                expect(deterministicStringify(newlyCreatedSubplebbit[editKey])).to.equal(deterministicStringify(editValue));
         })
     );
 
     it(`Can edit a local sub address, then start it`, async () => {
         const customPlebbit = await mockPlebbit();
         const signer = await customPlebbit.createSigner();
-        const domain = `edit-before-start-${v4()}.eth`;
+        const domain = `edit-before-start-${uuidV4()}.eth`;
 
         const originalPlebbit = await mockPlebbit();
 
@@ -307,7 +307,7 @@ describe(`subplebbit.edit (RPC)`, async () => {
             const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
             const loadedSubplebbit = await remotePlebbit.createSubplebbit({address: subplebbit.address});
             await loadedSubplebbit.update();
-            await waitUntil(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+            await waitUntil.default(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
             await loadedSubplebbit.stop();
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
         })

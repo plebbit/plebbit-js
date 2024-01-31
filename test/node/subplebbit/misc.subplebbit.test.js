@@ -1,5 +1,4 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     publishRandomPost,
     createSubWithNoChallenge,
@@ -10,17 +9,18 @@ const {
     publishWithExpectedResult,
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly
-} = require("../../../dist/node/test/test-util");
-const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
+} from "../../../dist/node/test/test-util";
+import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
 
-const signers = require("../../fixtures/signers");
-const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
-const path = require("path");
-const fs = require("fs");
-const { default: waitUntil } = require("async-wait-until");
+import signers from "../../fixtures/signers";
+import { getThumbnailUrlOfLink } from "../../../dist/node/runtime/node/util";
+import path from "path";
+import fs from "fs";
+import { default as waitUntil } from "async-wait-until";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import EventEmitter from "events";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -36,7 +36,7 @@ describe("plebbit.listSubplebbits", async () => {
 
         plebbit.createSubplebbit({ signer: subSigner, title: title });
 
-        await waitUntil(async () => (await plebbit.listSubplebbits()).includes(subSigner.address), {
+        await waitUntil.default(async () => (await plebbit.listSubplebbits()).includes(subSigner.address), {
             timeout: 200000
         });
 
@@ -212,7 +212,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil(() => eventFired);
+        await waitUntil.default(() => eventFired);
     });
 
     it(`subplebbit.state = stopped after calling stop()`, async () => {
@@ -223,7 +223,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.stop();
         expect(subplebbit.state).to.equal("stopped");
-        await waitUntil(() => eventFired);
+        await waitUntil.default(() => eventFired);
     });
 
     it(`subplebbit.state = updating after calling update()`, async () => {
@@ -234,7 +234,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.update();
         expect(subplebbit.state).to.equal("updating");
-        await waitUntil(() => eventFired);
+        await waitUntil.default(() => eventFired);
     });
 
     it(`subplebbit.state = started after calling start() after update()`, async () => {
@@ -244,7 +244,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil(() => eventFired);
+        await waitUntil.default(() => eventFired);
     });
 });
 
@@ -282,7 +282,7 @@ describe(`subplebbit.startedState`, async () => {
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit.plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
+            subplebbit.plebbit.clients.ipfsClients = subplebbit.clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -295,7 +295,7 @@ describe(`subplebbit.updatingState (remote sub - node)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRemotePlebbitIpfsOnly();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -388,7 +388,7 @@ describe(`comment.link`, async () => {
                 "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
             const expectedThumbnailUrl =
                 "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(675);
             expect(thumbnailInfo.thumbnailHeight).to.equal(450);
@@ -398,7 +398,7 @@ describe(`comment.link`, async () => {
             const url =
                 "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
             const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(512);
             expect(thumbnailInfo.thumbnailHeight).to.equal(497);
@@ -407,7 +407,7 @@ describe(`comment.link`, async () => {
         it(`Generates thumbnail url for twitter urls correctly`, async () => {
             const url = "https://twitter.com/eustatheia/status/1691285870244937728";
             const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
             expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
