@@ -16,6 +16,7 @@ import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
 import os from "os";
 import * as fileType from "file-type";
+import { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types";
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -51,11 +52,14 @@ export async function getThumbnailUrlOfLink(
 
     //@ts-expect-error
     const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
-    const options = {
+    const options: OpenGraphScraperOptions = {
         url,
-        downloadLimit: 2000000,
-        headers: {
-            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+        fetchOptions: {
+            headers: {
+                "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+            },
+            //@ts-expect-error
+            downloadLimit: 2000000
         }
     };
 
@@ -70,15 +74,13 @@ export async function getThumbnailUrlOfLink(
         if (res.error) return undefined;
         if (!res?.result?.ogImage) return undefined;
 
-        thumbnail.thumbnailUrl = typeof res.result.ogImage === "string" ? res.result.ogImage : res.result.ogImage["url"];
-        assert(thumbnail.thumbnailUrl, "thumbnailUrl needs to be defined");
+        res.result.ogImage[0].url;
+        thumbnail.thumbnailUrl = res.result.ogImage[0].url;
+        assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
 
-        const ogImageHeight = res.result.ogImage?.[0]?.height;
-        const ogImageWidth = res.result.ogImage?.[0]?.width;
-
-        thumbnail.thumbnailHeight = typeof ogImageHeight === "number" ? ogImageHeight : undefined;
-        thumbnail.thumbnailWidth = typeof ogImageWidth === "number" ? ogImageWidth : undefined;
-        if (lodash.isNil(thumbnail.thumbnailWidth) || lodash.isNil(thumbnail.thumbnailHeight)) {
+        thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
+        thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
+        if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
             const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
             thumbnail.thumbnailHeight = dimensions?.height;
             thumbnail.thumbnailWidth = dimensions?.width;

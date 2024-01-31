@@ -1276,9 +1276,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateDbInternalState(newProps);
         }
 
-        await this.dbHandler.initDestroyedConnection();
-        const currentState = await this._getDbInternalState(true);
-        await this.initRpcInternalSubplebbit(currentState);
+        await this.initRpcInternalSubplebbit(newProps);
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
         if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
