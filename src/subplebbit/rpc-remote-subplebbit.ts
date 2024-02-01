@@ -7,7 +7,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
 
     protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
         const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
-        if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
+        const currentState = this.clients.plebbitRpcClients[currentRpcUrl].state;
+        if (newState === currentState) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }

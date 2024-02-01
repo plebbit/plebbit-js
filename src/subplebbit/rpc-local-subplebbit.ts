@@ -29,7 +29,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
         await super.initRemoteSubplebbitProps(newProps);
         this.settings = mergedProps.settings;
-        this._setStartedState(mergedProps.startedState);
+        // only use startedState from local state if we're not getting updates from rpc
+        if (!this._startRpcSubscriptionId) this._setStartedState(mergedProps.startedState);
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
     }
 
