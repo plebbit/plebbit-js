@@ -290,7 +290,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ttl,
             lifetime
         });
-        this.emit("update", this);
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
         );
@@ -1160,6 +1159,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.updateSubplebbitIpnsIfNeeded();
             this._setStartedState("succeeded");
             this.clientsManager.updateIpfsState("stopped");
+            this.emit("update", this);
         } catch (e) {
             this._setStartedState("failed");
             this.clientsManager.updateIpfsState("stopped");

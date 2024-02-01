@@ -36,6 +36,7 @@ export default class PlebbitRpcClient {
     }
 
     async _init() {
+        const log = Logger("plebbit-js:plebbit-rpc-client:_init");
         // wait for websocket connection to open
         if (!(this._webSocketClient instanceof WebSocketClient)) {
             // Set up events here
@@ -43,6 +44,7 @@ export default class PlebbitRpcClient {
             // NOTE: it is possible to receive a subscription message before receiving the subscription id
 
             this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions[0]);
+            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions[0]);
             //@ts-expect-error
             this._webSocketClient.socket.on("message", (jsonMessage) => {
                 const message = JSON.parse(jsonMessage);

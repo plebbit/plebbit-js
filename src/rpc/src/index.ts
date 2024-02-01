@@ -20,6 +20,7 @@ import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit
 import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit";
+import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -182,7 +183,7 @@ class PlebbitWsServer extends EventEmitter {
     async getSubplebbitPage(params: any) {
         const pageCid = <string>params[0];
         const subplebbitAddress = <string>params[1];
-        const subplebbit = await this.plebbit.createSubplebbit({ address: subplebbitAddress });
+        const subplebbit = <RemoteSubplebbit | LocalSubplebbit>await this.plebbit.createSubplebbit({ address: subplebbitAddress });
         const page = await subplebbit.posts._fetchAndVerifyPage(pageCid);
         return page;
     }
@@ -225,10 +226,10 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.on("challenge", (challenge: any) => sendEvent("challenge", encodePubsubMsg(challenge)));
             subplebbit.on("challengeanswer", (answer: any) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
             subplebbit.on("challengerequest", (request: any) => sendEvent("challengerequest", encodePubsubMsg(request)));
-            subplebbit.on("challengeverification", (challengeVerification: any) =>
+            subplebbit.on("challengeverification", (challengeVerification) =>
                 sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
             );
-            subplebbit.on("error", (error: any) => sendEvent("error", error));
+            subplebbit.on("error", (error) => sendEvent("error", error));
 
             // cleanup function
             this.subscriptionCleanups[connectionId][subscriptionId] = () => {
