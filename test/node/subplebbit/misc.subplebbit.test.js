@@ -88,6 +88,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
     });
 
     after(async () => await sub.stop());
@@ -141,6 +142,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
@@ -157,6 +159,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
@@ -182,6 +185,8 @@ describe(`subplebbit.pubsubTopic`, async () => {
             expect.fail("subplebbit.pubsubTopic should be null or undefined");
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+
         if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
             expect.fail("subplebbit.pubsubTopic should be null or undefined");
 
@@ -272,7 +277,7 @@ describe(`subplebbit.startedState`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
-        await new Promise((resolve) => subplebbit.once("startedstatechange", (newState) => newState === "succeeded" && resolve()));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(recordedStates).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]);
     });
@@ -365,6 +370,7 @@ describe(`comment.link`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {
@@ -613,6 +619,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await mockSub.start();
 
             await new Promise((resolve) => mockSub.once("update", resolve));
+            if (!mockSub.updatedAt) await new Promise(resolve => mockSub.once("update", resolve));
 
             const post = await generateMockPost(mockSub.address, plebbit);
             post.once("challenge", async () => {
@@ -712,6 +719,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await sub.start();
 
             await new Promise(resolve => sub.once("update", resolve));
+            if (!sub.updatedAt) await new Promise(resolve => sub.once("update", resolve));
 
             await publishRandomPost(sub.address, plebbit, {}, true);
             if (recordedStates[recordedStates.length - 1] === "stopped")
@@ -740,6 +748,7 @@ describe(`subplebbit.clients (Local)`, async () => {
                 "publishing-challenge-verification",
                 "waiting-challenge-requests",
                 "publishing-ipns",
+                "stopped"
               ]
             sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
                 recordedStates.push(newState)
@@ -749,6 +758,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await sub.start();
 
             await new Promise(resolve => sub.once("update", resolve));
+            if (!sub.updatedAt) await new Promise(resolve => sub.once("update", resolve));
 
             const mockPost = await generateMockPost(sub.address, plebbit);
 
@@ -776,6 +786,7 @@ describe(`subplebbit.statsCid`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {

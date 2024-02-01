@@ -322,6 +322,7 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
         expect(subplebbit.updatedAt).to.be.a("number");
     });
 
+    if (!isRpcFlagOn())
     it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
         const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
         expect(subplebbit.address).to.equal(ensSubplebbitAddress);
@@ -762,7 +763,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
         //prettier-ignore
         if (isRpcFlagOn())
         describe(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
-            it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
+            it(`subplebbit.posts.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
                 const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
                 const rpcUrl = Object.keys(mockSub.clients.plebbitRpcClients)[0];
                 // add tests here

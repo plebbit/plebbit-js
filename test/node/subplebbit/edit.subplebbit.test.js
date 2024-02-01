@@ -265,6 +265,7 @@ describe(`Edit misc`, async () => {
         // Has no subplebbit-address text record
         await newSub.edit({ address: "no-sub-address.eth" });
         expect(newSub.address).to.equal("no-sub-address.eth");
+        await newSub.delete();
     });
 
     it(`Can edit subplebbit.address to a new domain even if subplebbit-address text record does not match subplebbit.signer.address`, async () => {
@@ -274,6 +275,7 @@ describe(`Edit misc`, async () => {
         // Should not match signer.address
         await newSub.edit({ address: "different-signer.eth" });
         expect(newSub.address).to.equal("different-signer.eth");
+        await newSub.delete();
     });
 });
 

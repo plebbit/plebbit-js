@@ -25,6 +25,7 @@ describe(`subplebbit.start`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
     after(async () => subplebbit.stop());
 
@@ -42,10 +43,11 @@ describe(`subplebbit.start`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
+        if (!newSub.updatedAt) await new Promise((resolve) => newSub.once("update", resolve));
         await publishRandomPost(newSub.address, plebbit, {}, false);
         await newSub.stop();
         await newSub.start();
-        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await publishRandomPost(newSub.address, plebbit, {}, false);
         await newSub.stop();
     });
 
@@ -145,6 +147,7 @@ describe(`Publish loop resiliency`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {

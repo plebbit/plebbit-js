@@ -33,6 +33,7 @@ describe(`subplebbit.settings.challenges`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges[0].type).to.equal("image/png");
@@ -66,6 +67,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.edit({ settings: { challenges: [] } });
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
 
         await subplebbit.delete();
@@ -100,6 +102,7 @@ describe(`subplebbit.settings.challenges`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
 
@@ -128,6 +131,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit.challenges).to.deep.equal([]);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
@@ -146,6 +150,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         commentSigner = await plebbit.createSigner(); // We're using the same signer for publishing so that publication.author.subplebbit is defined
     });
 
