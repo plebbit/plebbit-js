@@ -1,14 +1,14 @@
 // you can add "CHROME_BIN=/usr/bin/chromium" to .env file
 // to not have to type it every time
-require("dotenv").config();
+// require("dotenv").config();
 
 const os = require("os");
 
-const mochaConfig = require("./.mocharc.js");
-
+const mochaConfig = { timeout: 2000000 };
+console.log(mochaConfig);
 // possible to add flags when launching the browser
 const CustomChrome = {
-    base: "ChromeHeadless",
+    base: "Chrome",
     flags: ["--disable-web-security"],
     debug: true
 };

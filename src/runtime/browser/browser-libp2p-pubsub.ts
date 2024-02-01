@@ -32,7 +32,7 @@ let libp2pPubsubClient: PubsubClient;
 const logEvents = (node) => {
     const events = [
         "connection:close",
-        "connection:open",
+        "connection:open",                
         "connection:prune",
         "peer:connect",
         "peer:disconnect",
@@ -105,7 +105,8 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
                 ls: async () => libP2pNode.services.pubsub.getTopics(),
                 peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic),
                 publish: async (topic, data, options) => {
-                    await libP2pNode.services.pubsub.publish(topic, data);
+                    const res = await libP2pNode.services.pubsub.publish(topic, data);
+                    log("Published new data to topic", topic, "And the result is", res);
                 },
                 subscribe: async (topic, handler, options) => {
                     //@ts-expect-error

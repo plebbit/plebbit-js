@@ -1,13 +1,12 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions";
-import { NativeFunctions, PlebbitOptions } from "../../types";
+import { IpfsClient, NativeFunctions, PlebbitOptions } from "../../types";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
 import { parseJsonStrings, throwWithErrorCode } from "../../util";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
-import Logger from "@plebbit/plebbit-logger";
 import { PlebbitError } from "../../plebbit-error";
 import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit";
@@ -17,6 +16,14 @@ import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
 import os from "os";
 import * as fileType from "file-type";
 import { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types";
+import { Agent as HttpAgent } from "http";
+import { Agent as HttpsAgent } from "https";
+import { sha256 } from "js-sha256";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import Logger from "@plebbit/plebbit-logger";
+
+const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
@@ -163,7 +170,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit) {
     return deletedPersistentSubs;
 }
 
-export async function listSubplebbit(plebbit: Plebbit) {
+export async function listSubplebbits(plebbit: Plebbit) {
     const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
 
     await fs.mkdir(subplebbitsPath, { recursive: true });
@@ -221,4 +228,24 @@ export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: stri
     await fs.cp(oldPath, newPath);
     if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPath, plebbit);
     else await fs.rm(oldPath);
+}
+
+export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
+    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
+    if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createIpfsClient");
+    log("Creating a new ipfs client on node with options", ipfsHttpClientOptions);
+    const isHttpsAgent =
+        (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+        ipfsHttpClientOptions?.protocol === "https" ||
+        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
+        ipfsHttpClientOptions.url?.toString()?.includes("https");
+    const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
+
+    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
+        ...ipfsHttpClientOptions,
+        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
+    });
+
+    return storedIpfsClients[cacheKey];
 }

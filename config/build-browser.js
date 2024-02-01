@@ -2,13 +2,13 @@
 // it watches the dist/node folder which is created by tsc (typescript)
 // and replaces `runtime/node` with `runtime/browser` in the imports
 
-const path = require("path");
-const chokidar = require("chokidar");
-const fs = require("fs-extra");
+import path from "path";
+import chokidar from "chokidar";
+import fs from "fs-extra";
 
-const distFolder = path.resolve(__dirname, "..", "dist");
-const inputFolder = path.resolve(__dirname, "..", "dist", "node");
-const outputFolder = path.resolve(__dirname, "..", "dist", "browser");
+const distFolder = path.resolve(process.cwd(), "dist");
+const inputFolder = path.resolve(process.cwd(), "dist", "node");
+const outputFolder = path.resolve(process.cwd(), "dist", "browser");
 
 fs.removeSync(outputFolder);
 

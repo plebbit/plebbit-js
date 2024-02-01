@@ -32,12 +32,6 @@ import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 import extName from "ext-name";
-import { Agent as HttpAgent } from "http";
-import { Agent as HttpsAgent } from "https";
-import { sha256 } from "js-sha256";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { create as CreateKuboRpcClient } from "kubo-rpc-client";
-import Logger from "@plebbit/plebbit-logger";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -72,7 +66,6 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     old: { score: (...args) => oldScore(...args) }
 };
 
-const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -349,22 +342,4 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     return out;
 }
 
-export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
-    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
-    if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
-    const log = Logger("plebbit-js:plebbit:createIpfsClient");
-    log("Creating a new ipfs client instance with options", ipfsHttpClientOptions);
-    const isHttpsAgent =
-        (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
-        ipfsHttpClientOptions?.protocol === "https" ||
-        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
-        ipfsHttpClientOptions.url?.toString()?.includes("https");
-    const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
-    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
-        ...ipfsHttpClientOptions,
-        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
-    });
-
-    return storedIpfsClients[cacheKey];
-}

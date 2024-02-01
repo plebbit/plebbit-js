@@ -1,4 +1,4 @@
-import { getDefaultDataPath, listSubplebbit as nodeListSubplebbits, nativeFunctions } from "./runtime/node/util";
+import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util";
 import {
     StorageInterface,
     ChainProvider,
@@ -24,7 +24,7 @@ import {
     PubsubSubscriptionHandler
 } from "./types";
 import { Comment } from "./comment";
-import { createIpfsClient, doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
+import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer } from "./signer";
 import { Resolver } from "./resolver";
