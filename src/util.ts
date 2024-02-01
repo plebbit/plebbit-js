@@ -37,6 +37,7 @@ import { Agent as HttpsAgent } from "https";
 import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import Logger from "@plebbit/plebbit-logger";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -351,6 +352,8 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
 export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
     const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
     if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createIpfsClient");
+    log("Creating a new ipfs client instance with options", ipfsHttpClientOptions);
     const isHttpsAgent =
         (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
         ipfsHttpClientOptions?.protocol === "https" ||
