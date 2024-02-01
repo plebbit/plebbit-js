@@ -310,7 +310,7 @@ export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
 }
 
 export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions) {
-    const plebbit = await mockPlebbit({
+    const plebbit = await mockRemotePlebbit({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
         ...plebbitOptions

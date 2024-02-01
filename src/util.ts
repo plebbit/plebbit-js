@@ -9,10 +9,10 @@ import {
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    IpfsClient,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -32,11 +32,11 @@ import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 import extName from "ext-name";
-import { create, IPFSHTTPClient, Options } from "ipfs-http-client";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -71,7 +71,7 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     old: { score: (...args) => oldScore(...args) }
 };
 
-const storedIpfsClients: Record<string, IPFSHTTPClient> = {};
+const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -348,7 +348,7 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     return out;
 }
 
-export function createIpfsClient(ipfsHttpClientOptions: Options): IPFSHTTPClient {
+export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
     const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
     if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
     const isHttpsAgent =
@@ -358,7 +358,7 @@ export function createIpfsClient(ipfsHttpClientOptions: Options): IPFSHTTPClient
         ipfsHttpClientOptions.url?.toString()?.includes("https");
     const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
 
-    storedIpfsClients[cacheKey] = create({
+    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
         ...ipfsHttpClientOptions,
         agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
     });

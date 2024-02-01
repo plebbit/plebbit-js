@@ -1,5 +1,4 @@
-import { IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import { IPFS as IpfsTypes } from "ipfs-core-types";
+import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import {
@@ -600,15 +599,15 @@ export interface PubsubSubplebbitStats {
 }
 
 export interface IpfsClient {
-    peers: () => ReturnType<IpfsTypes["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    peers: () => ReturnType<IpfsClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: IPFSHTTPClient; // Private API, shouldn't be used by consumers
-    _clientOptions: IpfsHttpClientOptions;
+    _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
+    _clientOptions: Parameters<typeof CreateIpfsClient>[0];
 }
 
-export type PubsubSubscriptionHandler = Extract<Parameters<IpfsTypes["pubsub"]["subscribe"]>[1], Function>;
+export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
 export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers

@@ -35,7 +35,6 @@ import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
-import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
@@ -62,8 +61,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     };
     resolver: Resolver;
     plebbitRpcClient?: PlebbitRpcClient;
-    ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
-    pubsubHttpClientsOptions: IpfsHttpClientOptions[];
+    ipfsHttpClientsOptions?: IpfsClient["_clientOptions"][];
+    pubsubHttpClientsOptions: IpfsClient["_clientOptions"][];
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
     browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
@@ -113,13 +112,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions =
             Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
-                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+                : <IpfsClient["_clientOptions"][] | undefined>options.ipfsHttpClientsOptions;
 
         const fallbackPubsubProviders = this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
         this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
-                : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions || this.ipfsHttpClientsOptions || fallbackPubsubProviders;
+                : <IpfsClient["_clientOptions"][]>options.pubsubHttpClientsOptions ||
+                  this.ipfsHttpClientsOptions ||
+                  fallbackPubsubProviders;
 
         this.publishInterval = this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
             ? options.publishInterval
@@ -209,7 +210,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         });
     }
 
-    private _parseUrlToOption(urlStrings: string[]): IpfsHttpClientOptions[] {
+    private _parseUrlToOption(urlStrings: string[]): IpfsClient["_clientOptions"][] {
         const parsed = [];
         for (const urlString of urlStrings) {
             const url = new URL(urlString);
@@ -365,7 +366,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
                 let error: PlebbitError | undefined;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
-                await Promise.race([updatePromise, errorPromise]);
+                await Promise.race([
+                    updatePromise,
+                    errorPromise,
+                    new Promise((resolve) => typeof sub.createdAt === "number" && resolve(1)) // In case await sub.update() above got updated quickly
+                ]);
                 await sub.stop();
                 if (error) throw error;
 
