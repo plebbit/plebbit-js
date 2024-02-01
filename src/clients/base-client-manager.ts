@@ -179,7 +179,12 @@ export class BaseClientsManager {
         let res: Response;
         const formattedUrl = url.replace("localhost", "127.0.0.1"); // For some reason fetch fails with localhost
         try {
-            res = await nativeFunctions.fetch(formattedUrl, { cache, signal });
+            res = await nativeFunctions.fetch(formattedUrl, {
+                cache,
+                signal,
+                //@ts-expect-error, this option is for node-fetch
+                size: DOWNLOAD_LIMIT_BYTES
+            });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return await res.text();
