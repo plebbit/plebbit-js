@@ -1,9 +1,13 @@
 import signers from "../../fixtures/signers";
-import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import {
+    mockRemotePlebbit,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors";
 import lodash from "lodash";
-import { default as waitUntil } from "async-wait-until";
 const subplebbitAddress = signers[0].address;
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -51,7 +55,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await waitUntil.default(() => commentToBeEdited.content === editedText, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited._rawCommentUpdate.edit.content).to.equal(editedText);
         expect(commentToBeEdited._rawCommentUpdate.edit.reason).to.equal(editReason);
@@ -78,7 +82,7 @@ describe("Editing comment.content", async () => {
             signer: commentToBeEdited.signer
         });
         await publishWithExpectedResult(commentEdit, true);
-        await waitUntil.default(() => commentToBeEdited.content === editedText, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
@@ -103,7 +107,7 @@ describe("Editing comment.content", async () => {
                 signer: roleTest.signer
             });
             await publishWithExpectedResult(commentEdit, true);
-            await waitUntil.default(() => commentToEdit.edit?.content === editedText, { timeout: 200000 });
+            await resolveWhenConditionIsTrue(commentToEdit, () => commentToEdit.edit?.content === editedText);
             expect(commentToEdit.edit.content).to.equal(editedText);
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);

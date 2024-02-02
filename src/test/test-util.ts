@@ -15,9 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
 import { CreateSubplebbitOptions } from "../subplebbit/types";
-import waitUntilPkg from "async-wait-until";
-//@ts-expect-error
-const waitUntil = waitUntilPkg.default;
+import { EventEmitter } from "events";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -436,16 +434,13 @@ export async function waitTillCommentIsInParentPages(
     await parent.update();
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
-    await waitUntil(
-        async () => {
-            const repliesPageCid = pagesInstance()?.pageCids?.new;
-            if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
-            return Boolean(commentInPage);
-        },
-        {
-            timeout: 200000
-        }
-    );
+    const isCommentInParentPages = async () => {
+        const repliesPageCid = pagesInstance()?.pageCids?.new;
+        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+        return Boolean(commentInPage);
+    };
+
+    await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
 
     await parent.stop();
 
@@ -487,4 +482,15 @@ export function isRpcFlagOn(): boolean {
     const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
     const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
     return isRpcFlagOn;
+}
+
+export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>) {
+    // should add a timeout?
+    if (!(await predicate()))
+        await new Promise((resolve) => {
+            toUpdate.on("update", async () => {
+                const conditionStatus = await predicate();
+                if (conditionStatus) resolve(conditionStatus);
+            });
+        });
 }

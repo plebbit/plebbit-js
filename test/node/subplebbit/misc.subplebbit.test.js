@@ -16,7 +16,6 @@ import signers from "../../fixtures/signers";
 import { getThumbnailUrlOfLink } from "../../../dist/node/runtime/node/util";
 import path from "path";
 import fs from "fs";
-import { default as waitUntil } from "async-wait-until";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -34,14 +33,10 @@ describe("plebbit.listSubplebbits", async () => {
     it(`listSubplebbits shows unlocked created subplebbits`, async () => {
         const title = "Test listSubplebbits" + Date.now();
 
-        plebbit.createSubplebbit({ signer: subSigner, title: title });
-
-        await waitUntil.default(async () => (await plebbit.listSubplebbits()).includes(subSigner.address), {
-            timeout: 200000
-        });
-
+        const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
         // At this point the sub should be unlocked and ready to be recreated by another instance
-        const createdSubplebbit = await plebbit.createSubplebbit({ address: subSigner.address });
+        const listedSubs = await plebbit.listSubplebbits();
+        expect(listedSubs).to.include(createdSubplebbit.address);
 
         expect(createdSubplebbit.address).to.equal(subSigner.address);
         expect(createdSubplebbit.title).to.equal(title);
@@ -217,7 +212,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil.default(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = stopped after calling stop()`, async () => {
@@ -228,7 +223,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.stop();
         expect(subplebbit.state).to.equal("stopped");
-        await waitUntil.default(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = updating after calling update()`, async () => {
@@ -239,7 +234,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.update();
         expect(subplebbit.state).to.equal("updating");
-        await waitUntil.default(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = started after calling start() after update()`, async () => {
@@ -249,7 +244,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil.default(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 });
 

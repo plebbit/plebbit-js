@@ -4,7 +4,8 @@ import {
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
-    mockRemotePlebbit
+    mockRemotePlebbit,
+    resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util";
 import { messages } from "../../../../dist/node/errors";
 import lodash from "lodash";
@@ -12,7 +13,6 @@ import lodash from "lodash";
 import chai from "chai";
 import { expect, assert } from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { default as waitUntil } from "async-wait-until";
 chai.use(chaiAsPromised);
 
 const subplebbitAddress = signers[0].address;
@@ -26,9 +26,8 @@ describe(`Test Downvote`, async () => {
         postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
         replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
         await Promise.all([postToVote.update(), replyToVote.update()]);
-        await waitUntil.default(() => typeof postToVote.updatedAt === "number" && typeof replyToVote.updatedAt === "number", {
-            timeout: 200000
-        });
+        await resolveWhenConditionIsTrue(postToVote, () => typeof postToVote.updatedAt === "number");
+        await resolveWhenConditionIsTrue(replyToVote, () => typeof replyToVote.updatedAt === "number");
     });
     after(async () => {
         await postToVote.stop();
@@ -40,7 +39,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(postToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil.default(() => postToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(postToVote, () => postToVote.downvoteCount === originalDownvote + 1);
 
         expect(postToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(postToVote.upvoteCount).to.equal(0);
@@ -55,7 +54,7 @@ describe(`Test Downvote`, async () => {
         const vote = await generateMockVote(replyToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil.default(() => replyToVote.downvoteCount === originalDownvote + 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(replyToVote, () => replyToVote.downvoteCount === originalDownvote + 1);
 
         expect(replyToVote.downvoteCount).to.equal(originalDownvote + 1);
         expect(replyToVote.upvoteCount).to.equal(0);
@@ -77,7 +76,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil.default(() => postToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(postToVote, () => postToVote.upvoteCount === originalUpvote + 1);
 
         expect(postToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(postToVote.downvoteCount).to.equal(originalDownvote - 1);
@@ -97,7 +96,7 @@ describe(`Test Downvote`, async () => {
         });
         await publishWithExpectedResult(vote, true);
 
-        await waitUntil.default(() => replyToVote.upvoteCount === originalUpvote + 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(replyToVote, () => replyToVote.upvoteCount === originalUpvote + 1);
 
         expect(replyToVote.upvoteCount).to.equal(originalUpvote + 1);
         expect(replyToVote.downvoteCount).to.equal(originalDownvote - 1);

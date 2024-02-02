@@ -1,8 +1,12 @@
 import signers from "../../fixtures/signers";
-import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import {
+    mockRemotePlebbit,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors";
-import { default as waitUntil } from "async-wait-until";
 import { verifyComment, verifyCommentUpdate } from "../../../dist/node/signer/signatures";
 
 const subplebbitAddress = signers[0].address;
@@ -46,7 +50,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         await publishWithExpectedResult(spoilerEdit, true);
     });
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
-        await waitUntil.default(() => authorPost.spoiler === true, { timeout: 100000 });
+        await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === true);
         expect(authorPost.edit.spoiler).to.be.true;
         expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
         expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
@@ -92,8 +96,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         await publishWithExpectedResult(unspoilerEdit, true);
     });
     it(`A new CommentUpdate is published with spoiler=false`, async () => {
-        await waitUntil.default(() => authorPost.spoiler === false, { timeout: 100000 });
-
+        await resolveWhenConditionIsTrue(authorPost, () => authorPost.spoiler === false);
         expect(authorPost.edit.spoiler).to.be.false;
         expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
         expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
@@ -131,8 +134,7 @@ describe(`Mods marking an author comment as spoiler`, async () => {
     });
 
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
-        await waitUntil.default(() => randomPost.spoiler === true, { timeout: 100000 });
-
+        await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === true);
         expect(randomPost._rawCommentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
         expect(randomPost._rawCommentUpdate.spoiler).to.be.true;
         expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
@@ -153,7 +155,7 @@ describe(`Mods marking an author comment as spoiler`, async () => {
     });
 
     it(`A new CommentUpdate is published with spoiler=false`, async () => {
-        await waitUntil.default(() => randomPost.spoiler === false, { timeout: 100000 });
+        await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === false);
         expect(randomPost._rawCommentUpdate.reason).to.equal("Mod unspoilering an author comment");
         expect(randomPost._rawCommentUpdate.spoiler).to.be.false;
         expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
@@ -188,8 +190,7 @@ describe(`Mods marking their own comment as spoiler`, async () => {
     });
 
     it(`A new CommentUpdate is published with spoiler=true`, async () => {
-        await waitUntil.default(() => modPost.spoiler === true, { timeout: 100000 });
-
+        await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === true);
         expect(modPost.edit.spoiler).to.be.true;
         expect(modPost._rawCommentUpdate.reason).to.be.undefined;
         expect(modPost._rawCommentUpdate.spoiler).to.be.undefined;
@@ -213,8 +214,7 @@ describe(`Mods marking their own comment as spoiler`, async () => {
     });
 
     it(`A new CommentUpdate is published with spoiler=false`, async () => {
-        await waitUntil.default(() => modPost.spoiler === false, { timeout: 100000 });
-
+        await resolveWhenConditionIsTrue(modPost, () => modPost.spoiler === false);
         expect(modPost.edit.spoiler).to.be.false;
         expect(modPost._rawCommentUpdate.reason).to.be.undefined;
         expect(modPost._rawCommentUpdate.spoiler).to.be.undefined;

@@ -11,7 +11,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     publishVote,
     generatePostToAnswerMathQuestion,
-    isRpcFlagOn
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util";
 import lodash from "lodash";
 import { messages } from "../../../../dist/node/errors";
@@ -19,8 +20,6 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
 import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client";
-import waitUntilPkg from "async-wait-until";
-const waitUntil = waitUntilPkg.default;
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures";
 
@@ -326,12 +325,16 @@ describe(`commentUpdate.replyCount`, async () => {
         reply = await publishRandomReply(post, plebbit, {}, false);
         await reply.update();
         await new Promise((resolve) => reply.once("update", resolve));
-        await waitUntil(() => post.replyCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
+        expect(post.replyCount).to.equal(1);
     });
 
     it(`post.replyCount increases with a reply of a reply`, async () => {
         await publishRandomReply(reply, plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+        await resolveWhenConditionIsTrue(reply, () => reply.replyCount === 1);
+        expect(post.replyCount).to.equal(2);
+        expect(reply.replyCount).to.equal(1);
     });
 });
 
@@ -358,7 +361,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
         await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         expect(post.replyCount).to.equal(2);
         expect(post.lastChildCid).to.equal(post.replies.pages.topAll.comments[0].cid);
     });
@@ -380,14 +383,14 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
 
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 1, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
         const replyOfReply = await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         expect(post.replyCount).to.equal(2);
         expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
     });
@@ -409,7 +412,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`post.author.subplebbit.postScore increases with upvote to post`, async () => {
         expect(post.cid).to.be.a("string");
         await publishVote(post.cid, post.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => post.upvoteCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.upvoteCount === 1);
         expect(post.upvoteCount).to.equal(1);
         expect(post.author.subplebbit.postScore).to.equal(1);
         expect(post.author.subplebbit.replyScore).to.equal(0);
@@ -418,9 +421,9 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
         const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
-
         await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => anotherPost.upvoteCount === 1 && post.author.subplebbit.postScore === 2, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.postScore === 2);
+        await resolveWhenConditionIsTrue(anotherPost, () => anotherPost.upvoteCount === 1);
         expect(anotherPost.upvoteCount).to.equal(1);
         expect(anotherPost.author.subplebbit.postScore).to.equal(2);
         expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
@@ -436,8 +439,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
         await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
-
+        await resolveWhenConditionIsTrue(reply, () => reply.upvoteCount === 1);
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.replyScore === 1);
         expect(post.upvoteCount).to.equal(1);
         expect(post.author.subplebbit.postScore).to.equal(2);
         expect(post.author.subplebbit.replyScore).to.equal(1);
@@ -455,10 +458,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
-        await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
-            timeout: 200000
-        });
-
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.lastCommentCid === anotherPost.cid);
+        await resolveWhenConditionIsTrue(anotherPost, () => typeof anotherPost.updatedAt === "number");
         expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
         expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
         expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
@@ -469,9 +470,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
         const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
-
-        await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
-
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+        await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
         expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
         expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
         expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);

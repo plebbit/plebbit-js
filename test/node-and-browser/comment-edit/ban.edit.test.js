@@ -1,9 +1,14 @@
 import signers from "../../fixtures/signers";
-import { mockRemotePlebbit, generateMockPost, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import {
+    mockRemotePlebbit,
+    generateMockPost,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors";
 import { timestamp } from "../../../dist/node/util";
-import { default as waitUntil } from "async-wait-until";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -45,7 +50,7 @@ describe(`Banning authors`, async () => {
     });
 
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
-        await waitUntil.default(() => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number", { timeout: 200000 });
+        await resolveWhenConditionIsTrue(commentToBeBanned, () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number");
         expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
     });
 

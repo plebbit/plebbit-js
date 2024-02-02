@@ -4,11 +4,11 @@ import {
     loadAllPages,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
-    isRpcFlagOn
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
 import lodash from "lodash";
-import { default as waitUntil } from "async-wait-until";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";
@@ -47,7 +47,7 @@ describe(`subplebbit.edit`, async () => {
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
                 const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
                 await loadedSubplebbit.update();
-                await waitUntil.default(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+                await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
                 loadedSubplebbit.stop();
                 expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
                 expect(deterministicStringify(loadedSubplebbit.toJSON())).to.equal(deterministicStringify(subplebbit.toJSON()));
@@ -103,9 +103,7 @@ describe(`subplebbit.edit`, async () => {
     });
 
     it(`Posts submitted to new sub address are shown in subplebbit.posts`, async () => {
-        await waitUntil.default(() => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid), {
-            timeout: 200000
-        });
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit?.posts?.pages?.hot?.comments?.some((comment) => comment.cid === postToPublishAfterEdit.cid));
         expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
         expect(Object.values(subplebbit.posts.pageCids)).to.deep.equal(
             new Array(Object.keys(subplebbit.posts.pageCids).length).fill(Object.values(subplebbit.posts.pageCids)[0])
@@ -309,7 +307,7 @@ describe(`subplebbit.edit (RPC)`, async () => {
             const remotePlebbit = await mockRemotePlebbitIpfsOnly(); // This plebbit instance won't use RPC
             const loadedSubplebbit = await remotePlebbit.createSubplebbit({address: subplebbit.address});
             await loadedSubplebbit.update();
-            await waitUntil.default(() => loadedSubplebbit[keyToEdit] === newValue, { timeout: 200000 });
+            await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
             await loadedSubplebbit.stop();
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
         })
