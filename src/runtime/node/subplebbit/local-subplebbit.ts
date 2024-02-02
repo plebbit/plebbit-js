@@ -1300,6 +1300,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Import subplebbit keys onto ipfs node
 
         await this._importSubplebbitSignerIntoIpfsIfNeeded();
+        await this._listenToIncomingRequests();
 
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
