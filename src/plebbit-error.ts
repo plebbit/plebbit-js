@@ -1,3 +1,4 @@
+import lodash from "lodash";
 import { messages } from "./errors";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {
@@ -13,7 +14,7 @@ export class PlebbitError extends CustomError {
     }
 
     toString() {
-        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(this.details)}`;
+        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(lodash.omit(this.details, "stack"))}`;
     }
 
     toJSON() {

@@ -15,6 +15,7 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
+import lodash from "lodash";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -177,9 +178,8 @@ export class BaseClientsManager {
     private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<string> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
-        const formattedUrl = url.replace("localhost", "127.0.0.1"); // For some reason fetch fails with localhost
         try {
-            res = await nativeFunctions.fetch(formattedUrl, {
+            res = await nativeFunctions.fetch(url, {
                 cache,
                 signal,
                 //@ts-expect-error, this option is for node-fetch
@@ -196,7 +196,7 @@ export class BaseClientsManager {
                 : url.includes("/ipns/")
                   ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                   : "ERR_FAILED_TO_FETCH_GENERIC";
-            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, error: e });
+            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
 
             // If error is not related to size limit, then throw it again
         }
@@ -283,7 +283,7 @@ export class BaseClientsManager {
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, e);
                 if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                return { error: e };
+                return { error: lodash.omit(<PlebbitError>e, "stack") };
             }
         }
     }

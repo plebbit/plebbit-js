@@ -157,8 +157,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             typeof props.spoiler === "boolean"
                 ? props.spoiler
                 : typeof props.edit?.spoiler === "boolean"
-                ? props.edit?.spoiler
-                : this.spoiler;
+                  ? props.edit?.spoiler
+                  : this.spoiler;
         this.author.subplebbit = props.author?.subplebbit;
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;
@@ -333,8 +333,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 } catch (e) {
                     if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(String(e));
-                    this.emit("error", e);
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e.toString());
                     this._loadingOperation.retry(e);
                 }
             });
@@ -351,9 +350,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 } catch (e) {
                     if (e["details"]) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(String(e));
+                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e.toString());
                     this._loadingOperation.retry(e);
-                    this.emit("error", e);
                 }
             });
         });

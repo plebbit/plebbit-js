@@ -339,7 +339,7 @@ export class ClientsManager extends BaseClientsManager {
             for (const gatewayUrl of Object.keys(gatewayFetches))
                 if (gatewayFetches[gatewayUrl].error) gatewayToError[gatewayUrl] = gatewayFetches[gatewayUrl].error;
             const combinedError = new PlebbitError("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", { ipnsName, gatewayToError });
-
+            delete combinedError.stack;
             throw combinedError;
         }
 
@@ -624,7 +624,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return commentUpdate;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(e, `Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             } else {
                 // States of gateways should be updated by fetchFromMultipleGateways
@@ -633,7 +633,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return update;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(e, `Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             }
         }
