@@ -4,8 +4,8 @@ import { Plebbit } from "../plebbit";
 
 import { ProtocolVersion, SubplebbitEvents } from "../types";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
-import { subplebbitForPublishingCache } from "../constants";
+import { multihash as isIpfsMultihash } from "is-ipfs";
+
 import { JsonSignature } from "../signer/constants";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error";
@@ -128,8 +128,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     protected _setAddress(newAddress: string) {
+        // check if domain or ipns
+        // else, throw an error
         if (doesEnsAddressHaveCapitalLetter(newAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
+        const isDomain = newAddress.includes(".");
+        const isIpns = isIpfsMultihash(newAddress);
+        if (!isDomain && !isIpns)
+            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns });
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
