@@ -1,5 +1,5 @@
-const Plebbit = require("../../dist/browser");
-const { expect } = require("chai");
+import Plebbit from "../../dist/node/index";
+import { expect } from "chai";
 
 // example of browser only tests
 

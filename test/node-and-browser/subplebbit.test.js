@@ -93,6 +93,11 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: "testSub.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
     });
+
+    it("plebbit.createSubplebbit({address}) throws if subplebbit address isn't an ipns or domain", async () => {
+        const invalidAddress = "0xdeadbeef";
+        await assert.isRejected(plebbit.createSubplebbit({ address: invalidAddress }), messages.ERR_INVALID_SUBPLEBBIT_ADDRESS);
+    });
 });
 
 describe("subplebbit.update (remote)", async () => {
@@ -167,24 +172,6 @@ describe("subplebbit.update (remote)", async () => {
         await new Promise((resolve) => {
             sub.on("error", (err) => {
                 expect(err.code).to.equal("ERR_ENS_TXT_RECORD_NOT_FOUND");
-                expect(sub.updatingState).to.equal("failed");
-                errorCount++;
-                if (errorCount === 3) resolve();
-            });
-        });
-
-        await sub.stop();
-        await sub.removeAllListeners("error");
-    });
-    it("subplebbit.update emits error if subplebbit address is incorrect", async () => {
-        const invalidAddress = "0xdeadbeef";
-        const sub = await plebbit.createSubplebbit({ address: invalidAddress });
-        sub.update();
-        // Should emit an error and keep on retrying in the next update loop
-        let errorCount = 0;
-        await new Promise((resolve) => {
-            sub.on("error", (err) => {
-                expect(err.code).to.equal("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS");
                 expect(sub.updatingState).to.equal("failed");
                 errorCount++;
                 if (errorCount === 3) resolve();
@@ -323,11 +310,11 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
     });
 
     if (!isRpcFlagOn())
-    it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
-        const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
-        expect(subplebbit.address).to.equal(ensSubplebbitAddress);
-        expect(subplebbit.updatedAt).to.be.a("number");
-    });
+        it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
+            const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
+            expect(subplebbit.address).to.equal(ensSubplebbitAddress);
+            expect(subplebbit.updatedAt).to.be.a("number");
+        });
 
     it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
         await assert.isRejected(plebbit.getSubplebbit("testSub.eth"), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
