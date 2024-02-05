@@ -192,7 +192,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.emit("startedstatechange", this.startedState);
     }
 
-    private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType> {
+    private _isCriticalErrorWhenLoading(err: PlebbitError) {
+        return err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID";
+    }
+
+    private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
         return new Promise((resolve) => {
             this._loadingOperation.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
@@ -201,9 +205,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                     resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(String(e));
-                    this.emit("error", e);
-                    this._loadingOperation.retry(e);
+                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e.toString());
+                    if (this._isCriticalErrorWhenLoading(e)) return <PlebbitError>e;
+                    else this._loadingOperation.retry(e);
                 }
             });
         });
@@ -215,12 +219,16 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
 
         const loadedSubIpfs = await this._retryLoadingSubplebbitIpns(log, this.address);
+        if (loadedSubIpfs instanceof Error){
+            this.emit("error", <PlebbitError>loadedSubIpfs);
+            return;
+        }
+        // Signature already has been validated
 
         if ((this.updatedAt || 0) < loadedSubIpfs.updatedAt) {
             await this.initRemoteSubplebbitProps(loadedSubIpfs);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
-            subplebbitForPublishingCache.set(loadedSubIpfs.address, lodash.pick(loadedSubIpfs, ["encryption", "address", "pubsubTopic"]));
         } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
     }
 
