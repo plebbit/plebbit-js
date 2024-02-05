@@ -209,6 +209,21 @@ type TestServerSubs = {
     mathSub: string;
 };
 
+export async function startOnlineSubplebbit() {
+    const onlinePlebbit = await createOnlinePlebbit();
+
+    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+
+    await onlineSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+
+    await onlineSub.start();
+
+    await new Promise((resolve) => onlineSub.once("update", resolve));
+    console.log("Online sub is online on address", onlineSub.address);
+
+    return onlineSub;
+}
+
 export async function startSubplebbits(props: {
     signers: SignerType[];
     noData: boolean;
@@ -230,15 +245,7 @@ export async function startSubplebbits(props: {
     ]);
     console.timeEnd("populate");
 
-    const onlinePlebbit = await createOnlinePlebbit();
-
-    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
-
-    await onlineSub.start();
-
-    await new Promise((resolve) => onlineSub.once("update", resolve));
-    console.log("Online sub is online on address", onlineSub.address);
-
+    const onlineSub = await startOnlineSubplebbit();
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
     return { onlineSub: onlineSub.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };

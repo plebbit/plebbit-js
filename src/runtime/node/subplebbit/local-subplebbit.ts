@@ -477,7 +477,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this.clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log.trace(
-            `(${request.challengeRequestId.toString()}): `,
             `Published ${challengeMessage.type} over pubsub: `,
             removeNullAndUndefinedValuesRecursively(lodash.omit(toSignChallenge, ["encrypted"]))
         );
@@ -578,7 +577,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log(
-                `(${request.challengeRequestId.toString()}): `,
                 `Published ${challengeVerification.type} over pubsub:`,
                 removeNullAndUndefinedValuesRecursively(lodash.omit(objectToEmit, ["encrypted", "signature"]))
             );
