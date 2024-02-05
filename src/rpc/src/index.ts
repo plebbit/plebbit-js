@@ -14,7 +14,7 @@ import {
     PlebbitWsServerSettingsSerialized,
     VotePubsubMessage
 } from "../../types";
-import { WebSocket } from "ws";
+import WebSocket from "ws";
 import Publication from "../../publication";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types";
 import lodash from "lodash";
@@ -87,7 +87,9 @@ class PlebbitWsServer extends EventEmitter {
 
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
+            //@ts-ignore-error
             this.connections[ws._id] = ws;
+            //@ts-ignore-error
             this.subscriptionCleanups[ws._id] = {};
         });
 
