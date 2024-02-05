@@ -455,10 +455,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     this.getType() === "comment"
                         ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessage())
                         : this.getType() === "commentedit"
-                        ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
-                        : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
-                        : undefined;
+                          ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
+                          : this.getType() === "vote"
+                            ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
+                            : undefined;
             } catch (e) {
                 log.error("Failed to publish to RPC due to error", String(e));
                 this._updateState("stopped");
