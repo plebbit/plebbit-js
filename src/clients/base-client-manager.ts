@@ -277,7 +277,7 @@ export class BaseClientsManager {
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
-            if (e?.details?.error?.type === "aborted") {
+            if (e?.details?.fetchError?.includes("AbortError")) {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
             } else {
