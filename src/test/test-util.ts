@@ -234,9 +234,10 @@ export async function startSubplebbits(props: {
 
     const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
 
-    await onlinePlebbit._storage.setItem("online-sub-address", onlineSub.address);
-
     await onlineSub.start();
+
+    await new Promise((resolve) => onlineSub.once("update", resolve));
+    console.log("Online sub is online on address", onlineSub.address);
 
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
@@ -303,7 +304,11 @@ export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
 }
 
 export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
-    const plebbit = await PlebbitIndex({ ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"], ...plebbitOptions }); // use online ipfs node
+    const plebbit = await PlebbitIndex({
+        ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        ...plebbitOptions
+    }); // use online ipfs node
     return plebbit;
 }
 
