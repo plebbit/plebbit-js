@@ -1,7 +1,12 @@
 // In this test we're gonna publish a couple of publications to the online sub we started in test-server.js
-const Plebbit = require("../../dist/browser");
-const { expect } = require("chai");
-const { generateMockPost, createOnlinePlebbit } = require("../../dist/node/test/test-util");
+import Plebbit from "../../dist/browser/index";
+import { expect } from "chai";
+import {
+    createOnlinePlebbit,
+    fetchTestServerSubs,
+    generatePostToAnswerMathQuestion,
+    publishWithExpectedResult
+} from "../../dist/node/test/test-util";
 
 // example of browser only tests
 
@@ -19,16 +24,10 @@ describe("plebbit.browserLibp2pJsPublish", () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
-    it(`Can publish a post to online sub and get a challenge back`, async () => {
-        const onlinePlebbit = await createOnlinePlebbit({ browserLibp2pJsPublish: true });
-        const post = await generateMockPost(subs.onlineSub, onlinePlebbit, false, {});
+    it(`Can publish a post to online sub and complete a challenge exchange`, async () => {
+        const onlinePlebbit = await createOnlinePlebbit({ browserLibp2pJsPublish: true, resolveAuthorAddresses: false });
+        const post = await generatePostToAnswerMathQuestion({ subplebbitAddress: subs.onlineSub }, onlinePlebbit);
 
-        await post.publish();
-
-        await new Promise((resolve) =>
-            post.once("challenge", () => {
-                debugger;
-            })
-        );
+        await publishWithExpectedResult(post, true);
     });
 });

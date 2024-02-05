@@ -286,9 +286,9 @@ describe(`subplebbit.edit (RPC)`, async () => {
         plebbit = await mockPlebbit();
         const signer = await plebbit.createSigner();
         subplebbit = await plebbit.createSubplebbit({signer});
-        await subplebbit.start();
-        await new Promise(resolve => subplebbit.once("update", resolve));
         expect(subplebbit.address).to.equal(signer.address);
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
@@ -308,8 +308,8 @@ describe(`subplebbit.edit (RPC)`, async () => {
             const loadedSubplebbit = await remotePlebbit.createSubplebbit({address: subplebbit.address});
             await loadedSubplebbit.update();
             await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
-            await loadedSubplebbit.stop();
             expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
+            await loadedSubplebbit.stop();
         })
     );
 });
