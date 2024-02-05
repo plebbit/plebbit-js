@@ -10,6 +10,7 @@ import { identify as identifyService } from "@libp2p/identify";
 import { kadDHT } from "@libp2p/kad-dht";
 import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
+import { createEd25519PeerId } from "@libp2p/peer-id-factory";
 import { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types";
 
 import { EventEmitter } from "events";
@@ -51,10 +52,12 @@ const logEvents = (node) => {
 
 export async function createLibp2pNode(): Promise<PubsubClient> {
     if (libp2pPubsubClient) return libp2pPubsubClient;
+    const peerId = await createEd25519PeerId();
     const libP2pNode = await createLibp2p({
         // can't listen using webtransport in libp2p js
         // addresses: {listen: []},
         peerDiscovery: [bootstrap(bootstrapConfig)],
+        peerId,
         transports: [
             webTransport(),
             webRTCDirect()
@@ -72,10 +75,7 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
         },
         services: {
             identify: identifyService(), // required for peer discovery of pubsub
-            dht: kadDHT({
-                protocol: "/plebbit"
-                //  clientMode: true // if not publicaly dialable
-            }), // p2p peer discovery
+            dht: kadDHT({}), // p2p peer discovery
             pubsub: gossipsub({
                 allowPublishToZeroPeers: true
             })
