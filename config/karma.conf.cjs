@@ -4,11 +4,12 @@
 
 const os = require("os");
 
-const mochaConfig = { timeout: 2000000 };
-console.log(mochaConfig);
+const mochaConfig = require("./.mocharc.json");
+delete mochaConfig["node-option"];
+delete mochaConfig["colors"];
 // possible to add flags when launching the browser
 const CustomChrome = {
-    base: "Chrome",
+    base: "ChromeHeadless",
     flags: ["--disable-web-security"],
     debug: true
 };
@@ -74,14 +75,21 @@ module.exports = function (config) {
             // then they are compiled to browser with webpack to dist/browser/test
             // you must run `npm run tsc:watch` and `npm run webpack:watch` to use the karma tests
             "test-karma-webpack/test/browser/root-hook-karma.util.js", // To load root hook in karma,
-            "test-karma-webpack/test/browser/**/*.test.js"
-            // "test-karma-webpack/test/*browser/**/*.test.js"
+            // "test-karma-webpack/test/browser/**/*.test.js"
+            "test-karma-webpack/test/*browser/**/*.test.js"
+            // "test-karma-webpack/test/browser/libp2p.browser.test.js"
+            // "test-karma-webpack/test/node-and-browser/**/*.test.js"
+            // "test-karma-webpack/test/node-and-browser/publications/comment/misc.test.js",
+            // "test-karma-webpack/test/node-and-browser/subplebbit.test.js"
+
+            // "test-karma-webpack/test/node-and-browser/*.test.js"
+
             // "test-karma-webpack/test/*browser/publications/**/*.test.js"
             // "test-karma-webpack/test/*browser/comment-edit/*.test.js"
             // "test-karma-webpack/test/node-and-browser/comment-edit/locked.edit.test.js"
             // "test-karma-webpack/test/node-and-browser/publications/comment/publish.test.js"
         ],
-        exclude: [],
+        exclude: ["test-karma-webpack/test/browser/libp2p.browser.test.js"],
 
         preprocessors: {
             // inject code to run before each test

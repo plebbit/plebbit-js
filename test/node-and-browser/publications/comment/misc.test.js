@@ -545,7 +545,6 @@ describe("comment.updatingState", async () => {
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
-
         await new Promise((resolve) => mockPost.once("update", resolve));
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
