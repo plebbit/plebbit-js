@@ -33,7 +33,7 @@ let libp2pPubsubClient: PubsubClient;
 const logEvents = (node) => {
     const events = [
         "connection:close",
-        "connection:open",                
+        "connection:open",
         "connection:prune",
         "peer:connect",
         "peer:disconnect",
@@ -89,10 +89,7 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
     const pubsubEventHandler = new EventEmitter();
 
     libP2pNode.services.pubsub.addEventListener("message", (evt) => {
-        log(
-            `Event from libp2p pubsub in browser:`, //@ts-expect-error
-            `${evt.detail.from}: ${uint8ArrayToString(evt.detail.data)} on topic ${evt.detail.topic}`
-        );
+        log(`Event from libp2p pubsub in browser:`, `${evt.detail["from"]}: on topic ${evt.detail.topic}`);
 
         //@ts-expect-error
         const msgFormatted: IpfsHttpClientPubsubMessage = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
@@ -109,12 +106,14 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
                     log("Published new data to topic", topic, "And the result is", res);
                 },
                 subscribe: async (topic, handler, options) => {
+                    libP2pNode.services.pubsub.subscribe(topic);
                     //@ts-expect-error
                     pubsubEventHandler.on(topic, handler);
                 },
                 unsubscribe: async (topic, handler, options) => {
                     //@ts-expect-error
                     pubsubEventHandler.removeListener(topic, handler);
+                    if (pubsubEventHandler.listenerCount(topic) === 0) libP2pNode.services.pubsub.unsubscribe(topic);
                 }
             }
         },
