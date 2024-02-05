@@ -249,9 +249,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
 
         if (typeof subplebbit.createdAt === "number") return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
-        const subIpfs = await subplebbit.clientsManager.fetchSubplebbit(subplebbitAddress); // would throw if signature is invalid
-        await subplebbit.initRemoteSubplebbitProps(subIpfs);
-        subplebbit._setUpdatingState("stopped");
+        const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+        const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
+        await subplebbit.update();
+        let error: PlebbitError | undefined;
+        await Promise.race([updatePromise, errorPromise]);
+        await subplebbit.stop();
+        if (error) throw error;
 
         return subplebbit;
     }
