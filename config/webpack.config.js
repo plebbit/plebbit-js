@@ -59,7 +59,7 @@ export default {
                         presets: ["@babel/preset-env"],
 
                         // fix ReferenceError: regeneratorRuntime is not defined
-                        plugins: ["@babel/plugin-transform-runtime", "@babel/plugin-syntax-import-assertions"]
+                        plugins: ["@babel/plugin-syntax-import-assertions"]
                     }
                 }
             }

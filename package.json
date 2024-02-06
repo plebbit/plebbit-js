@@ -102,7 +102,6 @@
     "devDependencies": {
         "@babel/core": "7.23.7",
         "@babel/plugin-syntax-import-assertions": "7.23.3",
-        "@babel/plugin-transform-runtime": "7.23.9",
         "@babel/preset-env": " 7.23.9",
         "@types/glob": "8.1.0",
         "@types/lodash": "4.14.189",
