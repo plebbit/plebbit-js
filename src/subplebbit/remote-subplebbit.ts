@@ -58,9 +58,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
 
+    // should be used internally
+    _ipnsLoadingOperation: RetryOperation;
+
     // private
     protected _updateTimeout?: NodeJS.Timeout;
-    private _loadingOperation: RetryOperation;
 
     constructor(plebbit: Plebbit) {
         super();
@@ -204,7 +206,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
         return new Promise((resolve) => {
-            this._loadingOperation.attempt(async (curAttempt) => {
+            this._ipnsLoadingOperation.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this.clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
@@ -213,7 +215,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                     this._setUpdatingState("failed");
                     log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e.toString());
                     if (this._isCriticalErrorWhenLoading(e)) return <PlebbitError>e;
-                    else this._loadingOperation.retry(e);
+                    else this._ipnsLoadingOperation.retry(e);
                 }
             });
         });
@@ -222,10 +224,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     private async updateOnce() {
         const log = Logger("plebbit-js:remote-subplebbit:update");
 
-        this._loadingOperation = retry.operation({ forever: true, factor: 2 });
+        this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
 
         const loadedSubIpfs = await this._retryLoadingSubplebbitIpns(log, this.address);
-        if (loadedSubIpfs instanceof Error){
+        if (loadedSubIpfs instanceof Error) {
             this.emit("error", <PlebbitError>loadedSubIpfs);
             return;
         }
@@ -258,7 +260,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     async stop() {
-        this._loadingOperation?.stop();
+        this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
 
         this._setUpdatingState("stopped");

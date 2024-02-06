@@ -249,13 +249,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
 
         if (typeof subplebbit.createdAt === "number") return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
+        const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
-        await subplebbit.update();
-        let error: PlebbitError | undefined;
-        await Promise.race([updatePromise, errorPromise]);
+        let updateError: PlebbitError | undefined;
+        const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((updateError = err))));
+        try {
+            await subplebbit.update();
+            await Promise.race([updatePromise, errorPromise, new Promise((_, reject) => setTimeout(() => reject("timed out"), timeoutMs))]);
+        } catch (e) {
+            await subplebbit.stop();
+            if (updateError) throw updateError;
+            if (subplebbit?._ipnsLoadingOperation?.mainError()) throw subplebbit._ipnsLoadingOperation.mainError();
+            throw Error("Timed out without error. Should not happen" + e);
+        }
         await subplebbit.stop();
-        if (error) throw error;
 
         return subplebbit;
     }
