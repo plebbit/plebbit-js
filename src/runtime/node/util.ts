@@ -136,8 +136,7 @@ export const deleteOldSubplebbitInWindows = async (subPath: string, plebbit: Pic
     }
 };
 
-async function _handlePersistentSubsIfNeeded(plebbit: Plebbit) {
-    const log = Logger("plebbit-js:listSubplebbits");
+async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
     const deletedPersistentSubs = <string[] | undefined>(
         await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS])
     );
@@ -171,11 +170,13 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit) {
 }
 
 export async function listSubplebbits(plebbit: Plebbit) {
+    const log = Logger("plebbit-js:listSubplebbits");
+
     const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
 
     await fs.mkdir(subplebbitsPath, { recursive: true });
 
-    const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit);
+    const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit, log);
 
     const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
         .filter((file) => file.isFile()) // Filter directories out
@@ -185,9 +186,13 @@ export async function listSubplebbits(plebbit: Plebbit) {
     const filterResults = await Promise.all(
         files.map(async (address) => {
             if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address)) return false;
-            //@ts-expect-error
-            const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address));
-            return typeOfFile?.mime === "application/x-sqlite3";
+            try {
+                //@ts-expect-error
+                const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
+                return typeOfFile?.mime === "application/x-sqlite3";
+            } catch (e) {
+                return false;
+            }
         })
     );
 
