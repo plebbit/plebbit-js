@@ -1069,13 +1069,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 this._cidsToUnPin.map(async (cid) => {
                     try {
                         await this.clientsManager.getDefaultIpfs()._client.pin.rm(cid);
-                    } catch (e) {
-                        log.error(`Failed to unpin cid ${cid} due to error `, e);
-                    }
+                    } catch (e) {}
                 })
             );
 
-            log(`unpinned ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
+            log.trace(`unpinned ${this._cidsToUnPin.length} stale cids from ipfs node for subplebbit (${this.address})`);
         }
     }
     private pubsubTopicWithfallback() {
@@ -1205,6 +1203,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _initBeforeStarting() {
+        if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this._challengeAnswerPromises)
             this._challengeAnswerPromises = new LRUCache<string, Promise<string[]>>({
                 max: 1000,
@@ -1224,7 +1223,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 ttl: 600000
             });
         if (!this._cidsToUnPin) this._cidsToUnPin = [];
-        if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         await this.dbHandler.initDestroyedConnection();
     }
 
