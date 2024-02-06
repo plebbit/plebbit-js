@@ -13,6 +13,8 @@ const ipfsPath = getIpfsPath();
 
 const rpcPort = 39652;
 
+const startOnlineSub = false;
+
 // use the test server with the compiled version (dist/node)
 // in order to test the repo like a real user would
 
@@ -58,7 +60,8 @@ const anotherPubsubNodeArgs = {
 };
 
 const startIpfsNodes = async () => {
-    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, onlineNodeArgs];
+    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs];
+    if (startOnlineSub) ipfsNodesToRun.push(onlineNodeArgs);
     for (const nodeArgs of ipfsNodesToRun) {
         console.log("Initializing Node", nodeArgs.dir, "\n");
         try {
@@ -232,7 +235,8 @@ const setUpMockGateways = async () => {
             publishInterval: 3000,
             votesPerCommentToPublish: 5,
             numOfPostsToPublish: 51,
-            numOfCommentsToPublish: 10
+            numOfCommentsToPublish: 10,
+            startOnlineSub: startOnlineSub
         });
 
         http.createServer(async (req, res) => {

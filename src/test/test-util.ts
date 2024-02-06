@@ -231,6 +231,7 @@ export async function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
+    startOnlineSub: boolean;
 }): Promise<TestServerSubs> {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
@@ -245,10 +246,11 @@ export async function startSubplebbits(props: {
     ]);
     console.timeEnd("populate");
 
-    const onlineSub = await startOnlineSubplebbit();
+    let onlineSub;
+    if (props.startOnlineSub) onlineSub = await startOnlineSubplebbit();
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
-    return { onlineSub: onlineSub.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
+    return { onlineSub: onlineSub?.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
 }
 
 export async function fetchTestServerSubs() {
