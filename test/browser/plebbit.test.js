@@ -1,5 +1,5 @@
-const Plebbit = require("../../dist/browser");
-const { expect } = require("chai");
+import Plebbit from "../../dist/node/index";
+import { expect } from "chai";
 
 // example of browser only tests
 
@@ -12,6 +12,7 @@ describe("plebbit", () => {
 
         // no dataPath in brower
         expect(plebbit.dataPath).to.equal(undefined);
+        expect(plebbit.browserLibp2pJsPublish).to.be.false;
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 });

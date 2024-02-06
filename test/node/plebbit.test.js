@@ -1,6 +1,6 @@
-const Plebbit = require("../../dist/node");
-const { expect } = require("chai");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+import Plebbit from "../../dist/node";
+import { expect } from "chai";
+import { mockPlebbit } from "../../dist/node/test/test-util";
 
 // example of node only tests
 

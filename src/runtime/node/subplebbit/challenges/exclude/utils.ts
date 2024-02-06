@@ -1,6 +1,6 @@
-import { Subplebbit } from "../../../../subplebbit/subplebbit"
-import { SubplebbitRole } from "../../../../subplebbit/types"
-import { DecryptedChallengeRequestMessageType } from "../../../../types"
+import { RemoteSubplebbit } from "../../../../../subplebbit/remote-subplebbit"
+import { SubplebbitRole } from "../../../../../subplebbit/types"
+import { DecryptedChallengeRequestMessageType } from "../../../../../types"
 
 // e.g. secondsToGoBack = 60 would return the timestamp 1 minute ago
 const getTimestampSecondsAgo = (secondsToGoBack: number) => Math.round(Date.now() / 1000) - secondsToGoBack
@@ -30,7 +30,7 @@ const testType = (excludePublicationType: boolean | undefined, publication: Decr
 const testVote = (excludeVote: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => testType(excludeVote, publication, isVote)
 const testReply = (excludeReply: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => testType(excludeReply, publication, isReply)
 const testPost = (excludePost: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => testType(excludePost, publication, isPost)
-const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: Subplebbit["roles"]) => {
+const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: RemoteSubplebbit["roles"]) => {
   if (excludeRole === undefined || subplebbitRoles === undefined) {
     return true
   }

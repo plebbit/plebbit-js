@@ -1,4 +1,4 @@
-import { getDefaultDataPath, mkdir, nativeFunctions } from "./runtime/node/util";
+import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util";
 import {
     StorageInterface,
     ChainProvider,
@@ -20,34 +20,36 @@ import {
     VoteType,
     ParsedPlebbitOptions,
     LRUStorageInterface,
-    LRUStorageConstructor
+    LRUStorageConstructor,
+    PubsubSubscriptionHandler
 } from "./types";
 import { Comment } from "./comment";
-import { Subplebbit } from "./subplebbit/subplebbit";
 import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
 import Vote from "./vote";
 import { createSigner, Signer } from "./signer";
 import { Resolver } from "./resolver";
 import { CommentEdit } from "./comment-edit";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid } from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version";
 import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures";
-import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants";
 import Stats from "./stats";
 import Storage from "./runtime/node/storage";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import { ClientsManager } from "./clients/client-manager";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client";
 import { PlebbitError } from "./plebbit-error";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
 import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
 import LRUStorage from "./runtime/node/lru-storage";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
+import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit";
+import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
@@ -59,17 +61,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     };
     resolver: Resolver;
     plebbitRpcClient?: PlebbitRpcClient;
-    ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
-    pubsubHttpClientsOptions: IpfsHttpClientOptions[];
+    ipfsHttpClientsOptions?: IpfsClient["_clientOptions"][];
+    pubsubHttpClientsOptions: IpfsClient["_clientOptions"][];
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
+    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses?: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
     _storage: StorageInterface;
     stats: Stats;
     parsedPlebbitOptions: ParsedPlebbitOptions;
 
-    private _pubsubSubscriptions: Record<string, MessageHandlerFn>;
+    private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler>;
     _clientsManager: ClientsManager;
     publishInterval: number;
     updateInterval: number;
@@ -90,7 +93,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "plebbitRpcClientsOptions",
             "publishInterval",
             "updateInterval",
-            "noData"
+            "noData",
+            "browserLibp2pJsPublish"
         ];
         for (const option of Object.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
@@ -108,13 +112,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions =
             Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
-                : <IpfsHttpClientOptions[] | undefined>options.ipfsHttpClientsOptions; // Same as https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs-http-client#options
+                : <IpfsClient["_clientOptions"][] | undefined>options.ipfsHttpClientsOptions;
 
         const fallbackPubsubProviders = this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
         this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions =
             Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
                 ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
-                : <IpfsHttpClientOptions[]>options.pubsubHttpClientsOptions || this.ipfsHttpClientsOptions || fallbackPubsubProviders;
+                : <IpfsClient["_clientOptions"][]>options.pubsubHttpClientsOptions ||
+                  this.ipfsHttpClientsOptions ||
+                  fallbackPubsubProviders;
 
         this.publishInterval = this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
             ? options.publishInterval
@@ -123,6 +129,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             ? options.updateInterval
             : 60000; // Default to 1 minute
         this.noData = this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
+        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish = options.hasOwnProperty("browserLibp2pJsPublish")
+            ? options.browserLibp2pJsPublish
+            : false;
 
         this._initIpfsClients();
         this._initPubsubClients();
@@ -138,7 +147,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (!nativeFunctions)
             throw Error("Native function is defined at all. Can't create ipfs client: " + JSON.stringify(this._userPlebbitOptions));
         for (const clientOptions of this.ipfsHttpClientsOptions) {
-            const ipfsClient = nativeFunctions.createIpfsClient(clientOptions);
+            const ipfsClient = createIpfsClient(clientOptions);
             this.clients.ipfsClients[<string>clientOptions.url] = {
                 _client: ipfsClient,
                 _clientOptions: clientOptions,
@@ -149,16 +158,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initPubsubClients() {
         this.clients.pubsubClients = {};
-        if (this.pubsubHttpClientsOptions)
+        if (this.browserLibp2pJsPublish)
+            //@ts-expect-error
+            this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
+        else if (this.pubsubHttpClientsOptions)
             for (const clientOptions of this.pubsubHttpClientsOptions) {
-                const ipfsClient =
-                    this.clients.ipfsClients?.[<string>clientOptions.url]?._client || nativeFunctions.createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
+                const ipfsClient = this.clients.ipfsClients?.[<string>clientOptions.url]?._client || createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
                 this.clients.pubsubClients[<string>clientOptions.url] = {
                     _client: ipfsClient,
                     _clientOptions: clientOptions,
                     peers: async () => {
                         const topics = await ipfsClient.pubsub.ls();
-                        return lodash.uniq(lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic)))));
+                        const topicPeers = lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                        const peers = lodash.uniq(topicPeers.map((topicPeer) => topicPeer.toString()));
+                        return peers;
                     }
                 };
             }
@@ -197,7 +210,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         });
     }
 
-    private _parseUrlToOption(urlStrings: string[]): IpfsHttpClientOptions[] {
+    private _parseUrlToOption(urlStrings: string[]): IpfsClient["_clientOptions"][] {
         const parsed = [];
         for (const urlString of urlStrings) {
             const url = new URL(urlString);
@@ -216,7 +229,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         // If user did not provide ipfsGatewayUrls
         const fallbackGateways = this.plebbitRpcClient ? undefined : lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
-        if (this.dataPath) await mkdir(this.dataPath, { recursive: true });
         this.clients.ipfsGateways = {};
         if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
@@ -233,13 +245,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._clientsManager = new ClientsManager(this);
     }
 
-    async getSubplebbit(subplebbitAddress: string): Promise<Subplebbit> {
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit({ address: subplebbitAddress });
-        subplebbit.update();
+    async getSubplebbit(subplebbitAddress: string) {
+        const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
+
+        if (typeof subplebbit.createdAt === "number") return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-        let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((error = err))));
+        await subplebbit.update();
+        let error: PlebbitError | undefined;
         await Promise.race([updatePromise, errorPromise]);
         await subplebbit.stop();
         if (error) throw error;
@@ -256,7 +269,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = () => {};
-        comment.update();
+        await comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
@@ -316,7 +329,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             | Pick<CommentWithCommentUpdate, "cid">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
-        if (options["cid"] && !isIPFS.cid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
+        if (options["cid"] && !isIpfsCid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
 
         const formattedOptions = options instanceof Comment ? options.toJSON() : options;
         formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
@@ -331,25 +344,42 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     _canCreateNewLocalSub(): boolean {
-        try {
-            //@ts-ignore
-            nativeFunctions.createDbHandler({ address: "", plebbit: this });
-            return true;
-        } catch {}
-
-        return false;
+        const isNode = typeof process?.versions?.node !== "undefined";
+        return isNode;
     }
 
-    private async _createSubplebbitRpc(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType) {
+    private async _createSubplebbitRpc(
+        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType
+    ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
         if (options.address && !options["signer"]) {
             options = options as CreateSubplebbitOptions;
             const rpcSubs = await this.listSubplebbits();
-            const isSubLocal = rpcSubs.includes(options.address);
-            if (isSubLocal)
-                return this.getSubplebbit(options.address); // getSubplebbit will fetch the local sub through RPC subplebbitUpdate
-            else return this._createRemoteSubplebbitInstance(options);
+            const isSubRpcLocal = rpcSubs.includes(options.address);
+            // Should actually create an instance here, instead of calling getSubplebbit
+            if (isSubRpcLocal) {
+                const sub = new RpcLocalSubplebbit(this);
+                await sub.initRemoteSubplebbitProps({ address: options.address });
+                // wait for one update here, and then stop
+                await sub.update();
+                const updatePromise = new Promise((resolve) => sub.once("update", resolve));
+                let error: PlebbitError | undefined;
+                const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
+                await Promise.race([
+                    updatePromise,
+                    errorPromise,
+                    new Promise((resolve) => typeof sub.createdAt === "number" && resolve(1)) // In case await sub.update() above got updated quickly
+                ]);
+                await sub.stop();
+                if (error) throw error;
+
+                return sub;
+            } else {
+                const remoteSub = new RpcRemoteSubplebbit(this);
+                await remoteSub.initRemoteSubplebbitProps(options);
+                return remoteSub;
+            }
         } else {
             const newLocalSub = await this.plebbitRpcClient.createSubplebbit(options);
             log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
@@ -365,13 +395,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
                 options
             });
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(options);
+        const subplebbit = new RemoteSubplebbit(this);
+        await subplebbit.initRemoteSubplebbitProps(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
 
-    private async _createLocalSub(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+    private async _createLocalSub(options: CreateSubplebbitOptions): Promise<LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createLocalSubplebbit");
         log.trace("Received subplebbit options to create a local subplebbit instance:", options);
 
@@ -382,15 +412,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
-        const subplebbit = new Subplebbit(this);
-        await subplebbit.initSubplebbit(isLocalSub ? { address: options.address } : options);
+        const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
+            await subplebbit.initRemoteSubplebbitProps({ address: options.address });
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
             );
         } else {
+            await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
@@ -403,7 +434,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createSubplebbit(
         options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
-    ): Promise<Subplebbit> {
+    ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
 
@@ -470,7 +501,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (this.plebbitRpcClient) return this.plebbitRpcClient.listSubplebbits();
         const canCreateSubs = this._canCreateNewLocalSub();
         if (!canCreateSubs || !this.dataPath) return [];
-        return nativeFunctions.listSubplebbits(this.dataPath, this);
+        return nodeListSubplebbits(this);
     }
 
     async fetchCid(cid: string) {

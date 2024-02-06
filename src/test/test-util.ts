@@ -3,10 +3,9 @@ import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import PlebbitIndex from "../index";
 import Vote from "../vote";
-import { Subplebbit } from "../subplebbit/subplebbit";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
 import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types";
-import isIPFS from "is-ipfs";
-import waitUntil from "async-wait-until";
+import { cid as isIpfsCid } from "is-ipfs";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants";
@@ -16,6 +15,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client";
 import { BasePages } from "../pages";
 import { CreateSubplebbitOptions } from "../subplebbit/types";
+import { EventEmitter } from "events";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -102,7 +102,7 @@ export async function generateMockVote(
 }
 
 export async function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]> {
-    if (!isIPFS.cid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
+    if (!isIpfsCid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: Comment[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
@@ -174,7 +174,7 @@ async function _publishVotes(comments: Comment[], votesPerCommentToPublish: numb
 }
 
 async function _populateSubplebbit(
-    subplebbit: Subplebbit,
+    subplebbit: RemoteSubplebbit,
     props: {
         signers: SignerType[];
         votesPerCommentToPublish: number;
@@ -201,6 +201,29 @@ async function _populateSubplebbit(
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
+type TestServerSubs = {
+    // string will be the address
+    onlineSub: string;
+    ensSub: string;
+    mainSub: string;
+    mathSub: string;
+};
+
+export async function startOnlineSubplebbit() {
+    const onlinePlebbit = await createOnlinePlebbit();
+
+    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+
+    await onlineSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+
+    await onlineSub.start();
+
+    await new Promise((resolve) => onlineSub.once("update", resolve));
+    console.log("Online sub is online on address", onlineSub.address);
+
+    return onlineSub;
+}
+
 export async function startSubplebbits(props: {
     signers: SignerType[];
     noData: boolean;
@@ -208,29 +231,30 @@ export async function startSubplebbits(props: {
     votesPerCommentToPublish: number;
     numOfCommentsToPublish: number;
     numOfPostsToPublish: number;
-}) {
+}): Promise<TestServerSubs> {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
-    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
+    const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
-    await subplebbit.start();
+    await mainSub.start();
     console.time("populate");
     const [mathSub, ensSub] = await Promise.all([
         _startMathCliSubplebbit(props.signers, plebbit),
         _startEnsSubplebbit(props.signers, plebbit),
-        _populateSubplebbit(subplebbit, props)
+        _populateSubplebbit(mainSub, props)
     ]);
     console.timeEnd("populate");
 
-    for (const sub of [mathSub, ensSub, subplebbit]) {
-        sub.on("update", () => {
-            const lastUpdatedAt = sub["lastUpdatedAt"];
-            console.log(`Sub (${sub.address}) took ${sub.updatedAt - lastUpdatedAt} seconds for update loop to complete`);
-            sub["lastUpdatedAt"] = sub.updatedAt;
-        });
-    }
-
+    const onlineSub = await startOnlineSubplebbit();
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+
+    return { onlineSub: onlineSub.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
+}
+
+export async function fetchTestServerSubs() {
+    const res = await fetch("http://localhost:14953");
+    const resWithType = <TestServerSubs>await res.json();
+    return resWithType;
 }
 
 export function mockDefaultOptionsForNodeAndBrowserTests() {
@@ -286,8 +310,17 @@ export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
+export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
+    const plebbit = await PlebbitIndex({
+        ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        ...plebbitOptions
+    }); // use online ipfs node
+    return plebbit;
+}
+
 export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions) {
-    const plebbit = await mockPlebbit({
+    const plebbit = await mockRemotePlebbit({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
         ...plebbitOptions
@@ -307,6 +340,8 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;
+    delete plebbit.plebbitRpcClient;
+    delete plebbit.plebbitRpcClientsOptions;
     plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
     return plebbit;
 }
@@ -409,18 +444,15 @@ export async function waitTillCommentIsInParentPages(
             ? await plebbit.getSubplebbit(comment.subplebbitAddress)
             : await plebbit.createComment({ cid: comment.parentCid });
     await parent.update();
-    const pagesInstance = () => (parent instanceof Subplebbit ? parent.posts : parent.replies);
+    const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment;
-    await waitUntil(
-        async () => {
-            const repliesPageCid = pagesInstance()?.pageCids?.new;
-            if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
-            return Boolean(commentInPage);
-        },
-        {
-            timeout: 200000
-        }
-    );
+    const isCommentInParentPages = async () => {
+        const repliesPageCid = pagesInstance()?.pageCids?.new;
+        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+        return Boolean(commentInPage);
+    };
+
+    await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
 
     await parent.stop();
 
@@ -462,4 +494,15 @@ export function isRpcFlagOn(): boolean {
     const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
     const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
     return isRpcFlagOn;
+}
+
+export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>) {
+    // should add a timeout?
+    if (!(await predicate()))
+        await new Promise((resolve) => {
+            toUpdate.on("update", async () => {
+                const conditionStatus = await predicate();
+                if (conditionStatus) resolve(conditionStatus);
+            });
+        });
 }

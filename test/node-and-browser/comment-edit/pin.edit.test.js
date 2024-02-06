@@ -1,18 +1,17 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const {
+import signers from "../../fixtures/signers";
+import {
     publishRandomPost,
     publishWithExpectedResult,
     loadAllPages,
     publishRandomReply,
     mockRemotePlebbit,
-    findCommentInPage
-} = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const lodash = require("lodash");
-const { default: waitUntil } = require("async-wait-until");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../../dist/node/subplebbit/sort-handler");
+    findCommentInPage,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
+import lodash from "lodash";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/util";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
@@ -101,7 +100,7 @@ describe(`Pinning posts`, async () => {
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=true`, async () => {
-        await waitUntil(() => postToPin.pinned === true, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(postToPin, () => postToPin.pinned === true);
         expect(postToPin.pinned).to.be.true;
         expect(postToPin._rawCommentUpdate.pinned).to.be.true;
         expect(postToPin._rawCommentUpdate.edit).to.be.undefined;
@@ -191,9 +190,7 @@ describe(`Pinning posts`, async () => {
         await publishWithExpectedResult(pinEdit, true);
     });
     it(`A new CommentUpdate is published with pinned=false`, async () => {
-        await waitUntil(() => secondPostToPin.pinned === false && secondPostToPin.reason === "To unpin the second post", {
-            timeout: 200000
-        });
+        await resolveWhenConditionIsTrue(secondPostToPin, () => secondPostToPin.pinned === false);
         expect(secondPostToPin.pinned).to.be.false;
         expect(secondPostToPin._rawCommentUpdate.pinned).to.be.false;
         expect(secondPostToPin._rawCommentUpdate.edit).to.be.undefined;
@@ -284,7 +281,7 @@ describe(`Pinning replies`, async () => {
     });
 
     it(`A pinned reply is on the top of every page in parentComment.replies`, async () => {
-        // Seems like all pages don't get updated at the same time, so waitUntil will stop until all pages include the pinned post
+        // Seems like all pages don't get updated at the same time, so will wait until all pages include the pinned post
         const postToRecreate = await plebbit.createComment({ cid: post.cid });
 
         postToRecreate.update();

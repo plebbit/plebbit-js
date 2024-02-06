@@ -4,10 +4,9 @@ import { Comment } from "../comment";
 import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util";
 import assert from "assert";
 import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types";
-import { Subplebbit } from "../subplebbit/subplebbit";
 import { verifySubplebbit } from "../signer";
 import lodash from "lodash";
-import isIPFS from "is-ipfs";
+import { cid as isIpfsCid, path as isIpfsPath } from "is-ipfs";
 import { PlebbitError } from "../plebbit-error";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
@@ -30,6 +29,7 @@ import {
 import { SubplebbitIpfsType } from "../subplebbit/types";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -91,10 +91,10 @@ export class ClientsManager extends BaseClientsManager {
             loadType === "subplebbit"
                 ? this._getStatePriorToResolvingSubplebbitIpns()
                 : loadType === "comment-update"
-                ? "fetching-update-ipfs"
-                : loadType === "comment" || loadType === "generic-ipfs"
-                ? "fetching-ipfs"
-                : undefined;
+                  ? "fetching-update-ipfs"
+                  : loadType === "comment" || loadType === "generic-ipfs"
+                    ? "fetching-ipfs"
+                    : undefined;
         assert(gatewayState);
         this.updateGatewayState(gatewayState, gatewayUrl);
     }
@@ -175,8 +175,8 @@ export class ClientsManager extends BaseClientsManager {
 
     async fetchCid(cid: string) {
         let finalCid = lodash.clone(cid);
-        if (!isIPFS.cid(finalCid) && isIPFS.path(finalCid)) finalCid = finalCid.split("/")[2];
-        if (!isIPFS.cid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
+        if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
+        if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
         else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
     }
@@ -339,7 +339,7 @@ export class ClientsManager extends BaseClientsManager {
             for (const gatewayUrl of Object.keys(gatewayFetches))
                 if (gatewayFetches[gatewayUrl].error) gatewayToError[gatewayUrl] = gatewayFetches[gatewayUrl].error;
             const combinedError = new PlebbitError("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", { ipnsName, gatewayToError });
-
+            delete combinedError.stack;
             throw combinedError;
         }
 
@@ -624,7 +624,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return commentUpdate;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(e, `Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             } else {
                 // States of gateways should be updated by fetchFromMultipleGateways
@@ -633,7 +633,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                     return update;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(e, `Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             }
         }
@@ -737,9 +737,9 @@ export class SubplebbitClientsManager extends ClientsManager {
         chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
-    private _subplebbit: Subplebbit;
+    private _subplebbit: RemoteSubplebbit;
 
-    constructor(subplebbit: Subplebbit) {
+    constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit.plebbit);
         this._subplebbit = subplebbit;
     }

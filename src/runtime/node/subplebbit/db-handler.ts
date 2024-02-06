@@ -1,6 +1,5 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../util";
+import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util";
 import knex, { Knex } from "knex";
-import { Subplebbit } from "../../subplebbit/subplebbit";
 import path from "path";
 import assert from "assert";
 import fs from "fs";
@@ -21,18 +20,18 @@ import {
     SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
-} from "../../types";
+} from "../../../types";
 import Logger from "@plebbit/plebbit-logger";
-import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "./util";
-import env from "../../version";
-import { Plebbit } from "../../plebbit";
+import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util";
+import env from "../../../version";
 import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "../../subplebbit/sort-handler";
-import { SubplebbitStats } from "../../subplebbit/types";
+import { PageOptions } from "./sort-handler";
+import { SubplebbitStats } from "../../../subplebbit/types";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS } from "../../signer/constants";
+import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants";
+import { LocalSubplebbit } from "./local-subplebbit";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -43,9 +42,7 @@ const TABLES = Object.freeze({
 
 export class DbHandler {
     private _knex: Knex;
-    private _subplebbit: Pick<Subplebbit, "address" | "_isAuthorEdit"> & {
-        plebbit: Pick<Plebbit, "dataPath" | "noData" | "_storage">;
-    };
+    private _subplebbit: LocalSubplebbit;
     private _currentTrxs: Record<string, Transaction>; // Prefix to Transaction. Prefix represents all trx under a pubsub message or challenge
     private _dbConfig: Knex.Config<any>;
     private _keyv: Keyv;
@@ -204,8 +201,6 @@ export class DbHandler {
             table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
 
-            // We're not storing replies here because it would take too much storage, and is not needed
-
             table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.json("flair").nullable();
             table.boolean("spoiler");
@@ -217,7 +212,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
             table.json("author").nullable();
-            table.json("replies").nullable();
+            table.json("replies").nullable(); // TODO we should not be storing replies here, it takes too much storage
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.timestamp("lastReplyTimestamp").nullable();
 
@@ -282,18 +277,21 @@ export class DbHandler {
 
         const currentDbVersion = await this.getDbVersion();
 
-        if (currentDbVersion <= 10) {
-            // Remove unneeded tables
-            await Promise.all(
-                ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
-                    this._knex.schema.dropTableIfExists(tableName)
-                )
-            );
-        }
-
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
-        if (needToMigrate) await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+        if (needToMigrate) {
+            await this._knex.raw("PRAGMA foreign_keys = OFF");
+            if (currentDbVersion <= 10) {
+                // Remove unneeded tables
+                await Promise.all(
+                    ["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) =>
+                        this._knex.schema.dropTableIfExists(tableName)
+                    )
+                );
+            }
+            await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+        }
+
         const createTableFunctions = [
             this._createCommentsTable,
             this._createCommentUpdatesTable,
@@ -311,7 +309,6 @@ export class DbHandler {
             } else if (tableExists && needToMigrate) {
                 // We need to update the schema of the currently existing table
                 log(`Migrating table ${tableName} to new schema`);
-                await this._knex.raw("PRAGMA foreign_keys = OFF");
                 const tempTableName = `${tableName}${env.DB_VERSION}`;
                 await this._knex.schema.dropTableIfExists(tempTableName);
                 await createTableFunctions[i].bind(this)(tempTableName);
@@ -820,25 +817,17 @@ export class DbHandler {
         };
     }
 
-    async changeDbFilename(newDbFileName: string, newSubplebbit: DbHandler["_subplebbit"]) {
+    async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = (<any>this._dbConfig.connection).filename;
-        assert.ok(oldPathString, "subplebbit._dbConfig either does not exist or DB connection is in memory");
+        const oldPathString = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", oldDbName);
+        const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
+        await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
-        this._subplebbit = newSubplebbit;
-        if (oldPathString === ":memory:") {
-            log.trace(`No need to change file name of db since it's in memory`);
-            return;
-        }
-        const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbFileName });
-
-        await fs.promises.mkdir(path.dirname(newPath), { recursive: true });
-
         delete this["_knex"];
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, newSubplebbit.plebbit);
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit.plebbit);
         else await fs.promises.rm(oldPathString);
 
         this._dbConfig = {
@@ -896,10 +885,11 @@ export class DbHandler {
         }
     }
 
-    async isSubStartLocked(subAddress = this._subplebbit.address) {
+    async isSubStartLocked(subAddress = this._subplebbit.address): Promise<boolean> {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
-        return lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
+        return isLocked;
     }
 
     // Subplebbit state lock

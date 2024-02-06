@@ -1,21 +1,20 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     publishRandomPost,
     mockPlebbit,
     createSubWithNoChallenge,
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
-    isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
-const { messages } = require("../../../dist/node/errors");
-const path = require("path");
-const fs = require("fs");
-const signers = require("../../fixtures/signers");
-const { default: waitUntil } = require("async-wait-until");
-const { subplebbitVerificationCache } = require("../../../dist/node/constants");
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
+import { messages } from "../../../dist/node/errors";
+import path from "path";
+import fs from "fs";
+import signers from "../../fixtures/signers";
+import { subplebbitVerificationCache } from "../../../dist/node/constants";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -26,6 +25,7 @@ describe(`subplebbit.start`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
     after(async () => subplebbit.stop());
 
@@ -43,10 +43,11 @@ describe(`subplebbit.start`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
+        if (!newSub.updatedAt) await new Promise((resolve) => newSub.once("update", resolve));
         await publishRandomPost(newSub.address, plebbit, {}, false);
         await newSub.stop();
         await newSub.start();
-        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await publishRandomPost(newSub.address, plebbit, {}, false);
         await newSub.stop();
     });
 
@@ -59,12 +60,13 @@ describe(`subplebbit.start`, async () => {
         await subplebbit.plebbit._clientsManager
             .getDefaultPubsub()
             ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        await waitUntil(
-            async () => (await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls()).includes(subplebbit.address),
-            {
-                timeout: 150000
-            }
-        );
+        const listedTopics = async () => await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
+        expect(await listedTopics()).to.not.include(subplebbit.address);
+
+        await resolveWhenConditionIsTrue(subplebbit, async () => {
+            return (await listedTopics()).includes(subplebbit.address);
+        });
+        
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
     });
 });
@@ -74,7 +76,7 @@ if (!isRpcFlagOn())
 describe(`Start lock`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit();
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
@@ -98,7 +100,7 @@ describe(`Start lock`, async () => {
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         const sameSub = await plebbit.createSubplebbit({ address: sub.address });
         sub.start();
-        await waitUntil(() => fs.existsSync(lockPath));
+        await resolveWhenConditionIsTrue(sub, () => fs.existsSync(lockPath));
         await assert.isRejected(sameSub.start(), messages.ERR_SUB_ALREADY_STARTED);
         await sub.stop();
         await sameSub.stop();
@@ -110,7 +112,9 @@ describe(`Start lock`, async () => {
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         await sub.start();
         sub.stop();
-        await waitUntil(() => !fs.existsSync(lockPath));
+        await new Promise(resolve => fs.watchFile(lockPath, (curr, prev) => {
+            if (!fs.existsSync(lockPath)) resolve();
+        }));
         await assert.isFulfilled(sub.start());
         await sub.stop();
     });
@@ -146,6 +150,7 @@ describe(`Publish loop resiliency`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {

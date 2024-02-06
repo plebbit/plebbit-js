@@ -9,16 +9,18 @@ import {
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    IpfsClient,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
     PagesTypeIpfs,
     PagesTypeJson,
     PageType,
+    PostSort,
+    ReplySort,
     Timeframe
 } from "./types";
 import { messages } from "./errors";
@@ -30,6 +32,7 @@ import { Plebbit } from "./plebbit";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 import extName from "ext-name";
+
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     HOUR: 60 * 60,
@@ -39,6 +42,30 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
     YEAR: 60 * 60 * 24 * 7 * 4 * 12,
     ALL: Infinity
 });
+
+export const POSTS_SORT_TYPES: PostSort = {
+    hot: { score: (...args) => hotScore(...args) },
+    new: { score: (...args) => newScore(...args) },
+    active: { score: (...args) => undefined },
+    topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
+    topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
+    topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
+    topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
+    topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
+    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
+    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
+    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
+    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
+    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
+    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
+    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
+};
+
+export const REPLIES_SORT_TYPES: ReplySort = {
+    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    old: { score: (...args) => oldScore(...args) }
+};
+
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -306,3 +333,13 @@ export function isLinkOfMedia(link: string) {
     }
     if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio")) return true;
 }
+
+export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
+    const out: T[] = [];
+    for await (const x of gen) {
+        out.push(x);
+    }
+    return out;
+}
+
+

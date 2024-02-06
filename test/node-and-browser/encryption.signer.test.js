@@ -1,25 +1,22 @@
-const Plebbit = require("../../dist/node");
-const fixtureSigners = require("../fixtures/signers");
+import fixtureSigners from "../fixtures/signers";
 const authorSignerFixture = fixtureSigners[1];
 const subplebbitSignerFixture = fixtureSigners[2];
-const fixtureComment = require("../fixtures/publications").comment;
-const { encryptEd25519AesGcm, decryptEd25519AesGcm } = require("../../dist/node/signer");
-const { encryptStringAesGcm, decryptStringAesGcm } = require("../../dist/node/signer/encryption");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import { comment as fixtureComment } from "../fixtures/publications";
+import { encryptEd25519AesGcm, decryptEd25519AesGcm, encryptStringAesGcm, decryptStringAesGcm } from "../../dist/node/signer/encryption";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect } = chai;
-const { fromString: uint8ArrayFromString } = require("uint8arrays/from-string");
-const { toString: uint8ArrayToString } = require("uint8arrays/to-string");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
-const ed = require("@noble/ed25519");
-
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { mockRemotePlebbit } from "../../dist/node/test/test-util";
+import * as ed from "@noble/ed25519";
 
 describe("encryption", () => {
     let plebbit, authorSigner;
 
     before(async function () {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
     });
 

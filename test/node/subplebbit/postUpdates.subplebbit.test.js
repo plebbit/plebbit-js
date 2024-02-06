@@ -1,14 +1,13 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     publishRandomPost,
     createSubWithNoChallenge,
     publishRandomReply,
     isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
+} from "../../../dist/node/test/test-util";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 

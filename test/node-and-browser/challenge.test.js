@@ -1,13 +1,13 @@
-const Plebbit = require("../../dist/node");
-const { expect } = require("chai");
-const signers = require("../fixtures/signers");
-const {
+import { expect } from "chai";
+import signers from "../fixtures/signers";
+import {
     generateMockPost,
     publishWithExpectedResult,
     publishRandomPost,
-    generatePostToAnswerMathQuestion
-} = require("../../dist/node/test/test-util");
-const { mockPlebbit } = require("../../dist/node/test/test-util");
+    generatePostToAnswerMathQuestion,
+    mockRemotePlebbit,
+    mockPlebbit
+} from "../../dist/node/test/test-util";
 
 const mathCliSubplebbitAddress = signers[1].address;
 
@@ -16,7 +16,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
     let plebbit, subplebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
 
@@ -49,7 +49,7 @@ describe("math-cli", async () => {
 describe("Validate props of publication Pubsub messages", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`Validate props of challengerequest`, async () => {

@@ -1,16 +1,21 @@
 import { Plebbit } from "../plebbit";
 import assert from "assert";
 import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/node/util";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error";
 import Logger from "@plebbit/plebbit-logger";
-import { Chain, PubsubMessage } from "../types";
+import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types";
 import * as cborg from "cborg";
 import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
 import { sha256 } from "js-sha256";
+import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub";
+import last from "it-last";
+import { concat as uint8ArrayConcat } from "uint8arrays/concat";
+import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import all from "it-all";
+import lodash from "lodash";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -36,9 +41,9 @@ export class BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
-        this._defaultPubsubProviderUrl = <string>Object.values(plebbit.clients.pubsubClients)[0]?._clientOptions?.url; // TODO Should be the gateway with the best score
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
+        this._defaultPubsubProviderUrl = Object.keys(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
             this.providerSubscriptions = {};
             for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
@@ -61,8 +66,16 @@ export class BaseClientsManager {
 
     // Pubsub methods
 
-    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string) {
+    async _initializeLibp2pClientIfNeeded() {
+        if (this._defaultPubsubProviderUrl !== "browser-libp2p-pubsub")
+            throw Error("Default pubsub should be browser-libp2p-pubsub on browser");
+        if (!this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl]?._client)
+            this._plebbit.clients.pubsubClients[this._defaultPubsubProviderUrl] = await createLibp2pNode();
+    }
+
+    async pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string) {
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubSubscribeOnProvider");
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
 
         const timeBefore = Date.now();
         try {
@@ -77,7 +90,8 @@ export class BaseClientsManager {
         }
     }
 
-    async pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn) {
+    async pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
@@ -96,14 +110,16 @@ export class BaseClientsManager {
         throw combinedError;
     }
 
-    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn) {
+    async pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.unsubscribe(pubsubTopic, handler);
         this.providerSubscriptions[pubsubProvider] = this.providerSubscriptions[pubsubProvider].filter(
             (subPubsubTopic) => subPubsubTopic !== pubsubTopic
         );
     }
 
-    async pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn) {
+    async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
             const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
             try {
@@ -119,6 +135,7 @@ export class BaseClientsManager {
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError) {}
 
     async pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string) {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:pubsubPublish");
         const dataBinary = cborg.encode(data);
         this.prePubsubPublishProvider(pubsubTopic, pubsubProvider);
@@ -135,6 +152,7 @@ export class BaseClientsManager {
     }
 
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
+        if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
         const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};
@@ -157,12 +175,16 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(url: string, options?): Promise<string> {
+    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<string> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
         try {
-            //@ts-expect-error
-            res = await nativeFunctions.fetch(url, { ...options, size: DOWNLOAD_LIMIT_BYTES });
+            res = await nativeFunctions.fetch(url, {
+                cache,
+                signal,
+                //@ts-expect-error, this option is for node-fetch
+                size: DOWNLOAD_LIMIT_BYTES
+            });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return await res.text();
@@ -172,9 +194,9 @@ export class BaseClientsManager {
             const errorCode = url.includes("/ipfs/")
                 ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
                 : url.includes("/ipns/")
-                ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
-                : "ERR_FAILED_TO_FETCH_GENERIC";
-            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, error: e });
+                  ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
+                  : "ERR_FAILED_TO_FETCH_GENERIC";
+            throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
 
             // If error is not related to size limit, then throw it again
         }
@@ -215,7 +237,7 @@ export class BaseClientsManager {
 
         const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
 
-        const resText = await this._fetchWithLimit(url, { cache: isCid ? "force-cache" : "no-store", signal: abortController.signal });
+        const resText = await this._fetchWithLimit(url, isCid ? "force-cache" : "no-store", abortController.signal);
         if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
         return resText;
     }
@@ -255,13 +277,13 @@ export class BaseClientsManager {
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
-            if (e?.details?.error?.type === "aborted") {
+            if (e?.details?.fetchError?.includes("AbortError")) {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, e);
                 if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                return { error: e };
+                return { error: lodash.omit(<PlebbitError>e, "stack") };
             }
         }
     }
@@ -281,10 +303,10 @@ export class BaseClientsManager {
         return loadType === "subplebbit"
             ? 5 * 60 * 1000 // 5min
             : loadType === "comment"
-            ? 60 * 1000 // 1 min
-            : loadType === "comment-update"
-            ? 2 * 60 * 1000 // 2min
-            : 30 * 1000; // 30s
+              ? 60 * 1000 // 1 min
+              : loadType === "comment-update"
+                ? 2 * 60 * 1000 // 2min
+                : 30 * 1000; // 30s
     }
 
     async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
@@ -351,7 +373,7 @@ export class BaseClientsManager {
             let cid: string;
             if (p2pIpnsPromiseCache.has(ipnsName)) cid = await p2pIpnsPromiseCache.get(ipnsName);
             else {
-                const cidPromise = ipfsClient._client.name.resolve(ipnsName);
+                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName));
                 p2pIpnsPromiseCache.set(ipnsName, cidPromise);
                 cid = await cidPromise;
                 p2pIpnsPromiseCache.delete(ipnsName);
@@ -370,7 +392,10 @@ export class BaseClientsManager {
         const ipfsClient = this.getDefaultIpfs();
 
         const fetchPromise = async () => {
-            const fileContent = await ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES }); // Limit is 1mb files
+            const rawData = await all(ipfsClient._client.cat(cid, { length: DOWNLOAD_LIMIT_BYTES })); // Limit is 1mb files
+            const data = uint8ArrayConcat(rawData);
+            const fileContent = uint8ArrayToString(data);
+
             if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
             if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
                 const calculatedCid: string = await Hash.of(fileContent);
@@ -506,6 +531,9 @@ export class BaseClientsManager {
             if (cachedTextRecord && !cachedTextRecord.stale) return cachedTextRecord.resolveCache;
             log.trace(`Retrying to resolve address (${address}) text record (${txtRecordName}) for the ${i}th time`);
 
+            if (!this._plebbit.clients.chainProviders[chain]) {
+                log.error(`Plebbit has no chain provider for (${chain}), `, this._plebbit.clients.chainProviders);
+            }
             // Only sort if we have more than 3 gateways
             const providersSorted =
                 this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit

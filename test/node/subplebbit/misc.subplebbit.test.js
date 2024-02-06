@@ -1,5 +1,4 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     publishRandomPost,
     createSubWithNoChallenge,
@@ -10,17 +9,17 @@ const {
     publishWithExpectedResult,
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly
-} = require("../../../dist/node/test/test-util");
-const { createMockIpfsClient } = require("../../../dist/node/test/mock-ipfs-client");
+} from "../../../dist/node/test/test-util";
+import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
 
-const signers = require("../../fixtures/signers");
-const { getThumbnailUrlOfLink } = require("../../../dist/node/runtime/node/util");
-const path = require("path");
-const fs = require("fs");
-const { default: waitUntil } = require("async-wait-until");
+import signers from "../../fixtures/signers";
+import { getThumbnailUrlOfLink } from "../../../dist/node/runtime/node/util";
+import path from "path";
+import fs from "fs";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import EventEmitter from "events";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -34,14 +33,10 @@ describe("plebbit.listSubplebbits", async () => {
     it(`listSubplebbits shows unlocked created subplebbits`, async () => {
         const title = "Test listSubplebbits" + Date.now();
 
-        plebbit.createSubplebbit({ signer: subSigner, title: title });
-
-        await waitUntil(async () => (await plebbit.listSubplebbits()).includes(subSigner.address), {
-            timeout: 200000
-        });
-
+        const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
         // At this point the sub should be unlocked and ready to be recreated by another instance
-        const createdSubplebbit = await plebbit.createSubplebbit({ address: subSigner.address });
+        const listedSubs = await plebbit.listSubplebbits();
+        expect(listedSubs).to.include(createdSubplebbit.address);
 
         expect(createdSubplebbit.address).to.equal(subSigner.address);
         expect(createdSubplebbit.title).to.equal(title);
@@ -88,6 +83,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
     });
 
     after(async () => await sub.stop());
@@ -141,6 +137,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
@@ -157,6 +154,7 @@ describe(`Create a sub with basic auth urls`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         await publishRandomPost(sub.address, plebbit, {}, false);
         await sub.stop();
     });
@@ -182,6 +180,8 @@ describe(`subplebbit.pubsubTopic`, async () => {
             expect.fail("subplebbit.pubsubTopic should be null or undefined");
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+
         if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
             expect.fail("subplebbit.pubsubTopic should be null or undefined");
 
@@ -212,7 +212,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = stopped after calling stop()`, async () => {
@@ -223,7 +223,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.stop();
         expect(subplebbit.state).to.equal("stopped");
-        await waitUntil(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = updating after calling update()`, async () => {
@@ -234,7 +234,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.update();
         expect(subplebbit.state).to.equal("updating");
-        await waitUntil(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 
     it(`subplebbit.state = started after calling start() after update()`, async () => {
@@ -244,7 +244,7 @@ describe(`subplebbit.state`, async () => {
         });
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
-        await waitUntil(() => eventFired);
+        expect(eventFired).to.be.true;
     });
 });
 
@@ -272,7 +272,7 @@ describe(`subplebbit.startedState`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
-        await new Promise((resolve) => subplebbit.once("startedstatechange", (newState) => newState === "succeeded" && resolve()));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(recordedStates).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]);
     });
@@ -282,7 +282,7 @@ describe(`subplebbit.startedState`, async () => {
     it(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit.plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
+            subplebbit.plebbit.clients.ipfsClients = subplebbit.clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -295,7 +295,7 @@ describe(`subplebbit.updatingState (remote sub - node)`, async () => {
     });
 
     it(`subplebbit.updatingState is in correct order upon updating with IPFS client (non-ENS)`, async () => {
-        const plebbit = await mockPlebbit();
+        const plebbit = await mockRemotePlebbitIpfsOnly();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const recordedStates = [];
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "succeeded", "stopped"];
@@ -365,6 +365,7 @@ describe(`comment.link`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {
@@ -388,7 +389,7 @@ describe(`comment.link`, async () => {
                 "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
             const expectedThumbnailUrl =
                 "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(675);
             expect(thumbnailInfo.thumbnailHeight).to.equal(450);
@@ -398,7 +399,7 @@ describe(`comment.link`, async () => {
             const url =
                 "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
             const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(512);
             expect(thumbnailInfo.thumbnailHeight).to.equal(497);
@@ -407,7 +408,7 @@ describe(`comment.link`, async () => {
         it(`Generates thumbnail url for twitter urls correctly`, async () => {
             const url = "https://twitter.com/eustatheia/status/1691285870244937728";
             const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
             expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
@@ -613,6 +614,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await mockSub.start();
 
             await new Promise((resolve) => mockSub.once("update", resolve));
+            if (!mockSub.updatedAt) await new Promise(resolve => mockSub.once("update", resolve));
 
             const post = await generateMockPost(mockSub.address, plebbit);
             post.once("challenge", async () => {
@@ -712,6 +714,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await sub.start();
 
             await new Promise(resolve => sub.once("update", resolve));
+            if (!sub.updatedAt) await new Promise(resolve => sub.once("update", resolve));
 
             await publishRandomPost(sub.address, plebbit, {}, true);
             if (recordedStates[recordedStates.length - 1] === "stopped")
@@ -740,6 +743,7 @@ describe(`subplebbit.clients (Local)`, async () => {
                 "publishing-challenge-verification",
                 "waiting-challenge-requests",
                 "publishing-ipns",
+                "stopped"
               ]
             sub.clients.plebbitRpcClients[rpcUrl].on("statechange", (newState) => 
                 recordedStates.push(newState)
@@ -749,6 +753,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await sub.start();
 
             await new Promise(resolve => sub.once("update", resolve));
+            if (!sub.updatedAt) await new Promise(resolve => sub.once("update", resolve));
 
             const mockPost = await generateMockPost(sub.address, plebbit);
 
@@ -776,6 +781,7 @@ describe(`subplebbit.statsCid`, async () => {
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
+        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {

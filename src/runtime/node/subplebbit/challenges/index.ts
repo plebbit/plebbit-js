@@ -7,10 +7,10 @@ import fail from './plebbit-js-challenges/fail'
 import blacklist from './plebbit-js-challenges/blacklist'
 import question from './plebbit-js-challenges/question'
 import evmContractCall from './plebbit-js-challenges/evm-contract-call'
-import { Subplebbit } from '../../../subplebbit/subplebbit'
-import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../types'
-import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../subplebbit/types'
-import { ChallengeVerificationMessage } from '../../../challenge'
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types'
+import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../../subplebbit/types'
+import { ChallengeVerificationMessage } from '../../../../challenge'
+import { LocalSubplebbit } from '../local-subplebbit'
 
 
 type PendingChallenge = Challenge & {index: number};
@@ -26,21 +26,21 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
   'evm-contract-call': evmContractCall
 }
 
-const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: Subplebbit) => {
+const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: LocalSubplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   if (typeof challengeFileFactory !== 'function') {
     throw Error(`invalid challenge file factory export from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`)
   }
 }
 
-const validateChallengeFile = (challengeFile: ChallengeFile, challengeIndex: number, subplebbit: Subplebbit) => {
+const validateChallengeFile = (challengeFile: ChallengeFile, challengeIndex: number, subplebbit: LocalSubplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   if (typeof challengeFile?.getChallenge !== 'function') {
     throw Error(`invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`)
   }
 }
 
-const validateChallengeResult = (challengeResult: ChallengeResult, challengeIndex: number, subplebbit: Subplebbit) => {
+const validateChallengeResult = (challengeResult: ChallengeResult, challengeIndex: number, subplebbit: LocalSubplebbit) => {
   const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex]
   const error = `invalid challenge result from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex+1})`
   if (typeof challengeResult?.success !== 'boolean') {
@@ -48,7 +48,7 @@ const validateChallengeResult = (challengeResult: ChallengeResult, challengeInde
   }
 }
 
-const validateChallengeOrChallengeResult = (challengeOrChallengeResult: Challenge | ChallengeResult, getChallengeError: Error, challengeIndex: number, subplebbit: Subplebbit) => {
+const validateChallengeOrChallengeResult = (challengeOrChallengeResult: Challenge | ChallengeResult, getChallengeError: Error, challengeIndex: number, subplebbit: LocalSubplebbit) => {
   if (challengeOrChallengeResult?.["success"] !== undefined) {
     validateChallengeResult(<ChallengeResult>challengeOrChallengeResult, challengeIndex, subplebbit)
   }
@@ -66,7 +66,7 @@ const validateChallengeOrChallengeResult = (challengeOrChallengeResult: Challeng
   }
 }
 
-const getPendingChallengesOrChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit) => {
+const getPendingChallengesOrChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => {
   const challengeResults: (Challenge | ChallengeResult)[] = []
   // interate over all challenges of the subplebbit, can be more than 1
   for (const i in subplebbit.settings?.challenges) {
@@ -173,7 +173,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
   }
 }
 
-const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: Subplebbit) => {
+const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => {
   const verifyChallengePromises: Promise<ChallengeResult>[] = []
   for (const i in pendingChallenges) {
     verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i]))
@@ -227,7 +227,7 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges: P
   }
 }
 
-const getChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: Subplebbit, getChallengeAnswers: GetChallengeAnswers): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" >> => {
+const getChallengeVerification = async (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit, getChallengeAnswers: GetChallengeAnswers): Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess" >> => {
   if (!challengeRequestMessage) {
     throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`)
   }

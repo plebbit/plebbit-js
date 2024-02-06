@@ -7,12 +7,14 @@ import * as chains from "viem/chains";
 import { ethers } from "ethers";
 import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
 
-export const viemPublicClient = createPublicClient({
-    chain: chains.mainnet,
-    transport: http()
-});
-//@ts-expect-error
-export const ethersPublicClient = ethers.getDefaultProvider();
+const viemCache: Record<string, PublicClient> = {
+    viem: createPublicClient({
+        chain: chains.mainnet,
+        transport: http()
+    })
+};
+
+const ethersPublicClient = ethers.getDefaultProvider("mainnet");
 
 export class Resolver {
     private plebbit: Pick<Plebbit, "resolveAuthorAddresses" | "chainProviders">;
@@ -37,15 +39,19 @@ export class Resolver {
 
         if (chainTicker === "eth" && chainProviderUrl === "viem") {
             // if using eth, use viem' default provider unless another provider is specified
-            return viemPublicClient;
+            return viemCache["viem"];
         } else {
+            // Cache viem public client here
             const chainId = this.plebbit.chainProviders[chainTicker].chainId;
             const chain = Object.values(chains).find((chain) => chain.id === chainId);
             assert(chain, `Was not able to find a chain with id ${chainId}`);
-            return createPublicClient({
-                chain: chain,
-                transport: http(chainProviderUrl)
-            });
+            const key = chainProviderUrl + chainId;
+            if (!viemCache[key])
+                viemCache[key] = createPublicClient({
+                    chain: chain,
+                    transport: http(chainProviderUrl)
+                });
+            return viemCache[key];
         }
     }
 
@@ -59,7 +65,6 @@ export class Resolver {
     }
 
     async resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null> {
-        // TODO should cache this method
         const log = Logger("plebbit-js:resolver:_resolveEnsTxtRecord");
 
         log.trace(`Attempting to resolve text record (${txtRecordName}) of address (${address}) with chain provider (${chainProviderUrl})`);

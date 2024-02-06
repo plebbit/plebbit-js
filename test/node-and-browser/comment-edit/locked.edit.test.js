@@ -1,17 +1,16 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const {
+import signers from "../../fixtures/signers";
+import {
     publishRandomPost,
     generateMockComment,
     generateMockVote,
     publishRandomReply,
     publishWithExpectedResult,
     mockRemotePlebbit,
-    findCommentInPage
-} = require("../../../dist/node/test/test-util");
-const { expect } = require("chai");
-const { messages } = require("../../../dist/node/errors");
-const { default: waitUntil } = require("async-wait-until");
+    findCommentInPage,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util";
+import { expect } from "chai";
+import { messages } from "../../../dist/node/errors";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -80,7 +79,7 @@ describe(`Locking posts`, async () => {
     });
 
     it(`A new CommentUpdate with locked=true is published`, async () => {
-        await waitUntil(() => postToBeLocked.locked, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === true);
         expect(postToBeLocked.locked).to.be.true;
         expect(postToBeLocked.reason).to.equal("To lock an author post");
         expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To lock an author post");
@@ -120,7 +119,7 @@ describe(`Locking posts`, async () => {
     });
 
     it(`A new CommentUpdate with locked=true is published`, async () => {
-        await waitUntil(() => modPost.locked === true, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(modPost, () => modPost.locked === true);
         expect(modPost.locked).to.be.true;
         expect(modPost.reason).to.equal("To lock a mod post");
         expect(modPost._rawCommentUpdate.reason).to.equal("To lock a mod post");
@@ -160,7 +159,7 @@ describe(`Locking posts`, async () => {
     });
 
     it(`A new CommentUpdate with locked=false is published`, async () => {
-        await waitUntil(() => postToBeLocked.locked === false, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(postToBeLocked, () => postToBeLocked.locked === false);
         expect(postToBeLocked.locked).to.be.false;
         expect(postToBeLocked.reason).to.equal("To unlock an author post");
         expect(postToBeLocked._rawCommentUpdate.reason).to.equal("To unlock an author post");

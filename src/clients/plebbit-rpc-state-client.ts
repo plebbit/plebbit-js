@@ -2,8 +2,8 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types";
 import Publication from "../publication";
 import { Comment } from "../comment";
-import { Subplebbit } from "../subplebbit/subplebbit";
 import { BasePages } from "../pages";
+import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit";
 
 // Types
 type PublicationRpcState =
@@ -17,10 +17,10 @@ type CommentRpcState =
     | Comment["clients"]["pubsubClients"][0]["state"]
     | Comment["clients"]["ipfsGateways"][0]["state"];
 type SubplebbitRpcState =
-    | Subplebbit["clients"]["chainProviders"]["eth"][0]["state"]
-    | Subplebbit["clients"]["ipfsClients"][0]["state"]
-    | Subplebbit["clients"]["pubsubClients"][0]["state"]
-    | Subplebbit["clients"]["ipfsGateways"][0]["state"];
+    | RpcRemoteSubplebbit["clients"]["chainProviders"]["eth"][0]["state"]
+    | RpcRemoteSubplebbit["clients"]["ipfsClients"][0]["state"]
+    | RpcRemoteSubplebbit["clients"]["pubsubClients"][0]["state"]
+    | RpcRemoteSubplebbit["clients"]["ipfsGateways"][0]["state"];
 
 type PagesRpcState = BasePages["clients"]["ipfsClients"][""][""]["state"] | BasePages["clients"]["ipfsGateways"][""][""]["state"];
 

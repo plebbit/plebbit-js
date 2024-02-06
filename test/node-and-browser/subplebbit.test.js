@@ -1,22 +1,22 @@
-const Plebbit = require("../../dist/node");
-const signers = require("../fixtures/signers");
-const { messages } = require("../../dist/node/errors");
+import signers from "../fixtures/signers";
+import { messages } from "../../dist/node/errors";
 
-const {
-    mockPlebbit,
+import {
     publishRandomPost,
+    mockPlebbit,
     mockRemotePlebbit,
     mockGatewayPlebbit,
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly
-} = require("../../dist/node/test/test-util");
+} from "../../dist/node/test/test-util";
 
-const lodash = require("lodash");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import lodash from "lodash";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const stringify = require("safe-stable-stringify");
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import validSubplebbitFixture from "../fixtures/valid_subplebbit.json" assert { type: "json" };
 
 const subplebbitAddress = signers[0].address;
 
@@ -49,8 +49,8 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const subJson = lodash.cloneDeep(require("../fixtures/valid_subplebbit.json"));
-        const subObj = await plebbit.createSubplebbit(lodash.cloneDeep(require("../fixtures/valid_subplebbit.json")));
+        const subJson = lodash.cloneDeep(validSubplebbitFixture);
+        const subObj = await plebbit.createSubplebbit(lodash.cloneDeep(validSubplebbitFixture));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
@@ -93,6 +93,11 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`plebbit.createSubplebbit({address}) throws if address if ENS and has a capital letter`, async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: "testSub.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
     });
+
+    it("plebbit.createSubplebbit({address}) throws if subplebbit address isn't an ipns or domain", async () => {
+        const invalidAddress = "0xdeadbeef";
+        await assert.isRejected(plebbit.createSubplebbit({ address: invalidAddress }), messages.ERR_INVALID_SUBPLEBBIT_ADDRESS);
+    });
 });
 
 describe("subplebbit.update (remote)", async () => {
@@ -128,9 +133,9 @@ describe("subplebbit.update (remote)", async () => {
     it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs P2P)`, async () => {
         const remotePlebbit = await mockRemotePlebbit();
         const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
-        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address))._rawSubplebbitType;
+        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
-        tempSubplebbit._clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
         tempSubplebbit.update();
         await new Promise(resolve => {
             tempSubplebbit.once("error", err =>{
@@ -146,9 +151,9 @@ describe("subplebbit.update (remote)", async () => {
      it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs gateway)`, async () => {
          const remoteGatewayPlebbit = await mockGatewayPlebbit();
          const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
-         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address))._rawSubplebbitType;
+         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
          rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
-         tempSubplebbit._clientsManager._fetchWithGateway = async () => JSON.stringify(rawSubplebbitJson);
+         tempSubplebbit.clientsManager._fetchWithGateway = async () => JSON.stringify(rawSubplebbitJson);
          tempSubplebbit.update();
          await new Promise(resolve => {
              tempSubplebbit.once("error", err =>{
@@ -167,24 +172,6 @@ describe("subplebbit.update (remote)", async () => {
         await new Promise((resolve) => {
             sub.on("error", (err) => {
                 expect(err.code).to.equal("ERR_ENS_TXT_RECORD_NOT_FOUND");
-                expect(sub.updatingState).to.equal("failed");
-                errorCount++;
-                if (errorCount === 3) resolve();
-            });
-        });
-
-        await sub.stop();
-        await sub.removeAllListeners("error");
-    });
-    it("subplebbit.update emits error if subplebbit address is incorrect", async () => {
-        const invalidAddress = "0xdeadbeef";
-        const sub = await plebbit.createSubplebbit({ address: invalidAddress });
-        sub.update();
-        // Should emit an error and keep on retrying in the next update loop
-        let errorCount = 0;
-        await new Promise((resolve) => {
-            sub.on("error", (err) => {
-                expect(err.code).to.equal("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS");
                 expect(sub.updatingState).to.equal("failed");
                 errorCount++;
                 if (errorCount === 3) resolve();
@@ -300,7 +287,7 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
         const loadedSubplebbitP2p = await plebbit.getSubplebbit(subplebbitSigner.address);
         const loadedSubplebbitGateway = await gatewayPlebbit.getSubplebbit(subplebbitSigner.address);
         for (const loadedSubplebbit of [loadedSubplebbitP2p, loadedSubplebbitGateway]) {
-            const _subplebbitIpns = loadedSubplebbit._rawSubplebbitType;
+            const _subplebbitIpns = loadedSubplebbit.toJSONIpfs();
             expect(_subplebbitIpns.lastPostCid).to.be.a.string;
             expect(_subplebbitIpns.pubsubTopic).to.be.a.string;
             expect(_subplebbitIpns.address).to.be.a.string;
@@ -312,7 +299,7 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
             expect(_subplebbitIpns.signature).to.be.a("object");
             expect(_subplebbitIpns.posts).to.be.a("object");
             // Remove undefined keys from json
-            expect(stringify(loadedSubplebbit.toJSONIpfs())).to.equals(stringify(_subplebbitIpns));
+            expect(deterministicStringify(loadedSubplebbit.toJSONIpfs())).to.equals(deterministicStringify(_subplebbitIpns));
         }
     });
 
@@ -322,11 +309,12 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
         expect(subplebbit.updatedAt).to.be.a("number");
     });
 
-    it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
-        const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
-        expect(subplebbit.address).to.equal(ensSubplebbitAddress);
-        expect(subplebbit.updatedAt).to.be.a("number");
-    });
+    if (!isRpcFlagOn())
+        it("can load subplebbit with ENS domain via plebbit.getSubplebbit (ipfs gateway)", async () => {
+            const subplebbit = await gatewayPlebbit.getSubplebbit(ensSubplebbitAddress);
+            expect(subplebbit.address).to.equal(ensSubplebbitAddress);
+            expect(subplebbit.updatedAt).to.be.a("number");
+        });
 
     it(`plebbit.getSubplebbit fails to fetch a sub with ENS address if it has capital letter`, async () => {
         await assert.isRejected(plebbit.getSubplebbit("testSub.eth"), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
@@ -762,7 +750,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
         //prettier-ignore
         if (isRpcFlagOn())
         describe(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
-            it(`subplebbit.posts.clients.ipfsGateways[sortType][url] is stopped by default`, async () => {
+            it(`subplebbit.posts.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
                 const mockSub = await plebbit.getSubplebbit(subplebbitAddress);
                 const rpcUrl = Object.keys(mockSub.clients.plebbitRpcClients)[0];
                 // add tests here

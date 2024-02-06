@@ -1,14 +1,11 @@
 import {
-    controversialScore,
-    hotScore,
-    newScore,
-    oldScore,
+    POSTS_SORT_TYPES,
     removeNullAndUndefinedValuesRecursively,
+    REPLIES_SORT_TYPES,
     TIMEFRAMES_TO_SECONDS,
-    timestamp,
-    topScore
-} from "../util";
-import { Subplebbit } from "./subplebbit";
+    timestamp
+} from "../../../util";
+import { LocalSubplebbit } from "./local-subplebbit";
 import assert from "assert";
 import {
     CommentsTableRow,
@@ -16,37 +13,12 @@ import {
     CommentWithCommentUpdate,
     PageIpfs,
     PagesTypeIpfs,
-    PostSort,
     PostSortName,
-    ReplySort,
     ReplySortName,
     SortProps
-} from "../types";
+} from "../../../types";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-
-export const POSTS_SORT_TYPES: PostSort = {
-    hot: { score: (...args) => hotScore(...args) },
-    new: { score: (...args) => newScore(...args) },
-    active: { score: (...args) => undefined },
-    topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
-    topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
-    topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
-    topMonth: { timeframe: "MONTH", score: (...args) => topScore(...args) },
-    topYear: { timeframe: "YEAR", score: (...args) => topScore(...args) },
-    topAll: { timeframe: "ALL", score: (...args) => topScore(...args) },
-    controversialHour: { timeframe: "HOUR", score: (...args) => controversialScore(...args) },
-    controversialDay: { timeframe: "DAY", score: (...args) => controversialScore(...args) },
-    controversialWeek: { timeframe: "WEEK", score: (...args) => controversialScore(...args) },
-    controversialMonth: { timeframe: "MONTH", score: (...args) => controversialScore(...args) },
-    controversialYear: { timeframe: "YEAR", score: (...args) => controversialScore(...args) },
-    controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
-};
-
-export const REPLIES_SORT_TYPES: ReplySort = {
-    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
-    old: { score: (...args) => oldScore(...args) }
-};
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -59,7 +31,7 @@ export type PageOptions = {
 type PageGenerationRes = Partial<Record<PostSortName | ReplySortName, { pages: PageIpfs[]; cids: string[] }>>;
 
 export class SortHandler {
-    subplebbit: Pick<Subplebbit, "dbHandler" | "plebbit" | "address" | "encryption" | "_clientsManager">;
+    subplebbit: LocalSubplebbit;
 
     constructor(subplebbit: SortHandler["subplebbit"]) {
         this.subplebbit = subplebbit;
@@ -85,10 +57,9 @@ export class SortHandler {
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = removeNullAndUndefinedValuesRecursively({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
-            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
+            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
             listOfPage[i] = pageIpfs;
         }
-
         return { [sortName]: { pages: listOfPage, cids } };
     }
 
@@ -213,5 +184,9 @@ export class SortHandler {
         };
 
         return this._generateSubplebbitPosts(pageOptions);
+    }
+
+    toJSON() {
+        return undefined;
     }
 }

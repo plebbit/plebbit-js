@@ -1,6 +1,6 @@
 import { JsonSignature, SignerType } from "../signer/constants";
 import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types";
-import { Subplebbit } from "./subplebbit";
+import { RemoteSubplebbit } from "./remote-subplebbit";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -92,15 +92,15 @@ export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shor
     challenges: Required<SubplebbitType["challenges"]>;
 }
 
-export interface InternalSubplebbitType extends Omit<SubplebbitType, "shortAddress" | "posts">, Pick<SubplebbitIpfsType, "posts"> {
+// This type will be stored in the db as the current state
+export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateSubplebbitOptions, "settings"> {
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
     _usingDefaultChallenge: boolean;
-    startedState: Subplebbit["startedState"];
+    startedState: RemoteSubplebbit["startedState"];
 }
 
-export interface InternalSubplebbitRpcType
-    extends Omit<InternalSubplebbitType, "signer" | "_rawSubplebbitType" | "_subplebbitUpdateTrigger"> {}
+export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {}
 
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;

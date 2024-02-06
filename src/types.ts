@@ -1,10 +1,4 @@
-import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import { PeersResult } from "ipfs-core-types/src/swarm/index";
-import { LsResult } from "ipfs-core-types/src/pin/index";
-import { DbHandler } from "./runtime/node/db-handler";
-import fetch from "node-fetch";
-import { createCaptcha } from "captcha-canvas";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
+import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
 import { Comment } from "./comment";
 import {
@@ -18,11 +12,11 @@ import {
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants";
-import { Subplebbit } from "./subplebbit/subplebbit";
 import Publication from "./publication";
 import { PlebbitError } from "./plebbit-error";
 import { ChallengeFile, Flair } from "./subplebbit/types";
 import { Plebbit } from "./plebbit";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
@@ -40,6 +34,7 @@ export interface PlebbitOptions {
     publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
     updateInterval?: number; // in ms, the time to wait for comment/subplebbit instances to check for updates
     noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
+    browserLibp2pJsPublish?: boolean; // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
 }
 
 export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
@@ -456,41 +451,8 @@ export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyName
 export interface CommentEditPubsubMessage
     extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 
-type FunctionPropertyOf<T> = {
-    [P in keyof T]: T[P] extends Function ? P : never;
-}[keyof T];
-
-export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
-
-export type IpfsHttpClientPublicAPI = {
-    add: IPFSHTTPClient["add"];
-    cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
-    name: {
-        resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
-        publish: IPFSHTTPClient["name"]["publish"];
-    };
-    config: Pick<IPFSHTTPClient["config"], "get">;
-    key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: {
-        rm: IPFSHTTPClient["pin"]["rm"];
-        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
-        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
-    };
-
-    block: { rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{ cid: CID; error?: Error }[]> };
-    swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
-    files: IPFSHTTPClient["files"];
-};
 export type NativeFunctions = {
-    listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
-    createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
-    createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{ image: string; text: string }>;
-    // This is a temporary method until https://github.com/ipfs/js-ipfs/issues/3547 is fixed
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) => Promise<IpfsKey>;
-    deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 
 export type OnlyDefinedProperties<T> = Pick<
@@ -563,11 +525,11 @@ export interface SubplebbitEvents {
     error: (error: PlebbitError) => void;
 
     // State changes
-    statechange: (newState: Subplebbit["state"]) => void;
-    updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
-    startedstatechange: (newState: Subplebbit["startedState"]) => void;
+    statechange: (newState: RemoteSubplebbit["state"]) => void;
+    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
+    startedstatechange: (newState: RemoteSubplebbit["startedState"]) => void;
 
-    update: (updatedSubplebbit: Subplebbit) => void;
+    update: (updatedSubplebbit: RemoteSubplebbit) => void;
 }
 
 export interface PublicationEvents {
@@ -637,20 +599,22 @@ export interface PubsubSubplebbitStats {
 }
 
 export interface IpfsClient {
-    peers: () => Promise<PeersResult[]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
+    peers: () => ReturnType<IpfsClient["_client"]["swarm"]["peers"]>; // https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-swarm-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: IpfsHttpClientPublicAPI; // Private API, shouldn't be used by consumers
-    _clientOptions: IpfsHttpClientOptions;
+    _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
+    _clientOptions: Parameters<typeof CreateIpfsClient>[0];
 }
 
+export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
+export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>; // IPFS peers https://docs.ipfs.tech/reference/kubo/rpc/#api-v0-pubsub-peers
     stats?: undefined; // Should be defined, will change later
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
-    _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">; // Private API, shouldn't be used by consumers
+    _client: Pick<IpfsClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
     _clientOptions: IpfsHttpClientOptions;
 }
 

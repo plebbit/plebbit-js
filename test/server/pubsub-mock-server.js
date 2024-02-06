@@ -1,4 +1,4 @@
-const { Server } = require("socket.io");
+import { Server } from "socket.io";
 
 const ipfsMockPort = 25963;
 

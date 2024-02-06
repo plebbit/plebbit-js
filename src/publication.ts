@@ -16,6 +16,7 @@ import {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerification,
     DecryptedChallengeVerificationMessageType,
+    IpfsHttpClientPubsubMessage,
     ProtocolVersion,
     PublicationEvents,
     PublicationType,
@@ -31,7 +32,6 @@ import { Comment } from "./comment";
 import { PlebbitError } from "./plebbit-error";
 import { getBufferedPlebbitAddressFromPublicKey } from "./signer/util";
 import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
 import * as cborg from "cborg";
 import { JsonSignature } from "./signer/constants";
 import lodash from "lodash";
@@ -163,7 +163,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("challengeanswer", answer);
     }
 
-    private async handleChallengeExchange(pubsubMsg: Parameters<MessageHandlerFn>[0]) {
+    private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         if (
@@ -424,7 +424,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     });
                     log.error(String(allAttemptsFailedError));
 
-                    this.emit("error", allAttemptsFailedError);
+                    this.emit("error", allAttemptsFailedError); // TODO this line is causing an uncaught error
                 }
             }
         }, this._setProviderFailureThresholdSeconds * 1000);
@@ -455,10 +455,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     this.getType() === "comment"
                         ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessage())
                         : this.getType() === "commentedit"
-                        ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
-                        : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
-                        : undefined;
+                          ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
+                          : this.getType() === "vote"
+                            ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
+                            : undefined;
             } catch (e) {
                 log.error("Failed to publish to RPC due to error", String(e));
                 this._updateState("stopped");

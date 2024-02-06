@@ -1,20 +1,12 @@
-const {
+import {
     getPendingChallengesOrChallengeVerification,
     getChallengeVerificationFromChallengeAnswers,
     getChallengeVerification,
     plebbitJsChallenges,
     getSubplebbitChallengeFromSubplebbitChallengeSettings
-} = require("../../dist/node/runtime/node/challenges");
-const { expect } = require("chai");
-const {
-    Plebbit,
-    subplebbits,
-    authors,
-    subplebbitAuthors,
-    challengeAnswers,
-    challengeCommentCids,
-    results
-} = require("./fixtures/fixtures");
+} from "../../dist/node/runtime/node/subplebbit/challenges/index";
+import { expect } from "chai";
+import { Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results } from "./fixtures/fixtures";
 
 // sometimes use random addresses because the rate limiter
 // is based on author addresses and doesn't reset between tests

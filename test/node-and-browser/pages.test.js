@@ -1,10 +1,9 @@
-const Plebbit = require("../../dist/node");
-const { TIMEFRAMES_TO_SECONDS } = require("../../dist/node/util");
-const { expect } = require("chai");
-const { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } = require("../../dist/node/subplebbit/sort-handler");
-const signers = require("../fixtures/signers");
-const { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } = require("../../dist/node/test/test-util");
-const lodash = require("lodash");
+import { TIMEFRAMES_TO_SECONDS } from "../../dist/node/util";
+import { expect } from "chai";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/util";
+import signers from "../fixtures/signers";
+import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util";
+import lodash from "lodash";
 
 let subplebbit;
 const subCommentPages = {};

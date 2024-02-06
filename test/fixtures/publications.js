@@ -1,4 +1,4 @@
-const signers = require("./signers");
+import signers from "./signers";
 
 const comment = {
     subplebbitAddress: signers[0].address,
@@ -13,6 +13,4 @@ while (i--) {
     comment.content += "some content... ";
 }
 
-module.exports = {
-    comment
-};
+export { comment };

@@ -1,20 +1,17 @@
-const Plebbit = require("../../../../dist/node");
-const signers = require("../../../fixtures/signers");
-const {
+import signers from "../../../fixtures/signers";
+import {
     generateMockPost,
     generateMockComment,
     publishWithExpectedResult,
-    mockPlebbit,
+    mockRemotePlebbit,
     publishRandomPost,
     isRpcFlagOn
-} = require("../../../../dist/node/test/test-util");
-const { messages } = require("../../../../dist/node/errors");
-const { signComment, verifyComment } = require("../../../../dist/node/signer/signatures");
-const lodash = require("lodash");
-
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { verifySubplebbit } = require("../../../../dist/node/signer");
+} from "../../../../dist/node/test/test-util";
+import lodash from "lodash";
+import { messages } from "../../../../dist/node/errors";
+import { signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -23,7 +20,7 @@ const subplebbitAddress = signers[0].address;
 describe(`Client side verification`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(".publish() throws if publication has invalid signature", async () => {
         const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
@@ -34,7 +31,7 @@ describe(`Client side verification`, async () => {
     //prettier-ignore
     if (!isRpcFlagOn())
     it(`.publish() throws if fetched subplebbit has an invalid signature`, async () => {
-        const customPlebbit = await mockPlebbit();
+        const customPlebbit = await mockRemotePlebbit();
         const subJson = (await customPlebbit.getSubplebbit(subplebbitAddress)).toJSONIpfs();
         subJson.updatedAt += 1; // should invalidate the signature
         expect(await verifySubplebbit(subJson, customPlebbit.resolveAuthorAddresses, customPlebbit._clientsManager)).to.deep.equal({
@@ -55,7 +52,7 @@ if (!isRpcFlagOn())
 describe("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
     });
 
@@ -100,7 +97,7 @@ if (!isRpcFlagOn())
 describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     const forbiddenFieldsWithValue = [
         { cid: "Qm12345" },
@@ -141,7 +138,7 @@ if (!isRpcFlagOn())
 describe("Posts with forbidden author fields are rejected", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     const forbiddenFieldsWithValue = {
         subplebbit: { lastCommentCid: "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs", postScore: 0, replyScore: 0, banExpiresAt: 0 },

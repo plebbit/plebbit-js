@@ -1,8 +1,8 @@
-const Plebbit = require("../../../../dist/node"); // Don't delete this line, otherwise browser tests will give "Process not defined" error. No idea why it happens
-const signers = require("../../../fixtures/signers");
-const {
+import Plebbit from "../../../../dist/node/index";
+import signers from "../../../fixtures/signers";
+import {
     generateMockPost,
-    mockPlebbit,
+    mockRemotePlebbit,
     publishRandomPost,
     publishRandomReply,
     publishWithExpectedResult,
@@ -12,18 +12,17 @@ const {
     publishVote,
     generatePostToAnswerMathQuestion,
     isRpcFlagOn,
-    mockRemotePlebbit
-} = require("../../../../dist/node/test/test-util");
-const lodash = require("lodash");
-const { messages } = require("../../../../dist/node/errors");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { createMockIpfsClient } = require("../../../../dist/node/test/mock-ipfs-client");
+    resolveWhenConditionIsTrue
+} from "../../../../dist/node/test/test-util";
+import lodash from "lodash";
+import { messages } from "../../../../dist/node/errors";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 
-const { default: waitUntil } = require("async-wait-until");
-const stringify = require("safe-stable-stringify");
-const { verifyComment } = require("../../../../dist/node/signer");
-const { verifyCommentUpdate } = require("../../../../dist/node/signer/signatures");
+import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures";
+
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -33,7 +32,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 describe("createComment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`comment = await createComment(await createComment)`, async () => {
@@ -54,7 +53,7 @@ describe("createComment", async () => {
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
-        expect(stringify(comment.author)).to.equal(stringify(props.author));
+        expect(deterministicStringify(comment.author)).to.equal(deterministicStringify(props.author));
         expect(comment.timestamp).to.equal(props.timestamp);
 
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
@@ -312,7 +311,7 @@ describe(`comment.update`, async () => {
 describe(`commentUpdate.replyCount`, async () => {
     let plebbit, post, reply;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -326,19 +325,23 @@ describe(`commentUpdate.replyCount`, async () => {
         reply = await publishRandomReply(post, plebbit, {}, false);
         await reply.update();
         await new Promise((resolve) => reply.once("update", resolve));
-        await waitUntil(() => post.replyCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
+        expect(post.replyCount).to.equal(1);
     });
 
     it(`post.replyCount increases with a reply of a reply`, async () => {
         await publishRandomReply(reply, plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2 && reply.replyCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+        await resolveWhenConditionIsTrue(reply, () => reply.replyCount === 1);
+        expect(post.replyCount).to.equal(2);
+        expect(reply.replyCount).to.equal(1);
     });
 });
 
 describe(`commentUpdate.lastChildCid`, async () => {
     let post, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -358,7 +361,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
         await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         expect(post.replyCount).to.equal(2);
         expect(post.lastChildCid).to.equal(post.replies.pages.topAll.comments[0].cid);
     });
@@ -367,7 +370,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 describe(`commentUpdate.lastReplyTimestamp`, async () => {
     let post, plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -380,14 +383,14 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
 
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 1, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
         const replyOfReply = await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
-        await waitUntil(() => post.replyCount === 2, { timeout: 50000 });
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         expect(post.replyCount).to.equal(2);
         expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
     });
@@ -397,7 +400,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     let plebbit, post;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
         await new Promise((resolve) => post.once("update", resolve));
@@ -409,7 +412,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`post.author.subplebbit.postScore increases with upvote to post`, async () => {
         expect(post.cid).to.be.a("string");
         await publishVote(post.cid, post.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => post.upvoteCount === 1, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.upvoteCount === 1);
         expect(post.upvoteCount).to.equal(1);
         expect(post.author.subplebbit.postScore).to.equal(1);
         expect(post.author.subplebbit.replyScore).to.equal(0);
@@ -418,9 +421,9 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
         const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
-
         await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => anotherPost.upvoteCount === 1 && post.author.subplebbit.postScore === 2, { timeout: 200000 });
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.postScore === 2);
+        await resolveWhenConditionIsTrue(anotherPost, () => anotherPost.upvoteCount === 1);
         expect(anotherPost.upvoteCount).to.equal(1);
         expect(anotherPost.author.subplebbit.postScore).to.equal(2);
         expect(anotherPost.author.subplebbit.replyScore).to.equal(0);
@@ -436,8 +439,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
         await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
-        await waitUntil(() => reply.upvoteCount === 1 && post.author.subplebbit.replyScore === 1, { timeout: 200000 });
-
+        await resolveWhenConditionIsTrue(reply, () => reply.upvoteCount === 1);
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.replyScore === 1);
         expect(post.upvoteCount).to.equal(1);
         expect(post.author.subplebbit.postScore).to.equal(2);
         expect(post.author.subplebbit.replyScore).to.equal(1);
@@ -455,10 +458,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
         await anotherPost.update();
 
-        await waitUntil(() => post.author.subplebbit.lastCommentCid === anotherPost.cid && typeof anotherPost.updatedAt === "number", {
-            timeout: 200000
-        });
-
+        await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.lastCommentCid === anotherPost.cid);
+        await resolveWhenConditionIsTrue(anotherPost, () => typeof anotherPost.updatedAt === "number");
         expect(post.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
         expect(anotherPost.author.subplebbit.lastCommentCid).to.equal(anotherPost.cid);
         expect(anotherPost.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
@@ -469,9 +470,8 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
         const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
         await reply.update();
-
-        await waitUntil(() => post.replyCount === 2 && typeof reply.updatedAt === "number", { timeout: 200000 });
-
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
+        await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");
         expect(post.author.subplebbit.lastCommentCid).to.equal(reply.cid);
         expect(reply.author.subplebbit.lastCommentCid).to.equal(reply.cid);
         expect(reply.author.subplebbit.firstCommentTimestamp).to.equal(post.timestamp);
@@ -487,7 +487,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
 describe(`comment.state`, async () => {
     let plebbit, comment;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         comment = await generateMockPost(subplebbitAddress, plebbit);
     });
 
@@ -545,7 +545,6 @@ describe("comment.updatingState", async () => {
         mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
         await mockPost.update();
-
         await new Promise((resolve) => mockPost.once("update", resolve));
         if (!mockPost.updatedAt) await new Promise((resolve) => mockPost.once("update", resolve));
         await mockPost.stop();
@@ -607,7 +606,7 @@ describe("comment.updatingState", async () => {
 describe(`comment.clients`, async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         gatewayPlebbit = await mockGatewayPlebbit();
     });
 
@@ -844,7 +843,7 @@ describe(`comment.clients`, async () => {
 
         it(`correct order of pubsubClients state when failing to publish a comment and the error is from the pubsub provider`, async () => {
             const offlinePubsubUrl = "http://localhost:13173"; // Should be down
-            const offlinePubsubPlebbit = await mockPlebbit({
+            const offlinePubsubPlebbit = await mockRemotePlebbit({
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
                 pubsubHttpClientsOptions: [offlinePubsubUrl]
             });
@@ -865,7 +864,7 @@ describe(`comment.clients`, async () => {
         it(`Correct order of pubsubClients state when failing to publish a comment on one pubsub provider and moving on to the other one`, async () => {
             const offlinePubsubUrl = "http://localhost:13173"; // Should be down
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [offlinePubsubUrl, upPubsubUrl]
             });
 
@@ -891,7 +890,7 @@ describe(`comment.clients`, async () => {
         it(`Correct order of pubsubClients state when provider 1 is not responding and moving on to the other one`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             });
 
@@ -918,7 +917,7 @@ describe(`comment.clients`, async () => {
         it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge (pubsub provider 0 fail to receive a response in alotted time)`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take pubsub msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             });
 

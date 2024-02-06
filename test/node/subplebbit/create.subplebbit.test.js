@@ -1,19 +1,18 @@
-const Plebbit = require("../../../dist/node");
-const {
+import {
     mockPlebbit,
     publishRandomPost,
     publishRandomReply,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
     isRpcFlagOn
-} = require("../../../dist/node/test/test-util");
-const { timestamp } = require("../../../dist/node/util");
-const { messages } = require("../../../dist/node/errors");
+} from "../../../dist/node/test/test-util";
+import { timestamp } from "../../../dist/node/util";
+import { messages } from "../../../dist/node/errors";
 
-const stringify = require("safe-stable-stringify");
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -28,12 +27,13 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
         await newSubplebbit.start();
         await new Promise((resolve) => newSubplebbit.once("update", resolve));
+        if (!newSubplebbit.updatedAt) await new Promise((resolve) => newSubplebbit.once("update", resolve));
         await newSubplebbit.stop();
 
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address.startsWith("12D3")).to.be.true;
         const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
-        expect(stringify(subplebbitIpns.toJSON())).to.equal(stringify(newSubplebbit.toJSON()));
+        expect(deterministicStringify(subplebbitIpns.toJSON())).to.equal(deterministicStringify(newSubplebbit.toJSON()));
         return newSubplebbit;
     };
 
@@ -54,7 +54,8 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
         const props = { title: "subplebbit = await createSubplebbit(await createSubplebbit)" };
-        const createdSub = await plebbit.createSubplebbit(await plebbit.createSubplebbit(props));
+        const firstSub = await plebbit.createSubplebbit(props);
+        const createdSub = await plebbit.createSubplebbit(firstSub);
         expect(createdSub.title).to.equal(props.title);
         if (!isRpcFlagOn())
             // signer will not exist on RPC tests
@@ -67,6 +68,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const sub = await createSubWithNoChallenge(props, plebbit);
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         const post = await publishRandomPost(sub.address, plebbit, {}, false);
         await publishRandomReply(post, plebbit, {}, true);
         expect(sub.posts).to.be.a("object");
@@ -94,7 +96,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const sub = await _createAndValidateSubArsg({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
-        expect(stringify(createdSub.toJSON())).to.equal(stringify(sub.toJSON()));
+        expect(deterministicStringify(createdSub.toJSON())).to.equal(deterministicStringify(sub.toJSON()));
         await createdSub.delete();
     });
 
@@ -108,6 +110,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         );
         await newSub.start();
         await new Promise((resolve) => newSub.once("update", resolve));
+        if (!newSub.updatedAt) await new Promise((resolve) => newSub.once("update", resolve));
         await newSub.stop();
 
         const createdSubplebbit = await createSubWithNoChallenge(

@@ -1,19 +1,18 @@
-const Plebbit = require("../../../dist/node");
-const signers = require("../../fixtures/signers");
-const { timestamp } = require("../../../dist/node/util");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import signers from "../../fixtures/signers";
+import { timestamp } from "../../../dist/node/util";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const lodash = require("lodash");
-const { messages } = require("../../../dist/node/errors");
-const { verifyCommentEdit, signCommentEdit } = require("../../../dist/node/signer/signatures");
-const { mockPlebbit, isRpcFlagOn } = require("../../../dist/node/test/test-util");
-
+import lodash from "lodash";
+import { messages } from "../../../dist/node/errors";
+import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
         editProps = {
             author: { address: signers[7].address },
@@ -54,29 +53,29 @@ if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't v
 describe("Verify CommentEdit", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
-        const edit = lodash.cloneDeep(require("../../fixtures/signatures/commentEdit/valid_comment_edit.json"));
+        const edit = lodash.cloneDeep(validCommentEditFixture);
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid CommentEdit signature gets invalidated correctly`, async () => {
-        const edit = lodash.cloneDeep(require("../../fixtures/signatures/commentEdit/valid_comment_edit.json"));
+        const edit = lodash.cloneDeep(validCommentEditFixture);
         edit.reason += "1234"; // Should invalidate comment edit
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyCommentEdit invalidates a commentEdit with author.address not a domain or IPNS`, async () => {
-        const edit = lodash.cloneDeep(require("../../fixtures/signatures/commentEdit/valid_comment_edit.json"));
+        const edit = lodash.cloneDeep(validCommentEditFixture);
         edit.author.address = "gibbresish"; // Not a domain or IPNS
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
-        const edit = lodash.cloneDeep(require("../../fixtures/signatures/commentEdit/valid_comment_edit.json"));
+        const edit = lodash.cloneDeep(validCommentEditFixture);
         edit.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });

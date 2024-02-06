@@ -1,22 +1,20 @@
 // use this file to launch an ipfs node and some subplebbits
 // that can be used during node and browser tests
-const getIpfsPath = require("kubo").path;
-const { execSync, exec } = require("child_process");
-const { startSubplebbits, mockRpcServerPlebbit, mockPlebbit } = require("../../dist/node/test/test-util");
-const { signSubplebbit } = require("../../dist/node/signer/signatures");
-const signers = require("../fixtures/signers");
-const http = require("http");
+import { path as getIpfsPath } from "kubo";
+import { execSync, exec } from "child_process";
+import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
+import { signSubplebbit } from "../../dist/node/signer/signatures";
+import signers from "../fixtures/signers";
+import http from "http";
+import path from "path";
+import fs from "fs";
 
 const ipfsPath = getIpfsPath();
 
 const rpcPort = 39652;
 
 // use the test server with the compiled version (dist/node)
-// with plain Javascript and commonjs require (not import)
 // in order to test the repo like a real user would
-
-const path = require("path");
-const fs = require("fs");
 
 const rpcAuthKey = "123456";
 
@@ -60,55 +58,54 @@ const anotherPubsubNodeArgs = {
 };
 
 const startIpfsNodes = async () => {
-    await Promise.all(
-        [offlineNodeArgs, pubsubNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs].map(async (nodeArgs) => {
-            try {
-                execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
-            } catch {}
+    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, onlineNodeArgs];
+    for (const nodeArgs of ipfsNodesToRun) {
+        console.log("Initializing Node", nodeArgs.dir, "\n");
+        try {
+            execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
+        } catch {}
 
-            const ipfsConfigPath = path.join(nodeArgs.dir, "config");
-            const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
+        const ipfsConfigPath = path.join(nodeArgs.dir, "config");
+        const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
 
-            ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
-            ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
-            ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+        ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
+        ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+        ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
 
-            fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
+        fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
-            if (nodeArgs.extraCommands)
-                for (const extraCommand of nodeArgs.extraCommands)
-                    execSync(`${ipfsPath} ${extraCommand}`, {
-                        stdio: "inherit",
-                        env: { IPFS_PATH: nodeArgs.dir }
-                    });
-
-            const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
-            console.log(ipfsCmd);
-            const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
-            ipfsProcess.stderr.on("data", console.error);
-            ipfsProcess.stdin.on("data", console.log);
-            ipfsProcess.stdout.on("data", console.log);
-            ipfsProcess.on("error", console.error);
-            ipfsProcess.on("exit", () => {
-                console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
-                process.exit(1);
-            });
-            process.on("exit", () => {
-                exec(`kill ${ipfsProcess.pid + 1}`);
-            });
-
-            const ipfsDaemonIsReady = () =>
-                new Promise((resolve) => {
-                    ipfsProcess.stdout.on("data", (data) => {
-                        if (data.match("Daemon is ready")) {
-                            resolve();
-                        }
-                    });
+        if (nodeArgs.extraCommands)
+            for (const extraCommand of nodeArgs.extraCommands)
+                execSync(`${ipfsPath} ${extraCommand}`, {
+                    stdio: "inherit",
+                    env: { IPFS_PATH: nodeArgs.dir }
                 });
-            await ipfsDaemonIsReady();
-            return;
-        })
-    );
+
+        const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+        console.log(ipfsCmd);
+        const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
+        ipfsProcess.stderr.on("data", console.error);
+        ipfsProcess.stdin.on("data", console.log);
+        ipfsProcess.stdout.on("data", console.log);
+        ipfsProcess.on("error", console.error);
+        ipfsProcess.on("exit", () => {
+            console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
+            process.exit(1);
+        });
+        process.on("exit", () => {
+            exec(`kill ${ipfsProcess.pid + 1}`);
+        });
+
+        const ipfsDaemonIsReady = () =>
+            new Promise((resolve) => {
+                ipfsProcess.stdout.on("data", (data) => {
+                    if (data.match("Daemon is ready")) {
+                        resolve();
+                    }
+                });
+            });
+        await ipfsDaemonIsReady();
+    }
 };
 
 const setUpMockGateways = async () => {
@@ -118,7 +115,8 @@ const setUpMockGateways = async () => {
 
     http.createServer((req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
-        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr") res.end("Hello plebs"); // Valid content
+        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr")
+            res.end("Hello plebs"); // Valid content
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else res.end("Unknown CID");
@@ -140,7 +138,7 @@ const setUpMockGateways = async () => {
     }).listen(33417);
 
     // Set up mock gateways for subplebbit gateway fetching tests
-    const plebbit = await mockPlebbit();
+    const plebbit = await mockGatewayPlebbit();
     const fetchLatestSubplebbitJson = async () => {
         const subRecord = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         return subRecord;
@@ -210,13 +208,13 @@ const setUpMockGateways = async () => {
 
     await setUpMockGateways();
 
-    require("./pubsub-mock-server");
+    await import("./pubsub-mock-server");
 
     if (process.env["USE_RPC"] === "1") {
-        // run RPC here
+        // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
-        const PlebbitRpc = require("../../rpc");
-        const plebbitWebSocketServer = await PlebbitRpc.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
+        const PlebbitRpc = await import("../../rpc");
+        const plebbitWebSocketServer = await PlebbitRpc.default.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
         // debug raw JSON RPC messages in console (optional)
@@ -228,14 +226,20 @@ const setUpMockGateways = async () => {
         console.log(`test server plebbit wss listening on port ${rpcPort}`);
     }
 
-    if (process.env["NO_SUBPLEBBITS"] !== "1")
-        await startSubplebbits({
+    if (process.env["NO_SUBPLEBBITS"] !== "1") {
+        const subs = await startSubplebbits({
             signers: signers,
             publishInterval: 3000,
             votesPerCommentToPublish: 5,
             numOfPostsToPublish: 51,
             numOfCommentsToPublish: 10
         });
+
+        http.createServer(async (req, res) => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.end(JSON.stringify(subs));
+        }).listen(14953);
+    }
 
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready

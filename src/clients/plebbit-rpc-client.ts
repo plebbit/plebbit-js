@@ -4,12 +4,12 @@ import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../comment";
 import { Plebbit } from "../plebbit";
 import assert from "assert";
-import { Subplebbit } from "../subplebbit/subplebbit";
 import { PlebbitError } from "../plebbit-error";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util";
 import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -36,6 +36,7 @@ export default class PlebbitRpcClient {
     }
 
     async _init() {
+        const log = Logger("plebbit-js:plebbit-rpc-client:_init");
         // wait for websocket connection to open
         if (!(this._webSocketClient instanceof WebSocketClient)) {
             // Set up events here
@@ -43,6 +44,7 @@ export default class PlebbitRpcClient {
             // NOTE: it is possible to receive a subscription message before receiving the subscription id
 
             this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions[0]);
+            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions[0]);
             //@ts-expect-error
             this._webSocketClient.socket.on("message", (jsonMessage) => {
                 const message = JSON.parse(jsonMessage);
@@ -93,10 +95,9 @@ export default class PlebbitRpcClient {
         // @ts-expect-error
         if (this._webSocketClient.ready) return;
         if (!this._openConnectionPromise)
-            this._openConnectionPromise = pTimeout(
-                new Promise(async (resolve) => this._webSocketClient.once("open", resolve)),
-                this._timeoutSeconds * 1000
-            );
+            this._openConnectionPromise = pTimeout(new Promise(async (resolve) => this._webSocketClient.once("open", resolve)), {
+                milliseconds: this._timeoutSeconds * 1000
+            });
 
         try {
             await this._openConnectionPromise;
@@ -155,11 +156,11 @@ export default class PlebbitRpcClient {
         return pageIpfs;
     }
 
-    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<Subplebbit> {
+    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
-        const subProps = <SubplebbitType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
-        const subplebbit = new Subplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
-        await subplebbit.initSubplebbit(subProps);
+        const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
+        const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
+        await subplebbit.initRpcInternalSubplebbit(subProps);
         return subplebbit;
     }
 

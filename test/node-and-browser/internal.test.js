@@ -1,19 +1,18 @@
-const Plebbit = require("../../dist/node");
-const { parseJsonStrings } = require("../../dist/node/util");
-const chai = require("chai");
-const fetch = require("node-fetch");
-const chaiAsPromised = require("chai-as-promised");
+import Plebbit from "../../dist/node";
+import { parseJsonStrings } from "../../dist/node/util";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, isRpcFlagOn } = require("../../dist/node/test/test-util");
+import { messages } from "../../dist/node/errors";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../dist/node/test/test-util";
 
 //prettier-ignore
 if (!isRpcFlagOn())
 describe("Test util functions", async () => {
     let plebbit, gatewayPlebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         gatewayPlebbit = await Plebbit({
             ipfsGatewayUrls: ["http://127.0.0.1:18080"]
         });

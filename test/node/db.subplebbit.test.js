@@ -1,18 +1,17 @@
-const Plebbit = require("../../dist/node");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-const signers = require("../fixtures/signers");
+import signers from "../fixtures/signers";
 
-const path = require("path");
-const fs = require("fs");
-const { mockPlebbit, generateMockPost, publishWithExpectedResult, isRpcFlagOn } = require("../../dist/node/test/test-util");
+import path from "path";
+import fs from "fs";
+import tempy from "tempy";
+import { mockPlebbit, generateMockPost, publishWithExpectedResult, isRpcFlagOn } from "../../dist/node/test/test-util";
 
-const plebbitVersion = require("../../dist/node/version");
+import plebbitVersion from "../../dist/node/version";
 
 const getTemporaryPlebbitOptions = () => {
-    const tempy = require("tempy");
     return {
         dataPath: tempy.directory(),
         ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"],
@@ -80,7 +79,7 @@ describe(`DB importing`, async () => {
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
         const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
-        expect(currentDbVersion).to.equal(plebbitVersion.default.DB_VERSION);
+        expect(currentDbVersion).to.equal(plebbitVersion.DB_VERSION);
 
         const mockPost = await generateMockPost(subplebbit.address, tempPlebbit);
         mockPost.once("challenge", async (challengeMsg) => {
@@ -99,13 +98,13 @@ describe("DB Migration", () => {
     const databasesToMigrate = getDatabasesToMigrate();
 
     databasesToMigrate.map((databaseInfo) =>
-        it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.default.DB_VERSION} - address (${databaseInfo.address})`, async () => {
+        it(`Can migrate from DB version ${databaseInfo.version} to ${plebbitVersion.DB_VERSION} - address (${databaseInfo.address})`, async () => {
             // Once we start the sub, it's gonna attempt to migrate to the latest DB version
 
             const plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
 
             console.log(
-                `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${databaseInfo.version}) to ${plebbitVersion.default.DB_VERSION}`
+                `We're using datapath (${plebbit.dataPath}) For testing migration from db version (${databaseInfo.version}) to ${plebbitVersion.DB_VERSION}`
             );
             await copyDbToDataPath(databaseInfo, plebbit);
 

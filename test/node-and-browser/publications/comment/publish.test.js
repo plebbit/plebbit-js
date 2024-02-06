@@ -1,23 +1,23 @@
-const Plebbit = require("../../../../dist/node");
-const signers = require("../../../fixtures/signers");
-const {
+import Plebbit from "../../../../dist/node/index";
+import signers from "../../../fixtures/signers";
+import {
     generateMockPost,
     publishRandomReply,
     publishWithExpectedResult,
     waitTillCommentIsInParentPages,
     publishRandomPost,
-    mockPlebbit,
+    mockRemotePlebbit,
     findCommentInPage,
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     isRpcFlagOn
-} = require("../../../../dist/node/test/test-util");
-const lodash = require("lodash");
-const chai = require("chai");
-const { messages } = require("../../../../dist/node/errors");
-const chaiAsPromised = require("chai-as-promised");
-const { default: waitUntil } = require("async-wait-until");
-const { signComment } = require("../../../../dist/node/signer/signatures");
+} from "../../../../dist/node/test/test-util";
+import lodash from "lodash";
+import { messages } from "../../../../dist/node/errors";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { signComment } from "../../../../dist/node/signer/signatures";
+
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -28,7 +28,7 @@ describe("publishing comments", async () => {
     let plebbit;
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it("Can publish a post", async () => {
@@ -185,7 +185,7 @@ describe("publishing comments", async () => {
 
     if (!isRpcFlagOn())
         it(`Can publish a comment when all pubsub providers are down except one`, async () => {
-            const tempPlebbit = await mockPlebbit();
+            const tempPlebbit = await mockRemotePlebbit();
             // We're gonna modify this plebbit instance to throw errors when pubsub publish/subscribe is called for two of its pubsub providers (it uses three)
             const pubsubProviders = Object.keys(tempPlebbit.clients.pubsubClients);
             expect(pubsubProviders.length).to.equal(3);
@@ -213,7 +213,7 @@ describe("publishing comments", async () => {
         it(`comment.publish emits an error if provider 1 and 2 are not responding`, async () => {
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
             const upPubsubUrl = "http://localhost:15002/api/v0";
-            const plebbit = await mockPlebbit({
+            const plebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
             });
 
@@ -256,7 +256,7 @@ describe("publishing comments", async () => {
     if (!isRpcFlagOn())
         it(`comment emits and throws errors if all providers fail to publish`, async () => {
             const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
-            const offlinePubsubPlebbit = await mockPlebbit({
+            const offlinePubsubPlebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: offlinePubsubUrls
             });
             const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
@@ -281,7 +281,7 @@ describe("publishing comments", async () => {
 
             const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
             const offlinePubsubUrl = "http://localhost:23425"; // Will throw errors; can't subscribe or publish
-            const offlinePubsubPlebbit = await mockPlebbit({
+            const offlinePubsubPlebbit = await mockRemotePlebbit({
                 pubsubHttpClientsOptions: [notRespondingPubsubUrl, offlinePubsubUrl]
             });
             const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
@@ -322,7 +322,7 @@ describe(`Publishing replies`, async () => {
     const parents = [];
 
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit);
         parents.push(post);
     });
@@ -364,7 +364,7 @@ describe(`Publishing replies`, async () => {
 describe(`comment.publishingState`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
 
     it(`publishingState is stopped by default`, async () => {
@@ -521,7 +521,7 @@ describe(`comment.publishingState`, async () => {
     if (!isRpcFlagOn())
         it(`comment.publishingState = 'failed' if pubsub provider is down`, async () => {
             const offlinePubsubUrl = "http://localhost:23425";
-            const offlinePubsubPlebbit = await mockPlebbit({
+            const offlinePubsubPlebbit = await mockRemotePlebbit({
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
                 pubsubHttpClientsOptions: [offlinePubsubUrl]
             });

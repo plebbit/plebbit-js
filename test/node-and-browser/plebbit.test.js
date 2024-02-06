@@ -1,15 +1,15 @@
-const Plebbit = require("../../dist/node");
-const fixtureSigner = require("../fixtures/signers")[0];
-const signers = require("../fixtures/signers");
-const chai = require("chai");
-const chaiAsPromised = require("chai-as-promised");
-const { messages } = require("../../dist/node/errors");
-const { mockPlebbit, loadAllPages, isRpcFlagOn } = require("../../dist/node/test/test-util");
-const { default: Author } = require("../../dist/node/author");
-const stringify = require("safe-stable-stringify");
+import Plebbit from "../../dist/node";
+import signers from "../fixtures/signers";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+import { messages } from "../../dist/node/errors";
+import { mockRemotePlebbit, loadAllPages, isRpcFlagOn } from "../../dist/node/test/test-util";
+import { default as Author } from "../../dist/node/author";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
+const fixtureSigner = signers[0];
 const subplebbitSigner = signers[0];
 
 describe("Plebbit options", async () => {
@@ -81,7 +81,7 @@ describe("Plebbit options", async () => {
     //prettier-ignore
     if(isRpcFlagOn())
     it("Error is thrown if RPC is down", async () => {
-        const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+        const plebbit = await mockRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
         // plebbit.listSubplebbits will take 20s to timeout and throw this error
         await assert.isRejected(plebbit.listSubplebbits(), messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]); // Use the rpc so it would detect it's not loading
     });
@@ -91,7 +91,7 @@ describe("plebbit.createSigner", async () => {
     let plebbit, signer;
     const isBase64 = (testString) => /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}))?$/gm.test(testString);
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
         signer = await plebbit.createSigner();
     });
 
@@ -124,7 +124,7 @@ describe("plebbit.createSigner", async () => {
 describe("plebbit.getComment", async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockPlebbit();
+        plebbit = await mockRemotePlebbit();
     });
     it("post props are loaded correctly", async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitSigner.address);
@@ -133,7 +133,7 @@ describe("plebbit.getComment", async () => {
         expectedPostProps.cid = subplebbit.lastPostCid;
         expectedPostProps.author = new Author(expectedPostProps.author);
         const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-        for (const key of Object.keys(expectedPostProps)) expect(stringify(expectedPostProps[key])).to.equal(stringify(loadedPost[key]));
+        for (const key of Object.keys(expectedPostProps)) expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
     });
 
     it("comment props are loaded correctly", async () => {
@@ -159,7 +159,7 @@ describe("plebbit.getComment", async () => {
         expect(loadedComment.constructor.name).to.equal("Comment");
         if (loadedComment.author.subplebbit) delete loadedComment.author.subplebbit; // If it's running on RPC then it will fetch both CommentIpfs and CommentUpdate
         for (const key of Object.keys(expectedCommentProps))
-            expect(stringify(expectedCommentProps[key])).to.equal(stringify(loadedComment[key]));
+            expect(deterministicStringify(expectedCommentProps[key])).to.equal(deterministicStringify(loadedComment[key]));
     });
 
     it(`plebbit.getComment is not fetching comment updates in background after fulfilling its promise`, async () => {
@@ -177,7 +177,7 @@ describe("plebbit.getComment", async () => {
 describe("plebbit.fetchCid", async () => {
     let plebbit, gatewayPlebbit, ipfsPlebbit;
     before(async () => {
-        plebbit = await mockPlebbit(); // Here this should be alternated for RPC
+        plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
         gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
         ipfsPlebbit = await Plebbit({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"] });
     });

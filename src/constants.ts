@@ -1,4 +1,4 @@
-import LRUCache from "lru-cache";
+import {LRUCache} from "lru-cache";
 import { LRUStorageConstructor } from "./types";
 import { SubplebbitIpfsType } from "./subplebbit/types";
 export enum STORAGE_KEYS {
