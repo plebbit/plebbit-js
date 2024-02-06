@@ -959,7 +959,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Code below is to handle in case the ipfs node restarted and the subscription got lost or something
         const subscribedTopics = await this.clientsManager.getDefaultPubsub()._client.pubsub.ls();
         if (!subscribedTopics.includes(this.pubsubTopicWithfallback())) {
-            // console.log("pubsubTopic", this.pubsubTopicWithfallback(), "subscribed topics", subscribedTopics);
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange); // Make sure it's not hanging
             await this.clientsManager.pubsubSubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this.clientsManager.updatePubsubState("waiting-challenge-requests", undefined);

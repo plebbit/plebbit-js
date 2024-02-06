@@ -531,6 +531,9 @@ export class BaseClientsManager {
             if (cachedTextRecord && !cachedTextRecord.stale) return cachedTextRecord.resolveCache;
             log.trace(`Retrying to resolve address (${address}) text record (${txtRecordName}) for the ${i}th time`);
 
+            if (!this._plebbit.clients.chainProviders[chain]) {
+                log.error(`Plebbit has no chain provider for (${chain}), `, this._plebbit.clients.chainProviders);
+            }
             // Only sort if we have more than 3 gateways
             const providersSorted =
                 this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit

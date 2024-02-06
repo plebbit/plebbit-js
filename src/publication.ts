@@ -424,7 +424,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     });
                     log.error(String(allAttemptsFailedError));
 
-                    this.emit("error", allAttemptsFailedError);
+                    this.emit("error", allAttemptsFailedError); // TODO this line is causing an uncaught error
                 }
             }
         }, this._setProviderFailureThresholdSeconds * 1000);
