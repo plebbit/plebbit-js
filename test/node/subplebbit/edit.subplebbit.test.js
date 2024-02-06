@@ -68,6 +68,7 @@ describe(`subplebbit.edit`, async () => {
     });
 
     it(`plebbit.listSubplebbit includes the new ENS address, and not the old address`, async () => {
+        await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 2)); // wait until db has been renamed
         const subs = await plebbit.listSubplebbits();
         expect(subs).to.include(ethAddress);
         expect(subs).to.not.include(subplebbit.signer.address);
