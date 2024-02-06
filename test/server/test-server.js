@@ -2,7 +2,7 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import { startSubplebbits, mockRpcServerPlebbit, mockPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
+import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
 import { signSubplebbit } from "../../dist/node/signer/signatures";
 import signers from "../fixtures/signers";
 import http from "http";
@@ -58,55 +58,54 @@ const anotherPubsubNodeArgs = {
 };
 
 const startIpfsNodes = async () => {
-    await Promise.all(
-        [offlineNodeArgs, pubsubNodeArgs, onlineNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs].map(async (nodeArgs) => {
-            try {
-                execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
-            } catch {}
+    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, onlineNodeArgs];
+    for (const nodeArgs of ipfsNodesToRun) {
+        console.log("Initializing Node", nodeArgs.dir, "\n");
+        try {
+            execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
+        } catch {}
 
-            const ipfsConfigPath = path.join(nodeArgs.dir, "config");
-            const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
+        const ipfsConfigPath = path.join(nodeArgs.dir, "config");
+        const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
 
-            ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
-            ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
-            ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+        ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
+        ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+        ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
 
-            fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
+        fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
 
-            if (nodeArgs.extraCommands)
-                for (const extraCommand of nodeArgs.extraCommands)
-                    execSync(`${ipfsPath} ${extraCommand}`, {
-                        stdio: "inherit",
-                        env: { IPFS_PATH: nodeArgs.dir }
-                    });
-
-            const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
-            console.log(ipfsCmd);
-            const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
-            ipfsProcess.stderr.on("data", console.error);
-            ipfsProcess.stdin.on("data", console.log);
-            ipfsProcess.stdout.on("data", console.log);
-            ipfsProcess.on("error", console.error);
-            ipfsProcess.on("exit", () => {
-                console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
-                process.exit(1);
-            });
-            process.on("exit", () => {
-                exec(`kill ${ipfsProcess.pid + 1}`);
-            });
-
-            const ipfsDaemonIsReady = () =>
-                new Promise((resolve) => {
-                    ipfsProcess.stdout.on("data", (data) => {
-                        if (data.match("Daemon is ready")) {
-                            resolve();
-                        }
-                    });
+        if (nodeArgs.extraCommands)
+            for (const extraCommand of nodeArgs.extraCommands)
+                execSync(`${ipfsPath} ${extraCommand}`, {
+                    stdio: "inherit",
+                    env: { IPFS_PATH: nodeArgs.dir }
                 });
-            await ipfsDaemonIsReady();
-            return;
-        })
-    );
+
+        const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+        console.log(ipfsCmd);
+        const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
+        ipfsProcess.stderr.on("data", console.error);
+        ipfsProcess.stdin.on("data", console.log);
+        ipfsProcess.stdout.on("data", console.log);
+        ipfsProcess.on("error", console.error);
+        ipfsProcess.on("exit", () => {
+            console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
+            process.exit(1);
+        });
+        process.on("exit", () => {
+            exec(`kill ${ipfsProcess.pid + 1}`);
+        });
+
+        const ipfsDaemonIsReady = () =>
+            new Promise((resolve) => {
+                ipfsProcess.stdout.on("data", (data) => {
+                    if (data.match("Daemon is ready")) {
+                        resolve();
+                    }
+                });
+            });
+        await ipfsDaemonIsReady();
+    }
 };
 
 const setUpMockGateways = async () => {
