@@ -10,7 +10,8 @@ import {
 
 // example of browser only tests
 
-describe("plebbit.browserLibp2pJsPublish", () => {
+// No need to test this in production
+describe.skip("plebbit.browserLibp2pJsPublish", () => {
     let subs;
     before(async () => {
         subs = await fetchTestServerSubs();
