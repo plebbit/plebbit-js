@@ -1,7 +1,7 @@
-import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge";
-import Author from "./author";
+import { ChallengeAnswerMessage, ChallengeRequestMessage } from "./challenge.js";
+import Author from "./author.js";
 import assert from "assert";
-import { Signer, decryptEd25519AesGcm, encryptEd25519AesGcm } from "./signer";
+import { Signer, decryptEd25519AesGcm, encryptEd25519AesGcm } from "./signer/index.js";
 import {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -21,22 +21,22 @@ import {
     PublicationEvents,
     PublicationType,
     PublicationTypeName
-} from "./types";
+} from "./types.js";
 import Logger from "@plebbit/plebbit-logger";
-import env from "./version";
-import { Plebbit } from "./plebbit";
-import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures";
-import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util";
+import env from "./version.js";
+import { Plebbit } from "./plebbit.js";
+import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures.js";
+import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { Comment } from "./comment";
-import { PlebbitError } from "./plebbit-error";
-import { getBufferedPlebbitAddressFromPublicKey } from "./signer/util";
-import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
+import { Comment } from "./comment.js";
+import { PlebbitError } from "./plebbit-error.js";
+import { getBufferedPlebbitAddressFromPublicKey } from "./signer/util.js";
+import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager.js";
 import * as cborg from "cborg";
-import { JsonSignature } from "./signer/constants";
+import { JsonSignature } from "./signer/constants.js";
 import lodash from "lodash";
-import { subplebbitForPublishingCache } from "./constants";
-import { SubplebbitIpfsType } from "./subplebbit/types";
+import { subplebbitForPublishingCache } from "./constants.js";
+import { SubplebbitIpfsType } from "./subplebbit/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props

@@ -1,14 +1,14 @@
 import Logger from "@plebbit/plebbit-logger";
-import { decodePubsubMsgFromRpc, replaceXWithY } from "../util";
-import { InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitSettings } from "./types";
-import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit";
+import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
+import { InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitSettings } from "./types.js";
+import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
-} from "../types";
-import { RemoteSubplebbit } from "./remote-subplebbit";
+} from "../types.js";
+import { RemoteSubplebbit } from "./remote-subplebbit.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {

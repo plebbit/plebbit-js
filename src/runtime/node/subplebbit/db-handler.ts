@@ -1,4 +1,4 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util";
+import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
 import knex, { Knex } from "knex";
 import path from "path";
 import assert from "assert";
@@ -20,18 +20,18 @@ import {
     SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
-} from "../../../types";
+} from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util";
-import env from "../../../version";
+import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
+import env from "../../../version.js";
 import lodash from "lodash";
 
 import * as lockfile from "@plebbit/proper-lockfile";
-import { PageOptions } from "./sort-handler";
-import { SubplebbitStats } from "../../../subplebbit/types";
+import { PageOptions } from "./sort-handler.js";
+import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants";
-import { LocalSubplebbit } from "./local-subplebbit";
+import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants.js";
+import { LocalSubplebbit } from "./local-subplebbit.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",

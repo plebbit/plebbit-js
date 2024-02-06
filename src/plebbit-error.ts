@@ -1,5 +1,5 @@
 import lodash from "lodash";
-import { messages } from "./errors";
+import { messages } from "./errors.js";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {
     code: keyof typeof messages;

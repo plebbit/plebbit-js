@@ -1,4 +1,4 @@
-import { ProtocolVersion } from "./types";
+import { ProtocolVersion } from "./types.js";
 
 const protocolVersion: ProtocolVersion = "1.0.0";
 const plebbitJsVersion = "0.0.1";

@@ -1,7 +1,7 @@
 // Signer section
 
-import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
-import { SubplebbitIpfsType } from "../subplebbit/types";
+import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
+import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import {
     AuthorCommentEdit,
     ChallengeAnswerMessageType,
@@ -18,7 +18,7 @@ import {
     PublicationType,
     PublicationTypeName,
     VotePubsubMessage
-} from "../types";
+} from "../types.js";
 
 export type CreateSignerOptions = {
     privateKey?: string; // If undefined, generate a random private key

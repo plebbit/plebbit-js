@@ -1,16 +1,16 @@
-import { Plebbit } from "../plebbit";
+import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util";
+import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util.js";
 import Hash from "ipfs-only-hash";
-import { nativeFunctions } from "../runtime/node/util";
+import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
-import { PlebbitError } from "../plebbit-error";
+import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types";
+import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
-import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants";
+import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
-import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub";
+import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub.js";
 import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
@@ -61,6 +61,7 @@ export class BaseClientsManager {
     getDefaultIpfs() {
         assert(this._defaultIpfsProviderUrl);
         assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
+        
         return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     }
 

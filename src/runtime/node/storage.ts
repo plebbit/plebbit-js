@@ -1,5 +1,5 @@
-import { Plebbit } from "../../plebbit";
-import { StorageInterface } from "../../types";
+import { Plebbit } from "../../plebbit.js";
+import { StorageInterface } from "../../types.js";
 import path from "path";
 import fs from "fs";
 import Keyv from "keyv";

@@ -22,15 +22,15 @@ import {
     PostSort,
     ReplySort,
     Timeframe
-} from "./types";
-import { messages } from "./errors";
+} from "./types.js";
+import { messages } from "./errors.js";
 import lodash from "lodash";
 import assert from "assert";
-import { BasePages } from "./pages";
-import { PlebbitError } from "./plebbit-error";
-import { Plebbit } from "./plebbit";
+import { BasePages } from "./pages.js";
+import { PlebbitError } from "./plebbit-error.js";
+import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
-import { SubplebbitIpfsType } from "./subplebbit/types";
+import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
 
 //This is temp. TODO replace this with accurate mapping

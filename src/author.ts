@@ -1,7 +1,7 @@
 import assert from "assert";
-import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "./types";
-import { shortifyAddress } from "./util";
-import { Flair } from "./subplebbit/types";
+import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "./types.js";
+import { shortifyAddress } from "./util.js";
+import { Flair } from "./subplebbit/types.js";
 
 class Author implements AuthorTypeWithCommentUpdate {
     address: string;

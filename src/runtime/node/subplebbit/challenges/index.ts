@@ -1,16 +1,16 @@
-import {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess, addToRateLimiter} from './exclude'
+import {shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess, addToRateLimiter} from './exclude/index.js'
 
 // all challenges included with plebbit-js, in Plebbit.challenges
-import textMath from './plebbit-js-challenges/text-math'
-import captchaCanvasV3 from './plebbit-js-challenges/captcha-canvas-v3'
-import fail from './plebbit-js-challenges/fail'
-import blacklist from './plebbit-js-challenges/blacklist'
-import question from './plebbit-js-challenges/question'
-import evmContractCall from './plebbit-js-challenges/evm-contract-call'
-import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types'
-import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../../subplebbit/types'
-import { ChallengeVerificationMessage } from '../../../../challenge'
-import { LocalSubplebbit } from '../local-subplebbit'
+import textMath from './plebbit-js-challenges/text-math.js'
+import captchaCanvasV3 from './plebbit-js-challenges/captcha-canvas-v3/index.js'
+import fail from './plebbit-js-challenges/fail.js'
+import blacklist from './plebbit-js-challenges/blacklist.js'
+import question from './plebbit-js-challenges/question.js'
+import evmContractCall from './plebbit-js-challenges/evm-contract-call/index.js'
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types.js'
+import { Challenge, ChallengeFile, ChallengeFileFactory, ChallengeResult, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../../subplebbit/types.js'
+import { ChallengeVerificationMessage } from '../../../../challenge.js'
+import { LocalSubplebbit } from '../local-subplebbit.js'
 
 
 type PendingChallenge = Challenge & {index: number};

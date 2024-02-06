@@ -7,12 +7,12 @@ import {
   testScore,
   testFirstCommentTimestamp,
   testRole
-} from './utils'
-import {testRateLimit} from './rate-limiter'
-import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../../../../subplebbit/types'
-import {   DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../../types'
-import { Comment } from '../../../../../comment'
-import { LocalSubplebbit } from '../../local-subplebbit'
+} from './utils.js'
+import {testRateLimit} from './rate-limiter.js'
+import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from '../../../../../subplebbit/types.js'
+import {   DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../../types.js'
+import { Comment } from '../../../../../comment.js'
+import { LocalSubplebbit } from '../../local-subplebbit.js'
 
 const shouldExcludePublication = (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: LocalSubplebbit) => {
   if (!subplebbitChallenge) {

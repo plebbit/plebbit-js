@@ -1,16 +1,16 @@
-import { parseRawPages, shortifyAddress, doesEnsAddressHaveCapitalLetter } from "../util";
-import { PostsPages } from "../pages";
-import { Plebbit } from "../plebbit";
+import { parseRawPages, shortifyAddress, doesEnsAddressHaveCapitalLetter } from "../util.js";
+import { PostsPages } from "../pages.js";
+import { Plebbit } from "../plebbit.js";
 
-import { ProtocolVersion, SubplebbitEvents } from "../types";
+import { ProtocolVersion, SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { multihash as isIpfsMultihash } from "is-ipfs";
 
-import { JsonSignature } from "../signer/constants";
+import { JsonSignature } from "../signer/constants.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { PlebbitError } from "../plebbit-error";
+import { PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
-import { SubplebbitClientsManager } from "../clients/client-manager";
+import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import {
     CreateSubplebbitOptions,
     Flair,
@@ -23,7 +23,7 @@ import {
     SubplebbitStats,
     SubplebbitSuggested,
     SubplebbitType
-} from "./types";
+} from "./types.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public

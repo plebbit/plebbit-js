@@ -1,5 +1,5 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types";
+import { GenericClientEvents } from "../types.js";
 
 // Types
 type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";

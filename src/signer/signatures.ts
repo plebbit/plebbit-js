@@ -4,15 +4,15 @@ import {
     getPlebbitAddressFromPrivateKey,
     getPlebbitAddressFromPublicKey,
     getPlebbitAddressFromPublicKeyBuffer
-} from "./util";
+} from "./util.js";
 import * as cborg from "cborg";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../util";
-import { Plebbit } from "../plebbit";
+import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
+import { Plebbit } from "../plebbit.js";
 
 import {
     ChallengeAnswerMessageType,
@@ -30,10 +30,10 @@ import {
     PageIpfs,
     PubsubMessage,
     VotePubsubMessage
-} from "../types";
+} from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import { messages } from "../errors";
+import { messages } from "../errors.js";
 import assert from "assert";
 import {
     ChallengeAnswerMessageSignedPropertyNames,
@@ -51,10 +51,10 @@ import {
     SignerType,
     SubplebbitSignedPropertyNames,
     VoteSignedPropertyNames
-} from "./constants";
-import { BaseClientsManager } from "../clients/base-client-manager";
-import { SubplebbitIpfsType } from "../subplebbit/types";
-import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants";
+} from "./constants.js";
+import { BaseClientsManager } from "../clients/base-client-manager.js";
+import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 
 export interface ValidationResult {

@@ -1,14 +1,14 @@
 import assert from "assert";
-import { BasePages } from "../pages";
-import { BaseClientsManager, LoadType } from "./base-client-manager";
-import { PagesIpfsClient } from "./ipfs-client";
-import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
-import { PageIpfs, PostSortName, ReplySortName } from "../types";
+import { BasePages } from "../pages.js";
+import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { PagesIpfsClient } from "./ipfs-client.js";
+import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
+import { PageIpfs, PostSortName, ReplySortName } from "../types.js";
 import lodash from "lodash";
-import { pageCidToSortTypesCache } from "../constants";
-import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
+import { pageCidToSortTypesCache } from "../constants.js";
+import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../util";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../util.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']

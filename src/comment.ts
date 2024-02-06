@@ -1,7 +1,7 @@
 import retry, { RetryOperation } from "retry";
-import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util";
-import Publication from "./publication";
-import { RepliesPages } from "./pages";
+import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util.js";
+import Publication from "./publication.js";
+import { RepliesPages } from "./pages.js";
 import {
     AuthorCommentEdit,
     CommentIpfsType,
@@ -13,17 +13,17 @@ import {
     CommentWithCommentUpdate,
     ProtocolVersion,
     PublicationTypeName
-} from "./types";
+} from "./types.js";
 
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "./plebbit";
+import { Plebbit } from "./plebbit.js";
 import lodash from "lodash";
-import { verifyComment, verifyCommentUpdate } from "./signer/signatures";
+import { verifyComment, verifyCommentUpdate } from "./signer/signatures.js";
 import assert from "assert";
-import { PlebbitError } from "./plebbit-error";
-import { CommentClientsManager } from "./clients/client-manager";
-import { messages } from "./errors";
-import { Flair } from "./subplebbit/types";
+import { PlebbitError } from "./plebbit-error.js";
+import { CommentClientsManager } from "./clients/client-manager.js";
+import { messages } from "./errors.js";
+import { Flair } from "./subplebbit/types.js";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props

@@ -1,5 +1,4 @@
-import { NativeFunctions } from "../../types";
-
+import { NativeFunctions } from "../../types.js";
 
 const nativeFunctions: NativeFunctions = {
     //@ts-ignore

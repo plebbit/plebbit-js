@@ -1,6 +1,6 @@
-import { JsonSignature, SignerType } from "../signer/constants";
-import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types";
-import { RemoteSubplebbit } from "./remote-subplebbit";
+import { JsonSignature, SignerType } from "../signer/constants.js";
+import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
+import { RemoteSubplebbit } from "./remote-subplebbit.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;

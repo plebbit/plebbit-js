@@ -1,7 +1,7 @@
-import { Plebbit } from "./plebbit";
+import { Plebbit } from "./plebbit.js";
 import assert from "assert";
 import lodash from "lodash";
-import { Chain } from "./types";
+import { Chain } from "./types.js";
 
 type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {

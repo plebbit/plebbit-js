@@ -4,8 +4,8 @@ import {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     ProtocolVersion
-} from "./types";
-import { Encrypted, PubsubSignature } from "./signer/constants";
+} from "./types.js";
+import { Encrypted, PubsubSignature } from "./signer/constants.js";
 
 export class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encrypted: Encrypted;

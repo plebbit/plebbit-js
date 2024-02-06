@@ -1,20 +1,20 @@
-import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util";
-import { Comment } from "../comment";
-import { Plebbit } from "../plebbit";
-import PlebbitIndex from "../index";
-import Vote from "../vote";
-import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
-import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types";
+import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
+import { Comment } from "../comment.js";
+import { Plebbit } from "../plebbit.js";
+import PlebbitIndex from "../index.js";
+import Vote from "../vote.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
 import { cid as isIpfsCid } from "is-ipfs";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { SignerType } from "../signer/constants";
-import Publication from "../publication";
+import { SignerType } from "../signer/constants.js";
+import Publication from "../publication.js";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
-import { createMockIpfsClient } from "./mock-ipfs-client";
-import { BasePages } from "../pages";
-import { CreateSubplebbitOptions } from "../subplebbit/types";
+import { createMockIpfsClient } from "./mock-ipfs-client.js";
+import { BasePages } from "../pages.js";
+import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {

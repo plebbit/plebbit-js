@@ -1,35 +1,35 @@
-import Publication from "../publication";
-import { Plebbit } from "../plebbit";
-import { Comment } from "../comment";
-import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util";
+import Publication from "../publication.js";
+import { Plebbit } from "../plebbit.js";
+import { Comment } from "../comment.js";
+import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
-import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types";
-import { verifySubplebbit } from "../signer";
+import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types.js";
+import { verifySubplebbit } from "../signer/index.js";
 import lodash from "lodash";
 import { cid as isIpfsCid, path as isIpfsPath } from "is-ipfs";
-import { PlebbitError } from "../plebbit-error";
-import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client";
-import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client";
-import { GenericChainProviderClient } from "./chain-provider-client";
+import { PlebbitError } from "../plebbit-error.js";
+import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
+import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
+import { GenericChainProviderClient } from "./chain-provider-client.js";
 import {
     CommentIpfsGatewayClient,
     GenericIpfsGatewayClient,
     PublicationIpfsGatewayClient,
     SubplebbitIpfsGatewayClient
-} from "./ipfs-gateway-client";
+} from "./ipfs-gateway-client.js";
 
-import { BaseClientsManager, LoadType } from "./base-client-manager";
-import { commentPostUpdatesParentsPathConfig, postTimestampConfig, subplebbitForPublishingCache } from "../constants";
+import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { commentPostUpdatesParentsPathConfig, postTimestampConfig, subplebbitForPublishingCache } from "../constants.js";
 import {
     CommentPlebbitRpcStateClient,
     GenericPlebbitRpcStateClient,
     PublicationPlebbitRpcStateClient,
     SubplebbitPlebbitRpcStateClient
-} from "./plebbit-rpc-state-client";
-import { SubplebbitIpfsType } from "../subplebbit/types";
+} from "./plebbit-rpc-state-client.js";
+import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
-import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 
 export class ClientsManager extends BaseClientsManager {
     protected _plebbit: Plebbit;

@@ -1,6 +1,6 @@
-import { LRUStorageConstructor, LRUStorageInterface } from "../../types";
+import { LRUStorageConstructor, LRUStorageInterface } from "../../types.js";
 import path from "path";
-import SqliteCache from "./sqlite-lru-cache";
+import SqliteCache from "./sqlite-lru-cache.js";
 
 // This code is highly inspired by https://github.com/jkelin/cache-sqlite-lru-ttl
 

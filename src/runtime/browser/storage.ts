@@ -1,6 +1,6 @@
 import localForage from "localforage";
-import { StorageInterface } from "../../types";
-import { Plebbit } from "../../plebbit";
+import { StorageInterface } from "../../types.js";
+import { Plebbit } from "../../plebbit.js";
 import lodash from "lodash";
 
 // Storage is for long term items, no eviction based on ttl or anything like that

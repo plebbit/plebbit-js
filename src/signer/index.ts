@@ -1,9 +1,9 @@
 import assert from "assert";
-import { CreateSignerOptions, SignerType } from "./constants";
-import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util";
-import { shortifyAddress } from "../util";
-export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
-export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption";
+import { CreateSignerOptions, SignerType } from "./constants.js";
+import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util.js";
+import { shortifyAddress } from "../util.js";
+export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
+export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
 
 export class Signer implements SignerType {
     type: "ed25519";

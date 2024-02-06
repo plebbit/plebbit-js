@@ -11,7 +11,7 @@ import { kadDHT } from "@libp2p/kad-dht";
 import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
 import { createEd25519PeerId } from "@libp2p/peer-id-factory";
-import { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types";
+import { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types.js";
 
 import { EventEmitter } from "events";
 

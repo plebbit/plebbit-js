@@ -4,8 +4,8 @@ import {
     REPLIES_SORT_TYPES,
     TIMEFRAMES_TO_SECONDS,
     timestamp
-} from "../../../util";
-import { LocalSubplebbit } from "./local-subplebbit";
+} from "../../../util.js";
+import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import {
     CommentsTableRow,
@@ -16,7 +16,7 @@ import {
     PostSortName,
     ReplySortName,
     SortProps
-} from "../../../types";
+} from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
 

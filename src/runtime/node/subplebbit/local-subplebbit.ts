@@ -1,5 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "../../../plebbit";
+import { Plebbit } from "../../../plebbit.js";
 import {
     Challenge,
     CreateSubplebbitOptions,
@@ -7,10 +7,10 @@ import {
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitSettings
-} from "../../../subplebbit/types";
+} from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
-import { SortHandler } from "./sort-handler";
-import { DbHandler } from "./db-handler";
+import { SortHandler } from "./sort-handler.js";
+import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
 
 import {
@@ -22,11 +22,11 @@ import {
     removeNullAndUndefinedValuesRecursively,
     throwWithErrorCode,
     timestamp
-} from "../../../util";
+} from "../../../util.js";
 import lodash from "lodash";
-import { STORAGE_KEYS } from "../../../constants";
+import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { PlebbitError } from "../../../plebbit-error";
+import { PlebbitError } from "../../../plebbit-error.js";
 import {
     AuthorCommentEditOptions,
     ChallengeAnswerMessageType,
@@ -49,7 +49,7 @@ import {
     ModeratorCommentEditOptions,
     VotePubsubMessage,
     VoteType
-} from "../../../types";
+} from "../../../types.js";
 import {
     ValidationResult,
     signChallengeMessage,
@@ -60,22 +60,22 @@ import {
     verifyChallengeRequest,
     verifyCommentEdit,
     verifyCommentUpdate
-} from "../../../signer/signatures";
-import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge";
-import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util";
-import { getErrorCodeFromMessage } from "../../../util";
-import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifyVote } from "../../../signer";
-import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption";
-import { messages } from "../../../errors";
-import Author from "../../../author";
-import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants";
-import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges";
+} from "../../../signer/signatures.js";
+import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
+import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
+import { getErrorCodeFromMessage } from "../../../util.js";
+import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifyVote } from "../../../signer/index.js";
+import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
+import { messages } from "../../../errors.js";
+import Author from "../../../author.js";
+import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants.js";
+import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
 import * as cborg from "cborg";
 import assert from "assert";
-import env from "../../../version";
+import env from "../../../version.js";
 import { sha256 } from "js-sha256";
-import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../../../signer/util";
-import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit";
+import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
+import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {

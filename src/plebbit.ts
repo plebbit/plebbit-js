@@ -1,4 +1,4 @@
-import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util";
+import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util.js";
 import {
     StorageInterface,
     ChainProvider,
@@ -22,34 +22,34 @@ import {
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler
-} from "./types";
-import { Comment } from "./comment";
-import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util";
-import Vote from "./vote";
-import { createSigner, Signer } from "./signer";
-import { Resolver } from "./resolver";
-import { CommentEdit } from "./comment-edit";
-import { getPlebbitAddressFromPrivateKey } from "./signer/util";
+} from "./types.js";
+import { Comment } from "./comment.js";
+import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+import Vote from "./vote.js";
+import { createSigner, Signer } from "./signer/index.js";
+import { Resolver } from "./resolver.js";
+import { CommentEdit } from "./comment-edit.js";
+import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import { cid as isIpfsCid } from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
-import env from "./version";
+import env from "./version.js";
 import lodash from "lodash";
-import { signComment, signCommentEdit, signVote } from "./signer/signatures";
+import { signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { CreateSignerOptions, SignerType } from "./signer/constants";
-import Stats from "./stats";
-import Storage from "./runtime/node/storage";
-import { ClientsManager } from "./clients/client-manager";
-import PlebbitRpcClient from "./clients/plebbit-rpc-client";
-import { PlebbitError } from "./plebbit-error";
-import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
-import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
-import LRUStorage from "./runtime/node/lru-storage";
-import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
-import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit";
-import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit";
-import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit";
+import { CreateSignerOptions, SignerType } from "./signer/constants.js";
+import Stats from "./stats.js";
+import Storage from "./runtime/node/storage.js";
+import { ClientsManager } from "./clients/client-manager.js";
+import PlebbitRpcClient from "./clients/plebbit-rpc-client.js";
+import { PlebbitError } from "./plebbit-error.js";
+import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client.js";
+import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types.js";
+import LRUStorage from "./runtime/node/lru-storage.js";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
+import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {

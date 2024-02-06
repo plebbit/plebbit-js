@@ -1,15 +1,21 @@
 import Logger from "@plebbit/plebbit-logger";
-import { CommentIpfsType, DecryptedChallengeRequest, PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types";
+import {
+    CommentIpfsType,
+    DecryptedChallengeRequest,
+    PageIpfs,
+    PlebbitWsServerSettings,
+    PlebbitWsServerSettingsSerialized
+} from "../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
-import { Comment } from "../comment";
-import { Plebbit } from "../plebbit";
+import { Comment } from "../comment.js";
+import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { PlebbitError } from "../plebbit-error";
+import { PlebbitError } from "../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
-import { throwWithErrorCode } from "../util";
-import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types";
-import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit";
+import { throwWithErrorCode } from "../util.js";
+import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types.js";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 

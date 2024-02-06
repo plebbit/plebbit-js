@@ -1,5 +1,5 @@
-import { Plebbit } from "./plebbit";
-import { Chain } from "./types";
+import { Plebbit } from "./plebbit.js";
+import { Chain } from "./types.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
 import { PublicClient, createPublicClient, http } from "viem";

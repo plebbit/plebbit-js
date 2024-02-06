@@ -1,6 +1,6 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
-import { Comment } from "./comment";
+import { Comment } from "./comment.js";
 import {
     CommentEditSignedPropertyNamesUnion,
     CommentSignedPropertyNamesUnion,
@@ -11,12 +11,12 @@ import {
     PubsubSignature,
     SignerType,
     VoteSignedPropertyNamesUnion
-} from "./signer/constants";
-import Publication from "./publication";
-import { PlebbitError } from "./plebbit-error";
-import { ChallengeFile, Flair } from "./subplebbit/types";
-import { Plebbit } from "./plebbit";
-import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit";
+} from "./signer/constants.js";
+import Publication from "./publication.js";
+import { PlebbitError } from "./plebbit-error.js";
+import { ChallengeFile, Flair } from "./subplebbit/types.js";
+import { Plebbit } from "./plebbit.js";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";

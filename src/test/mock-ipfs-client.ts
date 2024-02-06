@@ -1,5 +1,5 @@
 import io, { Socket } from "socket.io-client";
-import {  IpfsClient, PubsubSubscriptionHandler } from "../types";
+import {  IpfsClient, PubsubSubscriptionHandler } from "../types.js";
 
 const port = 25963;
 

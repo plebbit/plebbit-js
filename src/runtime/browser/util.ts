@@ -1,6 +1,6 @@
 import { sha256 } from "js-sha256";
-import { IpfsClient, NativeFunctions } from "../../types";
-import { default as browserNativeFunctions } from "./native-functions";
+import { IpfsClient, NativeFunctions } from "../../types.js";
+import { default as browserNativeFunctions } from "./native-functions.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Logger from "@plebbit/plebbit-logger";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";

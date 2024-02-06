@@ -1,7 +1,7 @@
 // NOTE: don't import plebbit-js directly to be able to replace the implementation
 
 // @plebbit/plebbit-js imported from parent folder
-import Plebbit from "../../../../index";
+import Plebbit from "../../../../index.js";
 
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";

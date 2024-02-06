@@ -1,4 +1,4 @@
-import { parsePageIpfs } from "./util";
+import { parsePageIpfs } from "./util.js";
 import {
     CommentIpfsType,
     CommentWithCommentUpdate,
@@ -10,13 +10,13 @@ import {
     PostsPagesTypeJson,
     RepliesPagesTypeJson,
     ReplySortName
-} from "./types";
-import { verifyPage } from "./signer/signatures";
+} from "./types.js";
+import { verifyPage } from "./signer/signatures.js";
 import lodash from "lodash";
 import assert from "assert";
-import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
-import { Plebbit } from "./plebbit";
-import { PlebbitError } from "./plebbit-error";
+import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager.js";
+import { Plebbit } from "./plebbit.js";
+import { PlebbitError } from "./plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 
 type ConstructorProps = PagesType & {

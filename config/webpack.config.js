@@ -58,7 +58,7 @@ export default {
                         // the most common option used by peopler
                         presets: ["@babel/preset-env"],
 
-                        // fix ReferenceError: regeneratorRuntime is not defined
+                        // To be able to import json in tests
                         plugins: ["@babel/plugin-syntax-import-assertions"]
                     }
                 }

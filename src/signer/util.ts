@@ -32,7 +32,6 @@ export const getBufferedPlebbitAddressFromPublicKey = async (publicKeyBase64: st
     const peerId = await getPeerIdFromPublicKey(publicKeyBase64);
     const buffered = uint8ArrayFromString(publicKeyBase64, "base64");
 
-    
     return peerId.toBytes();
 };
 

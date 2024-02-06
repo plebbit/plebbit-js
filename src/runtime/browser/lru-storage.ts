@@ -1,5 +1,5 @@
-import { LRUStorageConstructor, LRUStorageInterface } from "../../types";
-import { createInstance as CreateLocalForageLRU } from "./localforage-lru";
+import { LRUStorageConstructor, LRUStorageInterface } from "../../types.js";
+import { createInstance as CreateLocalForageLRU } from "./localforage-lru.js";
 
 // Storing items that will be evicted based on LRU
 

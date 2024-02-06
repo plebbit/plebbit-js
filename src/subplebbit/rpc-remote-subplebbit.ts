@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
-import { RemoteSubplebbit } from "./remote-subplebbit";
-import { SubplebbitIpfsType } from "./types";
+import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import { SubplebbitIpfsType } from "./types.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number;

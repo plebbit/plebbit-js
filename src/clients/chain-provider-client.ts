@@ -1,5 +1,5 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types";
+import { GenericClientEvents } from "../types.js";
 
 type GenericChainproviderState = "stopped" | "resolving-subplebbit-address" | "resolving-author-address";
 export class GenericChainProviderClient extends TypedEmitter<GenericClientEvents<GenericChainproviderState>> {

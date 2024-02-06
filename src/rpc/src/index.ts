@@ -1,11 +1,11 @@
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
-import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js";
-import { clone, encodePubsubMsg, generateSubscriptionId } from "./utils";
+import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
+import { clone, encodePubsubMsg, generateSubscriptionId } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
-import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types";
-import { Plebbit } from "../../plebbit";
+import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
+import { Plebbit } from "../../plebbit.js";
 import {
     CommentEditPubsubMessage,
     CommentPubsubMessage,
@@ -13,14 +13,14 @@ import {
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized,
     VotePubsubMessage
-} from "../../types";
+} from "../../types.js";
 import WebSocket from "ws";
-import Publication from "../../publication";
-import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types";
+import Publication from "../../publication.js";
+import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import lodash from "lodash";
-import { PlebbitError } from "../../plebbit-error";
-import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit";
-import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit";
+import { PlebbitError } from "../../plebbit-error.js";
+import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
+import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
