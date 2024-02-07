@@ -69,7 +69,11 @@ import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.
 import { messages } from "../../../errors.js";
 import Author from "../../../author.js";
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants.js";
-import { GetChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings } from "./challenges/index.js";
+import {
+    GetChallengeAnswers,
+    getChallengeVerification,
+    getSubplebbitChallengeFromSubplebbitChallengeSettings
+} from "./challenges/index.js";
 import * as cborg from "cborg";
 import assert from "assert";
 import env from "../../../version.js";
@@ -1106,9 +1110,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _adjustPostUpdatesBucketsIfNeeded() {
         // This function will be ran a lot, maybe we should move it out of the sync loop or try to limit its execution
         if (!this.postUpdates) return;
-        if (Math.random() < 0.1) return; // Should not be ran very often
         // Look for posts whose buckets should be changed
 
+        // TODO this function should be ran in a more efficient manner. It iterates through all posts in the database
+        // At some point we should have a db query that looks for posts that need to move to a different bucket
         const log = Logger("plebbit-js:local-subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
         const commentUpdateOfPosts = await this.dbHandler.queryCommentUpdatesOfPostsForBucketAdjustment();
         for (const post of commentUpdateOfPosts) {

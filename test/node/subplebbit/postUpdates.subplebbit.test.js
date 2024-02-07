@@ -3,7 +3,8 @@ import {
     publishRandomPost,
     createSubWithNoChallenge,
     publishRandomReply,
-    isRpcFlagOn
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -61,7 +62,7 @@ describe("plebbit.postUpdates", async () => {
         // For example, we have a bucket 86400 which is for the last 24 hours,
         // But if we have a new bucket, 43200 for the last 12 hours, the post from previous tests should be moved to it
         subplebbit._postUpdatesBuckets = [43200, ...subplebbit._postUpdatesBuckets];
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => Object.keys(subplebbit.postUpdates).length === 1 && Object.keys(subplebbit.postUpdates)[0] === "43200");
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["43200"]);
     });
 
