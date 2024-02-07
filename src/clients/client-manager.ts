@@ -283,17 +283,21 @@ export class ClientsManager extends BaseClientsManager {
 
             const totalGateways = gatewaysSorted.length;
 
-            const quorm = totalGateways <= 3 ? totalGateways : 3;
+            const quorm = Math.min(2, totalGateways);
+
+            const freshThreshold = 20 * 60; // if a record is as old as 20 min, then use it immediately
 
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
             const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
+            const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord.updatedAt; // how old is the record, relative to now, in seconds
 
-            if (timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord.updatedAt <= 120) {
+            if (bestGatewayRecordAge <= freshThreshold) {
                 // A very recent subplebbit, a good thing
                 // TODO reward this gateway
-                log(`Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record `);
-                // should find the sub with max updatedAt
+                log(
+                    `Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record that's ${bestGatewayRecordAge}s old`
+                );
                 return gatewayFetches[bestGatewayUrl].subplebbitRecord;
             }
 
