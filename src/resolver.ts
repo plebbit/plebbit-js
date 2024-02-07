@@ -48,7 +48,7 @@ export class Resolver {
             const key = chainProviderUrl + chainId;
             if (!viemCache[key])
                 viemCache[key] = createPublicClient({
-                    chain: chain,
+                    chain,
                     transport: http(chainProviderUrl)
                 });
             return viemCache[key];
