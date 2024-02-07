@@ -21,10 +21,11 @@ const testEntries = testFiles.reduce((acc, file) => {
 // debug build paths if needed
 // console.log({rootFolder, testFiles, testEntries, outputFolder, testFolder, lockFile})
 
+/** @type { import('webpack').Configuration } */
 export default {
     // each test file is its own entry
     entry: testEntries,
-
+    
     output: {
         // output each test entry to its own file name
         filename: "[name]",
@@ -43,14 +44,21 @@ export default {
 
     module: {
         rules: [
+            // Need to make sure all webpacked files are using browser files
+            {
+                test: /\.js$/,
+                loader: "string-replace-loader",
+                options: {
+                    search: "dist/node",
+                    replace: "dist/browser",
+                    flags: "g"
+                }
+            },
             // plebbit-js doesn't need babel, but we should write our tests
             // with it to make sure it doesn't break for users who use it
             // like react users for example
             {
                 test: /\.js$/,
-                resolve: {
-                    fullySpecified: false
-                },
                 exclude: /node_modules/,
                 use: {
                     loader: "babel-loader",
