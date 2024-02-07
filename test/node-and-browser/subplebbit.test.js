@@ -8,7 +8,7 @@ import {
     mockGatewayPlebbit,
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly
-} from "../../dist/browser/test/test-util.js";
+} from "../../dist/node/test/test-util.js";
 
 import lodash from "lodash";
 import chai from "chai";
