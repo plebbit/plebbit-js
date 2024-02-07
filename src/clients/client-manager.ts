@@ -287,18 +287,19 @@ export class ClientsManager extends BaseClientsManager {
 
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
-            for (const gatewayUrl of gatewaysWithSub) {
-                if (timestamp() - gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt <= 120) {
-                    // A very recent subplebbit, a good thing
-                    // TODO reward this gateway
-                    log(`Gateway (${gatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record `);
-                    return gatewayFetches[gatewayUrl].subplebbitRecord;
-                }
+            const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
+
+            if (timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord.updatedAt <= 120) {
+                // A very recent subplebbit, a good thing
+                // TODO reward this gateway
+                log(`Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record `);
+                // should find the sub with max updatedAt
+                return gatewayFetches[bestGatewayUrl].subplebbitRecord;
             }
+
             // We weren't able to find a very recent subplebbit record
             if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
                 // we find the gateway with the max updatedAt
-                const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
                 return gatewayFetches[bestGatewayUrl].subplebbitRecord;
             } else return undefined;
         };
