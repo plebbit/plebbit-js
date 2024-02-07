@@ -2,11 +2,17 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { signComment, verifyComment, verifyCommentUpdate, signCommentUpdate, signCommentEdit } from "../../../dist/node/signer/signatures";
-import { messages } from "../../../dist/node/errors";
-import signers from "../../fixtures/signers";
-import { timestamp } from "../../../dist/node/util";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import {
+    signComment,
+    verifyComment,
+    verifyCommentUpdate,
+    signCommentUpdate,
+    signCommentEdit
+} from "../../../dist/node/signer/signatures.js";
+import { messages } from "../../../dist/node/errors.js";
+import signers from "../../fixtures/signers.js";
+import { timestamp } from "../../../dist/node/util.js";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 import lodash from "lodash";
 import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
 import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
@@ -14,7 +20,7 @@ import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/co
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
 import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json" assert { type: "json" };
 import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json" assert { type: "json" };
-import {comment as fixtureComment} from "../../fixtures/publications";
+import { comment as fixtureComment } from "../../fixtures/publications.js";
 
 const fixtureSignature = {
     signature: "0ibxT1DhPIWzCUnnxq3GCnq7fsj41D/xvArlRmBPt4Gl0+sSGjwIF7Hl8Z7gLbWAg458Kr8oZ8ZDxWQTxtawCA",

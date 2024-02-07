@@ -1,10 +1,10 @@
-import { verifyPage } from "../../../dist/node/signer/signatures";
-import { messages } from "../../../dist/node/errors";
+import { verifyPage } from "../../../dist/node/signer/signatures.js";
+import { messages } from "../../../dist/node/errors.js";
 import { expect } from "chai";
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 import lodash from "lodash";
 import { v4 as uuidV4 } from "uuid";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 
 import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
 

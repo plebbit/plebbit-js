@@ -1,4 +1,4 @@
-import signers from "../../../fixtures/signers";
+import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     generateMockComment,
@@ -6,10 +6,10 @@ import {
     mockRemotePlebbit,
     publishRandomPost,
     isRpcFlagOn
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 import lodash from "lodash";
-import { messages } from "../../../../dist/node/errors";
-import { signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures";
+import { messages } from "../../../../dist/node/errors.js";
+import { signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);

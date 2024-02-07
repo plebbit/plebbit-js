@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../../../fixtures/signers";
+import signers from "../../../fixtures/signers.js";
 import {
     generateMockVote,
     publishRandomPost,
@@ -7,8 +7,8 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue
-} from "../../../../dist/node/test/test-util";
-import { timestamp } from "../../../../dist/node/util";
+} from "../../../../dist/node/test/test-util.js";
+import { timestamp } from "../../../../dist/node/util.js";
 import lodash from "lodash";
 
 const subplebbitAddress = signers[0].address;

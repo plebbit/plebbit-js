@@ -1,8 +1,7 @@
-import { TIMEFRAMES_TO_SECONDS } from "../../dist/node/util";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/util.js";
 import { expect } from "chai";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/util";
-import signers from "../fixtures/signers";
-import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util";
+import signers from "../fixtures/signers.js";
+import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util.js";
 import lodash from "lodash";
 
 let subplebbit;

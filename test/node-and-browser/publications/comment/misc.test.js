@@ -1,5 +1,5 @@
-import Plebbit from "../../../../dist/node/index";
-import signers from "../../../fixtures/signers";
+import Plebbit from "../../../../dist/node/index.js";
+import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     mockRemotePlebbit,
@@ -13,15 +13,15 @@ import {
     generatePostToAnswerMathQuestion,
     isRpcFlagOn,
     resolveWhenConditionIsTrue
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 import lodash from "lodash";
-import { messages } from "../../../../dist/node/errors";
+import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client";
+import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures";
+import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;

@@ -1,12 +1,12 @@
 // In this test we're gonna publish a couple of publications to the online sub we started in test-server.js
-import Plebbit from "../../dist/browser/index";
+import Plebbit from "../../dist/node/index.js";
 import { expect } from "chai";
 import {
     createOnlinePlebbit,
     fetchTestServerSubs,
     generatePostToAnswerMathQuestion,
     publishWithExpectedResult
-} from "../../dist/node/test/test-util";
+} from "../../dist/node/test/test-util.js";
 
 // example of browser only tests
 

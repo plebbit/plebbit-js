@@ -1,11 +1,11 @@
-import Plebbit from "../../dist/node";
-import { parseJsonStrings } from "../../dist/node/util";
+import Plebbit from "../../dist/node/index.js";
+import { parseJsonStrings } from "../../dist/node/util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { messages } from "../../dist/node/errors";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../dist/node/test/test-util";
+import { messages } from "../../dist/node/errors.js";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../dist/node/test/test-util.js";
 
 //prettier-ignore
 if (!isRpcFlagOn())

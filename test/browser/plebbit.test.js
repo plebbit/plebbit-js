@@ -1,4 +1,4 @@
-import Plebbit from "../../dist/node/index";
+import Plebbit from "../../dist/node/index.js";
 import { expect } from "chai";
 
 // example of browser only tests

@@ -1,4 +1,4 @@
-import signers from "../../../fixtures/signers";
+import signers from "../../../fixtures/signers.js";
 import {
     generateMockVote,
     publishRandomPost,
@@ -6,8 +6,8 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbit,
     resolveWhenConditionIsTrue
-} from "../../../../dist/node/test/test-util";
-import { messages } from "../../../../dist/node/errors";
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
 import lodash from "lodash";
 
 import chai from "chai";

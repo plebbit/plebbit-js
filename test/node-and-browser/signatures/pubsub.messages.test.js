@@ -6,24 +6,24 @@ import {
     verifyChallengeVerification,
     signChallengeRequest,
     verifyComment
-} from "../../../dist/node/signer/signatures";
+} from "../../../dist/node/signer/signatures.js";
 import {
     generateMockPost,
     mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     isRpcFlagOn
-} from "../../../dist/node/test/test-util";
-import signers from "../../fixtures/signers";
+} from "../../../dist/node/test/test-util.js";
+import signers from "../../fixtures/signers.js";
 import { expect, assert } from "chai";
-import { messages } from "../../../dist/node/errors";
-import { ChallengeAnswerMessage } from "../../../dist/node/challenge";
+import { messages } from "../../../dist/node/errors.js";
+import { ChallengeAnswerMessage } from "../../../dist/node/challenge.js";
 import lodash from "lodash";
-import { default as PlebbitJsVersion } from "../../../dist/node/version";
+import { default as PlebbitJsVersion } from "../../../dist/node/version.js";
 import { encode as cborgEncode, decode as cborgDecode } from "cborg";
-import { getBufferedPlebbitAddressFromPublicKey } from "../../../dist/node/signer/util";
-import { encryptEd25519AesGcm } from "../../../dist/node/signer/index";
-import { timestamp } from "../../../dist/node/util";
+import { getBufferedPlebbitAddressFromPublicKey } from "../../../dist/node/signer/util.js";
+import { encryptEd25519AesGcm } from "../../../dist/node/signer/index.js";
+import { timestamp } from "../../../dist/node/util.js";
 import validChallengeRequestFixture from "../../fixtures/signatures/challenges/valid_challenge_request.json" assert { type: "json" };
 import validChallengeFixture from "../../fixtures/signatures/challenges/valid_challenge_message.json" assert { type: "json" };
 import validChallengeAnswerFixture from "../../fixtures/signatures/challenges/valid_challenge_answer.json" assert { type: "json" };

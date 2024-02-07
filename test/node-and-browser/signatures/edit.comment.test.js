@@ -1,13 +1,13 @@
-import signers from "../../fixtures/signers";
-import { timestamp } from "../../../dist/node/util";
+import signers from "../../fixtures/signers.js";
+import { timestamp } from "../../../dist/node/util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import lodash from "lodash";
-import { messages } from "../../../dist/node/errors";
-import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util";
+import { messages } from "../../../dist/node/errors.js";
+import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
+import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;

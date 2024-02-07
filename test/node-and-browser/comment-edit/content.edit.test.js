@@ -1,12 +1,12 @@
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 import {
     mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
-import { messages } from "../../../dist/node/errors";
+import { messages } from "../../../dist/node/errors.js";
 import lodash from "lodash";
 const subplebbitAddress = signers[0].address;
 const roles = [

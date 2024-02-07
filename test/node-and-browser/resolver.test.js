@@ -1,10 +1,10 @@
-import signers from "../fixtures/signers";
+import signers from "../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { messages } from "../../dist/node/errors";
-import { mockRemotePlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } from "../../dist/node/test/test-util";
+import { messages } from "../../dist/node/errors.js";
+import { mockRemotePlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } from "../../dist/node/test/test-util.js";
 
 const mockComments = [];
 

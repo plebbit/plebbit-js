@@ -1,4 +1,4 @@
-import signers from "./signers";
+import signers from "./signers.js";
 
 const comment = {
     subplebbitAddress: signers[0].address,

@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import signers from "../../fixtures/signers";
-import { messages } from "../../../dist/node/errors";
-import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util";
+import signers from "../../fixtures/signers.js";
+import { messages } from "../../../dist/node/errors.js";
+import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 const commentToEditCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";

@@ -1,5 +1,5 @@
-import signers from "../fixtures/signers";
-import { messages } from "../../dist/node/errors";
+import signers from "../fixtures/signers.js";
+import { messages } from "../../dist/node/errors.js";
 
 import {
     publishRandomPost,
@@ -8,7 +8,7 @@ import {
     mockGatewayPlebbit,
     isRpcFlagOn,
     mockRemotePlebbitIpfsOnly
-} from "../../dist/node/test/test-util";
+} from "../../dist/browser/test/test-util.js";
 
 import lodash from "lodash";
 import chai from "chai";

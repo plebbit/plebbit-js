@@ -1,5 +1,5 @@
-import Plebbit from "../../../../dist/node/index";
-import signers from "../../../fixtures/signers";
+import Plebbit from "../../../../dist/node/index.js";
+import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishRandomReply,
@@ -11,12 +11,12 @@ import {
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     isRpcFlagOn
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 import lodash from "lodash";
-import { messages } from "../../../../dist/node/errors";
+import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { signComment } from "../../../../dist/node/signer/signatures";
+import { signComment } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;

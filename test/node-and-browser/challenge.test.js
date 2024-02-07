@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import signers from "../fixtures/signers";
+import signers from "../fixtures/signers.js";
 import {
     generateMockPost,
     publishWithExpectedResult,
@@ -7,7 +7,7 @@ import {
     generatePostToAnswerMathQuestion,
     mockRemotePlebbit,
     mockPlebbit
-} from "../../dist/node/test/test-util";
+} from "../../dist/node/test/test-util.js";
 
 const mathCliSubplebbitAddress = signers[1].address;
 

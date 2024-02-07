@@ -1,10 +1,10 @@
-import Plebbit from "../../dist/node";
-import signers from "../fixtures/signers";
+import Plebbit from "../../dist/node/index.js";
+import signers from "../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { messages } from "../../dist/node/errors";
-import { mockRemotePlebbit, loadAllPages, isRpcFlagOn } from "../../dist/node/test/test-util";
-import { default as Author } from "../../dist/node/author";
+import { messages } from "../../dist/node/errors.js";
+import { mockRemotePlebbit, loadAllPages, isRpcFlagOn } from "../../dist/node/test/test-util.js";
+import { default as Author } from "../../dist/node/author.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -133,7 +133,8 @@ describe("plebbit.getComment", async () => {
         expectedPostProps.cid = subplebbit.lastPostCid;
         expectedPostProps.author = new Author(expectedPostProps.author);
         const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
-        for (const key of Object.keys(expectedPostProps)) expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
+        for (const key of Object.keys(expectedPostProps))
+            expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
     });
 
     it("comment props are loaded correctly", async () => {
