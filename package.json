@@ -55,7 +55,7 @@
         "@libp2p/peer-id-factory": "4.0.5",
         "@libp2p/webrtc": "4.0.17",
         "@libp2p/webtransport": "4.0.17",
-        "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#9525ca9539479918931c3b334e8d490d1c87e507",
+        "@plebbit/plebbit-logger": "github:plebbit/plebbit-logger#355a96d7659ed820047980049dfa627d30d83a69",
         "@plebbit/proper-lockfile": "github:plebbit/node-proper-lockfile#7fd6332117340c1d3d98dd0afee2d31cc06f72b8",
         "@types/proper-lockfile": "4.1.2",
         "@types/uuid": "8.3.4",
