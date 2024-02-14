@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ChallengeVerificationMessage = exports.ChallengeAnswerMessage = exports.ChallengeMessage = exports.ChallengeRequestMessage = void 0;
-var ChallengeRequestMessage = /** @class */ (function () {
-    function ChallengeRequestMessage(props) {
+export class ChallengeRequestMessage {
+    constructor(props) {
         this.type = "CHALLENGEREQUEST";
         this.challengeRequestId = props.challengeRequestId;
         this.acceptedChallengeTypes = props.acceptedChallengeTypes;
@@ -12,7 +9,7 @@ var ChallengeRequestMessage = /** @class */ (function () {
         this.userAgent = props.userAgent;
         this.timestamp = props.timestamp;
     }
-    ChallengeRequestMessage.prototype.toJSON = function () {
+    toJSON() {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
@@ -23,12 +20,10 @@ var ChallengeRequestMessage = /** @class */ (function () {
             protocolVersion: this.protocolVersion,
             timestamp: this.timestamp
         };
-    };
-    return ChallengeRequestMessage;
-}());
-exports.ChallengeRequestMessage = ChallengeRequestMessage;
-var ChallengeMessage = /** @class */ (function () {
-    function ChallengeMessage(props) {
+    }
+}
+export class ChallengeMessage {
+    constructor(props) {
         this.type = "CHALLENGE";
         this.challengeRequestId = props.challengeRequestId;
         this.encrypted = props.encrypted;
@@ -37,7 +32,7 @@ var ChallengeMessage = /** @class */ (function () {
         this.userAgent = props.userAgent;
         this.timestamp = props.timestamp;
     }
-    ChallengeMessage.prototype.toJSON = function () {
+    toJSON() {
         return {
             encrypted: this.encrypted,
             type: this.type,
@@ -47,12 +42,10 @@ var ChallengeMessage = /** @class */ (function () {
             protocolVersion: this.protocolVersion,
             timestamp: this.timestamp
         };
-    };
-    return ChallengeMessage;
-}());
-exports.ChallengeMessage = ChallengeMessage;
-var ChallengeAnswerMessage = /** @class */ (function () {
-    function ChallengeAnswerMessage(props) {
+    }
+}
+export class ChallengeAnswerMessage {
+    constructor(props) {
         this.type = "CHALLENGEANSWER";
         this.encrypted = props.encrypted;
         this.challengeRequestId = props.challengeRequestId;
@@ -61,7 +54,7 @@ var ChallengeAnswerMessage = /** @class */ (function () {
         this.userAgent = props.userAgent;
         this.timestamp = props.timestamp;
     }
-    ChallengeAnswerMessage.prototype.toJSON = function () {
+    toJSON() {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
@@ -71,12 +64,10 @@ var ChallengeAnswerMessage = /** @class */ (function () {
             userAgent: this.userAgent,
             timestamp: this.timestamp
         };
-    };
-    return ChallengeAnswerMessage;
-}());
-exports.ChallengeAnswerMessage = ChallengeAnswerMessage;
-var ChallengeVerificationMessage = /** @class */ (function () {
-    function ChallengeVerificationMessage(props) {
+    }
+}
+export class ChallengeVerificationMessage {
+    constructor(props) {
         this.type = "CHALLENGEVERIFICATION";
         this.challengeRequestId = props.challengeRequestId;
         this.challengeSuccess = props.challengeSuccess;
@@ -88,7 +79,7 @@ var ChallengeVerificationMessage = /** @class */ (function () {
         this.userAgent = props.userAgent;
         this.timestamp = props.timestamp;
     }
-    ChallengeVerificationMessage.prototype.toJSON = function () {
+    toJSON() {
         return {
             type: this.type,
             challengeRequestId: this.challengeRequestId,
@@ -101,8 +92,6 @@ var ChallengeVerificationMessage = /** @class */ (function () {
             userAgent: this.userAgent,
             timestamp: this.timestamp
         };
-    };
-    return ChallengeVerificationMessage;
-}());
-exports.ChallengeVerificationMessage = ChallengeVerificationMessage;
+    }
+}
 //# sourceMappingURL=challenge.js.map

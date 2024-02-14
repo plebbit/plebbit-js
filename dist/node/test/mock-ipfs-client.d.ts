@@ -1,6 +1,6 @@
-import { IpfsHttpClientPublicAPI } from "../types";
+import { IpfsClient } from "../types.js";
 declare class IpfsHttpClient {
-    pubsub: IpfsHttpClientPublicAPI["pubsub"];
+    pubsub: IpfsClient["_client"]["pubsub"];
     private subscriptions;
     constructor(dropRate?: number);
 }

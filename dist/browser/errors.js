@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.messages = void 0;
-var messages;
+export var messages;
 (function (messages) {
     messages["ERR_SUB_SIGNER_NOT_DEFINED"] = "Subplebbit signer is not defined";
     messages["ERR_SUB_CAN_EITHER_RUN_OR_UPDATE"] = "Subplebbit can either sync through .start() or update, but not both";
@@ -114,5 +111,5 @@ var messages;
     // RPC errors
     messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"] = "Failed to open connection to RPC";
     messages["ERR_FAILED_TO_CREATE_WS_RPC_SERVER"] = "Failed to create WebSocket RPC server";
-})(messages || (exports.messages = messages = {}));
+})(messages || (messages = {}));
 //# sourceMappingURL=errors.js.map

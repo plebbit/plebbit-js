@@ -1,4 +1,4 @@
-import { Chain } from "./types";
+import { Chain } from "./types.js";
 type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {
     private _plebbit;

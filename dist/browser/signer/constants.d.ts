@@ -1,6 +1,6 @@
-import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge";
-import { SubplebbitIpfsType } from "../subplebbit/types";
-import { AuthorCommentEdit, ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, ModeratorCommentEdit, PublicationTypeName, VotePubsubMessage } from "../types";
+import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
+import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { AuthorCommentEdit, ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentPubsubMessage, CommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, ModeratorCommentEdit, PublicationTypeName, VotePubsubMessage } from "../types.js";
 export type CreateSignerOptions = {
     privateKey?: string;
     type?: "ed25519";

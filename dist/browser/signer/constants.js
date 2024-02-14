@@ -1,20 +1,8 @@
-"use strict";
 // Signer section
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AUTHOR_EDIT_FIELDS = exports.MOD_EDIT_FIELDS = exports.CommentUpdateSignedPropertyNames = exports.ChallengeVerificationMessageSignedPropertyNames = exports.ChallengeAnswerMessageSignedPropertyNames = exports.ChallengeMessageSignedPropertyNames = exports.ChallengeRequestMessageSignedPropertyNames = exports.SubplebbitSignedPropertyNames = exports.VoteSignedPropertyNames = exports.CommentEditSignedPropertyNames = exports.CommentSignedPropertyNames = void 0;
 // ---------------------------
 // SignedPropertyNames
-exports.CommentSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"];
-exports.CommentEditSignedPropertyNames = [
+export const CommentSignedPropertyNames = ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"];
+export const CommentEditSignedPropertyNames = [
     "author",
     "timestamp",
     "subplebbitAddress",
@@ -29,14 +17,14 @@ exports.CommentEditSignedPropertyNames = [
     "reason",
     "commentAuthor"
 ];
-exports.VoteSignedPropertyNames = [
+export const VoteSignedPropertyNames = [
     "subplebbitAddress",
     "author",
     "timestamp",
     "vote",
     "commentCid"
 ];
-exports.SubplebbitSignedPropertyNames = [
+export const SubplebbitSignedPropertyNames = [
     "title",
     "description",
     "roles",
@@ -55,26 +43,26 @@ exports.SubplebbitSignedPropertyNames = [
     "encryption",
     "postUpdates"
 ];
-exports.ChallengeRequestMessageSignedPropertyNames = [
+export const ChallengeRequestMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
     "encrypted",
     "acceptedChallengeTypes",
     "timestamp"
 ];
-exports.ChallengeMessageSignedPropertyNames = [
+export const ChallengeMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
     "encrypted",
     "timestamp"
 ];
-exports.ChallengeAnswerMessageSignedPropertyNames = [
+export const ChallengeAnswerMessageSignedPropertyNames = [
     "type",
     "challengeRequestId",
     "encrypted",
     "timestamp"
 ];
-exports.ChallengeVerificationMessageSignedPropertyNames = [
+export const ChallengeVerificationMessageSignedPropertyNames = [
     "reason",
     "type",
     "challengeRequestId",
@@ -83,7 +71,7 @@ exports.ChallengeVerificationMessageSignedPropertyNames = [
     "challengeErrors",
     "timestamp"
 ];
-exports.CommentUpdateSignedPropertyNames = [
+export const CommentUpdateSignedPropertyNames = [
     "author",
     "spoiler",
     "pinned",
@@ -103,14 +91,15 @@ exports.CommentUpdateSignedPropertyNames = [
 ];
 // Export constants of CommentType fields
 // Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
-var PUBLICATION_FIELDS = [
+const PUBLICATION_FIELDS = [
     "author",
     "protocolVersion",
     "signature",
     "subplebbitAddress",
     "timestamp"
 ];
-exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+export const MOD_EDIT_FIELDS = [
+    ...PUBLICATION_FIELDS,
     "commentCid",
     "flair",
     "spoiler",
@@ -119,13 +108,14 @@ exports.MOD_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, tr
     "removed",
     "reason",
     "commentAuthor"
-], false);
-exports.AUTHOR_EDIT_FIELDS = __spreadArray(__spreadArray([], PUBLICATION_FIELDS, true), [
+];
+export const AUTHOR_EDIT_FIELDS = [
+    ...PUBLICATION_FIELDS,
     "commentCid",
     "content",
     "flair",
     "spoiler",
     "reason",
     "deleted"
-], false);
+];
 //# sourceMappingURL=constants.js.map

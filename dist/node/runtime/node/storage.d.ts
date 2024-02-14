@@ -1,4 +1,4 @@
-import { StorageInterface } from "../../types";
+import { StorageInterface } from "../../types.js";
 export default class Storage implements StorageInterface {
     private _plebbit;
     private _keyv;

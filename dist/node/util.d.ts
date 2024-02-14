@@ -1,9 +1,11 @@
-import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, Timeframe } from "./types";
-import { messages } from "./errors";
-import { BasePages } from "./pages";
-import { Plebbit } from "./plebbit";
-import { SubplebbitIpfsType } from "./subplebbit/types";
+import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, OnlyDefinedProperties, PageIpfs, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, PostSort, ReplySort, Timeframe } from "./types.js";
+import { messages } from "./errors.js";
+import { BasePages } from "./pages.js";
+import { Plebbit } from "./plebbit.js";
+import { SubplebbitIpfsType } from "./subplebbit/types.js";
 export declare const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number>;
+export declare const POSTS_SORT_TYPES: PostSort;
+export declare const REPLIES_SORT_TYPES: ReplySort;
 export declare function timestamp(): number;
 export declare function replaceXWithY(obj: Object, x: any, y: any): any;
 export declare function hotScore(comment: {
@@ -43,7 +45,8 @@ export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
 export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;
-export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeRequestMessageType | DecryptedChallengeMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
+export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeMessageType | DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
 export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];
 export declare function isLinkValid(link: string): boolean;
 export declare function isLinkOfMedia(link: string): boolean;
+export declare function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]>;

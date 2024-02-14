@@ -1,9 +1,9 @@
-import { BasePages } from "../pages";
-import { BaseClientsManager, LoadType } from "./base-client-manager";
-import { PagesIpfsClient } from "./ipfs-client";
-import { PagesIpfsGatewayClient } from "./ipfs-gateway-client";
-import { PageIpfs, PostSortName, ReplySortName } from "../types";
-import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client";
+import { BasePages } from "../pages.js";
+import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { PagesIpfsClient } from "./ipfs-client.js";
+import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
+import { PageIpfs, PostSortName, ReplySortName } from "../types.js";
+import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 export declare class BasePagesClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: {

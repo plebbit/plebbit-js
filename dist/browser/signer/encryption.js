@@ -1,214 +1,122 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.decryptEd25519AesGcmPublicKeyBuffer = exports.decryptEd25519AesGcm = exports.encryptEd25519AesGcmPublicKeyBuffer = exports.encryptEd25519AesGcm = exports.decryptStringAesGcm = exports.encryptStringAesGcm = void 0;
-var node_forge_1 = __importDefault(require("node-forge"));
-var from_string_1 = require("uint8arrays/from-string");
-var ed = __importStar(require("@noble/ed25519"));
-var isProbablyBuffer = function (arg) { return arg && typeof arg !== "string" && typeof arg !== "number"; };
-var uint8ArrayToNodeForgeBuffer = function (uint8Array) {
-    var forgeBuffer = node_forge_1.default.util.createBuffer();
-    for (var _i = 0, uint8Array_1 = uint8Array; _i < uint8Array_1.length; _i++) {
-        var byte = uint8Array_1[_i];
+import forge from "node-forge";
+import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+import * as ed from "@noble/ed25519";
+const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
+const uint8ArrayToNodeForgeBuffer = (uint8Array) => {
+    const forgeBuffer = forge.util.createBuffer();
+    for (const byte of uint8Array) {
         forgeBuffer.putByte(byte);
     }
     return forgeBuffer;
 };
 // NOTE: never pass the last param 'iv', only used for testing, it must always be random
-var encryptStringAesGcm = function (plaintext, key, iv) { return __awaiter(void 0, void 0, void 0, function () {
-    var keyAsForgeBuffer, ivAsForgeBuffer, cipher;
-    return __generator(this, function (_a) {
-        if (!plaintext || typeof plaintext !== "string")
-            throw Error("encryptStringAesGcm plaintext '".concat(plaintext, "' not a string"));
-        if (!isProbablyBuffer(key))
-            throw Error("encryptStringAesGcm invalid key '".concat(key, "' not buffer"));
-        // use random 12 bytes uint8 array for iv
-        if (!iv) {
-            iv = ed.utils.randomPrivateKey().slice(0, 12);
-        }
-        keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
-        ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
-        cipher = node_forge_1.default.cipher.createCipher("AES-GCM", keyAsForgeBuffer);
-        cipher.start({ iv: ivAsForgeBuffer });
-        cipher.update(node_forge_1.default.util.createBuffer(plaintext, "utf8"));
-        cipher.finish();
-        return [2 /*return*/, {
-                ciphertext: (0, from_string_1.fromString)(cipher.output.toHex(), "base16"),
-                iv: iv,
-                // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
-                tag: (0, from_string_1.fromString)(cipher.mode.tag.toHex(), "base16")
-            }];
-    });
-}); };
-exports.encryptStringAesGcm = encryptStringAesGcm;
-var decryptStringAesGcm = function (ciphertext, key, iv, tag) { return __awaiter(void 0, void 0, void 0, function () {
-    var keyAsForgeBuffer, ivAsForgeBuffer, tagAsForgeBuffer, cipher, decrypted;
-    return __generator(this, function (_a) {
-        if (!isProbablyBuffer(ciphertext))
-            throw Error("decryptStringAesGcm invalid ciphertext '".concat(ciphertext, "' not buffer"));
-        if (!isProbablyBuffer(key))
-            throw Error("decryptStringAesGcm invalid key '".concat(key, "' not buffer"));
-        if (!isProbablyBuffer(iv))
-            throw Error("decryptStringAesGcm invalid iv '".concat(iv, "' not buffer"));
-        if (!isProbablyBuffer(tag))
-            throw Error("decryptStringAesGcm invalid tag '".concat(tag, "' not buffer"));
-        keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
-        ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
-        tagAsForgeBuffer = uint8ArrayToNodeForgeBuffer(tag);
-        cipher = node_forge_1.default.cipher.createDecipher("AES-GCM", keyAsForgeBuffer);
-        cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer });
-        cipher.update(node_forge_1.default.util.createBuffer(ciphertext));
-        cipher.finish();
-        decrypted = cipher.output.toString();
-        return [2 /*return*/, decrypted];
-    });
-}); };
-exports.decryptStringAesGcm = decryptStringAesGcm;
-var encryptEd25519AesGcm = function (plaintext, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
-    var publicKeyBuffer;
-    return __generator(this, function (_a) {
-        if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-            throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
-        publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
-        return [2 /*return*/, (0, exports.encryptEd25519AesGcmPublicKeyBuffer)(plaintext, privateKeyBase64, publicKeyBuffer)];
-    });
-}); };
-exports.encryptEd25519AesGcm = encryptEd25519AesGcm;
-var encryptEd25519AesGcmPublicKeyBuffer = function (plaintext, privateKeyBase64, publicKeyBuffer) { return __awaiter(void 0, void 0, void 0, function () {
-    var privateKeyBuffer, randomPaddingLength, padding, aesGcmKey, aesGcmKey16Bytes, _a, ciphertext, iv, tag, encrypted;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0:
-                if (!plaintext || typeof plaintext !== "string")
-                    throw Error("encryptEd25519AesGcm plaintext '".concat(plaintext, "' not a string"));
-                if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
-                    throw Error("encryptEd25519AesGcm privateKeyBase64 not a string");
-                privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
-                if (privateKeyBuffer.length !== 32)
-                    throw Error("encryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
-                if (publicKeyBuffer.length !== 32)
-                    throw Error("encryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBuffer, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
-                randomPaddingLength = Math.round(Math.random() * 5000);
-                padding = "";
-                while (padding.length < randomPaddingLength) {
-                    padding += " ";
-                }
-                return [4 /*yield*/, ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)];
-            case 1:
-                aesGcmKey = _b.sent();
-                aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
-                return [4 /*yield*/, (0, exports.encryptStringAesGcm)(plaintext + padding, aesGcmKey16Bytes)];
-            case 2:
-                _a = _b.sent(), ciphertext = _a.ciphertext, iv = _a.iv, tag = _a.tag;
-                encrypted = {
-                    ciphertext: ciphertext,
-                    iv: iv,
-                    // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
-                    tag: tag,
-                    type: "ed25519-aes-gcm"
-                };
-                return [2 /*return*/, encrypted];
-        }
-    });
-}); };
-exports.encryptEd25519AesGcmPublicKeyBuffer = encryptEd25519AesGcmPublicKeyBuffer;
-var decryptEd25519AesGcm = function (encrypted, privateKeyBase64, publicKeyBase64) { return __awaiter(void 0, void 0, void 0, function () {
-    var publicKeyBuffer;
-    return __generator(this, function (_a) {
-        if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
-            throw Error("decryptEd25519AesGcm ".concat(privateKeyBase64, " privateKeyBase64 not a string"));
-        if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
-            throw Error("decryptEd25519AesGcm publicKeyBase64 '".concat(publicKeyBase64, "' not a string"));
-        publicKeyBuffer = (0, from_string_1.fromString)(publicKeyBase64, "base64");
-        return [2 /*return*/, (0, exports.decryptEd25519AesGcmPublicKeyBuffer)(encrypted, privateKeyBase64, publicKeyBuffer)];
-    });
-}); };
-exports.decryptEd25519AesGcm = decryptEd25519AesGcm;
-var decryptEd25519AesGcmPublicKeyBuffer = function (encrypted, privateKeyBase64, publicKeyBuffer) { return __awaiter(void 0, void 0, void 0, function () {
-    var privateKeyBuffer, aesGcmKey, aesGcmKey16Bytes, decrypted;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
-                    throw Error("decryptEd25519AesGcm ".concat(privateKeyBase64, " privateKeyBase64 not a string"));
-                privateKeyBuffer = (0, from_string_1.fromString)(privateKeyBase64, "base64");
-                if (privateKeyBuffer.length !== 32)
-                    throw Error("decryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (".concat(privateKeyBuffer.length, " bytes)"));
-                if (publicKeyBuffer.length !== 32)
-                    throw Error("decryptEd25519AesGcm publicKeyBuffer '".concat(publicKeyBuffer, "' ed25519 public key length not 32 bytes (").concat(publicKeyBuffer.length, " bytes)"));
-                return [4 /*yield*/, ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer)];
-            case 1:
-                aesGcmKey = _a.sent();
-                aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
-                return [4 /*yield*/, (0, exports.decryptStringAesGcm)(encrypted.ciphertext, aesGcmKey16Bytes, encrypted.iv, encrypted.tag)];
-            case 2:
-                decrypted = _a.sent();
-                // remove padding
-                decrypted = decrypted.replace(/ *$/, "");
-                return [2 /*return*/, decrypted];
-        }
-    });
-}); };
-exports.decryptEd25519AesGcmPublicKeyBuffer = decryptEd25519AesGcmPublicKeyBuffer;
+export const encryptStringAesGcm = async (plaintext, key, iv) => {
+    if (!plaintext || typeof plaintext !== "string")
+        throw Error(`encryptStringAesGcm plaintext '${plaintext}' not a string`);
+    if (!isProbablyBuffer(key))
+        throw Error(`encryptStringAesGcm invalid key '${key}' not buffer`);
+    // use random 12 bytes uint8 array for iv
+    if (!iv) {
+        iv = ed.utils.randomPrivateKey().slice(0, 12);
+    }
+    // node-forge doesn't accept uint8Array
+    const keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
+    const ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
+    const cipher = forge.cipher.createCipher("AES-GCM", keyAsForgeBuffer);
+    cipher.start({ iv: ivAsForgeBuffer });
+    cipher.update(forge.util.createBuffer(plaintext, "utf8"));
+    cipher.finish();
+    return {
+        ciphertext: uint8ArrayFromString(cipher.output.toHex(), "base16"),
+        iv,
+        // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+        tag: uint8ArrayFromString(cipher.mode.tag.toHex(), "base16")
+    };
+};
+export const decryptStringAesGcm = async (ciphertext, key, iv, tag) => {
+    if (!isProbablyBuffer(ciphertext))
+        throw Error(`decryptStringAesGcm invalid ciphertext '${ciphertext}' not buffer`);
+    if (!isProbablyBuffer(key))
+        throw Error(`decryptStringAesGcm invalid key '${key}' not buffer`);
+    if (!isProbablyBuffer(iv))
+        throw Error(`decryptStringAesGcm invalid iv '${iv}' not buffer`);
+    if (!isProbablyBuffer(tag))
+        throw Error(`decryptStringAesGcm invalid tag '${tag}' not buffer`);
+    // node-forge doesn't accept uint8Array
+    const keyAsForgeBuffer = uint8ArrayToNodeForgeBuffer(key);
+    const ivAsForgeBuffer = uint8ArrayToNodeForgeBuffer(iv);
+    const tagAsForgeBuffer = uint8ArrayToNodeForgeBuffer(tag);
+    const cipher = forge.cipher.createDecipher("AES-GCM", keyAsForgeBuffer);
+    cipher.start({ iv: ivAsForgeBuffer, tag: tagAsForgeBuffer });
+    cipher.update(forge.util.createBuffer(ciphertext));
+    cipher.finish();
+    const decrypted = cipher.output.toString();
+    return decrypted;
+};
+export const encryptEd25519AesGcm = async (plaintext, privateKeyBase64, publicKeyBase64) => {
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`encryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
+    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+    return encryptEd25519AesGcmPublicKeyBuffer(plaintext, privateKeyBase64, publicKeyBuffer);
+};
+export const encryptEd25519AesGcmPublicKeyBuffer = async (plaintext, privateKeyBase64, publicKeyBuffer) => {
+    if (!plaintext || typeof plaintext !== "string")
+        throw Error(`encryptEd25519AesGcm plaintext '${plaintext}' not a string`);
+    if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+        throw Error(`encryptEd25519AesGcm privateKeyBase64 not a string`);
+    const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
+    if (privateKeyBuffer.length !== 32)
+        throw Error(`encryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
+    if (publicKeyBuffer.length !== 32)
+        throw Error(`encryptEd25519AesGcm publicKeyBase64 '${publicKeyBuffer}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`);
+    // add random padding to prevent linking encrypted publications by sizes
+    // TODO: eventually use an algorithm to find the most anonymous padding length
+    const randomPaddingLength = Math.round(Math.random() * 5000);
+    let padding = "";
+    while (padding.length < randomPaddingLength) {
+        padding += " ";
+    }
+    // compute the shared secret of the sender and recipient and use it as the encryption key
+    // do not publish this secret https://datatracker.ietf.org/doc/html/rfc7748#section-6.1
+    const aesGcmKey = await ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer);
+    // use 16 bytes key for AES-128
+    const aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
+    // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
+    const { ciphertext, iv, tag } = await encryptStringAesGcm(plaintext + padding, aesGcmKey16Bytes);
+    const encrypted = {
+        ciphertext,
+        iv,
+        // AES-GCM has authentication tag https://en.wikipedia.org/wiki/Galois/Counter_Mode
+        tag,
+        type: "ed25519-aes-gcm"
+    };
+    return encrypted;
+};
+export const decryptEd25519AesGcm = async (encrypted, privateKeyBase64, publicKeyBase64) => {
+    if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+        throw Error(`decryptEd25519AesGcm ${privateKeyBase64} privateKeyBase64 not a string`);
+    if (!publicKeyBase64 || typeof publicKeyBase64 !== "string")
+        throw Error(`decryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
+    const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
+    return decryptEd25519AesGcmPublicKeyBuffer(encrypted, privateKeyBase64, publicKeyBuffer);
+};
+export const decryptEd25519AesGcmPublicKeyBuffer = async (encrypted, privateKeyBase64, publicKeyBuffer) => {
+    if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")
+        throw Error(`decryptEd25519AesGcm ${privateKeyBase64} privateKeyBase64 not a string`);
+    const privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
+    if (privateKeyBuffer.length !== 32)
+        throw Error(`decryptEd25519AesGcm publicKeyBase64 ed25519 public key length not 32 bytes (${privateKeyBuffer.length} bytes)`);
+    if (publicKeyBuffer.length !== 32)
+        throw Error(`decryptEd25519AesGcm publicKeyBuffer '${publicKeyBuffer}' ed25519 public key length not 32 bytes (${publicKeyBuffer.length} bytes)`);
+    // compute the shared secret of the sender and recipient and use it as the encryption key
+    // do not publish this secret https://datatracker.ietf.org/doc/html/rfc7748#section-6.1
+    const aesGcmKey = await ed.getSharedSecret(privateKeyBuffer, publicKeyBuffer);
+    // use 16 bytes key for AES-128
+    const aesGcmKey16Bytes = aesGcmKey.slice(0, 16);
+    // AES GCM using 128-bit key https://en.wikipedia.org/wiki/Galois/Counter_Mode
+    let decrypted = await decryptStringAesGcm(encrypted.ciphertext, aesGcmKey16Bytes, encrypted.iv, encrypted.tag);
+    // remove padding
+    decrypted = decrypted.replace(/ *$/, "");
+    return decrypted;
+};
 //# sourceMappingURL=encryption.js.map

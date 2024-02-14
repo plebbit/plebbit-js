@@ -1,9 +1,9 @@
-import Publication from "./publication";
-import { RepliesPages } from "./pages";
-import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, ProtocolVersion, PublicationTypeName } from "./types";
-import { Plebbit } from "./plebbit";
-import { CommentClientsManager } from "./clients/client-manager";
-import { Flair } from "./subplebbit/types";
+import Publication from "./publication.js";
+import { RepliesPages } from "./pages.js";
+import { AuthorCommentEdit, CommentIpfsType, CommentIpfsWithCid, CommentPubsubMessage, CommentsTableRowInsert, CommentType, CommentUpdate, CommentWithCommentUpdate, ProtocolVersion, PublicationTypeName } from "./types.js";
+import { Plebbit } from "./plebbit.js";
+import { CommentClientsManager } from "./clients/client-manager.js";
+import { Flair } from "./subplebbit/types.js";
 export declare class Comment extends Publication implements Omit<CommentType, "replies"> {
     shortCid?: string;
     clients: CommentClientsManager["clients"];

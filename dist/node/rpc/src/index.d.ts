@@ -1,12 +1,12 @@
 /// <reference types="node" />
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
-import { setPlebbitJs } from "./lib/plebbit-js";
+import { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { EventEmitter } from "events";
-import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types";
-import { Plebbit } from "../../plebbit";
-import { PlebbitWsServerSettingsSerialized } from "../../types";
-import { WebSocket } from "ws";
-import Publication from "../../publication";
+import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
+import { Plebbit } from "../../plebbit.js";
+import { PlebbitWsServerSettingsSerialized } from "../../types.js";
+import WebSocket from "ws";
+import Publication from "../../publication.js";
 declare class PlebbitWsServer extends EventEmitter {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
@@ -27,7 +27,7 @@ declare class PlebbitWsServer extends EventEmitter {
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<{
-        author: import("../../types").AuthorIpfsType;
+        author: import("../../types.js").AuthorIpfsType;
         challengeCommentCids?: string[];
         challengeAnswers?: string[];
         parentCid?: string;
@@ -37,9 +37,9 @@ declare class PlebbitWsServer extends EventEmitter {
         linkWidth?: number;
         linkHeight?: number;
         spoiler?: boolean;
-        flair?: import("../../subplebbit/types").Flair;
+        flair?: import("../../subplebbit/types.js").Flair;
         subplebbitAddress: string;
-        signature: import("../../signer/constants").JsonSignature;
+        signature: import("../../signer/constants.js").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;
         postCid?: string;
@@ -50,12 +50,12 @@ declare class PlebbitWsServer extends EventEmitter {
         depth: number;
         cid: string;
     }>;
-    getSubplebbitPage(params: any): Promise<import("../../types").PageIpfs>;
-    getCommentPage(params: any): Promise<import("../../types").PageIpfs>;
-    createSubplebbit(params: any): Promise<import("../../subplebbit/types").InternalSubplebbitRpcType>;
+    getSubplebbitPage(params: any): Promise<import("../../types.js").PageIpfs>;
+    getCommentPage(params: any): Promise<import("../../types.js").PageIpfs>;
+    createSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
     startSubplebbit(params: any, connectionId: string): Promise<number>;
     stopSubplebbit(params: any): Promise<boolean>;
-    editSubplebbit(params: any): Promise<import("../../subplebbit/types").InternalSubplebbitRpcType>;
+    editSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
     deleteSubplebbit(params: any): Promise<boolean>;
     listSubplebbits(params: any): Promise<any>;
     fetchCid(params: any): Promise<string>;
@@ -75,4 +75,4 @@ declare const PlebbitRpc: {
     PlebbitWsServer: ({ port, plebbitOptions, authKey }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
     setPlebbitJs: typeof setPlebbitJs;
 };
-export = PlebbitRpc;
+export default PlebbitRpc;

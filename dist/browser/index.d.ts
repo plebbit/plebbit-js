@@ -1,15 +1,15 @@
-import * as PlebbitClass from "./plebbit";
-import { PlebbitOptions } from "./types";
-import { shortifyAddress, shortifyCid } from "./util";
+import * as PlebbitClass from "./plebbit.js";
+import { PlebbitOptions } from "./types.js";
+import { shortifyAddress, shortifyCid } from "./util.js";
 declare const Plebbit: {
     (plebbitOptions?: PlebbitOptions): Promise<PlebbitClass.Plebbit>;
-    setNativeFunctions: (newNativeFunctions: Partial<import("./types").NativeFunctions>) => void;
+    setNativeFunctions: (newNativeFunctions: Partial<import("./types.js").NativeFunctions>) => void;
     nativeFunctions: {
-        node: import("./types").NativeFunctions;
-        browser: import("./types").NativeFunctions;
+        node: import("./types.js").NativeFunctions;
+        browser: import("./types.js").NativeFunctions;
     };
     getShortCid: typeof shortifyCid;
     getShortAddress: typeof shortifyAddress;
-    challenges: Record<string, import("./subplebbit/types").ChallengeFileFactory>;
+    challenges: Record<string, import("./subplebbit/types.js").ChallengeFileFactory>;
 };
-export = Plebbit;
+export default Plebbit;

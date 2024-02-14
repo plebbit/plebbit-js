@@ -1,780 +1,384 @@
-"use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.isRpcFlagOn = exports.generatePostToAnswerMathQuestion = exports.createSubWithNoChallenge = exports.waitTillCommentIsInParentPages = exports.findCommentInPage = exports.publishWithExpectedResult = exports.publishVote = exports.publishRandomPost = exports.publishRandomReply = exports.mockMultipleGatewaysPlebbit = exports.mockGatewayPlebbit = exports.mockRpcServerPlebbit = exports.mockRemotePlebbitIpfsOnly = exports.mockRemotePlebbit = exports.mockPlebbit = exports.mockDefaultOptionsForNodeAndBrowserTests = exports.startSubplebbits = exports.loadAllPages = exports.generateMockVote = exports.generateMockComment = exports.generateMockPost = void 0;
-var util_1 = require("../util");
-var comment_1 = require("../comment");
-var index_1 = __importDefault(require("../index"));
-var subplebbit_1 = require("../subplebbit/subplebbit");
-var is_ipfs_1 = __importDefault(require("is-ipfs"));
-var async_wait_until_1 = __importDefault(require("async-wait-until"));
-var assert_1 = __importDefault(require("assert"));
-var safe_stable_stringify_1 = require("safe-stable-stringify");
-var lodash_1 = __importDefault(require("lodash"));
-var uuid_1 = require("uuid");
-var mock_ipfs_client_1 = require("./mock-ipfs-client");
+import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
+import { Comment } from "../comment.js";
+import PlebbitIndex from "../index.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { cid as isIpfsCid } from "is-ipfs";
+import assert from "assert";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import lodash from "lodash";
+import { v4 as uuidv4 } from "uuid";
+import { createMockIpfsClient } from "./mock-ipfs-client.js";
 function generateRandomTimestamp(parentTimestamp) {
-    var _a = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, (0, util_1.timestamp)()], lowerLimit = _a[0], upperLimit = _a[1];
-    var randomTimestamp = -1;
+    const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
+    let randomTimestamp = -1;
     while (randomTimestamp === -1) {
-        var randomTimeframeIndex = (Object.keys(util_1.TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
-        var tempTimestamp = lowerLimit + Object.values(util_1.TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
+        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit)
             randomTimestamp = tempTimestamp;
     }
     return randomTimestamp;
 }
-function generateMockPost(subplebbitAddress, plebbit, randomTimestamp, postProps) {
-    if (randomTimestamp === void 0) { randomTimestamp = false; }
-    if (postProps === void 0) { postProps = {}; }
-    return __awaiter(this, void 0, void 0, function () {
-        var postTimestamp, postStartTestTime, signer, _a, post;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    postTimestamp = (randomTimestamp && generateRandomTimestamp()) || (0, util_1.timestamp)();
-                    postStartTestTime = Date.now() / 1000 + Math.random();
-                    _a = (postProps === null || postProps === void 0 ? void 0 : postProps.signer);
-                    if (_a) return [3 /*break*/, 2];
-                    return [4 /*yield*/, plebbit.createSigner()];
-                case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
-                case 2:
-                    signer = _a;
-                    return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(postStartTestTime) }, title: "Mock Post - ".concat(postStartTestTime), content: "Mock content - ".concat(postStartTestTime), signer: signer, timestamp: postTimestamp, subplebbitAddress: subplebbitAddress }, postProps))];
-                case 3:
-                    post = _b.sent();
-                    return [2 /*return*/, post];
-            }
-        });
+export async function generateMockPost(subplebbitAddress, plebbit, randomTimestamp = false, postProps = {}) {
+    const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
+    const postStartTestTime = Date.now() / 1000 + Math.random();
+    const signer = postProps?.signer || (await plebbit.createSigner());
+    const post = await plebbit.createComment({
+        author: { displayName: `Mock Author - ${postStartTestTime}` },
+        title: `Mock Post - ${postStartTestTime}`,
+        content: `Mock content - ${postStartTestTime}`,
+        signer,
+        timestamp: postTimestamp,
+        subplebbitAddress,
+        ...postProps
     });
+    return post;
 }
-exports.generateMockPost = generateMockPost;
 // TODO rework this
-function generateMockComment(parentPostOrComment, plebbit, randomTimestamp, commentProps) {
-    if (randomTimestamp === void 0) { randomTimestamp = false; }
-    if (commentProps === void 0) { commentProps = {}; }
-    return __awaiter(this, void 0, void 0, function () {
-        var commentTimestamp, commentTime, signer, _a, comment;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
-                        throw Error("Need to have parentComment defined to generate mock comment");
-                    commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || (0, util_1.timestamp)();
-                    commentTime = Date.now() / 1000 + Math.random();
-                    _a = (commentProps === null || commentProps === void 0 ? void 0 : commentProps.signer);
-                    if (_a) return [3 /*break*/, 2];
-                    return [4 /*yield*/, plebbit.createSigner()];
-                case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
-                case 2:
-                    signer = _a;
-                    return [4 /*yield*/, plebbit.createComment(__assign({ author: { displayName: "Mock Author - ".concat(commentTime) }, signer: signer, content: "Mock comment - ".concat(commentTime), parentCid: parentPostOrComment.cid, subplebbitAddress: parentPostOrComment.subplebbitAddress, timestamp: commentTimestamp }, commentProps))];
-                case 3:
-                    comment = _b.sent();
-                    return [2 /*return*/, comment];
-            }
-        });
+export async function generateMockComment(parentPostOrComment, plebbit, randomTimestamp = false, commentProps = {}) {
+    if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
+        throw Error("Need to have parentComment defined to generate mock comment");
+    const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
+    const commentTime = Date.now() / 1000 + Math.random();
+    const signer = commentProps?.signer || (await plebbit.createSigner());
+    const comment = await plebbit.createComment({
+        author: { displayName: `Mock Author - ${commentTime}` },
+        signer: signer,
+        content: `Mock comment - ${commentTime}`,
+        parentCid: parentPostOrComment.cid,
+        subplebbitAddress: parentPostOrComment.subplebbitAddress,
+        timestamp: commentTimestamp,
+        ...commentProps
     });
+    return comment;
 }
-exports.generateMockComment = generateMockComment;
-function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
-    return __awaiter(this, void 0, void 0, function () {
-        var voteTime, commentCid, _a, voteObj;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    voteTime = Date.now() / 1000;
-                    commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
-                    if (typeof commentCid !== "string")
-                        throw Error("generateMockVote: commentCid (".concat(commentCid, ") is not a valid CID"));
-                    _a = signer;
-                    if (_a) return [3 /*break*/, 2];
-                    return [4 /*yield*/, plebbit.createSigner()];
-                case 1:
-                    _a = (_b.sent());
-                    _b.label = 2;
-                case 2:
-                    signer = _a;
-                    return [4 /*yield*/, plebbit.createVote({
-                            author: { displayName: "Mock Author - ".concat(voteTime) },
-                            signer: signer,
-                            commentCid: commentCid,
-                            vote: vote,
-                            subplebbitAddress: parentPostOrComment.subplebbitAddress
-                        })];
-                case 3:
-                    voteObj = _b.sent();
-                    voteObj.once("challenge", function (challengeMsg) {
-                        voteObj.publishChallengeAnswers([]);
-                    });
-                    return [2 /*return*/, voteObj];
-            }
-        });
+export async function generateMockVote(parentPostOrComment, vote, plebbit, signer) {
+    const voteTime = Date.now() / 1000;
+    const commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
+    if (typeof commentCid !== "string")
+        throw Error(`generateMockVote: commentCid (${commentCid}) is not a valid CID`);
+    signer = signer || (await plebbit.createSigner());
+    const voteObj = await plebbit.createVote({
+        author: { displayName: `Mock Author - ${voteTime}` },
+        signer: signer,
+        commentCid: commentCid,
+        vote: vote,
+        subplebbitAddress: parentPostOrComment.subplebbitAddress
     });
-}
-exports.generateMockVote = generateMockVote;
-function loadAllPages(pageCid, pagesInstance) {
-    return __awaiter(this, void 0, void 0, function () {
-        var sortedCommentsPage, sortedComments;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!is_ipfs_1.default.cid(pageCid))
-                        throw Error("loadAllPages: pageCid (".concat(pageCid, ") is not a valid CID"));
-                    return [4 /*yield*/, pagesInstance.getPage(pageCid)];
-                case 1:
-                    sortedCommentsPage = _a.sent();
-                    sortedComments = sortedCommentsPage.comments;
-                    _a.label = 2;
-                case 2:
-                    if (!sortedCommentsPage.nextCid) return [3 /*break*/, 4];
-                    return [4 /*yield*/, pagesInstance.getPage(sortedCommentsPage.nextCid)];
-                case 3:
-                    sortedCommentsPage = _a.sent();
-                    sortedComments = sortedComments.concat(sortedCommentsPage.comments);
-                    return [3 /*break*/, 2];
-                case 4: return [2 /*return*/, sortedComments];
-            }
-        });
+    voteObj.once("challenge", (challengeMsg) => {
+        voteObj.publishChallengeAnswers([]);
     });
+    return voteObj;
 }
-exports.loadAllPages = loadAllPages;
-function _mockSubplebbitPlebbit(signers, plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit, _i, _a, pubsubUrl;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(__assign(__assign({}, plebbitOptions), { pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }))];
-                case 1:
-                    plebbit = _b.sent();
-                    for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
-                        pubsubUrl = _a[_i];
-                        plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.createMockIpfsClient)();
-                    }
-                    return [2 /*return*/, plebbit];
-            }
-        });
+export async function loadAllPages(pageCid, pagesInstance) {
+    if (!isIpfsCid(pageCid))
+        throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
+    let sortedCommentsPage = await pagesInstance.getPage(pageCid);
+    let sortedComments = sortedCommentsPage.comments;
+    while (sortedCommentsPage.nextCid) {
+        sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
+        sortedComments = sortedComments.concat(sortedCommentsPage.comments);
+    }
+    return sortedComments;
+}
+async function _mockSubplebbitPlebbit(signers, plebbitOptions) {
+    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
+    for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+        plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
+    return plebbit;
+}
+async function _startMathCliSubplebbit(signers, plebbit) {
+    const signer = await plebbit.createSigner(signers[1]);
+    const subplebbit = await plebbit.createSubplebbit({ signer });
+    await subplebbit.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+    await subplebbit.start();
+    return subplebbit;
+}
+async function _startEnsSubplebbit(signers, plebbit) {
+    const signer = await plebbit.createSigner(signers[3]);
+    const subplebbit = await createSubWithNoChallenge({ signer }, plebbit);
+    await subplebbit.edit({
+        roles: {
+            [signers[1].address]: { role: "owner" },
+            [signers[2].address]: { role: "admin" },
+            [signers[3].address]: { role: "moderator" }
+        }
     });
+    await subplebbit.start();
+    await subplebbit.edit({ address: "plebbit.eth" });
+    assert.equal(subplebbit.address, "plebbit.eth");
+    return subplebbit;
 }
-function _startMathCliSubplebbit(signers, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var signer, subplebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, plebbit.createSigner(signers[1])];
-                case 1:
-                    signer = _a.sent();
-                    return [4 /*yield*/, plebbit.createSubplebbit({ signer: signer })];
-                case 2:
-                    subplebbit = _a.sent();
-                    return [4 /*yield*/, subplebbit.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } })];
-                case 3:
-                    _a.sent();
-                    return [4 /*yield*/, subplebbit.start()];
-                case 4:
-                    _a.sent();
-                    return [2 /*return*/, subplebbit];
-            }
-        });
+async function _publishPosts(subplebbitAddress, numOfPosts, plebbit) {
+    return Promise.all(new Array(numOfPosts).fill(null).map(() => publishRandomPost(subplebbitAddress, plebbit, {}, false)));
+}
+async function _publishReplies(parentComment, numOfReplies, plebbit) {
+    return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
+}
+async function _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit) {
+    return Promise.all(new Array(votesPerCommentToPublish)
+        .fill(null)
+        .map(() => publishVote(comment.cid, comment.subplebbitAddress, Math.random() > 0.5 ? 1 : -1, plebbit, {})));
+}
+async function _publishVotes(comments, votesPerCommentToPublish, plebbit) {
+    const votes = lodash.flattenDeep(await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit))));
+    assert.equal(votes.length, votesPerCommentToPublish * comments.length);
+    console.log(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
+    return votes;
+}
+async function _populateSubplebbit(subplebbit, props) {
+    await subplebbit.edit({
+        roles: {
+            [props.signers[1].address]: { role: "owner" },
+            [props.signers[2].address]: { role: "admin" },
+            [props.signers[3].address]: { role: "moderator" }
+        }
     });
+    await new Promise((resolve) => subplebbit.once("update", resolve));
+    const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
+    console.log(`Have successfully published ${posts.length} posts`);
+    const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
+    console.log(`Have sucessfully published ${replies.length} replies`);
+    const postVotes = await _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit);
+    console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
+    const repliesVotes = await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
-function _startEnsSubplebbit(signers, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var signer, subplebbit;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, plebbit.createSigner(signers[3])];
-                case 1:
-                    signer = _b.sent();
-                    return [4 /*yield*/, createSubWithNoChallenge({ signer: signer }, plebbit)];
-                case 2:
-                    subplebbit = _b.sent();
-                    return [4 /*yield*/, subplebbit.edit({
-                            roles: (_a = {},
-                                _a[signers[1].address] = { role: "owner" },
-                                _a[signers[2].address] = { role: "admin" },
-                                _a[signers[3].address] = { role: "moderator" },
-                                _a)
-                        })];
-                case 3:
-                    _b.sent();
-                    return [4 /*yield*/, subplebbit.start()];
-                case 4:
-                    _b.sent();
-                    return [4 /*yield*/, subplebbit.edit({ address: "plebbit.eth" })];
-                case 5:
-                    _b.sent();
-                    assert_1.default.equal(subplebbit.address, "plebbit.eth");
-                    return [2 /*return*/, subplebbit];
-            }
-        });
-    });
+export async function startOnlineSubplebbit() {
+    const onlinePlebbit = await createOnlinePlebbit();
+    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+    await onlineSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
+    await onlineSub.start();
+    await new Promise((resolve) => onlineSub.once("update", resolve));
+    console.log("Online sub is online on address", onlineSub.address);
+    return onlineSub;
 }
-function _publishPosts(subplebbitAddress, numOfPosts, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(numOfPosts).fill(null).map(function () { return publishRandomPost(subplebbitAddress, plebbit, {}, false); }))];
-        });
-    });
+export async function startSubplebbits(props) {
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
+    const signer = await plebbit.createSigner(props.signers[0]);
+    const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
+    await mainSub.start();
+    console.time("populate");
+    const [mathSub, ensSub] = await Promise.all([
+        _startMathCliSubplebbit(props.signers, plebbit),
+        _startEnsSubplebbit(props.signers, plebbit),
+        _populateSubplebbit(mainSub, props)
+    ]);
+    console.timeEnd("populate");
+    let onlineSub;
+    if (props.startOnlineSub)
+        onlineSub = await startOnlineSubplebbit();
+    console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
+    return { onlineSub: onlineSub?.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
 }
-function _publishReplies(parentComment, numOfReplies, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(numOfReplies).fill(null).map(function () { return publishRandomReply(parentComment, plebbit, {}, false); }))];
-        });
-    });
+export async function fetchTestServerSubs() {
+    const res = await fetch("http://localhost:14953");
+    const resWithType = await res.json();
+    return resWithType;
 }
-function _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, Promise.all(new Array(votesPerCommentToPublish)
-                    .fill(null)
-                    .map(function () { return publishVote(comment.cid, comment.subplebbitAddress, Math.random() > 0.5 ? 1 : -1, plebbit, {}); }))];
-        });
-    });
-}
-function _publishVotes(comments, votesPerCommentToPublish, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var votes, _a, _b;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
-                case 0:
-                    _b = (_a = lodash_1.default).flattenDeep;
-                    return [4 /*yield*/, Promise.all(comments.map(function (comment) { return _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit); }))];
-                case 1:
-                    votes = _b.apply(_a, [_c.sent()]);
-                    assert_1.default.equal(votes.length, votesPerCommentToPublish * comments.length);
-                    console.log("".concat(votes.length, " votes for ").concat(comments.length, " ").concat(comments[0].depth === 0 ? "posts" : "replies", " have been published"));
-                    return [2 /*return*/, votes];
-            }
-        });
-    });
-}
-function _populateSubplebbit(subplebbit, props) {
-    return __awaiter(this, void 0, void 0, function () {
-        var posts, replies, postVotes, repliesVotes;
-        var _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, subplebbit.edit({
-                        roles: (_a = {},
-                            _a[props.signers[1].address] = { role: "owner" },
-                            _a[props.signers[2].address] = { role: "admin" },
-                            _a[props.signers[3].address] = { role: "moderator" },
-                            _a)
-                    })];
-                case 1:
-                    _b.sent();
-                    return [4 /*yield*/, new Promise(function (resolve) { return subplebbit.once("update", resolve); })];
-                case 2:
-                    _b.sent();
-                    return [4 /*yield*/, _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit.plebbit)];
-                case 3:
-                    posts = _b.sent();
-                    console.log("Have successfully published ".concat(posts.length, " posts"));
-                    return [4 /*yield*/, _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit)];
-                case 4:
-                    replies = _b.sent();
-                    console.log("Have sucessfully published ".concat(replies.length, " replies"));
-                    return [4 /*yield*/, _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit)];
-                case 5:
-                    postVotes = _b.sent();
-                    console.log("Have sucessfully published ".concat(postVotes.length, " votes on ").concat(posts.length, " posts"));
-                    return [4 /*yield*/, _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit)];
-                case 6:
-                    repliesVotes = _b.sent();
-                    console.log("Have successfully published ".concat(repliesVotes.length, " votes on ").concat(replies.length, " replies"));
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-function startSubplebbits(props) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit, signer, subplebbit, _a, mathSub, ensSub, _loop_1, _i, _b, sub;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
-                case 0: return [4 /*yield*/, _mockSubplebbitPlebbit(props.signers, lodash_1.default.pick(props, ["noData", "dataPath"]))];
-                case 1:
-                    plebbit = _c.sent();
-                    return [4 /*yield*/, plebbit.createSigner(props.signers[0])];
-                case 2:
-                    signer = _c.sent();
-                    return [4 /*yield*/, createSubWithNoChallenge({ signer: signer }, plebbit)];
-                case 3:
-                    subplebbit = _c.sent();
-                    return [4 /*yield*/, subplebbit.start()];
-                case 4:
-                    _c.sent();
-                    console.time("populate");
-                    return [4 /*yield*/, Promise.all([
-                            _startMathCliSubplebbit(props.signers, plebbit),
-                            _startEnsSubplebbit(props.signers, plebbit),
-                            _populateSubplebbit(subplebbit, props)
-                        ])];
-                case 5:
-                    _a = _c.sent(), mathSub = _a[0], ensSub = _a[1];
-                    console.timeEnd("populate");
-                    _loop_1 = function (sub) {
-                        sub.on("update", function () {
-                            var lastUpdatedAt = sub["lastUpdatedAt"];
-                            console.log("Sub (".concat(sub.address, ") took ").concat(sub.updatedAt - lastUpdatedAt, " seconds for update loop to complete"));
-                            sub["lastUpdatedAt"] = sub.updatedAt;
-                        });
-                    };
-                    for (_i = 0, _b = [mathSub, ensSub, subplebbit]; _i < _b.length; _i++) {
-                        sub = _b[_i];
-                        _loop_1(sub);
-                    }
-                    console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.startSubplebbits = startSubplebbits;
-function mockDefaultOptionsForNodeAndBrowserTests() {
-    var shouldUseRPC = isRpcFlagOn();
+export function mockDefaultOptionsForNodeAndBrowserTests() {
+    const shouldUseRPC = isRpcFlagOn();
     if (shouldUseRPC)
         return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
     else
         return {
             ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-            pubsubHttpClientsOptions: ["http://localhost:15002/api/v0", "http://localhost:42234/api/v0", "http://localhost:42254/api/v0"]
+            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`]
         };
 }
-exports.mockDefaultOptionsForNodeAndBrowserTests = mockDefaultOptionsForNodeAndBrowserTests;
-function mockPlebbit(plebbitOptions, forceMockPubsub, stubStorage) {
-    if (forceMockPubsub === void 0) { forceMockPubsub = false; }
-    if (stubStorage === void 0) { stubStorage = true; }
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit, _i, _a, pubsubUrl;
-        var _this = this;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, (0, index_1.default)(__assign(__assign(__assign({}, mockDefaultOptionsForNodeAndBrowserTests()), { resolveAuthorAddresses: true, publishInterval: 1000, updateInterval: 1000 }), plebbitOptions))];
-                case 1:
-                    plebbit = _b.sent();
-                    plebbit.resolver.resolveTxtRecord = function (ensName, textRecord) { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (!(ensName === "plebbit.eth" && textRecord === "subplebbit-address")) return [3 /*break*/, 1];
-                                    return [2 /*return*/, "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"]; // signers[3]
-                                case 1:
-                                    if (!(ensName === "plebbit.eth" && textRecord === "plebbit-author-address")) return [3 /*break*/, 2];
-                                    return [2 /*return*/, "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"]; // signers[6]
-                                case 2:
-                                    if (!(ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")) return [3 /*break*/, 3];
-                                    return [2 /*return*/, "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"]; // signers[7]
-                                case 3:
-                                    if (!(ensName === "different-signer.eth" && textRecord === "subplebbit-address")) return [3 /*break*/, 5];
-                                    return [4 /*yield*/, plebbit.createSigner()];
-                                case 4: return [2 /*return*/, (_a.sent()).address];
-                                case 5:
-                                    if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
-                                        return [2 /*return*/, "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z"];
-                                    else
-                                        return [2 /*return*/, null];
-                                    _a.label = 6;
-                                case 6: return [2 /*return*/];
-                            }
-                        });
-                    }); };
-                    if (stubStorage) {
-                        plebbit._storage.getItem = function () { return undefined; };
-                        plebbit._storage.setItem = function () { return undefined; };
-                    }
-                    // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
-                    if (!(plebbitOptions === null || plebbitOptions === void 0 ? void 0 : plebbitOptions.pubsubHttpClientsOptions) || forceMockPubsub)
-                        for (_i = 0, _a = Object.keys(plebbit.clients.pubsubClients); _i < _a.length; _i++) {
-                            pubsubUrl = _a[_i];
-                            plebbit.clients.pubsubClients[pubsubUrl]._client = (0, mock_ipfs_client_1.createMockIpfsClient)();
-                        }
-                    plebbit.on("error", function () { });
-                    return [2 /*return*/, plebbit];
+export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true) {
+    const plebbit = await PlebbitIndex({
+        ...mockDefaultOptionsForNodeAndBrowserTests(),
+        resolveAuthorAddresses: true,
+        publishInterval: 1000,
+        updateInterval: 1000,
+        ...plebbitOptions
+    });
+    plebbit.resolver.resolveTxtRecord = async (ensName, textRecord) => {
+        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
+        else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
+            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+        else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+            return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+        else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address")
+            return (await plebbit.createSigner()).address;
+        else if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+            return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
+        else
+            return null;
+    };
+    if (stubStorage) {
+        plebbit._storage.getItem = () => undefined;
+        plebbit._storage.setItem = () => undefined;
+    }
+    // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
+    if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)
+        for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+            plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
+    plebbit.on("error", () => { });
+    return plebbit;
+}
+export async function mockRemotePlebbit(plebbitOptions) {
+    const plebbit = await mockPlebbit(plebbitOptions);
+    plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
+export async function createOnlinePlebbit(plebbitOptions) {
+    const plebbit = await PlebbitIndex({
+        ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
+        ...plebbitOptions
+    }); // use online ipfs node
+    return plebbit;
+}
+export async function mockRemotePlebbitIpfsOnly(plebbitOptions) {
+    const plebbit = await mockRemotePlebbit({
+        ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
+        plebbitRpcClientsOptions: undefined,
+        ...plebbitOptions
+    });
+    plebbit._canCreateNewLocalSub = () => false;
+    return plebbit;
+}
+export async function mockRpcServerPlebbit(plebbitOptions) {
+    const plebbit = await mockPlebbit(plebbitOptions);
+    return plebbit;
+}
+export async function mockGatewayPlebbit(plebbitOptions) {
+    // Keep only pubsub and gateway
+    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], ...plebbitOptions });
+    delete plebbit.clients.ipfsClients;
+    delete plebbit.ipfsHttpClientsOptions;
+    delete plebbit._clientsManager.clients.ipfsClients;
+    delete plebbit.plebbitRpcClient;
+    delete plebbit.plebbitRpcClientsOptions;
+    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
+    return plebbit;
+}
+export async function mockMultipleGatewaysPlebbit(plebbitOptions) {
+    return mockGatewayPlebbit({ ipfsGatewayUrls: [], ...plebbitOptions });
+}
+export async function publishRandomReply(parentComment, plebbit, commentProps, verifyCommentPropsInParentPages = true) {
+    const reply = await generateMockComment(parentComment, plebbit, false, {
+        content: `Content ${uuidv4()}`,
+        ...commentProps
+    });
+    await publishWithExpectedResult(reply, true);
+    if (verifyCommentPropsInParentPages)
+        await waitTillCommentIsInParentPages(reply, plebbit);
+    return reply;
+}
+export async function publishRandomPost(subplebbitAddress, plebbit, postProps, verifyCommentPropsInParentPages = true) {
+    const post = await generateMockPost(subplebbitAddress, plebbit, false, {
+        content: `Random post Content ${uuidv4()} ${lodash.uniqueId()}`,
+        title: `Random post Title ${uuidv4()} ${lodash.uniqueId()}`,
+        ...postProps
+    });
+    await publishWithExpectedResult(post, true);
+    if (verifyCommentPropsInParentPages)
+        await waitTillCommentIsInParentPages(post, plebbit);
+    return post;
+}
+export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, voteProps) {
+    const voteObj = await plebbit.createVote({
+        commentCid,
+        vote,
+        subplebbitAddress,
+        signer: voteProps?.signer || (await plebbit.createSigner()),
+        ...voteProps
+    });
+    await publishWithExpectedResult(voteObj, true);
+    return voteObj;
+}
+export async function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
+    let receivedResponse = false;
+    await publication.publish();
+    await new Promise((resolve, reject) => {
+        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 90000); // throw after 20 seconds if we haven't received a response
+        publication.once("challengeverification", (verificationMsg) => {
+            receivedResponse = true;
+            if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
+                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason}): ${JSON.stringify(verificationMsg)}`;
+                reject(msg);
             }
-        });
-    });
-}
-exports.mockPlebbit = mockPlebbit;
-function mockRemotePlebbit(plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(plebbitOptions)];
-                case 1:
-                    plebbit = _a.sent();
-                    plebbit._canCreateNewLocalSub = function () { return false; };
-                    return [2 /*return*/, plebbit];
+            else if (expectedReason && expectedReason !== verificationMsg.reason) {
+                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(verificationMsg)}`;
+                reject(msg);
             }
+            else
+                resolve(1);
         });
     });
 }
-exports.mockRemotePlebbit = mockRemotePlebbit;
-function mockRemotePlebbitIpfsOnly(plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(__assign({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"], plebbitRpcClientsOptions: undefined }, plebbitOptions))];
-                case 1:
-                    plebbit = _a.sent();
-                    plebbit._canCreateNewLocalSub = function () { return false; };
-                    return [2 /*return*/, plebbit];
-            }
-        });
-    });
+export async function findCommentInPage(commentCid, pageCid, pages) {
+    let currentPageCid = lodash.clone(pageCid);
+    while (currentPageCid) {
+        const loadedPage = await pages.getPage(currentPageCid);
+        const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
+        if (commentInPage)
+            return commentInPage;
+        currentPageCid = loadedPage.nextCid;
+    }
+    return undefined;
 }
-exports.mockRemotePlebbitIpfsOnly = mockRemotePlebbitIpfsOnly;
-function mockRpcServerPlebbit(plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, mockPlebbit(plebbitOptions)];
-                case 1:
-                    plebbit = _a.sent();
-                    return [2 /*return*/, plebbit];
-            }
-        });
-    });
+export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCheckFor = {}, checkInAllPages = false) {
+    const parent = comment.depth === 0
+        ? await plebbit.getSubplebbit(comment.subplebbitAddress)
+        : await plebbit.createComment({ cid: comment.parentCid });
+    await parent.update();
+    const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
+    let commentInPage;
+    const isCommentInParentPages = async () => {
+        const repliesPageCid = pagesInstance()?.pageCids?.new;
+        if (repliesPageCid)
+            commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+        return Boolean(commentInPage);
+    };
+    await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
+    await parent.stop();
+    const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
+    assert(lodash.isPlainObject(pageCids));
+    if (checkInAllPages)
+        for (const pageCid of Object.values(pageCids)) {
+            const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
+            for (const [key, value] of Object.entries(propsToCheckFor))
+                if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
+                    throw Error(`commentInPage[${key}] is incorrect`);
+        }
+    else
+        for (const [key, value] of Object.entries(propsToCheckFor))
+            if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
+                throw Error(`commentInPage[${key}] is incorrect`);
 }
-exports.mockRpcServerPlebbit = mockRpcServerPlebbit;
-function mockGatewayPlebbit(plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        var plebbit;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, mockRemotePlebbit(__assign({ ipfsGatewayUrls: ["http://localhost:18080"] }, plebbitOptions))];
-                case 1:
-                    plebbit = _a.sent();
-                    delete plebbit.clients.ipfsClients;
-                    delete plebbit.ipfsHttpClientsOptions;
-                    delete plebbit._clientsManager.clients.ipfsClients;
-                    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
-                    return [2 /*return*/, plebbit];
-            }
-        });
-    });
+export async function createSubWithNoChallenge(props, plebbit) {
+    const sub = await plebbit.createSubplebbit(props);
+    await sub.edit({ settings: { challenges: undefined } }); // No challenge
+    return sub;
 }
-exports.mockGatewayPlebbit = mockGatewayPlebbit;
-function mockMultipleGatewaysPlebbit(plebbitOptions) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, mockGatewayPlebbit(__assign({ ipfsGatewayUrls: [] }, plebbitOptions))];
-        });
+export async function generatePostToAnswerMathQuestion(props, plebbit) {
+    const mockPost = await generateMockPost(props.subplebbitAddress, plebbit, false, props);
+    mockPost.removeAllListeners();
+    mockPost.once("challenge", (challengeMessage) => {
+        mockPost.publishChallengeAnswers(["2"]);
     });
+    return mockPost;
 }
-exports.mockMultipleGatewaysPlebbit = mockMultipleGatewaysPlebbit;
-function publishRandomReply(parentComment, plebbit, commentProps, verifyCommentPropsInParentPages) {
-    if (verifyCommentPropsInParentPages === void 0) { verifyCommentPropsInParentPages = true; }
-    return __awaiter(this, void 0, void 0, function () {
-        var reply;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, generateMockComment(parentComment, plebbit, false, __assign({ content: "Content ".concat((0, uuid_1.v4)()) }, commentProps))];
-                case 1:
-                    reply = _a.sent();
-                    return [4 /*yield*/, publishWithExpectedResult(reply, true)];
-                case 2:
-                    _a.sent();
-                    if (!verifyCommentPropsInParentPages) return [3 /*break*/, 4];
-                    return [4 /*yield*/, waitTillCommentIsInParentPages(reply, plebbit)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4: return [2 /*return*/, reply];
-            }
-        });
-    });
-}
-exports.publishRandomReply = publishRandomReply;
-function publishRandomPost(subplebbitAddress, plebbit, postProps, verifyCommentPropsInParentPages) {
-    if (verifyCommentPropsInParentPages === void 0) { verifyCommentPropsInParentPages = true; }
-    return __awaiter(this, void 0, void 0, function () {
-        var post;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, generateMockPost(subplebbitAddress, plebbit, false, __assign({ content: "Random post Content ".concat((0, uuid_1.v4)(), " ").concat(lodash_1.default.uniqueId()), title: "Random post Title ".concat((0, uuid_1.v4)(), " ").concat(lodash_1.default.uniqueId()) }, postProps))];
-                case 1:
-                    post = _a.sent();
-                    return [4 /*yield*/, publishWithExpectedResult(post, true)];
-                case 2:
-                    _a.sent();
-                    if (!verifyCommentPropsInParentPages) return [3 /*break*/, 4];
-                    return [4 /*yield*/, waitTillCommentIsInParentPages(post, plebbit)];
-                case 3:
-                    _a.sent();
-                    _a.label = 4;
-                case 4: return [2 /*return*/, post];
-            }
-        });
-    });
-}
-exports.publishRandomPost = publishRandomPost;
-function publishVote(commentCid, subplebbitAddress, vote, plebbit, voteProps) {
-    return __awaiter(this, void 0, void 0, function () {
-        var voteObj, _a, _b, _c;
-        var _d;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
-                case 0:
-                    _b = (_a = plebbit).createVote;
-                    _d = { commentCid: commentCid, vote: vote, subplebbitAddress: subplebbitAddress };
-                    _c = (voteProps === null || voteProps === void 0 ? void 0 : voteProps.signer);
-                    if (_c) return [3 /*break*/, 2];
-                    return [4 /*yield*/, plebbit.createSigner()];
-                case 1:
-                    _c = (_e.sent());
-                    _e.label = 2;
-                case 2: return [4 /*yield*/, _b.apply(_a, [__assign.apply(void 0, [(_d.signer = _c, _d), voteProps])])];
-                case 3:
-                    voteObj = _e.sent();
-                    return [4 /*yield*/, publishWithExpectedResult(voteObj, true)];
-                case 4:
-                    _e.sent();
-                    return [2 /*return*/, voteObj];
-            }
-        });
-    });
-}
-exports.publishVote = publishVote;
-function publishWithExpectedResult(publication, expectedChallengeSuccess, expectedReason) {
-    return __awaiter(this, void 0, void 0, function () {
-        var receivedResponse;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    receivedResponse = false;
-                    return [4 /*yield*/, publication.publish()];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, new Promise(function (resolve, reject) {
-                            setTimeout(function () { return !receivedResponse && reject("Publication did not receive any response"); }, 90000); // throw after 20 seconds if we haven't received a response
-                            publication.once("challengeverification", function (verificationMsg) {
-                                receivedResponse = true;
-                                if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                                    var msg = "Expected challengeSuccess to be (".concat(expectedChallengeSuccess, ") and got (").concat(verificationMsg.challengeSuccess, "). Reason (").concat(verificationMsg.reason, "): ").concat(JSON.stringify(verificationMsg));
-                                    reject(msg);
-                                }
-                                else if (expectedReason && expectedReason !== verificationMsg.reason) {
-                                    var msg = "Expected reason to be (".concat(expectedReason, ") and got (").concat(verificationMsg.reason, "): ").concat(JSON.stringify(verificationMsg));
-                                    reject(msg);
-                                }
-                                else
-                                    resolve(1);
-                            });
-                        })];
-                case 2:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.publishWithExpectedResult = publishWithExpectedResult;
-function findCommentInPage(commentCid, pageCid, pages) {
-    return __awaiter(this, void 0, void 0, function () {
-        var currentPageCid, loadedPage, commentInPage;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    currentPageCid = lodash_1.default.clone(pageCid);
-                    _a.label = 1;
-                case 1:
-                    if (!currentPageCid) return [3 /*break*/, 3];
-                    return [4 /*yield*/, pages.getPage(currentPageCid)];
-                case 2:
-                    loadedPage = _a.sent();
-                    commentInPage = loadedPage.comments.find(function (c) { return c.cid === commentCid; });
-                    if (commentInPage)
-                        return [2 /*return*/, commentInPage];
-                    currentPageCid = loadedPage.nextCid;
-                    return [3 /*break*/, 1];
-                case 3: return [2 /*return*/, undefined];
-            }
-        });
-    });
-}
-exports.findCommentInPage = findCommentInPage;
-function waitTillCommentIsInParentPages(comment, plebbit, propsToCheckFor, checkInAllPages) {
-    if (propsToCheckFor === void 0) { propsToCheckFor = {}; }
-    if (checkInAllPages === void 0) { checkInAllPages = false; }
-    return __awaiter(this, void 0, void 0, function () {
-        var parent, _a, pagesInstance, commentInPage, pageCids, _i, _b, pageCid, commentInPage_1, _c, _d, _e, key, value, _f, _g, _h, key, value;
-        var _this = this;
-        return __generator(this, function (_j) {
-            switch (_j.label) {
-                case 0:
-                    if (!(comment.depth === 0)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, plebbit.getSubplebbit(comment.subplebbitAddress)];
-                case 1:
-                    _a = _j.sent();
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, plebbit.createComment({ cid: comment.parentCid })];
-                case 3:
-                    _a = _j.sent();
-                    _j.label = 4;
-                case 4:
-                    parent = _a;
-                    return [4 /*yield*/, parent.update()];
-                case 5:
-                    _j.sent();
-                    pagesInstance = function () { return (parent instanceof subplebbit_1.Subplebbit ? parent.posts : parent.replies); };
-                    return [4 /*yield*/, (0, async_wait_until_1.default)(function () { return __awaiter(_this, void 0, void 0, function () {
-                            var repliesPageCid;
-                            var _a, _b;
-                            return __generator(this, function (_c) {
-                                switch (_c.label) {
-                                    case 0:
-                                        repliesPageCid = (_b = (_a = pagesInstance()) === null || _a === void 0 ? void 0 : _a.pageCids) === null || _b === void 0 ? void 0 : _b.new;
-                                        if (!repliesPageCid) return [3 /*break*/, 2];
-                                        return [4 /*yield*/, findCommentInPage(comment.cid, repliesPageCid, pagesInstance())];
-                                    case 1:
-                                        commentInPage = _c.sent();
-                                        _c.label = 2;
-                                    case 2: return [2 /*return*/, Boolean(commentInPage)];
-                                }
-                            });
-                        }); }, {
-                            timeout: 200000
-                        })];
-                case 6:
-                    _j.sent();
-                    return [4 /*yield*/, parent.stop()];
-                case 7:
-                    _j.sent();
-                    pageCids = parent instanceof comment_1.Comment ? parent.replies.pageCids : parent.posts.pageCids;
-                    (0, assert_1.default)(lodash_1.default.isPlainObject(pageCids));
-                    if (!checkInAllPages) return [3 /*break*/, 12];
-                    _i = 0, _b = Object.values(pageCids);
-                    _j.label = 8;
-                case 8:
-                    if (!(_i < _b.length)) return [3 /*break*/, 11];
-                    pageCid = _b[_i];
-                    return [4 /*yield*/, findCommentInPage(comment.cid, pageCid, pagesInstance())];
-                case 9:
-                    commentInPage_1 = _j.sent();
-                    for (_c = 0, _d = Object.entries(propsToCheckFor); _c < _d.length; _c++) {
-                        _e = _d[_c], key = _e[0], value = _e[1];
-                        if ((0, safe_stable_stringify_1.stringify)(commentInPage_1[key]) !== (0, safe_stable_stringify_1.stringify)(value))
-                            throw Error("commentInPage[".concat(key, "] is incorrect"));
-                    }
-                    _j.label = 10;
-                case 10:
-                    _i++;
-                    return [3 /*break*/, 8];
-                case 11: return [3 /*break*/, 13];
-                case 12:
-                    for (_f = 0, _g = Object.entries(propsToCheckFor); _f < _g.length; _f++) {
-                        _h = _g[_f], key = _h[0], value = _h[1];
-                        if ((0, safe_stable_stringify_1.stringify)(commentInPage[key]) !== (0, safe_stable_stringify_1.stringify)(value))
-                            throw Error("commentInPage[".concat(key, "] is incorrect"));
-                    }
-                    _j.label = 13;
-                case 13: return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.waitTillCommentIsInParentPages = waitTillCommentIsInParentPages;
-function createSubWithNoChallenge(props, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var sub;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, plebbit.createSubplebbit(props)];
-                case 1:
-                    sub = _a.sent();
-                    return [4 /*yield*/, sub.edit({ settings: { challenges: undefined } })];
-                case 2:
-                    _a.sent(); // No challenge
-                    return [2 /*return*/, sub];
-            }
-        });
-    });
-}
-exports.createSubWithNoChallenge = createSubWithNoChallenge;
-function generatePostToAnswerMathQuestion(props, plebbit) {
-    return __awaiter(this, void 0, void 0, function () {
-        var mockPost;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, generateMockPost(props.subplebbitAddress, plebbit, false, props)];
-                case 1:
-                    mockPost = _a.sent();
-                    mockPost.removeAllListeners();
-                    mockPost.once("challenge", function (challengeMessage) {
-                        mockPost.publishChallengeAnswers(["2"]);
-                    });
-                    return [2 /*return*/, mockPost];
-            }
-        });
-    });
-}
-exports.generatePostToAnswerMathQuestion = generatePostToAnswerMathQuestion;
-function isRpcFlagOn() {
-    var _a, _b, _c, _d, _e;
-    var isPartOfProcessEnv = ((_b = (_a = globalThis === null || globalThis === void 0 ? void 0 : globalThis["process"]) === null || _a === void 0 ? void 0 : _a.env) === null || _b === void 0 ? void 0 : _b["USE_RPC"]) === "1";
-    var isPartOfKarmaArgs = ((_e = (_d = (_c = globalThis === null || globalThis === void 0 ? void 0 : globalThis["__karma__"]) === null || _c === void 0 ? void 0 : _c.config) === null || _d === void 0 ? void 0 : _d.config) === null || _e === void 0 ? void 0 : _e["USE_RPC"]) === "1";
-    var isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
+export function isRpcFlagOn() {
+    const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
+    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
+    const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
     return isRpcFlagOn;
 }
-exports.isRpcFlagOn = isRpcFlagOn;
+export async function resolveWhenConditionIsTrue(toUpdate, predicate) {
+    // should add a timeout?
+    if (!(await predicate()))
+        await new Promise((resolve) => {
+            toUpdate.on("update", async () => {
+                const conditionStatus = await predicate();
+                if (conditionStatus)
+                    resolve(conditionStatus);
+            });
+        });
+}
 //# sourceMappingURL=test-util.js.map

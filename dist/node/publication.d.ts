@@ -1,11 +1,11 @@
-import Author from "./author";
-import { Signer } from "./signer";
-import { DecryptedChallengeRequest, ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName } from "./types";
-import { Plebbit } from "./plebbit";
+import Author from "./author.js";
+import { Signer } from "./signer/index.js";
+import { DecryptedChallengeRequest, ProtocolVersion, PublicationEvents, PublicationType, PublicationTypeName } from "./types.js";
+import { Plebbit } from "./plebbit.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager";
-import { JsonSignature } from "./signer/constants";
-import { SubplebbitIpfsType } from "./subplebbit/types";
+import { CommentClientsManager, PublicationClientsManager } from "./clients/client-manager.js";
+import { JsonSignature } from "./signer/constants.js";
+import { SubplebbitIpfsType } from "./subplebbit/types.js";
 declare class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     clients: PublicationClientsManager["clients"];
     subplebbitAddress: string;

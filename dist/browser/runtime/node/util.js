@@ -1,207 +1,219 @@
-"use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+import { promises as fs } from "fs";
+import { default as nodeNativeFunctions } from "./native-functions.js";
+import path from "path";
+import assert from "assert";
+import { parseJsonStrings, throwWithErrorCode } from "../../util.js";
+import scraper from "open-graph-scraper";
+import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
+import { PlebbitError } from "../../plebbit-error.js";
+import probe from "probe-image-size";
+import { STORAGE_KEYS } from "../../constants.js";
+import lodash from "lodash";
+import os from "os";
+import * as fileType from "file-type";
+import { Agent as HttpAgent } from "http";
+import { Agent as HttpsAgent } from "https";
+import { sha256 } from "js-sha256";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import Logger from "@plebbit/plebbit-logger";
+const storedIpfsClients = {};
+export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
+export const getDefaultSubplebbitDbConfig = async (subplebbit) => {
+    let filename;
+    if (subplebbit.plebbit.noData)
+        filename = ":memory:";
+    else {
+        assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
+        filename = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
+        await fs.mkdir(path.dirname(filename), { recursive: true });
+    }
+    return {
+        client: "better-sqlite3",
+        connection: { filename },
+        useNullAsDefault: true,
+        acquireConnectionTimeout: 120000,
+        postProcessResponse: (result, queryContext) => {
+            return parseJsonStrings(result);
+        }
+    };
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+// Should be moved to subplebbit.ts
+export async function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
+    const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
+    //@ts-expect-error
+    const thumbnail = {};
+    const options = {
+        url,
+        fetchOptions: {
+            headers: {
+                "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+            },
+            //@ts-expect-error
+            downloadLimit: 2000000
+        }
+    };
+    try {
+        if (proxyHttpUrl) {
+            const httpAgent = new HttpProxyAgent({ proxy: proxyHttpUrl });
+            const httpsAgent = new HttpsProxyAgent({ proxy: proxyHttpUrl });
+            options["agent"] = { https: httpsAgent, http: httpAgent };
+        }
+        const res = await scraper(options);
+        if (res.error)
+            return undefined;
+        if (!res?.result?.ogImage)
+            return undefined;
+        res.result.ogImage[0].url;
+        thumbnail.thumbnailUrl = res.result.ogImage[0].url;
+        assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
+        thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
+        thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
+        if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
+            const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
+            thumbnail.thumbnailHeight = dimensions?.height;
+            thumbnail.thumbnailWidth = dimensions?.width;
+        }
+        return thumbnail;
+    }
+    catch (e) {
+        const plebbitError = new PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
+            url,
+            scrapeOptions: options,
+            proxyHttpUrl,
+            error: e
+        });
+        log.error(String(plebbitError));
+        subplebbit.emit("error", plebbitError);
+        return undefined;
+    }
+}
+async function fetchDimensionsOfImage(imageUrl) {
+    const result = await probe(imageUrl);
+    return { width: result.width, height: result.height };
+}
+export const nativeFunctions = nodeNativeFunctions;
+export const setNativeFunctions = (newNativeFunctions) => {
+    if (!newNativeFunctions)
+        throw Error(`User passed an undefined object to setNativeFunctions`);
+    for (const i in newNativeFunctions)
+        nativeFunctions[i] = newNativeFunctions[i];
+};
+export const deleteOldSubplebbitInWindows = async (subPath, plebbit) => {
+    const log = Logger("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
+    const subAddress = path.basename(subPath);
+    try {
+        await fs.rm(subPath);
+        log(`Succeeded in deleting old subplebbit (${subAddress})`);
+    }
+    catch (e) {
+        // Assume it's because of EBUSY
+        log.error(`Failed to delete old subplebbit (${subAddress}). Restarting the node process or daemon should make this error disappear`);
+        // Put subAddress in storage
+        const storageKey = STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
+        const subsThatWeFailedToDelete = (await plebbit._storage.getItem(storageKey)) || [];
+        if (!subsThatWeFailedToDelete.includes(subAddress))
+            subsThatWeFailedToDelete.push(subAddress);
+        await plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete);
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteOldSubplebbitInWindows = exports.setNativeFunctions = exports.nativeFunctions = exports.getThumbnailUrlOfLink = exports.getDefaultSubplebbitDbConfig = exports.getDefaultDataPath = exports.mkdir = void 0;
-var fs_1 = require("fs");
-var native_functions_1 = __importDefault(require("./native-functions"));
-var path_1 = __importDefault(require("path"));
-var assert_1 = __importDefault(require("assert"));
-var util_1 = require("../../util");
-var open_graph_scraper_1 = __importDefault(require("open-graph-scraper"));
-var hpagent_1 = require("hpagent");
-var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var plebbit_error_1 = require("../../plebbit-error");
-var probe_image_size_1 = __importDefault(require("probe-image-size"));
-var constants_1 = require("../../constants");
-exports.mkdir = fs_1.promises.mkdir;
-var getDefaultDataPath = function () { return path_1.default.join(process.cwd(), ".plebbit"); };
-exports.getDefaultDataPath = getDefaultDataPath;
-var getDefaultSubplebbitDbConfig = function (subplebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var filename;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (!subplebbit.plebbit.noData) return [3 /*break*/, 1];
-                filename = ":memory:";
-                return [3 /*break*/, 3];
-            case 1:
-                (0, assert_1.default)(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
-                filename = path_1.default.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
-                return [4 /*yield*/, (0, exports.mkdir)(path_1.default.dirname(filename), { recursive: true })];
-            case 2:
-                _a.sent();
-                _a.label = 3;
-            case 3: return [2 /*return*/, {
-                    client: "sqlite3",
-                    connection: { filename: filename },
-                    useNullAsDefault: true,
-                    acquireConnectionTimeout: 120000,
-                    postProcessResponse: function (result, queryContext) {
-                        return (0, util_1.parseJsonStrings)(result);
-                    }
-                }];
-        }
-    });
-}); };
-exports.getDefaultSubplebbitDbConfig = getDefaultSubplebbitDbConfig;
-// Should be moved to subplebbit.ts
-function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function () {
-        var log, thumbnail, options, httpAgent, httpsAgent, res, dimensions, e_1, plebbitError;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:getThumbnailUrlOfLink");
-                    thumbnail = {};
-                    options = {
-                        url: url,
-                        downloadLimit: 2000000,
-                        headers: {
-                            "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
-                        }
-                    };
-                    _b.label = 1;
-                case 1:
-                    _b.trys.push([1, 5, , 6]);
-                    if (proxyHttpUrl) {
-                        httpAgent = new hpagent_1.HttpProxyAgent({ proxy: proxyHttpUrl });
-                        httpsAgent = new hpagent_1.HttpsProxyAgent({ proxy: proxyHttpUrl });
-                        options["agent"] = { https: httpsAgent, http: httpAgent };
-                    }
-                    return [4 /*yield*/, (0, open_graph_scraper_1.default)(options)];
-                case 2:
-                    res = _b.sent();
-                    if (res.error)
-                        return [2 /*return*/, undefined];
-                    if (!((_a = res === null || res === void 0 ? void 0 : res.result) === null || _a === void 0 ? void 0 : _a.ogImage))
-                        return [2 /*return*/, undefined];
-                    thumbnail.thumbnailUrl = typeof res.result.ogImage === "string" ? res.result.ogImage : res.result.ogImage["url"];
-                    (0, assert_1.default)(thumbnail.thumbnailUrl, "thumbnailUrl needs to be defined");
-                    thumbnail.thumbnailHeight = parseInt(res.result.ogImageHeight || res.result.ogImage["height"] || 0) || undefined;
-                    thumbnail.thumbnailWidth = parseInt(res.result.ogImageWidth || res.result.ogImage["width"] || 0) || undefined;
-                    if (!(!thumbnail.thumbnailWidth || !thumbnail.thumbnailHeight)) return [3 /*break*/, 4];
-                    return [4 /*yield*/, fetchDimensionsOfImage(thumbnail.thumbnailUrl)];
-                case 3:
-                    dimensions = _b.sent();
-                    thumbnail.thumbnailHeight = dimensions === null || dimensions === void 0 ? void 0 : dimensions.height;
-                    thumbnail.thumbnailWidth = dimensions === null || dimensions === void 0 ? void 0 : dimensions.width;
-                    _b.label = 4;
-                case 4: return [2 /*return*/, thumbnail];
-                case 5:
-                    e_1 = _b.sent();
-                    plebbitError = new plebbit_error_1.PlebbitError("ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK", {
-                        url: url,
-                        scrapeOptions: options,
-                        proxyHttpUrl: proxyHttpUrl,
-                        error: e_1
-                    });
-                    log.error(String(plebbitError));
-                    subplebbit.emit("error", plebbitError);
-                    return [2 /*return*/, undefined];
-                case 6: return [2 /*return*/];
+async function _handlePersistentSubsIfNeeded(plebbit, log) {
+    const deletedPersistentSubs = (await plebbit._storage.getItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]));
+    if (Array.isArray(deletedPersistentSubs)) {
+        // Attempt to delete them
+        const subsThatWereDeletedSuccessfully = [];
+        await Promise.all(deletedPersistentSubs.map(async (subAddress) => {
+            const subPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
+            try {
+                await fs.rm(subPath, { force: true });
+                log(`Succeeded in deleting old db path (${subAddress})`);
+                subsThatWereDeletedSuccessfully.push(subAddress);
             }
-        });
-    });
-}
-exports.getThumbnailUrlOfLink = getThumbnailUrlOfLink;
-function fetchDimensionsOfImage(imageUrl) {
-    return __awaiter(this, void 0, void 0, function () {
-        var result;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, (0, probe_image_size_1.default)(imageUrl)];
-                case 1:
-                    result = _a.sent();
-                    return [2 /*return*/, { width: result.width, height: result.height }];
+            catch (e) {
+                log.error(`Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`);
             }
-        });
-    });
+            const newPersistentDeletedSubplebbits = lodash.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+            if (newPersistentDeletedSubplebbits.length === 0)
+                await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
+            else
+                await plebbit._storage.setItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS], newPersistentDeletedSubplebbits);
+        }));
+    }
+    return deletedPersistentSubs;
 }
-exports.nativeFunctions = native_functions_1.default;
-var setNativeFunctions = function (newNativeFunctions) {
-    if (!newNativeFunctions)
-        throw Error("User passed an undefined object to setNativeFunctions");
-    for (var i in newNativeFunctions)
-        exports.nativeFunctions[i] = newNativeFunctions[i];
-};
-exports.setNativeFunctions = setNativeFunctions;
-var deleteOldSubplebbitInWindows = function (subPath, plebbit) { return __awaiter(void 0, void 0, void 0, function () {
-    var log, subAddress, e_2, storageKey, subsThatWeFailedToDelete;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                log = (0, plebbit_logger_1.default)("plebbit-js:subplebbit:deleteStaleSubplebbitInWindows");
-                subAddress = path_1.default.basename(subPath);
-                _a.label = 1;
-            case 1:
-                _a.trys.push([1, 3, , 6]);
-                return [4 /*yield*/, fs_1.promises.rm(subPath)];
-            case 2:
-                _a.sent();
-                log("Succeeded in deleting old subplebbit (".concat(subAddress, ")"));
-                return [3 /*break*/, 6];
-            case 3:
-                e_2 = _a.sent();
-                // Assume it's because of EBUSY
-                log.error("Failed to delete old subplebbit (".concat(subAddress, "). Restarting the node process or daemon should make this error disappear"));
-                storageKey = constants_1.STORAGE_KEYS[constants_1.STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS];
-                return [4 /*yield*/, plebbit._storage.getItem(storageKey)];
-            case 4:
-                subsThatWeFailedToDelete = (_a.sent()) || [];
-                if (!subsThatWeFailedToDelete.includes(subAddress))
-                    subsThatWeFailedToDelete.push(subAddress);
-                return [4 /*yield*/, plebbit._storage.setItem(storageKey, subsThatWeFailedToDelete)];
-            case 5:
-                _a.sent();
-                return [3 /*break*/, 6];
-            case 6: return [2 /*return*/];
+export async function listSubplebbits(plebbit) {
+    const log = Logger("plebbit-js:listSubplebbits");
+    const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
+    await fs.mkdir(subplebbitsPath, { recursive: true });
+    const deletedPersistentSubs = await _handlePersistentSubsIfNeeded(plebbit, log);
+    const files = (await fs.readdir(subplebbitsPath, { withFileTypes: true }))
+        .filter((file) => file.isFile()) // Filter directories out
+        .filter((file) => !/-journal$/.test(file.name)) // Filter SQLite3 journal files out
+        .map((file) => file.name);
+    const filterResults = await Promise.all(files.map(async (address) => {
+        if (Array.isArray(deletedPersistentSubs) && deletedPersistentSubs.includes(address))
+            return false;
+        try {
+            //@ts-expect-error
+            const typeOfFile = await fileType.default.fromFile(path.join(subplebbitsPath, address)); // This line fails if file no longer exists
+            return typeOfFile?.mime === "application/x-sqlite3";
         }
+        catch (e) {
+            return false;
+        }
+    }));
+    const filtered_results = files.filter((_, i) => filterResults[i]);
+    return filtered_results;
+}
+export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
+    const data = new FormData();
+    if (typeof ipnsKeyName !== "string")
+        throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
+    if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
+        throw Error("ipfsKey needs to be defined before importing key into IPFS node");
+    data.append("file", new Blob([ipfsKey]));
+    const nodeUrl = ipfsNode.url;
+    if (!nodeUrl)
+        throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
+    const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
+    const res = await fetch(url, {
+        method: "POST",
+        body: data,
+        headers: ipfsNode?.headers // We're assuming that only IPFS one client will be used
     });
-}); };
-exports.deleteOldSubplebbitInWindows = deleteOldSubplebbitInWindows;
-exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
-    nativeFunctions: exports.nativeFunctions,
-    setNativeFunctions: exports.setNativeFunctions,
-    mkdir: exports.mkdir
-};
+    if (res.status !== 200)
+        throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
+    const resJson = await res.json();
+    return { id: resJson.Id, name: resJson.Name };
+}
+export async function moveSubplebbitDbToDeletedDirectory(subplebbitAddress, plebbit) {
+    // Delete subplebbit will just move the sub db file to another directory
+    if (typeof plebbit.dataPath !== "string")
+        throw Error("plebbit.dataPath is not defined");
+    const oldPath = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
+    const newPath = path.join(plebbit.dataPath, "subplebbits", "deleted", subplebbitAddress);
+    await fs.mkdir(path.join(plebbit.dataPath, "subplebbits", "deleted"), { recursive: true });
+    await fs.cp(oldPath, newPath);
+    if (os.type() === "Windows_NT")
+        await deleteOldSubplebbitInWindows(oldPath, plebbit);
+    else
+        await fs.rm(oldPath);
+}
+export function createIpfsClient(ipfsHttpClientOptions) {
+    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
+    if (storedIpfsClients[cacheKey])
+        return storedIpfsClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createIpfsClient");
+    log("Creating a new ipfs client on node with options", ipfsHttpClientOptions);
+    const isHttpsAgent = (typeof ipfsHttpClientOptions.url === "string" && ipfsHttpClientOptions.url.startsWith("https")) ||
+        ipfsHttpClientOptions?.protocol === "https" ||
+        (ipfsHttpClientOptions.url instanceof URL && ipfsHttpClientOptions?.url?.protocol === "https:") ||
+        ipfsHttpClientOptions.url?.toString()?.includes("https");
+    const Agent = isHttpsAgent ? HttpsAgent : HttpAgent;
+    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
+        ...ipfsHttpClientOptions,
+        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity })
+    });
+    return storedIpfsClients[cacheKey];
+}
 //# sourceMappingURL=util.js.map

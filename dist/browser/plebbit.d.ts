@@ -1,18 +1,20 @@
-import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, VotePubsubMessage, VoteType, ParsedPlebbitOptions, LRUStorageInterface, LRUStorageConstructor } from "./types";
-import { Comment } from "./comment";
-import { Subplebbit } from "./subplebbit/subplebbit";
-import Vote from "./vote";
-import { Signer } from "./signer";
-import { Resolver } from "./resolver";
-import { CommentEdit } from "./comment-edit";
-import { Options as IpfsHttpClientOptions } from "ipfs-http-client";
+import { StorageInterface, ChainProvider, CommentEditType, CommentIpfsType, CommentPubsubMessage, CommentType, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, GatewayClient, IpfsClient, PlebbitEvents, PlebbitOptions, PubsubClient, VotePubsubMessage, VoteType, ParsedPlebbitOptions, LRUStorageInterface, LRUStorageConstructor } from "./types.js";
+import { Comment } from "./comment.js";
+import Vote from "./vote.js";
+import { Signer } from "./signer/index.js";
+import { Resolver } from "./resolver.js";
+import { CommentEdit } from "./comment-edit.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { CreateSignerOptions } from "./signer/constants";
-import Stats from "./stats";
-import { ClientsManager } from "./clients/client-manager";
-import PlebbitRpcClient from "./clients/plebbit-rpc-client";
-import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client";
-import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types";
+import { CreateSignerOptions } from "./signer/constants.js";
+import Stats from "./stats.js";
+import { ClientsManager } from "./clients/client-manager.js";
+import PlebbitRpcClient from "./clients/plebbit-rpc-client.js";
+import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client.js";
+import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types.js";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
+import { LocalSubplebbit } from "./runtime/browser/subplebbit/local-subplebbit.js";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     clients: {
         ipfsGateways: {
@@ -33,10 +35,11 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     };
     resolver: Resolver;
     plebbitRpcClient?: PlebbitRpcClient;
-    ipfsHttpClientsOptions?: IpfsHttpClientOptions[];
-    pubsubHttpClientsOptions: IpfsHttpClientOptions[];
+    ipfsHttpClientsOptions?: IpfsClient["_clientOptions"][];
+    pubsubHttpClientsOptions: IpfsClient["_clientOptions"][];
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
+    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses?: boolean;
     chainProviders: {
         [chainTicker: string]: ChainProvider;
@@ -58,7 +61,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _initResolver;
     private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
-    getSubplebbit(subplebbitAddress: string): Promise<Subplebbit>;
+    getSubplebbit(subplebbitAddress: string): Promise<RpcRemoteSubplebbit | RemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit>;
     getComment(cid: string): Promise<Comment>;
     private _initMissingFields;
     private _createCommentInstance;
@@ -67,7 +70,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _createSubplebbitRpc;
     private _createRemoteSubplebbitInstance;
     private _createLocalSub;
-    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType): Promise<Subplebbit>;
+    createSubplebbit(options?: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit>;
     createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote>;
     createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer>;

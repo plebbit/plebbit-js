@@ -1,4 +1,4 @@
-import { Encrypted } from "./constants";
+import { Encrypted } from "./constants.js";
 export declare const encryptStringAesGcm: (plaintext: string, key: Uint8Array, iv?: Uint8Array) => Promise<{
     ciphertext: Uint8Array;
     iv: Uint8Array;

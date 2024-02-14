@@ -1,5 +1,5 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types";
+import { GenericClientEvents } from "../types.js";
 type PublicationGatewayState = "stopped" | "fetching-subplebbit-ipns";
 type CommentGatewayState = PublicationGatewayState | "fetching-update-ipfs" | "fetching-ipfs";
 type SubplebbitGatewayState = "stopped" | "fetching-ipns";

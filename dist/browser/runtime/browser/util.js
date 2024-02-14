@@ -1,26 +1,33 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
+import { sha256 } from "js-sha256";
+import { default as browserNativeFunctions } from "./native-functions.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import Logger from "@plebbit/plebbit-logger";
+import { create as CreateKuboRpcClient } from "kubo-rpc-client";
+const storedIpfsClients = {};
+// Functions should not be called in browser
+export const getDefaultDataPath = () => undefined;
+export const mkdir = () => {
+    throw Error("mkdir should not be called in browser");
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.setNativeFunctions = exports.nativeFunctions = exports.mkdir = exports.getDefaultDataPath = void 0;
-var native_functions_1 = __importDefault(require("./native-functions"));
-var getDefaultDataPath = function () { return undefined; };
-exports.getDefaultDataPath = getDefaultDataPath;
-var mkdir = function () { return undefined; };
-exports.mkdir = mkdir;
-exports.nativeFunctions = native_functions_1.default;
-var setNativeFunctions = function (newNativeFunctions) {
+export const listSubplebbits = () => {
+    throw Error("listSubplebbits should not be called in browser");
+};
+export function createIpfsClient(ipfsHttpClientOptions) {
+    const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
+    if (storedIpfsClients[cacheKey])
+        return storedIpfsClients[cacheKey];
+    const log = Logger("plebbit-js:plebbit:createIpfsClient");
+    log("Creating a new ipfs client on browser with options", ipfsHttpClientOptions);
+    storedIpfsClients[cacheKey] = CreateKuboRpcClient({
+        ...ipfsHttpClientOptions
+    });
+    return storedIpfsClients[cacheKey];
+}
+export const nativeFunctions = browserNativeFunctions;
+export const setNativeFunctions = (newNativeFunctions) => {
     if (!newNativeFunctions)
-        throw Error("User passed an undefined object to setNativeFunctions");
-    for (var i in newNativeFunctions)
-        exports.nativeFunctions[i] = newNativeFunctions[i];
-};
-exports.setNativeFunctions = setNativeFunctions;
-exports.default = {
-    getDefaultDataPath: exports.getDefaultDataPath,
-    setNativeFunctions: exports.setNativeFunctions,
-    nativeFunctions: exports.nativeFunctions,
-    mkdir: exports.mkdir
+        throw Error(`User passed an undefined object to setNativeFunctions`);
+    for (const i in newNativeFunctions)
+        nativeFunctions[i] = newNativeFunctions[i];
 };
 //# sourceMappingURL=util.js.map

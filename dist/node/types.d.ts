@@ -1,18 +1,12 @@
-import { CID, IPFSHTTPClient, Options as IpfsHttpClientOptions } from "ipfs-http-client";
-import { PeersResult } from "ipfs-core-types/src/swarm/index";
-import { LsResult } from "ipfs-core-types/src/pin/index";
-import { DbHandler } from "./runtime/node/db-handler";
-import fetch from "node-fetch";
-import { createCaptcha } from "captcha-canvas";
-import { Key as IpfsKey } from "ipfs-core-types/types/src/key/index";
+import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
-import { Comment } from "./comment";
-import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants";
-import { Subplebbit } from "./subplebbit/subplebbit";
-import Publication from "./publication";
-import { PlebbitError } from "./plebbit-error";
-import { ChallengeFile, Flair } from "./subplebbit/types";
-import { Plebbit } from "./plebbit";
+import { Comment } from "./comment.js";
+import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants.js";
+import Publication from "./publication.js";
+import { PlebbitError } from "./plebbit-error.js";
+import { ChallengeFile, Flair } from "./subplebbit/types.js";
+import { Plebbit } from "./plebbit.js";
+import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax";
 export type ChainProvider = {
@@ -32,6 +26,7 @@ export interface PlebbitOptions {
     publishInterval?: number;
     updateInterval?: number;
     noData?: boolean;
+    browserLibp2pJsPublish?: boolean;
 }
 export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
     ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
@@ -336,48 +331,8 @@ export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyName
 }
 export interface CommentEditPubsubMessage extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
 }
-type FunctionPropertyOf<T> = {
-    [P in keyof T]: T[P] extends Function ? P : never;
-}[keyof T];
-export type DbHandlerPublicAPI = Pick<DbHandler, FunctionPropertyOf<DbHandler>>;
-export type IpfsHttpClientPublicAPI = {
-    add: IPFSHTTPClient["add"];
-    cat: (...p: Parameters<IPFSHTTPClient["cat"]>) => Promise<string | undefined>;
-    pubsub: Pick<IPFSHTTPClient["pubsub"], "subscribe" | "unsubscribe" | "publish" | "ls" | "peers">;
-    name: {
-        resolve: (...p: Parameters<IPFSHTTPClient["name"]["resolve"]>) => Promise<string | undefined>;
-        publish: IPFSHTTPClient["name"]["publish"];
-    };
-    config: Pick<IPFSHTTPClient["config"], "get">;
-    key: Pick<IPFSHTTPClient["key"], "list" | "rm">;
-    pin: {
-        rm: IPFSHTTPClient["pin"]["rm"];
-        addAll: (...p: Parameters<IPFSHTTPClient["pin"]["addAll"]>) => Promise<CID[]>;
-        ls: (...p: Parameters<IPFSHTTPClient["pin"]["ls"]>) => Promise<LsResult[]>;
-    };
-    block: {
-        rm: (...p: Parameters<IPFSHTTPClient["block"]["rm"]>) => Promise<{
-            cid: CID;
-            error?: Error;
-        }[]>;
-    };
-    swarm: Pick<IPFSHTTPClient["swarm"], "peers">;
-    files: IPFSHTTPClient["files"];
-};
 export type NativeFunctions = {
-    listSubplebbits: (dataPath: string, plebbit: Plebbit) => Promise<string[]>;
-    createDbHandler: (subplebbit: DbHandler["_subplebbit"]) => DbHandlerPublicAPI;
     fetch: typeof fetch;
-    createIpfsClient: (options: IpfsHttpClientOptions) => IpfsHttpClientPublicAPI;
-    createImageCaptcha: (...p: Parameters<typeof createCaptcha>) => Promise<{
-        image: string;
-        text: string;
-    }>;
-    importSignerIntoIpfsNode: (ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: {
-        url: string;
-        headers?: Object;
-    }) => Promise<IpfsKey>;
-    deleteSubplebbit(subplebbitAddress: string, dataPath: string, plebbit: Plebbit): Promise<void>;
 };
 export type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
@@ -424,10 +379,10 @@ export interface SubplebbitEvents {
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) => void;
     error: (error: PlebbitError) => void;
-    statechange: (newState: Subplebbit["state"]) => void;
-    updatingstatechange: (newState: Subplebbit["updatingState"]) => void;
-    startedstatechange: (newState: Subplebbit["startedState"]) => void;
-    update: (updatedSubplebbit: Subplebbit) => void;
+    statechange: (newState: RemoteSubplebbit["state"]) => void;
+    updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
+    startedstatechange: (newState: RemoteSubplebbit["startedState"]) => void;
+    update: (updatedSubplebbit: RemoteSubplebbit) => void;
 }
 export interface PublicationEvents {
     challengerequest: (request: DecryptedChallengeRequestMessageType) => void;
@@ -483,19 +438,21 @@ export interface PubsubSubplebbitStats {
     sessionStats: PubsubStats;
 }
 export interface IpfsClient {
-    peers: () => Promise<PeersResult[]>;
+    peers: () => ReturnType<IpfsClient["_client"]["swarm"]["peers"]>;
     stats?: undefined;
     sessionStats?: undefined;
     subplebbitStats?: undefined;
-    _client: IpfsHttpClientPublicAPI;
-    _clientOptions: IpfsHttpClientOptions;
+    _client: ReturnType<typeof CreateIpfsClient>;
+    _clientOptions: Parameters<typeof CreateIpfsClient>[0];
 }
+export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
+export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
 export interface PubsubClient {
     peers: () => Promise<string[]>;
     stats?: undefined;
     sessionStats?: undefined;
     subplebbitStats?: undefined;
-    _client: Pick<ReturnType<NativeFunctions["createIpfsClient"]>, "pubsub">;
+    _client: Pick<IpfsClient["_client"], "pubsub">;
     _clientOptions: IpfsHttpClientOptions;
 }
 export interface GatewayClient {

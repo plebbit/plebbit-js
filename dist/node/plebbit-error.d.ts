@@ -1,4 +1,4 @@
-import { messages } from "./errors";
+import { messages } from "./errors.js";
 import { CustomError } from "ts-custom-error";
 export declare class PlebbitError extends CustomError {
     code: keyof typeof messages;

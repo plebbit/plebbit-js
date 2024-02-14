@@ -1,101 +1,31 @@
-"use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.Comment = void 0;
-var retry_1 = __importDefault(require("retry"));
-var util_1 = require("./util");
-var publication_1 = __importDefault(require("./publication"));
-var pages_1 = require("./pages");
-var plebbit_logger_1 = __importDefault(require("@plebbit/plebbit-logger"));
-var lodash_1 = __importDefault(require("lodash"));
-var signatures_1 = require("./signer/signatures");
-var assert_1 = __importDefault(require("assert"));
-var plebbit_error_1 = require("./plebbit-error");
-var client_manager_1 = require("./clients/client-manager");
-var errors_1 = require("./errors");
-var Comment = /** @class */ (function (_super) {
-    __extends(Comment, _super);
-    function Comment(props, plebbit) {
-        var _this = _super.call(this, props, plebbit) || this;
-        _this._isUpdating = false;
-        _this._setUpdatingState("stopped");
+import retry from "retry";
+import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util.js";
+import Publication from "./publication.js";
+import { RepliesPages } from "./pages.js";
+import Logger from "@plebbit/plebbit-logger";
+import lodash from "lodash";
+import { verifyComment, verifyCommentUpdate } from "./signer/signatures.js";
+import assert from "assert";
+import { PlebbitError } from "./plebbit-error.js";
+import { CommentClientsManager } from "./clients/client-manager.js";
+import { messages } from "./errors.js";
+export class Comment extends Publication {
+    constructor(props, plebbit) {
+        super(props, plebbit);
+        this._isUpdating = false;
+        this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
-        _this.publish = _this.publish.bind(_this);
-        _this.update = _this.update.bind(_this);
-        _this.stop = _this.stop.bind(_this);
-        return _this;
+        this.publish = this.publish.bind(this);
+        this.update = this.update.bind(this);
+        this.stop = this.stop.bind(this);
     }
-    Comment.prototype._initClients = function () {
-        this._clientsManager = new client_manager_1.CommentClientsManager(this);
+    _initClients() {
+        this._clientsManager = new CommentClientsManager(this);
         this.clients = this._clientsManager.clients;
-    };
-    Comment.prototype._initProps = function (props) {
+    }
+    _initProps(props) {
         // This function is called once at in the constructor
-        _super.prototype._initProps.call(this, props);
+        super._initProps(props);
         this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.depth = props.depth;
@@ -114,7 +44,7 @@ var Comment = /** @class */ (function (_super) {
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
         if (!this.replies)
-            this.replies = new pages_1.RepliesPages({
+            this.replies = new RepliesPages({
                 pages: undefined,
                 pageCids: undefined,
                 plebbit: this._plebbit,
@@ -122,458 +52,367 @@ var Comment = /** @class */ (function (_super) {
                 pagesIpfs: undefined,
                 parentCid: this.cid
             });
-    };
-    Comment.prototype._initCommentUpdate = function (props) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
-        return __awaiter(this, void 0, void 0, function () {
-            var parsedPages;
-            return __generator(this, function (_o) {
-                switch (_o.label) {
-                    case 0:
-                        if (!this.original)
-                            this.original = (0, util_1.removeNullAndUndefinedValuesRecursively)(lodash_1.default.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
-                        this._rawCommentUpdate = props;
-                        this.upvoteCount = props.upvoteCount;
-                        this.downvoteCount = props.downvoteCount;
-                        this.replyCount = props.replyCount;
-                        this.updatedAt = props.updatedAt;
-                        this.deleted = (_a = props.edit) === null || _a === void 0 ? void 0 : _a.deleted;
-                        this.pinned = props.pinned;
-                        this.locked = props.locked;
-                        this.removed = props.removed;
-                        this.reason = props.reason || ((_b = props.edit) === null || _b === void 0 ? void 0 : _b.reason);
-                        this.edit = props.edit;
-                        this.protocolVersion = props.protocolVersion;
-                        // Merge props from original comment and CommentUpdate
-                        this.spoiler =
-                            typeof props.spoiler === "boolean"
-                                ? props.spoiler
-                                : typeof ((_c = props.edit) === null || _c === void 0 ? void 0 : _c.spoiler) === "boolean"
-                                    ? (_d = props.edit) === null || _d === void 0 ? void 0 : _d.spoiler
-                                    : this.spoiler;
-                        this.author.subplebbit = (_e = props.author) === null || _e === void 0 ? void 0 : _e.subplebbit;
-                        if ((_f = props.edit) === null || _f === void 0 ? void 0 : _f.content)
-                            this.content = props.edit.content;
-                        this.flair = props.flair || ((_g = props.edit) === null || _g === void 0 ? void 0 : _g.flair) || this.flair;
-                        this.author.flair = ((_j = (_h = props.author) === null || _h === void 0 ? void 0 : _h.subplebbit) === null || _j === void 0 ? void 0 : _j.flair) || ((_l = (_k = props.edit) === null || _k === void 0 ? void 0 : _k.author) === null || _l === void 0 ? void 0 : _l.flair) || ((_m = this.author) === null || _m === void 0 ? void 0 : _m.flair);
-                        this.lastChildCid = props.lastChildCid;
-                        this.lastReplyTimestamp = props.lastReplyTimestamp;
-                        (0, assert_1.default)(this.cid);
-                        if (!props.replies) return [3 /*break*/, 2];
-                        return [4 /*yield*/, (0, util_1.parseRawPages)(props.replies, this._plebbit)];
-                    case 1:
-                        parsedPages = _o.sent();
-                        this.replies.updateProps(__assign(__assign({}, parsedPages), { plebbit: this._plebbit, subplebbitAddress: this.subplebbitAddress, pageCids: props.replies.pageCids, parentCid: this.cid }));
-                        _o.label = 2;
-                    case 2: return [2 /*return*/];
-                }
+    }
+    async _initCommentUpdate(props) {
+        if (!this.original)
+            this.original = removeNullAndUndefinedValuesRecursively(lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
+        this._rawCommentUpdate = props;
+        this.upvoteCount = props.upvoteCount;
+        this.downvoteCount = props.downvoteCount;
+        this.replyCount = props.replyCount;
+        this.updatedAt = props.updatedAt;
+        this.deleted = props.edit?.deleted;
+        this.pinned = props.pinned;
+        this.locked = props.locked;
+        this.removed = props.removed;
+        this.reason = props.reason || props.edit?.reason;
+        this.edit = props.edit;
+        this.protocolVersion = props.protocolVersion;
+        // Merge props from original comment and CommentUpdate
+        this.spoiler =
+            typeof props.spoiler === "boolean"
+                ? props.spoiler
+                : typeof props.edit?.spoiler === "boolean"
+                    ? props.edit?.spoiler
+                    : this.spoiler;
+        this.author.subplebbit = props.author?.subplebbit;
+        if (props.edit?.content)
+            this.content = props.edit.content;
+        this.flair = props.flair || props.edit?.flair || this.flair;
+        this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
+        this.lastChildCid = props.lastChildCid;
+        this.lastReplyTimestamp = props.lastReplyTimestamp;
+        assert(this.cid);
+        if (props.replies) {
+            const parsedPages = await parseRawPages(props.replies, this._plebbit);
+            this.replies.updateProps({
+                ...parsedPages,
+                plebbit: this._plebbit,
+                subplebbitAddress: this.subplebbitAddress,
+                pageCids: props.replies.pageCids,
+                parentCid: this.cid
             });
-        });
-    };
-    Comment.prototype.getType = function () {
+        }
+    }
+    getType() {
         return "comment";
-    };
-    Comment.prototype.toJSON = function () {
-        var _a;
-        var base = this.cid
-            ? __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid }) : this.toJSONPubsubMessagePublication();
-        return __assign(__assign(__assign({}, base), (typeof this.updatedAt === "number"
-            ? {
-                author: this.author.toJSON(),
-                original: this.original,
-                upvoteCount: this.upvoteCount,
-                downvoteCount: this.downvoteCount,
-                replyCount: this.replyCount,
-                updatedAt: this.updatedAt,
-                deleted: this.deleted,
-                pinned: this.pinned,
-                locked: this.locked,
-                removed: this.removed,
-                reason: this.reason,
-                edit: this.edit,
-                protocolVersion: this.protocolVersion,
-                spoiler: this.spoiler,
-                flair: this.flair,
-                replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(),
-                lastChildCid: this.lastChildCid,
-                lastReplyTimestamp: this.lastReplyTimestamp
-            }
-            : {})), { shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON() });
-    };
-    Comment.prototype.toJSONPagesIpfs = function (commentUpdate) {
-        (0, assert_1.default)(this.cid && this.postCid);
+    }
+    toJSON() {
+        const base = this.cid
+            ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
+            : this.toJSONPubsubMessagePublication();
         return {
-            comment: __assign(__assign({}, this.toJSONIpfs()), { author: this.author.toJSONIpfs(), cid: this.cid, postCid: this.postCid }),
+            ...base,
+            ...(typeof this.updatedAt === "number"
+                ? {
+                    author: this.author.toJSON(),
+                    original: this.original,
+                    upvoteCount: this.upvoteCount,
+                    downvoteCount: this.downvoteCount,
+                    replyCount: this.replyCount,
+                    updatedAt: this.updatedAt,
+                    deleted: this.deleted,
+                    pinned: this.pinned,
+                    locked: this.locked,
+                    removed: this.removed,
+                    reason: this.reason,
+                    edit: this.edit,
+                    protocolVersion: this.protocolVersion,
+                    spoiler: this.spoiler,
+                    flair: this.flair,
+                    replies: this.replies?.toJSON(),
+                    lastChildCid: this.lastChildCid,
+                    lastReplyTimestamp: this.lastReplyTimestamp
+                }
+                : {}),
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            author: this.author.toJSON()
+        };
+    }
+    toJSONPagesIpfs(commentUpdate) {
+        assert(this.cid && this.postCid);
+        return {
+            comment: {
+                ...this.toJSONIpfs(),
+                author: this.author.toJSONIpfs(),
+                cid: this.cid,
+                postCid: this.postCid
+            },
             update: commentUpdate
         };
-    };
-    Comment.prototype.toJSONIpfs = function () {
+    }
+    toJSONIpfs() {
         if (typeof this.depth !== "number")
             throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return __assign(__assign({}, this.toJSONPubsubMessagePublication()), { previousCid: this.previousCid, postCid: this.depth === 0 ? undefined : this.postCid, depth: this.depth, thumbnailUrl: this.thumbnailUrl, thumbnailUrlWidth: this.thumbnailUrlWidth, thumbnailUrlHeight: this.thumbnailUrlHeight });
-    };
-    Comment.prototype.toJSONPubsubMessagePublication = function () {
-        return __assign(__assign({}, _super.prototype.toJSONPubsubMessagePublication.call(this)), { content: this.content, parentCid: this.parentCid, flair: this.flair, spoiler: this.spoiler, link: this.link, linkWidth: this.linkWidth, linkHeight: this.linkHeight, title: this.title });
-    };
-    Comment.prototype.toJSONAfterChallengeVerification = function () {
-        (0, assert_1.default)(this.cid && this.postCid);
-        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid });
-    };
-    Comment.prototype.toJSONCommentsTableRowInsert = function (publicationHash) {
-        (0, assert_1.default)(this.cid && this.postCid);
-        return __assign(__assign({}, this.toJSONIpfs()), { postCid: this.postCid, cid: this.cid, authorAddress: this.author.address, challengeRequestPublicationSha256: publicationHash });
-    };
-    Comment.prototype.toJSONMerged = function () {
-        var _a;
-        (0, assert_1.default)(typeof this.updatedAt === "number" && this.original && this.shortCid);
-        return __assign(__assign({}, this.toJSONAfterChallengeVerification()), { shortCid: this.shortCid, shortSubplebbitAddress: this.shortSubplebbitAddress, author: this.author.toJSON(), original: this.original, upvoteCount: this.upvoteCount, downvoteCount: this.downvoteCount, replyCount: this.replyCount, updatedAt: this.updatedAt, deleted: this.deleted, pinned: this.pinned, locked: this.locked, removed: this.removed, reason: this.reason, edit: this.edit, protocolVersion: this.protocolVersion, spoiler: this.spoiler, flair: this.flair, replies: (_a = this.replies) === null || _a === void 0 ? void 0 : _a.toJSON(), lastChildCid: this.lastChildCid, lastReplyTimestamp: this.lastReplyTimestamp });
-    };
-    Comment.prototype.setPostCid = function (newPostCid) {
+        return {
+            ...this.toJSONPubsubMessagePublication(),
+            previousCid: this.previousCid,
+            postCid: this.depth === 0 ? undefined : this.postCid,
+            depth: this.depth,
+            thumbnailUrl: this.thumbnailUrl,
+            thumbnailUrlWidth: this.thumbnailUrlWidth,
+            thumbnailUrlHeight: this.thumbnailUrlHeight
+        };
+    }
+    toJSONPubsubMessagePublication() {
+        return {
+            ...super.toJSONPubsubMessagePublication(),
+            content: this.content,
+            parentCid: this.parentCid,
+            flair: this.flair,
+            spoiler: this.spoiler,
+            link: this.link,
+            linkWidth: this.linkWidth,
+            linkHeight: this.linkHeight,
+            title: this.title
+        };
+    }
+    toJSONAfterChallengeVerification() {
+        assert(this.cid && this.postCid);
+        return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
+    }
+    toJSONCommentsTableRowInsert(publicationHash) {
+        assert(this.cid && this.postCid);
+        return {
+            ...this.toJSONIpfs(),
+            postCid: this.postCid,
+            cid: this.cid,
+            authorAddress: this.author.address,
+            challengeRequestPublicationSha256: publicationHash
+        };
+    }
+    toJSONMerged() {
+        assert(typeof this.updatedAt === "number" && this.original && this.shortCid);
+        return {
+            ...this.toJSONAfterChallengeVerification(),
+            shortCid: this.shortCid,
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            author: this.author.toJSON(),
+            original: this.original,
+            upvoteCount: this.upvoteCount,
+            downvoteCount: this.downvoteCount,
+            replyCount: this.replyCount,
+            updatedAt: this.updatedAt,
+            deleted: this.deleted,
+            pinned: this.pinned,
+            locked: this.locked,
+            removed: this.removed,
+            reason: this.reason,
+            edit: this.edit,
+            protocolVersion: this.protocolVersion,
+            spoiler: this.spoiler,
+            flair: this.flair,
+            replies: this.replies?.toJSON(),
+            lastChildCid: this.lastChildCid,
+            lastReplyTimestamp: this.lastReplyTimestamp
+        };
+    }
+    setPostCid(newPostCid) {
         this.postCid = newPostCid;
-    };
-    Comment.prototype.setCid = function (newCid) {
+    }
+    setCid(newCid) {
         this.cid = newCid;
         if (this.cid)
-            this.shortCid = (0, util_1.shortifyCid)(this.cid);
-    };
-    Comment.prototype.setPreviousCid = function (newPreviousCid) {
+            this.shortCid = shortifyCid(this.cid);
+    }
+    setPreviousCid(newPreviousCid) {
         this.previousCid = newPreviousCid;
-    };
-    Comment.prototype.setDepth = function (newDepth) {
+    }
+    setDepth(newDepth) {
         this.depth = newDepth;
-    };
-    Comment.prototype.setUpdatedAt = function (newUpdatedAt) {
+    }
+    setUpdatedAt(newUpdatedAt) {
         this.updatedAt = newUpdatedAt;
-    };
-    Comment.prototype._retryLoadingCommentIpfs = function (log) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve) {
-                        _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
-                            var res, e_1;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        log.trace("Retrying to load comment ipfs (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
-                                        _a.label = 1;
-                                    case 1:
-                                        _a.trys.push([1, 3, , 4]);
-                                        this._setUpdatingState("fetching-ipfs");
-                                        return [4 /*yield*/, this._clientsManager.fetchCommentCid(this.cid)];
-                                    case 2:
-                                        res = _a.sent();
-                                        this._setUpdatingState("succeeded");
-                                        resolve(res);
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        e_1 = _a.sent();
-                                        if (e_1["details"])
-                                            e_1.details.commentCid = this.cid;
-                                        this._setUpdatingState("failed");
-                                        log.error(String(e_1));
-                                        this.emit("error", e_1);
-                                        this._loadingOperation.retry(e_1);
-                                        return [3 /*break*/, 4];
-                                    case 4: return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                    })];
-            });
-        });
-    };
-    Comment.prototype._retryLoadingCommentUpdate = function (log) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve) {
-                        _this._loadingOperation.attempt(function (curAttempt) { return __awaiter(_this, void 0, void 0, function () {
-                            var update, e_2;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        log.trace("Retrying to load CommentUpdate (".concat(this.cid, ") for the ").concat(curAttempt, "th time"));
-                                        _a.label = 1;
-                                    case 1:
-                                        _a.trys.push([1, 3, , 4]);
-                                        return [4 /*yield*/, this._clientsManager.fetchCommentUpdate()];
-                                    case 2:
-                                        update = _a.sent();
-                                        resolve(update);
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        e_2 = _a.sent();
-                                        if (e_2["details"])
-                                            e_2.details.commentCid = this.cid;
-                                        this._setUpdatingState("failed");
-                                        log.error(String(e_2));
-                                        this._loadingOperation.retry(e_2);
-                                        this.emit("error", e_2);
-                                        return [3 /*break*/, 4];
-                                    case 4: return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                    })];
-            });
-        });
-    };
-    Comment.prototype.updateOnce = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, _a, commentIpfsValidation, commentUpdate, commentInstance, signatureValidity, err;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                        this._loadingOperation = retry_1.default.operation({ forever: true, factor: 2 });
-                        if (!(this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs)) return [3 /*break*/, 5];
-                        // User may have attempted to call plebbit.createComment({cid}).update
-                        _a = this;
-                        return [4 /*yield*/, this._retryLoadingCommentIpfs(log)];
-                    case 1:
-                        // User may have attempted to call plebbit.createComment({cid}).update
-                        _a._rawCommentIpfs = _b.sent(); // Will keep retrying to load until comment.stop() is called
-                        return [4 /*yield*/, (0, signatures_1.verifyComment)(this._rawCommentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
-                    case 2:
-                        commentIpfsValidation = _b.sent();
-                        if (!!commentIpfsValidation.valid) return [3 /*break*/, 4];
-                        // This is a crticial error, it should stop the comment from updating
-                        log.error("The signature of CommentIpfs (".concat(this.cid, ") is invalid, this is a critical error and will stop the update loop"));
-                        this._updateState("stopped");
-                        return [4 /*yield*/, this._stopUpdateLoop()];
-                    case 3:
-                        _b.sent();
-                        this._setUpdatingState("failed");
-                        this.emit("error", new plebbit_error_1.PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
-                            commentIpfs: this._rawCommentIpfs,
-                            commentIpfsValidation: commentIpfsValidation,
-                            cid: this.cid
-                        }));
-                        return [2 /*return*/];
-                    case 4:
-                        log("Loaded the CommentIpfs props of cid (".concat(this.cid, ") correctly, updating the instance props"));
-                        this._initProps(__assign(__assign({}, this._rawCommentIpfs), { cid: this.cid }));
-                        this.emit("update", this);
-                        _b.label = 5;
-                    case 5: return [4 /*yield*/, this._retryLoadingCommentUpdate(log)];
-                    case 6:
-                        commentUpdate = _b.sent();
-                        if (!(commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt)) return [3 /*break*/, 9];
-                        log("Comment (".concat(this.cid, ") received a new CommentUpdate. Will verify signature"));
-                        commentInstance = lodash_1.default.pick(this, ["cid", "signature"]);
-                        return [4 /*yield*/, (0, signatures_1.verifyCommentUpdate)(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true)];
-                    case 7:
-                        signatureValidity = _b.sent();
-                        if (!signatureValidity.valid) {
-                            this._setUpdatingState("failed");
-                            err = new plebbit_error_1.PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity, commentUpdate: commentUpdate });
-                            log.error(err.toString());
-                            this.emit("error", err);
-                            return [2 /*return*/];
-                        }
-                        this._setUpdatingState("succeeded");
-                        return [4 /*yield*/, this._initCommentUpdate(commentUpdate)];
-                    case 8:
-                        _b.sent();
-                        this.emit("update", this);
-                        return [3 /*break*/, 10];
-                    case 9:
-                        if (commentUpdate) {
-                            log.trace("Comment (".concat(this.cid, ") has no new update"));
-                            this._setUpdatingState("succeeded");
-                            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
-                        }
-                        _b.label = 10;
-                    case 10: return [2 /*return*/];
+    }
+    async _retryLoadingCommentIpfs(log) {
+        return new Promise((resolve) => {
+            this._loadingOperation.attempt(async (curAttempt) => {
+                log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
+                try {
+                    this._setUpdatingState("fetching-ipfs");
+                    const res = await this._clientsManager.fetchCommentCid(this.cid);
+                    this._setUpdatingState("succeeded");
+                    resolve(res);
+                }
+                catch (e) {
+                    if (e["details"])
+                        e.details.commentCid = this.cid;
+                    this._setUpdatingState("failed");
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e.toString());
+                    this._loadingOperation.retry(e);
                 }
             });
         });
-    };
-    Comment.prototype._setUpdatingState = function (newState) {
+    }
+    async _retryLoadingCommentUpdate(log) {
+        return new Promise((resolve) => {
+            this._loadingOperation.attempt(async (curAttempt) => {
+                log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
+                try {
+                    const update = await this._clientsManager.fetchCommentUpdate();
+                    resolve(update);
+                }
+                catch (e) {
+                    if (e["details"])
+                        e.details.commentCid = this.cid;
+                    this._setUpdatingState("failed");
+                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e.toString());
+                    this._loadingOperation.retry(e);
+                }
+            });
+        });
+    }
+    async updateOnce() {
+        const log = Logger("plebbit-js:comment:update");
+        this._loadingOperation = retry.operation({ forever: true, factor: 2 });
+        if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
+            // User may have attempted to call plebbit.createComment({cid}).update
+            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            // Can potentially throw if resolver if not working
+            const commentIpfsValidation = await verifyComment(this._rawCommentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true);
+            if (!commentIpfsValidation.valid) {
+                // This is a crticial error, it should stop the comment from updating
+                log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
+                this._updateState("stopped");
+                await this._stopUpdateLoop();
+                this._setUpdatingState("failed");
+                this.emit("error", new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
+                    commentIpfs: this._rawCommentIpfs,
+                    commentIpfsValidation,
+                    cid: this.cid
+                }));
+                return;
+            }
+            log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
+            this._initProps({ ...this._rawCommentIpfs, cid: this.cid });
+            this.emit("update", this);
+        }
+        const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+        if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
+            log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
+            //@ts-expect-error
+            const commentInstance = lodash.pick(this, ["cid", "signature"]);
+            // Can potentially throw if resolver if not working
+            const signatureValidity = await verifyCommentUpdate(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true);
+            if (!signatureValidity.valid) {
+                this._setUpdatingState("failed");
+                const err = new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
+                log.error(err.toString());
+                this.emit("error", err);
+                return;
+            }
+            this._setUpdatingState("succeeded");
+            await this._initCommentUpdate(commentUpdate);
+            this.emit("update", this);
+        }
+        else if (commentUpdate) {
+            log.trace(`Comment (${this.cid}) has no new update`);
+            this._setUpdatingState("succeeded");
+            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
+        }
+    }
+    _setUpdatingState(newState) {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
-    };
-    Comment.prototype._setRpcClientState = function (newState) {
-        var currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+    }
+    _setRpcClientState(newState) {
+        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
         if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state)
             return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
-    };
-    Comment.prototype._updateRpcClientStateFromUpdatingState = function (updatingState) {
+    }
+    _updateRpcClientStateFromUpdatingState(updatingState) {
         // We're deriving the the rpc state from publishing state
-        var rpcState = updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        const rpcState = updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
         this._setRpcClientState(rpcState);
-    };
-    Comment.prototype._isCriticalRpcError = function (err) {
+    }
+    _isCriticalRpcError(err) {
         // Critical Errors for now are:
         // Invalid signature of CommentIpfs
-        return err.message === errors_1.messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
-    };
-    Comment.prototype.update = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var log, _a, e_3, updateLoop;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        log = (0, plebbit_logger_1.default)("plebbit-js:comment:update");
-                        if (!this._plebbit.plebbitRpcClient) return [3 /*break*/, 5];
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        _a = this;
-                        return [4 /*yield*/, this._plebbit.plebbitRpcClient.commentUpdate(this.cid)];
-                    case 2:
-                        _a._updateRpcSubscriptionId = _b.sent();
-                        this._updateState("updating");
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_3 = _b.sent();
-                        log.error("Failed to receive commentUpdate from RPC due to error", e_3);
-                        this._updateState("stopped");
-                        this._setUpdatingState("failed");
-                        throw e_3;
-                    case 4:
-                        this._plebbit.plebbitRpcClient
-                            .getSubscription(this._updateRpcSubscriptionId)
-                            .on("update", function (updateProps) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (!updateProps.params.result.subplebbitAddress) return [3 /*break*/, 1];
-                                        log("Received new CommentIpfs (".concat(this.cid, ") from RPC (").concat(this._plebbit.plebbitRpcClientsOptions[0], ")"));
-                                        //@ts-expect-error
-                                        this._rawCommentIpfs = lodash_1.default.omit(updateProps.params.result, "cid");
-                                        this._initProps(updateProps.params.result);
-                                        return [3 /*break*/, 3];
-                                    case 1:
-                                        log("Received new CommentUpdate (".concat(this.cid, ") from RPC (").concat(this._plebbit.plebbitRpcClientsOptions[0], ")"));
-                                        return [4 /*yield*/, this._initCommentUpdate(updateProps.params.result)];
-                                    case 2:
-                                        _a.sent();
-                                        _a.label = 3;
-                                    case 3:
-                                        this.emit("update", this);
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); })
-                            .on("updatingstatechange", function (args) {
-                            var updateState = args.params.result;
-                            _this._setUpdatingState(updateState);
-                            _this._updateRpcClientStateFromUpdatingState(updateState);
-                        })
-                            .on("statechange", function (args) { return _this._updateState(args.params.result); })
-                            .on("error", function (args) { return __awaiter(_this, void 0, void 0, function () {
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (!this._isCriticalRpcError(args.params.result)) return [3 /*break*/, 2];
-                                        this._setUpdatingState("failed");
-                                        this._updateState("stopped");
-                                        return [4 /*yield*/, this._stopUpdateLoop()];
-                                    case 1:
-                                        _a.sent();
-                                        _a.label = 2;
-                                    case 2:
-                                        this.emit("error", args.params.result);
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); });
-                        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-                        this._isUpdating = true;
-                        _b.label = 5;
-                    case 5:
-                        if (this._isUpdating)
-                            return [2 /*return*/]; // Do nothing if it's already updating
-                        this._isUpdating = true;
-                        this._updateState("updating");
-                        updateLoop = (function () { return __awaiter(_this, void 0, void 0, function () {
-                            var _this = this;
-                            return __generator(this, function (_a) {
-                                if (this._isUpdating)
-                                    this.updateOnce()
-                                        .catch(function (e) { return log.error("Failed to update comment", e); })
-                                        .finally(function () { return (_this._updateInterval = setTimeout(updateLoop, _this._plebbit.updateInterval)); });
-                                return [2 /*return*/];
-                            });
-                        }); }).bind(this);
-                        updateLoop();
-                        return [2 /*return*/];
+        return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
+    }
+    async update() {
+        const log = Logger("plebbit-js:comment:update");
+        if (this._plebbit.plebbitRpcClient) {
+            try {
+                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+                this._updateState("updating");
+            }
+            catch (e) {
+                log.error("Failed to receive commentUpdate from RPC due to error", e);
+                this._updateState("stopped");
+                this._setUpdatingState("failed");
+                throw e;
+            }
+            this._plebbit.plebbitRpcClient
+                .getSubscription(this._updateRpcSubscriptionId)
+                .on("update", async (updateProps) => {
+                if (updateProps.params.result.subplebbitAddress) {
+                    log(`Received new CommentIpfs (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                    //@ts-expect-error
+                    this._rawCommentIpfs = lodash.omit(updateProps.params.result, "cid");
+                    this._initProps(updateProps.params.result);
                 }
-            });
-        });
-    };
-    Comment.prototype._stopUpdateLoop = function () {
-        var _a;
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        (_a = this._loadingOperation) === null || _a === void 0 ? void 0 : _a.stop();
-                        this._updateInterval = clearTimeout(this._updateInterval);
-                        this._isUpdating = false;
-                        if (!this._updateRpcSubscriptionId) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId)];
-                    case 1:
-                        _b.sent();
-                        this._updateRpcSubscriptionId = undefined;
-                        this._setRpcClientState("stopped");
-                        _b.label = 2;
-                    case 2: return [2 /*return*/];
+                else {
+                    log(`Received new CommentUpdate (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                    await this._initCommentUpdate(updateProps.params.result);
                 }
-            });
-        });
-    };
-    Comment.prototype.stop = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.stop.call(this)];
-                    case 1:
-                        _a.sent();
-                        this._setUpdatingState("stopped");
-                        return [4 /*yield*/, this._stopUpdateLoop()];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/];
+                this.emit("update", this);
+            })
+                .on("updatingstatechange", (args) => {
+                const updateState = args.params.result;
+                this._setUpdatingState(updateState);
+                this._updateRpcClientStateFromUpdatingState(updateState);
+            })
+                .on("statechange", (args) => this._updateState(args.params.result))
+                .on("error", async (args) => {
+                if (this._isCriticalRpcError(args.params.result)) {
+                    this._setUpdatingState("failed");
+                    this._updateState("stopped");
+                    await this._stopUpdateLoop();
                 }
+                this.emit("error", args.params.result);
             });
-        });
-    };
-    Comment.prototype._validateSignature = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var commentObj, signatureValidity;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-                        return [4 /*yield*/, (0, signatures_1.verifyComment)(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true)];
-                    case 1:
-                        signatureValidity = _a.sent();
-                        if (!signatureValidity.valid)
-                            (0, util_1.throwWithErrorCode)("ERR_SIGNATURE_IS_INVALID", { signatureValidity: signatureValidity });
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    Comment.prototype.publish = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._validateSignature()];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, _super.prototype.publish.call(this)];
-                }
-            });
-        });
-    };
-    return Comment;
-}(publication_1.default));
-exports.Comment = Comment;
+            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+            this._isUpdating = true;
+        }
+        if (this._isUpdating)
+            return; // Do nothing if it's already updating
+        this._isUpdating = true;
+        this._updateState("updating");
+        const updateLoop = (async () => {
+            if (this._isUpdating)
+                this.updateOnce()
+                    .catch((e) => log.error("Failed to update comment", e))
+                    .finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
+        }).bind(this);
+        updateLoop();
+    }
+    async _stopUpdateLoop() {
+        this._loadingOperation?.stop();
+        this._updateInterval = clearTimeout(this._updateInterval);
+        this._isUpdating = false;
+        if (this._updateRpcSubscriptionId) {
+            await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            this._updateRpcSubscriptionId = undefined;
+            this._setRpcClientState("stopped");
+        }
+    }
+    async stop() {
+        await super.stop();
+        this._setUpdatingState("stopped");
+        await this._stopUpdateLoop();
+    }
+    async _validateSignature() {
+        const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
+        const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
+        if (!signatureValidity.valid)
+            throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
+    }
+    async publish() {
+        await this._validateSignature();
+        return super.publish();
+    }
+}
 //# sourceMappingURL=comment.js.map

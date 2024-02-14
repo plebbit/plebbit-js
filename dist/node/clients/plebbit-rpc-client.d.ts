@@ -1,10 +1,10 @@
 /// <reference types="node" />
-import { DecryptedChallengeRequest, PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types";
-import { Comment } from "../comment";
-import { Plebbit } from "../plebbit";
-import { Subplebbit } from "../subplebbit/subplebbit";
+import { DecryptedChallengeRequest, PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types.js";
+import { Comment } from "../comment.js";
+import { Plebbit } from "../plebbit.js";
 import EventEmitter from "events";
-import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types";
+import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 export default class PlebbitRpcClient {
     private _webSocketClient;
     private _plebbit;
@@ -22,7 +22,7 @@ export default class PlebbitRpcClient {
     getComment(commentCid: string): Promise<Comment>;
     getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs>;
     getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs>;
-    createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<Subplebbit>;
+    createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<RpcLocalSubplebbit>;
     private _initSubscriptionEvent;
     startSubplebbit(subplebbitAddress: string): Promise<number>;
     stopSubplebbit(subplebbitAddress: string): Promise<void>;

@@ -1,6 +1,6 @@
-import { CommentIpfsType, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, PostSortName, PostsPagesTypeJson, RepliesPagesTypeJson, ReplySortName } from "./types";
-import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager";
-import { Plebbit } from "./plebbit";
+import { CommentIpfsType, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, PostSortName, PostsPagesTypeJson, RepliesPagesTypeJson, ReplySortName } from "./types.js";
+import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager.js";
+import { Plebbit } from "./plebbit.js";
 type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];
@@ -19,7 +19,7 @@ export declare class BasePages implements PagesType {
     constructor(props: ConstructorProps);
     updateProps(props: ConstructorProps): void;
     protected _initClientsManager(): void;
-    _fetchAndVerifyPage(pageCid: string): Promise<import("./types").PageIpfs>;
+    _fetchAndVerifyPage(pageCid: string): Promise<import("./types.js").PageIpfs>;
     getPage(pageCid: string): Promise<PageType>;
     toJSON(): PagesTypeJson | undefined;
     toJSONIpfs(): PagesTypeIpfs | undefined;

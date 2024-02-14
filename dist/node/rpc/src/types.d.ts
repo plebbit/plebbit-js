@@ -1,5 +1,5 @@
-import { Plebbit } from "../../plebbit";
-import { PlebbitOptions } from "../../types";
+import { Plebbit } from "../../plebbit.js";
+import { PlebbitOptions } from "../../types.js";
 export type PlebbitWsServerClassOptions = {
     port: number;
     plebbit: Plebbit;

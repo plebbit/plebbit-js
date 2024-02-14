@@ -4,7 +4,7 @@ export declare const getPlebbitAddressFromPrivateKey: (privateKeyBase64: string)
 export declare const getPlebbitAddressFromPublicKey: (publicKeyBase64: string) => Promise<string>;
 export declare const getPlebbitAddressFromPublicKeyBuffer: (publicKeyBuffer: Uint8Array) => Promise<string>;
 export declare const getBufferedPlebbitAddressFromPublicKey: (publicKeyBase64: string) => Promise<Uint8Array>;
-export declare const getIpfsKeyFromPrivateKey: (privateKeyBase64: string) => Promise<any>;
+export declare const getIpfsKeyFromPrivateKey: (privateKeyBase64: string) => Promise<Uint8Array>;
 export declare const getPublicKeyFromPrivateKey: (privateKeyBase64: string) => Promise<string>;
 export declare const getPeerIdFromPrivateKey: (privateKeyBase64: string) => Promise<PeerId>;
 export declare const getPeerIdFromPublicKey: (publicKeyBase64: string) => Promise<PeerId>;

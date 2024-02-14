@@ -1,5 +1,5 @@
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, ProtocolVersion } from "./types";
-import { Encrypted, PubsubSignature } from "./signer/constants";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, ProtocolVersion } from "./types.js";
+import { Encrypted, PubsubSignature } from "./signer/constants.js";
 export declare class ChallengeRequestMessage implements ChallengeRequestMessageType {
     encrypted: Encrypted;
     type: "CHALLENGEREQUEST";

@@ -1,4 +1,4 @@
-import { LRUStorageConstructor, LRUStorageInterface } from "../../types";
+import { LRUStorageConstructor, LRUStorageInterface } from "../../types.js";
 export default class LRUStorage implements LRUStorageInterface {
     private _opts;
     private _cache;

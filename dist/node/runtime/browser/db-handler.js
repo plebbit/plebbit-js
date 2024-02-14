@@ -1,12 +1,8 @@
-"use strict";
 // empty for the browser
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DbHandler = void 0;
-var DbHandler = /** @class */ (function () {
-    function DbHandler() {
+export class DbHandler {
+    constructor() {
+        throw Error("Should not attempt to create a new instance of DbHandler on browser");
     }
-    return DbHandler;
-}());
-exports.DbHandler = DbHandler;
-exports.default = DbHandler;
+}
+export default DbHandler;
 //# sourceMappingURL=db-handler.js.map

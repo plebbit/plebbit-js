@@ -1,6 +1,6 @@
-import Publication from "./publication";
-import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types";
-import { Plebbit } from "./plebbit";
+import Publication from "./publication.js";
+import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types.js";
+import { Plebbit } from "./plebbit.js";
 declare class Vote extends Publication implements VoteType {
     commentCid: string;
     vote: 1 | 0 | -1;
@@ -14,12 +14,12 @@ declare class Vote extends Publication implements VoteType {
             previousCommentCid?: string;
             displayName?: string;
             wallets?: {
-                [chainTicker: string]: import("./types").Wallet;
+                [chainTicker: string]: import("./types.js").Wallet;
             };
-            avatar?: import("./types").Nft;
-            flair?: import("./subplebbit/types").Flair;
+            avatar?: import("./types.js").Nft;
+            flair?: import("./subplebbit/types.js").Flair;
         };
-        signature: import("./signer/constants").JsonSignature;
+        signature: import("./signer/constants.js").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;
         vote: 0 | 1 | -1;

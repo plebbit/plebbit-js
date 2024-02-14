@@ -1,7 +1,7 @@
-import { Plebbit } from "./plebbit";
-import Publication from "./publication";
-import { Flair } from "./subplebbit/types";
-import { CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, PublicationTypeName } from "./types";
+import { Plebbit } from "./plebbit.js";
+import Publication from "./publication.js";
+import { Flair } from "./subplebbit/types.js";
+import { CommentAuthorEditOptions, CommentEditPubsubMessage, CommentEditsTableRowInsert, CommentEditType, PublicationTypeName } from "./types.js";
 export declare class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;
     content?: string;
@@ -24,12 +24,12 @@ export declare class CommentEdit extends Publication implements CommentEditType 
             previousCommentCid?: string;
             displayName?: string;
             wallets?: {
-                [chainTicker: string]: import("./types").Wallet;
+                [chainTicker: string]: import("./types.js").Wallet;
             };
-            avatar?: import("./types").Nft;
+            avatar?: import("./types.js").Nft;
             flair?: Flair;
         };
-        signature: import("./signer/constants").JsonSignature;
+        signature: import("./signer/constants.js").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;
         reason?: string;

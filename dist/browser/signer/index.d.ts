@@ -1,6 +1,6 @@
-import { CreateSignerOptions, SignerType } from "./constants";
-export { verifyComment, verifySubplebbit, verifyVote } from "./signatures";
-export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption";
+import { CreateSignerOptions, SignerType } from "./constants.js";
+export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
+export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
 export declare class Signer implements SignerType {
     type: "ed25519";
     privateKey: string;

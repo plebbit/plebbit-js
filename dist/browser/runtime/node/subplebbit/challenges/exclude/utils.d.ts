@@ -1,0 +1,13 @@
+import { RemoteSubplebbit } from "../../../../../subplebbit/remote-subplebbit.js";
+import { SubplebbitRole } from "../../../../../subplebbit/types.js";
+import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
+declare const testScore: (excludeScore: number | undefined, authorScore: number) => boolean;
+declare const testFirstCommentTimestamp: (excludeTime: number | undefined, authorFirstCommentTimestamp: number | undefined) => boolean;
+declare const isVote: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const isReply: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const isPost: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testVote: (excludeVote: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testReply: (excludeReply: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testPost: (excludePost: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testRole: (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: RemoteSubplebbit["roles"]) => boolean;
+export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole };

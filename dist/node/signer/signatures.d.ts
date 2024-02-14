@@ -1,8 +1,8 @@
-import { Plebbit } from "../plebbit";
-import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, VotePubsubMessage } from "../types";
-import { JsonSignature, PubsubSignature, SignerType } from "./constants";
-import { BaseClientsManager } from "../clients/base-client-manager";
-import { SubplebbitIpfsType } from "../subplebbit/types";
+import { Plebbit } from "../plebbit.js";
+import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, VotePubsubMessage } from "../types.js";
+import { JsonSignature, PubsubSignature, SignerType } from "./constants.js";
+import { BaseClientsManager } from "../clients/base-client-manager.js";
+import { SubplebbitIpfsType } from "../subplebbit/types.js";
 export interface ValidationResult {
     valid: boolean;
     reason?: string;

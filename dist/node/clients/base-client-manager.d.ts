@@ -1,7 +1,6 @@
-import { Plebbit } from "../plebbit";
-import { MessageHandlerFn } from "ipfs-http-client/types/src/pubsub/subscription-tracker";
-import { PlebbitError } from "../plebbit-error";
-import { Chain, PubsubMessage } from "../types";
+import { Plebbit } from "../plebbit.js";
+import { PlebbitError } from "../plebbit-error.js";
+import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -10,12 +9,13 @@ export declare class BaseClientsManager {
     providerSubscriptions: Record<string, string[]>;
     constructor(plebbit: Plebbit);
     toJSON(): any;
-    getDefaultPubsub(): import("../types").PubsubClient;
-    getDefaultIpfs(): import("../types").IpfsClient;
-    pubsubSubscribeOnProvider(pubsubTopic: string, handler: MessageHandlerFn, pubsubProviderUrl: string): Promise<void>;
-    pubsubSubscribe(pubsubTopic: string, handler: MessageHandlerFn): Promise<void>;
-    pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: MessageHandlerFn): Promise<void>;
-    pubsubUnsubscribe(pubsubTopic: string, handler?: MessageHandlerFn): Promise<void>;
+    getDefaultPubsub(): import("../types.js").PubsubClient;
+    getDefaultIpfs(): import("../types.js").IpfsClient;
+    _initializeLibp2pClientIfNeeded(): Promise<void>;
+    pubsubSubscribeOnProvider(pubsubTopic: string, handler: PubsubSubscriptionHandler, pubsubProviderUrl: string): Promise<void>;
+    pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler): Promise<void>;
+    pubsubUnsubscribeOnProvider(pubsubTopic: string, pubsubProvider: string, handler?: PubsubSubscriptionHandler): Promise<void>;
+    pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler): Promise<void>;
     protected prePubsubPublishProvider(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderSuccess(pubsubTopic: string, pubsubProvider: string): void;
     protected postPubsubPublishProviderFailure(pubsubTopic: string, pubsubProvider: string, error: PlebbitError): void;

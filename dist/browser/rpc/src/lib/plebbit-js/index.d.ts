@@ -1,14 +1,14 @@
 declare const PlebbitJs: {
     Plebbit: {
-        (plebbitOptions?: import("../../../../types").PlebbitOptions): Promise<import("../../../../plebbit").Plebbit>;
-        setNativeFunctions: (newNativeFunctions: Partial<import("../../../../types").NativeFunctions>) => void;
+        (plebbitOptions?: import("../../../../types.js").PlebbitOptions): Promise<import("../../../../plebbit.js").Plebbit>;
+        setNativeFunctions: (newNativeFunctions: Partial<import("../../../../types.js").NativeFunctions>) => void;
         nativeFunctions: {
-            node: import("../../../../types").NativeFunctions;
-            browser: import("../../../../types").NativeFunctions;
+            node: import("../../../../types.js").NativeFunctions;
+            browser: import("../../../../types.js").NativeFunctions;
         };
-        getShortCid: typeof import("../../../../util").shortifyCid;
-        getShortAddress: typeof import("../../../../util").shortifyAddress;
-        challenges: Record<string, import("../../../../subplebbit/types").ChallengeFileFactory>;
+        getShortCid: typeof import("../../../../util.js").shortifyCid;
+        getShortAddress: typeof import("../../../../util.js").shortifyAddress;
+        challenges: Record<string, import("../../../../subplebbit/types.js").ChallengeFileFactory>;
     };
 };
 /**
