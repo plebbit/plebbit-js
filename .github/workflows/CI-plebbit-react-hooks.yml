@@ -34,7 +34,13 @@ jobs:
       - run: rm -rf plebbit-js/yarn.lock
       - run: yarn
       # build
-      - run: DEBUG="plebbit*" yarn test
+      - name: Run vitest and report issues
+        uses: roerohan/vitest-github-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config: ./config/vitest.config.ts
+          coverage: true
       - run: yarn build
       - run: yarn webpack
       # disable hosts we shouldn't use
