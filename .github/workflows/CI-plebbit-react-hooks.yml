@@ -6,6 +6,11 @@ on:
 
 jobs:
   test:
+    permissions:
+      # Required to checkout the code
+      contents: read
+      # Required to put a comment into the pull-request
+      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -34,13 +39,13 @@ jobs:
       - run: rm -rf plebbit-js/yarn.lock
       - run: yarn
       # build
-      - name: Run vitest and report issues
-        uses: roerohan/vitest-github-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 'Enable vitest coverage'
+        run: yarn vitest --coverage.enabled true
+      - name: 'Report Coverage'
+        if: always() 
+        uses:  "davelosert/vitest-coverage-report-action@v2"
         with:
-          config: ./config/vitest.config.ts
-          coverage: true
+          vite-config-path: config/vite.config.ts
       - run: yarn build
       - run: yarn webpack
       # disable hosts we shouldn't use
