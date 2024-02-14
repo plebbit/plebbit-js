@@ -4,6 +4,8 @@ import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
 import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
 import { signSubplebbit } from "../../dist/node/signer/signatures";
+
+import PlebbitWsServer from "../../rpc";
 import signers from "../fixtures/signers";
 import http from "http";
 import path from "path";
@@ -216,8 +218,7 @@ const setUpMockGateways = async () => {
     if (process.env["USE_RPC"] === "1") {
         // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
-        const PlebbitRpc = await import("../../rpc");
-        const plebbitWebSocketServer = await PlebbitRpc.default.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
+        const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
         // debug raw JSON RPC messages in console (optional)
