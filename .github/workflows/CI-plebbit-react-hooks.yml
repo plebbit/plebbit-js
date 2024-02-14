@@ -34,7 +34,7 @@ jobs:
       - run: rm -rf plebbit-js/yarn.lock
       - run: yarn
       # build
-      - run: yarn test
+      - run: DEBUG="plebbit*" yarn test
       - run: yarn build
       - run: yarn webpack
       # disable hosts we shouldn't use
