@@ -35,6 +35,11 @@ export const getBufferedPlebbitAddressFromPublicKey = async (publicKeyBase64: st
     return peerId.toBytes();
 };
 
+const _makeSureBytesAreUint8Array = (bytes: any): Uint8Array => {
+    if (!(bytes instanceof Uint8Array)) return new Uint8Array(bytes);
+    return bytes;
+}
+
 export const getIpfsKeyFromPrivateKey = async (privateKeyBase64: string) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string") throw Error(`getIpfsKeyFromPrivateKey privateKeyBase64 not a string`);
     let privateKeyBuffer;
@@ -55,7 +60,7 @@ export const getIpfsKeyFromPrivateKey = async (privateKeyBase64: string) => {
 
     const ed25519PrivateKeyInstance = new Ed25519PrivateKey(privateAndPublicKeyBuffer, publicKeyBuffer);
     // the "ipfs key" adds a suffix, then the private key, then the public key, it is not the raw private key
-    return ed25519PrivateKeyInstance.bytes;
+    return _makeSureBytesAreUint8Array(ed25519PrivateKeyInstance.bytes);
 };
 
 export const getPublicKeyFromPrivateKey = async (privateKeyBase64: string) => {
@@ -99,7 +104,7 @@ export const getPeerIdFromPublicKey = async (publicKeyBase64: string) => {
 
     // the PeerId public key is not a raw public key, it adds a suffix
     const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-    const peerId = await PeerId.createFromPubKey(ed25519PublicKeyInstance.bytes);
+    const peerId = await PeerId.createFromPubKey(_makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes));
     return peerId;
 };
 
@@ -111,6 +116,6 @@ export const getPeerIdFromPublicKeyBuffer = async (publicKeyBuffer: Uint8Array) 
 
     // the PeerId public key is not a raw public key, it adds a suffix
     const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
-    const peerId = await PeerId.createFromPubKey(ed25519PublicKeyInstance.bytes);
+    const peerId = await PeerId.createFromPubKey(_makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes));
     return peerId;
 };
