@@ -39,13 +39,7 @@ jobs:
       - run: rm -rf plebbit-js/yarn.lock
       - run: yarn
       # build
-      - name: 'Enable vitest coverage'
-        run: yarn vitest --coverage.enabled true
-      - name: 'Report Coverage'
-        if: always() 
-        uses:  "davelosert/vitest-coverage-report-action@v2"
-        with:
-          vite-config-path: config/vite.config.ts
+      - run: yarn test --pool=forks
       - run: yarn build
       - run: yarn webpack
       # disable hosts we shouldn't use
