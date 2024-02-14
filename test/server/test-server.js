@@ -17,6 +17,8 @@ const rpcPort = 39652;
 
 const startOnlineSub = false;
 
+const hostName = "localhost";
+
 // use the test server with the compiled version (dist/node)
 // in order to test the repo like a real user would
 
@@ -125,7 +127,7 @@ const setUpMockGateways = async () => {
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else res.end("Unknown CID");
-    }).listen(33415);
+    }).listen(33415, hostName);
 
     // Create an HTTP server that mocks an ipfs gateway, and returns 429 always to imitate cloudflare-ipfs
     http.createServer((req, res) => {
@@ -133,14 +135,14 @@ const setUpMockGateways = async () => {
         res.statusCode = 429;
         res.statusMessage = "Too Many Requests";
         res.end();
-    }).listen(33416);
+    }).listen(33416, hostName);
 
     // Create an HTTP server that takes 10s to respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 10000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end("Yes");
-    }).listen(33417);
+    }).listen(33417, hostName);
 
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
@@ -154,21 +156,21 @@ const setUpMockGateways = async () => {
         await new Promise((resolve) => setTimeout(resolve, 11000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
-    }).listen(44000);
+    }).listen(44000, hostName);
 
     // This gateway will fetch from normal gateway, await some time (3s) than respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
-    }).listen(44002);
+    }).listen(44002, hostName);
 
     // this gateway will respond with an error immedietly
     http.createServer((req, res) => {
         res.statusCode = 430;
         res.statusMessage = "Error";
         res.end();
-    }).listen(44003);
+    }).listen(44003, hostName);
 
     // This gateway will respond immedietly with subplebbit IPNS record that is 30 minutes old
     http.createServer(async (req, res) => {
@@ -179,7 +181,7 @@ const setUpMockGateways = async () => {
         subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
-    }).listen(44004);
+    }).listen(44004, hostName);
 
     // This gateway will respond immedietly with subplebbit IPNS record that is 60 minutes old
     http.createServer(async (req, res) => {
@@ -190,7 +192,7 @@ const setUpMockGateways = async () => {
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
-    }).listen(44005);
+    }).listen(44005, hostName);
 };
 
 (async () => {
@@ -243,11 +245,11 @@ const setUpMockGateways = async () => {
         http.createServer(async (req, res) => {
             res.setHeader("Access-Control-Allow-Origin", "*");
             res.end(JSON.stringify(subs));
-        }).listen(14953);
+        }).listen(14953, hostName);
     }
 
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready
     // and able to start the automated tests
-    http.createServer((req, res) => res.end("test server ready")).listen(14952);
+    http.createServer((req, res) => res.end("test server ready")).listen(14952, hostName);
 })();
