@@ -1,25 +1,26 @@
 {
-  "name": "@plebbit/plebbit-js-rpc",
-  "keywords": [
-    "plebbit",
-    "subplebbit"
-  ],
-  "repository": "github:plebbit/plebbit-js",
-  "license": "GPL-2.0",
-  "publishConfig": {
-    "access": "public"
-  },
-  "version": "0.0.1",
-  "files": [
-    "../dist/node/rpc/src"
-  ],
-  "main":  "../dist/node/rpc/src/index.js",
-  "typings": "../dist/node/rpc/src/index.d.ts",
-  "scripts": {
-    "test": "mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
-    "test:browser": "karma start config/karma.conf.js",
-    "test:server": "rm -rf .plebbit/ && DEBUG=plebbit-js-rpc:* nodemon --watch dist test/test-server",
-    "test:server:wait-on": "wait-on http://localhost:59281 --timeout 120000",
-    "prettier": "prettier {src,test,config}/**/*.{cjs,js,jsx,ts,tsx} --config config/prettier.config.js --write"
-  }
+    "name": "@plebbit/plebbit-js-rpc",
+    "type": "module",
+    "keywords": [
+        "plebbit",
+        "subplebbit"
+    ],
+    "repository": "github:plebbit/plebbit-js",
+    "license": "GPL-2.0",
+    "publishConfig": {
+        "access": "public"
+    },
+    "version": "0.0.1",
+    "files": [
+        "../dist/node/rpc/src"
+    ],
+    "main": "../dist/node/rpc/src/index.js",
+    "typings": "../dist/node/rpc/src/index.d.ts",
+    "scripts": {
+        "test": "mocha --config config/.mocharc.js test/{node,node-and-browser}/**/*.test.js",
+        "test:browser": "karma start config/karma.conf.js",
+        "test:server": "rm -rf .plebbit/ && DEBUG=plebbit-js-rpc:* nodemon --watch dist test/test-server",
+        "test:server:wait-on": "wait-on http://localhost:59281 --timeout 120000",
+        "prettier": "prettier {src,test,config}/**/*.{cjs,js,jsx,ts,tsx} --config config/prettier.config.js --write"
+    }
 }
