@@ -6,6 +6,7 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     settings?: SubplebbitSettings;
     toJSONInternalRpc(): InternalSubplebbitRpcType;
     initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>): Promise<void>;
+    protected _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType): Promise<void>;
     start(): Promise<void>;
     stop(): Promise<void>;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this>;

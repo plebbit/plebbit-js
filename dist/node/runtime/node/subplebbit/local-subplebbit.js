@@ -187,7 +187,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // If this._isSubRunningLocally = false, then this is the last publish before stopping
         // TODO double check these values
         const ttl = this._isSubRunningLocally ? `${this.plebbit.publishInterval * 3}ms` : undefined;
-        const lifetime = this._isSubRunningLocally ? `${this.plebbit.publishInterval * 1000}ms` : `24h`;
+        const lifetime = `24h`; // doesn't matter anyway, DHT drops all entries after 24h
         const publishRes = await this.clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
