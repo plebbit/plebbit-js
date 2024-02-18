@@ -131,6 +131,19 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await createdSubplebbit.delete();
     });
 
+    it(`Recreating a local running subplebbit should not stop it`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await new Promise((resolve) => sub.once("update", resolve));
+        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
+        expect(sub.startedState).to.not.equal("stopped");
+
+        const recreatedSub = await plebbit.createSubplebbit({address: sub.address});
+        expect(recreatedSub.startedState).to.not.equal("stopped");
+        expect(sub.startedState).to.not.equal("stopped");
+        await sub.stop();
+    });
+
     it(`Fail to create a sub with ENS address has a capital letter`, async () => {
         await assert.isRejected(plebbit.createSubplebbit({ address: "testEth.eth" }), messages.ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER);
     });
