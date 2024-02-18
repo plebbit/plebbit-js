@@ -972,7 +972,7 @@ describe(`comment.clients`, async () => {
 
         it(`correct order of chainProviders state when publishing a comment to a sub with a domain address`, async () => {
             const mockPost = await generateMockPost("plebbit.eth", plebbit);
-
+            mockPost._clientsManager._getCachedTextRecord = () => undefined;
             const expectedStates = ["resolving-subplebbit-address", "stopped"];
 
             const actualStates = [];
