@@ -34,6 +34,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
     }
 
+    protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType){
+        await this.initRpcInternalSubplebbit(rpcProps);
+    }
+
     async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
         try {

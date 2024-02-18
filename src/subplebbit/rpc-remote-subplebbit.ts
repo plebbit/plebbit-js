@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import { SubplebbitIpfsType } from "./types.js";
+import type { InternalSubplebbitRpcType, SubplebbitIpfsType } from "./types.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number;
@@ -39,6 +39,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         mapper[updatingState].forEach(this._setRpcClientState.bind(this));
     }
 
+    protected async _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType){
+        await this.initRemoteSubplebbitProps(rpcProps);
+    }
+
     async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
 
@@ -57,8 +61,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             .getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
                 log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
-                const rpcRemoteSub = <SubplebbitIpfsType>updateProps.params.result;
-                await this.initRemoteSubplebbitProps(rpcRemoteSub);
+                const rpcSubProps = <SubplebbitIpfsType | InternalSubplebbitRpcType>updateProps.params.result;
+                await this._handleRpcUpdateProps(rpcSubProps);
                 this.emit("update", this);
             })
             .on("updatingstatechange", (args) => {
