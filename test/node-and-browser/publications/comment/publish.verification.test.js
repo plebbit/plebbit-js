@@ -89,6 +89,11 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
 
         await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
     });
+
+    it(`Throws an error when a comment has no title, link or content`, async () => {
+        const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {link: undefined, content: undefined, title: undefined});
+        await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+    })
 });
 
 // TODO include tests for replies later. Not needed as of now

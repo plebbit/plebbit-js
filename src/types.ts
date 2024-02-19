@@ -225,12 +225,27 @@ export interface DecryptedChallengeRequest {
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
+export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
+    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+};
+export type ChallengeRequestCommentEditWithSubplebbitAuthor = CommentEditPubsubMessage & {
+    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+};
+export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
+    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+};
+export type ChallengeRequestPostWithSubplebbitAuthor = PostPubsubMessage & {
+    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+};
+
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
     // This interface will query author.subplebbit and embed it within publication.author
     // We may add author
-    publication: (VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage) & {
-        author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
-    };
+    publication:
+        | ChallengeRequestVoteWithSubplebbitAuthor
+        | ChallengeRequestCommentEditWithSubplebbitAuthor
+        | ChallengeRequestCommentWithSubplebbitAuthor
+        | ChallengeRequestPostWithSubplebbitAuthor;
 }
 
 export interface EncodedDecryptedChallengeRequestMessageType

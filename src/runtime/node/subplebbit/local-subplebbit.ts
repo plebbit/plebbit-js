@@ -27,11 +27,14 @@ import lodash from "lodash";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
-import {
+import type {
     AuthorCommentEditOptions,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
+    ChallengeRequestCommentEditWithSubplebbitAuthor,
+    ChallengeRequestCommentWithSubplebbitAuthor,
     ChallengeRequestMessageType,
+    ChallengeRequestVoteWithSubplebbitAuthor,
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
     CommentIpfsWithCid,
@@ -665,6 +668,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
+            const publicationComment = <ChallengeRequestCommentWithSubplebbitAuthor>publication;
             const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
                 "cid",
                 "signer",
@@ -685,12 +689,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 "shortCid"
             ];
 
-            if (Object.keys(publication).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
+            if (Object.keys(publicationComment).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
+            if (!publicationComment.content && !publicationComment.link && !publicationComment.title)
+            return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
+
+
             if (this.isPublicationPost(publication)) {
-                if (this.features?.requirePostLink && !isLinkValid(publication["link"])) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
-                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publication["link"]))
+                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link)) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
+                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
             }
 
@@ -698,37 +706,37 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const publicationInDb = await this.dbHandler.queryCommentByRequestPublicationHash(publicationHash);
             if (publicationInDb) return messages.ERR_DUPLICATE_COMMENT;
 
-            if (lodash.isString(publication["link"]) && publication["link"].length > 2000)
+            if (lodash.isString(publicationComment.link) && publicationComment.link.length > 2000)
                 return messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT;
         }
 
         if (this.isPublicationVote(request.publication)) {
-            if (![1, 0, -1].includes(request.publication["vote"])) return messages.INCORRECT_VOTE_VALUE;
+            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication
+            if (![1, 0, -1].includes(publicationVote.vote)) return messages.INCORRECT_VOTE_VALUE;
             const lastVote = await this.dbHandler.getStoredVoteOfAuthor(
-                request.publication["commentCid"],
-                request.publication.author.address
+                publicationVote.commentCid,
+                publicationVote.author.address
             );
-            if (lastVote && request.publication.signature.publicKey !== lastVote.signature.publicKey)
+            if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
 
         if (this.isPublicationCommentEdit(request.publication)) {
-            //@ts-expect-error
-            const commentEdit = await this.plebbit.createCommentEdit(request.publication);
+            const editPublication = <ChallengeRequestCommentEditWithSubplebbitAuthor>publication;
 
-            const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
-            const editSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const editorModRole = this.roles && this.roles[commentEdit.author.address];
+            const commentToBeEdited = await this.dbHandler.queryComment(editPublication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+            const editSignedByOriginalAuthor = editPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
+            const editorModRole = this.roles && this.roles[editPublication.author.address];
 
-            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(<CommentEditPubsubMessage>request.publication);
-            const isAuthorEdit = this._isAuthorEdit(<CommentEditPubsubMessage>request.publication, editSignedByOriginalAuthor);
+            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(editPublication);
+            const isAuthorEdit = this._isAuthorEdit(editPublication, editSignedByOriginalAuthor);
 
             if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            for (const editField of Object.keys(removeKeysWithUndefinedValues(request.publication)))
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(editPublication)))
                 if (!allowedEditFields.includes(<any>editField)) {
                     log(
                         `The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`,
@@ -740,7 +748,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
                 }
 
-            if (editorModRole && typeof commentEdit.locked === "boolean" && commentToBeEdited.depth !== 0)
+            if (editorModRole && typeof editPublication.locked === "boolean" && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
         }
 
