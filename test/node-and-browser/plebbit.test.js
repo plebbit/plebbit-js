@@ -3,7 +3,7 @@ import signers from "../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../dist/node/errors.js";
-import { mockRemotePlebbit, loadAllPages, isRpcFlagOn } from "../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, loadAllPages, isRpcFlagOn, mockPlebbit } from "../../dist/node/test/test-util.js";
 import { default as Author } from "../../dist/node/author.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
@@ -247,6 +247,17 @@ describe("plebbit.fetchCid", async () => {
         expect(timeItTookInMs).to.be.lessThan(9000);
     });
 });
+
+//prettier-ignore
+if(isRpcFlagOn())
+describe(`plebbit.rpcCall`, async () => {
+
+    it(`Can use plebbit.rpcCall to get settings`, async () => {
+        const plebbit = await mockPlebbit();
+        const plebbitRpcSettings = await plebbit.rpcCall('getSettings', []);
+        expect(plebbitRpcSettings.challenges).to.be.a("object")
+    });
+})
 
 // Skip for firefox since we can't disable CORS on Firefox
 if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
