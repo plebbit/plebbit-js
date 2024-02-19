@@ -85,6 +85,7 @@ export var messages;
     messages["INCORRECT_VOTE_VALUE"] = "The vote can only be 1 or 0 or -1";
     messages["ERR_POST_HAS_INVALID_LINK_FIELD"] = "Publishing to the subplebbit requires a post with a valid link field";
     messages["ERR_POST_LINK_IS_NOT_OF_MEDIA"] = "Publishing to the subplebbit requires a post with a link pointing to media (audio, video, image)";
+    messages["ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE"] = "Comment has no content, link or title";
     // Comment Edit errors
     messages["ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY"] = "Can't lock replies. Only posts";
     messages["ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD"] = "CommentEdit includes a field that cannot be used";

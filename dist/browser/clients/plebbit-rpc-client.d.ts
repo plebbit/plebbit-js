@@ -39,6 +39,7 @@ export default class PlebbitRpcClient {
     fetchCid(cid: string): Promise<string>;
     setSettings(settings: PlebbitWsServerSettings): Promise<boolean>;
     getSettings(): Promise<PlebbitWsServerSettingsSerialized>;
+    rpcCall(method: string, params: any[]): Promise<any>;
     getDefaults(): Promise<void>;
     getPeers(): Promise<void>;
     getStats(): Promise<void>;

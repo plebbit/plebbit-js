@@ -440,6 +440,11 @@ export class Plebbit extends TypedEmitter {
         }
         return this._storageLRUs[opts.cacheName];
     }
+    async rpcCall(method, params) {
+        if (!this.plebbitRpcClient)
+            throw Error("Can't call rpcCall without having a rpc connection");
+        return this.plebbitRpcClient.rpcCall(method, params);
+    }
     async destroy() {
         // Clean up connections
         if (this.plebbitRpcClient)
