@@ -14,7 +14,7 @@ import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
 
 import {
-    doesEnsAddressHaveCapitalLetter,
+    doesDomainAddressHaveCapitalLetter,
     genToArray,
     isLinkOfMedia,
     isLinkValid,
@@ -693,11 +693,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
             if (!publicationComment.content && !publicationComment.link && !publicationComment.title)
-            return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
-
+                return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
 
             if (this.isPublicationPost(publication)) {
-                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link)) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
+                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link))
+                    return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
                 if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
             }
@@ -711,12 +711,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (this.isPublicationVote(request.publication)) {
-            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication
+            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication;
             if (![1, 0, -1].includes(publicationVote.vote)) return messages.INCORRECT_VOTE_VALUE;
-            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(
-                publicationVote.commentCid,
-                publicationVote.author.address
-            );
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, publicationVote.author.address);
             if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
@@ -1265,7 +1262,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
-            if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
+            if (doesDomainAddressHaveCapitalLetter(newSubplebbitOptions.address))
                 throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this._assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());

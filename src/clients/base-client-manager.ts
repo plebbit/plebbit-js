@@ -444,7 +444,7 @@ export class BaseClientsManager {
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain = address.endsWith(".eth") ? "eth" : undefined;
+        const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address`);
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {

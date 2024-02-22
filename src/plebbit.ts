@@ -24,7 +24,7 @@ import {
     PubsubSubscriptionHandler
 } from "./types.js";
 import { Comment } from "./comment.js";
-import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+ import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
 import Vote from "./vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
@@ -196,6 +196,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   matic: {
                       urls: ["https://polygon-rpc.com"],
                       chainId: 137
+                  },
+                  sol: {
+                      urls: ["bonfida"],
+                      chainId: null // no chain ID for solana
                   }
               };
         if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
@@ -445,7 +449,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
 
-        if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
+        if (options?.address && doesDomainAddressHaveCapitalLetter(options?.address))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
         if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
@@ -544,7 +548,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return this._storageLRUs[opts.cacheName];
     }
 
-    async rpcCall(method: string, params: any[]): Promise<any>{
+    async rpcCall(method: string, params: any[]): Promise<any> {
         if (!this.plebbitRpcClient) throw Error("Can't call rpcCall without having a rpc connection");
         return this.plebbitRpcClient.rpcCall(method, params);
     }

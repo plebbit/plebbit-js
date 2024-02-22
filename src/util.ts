@@ -268,9 +268,9 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
     throw Error(`No error code was found for message (${message})`);
 }
 
-export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
-    if (!ensAddress.endsWith(".eth")) return false;
-    return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+export function doesDomainAddressHaveCapitalLetter(domainAddress: string) {
+    if (!domainAddress.includes(".")) return false;
+    return /[A-Z]/.test(domainAddress); // Regex test for capital letters in English only
 }
 
 export function decodePubsubMsgFromRpc(
