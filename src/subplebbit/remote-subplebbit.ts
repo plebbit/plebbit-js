@@ -1,10 +1,9 @@
-import { doesDomainAddressHaveCapitalLetter, parseRawPages, shortifyAddress } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, isIpns, parseRawPages, shortifyAddress } from "../util.js";
 import { PostsPages } from "../pages.js";
 import { Plebbit } from "../plebbit.js";
 
 import { ProtocolVersion, SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import { multihash as isIpfsMultihash } from "is-ipfs";
 
 import { JsonSignature } from "../signer/constants.js";
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -135,9 +134,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (doesDomainAddressHaveCapitalLetter(newAddress))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
         const isDomain = newAddress.includes(".");
-        const isIpns = isIpfsMultihash(newAddress);
-        if (!isDomain && !isIpns)
-            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns });
+        if (!isDomain && !isIpns(newAddress))
+            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns: false });
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
