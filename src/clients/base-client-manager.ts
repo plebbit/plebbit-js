@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { delay, firstResolve, throwWithErrorCode, timestamp } from "../util.js";
+import { delay, isIpns, throwWithErrorCode, timestamp } from "../util.js";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
@@ -61,7 +61,6 @@ export class BaseClientsManager {
     getDefaultIpfs() {
         assert(this._defaultIpfsProviderUrl);
         assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
-        
         return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     }
 
@@ -495,6 +494,8 @@ export class BaseClientsManager {
                 ensResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }
+            if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
+                throw Error("Resolved text record to a non IPNS string");
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
             if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;

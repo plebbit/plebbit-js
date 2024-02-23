@@ -32,6 +32,7 @@ import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
+import { multihash as isIpfsMultihash } from "is-ipfs";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -65,7 +66,6 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
     old: { score: (...args) => oldScore(...args) }
 };
-
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -342,4 +342,7 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     return out;
 }
 
-
+export function isIpns(x: string | Uint8Array) {
+    // This function will test if a string is of IPNS address (12D)
+    return isIpfsMultihash(x);
+}

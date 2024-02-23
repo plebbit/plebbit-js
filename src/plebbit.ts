@@ -198,7 +198,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                       chainId: 137
                   },
                   sol: {
-                      urls: ["bonfida"],
+                      urls: ["@solana/web3.js"],
                       chainId: null // no chain ID for solana
                   }
               };
