@@ -963,7 +963,7 @@ describe(`comment.clients`, async () => {
     describe(`comment.clients.chainProviders`, async () => {
         it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
-            expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(3);
+            expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(4);
             for (const chain of Object.keys(mockPost.clients.chainProviders)) {
                 expect(Object.keys(mockPost.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockPost.clients.chainProviders[chain]))

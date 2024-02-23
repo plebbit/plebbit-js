@@ -635,7 +635,7 @@ describe(`subplebbit.clients (Local)`, async () => {
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await createSubWithNoChallenge({}, plebbit);
-            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(3);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(4);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
