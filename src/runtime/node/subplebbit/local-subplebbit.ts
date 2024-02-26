@@ -67,7 +67,7 @@ import {
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
-import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifyVote } from "../../../signer/index.js";
+import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifySubplebbit, verifyVote } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
 import Author from "../../../author.js";
@@ -277,7 +277,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             postUpdates: newPostUpdates
         };
         const signature = await signSubplebbit(newIpns, this.signer);
-        // this._validateLocalSignature(signature, newIpns); // this commented line should be taken out later
+        await this._validateSubSignatureBeforePublishing({ ...newIpns, signature }); // this commented line should be taken out later
         await this.initRemoteSubplebbitProps({ ...newIpns, signature });
         this._subplebbitUpdateTrigger = false;
 
@@ -300,6 +300,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
         );
+    }
+
+    private async _validateSubSignatureBeforePublishing(recordTobePublished: SubplebbitIpfsType) {
+        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false);
+        if (!validation.valid) {
+            this._cidsToUnPin = [];
+            throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD", {
+                validation,
+                subplebbitAddress: recordTobePublished.address
+            });
+        }
     }
 
     private async storeCommentEdit(
@@ -693,11 +704,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
             if (!publicationComment.content && !publicationComment.link && !publicationComment.title)
-            return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
-
+                return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
 
             if (this.isPublicationPost(publication)) {
-                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link)) return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
+                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link))
+                    return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
                 if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
             }
@@ -711,12 +722,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (this.isPublicationVote(request.publication)) {
-            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication
+            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication;
             if (![1, 0, -1].includes(publicationVote.vote)) return messages.INCORRECT_VOTE_VALUE;
-            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(
-                publicationVote.commentCid,
-                publicationVote.author.address
-            );
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, publicationVote.author.address);
             if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
