@@ -5,7 +5,8 @@ import {
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
     isRpcFlagOn,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
 import lodash from "lodash";
@@ -274,6 +275,29 @@ describe(`Edit misc`, async () => {
         // Should not match signer.address
         await newSub.edit({ address: "different-signer.eth" });
         expect(newSub.address).to.equal("different-signer.eth");
+        await newSub.delete();
+    });
+
+    it(`Setting sub.settings.challenges[0].exclude.rateLimit to a string doesn't corrupt the signature`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const remotePlebbit = await mockRemotePlebbit();
+        const newSub = await customPlebbit.createSubplebbit();
+        await newSub.start();
+        await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
+        await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
+
+        const newSettings = lodash.cloneDeep(newSub.settings);
+        newSettings.challenges[0].exclude[0].rateLimit = "123";
+        newSettings.challenges[0].exclude[0].firstCommentTimestamp = "123";
+
+        await newSub.edit({ settings: newSettings });
+        expect(newSub.challenges[0].exclude[0].rateLimit).to.equal("123");
+        expect(newSub.settings.challenges[0].exclude[0].rateLimit).to.equal("123");
+        expect(newSub.settings.challenges[0].exclude[0].firstCommentTimestamp).to.equal("123");
+
+        await new Promise((resolve) => newSub.once("update", resolve));
+        await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
+
         await newSub.delete();
     });
 });
