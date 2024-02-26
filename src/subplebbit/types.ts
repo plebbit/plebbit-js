@@ -1,3 +1,4 @@
+import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { JsonSignature, SignerType } from "../signer/constants.js";
 import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
@@ -208,7 +209,8 @@ export interface ChallengeFile {
     getChallenge: (
         challenge: SubplebbitChallengeSettings,
         challengeRequest: DecryptedChallengeRequestMessageType,
-        challengeIndex: number
+        challengeIndex: number,
+        subplebbit: LocalSubplebbit
     ) => Promise<Challenge | ChallengeResult>;
 }
 
