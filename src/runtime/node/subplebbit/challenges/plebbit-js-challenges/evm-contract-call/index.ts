@@ -48,10 +48,10 @@ const optionInputs = [
 const description = 'The response from an EVM contract call passes a condition, e.g. a token balance challenge.'
 
 const verifyAuthorAddress = async (publication: DecryptedChallengeRequestMessageType["publication"], chainTicker: string, subplebbit: LocalSubplebbit) => {
-  const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address // could be EVM address or .eth
+  const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address // could be EVM address or .eth or .sol
   const wallet = publication.author.wallets?.[chainTicker]
   const nftAvatar = publication.author?.avatar
-  if (authorWalletAddress?.endsWith('.eth')) {
+  if (subplebbit.plebbit.resolver.isDomain(authorWalletAddress)) {
     // resolve plebbit-author-address and check if it matches publication.signature.publicKey
     const resolvedWalletAddress = await subplebbit.plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
     const walletSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
