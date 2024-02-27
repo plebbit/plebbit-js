@@ -3,14 +3,9 @@ import { LocalSubplebbit } from "../../../local-subplebbit";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util";
 import { DecryptedChallengeRequestMessageType } from "../../../../../../types";
 import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types";
-import {
-    createPublicClient,
-    decodeFunctionResult,
-    encodeFunctionData,
-    http,
-} from "viem";
+import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
-import * as chains from "viem/chains";
+import { getViemClient } from "../../../../../../constants";
 
 const optionInputs = [
     {
@@ -94,15 +89,23 @@ const verifyAuthorAddress = async (
     return false;
 };
 
-const getContractCallResponse = async (props: { chainTicker: string; contractAddress: string; abi: any; authorWalletAddress: string }) => {
+const getContractCallResponse = async (props: {
+    chainTicker: string;
+    contractAddress: string;
+    abi: any;
+    authorWalletAddress: string;
+    subplebbit: LocalSubplebbit;
+}) => {
     // mock getting the response from the contract call using the contract address and contract method abi, and the author address as argument
 
     const log = Logger("plebbit-js:local-subplebbit:challenges:evm-contract-call");
 
     try {
-        // TODO we should find a chain
-        // TODO should use cached viem
-        const viemClient = createPublicClient({ transport: http(), chain: chains.mainnet });
+        const viemClient = await getViemClient(
+            props.subplebbit.plebbit,
+            props.chainTicker,
+            props.subplebbit.plebbit.chainProviders[props.chainTicker].urls[0]
+        );
 
         // need to create data first
         const encodedParameters = encodeFunctionData({
@@ -123,7 +126,6 @@ const getContractCallResponse = async (props: { chainTicker: string; contractAdd
         log.error("Failed to get contract call response", e);
         throw e;
     }
-
 };
 
 const conditionHasUnsafeCharacters = (condition: string) => {
@@ -182,7 +184,8 @@ const getChallenge = async (
             chainTicker,
             contractAddress: address,
             abi,
-            authorWalletAddress
+            authorWalletAddress,
+            subplebbit
         });
     } catch (e) {
         return {

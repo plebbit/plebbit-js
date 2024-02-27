@@ -1,6 +1,11 @@
 import {LRUCache} from "lru-cache";
 import { LRUStorageConstructor } from "./types.js";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
+import { PublicClient as ViemClient, createPublicClient, http } from "viem";
+import * as chains from "viem/chains";
+import { Plebbit } from "./plebbit.js";
+import Logger from "@plebbit/plebbit-logger";
+
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
     PERSISTENT_DELETED_SUBPLEBBITS // These are basically sub db files that we're unable to remove for some reason on windows
@@ -37,3 +42,32 @@ export const p2pCidPromiseCache = new LRUCache<string, Promise<string | undefine
 export const subplebbitVerificationCache = new LRUCache<string, boolean>({ max: 100, ttl: 5 * 60 * 100 });
 export const pageVerificationCache = new LRUCache<string, boolean>({ max: 300 });
 export const commentUpdateVerificationCache = new LRUCache<string, boolean>({ max: 300 });
+
+// Storing clients of viem here, and re-using them as needed
+const viemClients: Record<string, ViemClient> = {};
+
+export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chainProviderUrl: string): Promise<ViemClient> => {
+    const cacheKey = chainTicker + chainProviderUrl;
+    if (viemClients[cacheKey]) return viemClients[cacheKey];
+    const log = Logger("plebbit-js:getViemClient");
+
+    log("Creating a new viem instance for chain ticker", chainTicker, "And chain provider url", chainProviderUrl);
+    if (chainTicker === "eth" && chainProviderUrl === "viem"){
+        viemClients[cacheKey] = createPublicClient({
+            chain: chains.mainnet,
+            transport: http()
+        });
+    }
+    else {
+        const chainId = plebbit.chainProviders[chainTicker].chainId;
+        const chain = Object.values(chains).find((chain) => chain.id === chainId);
+        if (!chain) throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
+        viemClients[cacheKey] = createPublicClient({
+            chain,
+            transport: http(chainProviderUrl)
+        });
+    
+    }
+    return viemClients[cacheKey];
+
+}
