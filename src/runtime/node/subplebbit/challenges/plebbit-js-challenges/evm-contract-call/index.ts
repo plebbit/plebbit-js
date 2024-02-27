@@ -116,7 +116,7 @@ const getChallenge = async (
     }
     abi = JSON.parse(abi);
     if (!condition) {
-        throw Error("missing option abi");
+        throw Error("missing option condition");
     }
 
     if (conditionHasUnsafeCharacters(condition)) {
