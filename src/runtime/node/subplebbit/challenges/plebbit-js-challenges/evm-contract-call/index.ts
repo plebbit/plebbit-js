@@ -3,6 +3,14 @@ import { LocalSubplebbit } from "../../../local-subplebbit";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util";
 import { DecryptedChallengeRequestMessageType } from "../../../../../../types";
 import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types";
+import {
+    createPublicClient,
+    decodeFunctionResult,
+    encodeFunctionData,
+    http,
+} from "viem";
+import Logger from "@plebbit/plebbit-logger";
+import * as chains from "viem/chains";
 
 const optionInputs = [
     {
@@ -86,9 +94,36 @@ const verifyAuthorAddress = async (
     return false;
 };
 
-const getContractCallResponse = ({ chainTicker, address, abi }, authorAddress) => {
+const getContractCallResponse = async (props: { chainTicker: string; contractAddress: string; abi: any; authorWalletAddress: string }) => {
     // mock getting the response from the contract call using the contract address and contract method abi, and the author address as argument
-    return 10000;
+
+    const log = Logger("plebbit-js:local-subplebbit:challenges:evm-contract-call");
+
+    try {
+        // TODO we should find a chain
+        // TODO should use cached viem
+        const viemClient = createPublicClient({ transport: http(), chain: chains.mainnet });
+
+        // need to create data first
+        const encodedParameters = encodeFunctionData({
+            abi: [props.abi], // Not sure if should be array
+            args: [props.authorWalletAddress]
+        });
+
+        const encodedData = await viemClient.call({
+            data: encodedParameters,
+            to: props.contractAddress
+        });
+        const decodedData = decodeFunctionResult({
+            abi: [props.abi],
+            data: encodedData.data
+        });
+        return decodedData;
+    } catch (e) {
+        log.error("Failed to get contract call response", e);
+        throw e;
+    }
+
 };
 
 const conditionHasUnsafeCharacters = (condition: string) => {
@@ -125,8 +160,8 @@ const getChallenge = async (
 
     const publication = challengeRequestMessage.publication;
 
-    const authorAddress = publication.author.wallets?.[chainTicker]?.address;
-    if (!authorAddress) {
+    const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address;
+    if (!authorWalletAddress) {
         return {
             success: false,
             error: `Author doesn't have a wallet set.`
@@ -143,7 +178,12 @@ const getChallenge = async (
 
     let contractCallResponse;
     try {
-        contractCallResponse = await getContractCallResponse({ chainTicker, address, abi }, authorAddress);
+        contractCallResponse = await getContractCallResponse({
+            chainTicker,
+            contractAddress: address,
+            abi,
+            authorWalletAddress
+        });
     } catch (e) {
         return {
             success: false,
