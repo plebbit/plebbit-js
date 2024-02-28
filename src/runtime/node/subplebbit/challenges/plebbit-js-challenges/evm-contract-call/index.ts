@@ -128,10 +128,29 @@ const getContractCallResponse = async (props: {
     }
 };
 
-const conditionHasUnsafeCharacters = (condition: string) => {
-    // condition should only allow true, false, and characters 0-9, <, >, =
-    const unsafeCharacters = condition.replace(/true|false|[0-9<>=]/g, "");
-    return unsafeCharacters !== "";
+const evaluateConditionString = (condition: string, responseValue: any) => {
+    let result: boolean;
+    const comparisonOperators = [">=", "<=", "==", "=", ">", "<"];
+    const operatorInCondition = comparisonOperators.find((op) => condition.startsWith(op));
+    const valueInCondition = condition.split(operatorInCondition)[1];
+    const isAllValueNumber = /^\d+$/.test(valueInCondition);
+    const conditionValueParsed = isAllValueNumber ? BigInt(valueInCondition) : valueInCondition;
+    const repsonseValueParsed = isAllValueNumber ? BigInt(responseValue) : responseValue;
+
+    result =
+        operatorInCondition === ">="
+            ? repsonseValueParsed >= conditionValueParsed
+            : operatorInCondition === "<="
+              ? repsonseValueParsed <= conditionValueParsed
+              : operatorInCondition === "==" || operatorInCondition === "="
+                ? repsonseValueParsed === conditionValueParsed
+                : operatorInCondition === ">"
+                  ? responseValue > conditionValueParsed
+                  : operatorInCondition === "<"
+                    ? responseValue < conditionValueParsed
+                    : undefined;
+    if (result === undefined) throw Error("Failed to parse condition. Please double check code and set condition")
+    return result;
 };
 
 const getChallenge = async (
@@ -156,10 +175,7 @@ const getChallenge = async (
         throw Error("missing option condition");
     }
 
-    if (conditionHasUnsafeCharacters(condition)) {
-        throw Error("condition has unsafe characters");
-    }
-
+    
     const publication = challengeRequestMessage.publication;
 
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address;
@@ -194,11 +210,7 @@ const getChallenge = async (
         };
     }
 
-    contractCallResponse = String(contractCallResponse);
-    if (conditionHasUnsafeCharacters(contractCallResponse)) {
-        throw Error("contractCallResponse has unsafe characters");
-    }
-    if (!eval(`${contractCallResponse} ${condition}`)) {
+    if (!evaluateConditionString(condition, contractCallResponse)) {
         return {
             success: false,
             error: error || `Contract call response doesn't pass condition.`
