@@ -1,8 +1,8 @@
-import {LRUCache} from "lru-cache";
+import { LRUCache } from "lru-cache";
 import { LRUStorageConstructor } from "./types.js";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { PublicClient as ViemClient, createPublicClient, http } from "viem";
-import * as chains from "viem/chains";
+import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { Plebbit } from "./plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 
@@ -13,7 +13,10 @@ export enum STORAGE_KEYS {
 
 // Configs for LRU storage
 
-export const postTimestampConfig: Omit<LRUStorageConstructor, "plebbit"> = { cacheName: "plebbitjs_lrustorage_postTimestamp", maxItems: 500 };
+export const postTimestampConfig: Omit<LRUStorageConstructor, "plebbit"> = {
+    cacheName: "plebbitjs_lrustorage_postTimestamp",
+    maxItems: 500
+};
 
 export const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "plebbit"> = {
     cacheName: "plebbitjs_lrustorage_commentPostUpdatesParentsPath",
@@ -52,13 +55,13 @@ export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chain
     const log = Logger("plebbit-js:getViemClient");
 
     log("Creating a new viem instance for chain ticker", chainTicker, "And chain provider url", chainProviderUrl);
-    if (chainTicker === "eth" && chainProviderUrl === "viem"){
+    if (chainTicker === "eth" && chainProviderUrl === "viem") {
         viemClients[cacheKey] = createPublicClient({
             chain: chains.mainnet,
             transport: http()
         });
-    }
-    else {
+    } else {
+        // TODO should use viem's extractChain here
         const chainId = plebbit.chainProviders[chainTicker].chainId;
         const chain = Object.values(chains).find((chain) => chain.id === chainId);
         if (!chain) throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
@@ -66,8 +69,6 @@ export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chain
             chain,
             transport: http(chainProviderUrl)
         });
-    
     }
     return viemClients[cacheKey];
-
-}
+};
