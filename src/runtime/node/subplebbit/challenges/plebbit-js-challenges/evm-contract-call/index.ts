@@ -6,6 +6,8 @@ import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants";
+import { Plebbit } from "../../../../../../plebbit";
+import { isStringDomain } from "../../../../../../util";
 
 const optionInputs = [
     {
@@ -50,10 +52,16 @@ const optionInputs = [
 
 const description = "The response from an EVM contract call passes a condition, e.g. a token balance challenge.";
 
+// Unrelated to challenges API
+//prettier-ignore
+const nftAbi = [
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
+    {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}  
+  ];
 const verifyAuthorAddress = async (
     publication: DecryptedChallengeRequestMessageType["publication"],
     chainTicker: string,
-    subplebbit: LocalSubplebbit
+    plebbit: Plebbit
 ) => {
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address; // could be EVM address or .eth or .sol
     const wallet = publication.author.wallets?.[chainTicker];
@@ -94,18 +102,14 @@ const getContractCallResponse = async (props: {
     contractAddress: string;
     abi: any;
     authorWalletAddress: string;
-    subplebbit: LocalSubplebbit;
+    plebbit: Plebbit;
 }) => {
     // mock getting the response from the contract call using the contract address and contract method abi, and the author address as argument
 
     const log = Logger("plebbit-js:local-subplebbit:challenges:evm-contract-call");
 
     try {
-        const viemClient = await getViemClient(
-            props.subplebbit.plebbit,
-            props.chainTicker,
-            props.subplebbit.plebbit.chainProviders[props.chainTicker].urls[0]
-        );
+        const viemClient = await getViemClient(props.plebbit, props.chainTicker, props.plebbit.chainProviders[props.chainTicker].urls[0]);
 
         // need to create data first
         const encodedParameters = encodeFunctionData({
@@ -154,6 +158,40 @@ const evaluateConditionString = (condition: string, responseValue: any) => {
     return result;
 };
 
+const validateWalletAddressWithCondition = async (props: {
+    authorWalletAddress: string;
+    condition: string;
+    chainTicker: string;
+    contractAddress: string;
+    abi: any;
+    error: string;
+    plebbit: Plebbit;
+}) => {
+    let contractCallResponse;
+    try {
+        contractCallResponse = await getContractCallResponse({
+            chainTicker: props.chainTicker,
+            contractAddress: props.contractAddress,
+            abi: props.abi,
+            authorWalletAddress: props.authorWalletAddress,
+            plebbit: props.plebbit
+        });
+    } catch (e) {
+        return {
+            success: false,
+            error: `Failed getting contract call response from blockchain.`
+        };
+    }
+
+    if (!evaluateConditionString(props.condition, contractCallResponse)) {
+        return {
+            success: false,
+            error: props.error || `Contract call response doesn't pass condition.`
+        };
+    }
+    return undefined;
+};
+
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
@@ -175,15 +213,14 @@ const getChallenge = async (
     if (!condition) {
         throw Error("missing option condition");
     }
-
-    
     const publication = challengeRequestMessage.publication;
 
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address;
-    if (!authorWalletAddress) {
+    const nftAvatar = publication.author.avatar;
+    if (!authorWalletAddress && !nftAvatar) {
         return {
             success: false,
-            error: `Author doesn't have a wallet set.`
+            error: `Author doesn't have a wallet or avatar set.`
         };
     }
 
@@ -195,28 +232,47 @@ const getChallenge = async (
         };
     }
 
-    let contractCallResponse;
-    try {
-        contractCallResponse = await getContractCallResponse({
-            chainTicker,
-            contractAddress: address,
-            abi,
+    // Validate for author wallet address
+    if (authorWalletAddress) {
+        const walletValidationFailure = await validateWalletAddressWithCondition({
             authorWalletAddress,
-            subplebbit
+            condition,
+            plebbit: subplebbit.plebbit,
+            contractAddress: address,
+            chainTicker,
+            abi,
+            error
         });
-    } catch (e) {
-        return {
-            success: false,
-            error: `Failed getting contract call response from blockchain.`
-        };
+        if (!walletValidationFailure) return { success: true };
+        if (walletValidationFailure && !nftAvatar) return walletValidationFailure;
     }
 
-    if (!evaluateConditionString(condition, contractCallResponse)) {
-        return {
-            success: false,
-            error: error || `Contract call response doesn't pass condition.`
-        };
-    }
+    // Validate for NFT wallet address
+
+    const viemClient = await getViemClient(
+        subplebbit.plebbit,
+        nftAvatar.chainTicker,
+        subplebbit.plebbit.chainProviders[nftAvatar.chainTicker].urls[0]
+    );
+
+    const nftWalletAddress = <"0x${string}">await viemClient.readContract({
+        abi: nftAbi,
+        address: <"0x${string}">nftAvatar.address,
+        functionName: "ownerOf",
+        args: [nftAvatar.id]
+    }); // we're already calling the same method in verifyAuthorAddress, should be cached
+
+    const nftWalletValidationFailure = await validateWalletAddressWithCondition({
+        authorWalletAddress: nftWalletAddress,
+        condition,
+        plebbit: subplebbit.plebbit,
+        contractAddress: address,
+        chainTicker,
+        abi,
+        error
+    });
+
+    if (nftWalletValidationFailure) return nftWalletValidationFailure;
 
     return {
         success: true

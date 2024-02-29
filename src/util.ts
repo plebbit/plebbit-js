@@ -342,4 +342,6 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     return out;
 }
 
-
+export function isStringDomain(x: string){
+    return x.includes(".");
+}
