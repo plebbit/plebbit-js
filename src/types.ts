@@ -192,7 +192,7 @@ export type Nft = {
     address: string; // address of the NFT contract
     id: string; // tokenId or index of the specific NFT used, must be string type, not number
     timestamp: number; // in seconds, needed to mitigate multiple users using the same signature
-    signature: JsonSignature; // proof that author.address owns the nft
+    signature: { signature: "0x${string}"; type: "eip191"; timestamp: number }; // proof that author.address owns the nft
     // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
 };
 
