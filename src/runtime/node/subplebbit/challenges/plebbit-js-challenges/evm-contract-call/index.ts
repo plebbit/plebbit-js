@@ -135,21 +135,22 @@ const evaluateConditionString = (condition: string, responseValue: any) => {
     const valueInCondition = condition.split(operatorInCondition)[1];
     const isAllValueNumber = /^\d+$/.test(valueInCondition);
     const conditionValueParsed = isAllValueNumber ? BigInt(valueInCondition) : valueInCondition;
-    const repsonseValueParsed = isAllValueNumber ? BigInt(responseValue) : responseValue;
+    const responseValueParsed = isAllValueNumber ? BigInt(responseValue) : responseValue;
 
+    if (typeof conditionValueParsed !== typeof responseValueParsed) throw Error("value of condition and response should be the same");
     result =
         operatorInCondition === ">="
-            ? repsonseValueParsed >= conditionValueParsed
+            ? responseValueParsed >= conditionValueParsed
             : operatorInCondition === "<="
-              ? repsonseValueParsed <= conditionValueParsed
+              ? responseValueParsed <= conditionValueParsed
               : operatorInCondition === "==" || operatorInCondition === "="
-                ? repsonseValueParsed === conditionValueParsed
+                ? responseValueParsed === conditionValueParsed
                 : operatorInCondition === ">"
-                  ? responseValue > conditionValueParsed
+                  ? responseValueParsed > conditionValueParsed
                   : operatorInCondition === "<"
-                    ? responseValue < conditionValueParsed
+                    ? responseValueParsed < conditionValueParsed
                     : undefined;
-    if (result === undefined) throw Error("Failed to parse condition. Please double check code and set condition")
+    if (result === undefined) throw Error("Failed to parse condition. Please double check code and set condition");
     return result;
 };
 
