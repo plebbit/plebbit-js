@@ -66,18 +66,38 @@ const verifyAuthorAddress = async (
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address; // could be EVM address or .eth or .sol
     const wallet = publication.author.wallets?.[chainTicker];
     const nftAvatar = publication.author?.avatar;
-    if (subplebbit.plebbit.resolver.isDomain(authorWalletAddress)) {
+    // TOOD should add a test in case a solana user posted
+    if (isStringDomain(authorWalletAddress)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
-        const resolvedWalletAddress = await subplebbit.plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
-        const walletSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
-        if (resolvedWalletAddress !== walletSignatureAddress) return false;
+        const resolvedWalletAddress = await plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
+        const publicationSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        if (resolvedWalletAddress !== publicationSignatureAddress) return false;
     }
     if (nftAvatar?.signature) {
         // Do we need to validate the signature of NFT here? we're not validating it anywhere else
-        // TODO implement this
-        // validate if nftAvatar.signature matches authorWalletAddress (how to do that? we need to convert EVM address to public key right?)
-        // validate if nftAvatar.signature matches author.wallets[chainTicker].address
-        // return true
+        const viemClient = await getViemClient(plebbit, nftAvatar.chainTicker, plebbit.chainProviders[nftAvatar.chainTicker].urls[0]);
+
+        const currentOwner = <"0x${string}">await viemClient.readContract({
+            abi: nftAbi,
+            address: <"0x${string}">nftAvatar.address,
+            functionName: "ownerOf",
+            args: [nftAvatar.id]
+        });
+
+        const messageToBeSigned = {};
+        // the property names must be in this order for the signature to match
+        // insert props one at a time otherwise babel/webpack will reorder
+        messageToBeSigned["domainSeparator"] = "plebbit-author-avatar";
+        messageToBeSigned["authorAddress"] = authorWalletAddress;
+        messageToBeSigned["timestamp"] = nftAvatar.timestamp;
+        messageToBeSigned["tokenAddress"] = nftAvatar.address;
+        messageToBeSigned["tokenId"] = String(nftAvatar.id); // must be a type string, not number
+        const valid = await viemClient.verifyMessage({
+            address: currentOwner,
+            message: JSON.stringify(messageToBeSigned),
+            signature: nftAvatar.signature.signature
+        });
+        if (!valid) return false;
     }
     if (wallet?.signature) {
         // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
@@ -89,12 +109,13 @@ const verifyAuthorAddress = async (
         };
         if (!lodash.isEqual(wallet.signature, expectedSignature)) return false;
         // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
-        const mostRecentTimestamp = await subplebbit.dbHandler.queryMostRecentTimestampOfAuthorWallet(authorWalletAddress, chainTicker);
-        if ((mostRecentTimestamp || 0) > wallet.timestamp) return false;
-
-        return true;
+        const cache = await plebbit.createStorageLRU({ cacheName: "challenge_evm-contract-call-v1", maxItems: undefined });
+        const cacheKey = chainTicker + authorWalletAddress;
+        const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
+        if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) return false;
+        if ((lastTimestampOfAuthor || 0) < wallet.timestamp) await cache.setItem(cacheKey, wallet.timestamp);
     }
-    return false;
+    return true;
 };
 
 const getContractCallResponse = async (props: {
