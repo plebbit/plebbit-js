@@ -68,7 +68,8 @@ const verifyAuthorAddress = async (
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address; // could be EVM address or .eth or .sol
     const wallet = publication.author.wallets?.[chainTicker];
     const nftAvatar = publication.author?.avatar;
-    // TOOD should add a test in case a solana user posted
+    // TOOD should add a test in case of .sol author.address
+    if (!wallet?.signature && !nftAvatar?.signature) throw Error("Author has no wallet or NFT avatar set");
     if (isStringDomain(authorWalletAddress)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
         const resolvedWalletAddress = await plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
@@ -76,7 +77,6 @@ const verifyAuthorAddress = async (
         if (resolvedWalletAddress !== publicationSignatureAddress) return false;
     }
     if (nftAvatar?.signature) {
-        // Do we need to validate the signature of NFT here? we're not validating it anywhere else
         const viemClient = await getViemClient(plebbit, nftAvatar.chainTicker, plebbit.chainProviders[nftAvatar.chainTicker].urls[0]);
 
         const currentOwner = <"0x${string}">await viemClient.readContract({
