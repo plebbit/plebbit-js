@@ -51,6 +51,7 @@ import type {
     IpfsHttpClientPubsubMessage,
     ModeratorCommentEditOptions,
     VotePubsubMessage,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     VoteType
 } from "../../../types.js";
 import {
@@ -336,8 +337,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async storeVote(newVoteProps: VoteType, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]) {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
         const newVote = await this.plebbit.createVote(newVoteProps);
-        await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid);
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
+        await this.dbHandler.deleteVote(authorSignerAddress, newVote.commentCid);
         await this.dbHandler.insertVote(newVote.toJSONForDb(authorSignerAddress));
         log.trace(`(${challengeRequestId.toString()}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         return undefined;
@@ -571,8 +572,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             //@ts-expect-error
             const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
                 await this.storePublication(request);
-            if (lodash.isPlainObject(publication))
-                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(publication.author.address);
+
+            if (lodash.isPlainObject(publication)) {
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
+            }
             // could contain "publication" or "reason"
             const encrypted = lodash.isPlainObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
@@ -738,7 +742,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.isPublicationVote(request.publication)) {
             const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication;
             if (![1, 0, -1].includes(publicationVote.vote)) return messages.INCORRECT_VOTE_VALUE;
-            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, publicationVote.author.address);
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publicationVote.signature.publicKey);
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, authorSignerAddress);
             if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
@@ -800,21 +805,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 decryptedRequest.challengeRequestId
             );
 
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
         //@ts-expect-error
         const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = decryptedRequest;
 
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest); // This function will throw an error if signature is invalid
         } catch (e) {
-            decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(
-                decryptedRequest.publication.author.address
-            );
+            decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
+                await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
         }
-        decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(
-            decryptedRequest.publication.author.address
-        );
+        decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
+            await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
 
         this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
 
