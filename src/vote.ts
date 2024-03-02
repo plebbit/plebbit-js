@@ -38,10 +38,11 @@ class Vote extends Publication implements VoteType {
         return "vote";
     }
 
-    toJSONForDb(): VotesTableRowInsert {
+    toJSONForDb(authorSignerAddress: string): VotesTableRowInsert {
         return {
             ...this.toJSONPubsubMessagePublication(),
-            authorAddress: this.author.address
+            authorAddress: this.author.address,
+            authorSignerAddress
         };
     }
 

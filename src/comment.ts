@@ -262,14 +262,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
 
-    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"]): CommentsTableRowInsert {
+    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"], authorSignerAddress: string): CommentsTableRowInsert {
         assert(this.cid && this.postCid);
         return {
             ...this.toJSONIpfs(),
             postCid: this.postCid,
             cid: this.cid,
             authorAddress: this.author.address,
-            challengeRequestPublicationSha256: publicationHash
+            challengeRequestPublicationSha256: publicationHash,
+            authorSignerAddress
         };
     }
 

@@ -32,6 +32,7 @@ import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
+import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -162,6 +163,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.string("link").nullable();
             table.integer("linkWidth").nullable().checkPositive();
@@ -228,6 +230,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
 
             table.timestamp("timestamp").checkPositive().notNullable();
@@ -237,7 +240,7 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
-            table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
+            table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
         });
     }
 
@@ -245,6 +248,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
@@ -358,6 +362,10 @@ export class DbHandler {
                     const commentToBeEdited = await this.queryComment(editWithType.commentCid);
                     const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
                     srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
+                }
+
+                if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
+                    srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
                 }
             }
 

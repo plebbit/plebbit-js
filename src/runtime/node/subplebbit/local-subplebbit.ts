@@ -81,7 +81,12 @@ import * as cborg from "cborg";
 import assert from "assert";
 import env from "../../../version.js";
 import { sha256 } from "js-sha256";
-import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
+import {
+    getIpfsKeyFromPrivateKey,
+    getPlebbitAddressFromPrivateKey,
+    getPlebbitAddressFromPublicKey,
+    getPublicKeyFromPrivateKey
+} from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
@@ -323,8 +328,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
 
         const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
-
-        await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit));
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
+        await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit, authorSignerAddress));
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
     }
 
@@ -332,7 +337,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
         const newVote = await this.plebbit.createVote(newVoteProps);
         await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid);
-        await this.dbHandler.insertVote(newVote.toJSONForDb());
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
+        await this.dbHandler.insertVote(newVote.toJSONForDb(authorSignerAddress));
         log.trace(`(${challengeRequestId.toString()}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         return undefined;
     }
@@ -388,8 +394,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
                 const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.insertComment(
+                    commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
+                    trxForInsert
+                );
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
                 log(`(${request.challengeRequestId.toString()}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
@@ -406,8 +416,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
                 const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.insertComment(
+                    commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
+                    trxForInsert
+                );
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
                 log(

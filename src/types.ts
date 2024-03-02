@@ -485,6 +485,7 @@ export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAns
     ipnsName?: string;
     id: number;
     insertedAt: number;
+    authorSignerAddress: string;
 }
 
 export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
@@ -503,6 +504,7 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
+    authorSignerAddress: string;
 }
 
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
@@ -513,6 +515,7 @@ export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAn
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     isAuthorEdit: boolean; // If false, then mod edit
+    authorSignerAddress: string;
 }
 
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
