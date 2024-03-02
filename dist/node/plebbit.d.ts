@@ -80,6 +80,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
     resolveAuthorAddress(authorAddress: string): Promise<string>;
     createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">): Promise<LRUStorageInterface>;
+    rpcCall(method: string, params: any[]): Promise<any>;
     destroy(): Promise<void>;
     toJSON(): any;
 }

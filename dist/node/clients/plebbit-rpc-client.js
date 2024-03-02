@@ -209,6 +209,11 @@ export default class PlebbitRpcClient {
         const res = await this._webSocketClient.call("getSettings", []);
         return res;
     }
+    async rpcCall(method, params) {
+        // This function can be used to call any function on the rpc server
+        const res = await this._webSocketClient.call(method, params);
+        return res;
+    }
     async getDefaults() {
         throw Error("Not implemented");
     }

@@ -2,7 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit.js";
 import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitEditOptions } from "../../../subplebbit/types.js";
 import { DbHandler } from "./db-handler.js";
-import { CommentEditPubsubMessage } from "../../../types.js";
+import type { CommentEditPubsubMessage } from "../../../types.js";
 import { ChallengeAnswerMessage } from "../../../challenge.js";
 import { Signer } from "../../../signer/index.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
