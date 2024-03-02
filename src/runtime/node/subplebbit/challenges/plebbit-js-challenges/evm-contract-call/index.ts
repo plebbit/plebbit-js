@@ -69,7 +69,7 @@ const verifyAuthorAddress = async (
     const wallet = publication.author.wallets?.[chainTicker];
     const nftAvatar = publication.author?.avatar;
     // TOOD should add a test in case of .sol author.address
-    if (!wallet?.signature && !nftAvatar?.signature) throw Error("Author has no wallet or NFT avatar set");
+    if (!wallet?.signature && !nftAvatar?.signature) return false;
     if (isStringDomain(authorWalletAddress)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
         const resolvedWalletAddress = await plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
