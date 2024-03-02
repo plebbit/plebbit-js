@@ -86,8 +86,9 @@ const verifyAuthorAddress = async (
         }
     }
     if (nftAvatar?.signature) {
-        let currentOwner: "0x${string}";
         const viemClient = await getViemClient(plebbit, nftAvatar.chainTicker, plebbit.chainProviders[nftAvatar.chainTicker].urls[0]);
+
+        let currentOwner: "0x${string}";
         try {
             currentOwner = <"0x${string}">await viemClient.readContract({
                 abi: nftAbi,
@@ -120,18 +121,27 @@ const verifyAuthorAddress = async (
     }
     if (wallet?.signature) {
         // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
+        const viemClient = await getViemClient(plebbit, "eth", plebbit.chainProviders.eth.urls[0]);
 
-        const expectedSignature = {
-            domainSeparator: "plebbit-author-wallet",
-            authorAddress: `${authorWalletAddress}`,
-            timestamp: `${wallet.timestamp}`
-        };
-        if (!lodash.isEqual(wallet.signature, expectedSignature)) {
-            log.error(`The wallet signature is expected to be`, expectedSignature, "but instead it was", wallet.signature);
+        const messageToBeSigned = {};
+        messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
+        messageToBeSigned["authorAddress"] = publication.author.address;
+        messageToBeSigned["timestamp"] = wallet.timestamp;
+
+        const valid = await viemClient.verifyMessage({
+            address: <"0x${string}">wallet.address,
+            message: JSON.stringify(messageToBeSigned),
+            signature: wallet.signature.signature
+        });
+        if (!valid) {
+            log.error(`The signature of the wallet is invalid`);
             return false;
         }
         // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
-        const cache = await plebbit._createStorageLRU({ cacheName: "challenge_evm-contract-call-v1", maxItems: undefined });
+        const cache = await plebbit._createStorageLRU({
+            cacheName: "challenge_evm_contract_call_v1_wallet_last_timestamp",
+            maxItems: undefined
+        });
         const cacheKey = chainTicker + authorWalletAddress;
         const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
         if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) {
@@ -267,11 +277,11 @@ const getChallenge = async (
         };
     }
 
-    const verification = await verifyAuthorAddress(publication, chainTicker, subplebbit);
+    const verification = await verifyAuthorAddress(publication, chainTicker, subplebbit.plebbit);
     if (!verification) {
         return {
             success: false,
-            error: `Author doesn't signature proof of his wallet address.`
+            error: `Author doesn't signature proof of his wallet or NFT address.`
         };
     }
 
