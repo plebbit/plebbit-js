@@ -58,6 +58,8 @@ const nftAbi = [
     {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
     {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}  
   ];
+
+const supportedConditionOperators = ["=", ">", "<"];
 const verifyAuthorAddress = async (
     publication: DecryptedChallengeRequestMessageType["publication"],
     chainTicker: string,
@@ -154,27 +156,21 @@ const getContractCallResponse = async (props: {
 };
 
 const evaluateConditionString = (condition: string, responseValue: any) => {
-    let result: boolean;
-    const comparisonOperators = [">=", "<=", "==", "=", ">", "<"];
-    const operatorInCondition = comparisonOperators.find((op) => condition.startsWith(op));
+    const operatorInCondition = supportedConditionOperators.find((op) => condition.startsWith(op));
     const valueInCondition = condition.split(operatorInCondition)[1];
     const isAllValueNumber = /^\d+$/.test(valueInCondition);
     const conditionValueParsed = isAllValueNumber ? BigInt(valueInCondition) : valueInCondition;
     const responseValueParsed = isAllValueNumber ? BigInt(responseValue) : responseValue;
 
     if (typeof conditionValueParsed !== typeof responseValueParsed) throw Error("value of condition and response should be the same");
-    result =
-        operatorInCondition === ">="
-            ? responseValueParsed >= conditionValueParsed
-            : operatorInCondition === "<="
-              ? responseValueParsed <= conditionValueParsed
-              : operatorInCondition === "==" || operatorInCondition === "="
-                ? responseValueParsed === conditionValueParsed
-                : operatorInCondition === ">"
-                  ? responseValueParsed > conditionValueParsed
-                  : operatorInCondition === "<"
-                    ? responseValueParsed < conditionValueParsed
-                    : undefined;
+    const result =
+        operatorInCondition === "="
+            ? responseValueParsed === conditionValueParsed
+            : operatorInCondition === ">"
+              ? responseValueParsed > conditionValueParsed
+              : operatorInCondition === "<"
+                ? responseValueParsed < conditionValueParsed
+                : undefined;
     if (result === undefined) throw Error("Failed to parse condition. Please double check code and set condition");
     return result;
 };
@@ -234,6 +230,9 @@ const getChallenge = async (
     if (!condition) {
         throw Error("missing option condition");
     }
+
+    const doesConditionStartWithSupportedOperator = supportedConditionOperators.find((operator) => condition.startsWith(operator));
+    if (!doesConditionStartWithSupportedOperator) throw Error(`Condition uses unsupported comparison operator`);
     const publication = challengeRequestMessage.publication;
 
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address;
