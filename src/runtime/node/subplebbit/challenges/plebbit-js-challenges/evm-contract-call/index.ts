@@ -109,7 +109,7 @@ const verifyAuthorAddress = async (
         };
         if (!lodash.isEqual(wallet.signature, expectedSignature)) return false;
         // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
-        const cache = await plebbit.createStorageLRU({ cacheName: "challenge_evm-contract-call-v1", maxItems: undefined });
+        const cache = await plebbit._createStorageLRU({ cacheName: "challenge_evm-contract-call-v1", maxItems: undefined });
         const cacheKey = chainTicker + authorWalletAddress;
         const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
         if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) return false;
