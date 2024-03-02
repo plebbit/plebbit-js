@@ -66,7 +66,6 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     old: { score: (...args) => oldScore(...args) }
 };
 
-
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -342,6 +341,6 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
     return out;
 }
 
-export function isStringDomain(x: string){
-    return x.includes(".");
+export function isStringDomain(x: string | undefined) {
+    return typeof x === "string" && x.includes(".");
 }
