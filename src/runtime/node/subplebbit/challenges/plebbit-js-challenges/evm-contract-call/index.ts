@@ -65,26 +65,40 @@ const verifyAuthorAddress = async (
     chainTicker: string,
     plebbit: Plebbit
 ) => {
+    const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:verifyAuthorAddress");
     const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address; // could be EVM address or .eth or .sol
     const wallet = publication.author.wallets?.[chainTicker];
     const nftAvatar = publication.author?.avatar;
     // TOOD should add a test in case of .sol author.address
-    if (!wallet?.signature && !nftAvatar?.signature) return false;
+    if (!wallet?.signature && !nftAvatar?.signature) {
+        log.error("Publication has no wallet or NFT, therefore it will be rejected");
+        return false;
+    }
     if (isStringDomain(authorWalletAddress)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
         const resolvedWalletAddress = await plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
         const publicationSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
-        if (resolvedWalletAddress !== publicationSignatureAddress) return false;
+        if (resolvedWalletAddress !== publicationSignatureAddress) {
+            log.error(
+                `The author wallet address (${authorWalletAddress}) resolves to an incorrect value (${resolvedWalletAddress}), but it should resolve to ${publicationSignatureAddress}`
+            );
+            return false;
+        }
     }
     if (nftAvatar?.signature) {
+        let currentOwner: "0x${string}";
         const viemClient = await getViemClient(plebbit, nftAvatar.chainTicker, plebbit.chainProviders[nftAvatar.chainTicker].urls[0]);
-
-        const currentOwner = <"0x${string}">await viemClient.readContract({
-            abi: nftAbi,
-            address: <"0x${string}">nftAvatar.address,
-            functionName: "ownerOf",
-            args: [nftAvatar.id]
-        });
+        try {
+            currentOwner = <"0x${string}">await viemClient.readContract({
+                abi: nftAbi,
+                address: <"0x${string}">nftAvatar.address,
+                functionName: "ownerOf",
+                args: [nftAvatar.id]
+            });
+        } catch (e) {
+            log.error("Failed to read NFT contract", e);
+            return false;
+        }
 
         const messageToBeSigned = {};
         // the property names must be in this order for the signature to match
@@ -99,7 +113,10 @@ const verifyAuthorAddress = async (
             message: JSON.stringify(messageToBeSigned),
             signature: nftAvatar.signature.signature
         });
-        if (!valid) return false;
+        if (!valid) {
+            log.error(`The signature of the nft avatar is invalid`);
+            return false;
+        }
     }
     if (wallet?.signature) {
         // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
@@ -109,12 +126,18 @@ const verifyAuthorAddress = async (
             authorAddress: `${authorWalletAddress}`,
             timestamp: `${wallet.timestamp}`
         };
-        if (!lodash.isEqual(wallet.signature, expectedSignature)) return false;
+        if (!lodash.isEqual(wallet.signature, expectedSignature)) {
+            log.error(`The wallet signature is expected to be`, expectedSignature, "but instead it was", wallet.signature);
+            return false;
+        }
         // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
         const cache = await plebbit._createStorageLRU({ cacheName: "challenge_evm-contract-call-v1", maxItems: undefined });
         const cacheKey = chainTicker + authorWalletAddress;
         const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
-        if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) return false;
+        if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) {
+            log.error(`Wallet (${authorWalletAddress}) is trying to use an old signature`);
+            return false;
+        }
         if ((lastTimestampOfAuthor || 0) < wallet.timestamp) await cache.setItem(cacheKey, wallet.timestamp);
     }
     return true;
