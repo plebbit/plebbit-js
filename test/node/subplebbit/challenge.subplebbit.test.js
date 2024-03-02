@@ -5,11 +5,18 @@ import {
     mockRemotePlebbitIpfsOnly,
     generatePostToAnswerMathQuestion,
     publishRandomPost,
-    isRpcFlagOn
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 
+import Sinon from "sinon";
+import * as util from "../../../dist/node/constants";
 import chai from "chai";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import chaiAsPromised from "chai-as-promised";
+import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
+
+import { createPublicClient, http } from "viem";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -139,6 +146,93 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.delete();
     });
 });
+
+describe.only(`Test evm-contract challenge`, async () => {
+    // We need to mock viem Public client
+    // Mock readClient, and call
+    // I should find a way to mock viem here or the challenges API
+    const viemSandbox = Sinon.createSandbox();
+
+    const settings = {
+        challenges: [
+            {
+                name: "evm-contract-call",
+                options: {
+                    chainTicker: "eth",
+                    // contract address
+                    address: "0xEA81DaB2e0EcBc6B5c4172DE4c22B6Ef6E55Bd8f",
+                    // abi of the contract method
+                    abi: '{"constant":true,"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"}',
+                    condition: ">1000",
+                    // error to display to the user if condition fails
+                    error: "PLEB token balance must be greater than 1000."
+                }
+            }
+        ]
+    };
+
+    let plebbit, sub;
+
+    let actualViemClient;
+    let viemAccount;
+    const viemEthFake = {};
+    const viemMaticFake = {};
+    before(async () => {
+        plebbit = await mockPlebbit({ resolveAuthorAddresses: false });
+        actualViemClient = createPublicClient({
+            chain: chains.mainnet,
+            transport: http()
+        });
+        viemMaticFake["verifyMessage"] = viemEthFake["verifyMessage"] = actualViemClient.verifyMessage;
+        util._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]] = viemEthFake;
+        util._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]] = viemMaticFake;
+
+        sub = await plebbit.createSubplebbit();
+        await sub.edit({ settings });
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+
+        // Set up viem account
+        const privateKey = generatePrivateKey();
+        viemAccount = privateKeyToAccount(privateKey);
+    });
+
+    after(async () => {
+        await sub.delete();
+        viemSandbox.restore();
+        delete util._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];
+        delete util._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]];
+    it.only(`An author with NFT wallet with over 1000 PLEB should pass the challenge`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const avatarMessageToSign = {};
+        // the property names must be in this order for the signature to match
+        // insert props one at a time otherwise babel/webpack will reorder
+        avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
+        avatarMessageToSign.authorAddress = authorSigner.address;
+        avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
+        avatarMessageToSign.tokenAddress = "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED";
+        avatarMessageToSign.tokenId = "5404"; // must be a type string, not number
+
+        const avatarSignature = await viemAccount.signMessage({ message: JSON.stringify(avatarMessageToSign) });
+        const avatar = {
+            address: avatarMessageToSign.tokenAddress,
+            chainTicker: "matic",
+            id: avatarMessageToSign.tokenId,
+            timestamp: avatarMessageToSign.timestamp,
+            signature: { signature: avatarSignature, type: "eip191" }
+        };
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: { avatar }
+        });
+
+        const readContractFake = viemSandbox.fake.resolves(viemAccount.address); // NFT readOwner will resolve to this
+
+        viemMaticFake["readContract"] = readContractFake;
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
+
+        await publishWithExpectedResult(postWithAuthorAddress, true);
+    });
 
 describe("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;
