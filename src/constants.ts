@@ -47,16 +47,16 @@ export const pageVerificationCache = new LRUCache<string, boolean>({ max: 300 })
 export const commentUpdateVerificationCache = new LRUCache<string, boolean>({ max: 300 });
 
 // Storing clients of viem here, and re-using them as needed
-const viemClients: Record<string, ViemClient> = {};
+export const _viemClients: Record<string, ViemClient> = {}; // Should not be accessed
 
 export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chainProviderUrl: string): Promise<ViemClient> => {
     const cacheKey = chainTicker + chainProviderUrl;
-    if (viemClients[cacheKey]) return viemClients[cacheKey];
+    if (_viemClients[cacheKey]) return _viemClients[cacheKey];
     const log = Logger("plebbit-js:getViemClient");
 
     log("Creating a new viem instance for chain ticker", chainTicker, "And chain provider url", chainProviderUrl);
     if (chainTicker === "eth" && chainProviderUrl === "viem") {
-        viemClients[cacheKey] = createPublicClient({
+        _viemClients[cacheKey] = createPublicClient({
             chain: chains.mainnet,
             transport: http()
         });
@@ -65,10 +65,10 @@ export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chain
         const chainId = plebbit.chainProviders[chainTicker].chainId;
         const chain = Object.values(chains).find((chain) => chain.id === chainId);
         if (!chain) throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
-        viemClients[cacheKey] = createPublicClient({
+        _viemClients[cacheKey] = createPublicClient({
             chain,
             transport: http(chainProviderUrl)
         });
     }
-    return viemClients[cacheKey];
+    return _viemClients[cacheKey];
 };
