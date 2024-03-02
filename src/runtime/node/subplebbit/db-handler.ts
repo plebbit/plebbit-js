@@ -763,24 +763,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
     }
 
-    async queryMostRecentTimestampOfAuthorWallet(
-        authorAddress: string,
-        chainTicker: string,
-        trx?: Knex.Transaction
-    ): Promise<number | undefined> {
-        const comments = await this._baseTransaction(trx)(TABLES.COMMENTS).select("author").where("authorAddress", authorAddress);
-        const edits = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).select("author").where("authorAddress", authorAddress);
-        const votes = await this._baseTransaction(trx)(TABLES.VOTES).select("author").where("authorAddress", authorAddress);
-
-        let maxWalletTimestamp: number = Number.NEGATIVE_INFINITY;
-
-        for (const publication of [...comments, ...votes, ...edits])
-            if (typeof publication?.author?.wallets?.[chainTicker]?.timestamp === "number")
-                maxWalletTimestamp = Math.max(maxWalletTimestamp, publication.author.wallets[chainTicker].timestamp);
-
-        return maxWalletTimestamp === Number.NEGATIVE_INFINITY ? undefined : maxWalletTimestamp;
-    }
-
     async queryAuthorModEdits(authorAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
         const authorComments: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select("cid")
