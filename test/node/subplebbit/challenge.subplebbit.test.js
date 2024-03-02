@@ -147,10 +147,7 @@ describe(`subplebbit.settings.challenges`, async () => {
     });
 });
 
-describe.only(`Test evm-contract challenge`, async () => {
-    // We need to mock viem Public client
-    // Mock readClient, and call
-    // I should find a way to mock viem here or the challenges API
+describe(`Test evm-contract challenge`, async () => {
     const viemSandbox = Sinon.createSandbox();
 
     const settings = {
@@ -202,11 +199,71 @@ describe.only(`Test evm-contract challenge`, async () => {
         viemSandbox.restore();
         delete util._viemClients["eth" + plebbit.chainProviders["eth"].urls[0]];
         delete util._viemClients["matic" + plebbit.chainProviders["matic"].urls[0]];
-    it.only(`An author with NFT wallet with over 1000 PLEB should pass the challenge`, async () => {
+    });
+    it(`A wallet with over 1000 PLEB passes the challenge`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const walletMessageToSign = {};
+        walletMessageToSign.domainSeparator = "plebbit-author-wallet";
+        walletMessageToSign.authorAddress = authorSigner.address;
+        walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
+
+        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) }); // corrupt signature by adding "1"
+
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: {
+                wallets: {
+                    eth: {
+                        address: viemAccount.address,
+                        signature: { signature: walletSignature, type: "eip191" },
+                        timestamp: walletMessageToSign.timestamp
+                    }
+                }
+            }
+        });
+
+        // viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have 0 pleb
+
+        await publishWithExpectedResult(postWithAuthorAddress, true);
+    });
+
+    it(`A wallet with over 0 PLEB fails the challenge`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const walletMessageToSign = {};
+        walletMessageToSign.domainSeparator = "plebbit-author-wallet";
+        walletMessageToSign.authorAddress = authorSigner.address;
+        walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
+
+        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) }); // corrupt signature by adding "1"
+
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: {
+                wallets: {
+                    eth: {
+                        address: viemAccount.address,
+                        signature: { signature: walletSignature, type: "eip191" },
+                        timestamp: walletMessageToSign.timestamp
+                    }
+                }
+            }
+        });
+
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock wallet to have 0 pleb
+
+        await postWithAuthorAddress.publish();
+        const challengeVerification = await new Promise((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]);
+    });
+
+    it(`An author with NFT wallet with over 1000 PLEB should pass the challenge`, async () => {
         const authorSigner = await plebbit.createSigner();
         const avatarMessageToSign = {};
-        // the property names must be in this order for the signature to match
-        // insert props one at a time otherwise babel/webpack will reorder
         avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
         avatarMessageToSign.authorAddress = authorSigner.address;
         avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
@@ -226,13 +283,230 @@ describe.only(`Test evm-contract challenge`, async () => {
             author: { avatar }
         });
 
-        const readContractFake = viemSandbox.fake.resolves(viemAccount.address); // NFT readOwner will resolve to this
-
-        viemMaticFake["readContract"] = readContractFake;
+        viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
 
         await publishWithExpectedResult(postWithAuthorAddress, true);
     });
+    it(`An author with NFT wallet with less than 100 PLEB should fail the challenge`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const avatarMessageToSign = {};
+        avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
+        avatarMessageToSign.authorAddress = authorSigner.address;
+        avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
+        avatarMessageToSign.tokenAddress = "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED";
+        avatarMessageToSign.tokenId = "5404"; // must be a type string, not number
+
+        const avatarSignature = await viemAccount.signMessage({ message: JSON.stringify(avatarMessageToSign) });
+        const avatar = {
+            address: avatarMessageToSign.tokenAddress,
+            chainTicker: "matic",
+            id: avatarMessageToSign.tokenId,
+            timestamp: avatarMessageToSign.timestamp,
+            signature: { signature: avatarSignature, type: "eip191" }
+        };
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: { avatar }
+        });
+
+        viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
+
+        await postWithAuthorAddress.publish();
+        const challengeVerification = await new Promise((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]);
+    });
+    it(`An author with no NFT or wallet should fail immeditely`, async () => {
+        const post = await generateMockPost(sub.address, plebbit);
+
+        await post.publish();
+        const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal([`Author doesn't have a wallet or avatar set.`]);
+    });
+
+    it(`An author with wallet with less than 1000 PLEB and an NFT wallet with more than 1000 PLEB should passs`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const avatarMessageToSign = {};
+        avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
+        avatarMessageToSign.authorAddress = authorSigner.address;
+        avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
+        avatarMessageToSign.tokenAddress = "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED";
+        avatarMessageToSign.tokenId = "5404"; // must be a type string, not number
+
+        const avatarSignature = await viemAccount.signMessage({ message: JSON.stringify(avatarMessageToSign) });
+        const avatar = {
+            address: avatarMessageToSign.tokenAddress,
+            chainTicker: "matic",
+            id: avatarMessageToSign.tokenId,
+            timestamp: avatarMessageToSign.timestamp,
+            signature: { signature: avatarSignature, type: "eip191" }
+        };
+
+        // wallet
+        const walletMessageToSign = {};
+        walletMessageToSign.domainSeparator = "plebbit-author-wallet";
+        walletMessageToSign.authorAddress = authorSigner.address;
+        walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
+
+        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) }); // corrupt signature by adding "1"
+
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: {
+                avatar,
+                wallets: {
+                    eth: {
+                        address: viemAccount.address,
+                        signature: { signature: walletSignature, type: "eip191" },
+                        timestamp: walletMessageToSign.timestamp
+                    }
+                }
+            }
+        });
+
+        let callCount = 0;
+        const fakeCall = async (args) => {
+            callCount++;
+            if (callCount === 1)
+                return { data: "0x0000000000000000000000000000000000000000000000000000000000000000" }; // for wallet
+            else return { data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" };
+        };
+
+        viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = fakeCall; // mock nft wallet to have more than 100 pleb
+
+        await publishWithExpectedResult(postWithAuthorAddress, true);
+    });
+    it(`An author with both wallet and NFT having less than 1000 PLEB fails`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const avatarMessageToSign = {};
+        avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
+        avatarMessageToSign.authorAddress = authorSigner.address;
+        avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
+        avatarMessageToSign.tokenAddress = "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED";
+        avatarMessageToSign.tokenId = "5404"; // must be a type string, not number
+
+        const avatarSignature = await viemAccount.signMessage({ message: JSON.stringify(avatarMessageToSign) });
+        const avatar = {
+            address: avatarMessageToSign.tokenAddress,
+            chainTicker: "matic",
+            id: avatarMessageToSign.tokenId,
+            timestamp: avatarMessageToSign.timestamp,
+            signature: { signature: avatarSignature, type: "eip191" }
+        };
+
+        // wallet
+        const walletMessageToSign = {};
+        walletMessageToSign.domainSeparator = "plebbit-author-wallet";
+        walletMessageToSign.authorAddress = authorSigner.address;
+        walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
+
+        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) }); // corrupt signature by adding "1"
+
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: {
+                avatar,
+                wallets: {
+                    eth: {
+                        address: viemAccount.address,
+                        signature: { signature: walletSignature, type: "eip191" },
+                        timestamp: walletMessageToSign.timestamp
+                    }
+                }
+            }
+        });
+
+        viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have more than 100 pleb
+
+        await postWithAuthorAddress.publish();
+        const challengeVerification = await new Promise((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]); // failed to provide valid NFT
+    });
+
+    // Tests on verification of author
+
+    it(`Publication with invalid wallet signature will be rejected`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const walletMessageToSign = {};
+        walletMessageToSign.domainSeparator = "plebbit-author-wallet";
+        walletMessageToSign.authorAddress = authorSigner.address;
+        walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
+
+        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) + "1" }); // corrupt signature by adding "1"
+
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: {
+                wallets: {
+                    eth: {
+                        address: viemAccount.address,
+                        signature: { signature: walletSignature, type: "eip191" },
+                        timestamp: walletMessageToSign.timestamp
+                    }
+                }
+            }
+        });
+
+        // viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
+
+        await postWithAuthorAddress.publish();
+        const challengeVerification = await new Promise((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal(["Author doesn't signature proof of his wallet or NFT address."]); // failed to provide valid NFT
+    });
+
+    it(`Publication with invalid NFT signature will be rejected`, async () => {
+        const authorSigner = await plebbit.createSigner();
+        const avatarMessageToSign = {};
+        avatarMessageToSign.domainSeparator = "plebbit-author-avatar";
+        avatarMessageToSign.authorAddress = authorSigner.address;
+        avatarMessageToSign.timestamp = Math.round(Date.now() / 1000);
+        avatarMessageToSign.tokenAddress = "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED";
+        avatarMessageToSign.tokenId = "5404"; // must be a type string, not number
+
+        const avatarSignature = await viemAccount.signMessage({ message: JSON.stringify(avatarMessageToSign) + "1" }); // corrupt signature by adding "1"
+        const avatar = {
+            address: avatarMessageToSign.tokenAddress,
+            chainTicker: "matic",
+            id: avatarMessageToSign.tokenId,
+            timestamp: avatarMessageToSign.timestamp,
+            signature: { signature: avatarSignature, type: "eip191" }
+        };
+        const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
+            signer: authorSigner,
+            author: { avatar }
+        });
+
+        viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000000000000000000000000000" }); // mock nft wallet to have 0 pleb
+
+        await postWithAuthorAddress.publish();
+        const challengeVerification = await new Promise((resolve) => postWithAuthorAddress.once("challengeverification", resolve));
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.be.undefined;
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.challengeErrors).to.deep.equal(["Author doesn't signature proof of his wallet or NFT address."]); // failed to provide valid NFT
+    });
+});
 
 describe("Validate props of subplebbit Pubsub messages", async () => {
     let plebbit, subplebbit, commentSigner;
