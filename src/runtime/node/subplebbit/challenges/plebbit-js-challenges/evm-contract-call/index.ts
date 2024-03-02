@@ -104,7 +104,7 @@ const verifyAuthorAddress = async (
         // the property names must be in this order for the signature to match
         // insert props one at a time otherwise babel/webpack will reorder
         messageToBeSigned["domainSeparator"] = "plebbit-author-avatar";
-        messageToBeSigned["authorAddress"] = authorWalletAddress;
+        messageToBeSigned["authorAddress"] = publication.author.address;
         messageToBeSigned["timestamp"] = nftAvatar.timestamp;
         messageToBeSigned["tokenAddress"] = nftAvatar.address;
         messageToBeSigned["tokenId"] = String(nftAvatar.id); // must be a type string, not number
