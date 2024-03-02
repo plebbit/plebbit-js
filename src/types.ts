@@ -133,7 +133,7 @@ export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
 export type Wallet = {
     address: string;
     timestamp: number; // in seconds, allows partial blocking multiple authors using the same wallet
-    signature: JsonSignature; // type 'eip191' {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress}","{timestamp:${wallet.timestamp}"}
+    signature: { signature: "0x${string}"; type: "eip191" };
     // ...will add more stuff later, like signer or send/sign or balance
 };
 
