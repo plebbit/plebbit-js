@@ -384,7 +384,7 @@ const subplebbits = [
     whitelistChallegeSubplebbit,
     blacklistChallegeSubplebbit,
     // erc20PaymentChallegeSubplebbit,
-    evmContractCallChallegeSubplebbit,
+    // evmContractCallChallegeSubplebbit,
     passwordChallegeSubplebbit,
     excludeFriendlySubKarmaChallegeSubplebbit,
     twoOutOf4SuccessChallegeSubplebbit,
