@@ -910,7 +910,7 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
-                retries: 5,
+                retries: 10,
                 onCompromised: () => {}
             });
         } catch (e) {
