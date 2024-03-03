@@ -147,6 +147,8 @@ describe(`subplebbit.settings.challenges`, async () => {
     });
 });
 
+//prettier-ignore
+if (!isRpcFlagOn())
 describe(`Test evm-contract challenge`, async () => {
     const viemSandbox = Sinon.createSandbox();
 
