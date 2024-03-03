@@ -1,13 +1,12 @@
-import lodash from "lodash";
-import { LocalSubplebbit } from "../../../local-subplebbit";
-import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util";
-import { DecryptedChallengeRequestMessageType } from "../../../../../../types";
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types";
+import { LocalSubplebbit } from "../../../local-subplebbit.js";
+import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
+import type { DecryptedChallengeRequestMessageType } from "../../../../../../types.js";
+import type { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
-import { getViemClient } from "../../../../../../constants";
-import { Plebbit } from "../../../../../../plebbit";
-import { isStringDomain } from "../../../../../../util";
+import { getViemClient } from "../../../../../../constants.js";
+import type { Plebbit } from "../../../../../../plebbit.js";
+import { isStringDomain } from "../../../../../../util.js";
 
 const optionInputs = [
     {
