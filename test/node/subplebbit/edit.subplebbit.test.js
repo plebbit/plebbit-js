@@ -9,6 +9,7 @@ import {
     mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
+import signers from "../../fixtures/signers";
 import lodash from "lodash";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
@@ -302,6 +303,7 @@ describe(`Edit misc`, async () => {
     });
 });
 
+// TODO change this testing to be about capturing the edit args sent to RPC server
 //prettier-ignore
 if (isRpcFlagOn())
 describe(`subplebbit.edit (RPC)`, async () => {
@@ -309,9 +311,8 @@ describe(`subplebbit.edit (RPC)`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        const signer = await plebbit.createSigner();
-        subplebbit = await plebbit.createSubplebbit({signer});
-        expect(subplebbit.address).to.equal(signer.address);
+        subplebbit = await plebbit.createSubplebbit({signer: signers[7]});
+        expect(subplebbit.address).to.equal(signers[7].address);
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
