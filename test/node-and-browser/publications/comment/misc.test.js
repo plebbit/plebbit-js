@@ -373,8 +373,8 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        await post.update();
-        await new Promise((resolve) => post.once("update", resolve));
+        post.update();
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
         expect(post.lastReplyTimestamp).to.be.undefined;
     });
 
