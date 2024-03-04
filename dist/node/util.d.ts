@@ -50,3 +50,4 @@ export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsT
 export declare function isLinkValid(link: string): boolean;
 export declare function isLinkOfMedia(link: string): boolean;
 export declare function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]>;
+export declare function isStringDomain(x: string | undefined): boolean;

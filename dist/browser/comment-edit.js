@@ -43,12 +43,13 @@ export class CommentEdit extends Publication {
             author: this.author.toJSON()
         };
     }
-    toJSONForDb(isAuthorEdit) {
+    toJSONForDb(isAuthorEdit, authorSignerAddress) {
         return {
             ...this.toJSONPubsubMessagePublication(),
             author: this.author.toJSONIpfs(),
             authorAddress: this.author.address,
-            isAuthorEdit
+            isAuthorEdit,
+            authorSignerAddress
         };
     }
     getType() {

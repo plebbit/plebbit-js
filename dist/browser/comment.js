@@ -171,14 +171,15 @@ export class Comment extends Publication {
         assert(this.cid && this.postCid);
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
-    toJSONCommentsTableRowInsert(publicationHash) {
+    toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress) {
         assert(this.cid && this.postCid);
         return {
             ...this.toJSONIpfs(),
             postCid: this.postCid,
             cid: this.cid,
             authorAddress: this.author.address,
-            challengeRequestPublicationSha256: publicationHash
+            challengeRequestPublicationSha256: publicationHash,
+            authorSignerAddress
         };
     }
     toJSONMerged() {

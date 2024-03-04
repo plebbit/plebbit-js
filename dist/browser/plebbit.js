@@ -432,7 +432,7 @@ export class Plebbit extends TypedEmitter {
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
         return resolved;
     }
-    async createStorageLRU(opts) {
+    async _createStorageLRU(opts) {
         // should add the storage LRU to an array, so we can destroy all of them on plebbit.destroy
         if (!this._storageLRUs[opts.cacheName]) {
             this._storageLRUs[opts.cacheName] = new LRUStorage({ ...opts, plebbit: this });

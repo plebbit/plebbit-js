@@ -12,6 +12,7 @@ import lodash from "lodash";
 import * as lockfile from "@plebbit/proper-lockfile";
 import { v4 as uuidV4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants.js";
+import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -110,6 +111,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.string("link").nullable();
             table.integer("linkWidth").nullable().checkPositive();
@@ -165,6 +167,7 @@ export class DbHandler {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.timestamp("timestamp").checkPositive().notNullable();
             table.text("subplebbitAddress").notNullable();
@@ -172,13 +175,14 @@ export class DbHandler {
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-            table.primary(["commentCid", "authorAddress"]); // An author can't have multiple votes on a comment
+            table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
         });
     }
     async _createCommentEditsTable(tableName) {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
             table.text("authorAddress").notNullable();
+            table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
@@ -279,6 +283,9 @@ export class DbHandler {
                     const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
                     srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
                 }
+                if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
+                    srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
+                }
             }
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
             // Probably can be fixed but not worth the time
@@ -287,8 +294,8 @@ export class DbHandler {
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
-    async deleteVote(authorAddress, commentCid, trx) {
-        await this._baseTransaction(trx)(TABLES.VOTES).where("commentCid", commentCid).where("authorAddress", authorAddress).del();
+    async deleteVote(authorSignerAddress, commentCid, trx) {
+        await this._baseTransaction(trx)(TABLES.VOTES).where("commentCid", commentCid).where("authorSignerAddress", authorSignerAddress).del();
     }
     async insertVote(vote, trx) {
         await this._baseTransaction(trx)(TABLES.VOTES).insert(vote);
@@ -302,11 +309,11 @@ export class DbHandler {
     async insertEdit(edit, trx) {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
     }
-    async getStoredVoteOfAuthor(commentCid, authorAddress, trx) {
+    async getStoredVoteOfAuthor(commentCid, authorSignerAddress, trx) {
         return this._baseTransaction(trx)(TABLES.VOTES)
             .where({
             commentCid: commentCid,
-            authorAddress: authorAddress
+            authorSignerAddress
         })
             .first();
     }
@@ -368,9 +375,6 @@ export class DbHandler {
     async queryAllStoredCommentUpdates(trx) {
         return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES);
     }
-    async queryCommentUpdatesWithPlaceHolderForIpfsPath(trx) {
-        return this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).whereLike("ipfsPath", "%random-place-holder%");
-    }
     async queryCommentUpdatesOfPostsForBucketAdjustment(trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
@@ -386,10 +390,10 @@ export class DbHandler {
             .where(`${TABLES.COMMENTS}.postCid`, postCid)
             .select(`${TABLES.COMMENT_UPDATES}.*`);
     }
-    async queryCommentsOfAuthor(authorAddresses, trx) {
-        if (!Array.isArray(authorAddresses))
-            authorAddresses = [authorAddresses];
-        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorAddress", authorAddresses);
+    async queryCommentsOfAuthor(authorSignerAddresses, trx) {
+        if (!Array.isArray(authorSignerAddresses))
+            authorSignerAddresses = [authorSignerAddresses];
+        return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
     }
     async queryAllCommentsCid(trx) {
         const res = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
@@ -411,9 +415,6 @@ export class DbHandler {
             curParentCid = parent?.parentCid;
         }
         return parents;
-    }
-    async queryAllComments(trx) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS);
     }
     async queryCommentsToBeUpdated(trx) {
         // Criteria:
@@ -445,7 +446,7 @@ export class DbHandler {
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
         const comments = lodash.uniqBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
         const parents = lodash.flattenDeep(await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx))));
-        const authorComments = await this.queryCommentsOfAuthor(lodash.uniq(comments.map((comment) => comment.authorAddress)), trx);
+        const authorComments = await this.queryCommentsOfAuthor(lodash.uniq(comments.map((comment) => comment.authorSignerAddress)), trx);
         const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
         return uniqComments;
     }
@@ -457,8 +458,8 @@ export class DbHandler {
             const authors = lodash.uniq([
                 ...commentsRaw
                     .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
-                    .map((comment) => comment.authorAddress),
-                ...votesRaw.filter((vote) => vote.timestamp >= from && vote.timestamp <= to).map((vote) => vote.authorAddress)
+                    .map((comment) => comment.authorSignerAddress),
+                ...votesRaw.filter((vote) => vote.timestamp >= from && vote.timestamp <= to).map((vote) => vote.authorSignerAddress)
             ]);
             res[propertyName] = authors.length;
         }
@@ -477,8 +478,8 @@ export class DbHandler {
         return res;
     }
     async querySubplebbitStats(trx) {
-        const commentsRaw = await this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorAddress", "timestamp"]);
-        const votesRaw = await this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorAddress"]);
+        const commentsRaw = await this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorSignerAddress", "timestamp"]);
+        const votesRaw = await this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorSignerAddress"]);
         const res = { ...this._calcActiveUserCount(commentsRaw, votesRaw), ...this._calcPostCount(commentsRaw) };
         //@ts-expect-error
         return res;
@@ -505,10 +506,10 @@ export class DbHandler {
         ]);
         return { replyCount, upvoteCount, downvoteCount };
     }
-    async _queryAuthorEdit(cid, authorAddress, trx) {
+    async _queryAuthorEdit(cid, authorSignerAddress, trx) {
         const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select(AUTHOR_EDIT_FIELDS)
-            .where({ commentCid: cid, authorAddress, isAuthorEdit: true })
+            .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
         return authorEdit;
@@ -565,8 +566,8 @@ export class DbHandler {
     }
     async queryCalculatedCommentUpdate(comment, trx) {
         const [authorSubplebbit, authorEdit, commentUpdateCounts, moderatorReason, commentFlags, commentModFlair, lastChildAndLastReplyTimestamp] = await Promise.all([
-            this.querySubplebbitAuthor(comment.author.address, trx),
-            this._queryAuthorEdit(comment.cid, comment.author.address, trx),
+            this.querySubplebbitAuthor(comment.authorSignerAddress, trx),
+            this._queryAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
             this._queryCommentCounts(comment.cid, trx),
             this._queryLatestModeratorReason(comment, trx),
             this.queryCommentFlags(comment.cid, trx),
@@ -590,10 +591,10 @@ export class DbHandler {
     async queryLatestCommentCid(trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
     }
-    async queryAuthorModEdits(authorAddress, trx) {
+    async queryAuthorModEdits(authorSignerAddress, trx) {
         const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select("cid")
-            .where("authorAddress", authorAddress);
+            .where("authorSignerAddress", authorSignerAddress);
         if (!Array.isArray(authorComments) || authorComments.length === 0)
             return {};
         const commentAuthorEdits = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
@@ -605,8 +606,10 @@ export class DbHandler {
         const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair)?.commentAuthor;
         return { ...banAuthor, ...authorFlairByMod };
     }
-    async querySubplebbitAuthor(authorAddress, trx) {
-        const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorAddress", authorAddress);
+    async querySubplebbitAuthor(authorSignerAddress, trx) {
+        const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .select("cid")
+            .where("authorSignerAddress", authorSignerAddress);
         if (authorCommentCids.length === 0)
             return undefined;
         const authorComments = [];
@@ -623,7 +626,7 @@ export class DbHandler {
         const replyScore = lodash.sumBy(authorReplies, (reply) => reply.upvoteCount) - lodash.sumBy(authorReplies, (reply) => reply.downvoteCount);
         const lastCommentCid = lodash.maxBy(authorComments, (comment) => comment.id).cid;
         const firstCommentTimestamp = lodash.minBy(authorComments, (comment) => comment.id).timestamp;
-        const modAuthorEdits = await this.queryAuthorModEdits(authorAddress, trx);
+        const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
         return {
             postScore,
             replyScore,
@@ -713,7 +716,7 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
-                retries: 5,
+                retries: 10,
                 onCompromised: () => { }
             });
         }

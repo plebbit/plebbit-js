@@ -19,7 +19,7 @@ type TestServerSubs = {
     mainSub: string;
     mathSub: string;
 };
-export declare function startOnlineSubplebbit(): Promise<import("../subplebbit/rpc-remote-subplebbit.js").RpcRemoteSubplebbit | RemoteSubplebbit | import("../subplebbit/rpc-local-subplebbit.js").RpcLocalSubplebbit | import("../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+export declare function startOnlineSubplebbit(): Promise<import("../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit | import("../subplebbit/rpc-local-subplebbit.js").RpcLocalSubplebbit | import("../subplebbit/rpc-remote-subplebbit.js").RpcRemoteSubplebbit | RemoteSubplebbit>;
 export declare function startSubplebbits(props: {
     signers: SignerType[];
     noData: boolean;
@@ -52,7 +52,7 @@ export declare function publishVote(commentCid: string, subplebbitAddress: strin
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined>;
 export declare function waitTillCommentIsInParentPages(comment: Comment, plebbit: Plebbit, propsToCheckFor?: Partial<CreateCommentOptions>, checkInAllPages?: boolean): Promise<void>;
-export declare function createSubWithNoChallenge(props: CreateSubplebbitOptions, plebbit: Plebbit): Promise<import("../subplebbit/rpc-remote-subplebbit.js").RpcRemoteSubplebbit | RemoteSubplebbit | import("../subplebbit/rpc-local-subplebbit.js").RpcLocalSubplebbit | import("../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>;
+export declare function createSubWithNoChallenge(props: CreateSubplebbitOptions, plebbit: Plebbit): Promise<import("../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit | import("../subplebbit/rpc-local-subplebbit.js").RpcLocalSubplebbit | import("../subplebbit/rpc-remote-subplebbit.js").RpcRemoteSubplebbit | RemoteSubplebbit>;
 export declare function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit): Promise<Comment>;
 export declare function isRpcFlagOn(): boolean;
 export declare function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>): Promise<void>;

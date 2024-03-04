@@ -102,6 +102,7 @@ export var messages;
     messages["ERR_SUB_CREATION_LOCKED"] = "Subplebbit creation is locked";
     messages["ERR_SUB_ALREADY_STARTED"] = "Subplebbit already started";
     messages["ERR_FAILED_TO_IMPORT_IPFS_KEY"] = "Subplebbit failed to import IPFS key";
+    messages["ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD"] = "The local subplebbit has produced a new IPNS record with invalid signature. This is a crticial error";
     // Pubsub errors
     messages["ERR_PUBSUB_FAILED_TO_SUBSCRIBE"] = "Failed to subscribe on pubsub";
     messages["ERR_PUBSUB_FAILED_TO_UNSUBSCRIBE"] = "Failed to unsubscribe on pubsub";

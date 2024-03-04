@@ -113,7 +113,10 @@ export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
 export type Wallet = {
     address: string;
     timestamp: number;
-    signature: JsonSignature;
+    signature: {
+        signature: "0x${string}";
+        type: "eip191";
+    };
 };
 export interface PublicationType extends Required<Omit<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">>, Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids"> {
     author: AuthorIpfsType;
@@ -158,7 +161,10 @@ export type Nft = {
     address: string;
     id: string;
     timestamp: number;
-    signature: JsonSignature;
+    signature: {
+        signature: "0x${string}";
+        type: "eip191";
+    };
 };
 export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
@@ -359,6 +365,7 @@ export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAns
     ipnsName?: string;
     id: number;
     insertedAt: number;
+    authorSignerAddress: string;
 }
 export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {
 }
@@ -371,6 +378,7 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
+    authorSignerAddress: string;
 }
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 }
@@ -378,6 +386,7 @@ export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAn
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     isAuthorEdit: boolean;
+    authorSignerAddress: string;
 }
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {
 }
@@ -490,7 +499,7 @@ export interface StorageInterface {
 type LRUStorageCacheNames = "plebbitjs_lrustorage_postTimestamp" | "plebbitjs_lrustorage_commentPostUpdatesParentsPath";
 export interface LRUStorageConstructor {
     maxItems?: number;
-    cacheName: LRUStorageCacheNames;
+    cacheName: LRUStorageCacheNames | string;
     plebbit: Pick<Plebbit, "dataPath" | "noData">;
 }
 export interface LRUStorageInterface {

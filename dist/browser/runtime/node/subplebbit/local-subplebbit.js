@@ -12,7 +12,7 @@ import { signChallengeMessage, signChallengeVerification, signCommentUpdate, sig
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
-import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifyVote } from "../../../signer/index.js";
+import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifySubplebbit, verifyVote } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants.js";
@@ -21,7 +21,7 @@ import * as cborg from "cborg";
 import assert from "assert";
 import env from "../../../version.js";
 import { sha256 } from "js-sha256";
-import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
+import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -176,7 +176,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             postUpdates: newPostUpdates
         };
         const signature = await signSubplebbit(newIpns, this.signer);
-        // this._validateLocalSignature(signature, newIpns); // this commented line should be taken out later
+        await this._validateSubSignatureBeforePublishing({ ...newIpns, signature }); // this commented line should be taken out later
         await this.initRemoteSubplebbitProps({ ...newIpns, signature });
         this._subplebbitUpdateTrigger = false;
         const newSubplebbitRecord = { ...newIpns, signature };
@@ -196,20 +196,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`);
     }
+    async _validateSubSignatureBeforePublishing(recordTobePublished) {
+        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false);
+        if (!validation.valid) {
+            this._cidsToUnPin = [];
+            throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD", {
+                validation,
+                subplebbitAddress: recordTobePublished.address
+            });
+        }
+    }
     async storeCommentEdit(commentEditRaw, challengeRequestId) {
         const log = Logger("plebbit-js:local-subplebbit:handleCommentEdit");
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
         const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
-        await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit));
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
+        await this.dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit, authorSignerAddress));
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
     }
     async storeVote(newVoteProps, challengeRequestId) {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
         const newVote = await this.plebbit.createVote(newVoteProps);
-        await this.dbHandler.deleteVote(newVote.author.address, newVote.commentCid);
-        await this.dbHandler.insertVote(newVote.toJSONForDb());
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
+        await this.dbHandler.deleteVote(authorSignerAddress, newVote.commentCid);
+        await this.dbHandler.insertVote(newVote.toJSONForDb(authorSignerAddress));
         log.trace(`(${challengeRequestId.toString()}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         return undefined;
     }
@@ -255,8 +267,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
                 const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress), trxForInsert);
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
                 log(`(${request.challengeRequestId.toString()}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             }
@@ -273,8 +286,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
                 const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash), trxForInsert);
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress), trxForInsert);
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
                 log(`(${request.challengeRequestId.toString()}): `, `New comment with cid ${commentToInsert.cid} has been inserted into DB`);
             }
@@ -372,8 +386,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log.trace(`(${request.challengeRequestId.toString()}): `, `Will attempt to publish challengeVerification with challengeSuccess=true`);
             //@ts-expect-error
             const publication = await this.storePublication(request);
-            if (lodash.isPlainObject(publication))
-                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(publication.author.address);
+            if (lodash.isPlainObject(publication)) {
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
+            }
             // could contain "publication" or "reason"
             const encrypted = lodash.isPlainObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify({ publication: publication }), this.signer.privateKey, request.signature.publicKey)
@@ -508,7 +524,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const publicationVote = publication;
             if (![1, 0, -1].includes(publicationVote.vote))
                 return messages.INCORRECT_VOTE_VALUE;
-            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, publicationVote.author.address);
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publicationVote.signature.publicKey);
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, authorSignerAddress);
             if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
@@ -549,17 +566,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return this._publishFailedChallengeVerification({ reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED }, decryptedRequest.challengeRequestId);
         if (decryptedRequest?.publication?.author?.["subplebbit"])
             return this._publishFailedChallengeVerification({ reason: messages.ERR_FORBIDDEN_AUTHOR_FIELD }, decryptedRequest.challengeRequestId);
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
         //@ts-expect-error
         const decryptedRequestWithSubplebbitAuthor = decryptedRequest;
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest); // This function will throw an error if signature is invalid
         }
         catch (e) {
-            decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(decryptedRequest.publication.author.address);
+            decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
+                await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
         }
-        decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(decryptedRequest.publication.author.address);
+        decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
+            await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
         this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
         // Check publication props validity
         const publicationInvalidityReason = await this._checkPublicationValidity(decryptedRequestWithSubplebbitAuthor);

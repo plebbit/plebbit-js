@@ -61,7 +61,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _initResolver;
     private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
-    getSubplebbit(subplebbitAddress: string): Promise<RpcRemoteSubplebbit | RemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit>;
+    getSubplebbit(subplebbitAddress: string): Promise<LocalSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | RemoteSubplebbit>;
     getComment(cid: string): Promise<Comment>;
     private _initMissingFields;
     private _createCommentInstance;
@@ -79,7 +79,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     pubsubSubscribe(subplebbitAddress: string): Promise<void>;
     pubsubUnsubscribe(subplebbitAddress: string): Promise<void>;
     resolveAuthorAddress(authorAddress: string): Promise<string>;
-    createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">): Promise<LRUStorageInterface>;
+    _createStorageLRU(opts: Omit<LRUStorageConstructor, "plebbit">): Promise<LRUStorageInterface>;
     rpcCall(method: string, params: any[]): Promise<any>;
     destroy(): Promise<void>;
     toJSON(): any;

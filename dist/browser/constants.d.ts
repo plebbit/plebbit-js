@@ -1,6 +1,8 @@
 import { LRUCache } from "lru-cache";
 import { LRUStorageConstructor } from "./types.js";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
+import { PublicClient as ViemClient } from "viem";
+import { Plebbit } from "./plebbit.js";
 export declare enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT = 0,// InternalSubplebbitType
     PERSISTENT_DELETED_SUBPLEBBITS = 1
@@ -16,3 +18,5 @@ export declare const p2pCidPromiseCache: LRUCache<string, Promise<string>, unkno
 export declare const subplebbitVerificationCache: LRUCache<string, boolean, unknown>;
 export declare const pageVerificationCache: LRUCache<string, boolean, unknown>;
 export declare const commentUpdateVerificationCache: LRUCache<string, boolean, unknown>;
+export declare const _viemClients: Record<string, ViemClient>;
+export declare const getViemClient: (plebbit: Plebbit, chainTicker: string, chainProviderUrl: string) => Promise<ViemClient>;

@@ -280,4 +280,7 @@ export async function genToArray(gen) {
     }
     return out;
 }
+export function isStringDomain(x) {
+    return typeof x === "string" && x.includes(".");
+}
 //# sourceMappingURL=util.js.map

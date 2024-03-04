@@ -27,10 +27,11 @@ class Vote extends Publication {
     getType() {
         return "vote";
     }
-    toJSONForDb() {
+    toJSONForDb(authorSignerAddress) {
         return {
             ...this.toJSONPubsubMessagePublication(),
-            authorAddress: this.author.address
+            authorAddress: this.author.address,
+            authorSignerAddress
         };
     }
     async _validateSignature() {

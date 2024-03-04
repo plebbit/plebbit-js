@@ -1,3 +1,4 @@
+import type { LocalSubplebbit } from "../runtime/browser/subplebbit/local-subplebbit.js";
 import { JsonSignature, SignerType } from "../signer/constants.js";
 import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
@@ -181,7 +182,7 @@ export interface ChallengeFile {
     type: "image/png" | "text/plain" | "chain/<chainTicker>";
     challenge?: string;
     description?: string;
-    getChallenge: (challenge: SubplebbitChallengeSettings, challengeRequest: DecryptedChallengeRequestMessageType, challengeIndex: number) => Promise<Challenge | ChallengeResult>;
+    getChallenge: (challenge: SubplebbitChallengeSettings, challengeRequest: DecryptedChallengeRequestMessageType, challengeIndex: number, subplebbit: LocalSubplebbit) => Promise<Challenge | ChallengeResult>;
 }
 export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChallengeSettings) => ChallengeFile;
 export type SubplebbitSettings = {

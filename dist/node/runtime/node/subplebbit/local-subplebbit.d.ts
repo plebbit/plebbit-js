@@ -34,6 +34,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     _createNewLocalSubDb(): Promise<void>;
     private _calculateNewPostUpdates;
     private updateSubplebbitIpnsIfNeeded;
+    private _validateSubSignatureBeforePublishing;
     private storeCommentEdit;
     private storeVote;
     private isPublicationVote;

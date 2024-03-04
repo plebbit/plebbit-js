@@ -58,7 +58,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     toJSONIpfs(): CommentIpfsType;
     toJSONPubsubMessagePublication(): CommentPubsubMessage;
     toJSONAfterChallengeVerification(): CommentIpfsWithCid;
-    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"]): CommentsTableRowInsert;
+    toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"], authorSignerAddress: string): CommentsTableRowInsert;
     toJSONMerged(): CommentWithCommentUpdate;
     setPostCid(newPostCid: string): void;
     setCid(newCid: string): void;

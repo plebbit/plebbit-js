@@ -28,8 +28,8 @@ declare class PlebbitWsServer extends EventEmitter {
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<{
         author: import("../../types.js").AuthorIpfsType;
-        challengeCommentCids?: string[];
         challengeAnswers?: string[];
+        challengeCommentCids?: string[];
         parentCid?: string;
         content?: string;
         title?: string;
