@@ -254,7 +254,7 @@ export default class PlebbitRpcClient {
         return res;
     }
 
-    async rpcCall(method: string, params: any[]): Promise<any>{
+    async rpcCall(method: string, params: any[]): Promise<any> {
         // This function can be used to call any function on the rpc server
         const res = <any>await this._webSocketClient.call(method, params);
         return res;

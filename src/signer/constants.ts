@@ -182,10 +182,10 @@ export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] 
 
 // ---------------------------
 // SignedPropertyNames union (different representation)
-export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
-export type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
-export type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
-export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
+export type CommentSignedPropertyNamesUnion = (typeof CommentSignedPropertyNames)[number];
+export type CommentEditSignedPropertyNamesUnion = (typeof CommentEditSignedPropertyNames)[number];
+export type VoteSignedPropertyNamesUnion = (typeof VoteSignedPropertyNames)[number];
+export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSignedPropertyNames)[number];
 
 // ---------------------------
 // Signing

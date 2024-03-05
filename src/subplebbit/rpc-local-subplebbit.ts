@@ -34,7 +34,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
     }
 
-    protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType){
+    protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
         await this.initRpcInternalSubplebbit(rpcProps);
     }
 

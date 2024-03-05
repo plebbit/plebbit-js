@@ -65,10 +65,10 @@ export default class Stats {
             type === "cid" || type === "ipns"
                 ? "ipfsGateways"
                 : type === "pubsub-publish" || type === "pubsub-subscribe"
-                ? "pubsubClients"
-                : type === "eth" || type === "avax" || type === "matic"
-                ? "chainProviders"
-                : undefined;
+                  ? "pubsubClients"
+                  : type === "eth" || type === "avax" || type === "matic"
+                    ? "chainProviders"
+                    : undefined;
         assert(gatewayType);
         const gateways =
             gatewayType === "chainProviders"

@@ -1,5 +1,5 @@
 import io, { Socket } from "socket.io-client";
-import {  IpfsClient, PubsubSubscriptionHandler } from "../types.js";
+import { IpfsClient, PubsubSubscriptionHandler } from "../types.js";
 
 const port = 25963;
 
@@ -20,7 +20,6 @@ class IpfsHttpClient {
                 } else ioClient.emit(topic, message);
             },
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
-                
                 const callback = (msg: Buffer) => {
                     //@ts-expect-error
                     rawCallback({ from: undefined, seqno: undefined, topicIDs: undefined, data: new Uint8Array(msg) });

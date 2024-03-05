@@ -26,8 +26,8 @@ export class Signer implements SignerType {
             props.ipfsKey?.constructor?.name === "Object"
                 ? new Uint8Array(Object.values(props.ipfsKey))
                 : props.ipfsKey
-                ? new Uint8Array(props.ipfsKey)
-                : undefined;
+                  ? new Uint8Array(props.ipfsKey)
+                  : undefined;
     }
 }
 

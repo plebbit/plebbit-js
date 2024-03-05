@@ -1,7 +1,7 @@
 // empty for the browser
 
 export class DbHandler {
-    constructor(){
+    constructor() {
         throw Error("Should not attempt to create a new instance of DbHandler on browser");
     }
 }

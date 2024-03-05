@@ -381,7 +381,10 @@ export class DbHandler {
         commentCid: VotesTableRow["commentCid"],
         trx?: Transaction
     ) {
-        await this._baseTransaction(trx)(TABLES.VOTES).where("commentCid", commentCid).where("authorSignerAddress", authorSignerAddress).del();
+        await this._baseTransaction(trx)(TABLES.VOTES)
+            .where("commentCid", commentCid)
+            .where("authorSignerAddress", authorSignerAddress)
+            .del();
     }
 
     async insertVote(vote: VotesTableRowInsert, trx?: Transaction) {
@@ -767,7 +770,10 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
     }
 
-    async queryAuthorModEdits(authorSignerAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
+    async queryAuthorModEdits(
+        authorSignerAddress: string,
+        trx?: Knex.Transaction
+    ): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
         const authorComments: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select("cid")
             .where("authorSignerAddress", authorSignerAddress);
@@ -910,7 +916,7 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
-                retries: 10,
+                retries: 5,
                 onCompromised: () => {}
             });
         } catch (e) {

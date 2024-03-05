@@ -1,5 +1,5 @@
 const config = {
-  port: 39652,
-}
+    port: 39652
+};
 
-module.exports = config
+module.exports = config;

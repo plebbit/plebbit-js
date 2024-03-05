@@ -138,7 +138,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
         expect(sub.startedState).to.not.equal("stopped");
 
-        const recreatedSub = await plebbit.createSubplebbit({address: sub.address});
+        const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(recreatedSub.startedState).to.not.equal("stopped");
         expect(sub.startedState).to.not.equal("stopped");
         await sub.stop();

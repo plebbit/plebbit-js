@@ -544,7 +544,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return this._storageLRUs[opts.cacheName];
     }
 
-    async rpcCall(method: string, params: any[]): Promise<any>{
+    async rpcCall(method: string, params: any[]): Promise<any> {
         if (!this.plebbitRpcClient) throw Error("Can't call rpcCall without having a rpc connection");
         return this.plebbitRpcClient.rpcCall(method, params);
     }

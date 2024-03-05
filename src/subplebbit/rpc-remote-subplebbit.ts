@@ -39,7 +39,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         mapper[updatingState].forEach(this._setRpcClientState.bind(this));
     }
 
-    protected async _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType){
+    protected async _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType) {
         await this.initRemoteSubplebbitProps(rpcProps);
     }
 

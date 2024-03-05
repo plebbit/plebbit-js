@@ -61,7 +61,7 @@ export class BaseClientsManager {
     getDefaultIpfs() {
         assert(this._defaultIpfsProviderUrl);
         assert(this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl]);
-        
+
         return this._plebbit.clients.ipfsClients[this._defaultIpfsProviderUrl];
     }
 

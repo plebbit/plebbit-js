@@ -65,8 +65,7 @@ export const encryptEd25519AesGcm = async (plaintext: string, privateKeyBase64: 
         throw Error(`encryptEd25519AesGcm publicKeyBase64 '${publicKeyBase64}' not a string`);
     const publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
 
-        return encryptEd25519AesGcmPublicKeyBuffer(plaintext, privateKeyBase64, publicKeyBuffer);
-
+    return encryptEd25519AesGcmPublicKeyBuffer(plaintext, privateKeyBase64, publicKeyBuffer);
 };
 
 export const encryptEd25519AesGcmPublicKeyBuffer = async (plaintext: string, privateKeyBase64: string, publicKeyBuffer: Uint8Array) => {
@@ -106,7 +105,6 @@ export const encryptEd25519AesGcmPublicKeyBuffer = async (plaintext: string, pri
     };
     return encrypted;
 };
-
 
 export const decryptEd25519AesGcm = async (encrypted: Encrypted, privateKeyBase64: string, publicKeyBase64: string) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string")

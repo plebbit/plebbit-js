@@ -38,7 +38,7 @@ export const getBufferedPlebbitAddressFromPublicKey = async (publicKeyBase64: st
 const _makeSureBytesAreUint8Array = (bytes: any): Uint8Array => {
     if (!(bytes instanceof Uint8Array)) return new Uint8Array(bytes);
     return bytes;
-}
+};
 
 export const getIpfsKeyFromPrivateKey = async (privateKeyBase64: string) => {
     if (!privateKeyBase64 || typeof privateKeyBase64 !== "string") throw Error(`getIpfsKeyFromPrivateKey privateKeyBase64 not a string`);

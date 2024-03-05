@@ -1,6 +1,6 @@
-const {expect} = require('chai')
-const testServerConfig = require('../test-server/config')
+const { expect } = require("chai");
+const testServerConfig = require("../test-server/config");
 
-describe('plebbit-ws-server', () => {
-  before(async () => {})
-})
+describe("plebbit-ws-server", () => {
+    before(async () => {});
+});
