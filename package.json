@@ -134,6 +134,9 @@
         "webpack-cli": "5.1.4",
         "webpack-watch-files-plugin": "1.2.1"
     },
+    "resolutions": {
+        "skia-canvas": "1.0.0"
+    },
     "description": "plebbit.js will be an NPM module to wrap around the IPFS APIs used by Plebbit. It will be used in all clients: CLI, Electron (Desktop GUI) and Web.",
     "repository": {
         "type": "git",
