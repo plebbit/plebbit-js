@@ -7,6 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
 import type { Plebbit } from "../../../../../../plebbit.js";
 import { isStringDomain } from "../../../../../../util.js";
+import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
 
 const optionInputs = [
     {
@@ -59,97 +60,162 @@ const nftAbi = [
   ];
 
 const supportedConditionOperators = ["=", ">", "<"];
-const verifyAuthorAddress = async (
-    publication: DecryptedChallengeRequestMessageType["publication"],
-    chainTicker: string,
-    plebbit: Plebbit
-) => {
-    const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:verifyAuthorAddress");
-    const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address; // could be EVM address or .eth or .sol
-    const wallet = publication.author.wallets?.[chainTicker];
-    const nftAvatar = publication.author?.avatar;
-    // TOOD should add a test in case of .sol author.address
-    if (!wallet?.signature && !nftAvatar?.signature) {
-        log.error("Publication has no wallet or NFT, therefore it will be rejected");
-        return false;
-    }
-    if (isStringDomain(authorWalletAddress)) {
+
+const verifyAuthorWalletAddress = async (props: {
+    publication: DecryptedChallengeRequestMessageType["publication"];
+    chainTicker: string;
+    condition: string;
+    abi: any;
+    error: string;
+    contractAddress: string;
+    plebbit: Plebbit;
+}): Promise<string | undefined> => {
+    const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:verifyAuthorWalletAddress");
+    const authorWallet = props.publication.author.wallets?.[props.chainTicker];
+    if (typeof authorWallet?.address !== "string") return "The author wallet address is not defined";
+    // Verify first if the signature and resolved address is correct, before running the smart contract
+    if (isStringDomain(authorWallet.address)) {
         // resolve plebbit-author-address and check if it matches publication.signature.publicKey
-        const resolvedWalletAddress = await plebbit.resolveAuthorAddress(authorWalletAddress); // plebbit address
-        const publicationSignatureAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        const resolvedWalletAddress = await props.plebbit.resolveAuthorAddress(authorWallet.address); // plebbit address
+        const publicationSignatureAddress = await getPlebbitAddressFromPublicKey(props.publication.signature.publicKey);
         if (resolvedWalletAddress !== publicationSignatureAddress) {
+            const failedMsg =
+                "The author wallet address's plebbit-author-address text record should resolve to the public key of the signature";
             log.error(
-                `The author wallet address (${authorWalletAddress}) resolves to an incorrect value (${resolvedWalletAddress}), but it should resolve to ${publicationSignatureAddress}`
+                `The author wallet address (${authorWallet.address}) resolves to an incorrect value (${resolvedWalletAddress}), but it should resolve to ${publicationSignatureAddress}`
             );
-            return false;
+            return failedMsg;
         }
     }
-    if (nftAvatar?.signature) {
-        const viemClient = await getViemClient(plebbit, nftAvatar.chainTicker, plebbit.chainProviders[nftAvatar.chainTicker].urls[0]);
 
-        let currentOwner: "0x${string}";
-        try {
-            currentOwner = <"0x${string}">await viemClient.readContract({
-                abi: nftAbi,
-                address: <"0x${string}">nftAvatar.address,
-                functionName: "ownerOf",
-                args: [nftAvatar.id]
-            });
-        } catch (e) {
-            log.error("Failed to read NFT contract", e);
-            return false;
-        }
+    // verify the signature of the wallet
 
-        const messageToBeSigned = {};
-        // the property names must be in this order for the signature to match
-        // insert props one at a time otherwise babel/webpack will reorder
-        messageToBeSigned["domainSeparator"] = "plebbit-author-avatar";
-        messageToBeSigned["authorAddress"] = publication.author.address;
-        messageToBeSigned["timestamp"] = nftAvatar.timestamp;
-        messageToBeSigned["tokenAddress"] = nftAvatar.address;
-        messageToBeSigned["tokenId"] = String(nftAvatar.id); // must be a type string, not number
-        const valid = await viemClient.verifyMessage({
-            address: currentOwner,
-            message: JSON.stringify(messageToBeSigned),
-            signature: nftAvatar.signature.signature
-        });
-        if (!valid) {
-            log.error(`The signature of the nft avatar is invalid`);
-            return false;
-        }
+    // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
+    const viemClient = await getViemClient(props.plebbit, "eth", props.plebbit.chainProviders.eth.urls[0]);
+
+    const messageToBeSigned = {};
+    messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
+    messageToBeSigned["authorAddress"] = props.publication.author.address;
+    messageToBeSigned["timestamp"] = authorWallet.timestamp;
+
+    const valid = await viemClient.verifyMessage({
+        address: <"0x${string}">authorWallet.address,
+        message: JSON.stringify(messageToBeSigned),
+        signature: authorWallet.signature.signature
+    });
+    if (!valid) {
+        const failedMsg = `The signature of the wallet is invalid`;
+        log.error(`The signature of the wallet is invalid`, authorWallet.address);
+        return failedMsg;
     }
-    if (wallet?.signature) {
-        // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
-        const viemClient = await getViemClient(plebbit, "eth", plebbit.chainProviders.eth.urls[0]);
-
-        const messageToBeSigned = {};
-        messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
-        messageToBeSigned["authorAddress"] = publication.author.address;
-        messageToBeSigned["timestamp"] = wallet.timestamp;
-
-        const valid = await viemClient.verifyMessage({
-            address: <"0x${string}">wallet.address,
-            message: JSON.stringify(messageToBeSigned),
-            signature: wallet.signature.signature
-        });
-        if (!valid) {
-            log.error(`The signature of the wallet is invalid`);
-            return false;
-        }
-        // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
-        const cache = await plebbit._createStorageLRU({
-            cacheName: "challenge_evm_contract_call_v1_wallet_last_timestamp",
-            maxItems: undefined
-        });
-        const cacheKey = chainTicker + authorWalletAddress;
-        const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
-        if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > wallet.timestamp) {
-            log.error(`Wallet (${authorWalletAddress}) is trying to use an old signature`);
-            return false;
-        }
-        if ((lastTimestampOfAuthor || 0) < wallet.timestamp) await cache.setItem(cacheKey, wallet.timestamp);
+    // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
+    const cache = await props.plebbit._createStorageLRU({
+        cacheName: "challenge_evm_contract_call_v1_wallet_last_timestamp",
+        maxItems: undefined
+    });
+    const cacheKey = props.chainTicker + authorWallet.address;
+    const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
+    if (typeof lastTimestampOfAuthor === "number" && lastTimestampOfAuthor > authorWallet.timestamp) {
+        log.error(`Wallet (${authorWallet.address}) is trying to use an old signature`);
+        return "The author is trying to use an old wallet signature";
     }
-    return true;
+    if ((lastTimestampOfAuthor || 0) < authorWallet.timestamp) await cache.setItem(cacheKey, authorWallet.timestamp);
+
+    // Validate the contract call and condition here
+
+    const walletValidationFailure = await validateWalletAddressWithCondition({
+        authorWalletAddress: authorWallet.address,
+        condition: props.condition,
+        plebbit: props.plebbit,
+        contractAddress: props.contractAddress,
+        chainTicker: props.chainTicker,
+        abi: props.abi,
+        error: props.error
+    });
+
+    if (walletValidationFailure) return walletValidationFailure;
+    else return undefined;
+};
+
+const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
+    if (!props.publication.author.address.endsWith(".eth")) return "Author address is not an ENS domain";
+    const viemClient = await getViemClient(props.plebbit, "eth", props.plebbit.chainProviders["eth"].urls[0]);
+
+    const ownerOfAddress = await viemClient.getEnsAddress({
+        name: lib.normalize(props.publication.author.address)
+    });
+
+    // No need to verify if owner has their plebbit-author-address, it's already part of verifyComment
+    const walletValidationFailure = await validateWalletAddressWithCondition({
+        authorWalletAddress: ownerOfAddress,
+        condition: props.condition,
+        plebbit: props.plebbit,
+        contractAddress: props.contractAddress,
+        chainTicker: props.chainTicker,
+        abi: props.abi,
+        error: props.error
+    });
+
+    if (walletValidationFailure) return walletValidationFailure;
+    else return undefined;
+};
+
+const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
+    if (!props.publication.author.avatar) return "Author has no avatar NFT set";
+    const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:verifyAuthorNftWalletAddress");
+
+    const nftAvatar = props.publication.author.avatar;
+    const viemClient = await getViemClient(
+        props.plebbit,
+        nftAvatar.chainTicker,
+        props.plebbit.chainProviders[nftAvatar.chainTicker].urls[0]
+    );
+
+    let currentOwner: "0x${string}";
+    try {
+        currentOwner = <"0x${string}">await viemClient.readContract({
+            abi: nftAbi,
+            address: <"0x${string}">nftAvatar.address,
+            functionName: "ownerOf",
+            args: [nftAvatar.id]
+        });
+    } catch (e) {
+        log.error("Failed to read NFT contract", e);
+        return "Failed to read NFT contract";
+    }
+
+    const messageToBeSigned = {};
+    // the property names must be in this order for the signature to match
+    // insert props one at a time otherwise babel/webpack will reorder
+    messageToBeSigned["domainSeparator"] = "plebbit-author-avatar";
+    messageToBeSigned["authorAddress"] = props.publication.author.address;
+    messageToBeSigned["timestamp"] = nftAvatar.timestamp;
+    messageToBeSigned["tokenAddress"] = nftAvatar.address;
+    messageToBeSigned["tokenId"] = String(nftAvatar.id); // must be a type string, not number
+    const valid = await viemClient.verifyMessage({
+        address: currentOwner,
+        message: JSON.stringify(messageToBeSigned),
+        signature: nftAvatar.signature.signature
+    });
+    if (!valid) {
+        log.error(`The signature of the nft avatar is invalid`);
+        return `The signature of the nft avatar is invalid`;
+    }
+
+    // We're done with validation, let's call the contract
+
+    const nftWalletValidationFailure = await validateWalletAddressWithCondition({
+        authorWalletAddress: currentOwner,
+        condition: props.condition,
+        plebbit: props.plebbit,
+        contractAddress: props.contractAddress,
+        chainTicker: props.chainTicker,
+        abi: props.abi,
+        error: props.error
+    });
+
+    if (nftWalletValidationFailure) return nftWalletValidationFailure;
+    else return undefined;
 };
 
 const getContractCallResponse = async (props: {
@@ -226,17 +292,11 @@ const validateWalletAddressWithCondition = async (props: {
             plebbit: props.plebbit
         });
     } catch (e) {
-        return {
-            success: false,
-            error: `Failed getting contract call response from blockchain.`
-        };
+        return `Failed getting contract call response from blockchain.`;
     }
 
     if (!evaluateConditionString(props.condition, contractCallResponse)) {
-        return {
-            success: false,
-            error: props.error || `Contract call response doesn't pass condition.`
-        };
+        return props.error || `Contract call response doesn't pass condition.`;
     }
     return undefined;
 };
@@ -263,72 +323,43 @@ const getChallenge = async (
         throw Error("missing option condition");
     }
 
+    const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:getChallenge");
+
     const doesConditionStartWithSupportedOperator = supportedConditionOperators.find((operator) => condition.startsWith(operator));
     if (!doesConditionStartWithSupportedOperator) throw Error(`Condition uses unsupported comparison operator`);
     const publication = challengeRequestMessage.publication;
 
-    const authorWalletAddress = publication.author.wallets?.[chainTicker]?.address;
-    const nftAvatar = publication.author.avatar;
-    if (!authorWalletAddress && !nftAvatar) {
+    // Run the contract call and validate condition, by this order:
+    // - author wallet address
+    // - ENS author address (if they have ENS)
+    // - NFT wallet address
+    // If any of them pass, then the challenge pass
+
+    // First try to validate author
+    const sharedProps = { plebbit: subplebbit.plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
+
+    const walletFailureReason = await verifyAuthorWalletAddress(sharedProps);
+    if (!walletFailureReason)
         return {
-            success: false,
-            error: `Author doesn't have a wallet or avatar set.`
+            success: true
         };
-    }
 
-    const verification = await verifyAuthorAddress(publication, chainTicker, subplebbit.plebbit);
-    if (!verification) {
-        return {
-            success: false,
-            error: `Author doesn't signature proof of his wallet or NFT address.`
-        };
-    }
+    // Second try to validate author ENS address
+    const ensAuthorAddressFailureReason = await verifyAuthorENSAddress(sharedProps);
+    if (!ensAuthorAddressFailureReason) return { success: true };
 
-    // Validate for author wallet address
-    if (authorWalletAddress) {
-        const walletValidationFailure = await validateWalletAddressWithCondition({
-            authorWalletAddress,
-            condition,
-            plebbit: subplebbit.plebbit,
-            contractAddress: address,
-            chainTicker,
-            abi,
-            error
-        });
-        if (!walletValidationFailure) return { success: true };
-        if (walletValidationFailure && !nftAvatar) return walletValidationFailure;
-    }
+    // Third, try to validate for NFT wallet address
+    const nftWalletAddressFailureReason = await verifyAuthorNftWalletAddress(sharedProps);
+    if (!nftWalletAddressFailureReason) return { success: true };
 
-    // Validate for NFT wallet address
-
-    const viemClient = await getViemClient(
-        subplebbit.plebbit,
-        nftAvatar.chainTicker,
-        subplebbit.plebbit.chainProviders[nftAvatar.chainTicker].urls[0]
+    log(
+        `Author (${publication.author.address}) has failed all EVM challenges`,
+        `walletFailureReason=${walletFailureReason}`,
+        `ensAuthorAddressFailureReason=${ensAuthorAddressFailureReason}`,
+        `ensAuthorAddressFailureReason=${ensAuthorAddressFailureReason}`
     );
-
-    const nftWalletAddress = <"0x${string}">await viemClient.readContract({
-        abi: nftAbi,
-        address: <"0x${string}">nftAvatar.address,
-        functionName: "ownerOf",
-        args: [nftAvatar.id]
-    }); // we're already calling the same method in verifyAuthorAddress, should be cached
-
-    const nftWalletValidationFailure = await validateWalletAddressWithCondition({
-        authorWalletAddress: nftWalletAddress,
-        condition,
-        plebbit: subplebbit.plebbit,
-        contractAddress: address,
-        chainTicker,
-        abi,
-        error
-    });
-
-    if (nftWalletValidationFailure) return nftWalletValidationFailure;
-
-    return {
-        success: true
-    };
+    // author has failed all challenges
+    return { success: false, error: error || `Contract call response doesn't pass condition.` };
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
