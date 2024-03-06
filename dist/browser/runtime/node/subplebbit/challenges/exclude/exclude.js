@@ -1,7 +1,7 @@
-import TinyCache from 'tinycache';
-import QuickLRU from 'quick-lru';
-import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from './utils.js';
-import { testRateLimit } from './rate-limiter.js';
+import TinyCache from "tinycache";
+import QuickLRU from "quick-lru";
+import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
+import { testRateLimit } from "./rate-limiter.js";
 const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
@@ -102,7 +102,9 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) =>
     return false;
 };
 // cache for fetching comment cids, never expire
-const commentCache = new QuickLRU({ maxSize: 10000 });
+const commentCache = new QuickLRU({
+    maxSize: 10000
+});
 // cache for fetching comment updates, expire after 1 day
 const commentUpdateCache = new TinyCache();
 const commentUpdateCacheTime = 1000 * 60 * 60;
@@ -114,7 +116,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     if (!challengeRequestMessage) {
         throw Error(`shouldExcludeChallengeCommentCids invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }
-    if (typeof plebbit?.getComment !== 'function') {
+    if (typeof plebbit?.getComment !== "function") {
         throw Error(`shouldExcludeChallengeCommentCids invalid plebbit argument '${plebbit}'`);
     }
     const commentCids = challengeRequestMessage.challengeCommentCids;
@@ -122,7 +124,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     if (commentCids && !Array.isArray(commentCids)) {
         throw Error(`shouldExcludeChallengeCommentCids invalid commentCids argument '${commentCids}'`);
     }
-    if (!author?.address || typeof author?.address !== 'string') {
+    if (!author?.address || typeof author?.address !== "string") {
         throw Error(`shouldExcludeChallengeCommentCids invalid challengeRequestMessage.publication.author.address argument '${author?.address}'`);
     }
     const _getComment = async (commentCid, addressesSet) => {
@@ -153,7 +155,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
                 // @ts-ignore
                 commentUpdate = await plebbit.createComment({ cid: commentCid });
             }
-            const commentUpdatePromise = new Promise((resolve) => commentUpdate.once('update', resolve));
+            const commentUpdatePromise = new Promise((resolve) => commentUpdate.once("update", resolve));
             await commentUpdate.update();
             await commentUpdatePromise;
             await commentUpdate.stop();
@@ -169,7 +171,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     };
     const getComment = async (commentCid, addressesSet) => {
         // don't fetch the same comment twice
-        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const pendingKey = commentCid + plebbit.plebbitOptions?.ipfsGatewayUrl + plebbit.plebbitOptions?.ipfsHttpClientOptions?.url;
         while (getCommentPending[pendingKey] === true) {
             await sleep(20);
@@ -204,7 +206,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
         }
         // no friendly sub addresses
         if (!addresses?.length) {
-            throw Error('no friendly sub addresses');
+            throw Error("no friendly sub addresses");
         }
         const addressesSet = new Set(addresses);
         // author didn't provide comment cids

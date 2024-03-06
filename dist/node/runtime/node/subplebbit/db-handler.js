@@ -295,7 +295,10 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
     async deleteVote(authorSignerAddress, commentCid, trx) {
-        await this._baseTransaction(trx)(TABLES.VOTES).where("commentCid", commentCid).where("authorSignerAddress", authorSignerAddress).del();
+        await this._baseTransaction(trx)(TABLES.VOTES)
+            .where("commentCid", commentCid)
+            .where("authorSignerAddress", authorSignerAddress)
+            .del();
     }
     async insertVote(vote, trx) {
         await this._baseTransaction(trx)(TABLES.VOTES).insert(vote);
@@ -716,7 +719,7 @@ export class DbHandler {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
                 realpath: false,
-                retries: 10,
+                retries: 5,
                 onCompromised: () => { }
             });
         }

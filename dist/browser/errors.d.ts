@@ -15,6 +15,7 @@ export declare enum messages {
     ERR_CAN_NOT_RUN_A_SUB_WITH_NO_IPFS_NODE = "Can't run a subplebbit with plebbit.ipfsHttpClientOptions undefined",
     ERR_PLEBBIT_OPTION_NOT_ACCEPTED = "Option is not accepted on Plebbit constructor",
     ERR_CAN_NOT_CREATE_A_SUB = "Can't create a new sub with the current PlebbitOptions",
+    ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED = "User provided options.address in createSubplebbit that is either undefined or null",
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
     ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",

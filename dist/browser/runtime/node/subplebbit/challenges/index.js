@@ -1,35 +1,35 @@
-import { shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess, addToRateLimiter } from './exclude/index.js';
+import { shouldExcludeChallengeCommentCids, shouldExcludePublication, shouldExcludeChallengeSuccess, addToRateLimiter } from "./exclude/index.js";
 // all challenges included with plebbit-js, in Plebbit.challenges
-import textMath from './plebbit-js-challenges/text-math.js';
-import captchaCanvasV3 from './plebbit-js-challenges/captcha-canvas-v3/index.js';
-import fail from './plebbit-js-challenges/fail.js';
-import blacklist from './plebbit-js-challenges/blacklist.js';
-import question from './plebbit-js-challenges/question.js';
-import evmContractCall from './plebbit-js-challenges/evm-contract-call/index.js';
+import textMath from "./plebbit-js-challenges/text-math.js";
+import captchaCanvasV3 from "./plebbit-js-challenges/captcha-canvas-v3/index.js";
+import fail from "./plebbit-js-challenges/fail.js";
+import blacklist from "./plebbit-js-challenges/blacklist.js";
+import question from "./plebbit-js-challenges/question.js";
+import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 const plebbitJsChallenges = {
-    'text-math': textMath,
-    'captcha-canvas-v3': captchaCanvasV3,
-    'fail': fail,
-    'blacklist': blacklist,
-    'question': question,
-    'evm-contract-call': evmContractCall
+    "text-math": textMath,
+    "captcha-canvas-v3": captchaCanvasV3,
+    fail: fail,
+    blacklist: blacklist,
+    question: question,
+    "evm-contract-call": evmContractCall
 };
 const validateChallengeFileFactory = (challengeFileFactory, challengeIndex, subplebbit) => {
     const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-    if (typeof challengeFileFactory !== 'function') {
+    if (typeof challengeFileFactory !== "function") {
         throw Error(`invalid challenge file factory export from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`);
     }
 };
 const validateChallengeFile = (challengeFile, challengeIndex, subplebbit) => {
     const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-    if (typeof challengeFile?.getChallenge !== 'function') {
+    if (typeof challengeFile?.getChallenge !== "function") {
         throw Error(`invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`);
     }
 };
 const validateChallengeResult = (challengeResult, challengeIndex, subplebbit) => {
     const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
     const error = `invalid challenge result from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
-    if (typeof challengeResult?.success !== 'boolean') {
+    if (typeof challengeResult?.success !== "boolean") {
         throw Error(error);
     }
 };
@@ -37,9 +37,9 @@ const validateChallengeOrChallengeResult = (challengeOrChallengeResult, getChall
     if (challengeOrChallengeResult?.["success"] !== undefined) {
         validateChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
     }
-    else if (typeof challengeOrChallengeResult?.["challenge"] !== 'string' ||
-        typeof challengeOrChallengeResult?.["type"] !== 'string' ||
-        typeof challengeOrChallengeResult?.["verify"] !== 'function') {
+    else if (typeof challengeOrChallengeResult?.["challenge"] !== "string" ||
+        typeof challengeOrChallengeResult?.["type"] !== "string" ||
+        typeof challengeOrChallengeResult?.["verify"] !== "function") {
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
         let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
         if (getChallengeError) {
@@ -186,17 +186,17 @@ const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, c
         };
     }
     return {
-        challengeSuccess: true,
+        challengeSuccess: true
     };
 };
 const getChallengeVerification = async (challengeRequestMessage, subplebbit, getChallengeAnswers) => {
     if (!challengeRequestMessage) {
         throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }
-    if (typeof subplebbit?.plebbit?.getComment !== 'function') {
+    if (typeof subplebbit?.plebbit?.getComment !== "function") {
         throw Error(`getChallengeVerification invalid subplebbit argument '${subplebbit}' invalid subplebbit.plebbit instance`);
     }
-    if (typeof getChallengeAnswers !== 'function') {
+    if (typeof getChallengeAnswers !== "function") {
         throw Error(`getChallengeVerification invalid getChallengeAnswers argument '${getChallengeAnswers}' not a function`);
     }
     const { pendingChallenges, challengeSuccess, challengeErrors } = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
@@ -227,11 +227,11 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallen
     if (subplebbitChallengeSettings.path) {
         try {
             const ChallengeFileFactory = require(subplebbitChallengeSettings.path);
-            if (typeof ChallengeFileFactory !== 'function') {
+            if (typeof ChallengeFileFactory !== "function") {
                 throw Error(`invalid challenge file factory exported`);
             }
             challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-            if (typeof challengeFile?.getChallenge !== 'function') {
+            if (typeof challengeFile?.getChallenge !== "function") {
                 throw Error(`invalid challenge file`);
             }
         }
@@ -246,16 +246,21 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallen
         if (!ChallengeFileFactory) {
             throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings plebbit-js challenge with name '${subplebbitChallengeSettings.name}' doesn't exist`);
         }
-        if (typeof ChallengeFileFactory !== 'function') {
+        if (typeof ChallengeFileFactory !== "function") {
             throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid challenge file factory exported from subplebbit challenge '${subplebbitChallengeSettings.name}'`);
         }
         challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-        if (typeof challengeFile?.getChallenge !== 'function') {
+        if (typeof challengeFile?.getChallenge !== "function") {
             throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name}'`);
         }
     }
     const { challenge, type } = challengeFile;
-    return { exclude: subplebbitChallengeSettings.exclude, description: subplebbitChallengeSettings.description || challengeFile.description, challenge, type };
+    return {
+        exclude: subplebbitChallengeSettings.exclude,
+        description: subplebbitChallengeSettings.description || challengeFile.description,
+        challenge,
+        type
+    };
 };
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };
 //# sourceMappingURL=index.js.map

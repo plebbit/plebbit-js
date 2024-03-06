@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import EventEmitter from 'events';
+import EventEmitter from "events";
 export declare const simulateLoadingTime: () => Promise<unknown>;
 export declare const resetPlebbitJsMock: () => void;
 export declare const debugPlebbitJsMock: () => void;

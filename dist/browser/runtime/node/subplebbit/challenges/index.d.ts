@@ -1,6 +1,6 @@
-import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from '../../../../types.js';
-import { Challenge, ChallengeFileFactory, SubplebbitChallenge, SubplebbitChallengeSettings } from '../../../../subplebbit/types.js';
-import { LocalSubplebbit } from '../local-subplebbit.js';
+import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../types.js";
+import { Challenge, ChallengeFileFactory, SubplebbitChallenge, SubplebbitChallengeSettings } from "../../../../subplebbit/types.js";
+import { LocalSubplebbit } from "../local-subplebbit.js";
 type PendingChallenge = Challenge & {
     index: number;
 };
