@@ -20,6 +20,7 @@
         "test:node:parallel:local": "mocha --forbid-only --bail --parallel --recursive --config config/.mocharc.json test/node",
         "test:node:local": "mocha --forbid-only --recursive --bail --config config/.mocharc.json test/node",
         "test:node:parallel:remote": "mocha --forbid-only --bail --parallel --recursive --config config/.mocharc.json test/node-and-browser",
+        "test:node:remote": "mocha --forbid-only --bail --recursive --config config/.mocharc.json test/node-and-browser",
         "test:browser:chrome": "CHROME_BIN=$(which chrome || which chromium) FIREFOX_BIN='' karma start config/karma.conf.cjs",
         "test:browser:firefox": "FIREFOX_BIN=$(which firefox) CHROME_BIN='' karma start config/karma.conf.cjs",
         "test:server:node": "node --es-module-specifier-resolution=node test/server/test-server.js",
