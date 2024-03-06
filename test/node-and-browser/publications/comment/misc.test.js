@@ -369,7 +369,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 });
 
 describe(`commentUpdate.lastReplyTimestamp`, async () => {
-    let post, plebbit;
+    let post, plebbit, reply;
     before(async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
@@ -383,14 +383,14 @@ describe(`commentUpdate.lastReplyTimestamp`, async () => {
     });
 
     it(`commentUpdate.lastReplyTimestamp updates to the latest child comment's timestamp`, async () => {
-        const reply = await publishRandomReply(post, plebbit, {}, false);
+        reply = await publishRandomReply(post, plebbit, {}, false);
         await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
         expect(post.replyCount).to.equal(1);
         expect(post.lastReplyTimestamp).to.equal(reply.timestamp);
     });
 
     it(`commentUpdate.lastChildCid of a post does not update when replying to a comment under one of its replies`, async () => {
-        const replyOfReply = await publishRandomReply(post.replies.pages.topAll.comments[0], plebbit, {}, false);
+        const replyOfReply = await publishRandomReply(reply, plebbit, {}, false);
         await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         expect(post.replyCount).to.equal(2);
         expect(post.lastReplyTimestamp).to.equal(replyOfReply.timestamp);
