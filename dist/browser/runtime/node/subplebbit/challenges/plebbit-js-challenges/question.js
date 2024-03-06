@@ -1,17 +1,17 @@
 const optionInputs = [
     {
-        option: 'question',
-        label: 'Question',
-        default: '',
-        description: 'The question to answer.',
-        placeholder: '',
+        option: "question",
+        label: "Question",
+        default: "",
+        description: "The question to answer.",
+        placeholder: ""
     },
     {
-        option: 'answer',
-        label: 'Answer',
-        default: '',
-        description: 'The answer to the question.',
-        placeholder: '',
+        option: "answer",
+        label: "Answer",
+        default: "",
+        description: "The answer to the question.",
+        placeholder: "",
         required: true
     }
 ];
@@ -20,7 +20,7 @@ const description = `Ask a question, like 'What is the password?'`;
 const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
     let answer = subplebbitChallengeSettings?.options?.answer;
     if (!answer) {
-        throw Error('no option answer');
+        throw Error("no option answer");
     }
     // use the answer preincluded in the challenge request when possible
     const challengeAnswer = challengeRequestMessage?.challengeAnswers?.[challengeIndex];
@@ -35,7 +35,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
                     };
                 return {
                     success: false,
-                    error: 'Wrong answer.'
+                    error: "Wrong answer."
                 };
             },
             type
@@ -45,7 +45,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     if (challengeAnswer !== answer) {
         return {
             success: false,
-            error: 'Wrong answer.'
+            error: "Wrong answer."
         };
     }
     // the author did preinclude his answer, and it's correct, so send him a success challenge verification

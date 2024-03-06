@@ -49,10 +49,10 @@ export declare const ChallengeMessageSignedPropertyNames: readonly (keyof Challe
 export declare const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[];
 export declare const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[];
 export declare const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[];
-export type CommentSignedPropertyNamesUnion = typeof CommentSignedPropertyNames[number];
-export type CommentEditSignedPropertyNamesUnion = typeof CommentEditSignedPropertyNames[number];
-export type VoteSignedPropertyNamesUnion = typeof VoteSignedPropertyNames[number];
-export type CommentUpdatedSignedPropertyNamesUnion = typeof CommentUpdateSignedPropertyNames[number];
+export type CommentSignedPropertyNamesUnion = (typeof CommentSignedPropertyNames)[number];
+export type CommentEditSignedPropertyNamesUnion = (typeof CommentEditSignedPropertyNames)[number];
+export type VoteSignedPropertyNamesUnion = (typeof VoteSignedPropertyNames)[number];
+export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSignedPropertyNames)[number];
 export type PublicationsToSign = CreateCommentEditOptions | CreateVoteOptions | CreateCommentOptions | Omit<CommentUpdate, "signature"> | Omit<SubplebbitIpfsType, "signature">;
 export type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
 export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;

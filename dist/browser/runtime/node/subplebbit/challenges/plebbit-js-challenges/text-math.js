@@ -1,26 +1,26 @@
 const optionInputs = [
     {
-        option: 'difficulty',
-        label: 'Difficulty',
-        default: '1',
-        description: 'The math difficulty of the challenge between 1-3.',
-        placeholder: '1'
+        option: "difficulty",
+        label: "Difficulty",
+        default: "1",
+        description: "The math difficulty of the challenge between 1-3.",
+        placeholder: "1"
     }
 ];
 const type = "text/plain";
-const description = 'Ask a plain text math question, insecure, use ONLY for testing.';
+const description = "Ask a plain text math question, insecure, use ONLY for testing.";
 const getRandomNumber = (minNumber, maxNumber) => Math.floor(Math.random() * (maxNumber - minNumber + 1) + minNumber);
 const getChallengeString = (minNumber, maxNumber, operators) => {
     let firstNumber = getRandomNumber(minNumber, maxNumber);
     let secondNumber = getRandomNumber(minNumber, maxNumber);
     const operator = operators[getRandomNumber(0, operators.length - 1)];
     // reduce multiply difficulty
-    if (operator === '*') {
+    if (operator === "*") {
         firstNumber = Math.ceil(firstNumber / 10);
         secondNumber = Math.ceil(secondNumber / 10);
     }
     // don't allow negative numbers
-    if (operator === '-' && firstNumber < secondNumber) {
+    if (operator === "-" && firstNumber < secondNumber) {
         const _firstNumber = firstNumber;
         firstNumber = secondNumber;
         secondNumber = _firstNumber;
@@ -32,13 +32,13 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     const difficulty = Number(difficultyString);
     let challenge;
     if (difficulty === 1) {
-        challenge = getChallengeString(1, 10, ['+', '-']);
+        challenge = getChallengeString(1, 10, ["+", "-"]);
     }
     else if (difficulty === 2) {
-        challenge = getChallengeString(10, 100, ['+', '-', '*']);
+        challenge = getChallengeString(10, 100, ["+", "-", "*"]);
     }
     else if (difficulty === 3) {
-        challenge = getChallengeString(100, 1000, ['+', '-', '*']);
+        challenge = getChallengeString(100, 1000, ["+", "-", "*"]);
     }
     else {
         throw Error(`invalid challenge difficulty '${difficulty}'`);
@@ -48,7 +48,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
             return { success: true };
         }
         return {
-            success: false, error: 'Wrong answer.'
+            success: false,
+            error: "Wrong answer."
         };
     };
     return { challenge, verify, type };

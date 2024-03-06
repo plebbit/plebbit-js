@@ -1,5 +1,5 @@
-import QuickLRU from 'quick-lru';
-import { isVote, isReply, isPost, testVote, testReply, testPost } from './utils.js';
+import QuickLRU from "quick-lru";
+import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
 import { RateLimiter } from "limiter-es6-compat";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
@@ -23,13 +23,13 @@ const getRateLimitersToTest = (exclude, publication, challengeSuccess) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters = {};
     if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, 'post', challengeSuccess, filteredRateLimiters);
+        addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
     if (testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, 'reply', challengeSuccess, filteredRateLimiters);
+        addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
     if (testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
-        addFilteredRateLimiter(exclude, publication, 'vote', challengeSuccess, filteredRateLimiters);
+        addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;
 };
@@ -69,13 +69,13 @@ const getRateLimitersToAddTo = (excludeArray, publication, challengeSuccess) => 
             continue;
         }
         if (isPost(publication)) {
-            addFilteredRateLimiter(exclude, publication, 'post', challengeSuccess, filteredRateLimiters);
+            addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
         }
         if (isReply(publication)) {
-            addFilteredRateLimiter(exclude, publication, 'reply', challengeSuccess, filteredRateLimiters);
+            addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
         }
         if (isVote(publication)) {
-            addFilteredRateLimiter(exclude, publication, 'vote', challengeSuccess, filteredRateLimiters);
+            addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
         }
     }
     return filteredRateLimiters;
@@ -88,10 +88,10 @@ const addToRateLimiter = (subplebbitChallenges, publication, challengeSuccess) =
     if (!Array.isArray(subplebbitChallenges)) {
         throw Error(`addToRateLimiter invalid argument subplebbitChallenges '${subplebbitChallenges}' not an array`);
     }
-    if (typeof publication?.author?.address !== 'string') {
+    if (typeof publication?.author?.address !== "string") {
         throw Error(`addToRateLimiter invalid argument publication '${publication}'`);
     }
-    if (typeof challengeSuccess !== 'boolean') {
+    if (typeof challengeSuccess !== "boolean") {
         throw Error(`addToRateLimiter invalid argument challengeSuccess '${challengeSuccess}' not a boolean`);
     }
     // get all exclude items from all subplebbit challenges
