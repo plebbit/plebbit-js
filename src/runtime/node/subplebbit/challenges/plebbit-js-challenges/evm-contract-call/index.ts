@@ -352,14 +352,14 @@ const getChallenge = async (
     const nftWalletAddressFailureReason = await verifyAuthorNftWalletAddress(sharedProps);
     if (!nftWalletAddressFailureReason) return { success: true };
 
-    log(
-        `Author (${publication.author.address}) has failed all EVM challenges`,
-        `walletFailureReason=${walletFailureReason}`,
-        `ensAuthorAddressFailureReason=${ensAuthorAddressFailureReason}`,
-        `ensAuthorAddressFailureReason=${ensAuthorAddressFailureReason}`
-    );
+    const errorString =
+        `Author (${publication.author.address}) has failed all EVM challenges, ` +
+        `walletFailureReason='${walletFailureReason}', ` +
+        `ensAuthorAddressFailureReason='${ensAuthorAddressFailureReason}', ` +
+        `nftWalletAddressFailureReason='${nftWalletAddressFailureReason}'`;
+    log(errorString);
     // author has failed all challenges
-    return { success: false, error: error || `Contract call response doesn't pass condition.` };
+    return { success: false, error: errorString };
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
