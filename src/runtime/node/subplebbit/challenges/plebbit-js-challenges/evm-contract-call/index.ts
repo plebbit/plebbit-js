@@ -7,7 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
 import type { Plebbit } from "../../../../../../plebbit.js";
 import { isStringDomain } from "../../../../../../util.js";
-import { normalize } from 'viem/ens'
+import { normalize } from "viem/ens";
 
 const optionInputs = [
     {

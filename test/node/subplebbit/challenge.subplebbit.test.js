@@ -8,7 +8,7 @@ import {
     isRpcFlagOn,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
-import signers from "../../fixtures/signers"
+import signers from "../../fixtures/signers";
 import Sinon from "sinon";
 import * as util from "../../../dist/node/constants";
 import chai from "chai";
