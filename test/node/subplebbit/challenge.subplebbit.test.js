@@ -8,7 +8,7 @@ import {
     isRpcFlagOn,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
-
+import signers from "../../fixtures/signers"
 import Sinon from "sinon";
 import * as util from "../../../dist/node/constants";
 import chai from "chai";
@@ -516,7 +516,17 @@ describe(`Test evm-contract challenge`, async () => {
     });
 
     // ENS tests
-    it(`if user have pleb in their author.address ENS wallet challenge should pass`);
+    it(`if user have pleb in their author.address ENS wallet challenge should pass`, async () => {
+        const post = await generateMockPost(sub.address, plebbit, false, {
+            signer: signers[6],
+            author: { address: "plebbit.eth" }
+        })
+
+        viemEthFake["getEnsAddress"] = () => viemAccount.address;
+        viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have more than 100 pleb
+
+        await publishWithExpectedResult(post, true);
+    });
 });
 
 describe("Validate props of subplebbit Pubsub messages", async () => {
