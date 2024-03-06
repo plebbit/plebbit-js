@@ -7,7 +7,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
 import type { Plebbit } from "../../../../../../plebbit.js";
 import { isStringDomain } from "../../../../../../util.js";
-import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
+import { normalize } from 'viem/ens'
 
 const optionInputs = [
     {
@@ -133,8 +133,7 @@ const verifyAuthorWalletAddress = async (props: {
         error: props.error
     });
 
-    if (walletValidationFailure) return walletValidationFailure;
-    else return undefined;
+    return walletValidationFailure; // will be a string if error, otherwise undefined
 };
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
@@ -142,7 +141,7 @@ const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalle
     const viemClient = await getViemClient(props.plebbit, "eth", props.plebbit.chainProviders["eth"].urls[0]);
 
     const ownerOfAddress = await viemClient.getEnsAddress({
-        name: lib.normalize(props.publication.author.address)
+        name: normalize(props.publication.author.address)
     });
 
     // No need to verify if owner has their plebbit-author-address, it's already part of verifyComment
@@ -156,8 +155,7 @@ const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalle
         error: props.error
     });
 
-    if (walletValidationFailure) return walletValidationFailure;
-    else return undefined;
+    return walletValidationFailure; // will be string if error, otherwise undefined
 };
 
 const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
@@ -214,8 +212,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
         error: props.error
     });
 
-    if (nftWalletValidationFailure) return nftWalletValidationFailure;
-    else return undefined;
+    return nftWalletValidationFailure; // will be a string if error, otherwise undefined
 };
 
 const getContractCallResponse = async (props: {
@@ -228,6 +225,7 @@ const getContractCallResponse = async (props: {
     // mock getting the response from the contract call using the contract address and contract method abi, and the author address as argument
 
     const log = Logger("plebbit-js:local-subplebbit:challenges:evm-contract-call");
+    // TODO res should be cached for each authorWalletAddress at least for 30s
 
     try {
         const viemClient = await getViemClient(props.plebbit, props.chainTicker, props.plebbit.chainProviders[props.chainTicker].urls[0]);
