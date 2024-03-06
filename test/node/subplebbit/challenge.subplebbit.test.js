@@ -260,7 +260,8 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]);
+        const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='PLEB token balance must be greater than 1000.', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='Author has no avatar NFT set'`
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]);
     });
 
     it(`An author with NFT wallet with over 1000 PLEB should pass the challenge`, async () => {
@@ -321,7 +322,8 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]);
+        const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='The author wallet address is not defined', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='PLEB token balance must be greater than 1000.'`
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]);
     });
     it(`An author with no NFT or wallet should fail immeditely`, async () => {
         const post = await generateMockPost(sub.address, plebbit);
@@ -331,7 +333,8 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal([`Author doesn't have a wallet or avatar set.`]);
+        const challengeError = `Author (${post.author.address}) has failed all EVM challenges, walletFailureReason='The author wallet address is not defined', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='Author has no avatar NFT set'`
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]);
     });
 
     it(`An author with wallet with less than 1000 PLEB and an NFT wallet with more than 1000 PLEB should passs`, async () => {
@@ -436,7 +439,8 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal([settings.challenges[0].options.error]); // failed to provide valid NFT
+        const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='PLEB token balance must be greater than 1000.', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='PLEB token balance must be greater than 1000.'`
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]); // failed to provide valid NFT
     });
 
     // Tests on verification of author
@@ -472,7 +476,8 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal(["Author doesn't signature proof of his wallet or NFT address."]); // failed to provide valid NFT
+        const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='The signature of the wallet is invalid', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='Author has no avatar NFT set'`
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]); // failed to provide valid NFT
     });
 
     it(`Publication with invalid NFT signature will be rejected`, async () => {
@@ -506,8 +511,12 @@ describe(`Test evm-contract challenge`, async () => {
         expect(challengeVerification.challengeSuccess).to.be.false;
         expect(challengeVerification.reason).to.be.undefined;
         expect(challengeVerification.publication).to.be.undefined;
-        expect(challengeVerification.challengeErrors).to.deep.equal(["Author doesn't signature proof of his wallet or NFT address."]); // failed to provide valid NFT
+        const challengeError = `Author (${postWithAuthorAddress.author.address}) has failed all EVM challenges, walletFailureReason='The author wallet address is not defined', ensAuthorAddressFailureReason='Author address is not an ENS domain', nftWalletAddressFailureReason='The signature of the nft avatar is invalid'`;
+        expect(challengeVerification.challengeErrors).to.deep.equal([challengeError]); // failed to provide valid NFT
     });
+
+    // ENS tests
+    it(`if user have pleb in their author.address ENS wallet challenge should pass`);
 });
 
 describe("Validate props of subplebbit Pubsub messages", async () => {
