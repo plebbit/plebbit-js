@@ -445,6 +445,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
 
+        if (options?.hasOwnProperty("address") && !options?.address)
+            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { subplebbitAddress: options?.address });
         if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
