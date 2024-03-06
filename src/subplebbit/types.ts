@@ -203,8 +203,9 @@ export interface ChallengeResult {
 export interface ChallengeFile {
     // the result of the function exported by the challenge file
     optionInputs?: OptionInput[]; // the options inputs fields to display to the user
-    type: "image/png" | "text/plain" | "chain/<chainTicker>";
-    challenge?: string; // some challenges can be static and asked before the user publishes, like a password for example
+    type: ChallengeType["type"];
+    challenge?: ChallengeType["challenge"]; // some challenges can be static and asked before the user publishes, like a password for example
+    caseInsensitive?: ChallengeType["caseInsensitive"]; // challenge answer capitalization is ignored, informational only option added by the challenge file
     description?: string; // describe what the challenge does to display in the UI
     getChallenge: (
         challenge: SubplebbitChallengeSettings,

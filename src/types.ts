@@ -207,6 +207,7 @@ export interface PubsubMessage {
 export interface ChallengeType {
     challenge: string;
     type: "image/png" | "text/plain" | "chain/<chainTicker>";
+    caseInsensitive?: boolean; // challenge answer capitalization is ignored, informational only option added by the challenge file
 }
 
 export interface ChallengeRequestMessageType extends PubsubMessage {

@@ -73,7 +73,7 @@ const getChallenge = async (
 };
 
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
-    return { getChallenge, optionInputs, type, description };
+    return { getChallenge, optionInputs, type, description, caseInsensitive: true };
 }
 
 export default ChallengeFileFactory;
