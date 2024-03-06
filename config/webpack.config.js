@@ -25,7 +25,7 @@ const testEntries = testFiles.reduce((acc, file) => {
 export default {
     // each test file is its own entry
     entry: testEntries,
-    
+
     output: {
         // output each test entry to its own file name
         filename: "[name]",
