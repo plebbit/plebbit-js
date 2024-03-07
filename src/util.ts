@@ -345,3 +345,8 @@ export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {
 export function isStringDomain(x: string | undefined) {
     return typeof x === "string" && x.includes(".");
 }
+
+export function isIpns(x: string | Uint8Array) {
+    // This function will test if a string is of IPNS address (12D)
+    return isIpfsMultihash(x);
+}

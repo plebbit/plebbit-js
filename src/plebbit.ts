@@ -24,7 +24,7 @@ import {
     PubsubSubscriptionHandler
 } from "./types.js";
 import { Comment } from "./comment.js";
- import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
 import Vote from "./vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
@@ -451,7 +451,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         if (options?.hasOwnProperty("address") && !options?.address)
             throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { subplebbitAddress: options?.address });
-        if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
+        if (options?.address && doesDomainAddressHaveCapitalLetter(options?.address))
             throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
 
         if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
