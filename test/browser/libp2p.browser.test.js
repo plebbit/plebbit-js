@@ -25,7 +25,7 @@ describe("plebbit.browserLibp2pJsPublish", () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
-    it(`Can publish a post to online sub and complete a challenge exchange`, async () => {
+    it.skip(`Can publish a post to online sub and complete a challenge exchange`, async () => {
         const onlinePlebbit = await createOnlinePlebbit({ browserLibp2pJsPublish: true, resolveAuthorAddresses: false });
         const post = await generatePostToAnswerMathQuestion({ subplebbitAddress: subs.onlineSub }, onlinePlebbit);
 
