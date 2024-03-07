@@ -12,8 +12,8 @@ import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
 import { createEd25519PeerId } from "@libp2p/peer-id-factory";
 import type { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types.js";
-import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
-import { autoNAT } from '@libp2p/autonat'
+import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
+import { autoNAT } from "@libp2p/autonat";
 
 import { EventEmitter } from "events";
 
@@ -58,7 +58,7 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
     const libP2pNode = await createLibp2p({
         // can't listen using webtransport in libp2p js
         // addresses: {listen: []},
-        
+
         peerDiscovery: [bootstrap(bootstrapConfig)],
         peerId,
         transports: [
@@ -83,7 +83,7 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
                 allowPublishToZeroPeers: true
             }),
             nat: autoNAT()
-        },
+        }
     });
 
     log("Initialized address of Libp2p in browser", libP2pNode.getMultiaddrs());

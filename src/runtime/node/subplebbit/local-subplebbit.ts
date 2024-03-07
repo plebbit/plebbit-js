@@ -726,7 +726,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             if (this.isPublicationPost(publication)) {
                 if (this.features?.requirePostLink && !isLinkValid(publicationComment.link))
-                   
                     return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
                 if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;

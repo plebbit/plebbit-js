@@ -10,13 +10,11 @@ import { NameRegistryState, getDomainKeySync } from "@bonfida/spl-name-service";
 import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
-
 const viemClients: Record<string, ViemPublicClient> = {};
 
 const solanaConnections: Record<string, SolanaConnection> = {};
 
 const ethersClients: Record<string, ReturnType<typeof ethers.getDefaultProvider>> = {};
-
 
 // TODO Should be rename to domain resolver
 export class Resolver {
@@ -81,8 +79,7 @@ export class Resolver {
             const registryState = await NameRegistryState.retrieve(connection, res.pubkey);
             const recordValue = uint8ArrayToString(registryState.registry.data);
             return recordValue;
-        }
-        catch(e){
+        } catch (e) {
             if (e?.type !== "AccountDoesNotExist") throw e;
         }
 
@@ -96,13 +93,12 @@ export class Resolver {
         const log = Logger("plebbit-js:resolver:_resolveViaEthers");
 
         const clientKey = "ethers.js";
-        if (!ethersClients[clientKey]){
-            ethersClients[clientKey]= ethers.getDefaultProvider("mainnet");
+        if (!ethersClients[clientKey]) {
+            ethersClients[clientKey] = ethers.getDefaultProvider("mainnet");
             log("Created a new connection instance for ethers", clientKey);
-        } 
+        }
 
         const ethersClient = ethersClients[clientKey];
-
 
         const resolver = await ethersClient.getResolver(address);
         return resolver.getText(txtRecordName);
