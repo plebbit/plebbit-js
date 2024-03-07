@@ -4,7 +4,13 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { messages } from "../../dist/node/errors.js";
-import { mockRemotePlebbit, publishWithExpectedResult, publishRandomPost, isRpcFlagOn } from "../../dist/node/test/test-util.js";
+import {
+    mockRemotePlebbit,
+    publishWithExpectedResult,
+    publishRandomPost,
+    isRpcFlagOn,
+    mockPlebbit
+} from "../../dist/node/test/test-util.js";
 
 const mockComments = [];
 
@@ -42,6 +48,30 @@ describe(`Resolving text records`, async () => {
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress("estebanabaroa.eth");
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
+
+    it(`A solana domain that has no subplebbit-address will return null when resolved`, async () => {
+        const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
+        const subAddress = "randomdomain.sol";
+        const ipnsAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subAddress);
+        expect(ipnsAddress).to.be.null;
+
+    })
+
+    it(`Can resolve A solana domain with correct subplebbit-address subdomain correctly`, async () => {
+        const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
+        const subAddress = "redditdeath.sol";
+        const ipnsAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subAddress);
+        expect(ipnsAddress).to.equal("12D3KooWCqUeaM9LFGVt2idWk4EHbQdpHenRYpL7FnvJQsonPh71");
+
+    })
+
+    it(`Can resolve A solana domain with correct plebbit-author-address subdomain correctly`, async () => {
+        const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
+        const authorAddress = "redditdeath.sol";
+        const ipnsAddress = await plebbit.resolveAuthorAddress(authorAddress);
+        expect(ipnsAddress).to.equal("12D3KooWAszaoiJKCZCSeeKsjycPDrjdYG1zABbFdsgVenxdi9ma");
+
+    })
 });
 
 describe("Comments with Authors as domains", async () => {

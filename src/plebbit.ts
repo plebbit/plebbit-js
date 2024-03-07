@@ -24,7 +24,7 @@ import {
     PubsubSubscriptionHandler
 } from "./types.js";
 import { Comment } from "./comment.js";
-import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+ import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
 import Vote from "./vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
@@ -196,6 +196,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   matic: {
                       urls: ["https://polygon-rpc.com"],
                       chainId: 137
+                  },
+                  sol: {
+                      urls: ["@solana/web3.js"],
+                      chainId: null // no chain ID for solana
                   }
               };
         if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;

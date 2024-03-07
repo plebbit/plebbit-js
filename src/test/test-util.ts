@@ -270,7 +270,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
         };
 }
 
-export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true) {
+export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve=true) {
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -279,6 +279,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         ...plebbitOptions
     });
 
+    if  (mockResolve)
     plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
         if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
             return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]

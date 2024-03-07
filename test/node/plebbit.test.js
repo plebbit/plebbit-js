@@ -12,8 +12,8 @@ describe("plebbit", () => {
         expect(plebbit.clients.ipfsClients).to.deep.equal({});
         expect(plebbit.ipfsHttpClientsOptions).to.be.undefined;
         expect(plebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
-        expect(Object.keys(plebbit.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic"]);
-        expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic"]);
+        expect(Object.keys(plebbit.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
+        expect(Object.keys(plebbit.clients.chainProviders).sort()).to.deep.equal(["avax", "eth", "matic", "sol"]);
 
         expect(plebbit.dataPath).to.match(/\.plebbit$/);
 

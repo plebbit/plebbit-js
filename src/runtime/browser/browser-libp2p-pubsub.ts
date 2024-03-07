@@ -11,7 +11,9 @@ import { kadDHT } from "@libp2p/kad-dht";
 import { webRTCDirect } from "@libp2p/webrtc";
 import Logger from "@plebbit/plebbit-logger";
 import { createEd25519PeerId } from "@libp2p/peer-id-factory";
-import { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types.js";
+import type { IpfsHttpClientPubsubMessage, PubsubClient } from "../../types.js";
+import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
+import { autoNAT } from '@libp2p/autonat'
 
 import { EventEmitter } from "events";
 
@@ -56,18 +58,19 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
     const libP2pNode = await createLibp2p({
         // can't listen using webtransport in libp2p js
         // addresses: {listen: []},
+        
         peerDiscovery: [bootstrap(bootstrapConfig)],
         peerId,
         transports: [
             webTransport(),
-            webRTCDirect()
-            // circuitRelayTransport({discoverRelays: 1}) // TODO: test this later, probably need to upgrade libp2p
+            webRTCDirect(),
+            circuitRelayTransport() // TODO: test this later, probably need to upgrade libp2p
         ],
         streamMuxers: [yamux(), mplex()],
         connectionEncryption: [noise()],
         connectionGater: {
             // not sure why needed, doesn't connect without it
-            denyDialMultiaddr: async () => false
+            // denyDialMultiaddr: async () => false
         },
         connectionManager: {
             maxConnections: 10,
@@ -78,8 +81,9 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
             dht: kadDHT({}), // p2p peer discovery
             pubsub: gossipsub({
                 allowPublishToZeroPeers: true
-            })
-        }
+            }),
+            nat: autoNAT()
+        },
     });
 
     log("Initialized address of Libp2p in browser", libP2pNode.getMultiaddrs());

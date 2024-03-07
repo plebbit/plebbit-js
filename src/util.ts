@@ -32,6 +32,7 @@ import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
+import { multihash as isIpfsMultihash } from "is-ipfs";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -267,9 +268,9 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
     throw Error(`No error code was found for message (${message})`);
 }
 
-export function doesEnsAddressHaveCapitalLetter(ensAddress: string) {
-    if (!ensAddress.endsWith(".eth")) return false;
-    return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+export function doesDomainAddressHaveCapitalLetter(domainAddress: string) {
+    if (!domainAddress.includes(".")) return false;
+    return /[A-Z]/.test(domainAddress); // Regex test for capital letters in English only
 }
 
 export function decodePubsubMsgFromRpc(

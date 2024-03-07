@@ -14,7 +14,7 @@ import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
 
 import {
-    doesEnsAddressHaveCapitalLetter,
+    doesDomainAddressHaveCapitalLetter,
     genToArray,
     isLinkOfMedia,
     isLinkValid,
@@ -726,6 +726,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             if (this.isPublicationPost(publication)) {
                 if (this.features?.requirePostLink && !isLinkValid(publicationComment.link))
+                   
                     return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
                 if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
@@ -1291,7 +1292,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
-            if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
+            if (doesDomainAddressHaveCapitalLetter(newSubplebbitOptions.address))
                 throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this._assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
