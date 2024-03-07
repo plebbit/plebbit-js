@@ -61,7 +61,7 @@ describe(`Resolving text records`, async () => {
         const plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
         const subAddress = "redditdeath.sol";
         const ipnsAddress = await plebbit._clientsManager.resolveSubplebbitAddressIfNeeded(subAddress);
-        expect(ipnsAddress).to.equal("12D3KooWCqUeaM9LFGVt2idWk4EHbQdpHenRYpL7FnvJQsonPh71");
+        expect(ipnsAddress).to.equal("12D3KooWKuojPWVJRMsQGMHzKKHY8ZVbU84vaetkaiymoqvDMe9z");
 
     })
 
