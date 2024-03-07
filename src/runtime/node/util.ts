@@ -196,7 +196,7 @@ export async function listSubplebbits(plebbit: Plebbit) {
         })
     );
 
-    const filtered_results = files.filter((_, i) => filterResults[i]);
+    const filtered_results = files.filter((_, i) => filterResults[i]).sort(); // make sure it's sorted, so the order is always the same
 
     return filtered_results;
 }

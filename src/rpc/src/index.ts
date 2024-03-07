@@ -21,6 +21,8 @@ import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import path from "path";
+import { watch as fsWatch } from "node:fs";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -42,6 +44,7 @@ class PlebbitWsServer extends EventEmitter {
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
     authKey: string | undefined;
+    private _lastListedSubs?: string[];
 
     constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -114,6 +117,7 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("editSubplebbit", this.editSubplebbit.bind(this));
         this.rpcWebsocketsRegister("deleteSubplebbit", this.deleteSubplebbit.bind(this));
         this.rpcWebsocketsRegister("listSubplebbits", this.listSubplebbits.bind(this));
+
         this.rpcWebsocketsRegister("fetchCid", this.fetchCid.bind(this));
         this.rpcWebsocketsRegister("resolveAuthorAddress", this.resolveAuthorAddress.bind(this));
         this.rpcWebsocketsRegister("getSettings", this.getSettings.bind(this));
@@ -299,9 +303,34 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
 
-    async listSubplebbits(params: any) {
-        const subplebbits = await this.plebbit.listSubplebbits();
-        return clone(subplebbits);
+    async listSubplebbits(params: any, connectionId: string) {
+        const subscriptionId = generateSubscriptionId();
+
+        const sendEvent = (event: string, result: any) =>
+            this.jsonRpcSendNotification({ method: "listSubplebbits", subscription: subscriptionId, event, result, connectionId });
+
+        const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
+
+        const watchAbortController = new AbortController();
+
+        fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
+            if (filename.endsWith(".lock")) return; // we only care about subplebbits
+            const currentSubs = await this.plebbit.listSubplebbits();
+            if (!lodash.isEqual(this._lastListedSubs, currentSubs)) {
+                sendEvent("update", currentSubs);
+                this._lastListedSubs = currentSubs;
+            }
+        });
+
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            watchAbortController.abort();
+        };
+
+        this._lastListedSubs = await this.plebbit.listSubplebbits();
+
+        sendEvent("update", this._lastListedSubs);
+
+        return subscriptionId;
     }
 
     async fetchCid(params: any) {
@@ -584,6 +613,12 @@ class PlebbitWsServer extends EventEmitter {
             await startedSub.stop();
             delete startedSubplebbits[subplebbitAddress];
         }
+        for (const connectionId of Object.keys(this.subscriptionCleanups))
+            for (const subscriptionId of Object.keys(this.subscriptionCleanups[connectionId])) {
+                this.subscriptionCleanups[connectionId][subscriptionId]();
+                delete this.subscriptionCleanups[connectionId][subscriptionId];
+            }
+
         this.ws.close();
         await this.plebbit.destroy();
     }

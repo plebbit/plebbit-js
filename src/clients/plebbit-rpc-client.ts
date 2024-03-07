@@ -26,6 +26,8 @@ export default class PlebbitRpcClient {
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
     private _openConnectionPromise: Promise<any>;
+    private _listSubsSubscriptionId?: number;
+    private _lastListedSubs?: string[];
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions);
         this._plebbit = plebbit;
@@ -117,11 +119,16 @@ export default class PlebbitRpcClient {
     }
 
     async destroy() {
-        this._webSocketClient.close();
-        this._webSocketClient = undefined;
+        for (const subscriptionId of Object.keys(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
 
-        this._subscriptionEvents = undefined;
-        this._pendingSubscriptionMsgs = undefined;
+        this._webSocketClient.close();
+
+        this._webSocketClient =
+            this._listSubsSubscriptionId =
+            this._lastListedSubs =
+            this._subscriptionEvents =
+            this._pendingSubscriptionMsgs =
+                undefined;
     }
 
     toJSON() {
@@ -235,8 +242,18 @@ export default class PlebbitRpcClient {
     }
 
     async listSubplebbits(): Promise<string[]> {
-        const subs = <string[]>await this._webSocketClient.call("listSubplebbits", []);
-        return subs;
+        if (!this._listSubsSubscriptionId) {
+            this._listSubsSubscriptionId = <number>await this._webSocketClient.call("listSubplebbits", []);
+            this._initSubscriptionEvent(this._listSubsSubscriptionId);
+            this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {
+                this._lastListedSubs = <string[]>newSubs.params.result;
+            });
+        }
+        if (!this._lastListedSubs) this.emitAllPendingMessages(this._listSubsSubscriptionId); // should send an update with listed subs
+        if (!this._lastListedSubs) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
+        
+
+        return this._lastListedSubs;
     }
 
     async fetchCid(cid: string): Promise<string> {
