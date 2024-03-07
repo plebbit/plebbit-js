@@ -19,7 +19,7 @@ const { expect, assert } = chai;
 describe(`plebbit.createSubplebbit (local)`, async () => {
     let plebbit, remotePlebbit;
     before(async () => {
-        plebbit = await mockPlebbit({ dataPath: globalThis["window"]?.plebbitDataPath });
+        plebbit = await mockPlebbit({});
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
