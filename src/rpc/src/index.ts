@@ -309,6 +309,9 @@ class PlebbitWsServer extends EventEmitter {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "listSubplebbits", subscription: subscriptionId, event, result, connectionId });
 
+        this._lastListedSubs = await this.plebbit.listSubplebbits();
+        sendEvent("update", this._lastListedSubs);
+
         const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
 
         const watchAbortController = new AbortController();
@@ -325,10 +328,6 @@ class PlebbitWsServer extends EventEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             watchAbortController.abort();
         };
-
-        this._lastListedSubs = await this.plebbit.listSubplebbits();
-
-        sendEvent("update", this._lastListedSubs);
 
         return subscriptionId;
     }
