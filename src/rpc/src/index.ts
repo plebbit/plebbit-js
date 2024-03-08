@@ -262,7 +262,7 @@ class PlebbitWsServer extends EventEmitter {
         const address = <string>params[0];
 
         const startedSubplebbit = await getStartedSubplebbit(address);
-        if (!startedSubplebbit) return true;
+        if (!startedSubplebbit) throw Error("Attempting to stop a subplebbit that is not running");
 
         await startedSubplebbit.stop();
         delete startedSubplebbits[address];
