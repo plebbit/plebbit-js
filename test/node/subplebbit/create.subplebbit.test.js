@@ -4,7 +4,8 @@ import {
     publishRandomReply,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
-    isRpcFlagOn
+    isRpcFlagOn,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { timestamp } from "../../../dist/node/util";
 import { messages } from "../../../dist/node/errors";
@@ -26,12 +27,14 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     const _createAndValidateSubArsg = async (subArgs) => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
         await newSubplebbit.start();
-        await new Promise((resolve) => newSubplebbit.once("update", resolve));
-        if (!newSubplebbit.updatedAt) await new Promise((resolve) => newSubplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(newSubplebbit, () => typeof newSubplebbit.updatedAt === "number");
         await newSubplebbit.stop();
 
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address.startsWith("12D3")).to.be.true;
+        const listedSubs = await plebbit.listSubplebbits();
+        expect(listedSubs).to.include(newSubplebbit.address);
+
         const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
         expect(deterministicStringify(subplebbitIpns.toJSON())).to.equal(deterministicStringify(newSubplebbit.toJSON()));
         return newSubplebbit;
