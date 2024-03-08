@@ -418,8 +418,10 @@ class PlebbitWsServer extends EventEmitter {
         // possibly move it to a startedSubplebbitUpdate method
         // const startedSubplebbit = await getStartedSubplebbit(address)
 
-        const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
-        subplebbit.on("update", () => sendEvent("update", subplebbit.signer ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs()));
+        const subplebbit = <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
+        subplebbit.on("update", () =>
+            sendEvent("update", subplebbit["signer"] ? subplebbit["toJSONInternalRpc"]() : subplebbit.toJSONIpfs())
+        );
         subplebbit.on("updatingstatechange", () => sendEvent("updatingstatechange", subplebbit.updatingState));
         subplebbit.on("error", (error: any) => sendEvent("error", error));
 
@@ -432,7 +434,7 @@ class PlebbitWsServer extends EventEmitter {
 
         // if fail, cleanup
         try {
-            if (subplebbit.signer)
+            if (subplebbit["signer"])
                 // need to send an update when fetching sub from db for first time
                 subplebbit.emit("update", subplebbit);
             await subplebbit.update();
