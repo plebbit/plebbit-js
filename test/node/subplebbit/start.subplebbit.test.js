@@ -42,8 +42,7 @@ describe(`subplebbit.start`, async () => {
     it(`Can start a sub after stopping it`, async () => {
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
-        await new Promise((resolve) => newSub.once("update", resolve));
-        if (!newSub.updatedAt) await new Promise((resolve) => newSub.once("update", resolve));
+        await resolveWhenConditionIsTrue(newSub, () => typeof newSub.updatedAt === "number");
         await publishRandomPost(newSub.address, plebbit, {}, false);
         await newSub.stop();
         await newSub.start();
@@ -72,11 +71,15 @@ describe(`subplebbit.start`, async () => {
 });
 
 //prettier-ignore
-if (!isRpcFlagOn())
 describe(`Start lock`, async () => {
-    let plebbit;
+    let plebbit, dataPath;
     before(async () => {
         plebbit = await mockPlebbit();
+        if (plebbit.plebbitRpcClient){
+            const rpcSettings = await plebbit.plebbitRpcClient.getSettings();
+            dataPath = rpcSettings.plebbitOptions.dataPath
+        }
+        else dataPath = plebbit.dataPath;
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
@@ -88,7 +91,9 @@ describe(`Start lock`, async () => {
     it(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
+        expect(subplebbit.state).to.equal("started");
         const sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+        expect(sameSubplebbit.state).to.equal("stopped");
         await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
         await subplebbit.stop();
         await sameSubplebbit.stop();
@@ -96,7 +101,7 @@ describe(`Start lock`, async () => {
 
     it(`Fail to start subplebbit if start lock is present`, async () => {
         const subSigner = await plebbit.createSigner();
-        const lockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.start.lock`);
+        const lockPath = path.join(dataPath, "subplebbits", `${subSigner.address}.start.lock`);
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         const sameSub = await plebbit.createSubplebbit({ address: sub.address });
         sub.start();
@@ -108,7 +113,7 @@ describe(`Start lock`, async () => {
 
     it(`Can start subplebbit as soon as start lock is unlocked`, async () => {
         const subSigner = await plebbit.createSigner();
-        const lockPath = path.join(plebbit.dataPath, "subplebbits", `${subSigner.address}.start.lock`);
+        const lockPath = path.join(dataPath, "subplebbits", `${subSigner.address}.start.lock`);
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         await sub.start();
         sub.stop();
@@ -132,7 +137,7 @@ describe(`Start lock`, async () => {
         // Lock is considered stale if lock has not been updated in 10000 ms (10s)
         const sub = await plebbit.createSubplebbit();
 
-        const lockPath = path.join(plebbit.dataPath, "subplebbits", `${sub.address}.start.lock`);
+        const lockPath = path.join(dataPath, "subplebbits", `${sub.address}.start.lock`);
         await fs.promises.mkdir(lockPath); // Artifically create a start lock
 
         await assert.isRejected(sub.start(), messages.ERR_SUB_ALREADY_STARTED);
