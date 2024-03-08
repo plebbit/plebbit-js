@@ -274,7 +274,7 @@ class PlebbitWsServer extends EventEmitter {
         const address = <string>params[0];
         const editSubplebbitOptions = <SubplebbitEditOptions>params[1];
 
-        const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+        const subplebbit = (await getStartedSubplebbit(address)) || <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
         if (editSubplebbitOptions.address && startedSubplebbits[address]) {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
@@ -286,23 +286,13 @@ class PlebbitWsServer extends EventEmitter {
     async deleteSubplebbit(params: any) {
         const address = <string>params[0];
 
-        // try to delete a started sub
-        const startedSubplebbit = await getStartedSubplebbit(address);
-        if (startedSubplebbit) {
-            await startedSubplebbit.stop();
-            await startedSubplebbit.delete();
-            delete startedSubplebbits[address];
+        const addresses = await this.plebbit.listSubplebbits();
+        if (!addresses.includes(address)) {
+            throw Error(`subplebbit with address '${address}' not found in plebbit.listSubplebbits()`);
         }
-
-        // try to delete a sub not started
-        else {
-            const addresses = await this.plebbit.listSubplebbits();
-            if (!addresses.includes(address)) {
-                throw Error(`subplebbit with address '${address}' not found in plebbit.listSubplebbits()`);
-            }
-            const subplebbit = await this.plebbit.createSubplebbit({ address });
-            await subplebbit.delete();
-        }
+        const subplebbit = (await getStartedSubplebbit(address)) || <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+        await subplebbit.delete();
+        delete startedSubplebbits[address];
 
         return true;
     }
