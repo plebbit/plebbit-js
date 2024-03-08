@@ -211,10 +211,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.initDbIfNeeded();
 
-        // Not needed I think, will double check later
-        // if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
-        // await this._initSignerProps();
-
         if (!this.pubsubTopic) this.pubsubTopic = lodash.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
 
@@ -1035,8 +1031,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
 
         const currentDbAddress = dbIsOnOldName ? this.signer.address : this.address;
-        if (this.dbHandler.isDbInMemory()) this._setAddress(this.dbHandler.subAddress());
-        else if (internalState.address !== currentDbAddress) {
+        if (internalState.address !== currentDbAddress) {
             // That means a call has been made to edit the sub's address while it's running
             // We need to stop the sub from running, change its file name, then establish a connection to the new DB
             log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
@@ -1389,6 +1384,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._setStartedState("stopped");
             await this._updateDbInternalState({ startedState: this.startedState });
             await this.dbHandler.rollbackAllTransactions();
+            await this.dbHandler.unlockSubState();
             await this.dbHandler.unlockSubStart();
 
             clearInterval(this._publishInterval);
@@ -1406,9 +1402,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     async delete() {
         await this.stop();
-        const log = Logger("plebbit-js:local-subplebbit:delete");
-        if (typeof this.plebbit.dataPath !== "string")
-            throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
 
         const ipfsClient = this.clientsManager.getDefaultIpfs();
         if (!ipfsClient) throw Error("Ipfs client is not defined");
