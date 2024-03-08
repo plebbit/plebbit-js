@@ -23,6 +23,7 @@ import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
+import { throwWithErrorCode } from "../../util.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -215,9 +216,8 @@ class PlebbitWsServer extends EventEmitter {
     async startSubplebbit(params: any, connectionId: string) {
         const address = <string>params[0];
 
-        if (startedSubplebbits[address]) {
-            throw Error(`subplebbit '${address}' already started`);
-        }
+        if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
+
         startedSubplebbits[address] = "pending";
 
         const subscriptionId = generateSubscriptionId();
