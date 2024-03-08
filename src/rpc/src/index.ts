@@ -45,7 +45,8 @@ class PlebbitWsServer extends EventEmitter {
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
     authKey: string | undefined;
-    private _lastListedSubs?: string[];
+    private _listSubsSubscriptionIdToConnectionId: Record<string, string> = {};
+    private _lastListedSubs?: { subs: string[]; timestamp: number };
 
     constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -298,32 +299,57 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async listSubplebbits(params: any, connectionId: string) {
-        const subscriptionId = generateSubscriptionId();
-
-        const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "listSubplebbits", subscription: subscriptionId, event, result, connectionId });
-
-        this._lastListedSubs = await this.plebbit.listSubplebbits();
-        sendEvent("update", this._lastListedSubs);
-
-        const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
-
-        const watchAbortController = new AbortController();
-
-        fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
-            if (filename.endsWith(".lock")) return; // we only care about subplebbits
-            const currentSubs = await this.plebbit.listSubplebbits();
-            if (!lodash.isEqual(this._lastListedSubs, currentSubs)) {
-                sendEvent("update", currentSubs);
-                this._lastListedSubs = currentSubs;
+        const sendEvent = (event: string, result: any) => {
+            for (const [subscriptionId, connectionId] of Object.entries(this._listSubsSubscriptionIdToConnectionId)) {
+                this.jsonRpcSendNotification({
+                    method: "listSubplebbits",
+                    subscription: Number(subscriptionId),
+                    event,
+                    result,
+                    connectionId: connectionId
+                });
             }
-        });
-
-        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            watchAbortController.abort();
         };
 
-        return subscriptionId;
+        const getListedSubsWithTimestamp = async () => {
+            return { subs: await this.plebbit.listSubplebbits(), timestamp: Date.now() };
+        };
+
+        const newSubscriptionId = generateSubscriptionId();
+        const watchNotConfigured = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 0;
+        if (watchNotConfigured) {
+            // First time listSubplebbits is called, need to set up everything
+            // set up fs watch here
+
+            await this.plebbit.listSubplebbits(); // Just to mkdir plebbitDataPath/subplebbits
+            const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
+            const watchAbortController = new AbortController();
+            fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
+                if (filename.endsWith(".lock")) return; // we only care about subplebbits
+                const currentSubs = await getListedSubsWithTimestamp();
+                if (
+                    currentSubs.timestamp > this._lastListedSubs.timestamp &&
+                    JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs)
+                ) {
+                    sendEvent("update", currentSubs.subs);
+                    this._lastListedSubs = currentSubs;
+                }
+            });
+
+            this.subscriptionCleanups[connectionId][newSubscriptionId] = () => {
+                this._lastListedSubs = undefined;
+                this._listSubsSubscriptionIdToConnectionId = {};
+                watchAbortController.abort();
+            };
+        }
+
+        this._listSubsSubscriptionIdToConnectionId[newSubscriptionId] = connectionId;
+
+        if (!this._lastListedSubs) this._lastListedSubs = await getListedSubsWithTimestamp();
+
+        sendEvent("update", this._lastListedSubs.subs);
+
+        return newSubscriptionId;
     }
 
     async fetchCid(params: any) {
@@ -595,6 +621,16 @@ class PlebbitWsServer extends EventEmitter {
     async unsubscribe(params: any, connectionId: string) {
         const subscriptionId = <number>params[0];
 
+        if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
+            const noClientSubscribingToListSubs = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 1;
+            if (noClientSubscribingToListSubs)
+                // clean up fs watch only when there is no rpc client listening for listSubplebbits
+                this.subscriptionCleanups[connectionId][subscriptionId]();
+            delete this.subscriptionCleanups[connectionId][subscriptionId];
+            delete this._listSubsSubscriptionIdToConnectionId[subscriptionId];
+            return true;
+        }
+
         if (!this.subscriptionCleanups[connectionId][subscriptionId]) return true;
 
         this.subscriptionCleanups[connectionId][subscriptionId]();
@@ -609,10 +645,8 @@ class PlebbitWsServer extends EventEmitter {
             delete startedSubplebbits[subplebbitAddress];
         }
         for (const connectionId of Object.keys(this.subscriptionCleanups))
-            for (const subscriptionId of Object.keys(this.subscriptionCleanups[connectionId])) {
-                this.subscriptionCleanups[connectionId][subscriptionId]();
-                delete this.subscriptionCleanups[connectionId][subscriptionId];
-            }
+            for (const subscriptionId of Object.keys(this.subscriptionCleanups[connectionId]))
+                await this.unsubscribe([Number(subscriptionId)], connectionId);
 
         this.ws.close();
         await this.plebbit.destroy();

@@ -143,6 +143,7 @@ export default class PlebbitRpcClient {
     async unsubscribe(subscriptionId: number) {
         await this._webSocketClient.call("unsubscribe", [subscriptionId]);
         if (this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId].removeAllListeners();
+        if (subscriptionId === this._listSubsSubscriptionId) this._listSubsSubscriptionId = undefined;
         delete this._subscriptionEvents[subscriptionId];
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
@@ -243,15 +244,15 @@ export default class PlebbitRpcClient {
 
     async listSubplebbits(): Promise<string[]> {
         if (!this._listSubsSubscriptionId) {
+            this._lastListedSubs = undefined;
             this._listSubsSubscriptionId = <number>await this._webSocketClient.call("listSubplebbits", []);
             this._initSubscriptionEvent(this._listSubsSubscriptionId);
             this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {
                 this._lastListedSubs = <string[]>newSubs.params.result;
             });
+            this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
         }
-        if (!this._lastListedSubs) this.emitAllPendingMessages(this._listSubsSubscriptionId); // should send an update with listed subs
         if (!this._lastListedSubs) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
-        
 
         return this._lastListedSubs;
     }
