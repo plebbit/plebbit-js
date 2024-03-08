@@ -56,6 +56,7 @@ describe(`subplebbit.delete`, async () => {
         expect(subs).to.include(sub.address);
         const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
         await subRecreated.delete();
+        if (plebbit.plebbitRpcClient) await new Promise((resolve) => setTimeout(resolve, 1000));
         const subsAfterDeletion = await plebbit.listSubplebbits();
         expect(subsAfterDeletion).to.not.include(sub.address);
     });
@@ -73,6 +74,16 @@ describe(`subplebbit.delete`, async () => {
     it(`Deleted sub db is moved to datapath/subplebbits/deleted`, async () => {
         const expectedPath = path.join(plebbit.dataPath, "subplebbits", "deleted", sub.address);
         expect(fs.existsSync(expectedPath)).to.be.true;
+    });
+
+    //prettier-ignore
+    if (!isRpcFlagOn())
+    it(`Deleted sub has no locks in subplebbits directory`, async () => {
+        const subFiles = await fs.promises.readdir(path.join(plebbit.dataPath, "subplebbits"));
+        const startLockFilename = `${sub.address}.start.lock`;
+        const stateLockFilename = `${sub.address}.state.lock`;
+        expect(subFiles).to.not.include(startLockFilename);
+        expect(subFiles).to.not.include(stateLockFilename);
     });
 });
 
