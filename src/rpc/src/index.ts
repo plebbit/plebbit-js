@@ -276,6 +276,10 @@ class PlebbitWsServer extends EventEmitter {
 
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
+        if (editSubplebbitOptions.address && startedSubplebbits[address]) {
+            startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
+            delete startedSubplebbits[address];
+        }
         return subplebbit.toJSONInternalRpc();
     }
 
