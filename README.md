@@ -995,6 +995,7 @@ An object which may have the following keys:
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | privateKey | `string` or `undefined` | If undefined, generate a random `privateKey` |
+| type | `string` | Required if `privateKey` defined, only `'ed25519'` for now |
 
 #### Returns
 
@@ -1006,7 +1007,7 @@ An object which may have the following keys:
 
 ```js
 const newRandomSigner = await plebbit.createSigner()
-const signerFromPrivateKey = await plebbit.createSigner({privateKey: '-----BEGIN ENCRYPTED PRIVATE KEY...'})
+const signerFromPrivateKey = await plebbit.createSigner({privateKey: 'AbCd...', type: 'ed25519'})
 ```
 
 ### `plebbit.listSubplebbits()`
