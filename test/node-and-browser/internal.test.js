@@ -68,7 +68,7 @@ describe("Test util functions", async () => {
 
 //prettier-ignore
 if (!isRpcFlagOn())
-describe.only(`Test parsing of database queries`, async () => {
+describe(`Test parsing of database queries`, async () => {
     it(`Can parse regular json object with a field that's json string`, async () => {
         const rawObj = {
             author: '{"address":"12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR","displayName":"Mock Author - 1676110849.7439198"}'
