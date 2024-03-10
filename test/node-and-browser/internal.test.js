@@ -1,5 +1,5 @@
 import Plebbit from "../../dist/node/index.js";
-import { parseJsonStrings } from "../../dist/node/util.js";
+import { parseDbResponses } from "../../dist/node/util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -68,12 +68,12 @@ describe("Test util functions", async () => {
 
 //prettier-ignore
 if (!isRpcFlagOn())
-describe(`Test parsing of database queries`, async () => {
+describe.only(`Test parsing of database queries`, async () => {
     it(`Can parse regular json object with a field that's json string`, async () => {
         const rawObj = {
             author: '{"address":"12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR","displayName":"Mock Author - 1676110849.7439198"}'
         };
-        const parsed = parseJsonStrings(rawObj);
+        const parsed = parseDbResponses(rawObj);
         expect(parsed).to.be.a("object");
         expect(parsed.author).to.be.a("object");
         expect(parsed.author.address).to.equal("12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR");
@@ -84,7 +84,7 @@ describe(`Test parsing of database queries`, async () => {
         const rawObj = {
             removed: 1
         };
-        const parsed = parseJsonStrings(rawObj);
+        const parsed = parseDbResponses(rawObj);
         expect(parsed).to.be.a("object");
         expect(parsed.removed).to.equal(true);
     });
@@ -94,7 +94,7 @@ describe(`Test parsing of database queries`, async () => {
             acceptedChallengeTypes: '["test"]'
         };
 
-        const parsed = parseJsonStrings(rawObj);
+        const parsed = parseDbResponses(rawObj);
         expect(parsed).to.be.a("object");
         expect(parsed.acceptedChallengeTypes).to.be.a("array");
         expect(parsed.acceptedChallengeTypes[0]).to.equal("test");
