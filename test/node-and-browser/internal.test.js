@@ -99,4 +99,40 @@ describe(`Test parsing of database queries`, async () => {
         expect(parsed.acceptedChallengeTypes).to.be.a("array");
         expect(parsed.acceptedChallengeTypes[0]).to.equal("test");
     });
+
+    it(`Only parses one level of json strings`, async () => {
+
+        const author = {
+            "address": "12D3KooWL8oSq4yRKyw1cB83t9GeNcvxrDEQVkdE5F3PjBunzcVq",
+            "avatar": {
+                "address": "0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188",
+                "chainTicker": "matic",
+                "id": "9842",
+                "signature": {
+                    "signature": "{\"domainSeparator\":\"plebbit-author-avatar\",\"authorAddress\":\"12D3KooWJsiCyvG9mjRtWzc8TqzS7USKUrFFNs9s2AJuGqNhn9uU\",\"timestamp\":1709879936,\"tokenAddress\":\"0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188\",\"tokenId\":\"9842\"}",
+                    "type": "eip191"
+                }
+            }
+        };
+        const rawComment = {
+            author
+        };
+
+        const parsedComment = parseDbResponses(rawComment);
+
+        expect(parsedComment).to.be.a("object");
+        expect(parsedComment.author).to.be.a("object");
+        expect(parsedComment.author.address).to.be.a("string");
+        expect(parsedComment.author.avatar).to.be.a("object");
+        expect(parsedComment.author.avatar.address).to.be.a("string");
+        expect(parsedComment.author.avatar.chainTicker).to.be.a("string");
+        expect(parsedComment.author.avatar.id).to.be.a("string");
+
+
+        expect(parsedComment.author.avatar.signature).to.be.a("object")
+        expect(parsedComment.author.avatar.signature.signature).to.be.a("string")
+        expect(parsedComment.author.avatar.signature.type).to.be.a("string")
+
+
+    })
 });
