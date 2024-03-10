@@ -184,7 +184,6 @@ export const parseDbResponses = (obj: any) => {
 
         if (booleanFields.includes(key) && (value === 1 || value === 0)) newObj[key] = Boolean(value);
         else newObj[key] = parseIfJsonString(value) || value;
-        if (lodash.isPlainObject(newObj[key])) newObj[key] = removeNullAndUndefinedValues(parseDbResponses(newObj[key])); // not sure, do we really need this?
     }
     return <any>newObj;
 };
