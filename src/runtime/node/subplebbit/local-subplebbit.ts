@@ -52,7 +52,8 @@ import type {
     ModeratorCommentEditOptions,
     VotePubsubMessage,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    VoteType
+    VoteType,
+    CommentPubsubMessage
 } from "../../../types.js";
 import {
     ValidationResult,
@@ -381,6 +382,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     commentToInsert.thumbnailUrlHeight = thumbnailInfo.thumbnailHeight;
                 }
             }
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
 
             if (this.isPublicationPost(commentToInsert)) {
                 // Post
@@ -391,15 +393,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
-                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(
-                    commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
-                    trxForInsert
-                );
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-
-                log(`(${request.challengeRequestId.toString()}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             } else {
                 // Reply
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
@@ -413,19 +406,31 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
-                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
+                
+            }
+
+            const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
+            try {
                 await this.dbHandler.insertComment(
                     commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
                     trxForInsert
                 );
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-
-                log(
-                    `(${request.challengeRequestId.toString()}): `,
-                    `New comment with cid ${commentToInsert.cid} has been inserted into DB`
-                );
+                const commentInDb = await this.dbHandler.queryComment(commentToInsert.cid, trxForInsert);
+                const validity = await verifyComment(commentInDb, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
+                if (!validity.valid) throw Error("There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error")
+            } catch (e) {
+                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
+                await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
+                throw e;
             }
+
+            await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
+
+            log(
+                `(${request.challengeRequestId.toString()}): `,
+                `New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`
+            );
+
             return commentToInsert.toJSONAfterChallengeVerification();
         }
     }
@@ -456,7 +461,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _respondWithErrorIfSignatureOfPublicationIsInvalid(request: DecryptedChallengeRequestMessageType): Promise<void> {
         let validity: ValidationResult;
         if (this.isPublicationComment(request.publication))
-            validity = await verifyComment(request.publication, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
+            validity = await verifyComment(
+                <CommentPubsubMessage>request.publication,
+                this.plebbit.resolveAuthorAddresses,
+                this.clientsManager,
+                false
+            );
         else if (this.isPublicationCommentEdit(request.publication))
             validity = await verifyCommentEdit(
                 <CommentEditPubsubMessage>request.publication,
