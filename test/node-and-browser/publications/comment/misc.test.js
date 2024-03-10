@@ -18,7 +18,7 @@ import lodash from "lodash";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { ensResolverPromiseCache } from "../../../../dist/node/constants.js";
+import { domainResolverPromiseCache } from "../../../../dist/node/constants.js";
 
 import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -972,7 +972,7 @@ describe(`comment.clients`, async () => {
         });
 
         it(`correct order of chainProviders state when publishing a comment to a sub with a domain address`, async () => {
-            ensResolverPromiseCache.clear();
+            domainResolverPromiseCache.clear();
             const mockPost = await generateMockPost("plebbit.eth", plebbit);
             mockPost._clientsManager._getCachedTextRecord = () => undefined;
             const expectedStates = ["resolving-subplebbit-address", "stopped"];
