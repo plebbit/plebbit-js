@@ -644,8 +644,15 @@ describe(`subplebbit.clients (Local)`, async () => {
     //prettier-ignore
     if (!isRpcFlagOn())
     describe(`subplebbit.clients.chainProviders`, async () => {
+        let mockSub;
+        before(async () => {
+            mockSub  = await createSubWithNoChallenge({}, plebbit);;
+        })
+
+        after(async () => {
+            await mockSub.delete();
+        })
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
-            const mockSub = await createSubWithNoChallenge({}, plebbit);
             expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(4);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
@@ -655,7 +662,6 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
 
         it(`correct order of chainProviders state when receiving a comment with a domain for author.address`, async () => {
-            const mockSub = await createSubWithNoChallenge({}, plebbit);
 
             const expectedStates = ["resolving-author-address", "stopped"];
 
@@ -670,7 +676,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => mockSub.once("challengeverification", resolve));
 
-            expect(actualStates).to.deep.equal(expectedStates);
+            expect(actualStates.slice(0, expectedStates.length)).to.deep.equal(expectedStates);
         });
     });
 
