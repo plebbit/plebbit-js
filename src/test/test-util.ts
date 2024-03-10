@@ -16,6 +16,7 @@ import { createMockIpfsClient } from "./mock-ipfs-client.js";
 import { BasePages } from "../pages.js";
 import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
+import Logger from "@plebbit/plebbit-logger";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -271,6 +272,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
 }
 
 export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
+    const log = Logger("plebbit-js:test-util:mockPlebbit");
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -280,16 +282,19 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     });
 
     if (mockResolve)
-        plebbit.resolver.resolveTxtRecord = async (ensName: string, textRecord: string) => {
-            if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
+        plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
+            log(
+                `Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`
+            );
+            if (address === "plebbit.eth" && textRecord === "subplebbit-address")
                 return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
-            else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
+            else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
                 return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
-            else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+            else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
                 return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
-            else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address")
+            else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
                 return (await plebbit.createSigner()).address;
-            else if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+            else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
                 return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
             else return null;
         };
