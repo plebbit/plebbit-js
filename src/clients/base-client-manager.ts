@@ -8,7 +8,7 @@ import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
-import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
+import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import { createLibp2pNode } from "../runtime/node/browser-libp2p-pubsub.js";
 import last from "it-last";
@@ -487,11 +487,11 @@ export class BaseClientsManager {
         let isUsingCache = true;
         try {
             let resolvedTextRecord: string | null;
-            if (ensResolverPromiseCache.has(cacheKey)) resolvedTextRecord = await ensResolverPromiseCache.get(cacheKey);
+            if (domainResolverPromiseCache.has(cacheKey)) resolvedTextRecord = await domainResolverPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
                 const resolvePromise = this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
-                ensResolverPromiseCache.set(cacheKey, resolvePromise);
+                domainResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }
             if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
@@ -500,7 +500,7 @@ export class BaseClientsManager {
             if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            ensResolverPromiseCache.delete(cacheKey);
+            domainResolverPromiseCache.delete(cacheKey);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
             if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: e };
@@ -511,7 +511,7 @@ export class BaseClientsManager {
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: Chain
     ): Promise<string | undefined> {
-        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
+        const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
 
         const _firstResolve = (promises: Promise<string | null | { error: PlebbitError }>[]) => {
