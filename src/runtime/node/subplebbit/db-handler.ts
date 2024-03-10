@@ -330,8 +330,6 @@ export class DbHandler {
         this._createdTables = true;
     }
 
-
-
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());

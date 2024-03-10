@@ -159,31 +159,32 @@ export function throwWithErrorCode(code: keyof typeof messages, details?: {}) {
     throw new PlebbitError(code, details);
 }
 
-const isJsonString = (jsonString: any) => {
-    if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("["))) return false;
+const parseIfJsonString = (jsonString: any) => {
+    if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("["))) return undefined;
     try {
-        JSON.parse(jsonString);
-        return true;
+        return JSON.parse(jsonString);
     } catch {
-        return false;
+        return undefined;
     }
 };
 
 // Only for DB
-export const parseJsonStrings = (obj: any) => {
+export const parseDbResponses = (obj: any) => {
+    // This function is gonna be called for every query on db, it should be optimized
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
-    if (Array.isArray(obj)) return obj.map((o) => parseJsonStrings(o));
-    if (!isJsonString(obj) && !lodash.isPlainObject(obj)) return obj;
+    if (Array.isArray(obj)) return obj.map((o) => parseDbResponses(o));
+    const parsedJsonString = parseIfJsonString(obj);
+    if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
 
-    const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
+    const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
     //prettier-ignore
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
-        if (booleanFields.includes(key) && typeof value === "number") newObj[key] = Boolean(value);
-        else if (isJsonString(value)) newObj[key] = JSON.parse(<any>value);
-        if (lodash.isPlainObject(newObj[key])) newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
+        if (booleanFields.includes(key) && (value === 1 || value === 0)) newObj[key] = Boolean(value);
+        else newObj[key] = parseIfJsonString(value) || value;
+        if (lodash.isPlainObject(newObj[key])) newObj[key] = removeNullAndUndefinedValues(parseDbResponses(newObj[key])); // not sure, do we really need this?
     }
     return <any>newObj;
 };

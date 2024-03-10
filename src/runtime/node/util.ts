@@ -4,7 +4,7 @@ import { IpfsClient, NativeFunctions, PlebbitOptions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
-import { parseJsonStrings, throwWithErrorCode } from "../../util.js";
+import { parseDbResponses, throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -44,7 +44,7 @@ export const getDefaultSubplebbitDbConfig = async (
         useNullAsDefault: true,
         acquireConnectionTimeout: 120000,
         postProcessResponse: (result, queryContext) => {
-            return parseJsonStrings(result);
+            return parseDbResponses(result);
         }
     };
 };
