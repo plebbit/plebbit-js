@@ -534,7 +534,8 @@ export class BaseClientsManager {
             log.trace(`Retrying to resolve address (${address}) text record (${txtRecordName}) for the ${i}th time`);
 
             if (!this._plebbit.clients.chainProviders[chain]) {
-                log.error(`Plebbit has no chain provider for (${chain}), `, this._plebbit.clients.chainProviders);
+                throw Error(`Plebbit has no chain provider for (${chain})`);
+                
             }
             // Only sort if we have more than 3 gateways
             const providersSorted =
