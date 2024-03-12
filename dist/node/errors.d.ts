@@ -97,5 +97,10 @@ export declare enum messages {
     ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS = "All pubsub providers throw an error and unable to publish or subscribe",
     ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER = "The challenge request has been published over the pubsub topic but no response was received",
     ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC",
-    ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server"
+    ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server",
+    ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB = "Attempting to start a subplebbit that is not local",
+    ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING = "RPC client is attempting to stop a local sub that is not running",
+    ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB = "RPC client is attempting to stop a remote sub",
+    ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB = "RPC client is attempting to edit remote sub",
+    ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB = "RPC client is attempting to delete remote sub"
 }

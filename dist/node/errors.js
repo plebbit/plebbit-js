@@ -111,5 +111,10 @@ export var messages;
     // RPC errors
     messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"] = "Failed to open connection to RPC";
     messages["ERR_FAILED_TO_CREATE_WS_RPC_SERVER"] = "Failed to create WebSocket RPC server";
+    messages["ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB"] = "Attempting to start a subplebbit that is not local";
+    messages["ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING"] = "RPC client is attempting to stop a local sub that is not running";
+    messages["ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB"] = "RPC client is attempting to stop a remote sub";
+    messages["ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB"] = "RPC client is attempting to edit remote sub";
+    messages["ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB"] = "RPC client is attempting to delete remote sub";
 })(messages || (messages = {}));
 //# sourceMappingURL=errors.js.map

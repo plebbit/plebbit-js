@@ -178,6 +178,9 @@ class PlebbitWsServer extends EventEmitter {
         const address = params[0];
         if (startedSubplebbits[address])
             throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address))
+            throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
         startedSubplebbits[address] = "pending";
         const subscriptionId = generateSubscriptionId();
         const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
@@ -213,9 +216,12 @@ class PlebbitWsServer extends EventEmitter {
     }
     async stopSubplebbit(params) {
         const address = params[0];
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address))
+            throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
         const startedSubplebbit = await getStartedSubplebbit(address);
         if (!startedSubplebbit)
-            throw Error("Attempting to stop a subplebbit that is not running");
+            throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
         await startedSubplebbit.stop();
         delete startedSubplebbits[address];
         return true;
@@ -223,6 +229,9 @@ class PlebbitWsServer extends EventEmitter {
     async editSubplebbit(params) {
         const address = params[0];
         const editSubplebbitOptions = params[1];
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address))
+            throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         const subplebbit = (await getStartedSubplebbit(address)) || await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
         if (editSubplebbitOptions.address && startedSubplebbits[address]) {
@@ -234,9 +243,8 @@ class PlebbitWsServer extends EventEmitter {
     async deleteSubplebbit(params) {
         const address = params[0];
         const addresses = await this.plebbit.listSubplebbits();
-        if (!addresses.includes(address)) {
-            throw Error(`subplebbit with address '${address}' not found in plebbit.listSubplebbits()`);
-        }
+        if (!addresses.includes(address))
+            throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
         const subplebbit = (await getStartedSubplebbit(address)) || await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
         delete startedSubplebbits[address];
@@ -269,8 +277,9 @@ class PlebbitWsServer extends EventEmitter {
                 if (filename.endsWith(".lock"))
                     return; // we only care about subplebbits
                 const currentSubs = await getListedSubsWithTimestamp();
-                if (currentSubs.timestamp > this._lastListedSubs.timestamp &&
-                    JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs)) {
+                if (!this._lastListedSubs ||
+                    (currentSubs.timestamp > this._lastListedSubs.timestamp &&
+                        JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs))) {
                     sendEvent("update", currentSubs.subs);
                     this._lastListedSubs = currentSubs;
                 }

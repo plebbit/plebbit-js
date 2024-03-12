@@ -370,7 +370,7 @@ export class BaseClientsManager {
     async _getCachedTextRecord(address, txtRecord) {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
         const resolveCache = await this._plebbit._storage.getItem(cacheKey);
-        if (resolveCache) {
+        if (lodash.isPlainObject(resolveCache)) {
             const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
             return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
