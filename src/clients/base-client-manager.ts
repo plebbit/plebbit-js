@@ -31,6 +31,8 @@ type GenericGatewayFetch = {
     };
 };
 
+type CachedResolve = { timestamp: number; valueOfTextRecord: string | null };
+
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
 
@@ -427,16 +429,20 @@ export class BaseClientsManager {
 
     // Resolver methods here
 
+    private _getKeyOfCachedDomainTextRecord(domainAddress: string, txtRecord: string) {
+        return `${domainAddress}_${txtRecord}`;
+    }
+
     private async _getCachedTextRecord(
         address: string,
         txtRecord: "subplebbit-address" | "plebbit-author-address"
     ): Promise<{ stale: boolean; resolveCache: string | null } | undefined> {
-        const resolveCache: string | undefined | null = await this._plebbit._storage.getItem(`${address}_${txtRecord}`);
-        if (typeof resolveCache === "string") {
-            const resolvedTimestamp: number = await this._plebbit._storage.getItem(`${address}_${txtRecord}_timestamp`);
-            assert(typeof resolvedTimestamp === "number", `Cache of address (${address}) txt record (${txtRecord}) has no timestamp`);
-            const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
-            return { stale, resolveCache };
+        const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
+
+        const resolveCache: CachedResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
+        if (resolveCache) {
+            const stale = timestamp() - resolveCache.timestamp > 3600; // Only resolve again if cache was stored over an hour ago
+            return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
         return undefined;
     }
@@ -535,7 +541,6 @@ export class BaseClientsManager {
 
             if (!this._plebbit.clients.chainProviders[chain]) {
                 throw Error(`Plebbit has no chain provider for (${chain})`);
-                
             }
             // Only sort if we have more than 3 gateways
             const providersSorted =
@@ -562,8 +567,9 @@ export class BaseClientsManager {
                 } else {
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
-                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
-                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
+                        const resolvedCache: CachedResolve = { timestamp: Date.now(), valueOfTextRecord: resolvedTextRecord };
+                        const resolvedCacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecordName);
+                        await this._plebbit._storage.setItem(resolvedCacheKey, resolvedCache);
                     }
 
                     return resolvedTextRecord;
@@ -582,6 +588,11 @@ export class BaseClientsManager {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!this._plebbit.resolver.isDomain(subplebbitAddress)) return subplebbitAddress;
         return this._resolveTextRecordWithCache(subplebbitAddress, "subplebbit-address");
+    }
+
+    async clearDomainCache(domainAddress: string, txtRecordName: "subplebbit-address" | "plebbit-author-address") {
+        const cacheKey = this._getKeyOfCachedDomainTextRecord(domainAddress, txtRecordName);
+        await this._plebbit._storage.removeItem(cacheKey);
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string) {

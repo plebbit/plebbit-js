@@ -332,12 +332,15 @@ export async function verifySubplebbit(
     subplebbit: SubplebbitIpfsType,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
-    overrideAuthorAddressIfInvalid: boolean
+    overrideAuthorAddressIfInvalid: boolean,
+    resolveDomainSubAddress = true
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
-    const cacheKey = sha256(subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid);
+    const cacheKey = sha256(
+        subplebbit.signature.signature + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + resolveDomainSubAddress
+    );
     if (subplebbitVerificationCache.has(cacheKey)) return { valid: true };
 
     if (subplebbit.posts?.pages)
@@ -349,7 +352,8 @@ export async function verifySubplebbit(
                 clientsManager,
                 subplebbit.address,
                 undefined,
-                overrideAuthorAddressIfInvalid
+                overrideAuthorAddressIfInvalid,
+                resolveDomainSubAddress
             );
 
             if (!pageValidity.valid) {
@@ -360,9 +364,18 @@ export async function verifySubplebbit(
             }
         }
 
+    // Need to check if we should validate sub address here (if it's a domain)
+    const addressIsDomain = subplebbit.address.includes(".");
+    if (addressIsDomain && !resolveDomainSubAddress) {
+        subplebbitVerificationCache.set(cacheKey, true);
+        return { valid: true };
+    }
+
     const resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
 
-    if (!resolvedSubAddress) return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
+    if (addressIsDomain && resolveDomainSubAddress && !resolvedSubAddress)
+        return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
+
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
     const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
@@ -389,7 +402,8 @@ export async function verifyCommentUpdate(
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,
     comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
-    overrideAuthorAddressIfInvalid: boolean
+    overrideAuthorAddressIfInvalid: boolean,
+    resolveDomainSubAddress = true
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
 
@@ -398,7 +412,12 @@ export async function verifyCommentUpdate(
     if (!jsonValidation.valid) return jsonValidation;
 
     const cacheKey = sha256(
-        update.signature.signature + resolveAuthorAddresses + subplebbitAddress + JSON.stringify(comment) + overrideAuthorAddressIfInvalid
+        update.signature.signature +
+            resolveAuthorAddresses +
+            subplebbitAddress +
+            JSON.stringify(comment) +
+            overrideAuthorAddressIfInvalid +
+            resolveDomainSubAddress
     );
 
     if (commentUpdateVerificationCache.has(cacheKey)) return { valid: true };
@@ -429,6 +448,11 @@ export async function verifyCommentUpdate(
         if (invalidPageValidity) return invalidPageValidity;
     }
 
+    if (subplebbitAddress.includes(".") && !resolveDomainSubAddress) {
+        commentUpdateVerificationCache.set(cacheKey, true);
+
+        return { valid: true };
+    }
     const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
     const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
     if (updateSignatureAddress !== subplebbitResolvedAddress) {
@@ -519,9 +543,12 @@ export async function verifyPage(
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,
     parentCommentCid: string | undefined,
-    overrideAuthorAddressIfInvalid: boolean
+    overrideAuthorAddressIfInvalid: boolean,
+    resolveDomainSubAddress = true
 ): Promise<ValidationResult> {
-    const cacheKey = sha256(pageCid + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + subplebbitAddress + parentCommentCid);
+    const cacheKey = sha256(
+        pageCid + resolveAuthorAddresses + overrideAuthorAddressIfInvalid + subplebbitAddress + parentCommentCid + resolveDomainSubAddress
+    );
     if (pageVerificationCache.has(cacheKey)) return { valid: true };
     let shouldCache = true;
     for (const pageComment of page.comments) {
@@ -544,7 +571,8 @@ export async function verifyPage(
             clientsManager,
             subplebbitAddress,
             pageComment.comment,
-            overrideAuthorAddressIfInvalid
+            overrideAuthorAddressIfInvalid,
+            resolveDomainSubAddress
         );
         if (!commentUpdateSignatureValidity.valid) return commentUpdateSignatureValidity;
     }

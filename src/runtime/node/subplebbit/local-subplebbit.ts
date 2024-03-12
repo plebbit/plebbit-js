@@ -306,13 +306,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _validateSubSignatureBeforePublishing(recordTobePublished: SubplebbitIpfsType) {
-        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false);
+        const log = Logger("plebbit-js:local-subplebbit:_validateSubSignatureBeforePublishing");
+        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false, false);
         if (!validation.valid) {
             this._cidsToUnPin = [];
             throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD", {
                 validation,
                 subplebbitAddress: recordTobePublished.address
             });
+        }
+        const shouldResolveDomain = this.address.includes(".") && Math.random() < 0.05; // Don't resolve a lot because we're gonna get throttled
+        if (shouldResolveDomain) {
+            const resolvedSubAddress = await this.clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
+            if (resolvedSubAddress !== this.signer.address)
+                log.error(
+                    `The domain address (${this.address}) subplebbit-address text record to resolves to ${resolvedSubAddress} when it should resolve to ${this.signer.address}`
+                );
         }
     }
 
@@ -1209,9 +1218,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _assertDomainResolvesCorrectly(domain: string) {
         if (this.plebbit.resolver.isDomain(domain)) {
+            await this.clientsManager.clearDomainCache(domain, "subplebbit-address");
             const resolvedAddress = await this.clientsManager.resolveSubplebbitAddressIfNeeded(domain);
             if (resolvedAddress !== this.signer.address)
-                throwWithErrorCode("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
+                throwWithErrorCode("ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
                     subplebbitAddress: this.address,
                     resolvedAddress,
                     signerAddress: this.signer.address
