@@ -345,7 +345,7 @@ export async function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions) {
 
 export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], ...plebbitOptions });
+    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], plebbitRpcClientsOptions: undefined, ...plebbitOptions });
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;
