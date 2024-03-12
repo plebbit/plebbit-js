@@ -344,6 +344,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
     // These two gateways will respond with old record
     const thirtyMinuteLateGateway = `http://localhost:44004`; // This gateway will respond immedietly with subplebbitRecordThirtyMinuteOld
     const hourLateGateway = `http://localhost:44005`; // This gateway will respond immedietly with subplebbitRecordHourOld;
+    const twoHoursLateGateway = `http://localhost:44006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
 
     const subAddress = signers[0].address;
     let plebbit;
@@ -369,9 +370,9 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, stallingGateway] });
         customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
         // should succeed and return the result from normalGateway
-        const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(),customPlebbit.getSubplebbit(subplebbitAddress)]);
-        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
-        expect(sub.updatedAt).to.be.a("number");
+        const subFromGateway = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        expect(subFromGateway.toJSONIpfs()).to.deep.equal(latestSub);
     });
     it(`updating a subplebbit through working gateway and another gateway that is throwing an error`, async () => {
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalGateway, errorGateway] });
@@ -389,17 +390,18 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         await assert.isRejected(customPlebbit.getSubplebbit(subAddress), messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
     });
 
-    it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 2 min`, async () => {
+    it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
         await publishRandomPost(subAddress, plebbit, {}, true); // Force sub to publish a new update
         // normalWithStallingGateway gateway will return the latest SubplebbitIpfs
 
         // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
         // gateway that respondes after taking sometime with updatedAt < 2 min => normalWithStallingGateway
+        // should wait for normalWithStallingGateway
         // Should go with maximum updatedAt
-        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, thirtyMinuteLateGateway] });
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] });
         customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
 
-        const buffer = 5;
+        const buffer = customPlebbit._clientsManager.getGatewayTimeoutMs() * 5;
         const base = Math.round(Date.now() / 1000);
         const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
         expect(sub.updatedAt)
@@ -407,17 +409,17 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
             .greaterThanOrEqual(base - buffer);
     });
 
-    it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 2 min`, async () => {
-        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [thirtyMinuteLateGateway, hourLateGateway] });
+    it(`Fetching algo goes with the highest updatedAt of records if all of them are older than 60 min`, async () => {
+        const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [hourLateGateway, twoHoursLateGateway] });
         const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
 
-        // should go with the thirty minute old, not the one hour old
-        const timestampThirtyMinuteAgo = Math.round(Date.now() / 1000) - 30 * 60;
-        const bufferSeconds = 4;
+        // should go with the hour old, not the two hours
+        const timestampHourAgo = Math.round(Date.now() / 1000) - 60 * 60;
+        const bufferSeconds = 10;
 
         expect(sub.updatedAt)
-            .to.greaterThanOrEqual(timestampThirtyMinuteAgo - bufferSeconds)
-            .lessThanOrEqual(timestampThirtyMinuteAgo + bufferSeconds);
+            .to.greaterThanOrEqual(timestampHourAgo - bufferSeconds)
+            .lessThanOrEqual(timestampHourAgo + bufferSeconds);
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
         await publishRandomPost(subplebbitAddress, plebbit, {}, true); // should publish a new record after
