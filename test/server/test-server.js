@@ -17,7 +17,7 @@ const rpcPort = 39652;
 
 const startOnlineSub = false;
 
-const hostName = null; // use default
+const hostName = "localhost"; // use default
 
 // use the test server with the compiled version (dist/node)
 // in order to test the repo like a real user would
