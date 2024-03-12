@@ -217,7 +217,7 @@ class PlebbitWsServer extends EventEmitter {
     async startSubplebbit(params: any, connectionId: string) {
         const address = <string>params[0];
 
-        if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
+        if (startedSubplebbits[address]) return true;
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address))
