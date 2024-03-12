@@ -219,6 +219,9 @@ class PlebbitWsServer extends EventEmitter {
 
         if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
 
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
+
         startedSubplebbits[address] = "pending";
 
         const subscriptionId = generateSubscriptionId();

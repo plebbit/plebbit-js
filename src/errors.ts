@@ -122,5 +122,6 @@ export enum messages {
 
     // RPC errors
     ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC = "Failed to open connection to RPC",
-    ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server"
+    ERR_FAILED_TO_CREATE_WS_RPC_SERVER = "Failed to create WebSocket RPC server",
+    ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB = "Attempting to start a subplebbit that is not local"
 }
