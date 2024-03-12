@@ -8,6 +8,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
+import Logger from "@plebbit/plebbit-logger";
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
     let randomTimestamp = -1;
@@ -186,7 +187,8 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
             pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`]
         };
 }
-export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true) {
+export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
+    const log = Logger("plebbit-js:test-util:mockPlebbit");
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -194,20 +196,22 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
         updateInterval: 1000,
         ...plebbitOptions
     });
-    plebbit.resolver.resolveTxtRecord = async (ensName, textRecord) => {
-        if (ensName === "plebbit.eth" && textRecord === "subplebbit-address")
-            return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
-        else if (ensName === "plebbit.eth" && textRecord === "plebbit-author-address")
-            return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
-        else if (ensName === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
-            return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
-        else if (ensName === "different-signer.eth" && textRecord === "subplebbit-address")
-            return (await plebbit.createSigner()).address;
-        else if (ensName === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
-            return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
-        else
-            return null;
-    };
+    if (mockResolve)
+        plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
+            log(`Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`);
+            if (address === "plebbit.eth" && textRecord === "subplebbit-address")
+                return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
+            else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
+                return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+            else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+                return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+            else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
+                return (await plebbit.createSigner()).address;
+            else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+                return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
+            else
+                return null;
+        };
     if (stubStorage) {
         plebbit._storage.getItem = () => undefined;
         plebbit._storage.setItem = () => undefined;
@@ -247,7 +251,7 @@ export async function mockRpcServerPlebbit(plebbitOptions) {
 }
 export async function mockGatewayPlebbit(plebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], ...plebbitOptions });
+    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], plebbitRpcClientsOptions: undefined, ...plebbitOptions });
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;

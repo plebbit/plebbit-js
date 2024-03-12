@@ -211,7 +211,7 @@ export class ClientsManager extends BaseClientsManager {
                 return undefined;
             const totalGateways = gatewaysSorted.length;
             const quorm = Math.min(2, totalGateways);
-            const freshThreshold = 20 * 60; // if a record is as old as 20 min, then use it immediately
+            const freshThreshold = 60 * 60; // if a record is as old as 60 min, then use it immediately
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
             const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
             const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord.updatedAt; // how old is the record, relative to now, in seconds
@@ -325,7 +325,7 @@ export class PublicationClientsManager extends ClientsManager {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         if (!resolvedTextRecord) {
             this._publication._updatePublishingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });
@@ -541,7 +541,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
             else
                 this._comment._setUpdatingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });
@@ -625,7 +625,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
             this._subplebbit._setUpdatingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });

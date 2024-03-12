@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
-import { doesEnsAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
+import { doesDomainAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
 import lodash from "lodash";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -115,9 +115,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:_createNewLocalSubDb");
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.initDbIfNeeded();
-        // Not needed I think, will double check later
-        // if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
-        // await this._initSignerProps();
         if (!this.pubsubTopic)
             this.pubsubTopic = lodash.clone(this.signer.address);
         if (typeof this.createdAt !== "number")
@@ -196,14 +193,28 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`);
     }
+    shouldResolveDomainForVerification() {
+        return this.address.includes(".") && Math.random() < 0.05; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+    }
     async _validateSubSignatureBeforePublishing(recordTobePublished) {
-        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false);
+        const log = Logger("plebbit-js:local-subplebbit:_validateSubSignatureBeforePublishing");
+        const validation = await verifySubplebbit(recordTobePublished, false, this.clientsManager, false, false);
         if (!validation.valid) {
             this._cidsToUnPin = [];
             throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD", {
                 validation,
                 subplebbitAddress: recordTobePublished.address
             });
+        }
+        if (this.shouldResolveDomainForVerification()) {
+            try {
+                const resolvedSubAddress = await this.clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
+                if (resolvedSubAddress !== this.signer.address)
+                    log.error(`The domain address (${this.address}) subplebbit-address text record to resolves to ${resolvedSubAddress} when it should resolve to ${this.signer.address}`);
+            }
+            catch (e) {
+                log.error(`Failed to resolve sub domain ${this.address}`);
+            }
         }
     }
     async storeCommentEdit(commentEditRaw, challengeRequestId) {
@@ -258,6 +269,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     commentToInsert.thumbnailUrlHeight = thumbnailInfo.thumbnailHeight;
                 }
             }
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
             if (this.isPublicationPost(commentToInsert)) {
                 // Post
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
@@ -267,11 +279,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
-                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress), trxForInsert);
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-                log(`(${request.challengeRequestId.toString()}): `, `New post with cid ${commentToInsert.cid} has been inserted into DB`);
             }
             else {
                 // Reply
@@ -286,12 +293,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
-                const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress), trxForInsert);
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-                log(`(${request.challengeRequestId.toString()}): `, `New comment with cid ${commentToInsert.cid} has been inserted into DB`);
             }
+            const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
+            try {
+                await this.dbHandler.insertComment(commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress), trxForInsert);
+                const commentInDb = await this.dbHandler.queryComment(commentToInsert.cid, trxForInsert);
+                const validity = await verifyComment(commentInDb, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
+                if (!validity.valid)
+                    throw Error("There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error");
+            }
+            catch (e) {
+                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
+                await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
+                throw e;
+            }
+            await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
+            log(`(${request.challengeRequestId.toString()}): `, `New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
             return commentToInsert.toJSONAfterChallengeVerification();
         }
     }
@@ -761,9 +778,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const listedSubs = await this.plebbit.listSubplebbits();
         const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
         const currentDbAddress = dbIsOnOldName ? this.signer.address : this.address;
-        if (this.dbHandler.isDbInMemory())
-            this._setAddress(this.dbHandler.subAddress());
-        else if (internalState.address !== currentDbAddress) {
+        if (internalState.address !== currentDbAddress) {
             // That means a call has been made to edit the sub's address while it's running
             // We need to stop the sub from running, change its file name, then establish a connection to the new DB
             log(`Running sub (${currentDbAddress}) has received a new address (${internalState.address}) to change to`);
@@ -905,9 +920,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _assertDomainResolvesCorrectly(domain) {
         if (this.plebbit.resolver.isDomain(domain)) {
+            await this.clientsManager.clearDomainCache(domain, "subplebbit-address");
             const resolvedAddress = await this.clientsManager.resolveSubplebbitAddressIfNeeded(domain);
             if (resolvedAddress !== this.signer.address)
-                throwWithErrorCode("ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
+                throwWithErrorCode("ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS", {
                     subplebbitAddress: this.address,
                     resolvedAddress,
                     signerAddress: this.signer.address
@@ -982,8 +998,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         await this.dbHandler.initDestroyedConnection();
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
-            if (doesEnsAddressHaveCapitalLetter(newSubplebbitOptions.address))
-                throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
+            if (doesDomainAddressHaveCapitalLetter(newSubplebbitOptions.address))
+                throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this._assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err) => {
                 log.error(err.toString());
                 this.emit("error", err);
@@ -1066,6 +1082,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._setStartedState("stopped");
             await this._updateDbInternalState({ startedState: this.startedState });
             await this.dbHandler.rollbackAllTransactions();
+            await this.dbHandler.unlockSubState();
             await this.dbHandler.unlockSubStart();
             clearInterval(this._publishInterval);
             this.clientsManager.updateIpfsState("stopped");
@@ -1082,9 +1099,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async delete() {
         await this.stop();
-        const log = Logger("plebbit-js:local-subplebbit:delete");
-        if (typeof this.plebbit.dataPath !== "string")
-            throwWithErrorCode("ERR_DATA_PATH_IS_NOT_DEFINED", { plebbitDataPath: this.plebbit.dataPath });
         const ipfsClient = this.clientsManager.getDefaultIpfs();
         if (!ipfsClient)
             throw Error("Ipfs client is not defined");

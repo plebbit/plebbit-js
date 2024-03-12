@@ -44,6 +44,7 @@ export declare class BaseClientsManager {
     resolveIpnsToCidP2P(ipnsName: string): Promise<string>;
     _fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;
+    private _getKeyOfCachedDomainTextRecord;
     private _getCachedTextRecord;
     private _resolveTextRecordWithCache;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
@@ -52,6 +53,7 @@ export declare class BaseClientsManager {
     private _resolveTextRecordSingleChainProvider;
     private _resolveTextRecordConcurrently;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
+    clearDomainCache(domainAddress: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): Promise<void>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
     emitError(e: PlebbitError): void;
 }

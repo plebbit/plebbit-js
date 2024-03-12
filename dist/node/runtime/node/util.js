@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
 import path from "path";
 import assert from "assert";
-import { parseJsonStrings, throwWithErrorCode } from "../../util.js";
+import { parseDbResponses, throwWithErrorCode } from "../../util.js";
 import scraper from "open-graph-scraper";
 import { HttpProxyAgent, HttpsProxyAgent } from "hpagent";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -34,7 +34,7 @@ export const getDefaultSubplebbitDbConfig = async (subplebbit) => {
         useNullAsDefault: true,
         acquireConnectionTimeout: 120000,
         postProcessResponse: (result, queryContext) => {
-            return parseJsonStrings(result);
+            return parseDbResponses(result);
         }
     };
 };
@@ -162,7 +162,7 @@ export async function listSubplebbits(plebbit) {
             return false;
         }
     }));
-    const filtered_results = files.filter((_, i) => filterResults[i]);
+    const filtered_results = files.filter((_, i) => filterResults[i]).sort(); // make sure it's sorted, so the order is always the same
     return filtered_results;
 }
 export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {

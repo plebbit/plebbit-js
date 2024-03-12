@@ -23,7 +23,7 @@ export const subplebbitForPublishingCache = new LRUCache({
 }); // Cache for only 10 mins
 export const pageCidToSortTypesCache = new LRUCache({ max: 500 });
 // Below will be the caches for promises of fetching or resolving
-export const ensResolverPromiseCache = new LRUCache({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
+export const domainResolverPromiseCache = new LRUCache({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
 export const gatewayFetchPromiseCache = new LRUCache({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
 export const p2pIpnsPromiseCache = new LRUCache({ max: 200 }); // cache key will be ipnsName and the result will be a promise of cid
 export const p2pCidPromiseCache = new LRUCache({ max: 50, ttl: 60 * 1000 }); // cache key will be cid and the result will be a promise of content of cid

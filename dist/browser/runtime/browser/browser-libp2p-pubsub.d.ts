@@ -1,2 +1,2 @@
-import { PubsubClient } from "../../types.js";
+import type { PubsubClient } from "../../types.js";
 export declare function createLibp2pNode(): Promise<PubsubClient>;

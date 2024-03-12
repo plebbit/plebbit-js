@@ -6,9 +6,6 @@ export var messages;
     messages["ERR_SUBPLEBBIT_MISSING_FIELD"] = "Subplebbit is missing field needed for publishing";
     messages["ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS"] = "The options sent to plebbit.createSubplebbit() is missing address or signer";
     messages["ERR_INVALID_SUBPLEBBIT_ADDRESS"] = "Subplebbit address is incorrect. Address should be either a domain or IPNS";
-    messages["ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD"] = "The ENS address has no subplebbit-address text record that points to IPNS name";
-    messages["ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS"] = "plebbit-author-address resolves to an invalid IPNS";
-    messages["ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS"] = "subplebbit-address resolves to an invalid IPNS";
     messages["ERR_CID_IS_INVALID"] = "CID is invalid";
     messages["ERR_DATA_PATH_IS_NOT_DEFINED"] = "plebbitOptions.dataPath needs to be defined with native functions";
     messages["ERR_IPNS_IS_INVALID"] = "IPNS is invalid";
@@ -28,7 +25,7 @@ export var messages;
     messages["ERR_OVER_DOWNLOAD_LIMIT"] = "The file size is larger than download limit";
     messages["ERR_CALCULATED_CID_DOES_NOT_MATCH"] = "The CID calculated from loaded content does not match the provided CID";
     messages["ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK"] = "Failed to fetch the thumbnail url of the link";
-    messages["ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER"] = "ENS address has an uppercase letter. Subplebbit ENS address should be lowercase";
+    messages["ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER"] = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase";
     // Sign errors
     messages["ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER"] = "comment.author.address does not match signer.address";
     messages["ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58"] = "author.address is not a domain or B58";
@@ -53,6 +50,7 @@ export var messages;
     messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"] = "CommentIpfs signature is invalid";
     messages["ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID"] = "CommentUpdate signature is invalid";
     messages["ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID"] = "Subplebbit signature is invalid";
+    messages["ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN"] = "Failed to resolve the subplebbit domain address to use for verification";
     // getPage errors
     messages["ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB"] = "Comment in page should be under the same subplebbit";
     messages["ERR_PARENT_CID_NOT_AS_EXPECTED"] = "Comment under parent comment/post should have parentCid initialized";
@@ -94,9 +92,8 @@ export var messages;
     // Resolver errors
     messages["ERR_FAILED_TO_RESOLVE_TEXT_RECORD"] = "Failed to resolve text record";
     messages["ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER"] = "no chain provider options set for chain ticker";
-    messages["ERR_ENS_RESOLVER_NOT_FOUND"] = "ENS resolver is not found";
-    messages["ERR_ENS_TXT_RECORD_NOT_FOUND"] = "ENS resolver did not find the text record";
-    messages["ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS"] = "subplebbit-address is pointing to a different address than subplebbit.signer.address";
+    messages["ERR_DOMAIN_TXT_RECORD_NOT_FOUND"] = "Domain resolver did not find the text record";
+    messages["ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS"] = "subplebbit-address text record of domain is pointing to a different address than subplebbit.signer.address";
     // Local sub errors
     messages["ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE"] = "subplebbit.signer needs to be defined before proceeding";
     messages["ERR_SUB_STATE_LOCKED"] = "The internal state of the subplebbit in DB is locked";

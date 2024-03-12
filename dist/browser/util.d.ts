@@ -32,7 +32,7 @@ export declare function removeNullAndUndefinedValues<T extends Object>(obj: T): 
 export declare function removeNullAndUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;
-export declare const parseJsonStrings: (obj: any) => any;
+export declare const parseDbResponses: (obj: any) => any;
 export declare function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType>;
 export declare function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType>;
 export declare function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit): Promise<BasePages | {
@@ -44,10 +44,11 @@ export declare function shortifyCid(cid: string): string;
 export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve(promises: Promise<any>[]): Promise<any>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
-export declare function doesEnsAddressHaveCapitalLetter(ensAddress: string): boolean;
+export declare function doesDomainAddressHaveCapitalLetter(domainAddress: string): boolean;
 export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeMessageType | DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor;
 export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];
 export declare function isLinkValid(link: string): boolean;
 export declare function isLinkOfMedia(link: string): boolean;
 export declare function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]>;
 export declare function isStringDomain(x: string | undefined): boolean;
+export declare function isIpns(x: string | Uint8Array): boolean;

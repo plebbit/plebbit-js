@@ -23,6 +23,8 @@ declare class PlebbitWsServer extends EventEmitter {
         [subscriptionId: number]: Publication;
     };
     authKey: string | undefined;
+    private _listSubsSubscriptionIdToConnectionId;
+    private _lastListedSubs?;
     constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions);
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
@@ -57,7 +59,7 @@ declare class PlebbitWsServer extends EventEmitter {
     stopSubplebbit(params: any): Promise<boolean>;
     editSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
     deleteSubplebbit(params: any): Promise<boolean>;
-    listSubplebbits(params: any): Promise<any>;
+    listSubplebbits(params: any, connectionId: string): Promise<number>;
     fetchCid(params: any): Promise<string>;
     getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized>;
     setSettings(params: any): Promise<boolean>;
