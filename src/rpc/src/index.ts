@@ -220,7 +220,8 @@ class PlebbitWsServer extends EventEmitter {
         if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
 
         const localSubs = await this.plebbit.listSubplebbits();
-        if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
+        if (!localSubs.includes(address))
+            throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
 
         startedSubplebbits[address] = "pending";
 
@@ -331,8 +332,9 @@ class PlebbitWsServer extends EventEmitter {
                 if (filename.endsWith(".lock")) return; // we only care about subplebbits
                 const currentSubs = await getListedSubsWithTimestamp();
                 if (
-                    currentSubs.timestamp > this._lastListedSubs.timestamp &&
-                    JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs)
+                    !this._lastListedSubs ||
+                    (currentSubs.timestamp > this._lastListedSubs.timestamp &&
+                        JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs))
                 ) {
                     sendEvent("update", currentSubs.subs);
                     this._lastListedSubs = currentSubs;
