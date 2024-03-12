@@ -12,6 +12,7 @@ import path from "path";
 import fs from "fs";
 import signers from "../../fixtures/signers";
 import { subplebbitVerificationCache } from "../../../dist/node/constants";
+import { v4 as uuidV4 } from "uuid";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -197,40 +198,56 @@ describe(`Publish loop resiliency`, async () => {
         await sub.delete();
     });
 
-    //prettier-ignore
     if (!isRpcFlagOn())
-    it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
-
-        
-        const mockPost = await plebbit.createComment({
-            author: { address: "plebbit.eth" },
-            signer: signers[7], // Wrong signer
-            title: "Test publishing with invalid ENS " + Date.now(),
-            subplebbitAddress: subplebbit.address
+        it(`Subplebbit can still publish an IPNS, even if its subplebbit-address text record resolves to null`, async () => {
+            const sub = await createSubWithNoChallenge({}, plebbit);
+            await sub.edit({ address: `sub-does-not-exist-${uuidV4()}.eth` });
+            sub.shouldResolveDomainForVerification = () => true;
+            await sub.start();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.delete();
+        });
+    if (!isRpcFlagOn())
+        it(`Subplebbit can still publish an IPNS, even if all domain resolvers throw an error`, async () => {
+            const sub = await createSubWithNoChallenge({}, plebbit);
+            sub.clientsManager._resolveTextRecordSingleChainProvider = () => {
+                return { error: new Error("test error") };
+            };
+            await sub.edit({ address: `sub-does-not-exist-${uuidV4()}.eth` });
+            sub.shouldResolveDomainForVerification = () => true;
+            await sub.start();
+            await new Promise((resolve) => sub.once("update", resolve));
+            await sub.delete();
         });
 
-        subplebbit.on("error", (err) => {
-            console.log(err);
-        })
-        subplebbit.plebbit.resolveAuthorAddresses = false; // So the post gets accepted
+    if (!isRpcFlagOn())
+        it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
+            const mockPost = await plebbit.createComment({
+                author: { address: "plebbit.eth" },
+                signer: signers[7], // Wrong signer
+                title: "Test publishing with invalid ENS " + Date.now(),
+                subplebbitAddress: subplebbit.address
+            });
 
-        await publishWithExpectedResult(mockPost, true); 
-        subplebbit.plebbit.resolveAuthorAddresses = true; 
+            subplebbit.on("error", (err) => {
+                console.log(err);
+            });
+            subplebbit.plebbit.resolveAuthorAddresses = false; // So the post gets accepted
 
-        expect(mockPost.author.address).to.equal("plebbit.eth");
+            await publishWithExpectedResult(mockPost, true);
+            subplebbit.plebbit.resolveAuthorAddresses = true;
 
-        await publishRandomPost(subplebbit.address ,plebbit); // Stimulate an update
+            expect(mockPost.author.address).to.equal("plebbit.eth");
 
-        for (const resolveAuthorAddresses of [true, false]) {
-            subplebbitVerificationCache.clear();
-            const remotePlebbit = await mockRemotePlebbitIpfsOnly({resolveAuthorAddresses});
-            const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address); 
-            const mockPostInPage = loadedSub.posts.pages.hot.comments.find(comment => comment.cid === mockPost.cid);
-            if (resolveAuthorAddresses)
-                expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
-            else 
-                expect(mockPostInPage.author.address).to.equal("plebbit.eth");
-        }
+            await publishRandomPost(subplebbit.address, plebbit); // Stimulate an update
 
-    });
+            for (const resolveAuthorAddresses of [true, false]) {
+                subplebbitVerificationCache.clear();
+                const remotePlebbit = await mockRemotePlebbitIpfsOnly({ resolveAuthorAddresses });
+                const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+                const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
+                if (resolveAuthorAddresses) expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
+                else expect(mockPostInPage.author.address).to.equal("plebbit.eth");
+            }
+        });
 });
