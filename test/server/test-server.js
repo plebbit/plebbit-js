@@ -17,7 +17,7 @@ const rpcPort = 39652;
 
 const startOnlineSub = false;
 
-const hostName = "localhost"; // use default
+const hostName = undefined; // use default
 
 // use the test server with the compiled version (dist/node)
 // in order to test the repo like a real user would
@@ -283,9 +283,9 @@ const setUpMockGateways = async () => {
         const subs = await startSubplebbits({
             signers: signers,
             publishInterval: 3000,
-            votesPerCommentToPublish: 5,
-            numOfPostsToPublish: 51,
-            numOfCommentsToPublish: 10,
+            votesPerCommentToPublish: 1,
+            numOfPostsToPublish: 1,
+            numOfCommentsToPublish: 1,
             startOnlineSub: startOnlineSub
         });
 
