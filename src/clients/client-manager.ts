@@ -285,7 +285,7 @@ export class ClientsManager extends BaseClientsManager {
 
             const quorm = Math.min(2, totalGateways);
 
-            const freshThreshold = 20 * 60; // if a record is as old as 20 min, then use it immediately
+            const freshThreshold = 60 * 60; // if a record is as old as 60 min, then use it immediately
 
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
