@@ -71,16 +71,14 @@ describe(`subplebbit.start`, async () => {
     });
 });
 
-//prettier-ignore
 describe(`Start lock`, async () => {
     let plebbit, dataPath;
     before(async () => {
         plebbit = await mockPlebbit();
-        if (plebbit.plebbitRpcClient){
+        if (plebbit.plebbitRpcClient) {
             const rpcSettings = await plebbit.plebbitRpcClient.getSettings();
-            dataPath = rpcSettings.plebbitOptions.dataPath
-        }
-        else dataPath = plebbit.dataPath;
+            dataPath = rpcSettings.plebbitOptions.dataPath;
+        } else dataPath = plebbit.dataPath;
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
@@ -118,14 +116,16 @@ describe(`Start lock`, async () => {
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         await sub.start();
         sub.stop();
-        await new Promise(resolve => fs.watchFile(lockPath, (curr, prev) => {
-            if (!fs.existsSync(lockPath)) resolve();
-        }));
+        await new Promise((resolve) =>
+            fs.watchFile(lockPath, (curr, prev) => {
+                if (!fs.existsSync(lockPath)) resolve();
+            })
+        );
         await assert.isFulfilled(sub.start());
         await sub.stop();
     });
 
-    it(`subplebbit.start will throw if user attempted to start the same sub concurrently`, async () => {
+    it(`subplebbit.start will throw if user attempted to start the same sub concurrently through different instances`, async () => {
         const sub = await plebbit.createSubplebbit();
         const sameSub = await plebbit.createSubplebbit({ address: sub.address });
 
