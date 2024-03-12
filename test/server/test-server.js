@@ -193,6 +193,17 @@ const setUpMockGateways = async () => {
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     }).listen(44005, hostName);
+
+    // This gateway will respond immedietly with subplebbit IPNS record that is 120 minutes old
+    http.createServer(async (req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+
+        const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
+        subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
+        subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+
+        res.end(JSON.stringify(subplebbitRecordHourOld));
+    }).listen(44006, hostName);
 };
 
 (async () => {
