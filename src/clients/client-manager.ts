@@ -444,7 +444,7 @@ export class PublicationClientsManager extends ClientsManager {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
         if (!resolvedTextRecord) {
             this._publication._updatePublishingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });
@@ -693,7 +693,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             if (this._isPublishing()) {
                 this._comment._updatePublishingState("failed");
             } else this._comment._setUpdatingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });
@@ -820,7 +820,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
             this._subplebbit._setUpdatingState("failed");
-            const error = new PlebbitError("ERR_ENS_TXT_RECORD_NOT_FOUND", {
+            const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
                 subplebbitAddress: address,
                 textRecord: txtRecordName
             });

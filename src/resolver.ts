@@ -80,6 +80,10 @@ export class Resolver {
             const recordValue = uint8ArrayToString(registryState.registry.data);
             return recordValue;
         } catch (e) {
+            log.error(
+                `Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`,
+                e
+            );
             if (e?.type !== "AccountDoesNotExist") throw e;
         }
 

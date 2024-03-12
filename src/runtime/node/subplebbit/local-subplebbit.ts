@@ -415,7 +415,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(parent.postCid);
                 const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
                 commentToInsert.setCid(file.path);
-                
             }
 
             const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
@@ -426,7 +425,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 );
                 const commentInDb = await this.dbHandler.queryComment(commentToInsert.cid, trxForInsert);
                 const validity = await verifyComment(commentInDb, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
-                if (!validity.valid) throw Error("There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error")
+                if (!validity.valid)
+                    throw Error(
+                        "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
+                    );
             } catch (e) {
                 log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
                 await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
@@ -1307,7 +1309,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
             if (doesDomainAddressHaveCapitalLetter(newSubplebbitOptions.address))
-                throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
+                throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
             this._assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
                 this.emit("error", err);

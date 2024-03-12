@@ -5,9 +5,6 @@ export enum messages {
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS = "The options sent to plebbit.createSubplebbit() is missing address or signer",
     ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
-    ERR_ENS_ADDRESS_HAS_NO_SUBPLEBBIT_ADDRESS_TEXT_RECORD = "The ENS address has no subplebbit-address text record that points to IPNS name",
-    ERR_ENS_AUTHOR_ADDRESS_POINTS_TO_INVALID_IPNS = "plebbit-author-address resolves to an invalid IPNS",
-    ERR_ENS_SUBPLEBBIT_ADDRESS_POINTS_TO_INVALID_IPNS = "subplebbit-address resolves to an invalid IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
     ERR_IPNS_IS_INVALID = "IPNS is invalid",
@@ -29,7 +26,7 @@ export enum messages {
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
-    ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER = "ENS address has an uppercase letter. Subplebbit ENS address should be lowercase",
+    ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -56,6 +53,7 @@ export enum messages {
     ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID = "CommentIpfs signature is invalid",
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
     ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Subplebbit signature is invalid",
+    ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN = "Failed to resolve the subplebbit domain address to use for verification",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
@@ -103,9 +101,8 @@ export enum messages {
     // Resolver errors
     ERR_FAILED_TO_RESOLVE_TEXT_RECORD = "Failed to resolve text record",
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
-    ERR_ENS_RESOLVER_NOT_FOUND = "ENS resolver is not found",
-    ERR_ENS_TXT_RECORD_NOT_FOUND = "ENS resolver did not find the text record",
-    ERR_ENS_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address is pointing to a different address than subplebbit.signer.address",
+    ERR_DOMAIN_TXT_RECORD_NOT_FOUND = "Domain resolver did not find the text record",
+    ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address text record of domain is pointing to a different address than subplebbit.signer.address",
 
     // Local sub errors
     ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE = "subplebbit.signer needs to be defined before proceeding",

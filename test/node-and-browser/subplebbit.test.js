@@ -171,7 +171,7 @@ describe("subplebbit.update (remote)", async () => {
         let errorCount = 0;
         await new Promise((resolve) => {
             sub.on("error", (err) => {
-                expect(err.code).to.equal("ERR_ENS_TXT_RECORD_NOT_FOUND");
+                expect(err.code).to.equal("ERR_DOMAIN_TXT_RECORD_NOT_FOUND");
                 expect(sub.updatingState).to.equal("failed");
                 errorCount++;
                 if (errorCount === 3) resolve();
