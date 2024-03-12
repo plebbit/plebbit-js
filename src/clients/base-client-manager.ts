@@ -31,7 +31,7 @@ type GenericGatewayFetch = {
     };
 };
 
-type CachedResolve = { timestamp: number; valueOfTextRecord: string | null };
+type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | null };
 
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
@@ -441,7 +441,7 @@ export class BaseClientsManager {
 
         const resolveCache: CachedResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
         if (resolveCache) {
-            const stale = timestamp() - resolveCache.timestamp > 3600; // Only resolve again if cache was stored over an hour ago
+            const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
             return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
         return undefined;
@@ -567,7 +567,8 @@ export class BaseClientsManager {
                 } else {
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
-                        const resolvedCache: CachedResolve = { timestamp: Date.now(), valueOfTextRecord: resolvedTextRecord };
+                        // Only cache valid text records, not null
+                        const resolvedCache: CachedResolve = { timestampSeconds: timestamp(), valueOfTextRecord: resolvedTextRecord };
                         const resolvedCacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecordName);
                         await this._plebbit._storage.setItem(resolvedCacheKey, resolvedCache);
                     }
