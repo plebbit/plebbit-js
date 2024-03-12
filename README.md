@@ -36,7 +36,6 @@ Comment extends Publication /* (IPFS file) */ {
   spoiler?: boolean
   flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
   // below are added by subplebbit owner, not author
-  ipnsName: string // each post/comment needs its own IPNS record (CommentUpdate) for its mutable data like edits, vote counts, comments
   previousCid?: string // each comment/post is a linked list of other comments/posts with same comment.depth and comment.parentCid, undefined if first comment in list
   postCid?: string // helps faster loading post info for reply direct linking, undefined for posts, a post can't know its own CID
   depth: number // 0 = post, 1 = top level reply, 2+ = nested reply
@@ -74,7 +73,7 @@ ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
 CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
 SubplebbitEdit extends CreateSubplebbitOptions, Publication {}
 MultisubEdit extends CreateMultisubOptions, Publication {}
-CommentUpdate /* (IPNS record Comment.ipnsName) */ {
+CommentUpdate /* (IPFS file) */ {
   cid: string // cid of the comment, need it in signature to prevent attack
   edit?: AuthorCommentEdit // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
   upvoteCount: number
@@ -422,7 +421,6 @@ PubsubSignature {
   - `comment.thumbnailUrl`
   - `comment.thumbnailUrlWidth`
   - `comment.thumbnailUrlHeight`
-  - `comment.ipnsName`
   - `comment.flair`
   - `comment.spoiler`
   - `comment.depth`
@@ -800,7 +798,7 @@ await subplebbitEdit.publish()
 
 ### `plebbit.createComment(createCommentOptions)`
 
-> Create a `Comment` instance. Posts/Replies are also comments. Should update itself on update events after `Comment.update()` is called if `CreateCommentOptions.cid` or `CreateCommentOptions.ipnsName` exists.
+> Create a `Comment` instance. Posts/Replies are also comments. Should update itself on update events after `Comment.update()` is called if `CreateCommentOptions.cid` exists.
 
 #### Parameters
 
@@ -827,7 +825,6 @@ An object which may have the following keys:
 | challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
 | challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
-| ipnsName | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ...comment | `any` | `CreateCommentOptions` can also initialize any property on the `Comment` instance |
 
 #### Returns
@@ -846,12 +843,6 @@ comment.on('challenge', async (challengeMessage) => {
 })
 comment.on('challengeverification', console.log)
 await comment.publish()
-
-// or if you already fetched a comment but want to get updates
-const comment = await plebbit.createComment({ipnsName: 'Qm...'})
-// looks for updates in the background every 5 minutes
-comment.on('update', (updatedComment) => console.log(updatedComment))
-comment.update()
 
 // initialize any property on the Comment instance
 const comment = await plebbit.createComment({
@@ -1260,7 +1251,7 @@ Object is of the form:
 | `'stopped' \| 'fetching-ipns' \| 'publishing-ipns' \| 'failed' \| 'succeeded'` | The `Subplebbit.startedState` property |
 
 ## Comment API
-The comment API for publishing a comment as an author, or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` updates itselfs on update events after `Comment.update()` is called if `Comment.cid` or `Comment.ipnsName` exists.
+The comment API for publishing a comment as an author, or getting comment updates. `Comment`, `Vote` and `CommentEdit` inherit `Publication` class and all have a similar API. A `Comment` updates itselfs on update events after `Comment.update()` is called if `Comment.cid` exists.
 
 ### `comment.publish()`
 
@@ -1302,7 +1293,7 @@ await comment.publish()
 
 ### `comment.update()`
 
-> Start polling the network for comment updates (replies, upvotes, edits, etc), update itself and emit the update event. Only usable if comment.cid or comment.ipnsName exists.
+> Start polling the network for comment updates (replies, upvotes, edits, etc), update itself and emit the update event. Only usable if comment.cid or exists.
 
 #### Example
 
@@ -1318,7 +1309,7 @@ comment.on('update', (updatedCommentInstance) => {
 comment.update()
 
 // if you already fetched the comment and only want the updates
-const commentDataFetchedEarlier = {content, author, cid, ipnsName, ...comment}
+const commentDataFetchedEarlier = {content, author, cid, ...comment}
 const comment = await plebbit.createComment(commentDataFetchedEarlier)
 comment.on('update', () => {
   console.log('the comment instance updated itself:', comment)
@@ -1335,7 +1326,7 @@ The comment events.
 
 ### `update`
 
-> The comment's `Comment.ipnsName`'s record has been updated, which means vote counts and replies may have changed. To start polling the network for updates, call `Comment.update()`. If the previous `CommentUpdate` is the same, do not emit `update`.
+> The comment has been updated, which means vote counts and replies may have changed. To start polling the network for updates, call `Comment.update()`. If the previous `CommentUpdate` is the same, do not emit `update`.
 
 #### Emits
 
