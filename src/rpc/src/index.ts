@@ -217,7 +217,7 @@ class PlebbitWsServer extends EventEmitter {
     async startSubplebbit(params: any, connectionId: string) {
         const address = <string>params[0];
 
-        if (startedSubplebbits[address]) return true;
+        if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address))
@@ -266,8 +266,10 @@ class PlebbitWsServer extends EventEmitter {
     async stopSubplebbit(params: any) {
         const address = <string>params[0];
 
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
         const startedSubplebbit = await getStartedSubplebbit(address);
-        if (!startedSubplebbit) throw Error("Attempting to stop a subplebbit that is not running");
+        if (!startedSubplebbit) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
 
         await startedSubplebbit.stop();
         delete startedSubplebbits[address];
@@ -278,6 +280,9 @@ class PlebbitWsServer extends EventEmitter {
     async editSubplebbit(params: any) {
         const address = <string>params[0];
         const editSubplebbitOptions = <SubplebbitEditOptions>params[1];
+
+        const localSubs = await this.plebbit.listSubplebbits();
+        if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
 
         const subplebbit = (await getStartedSubplebbit(address)) || <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
@@ -292,9 +297,8 @@ class PlebbitWsServer extends EventEmitter {
         const address = <string>params[0];
 
         const addresses = await this.plebbit.listSubplebbits();
-        if (!addresses.includes(address)) {
-            throw Error(`subplebbit with address '${address}' not found in plebbit.listSubplebbits()`);
-        }
+        if (!addresses.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
+
         const subplebbit = (await getStartedSubplebbit(address)) || <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
         delete startedSubplebbits[address];

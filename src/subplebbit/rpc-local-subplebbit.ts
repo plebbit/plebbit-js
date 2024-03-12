@@ -9,6 +9,7 @@ import {
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
 } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import { messages } from "../errors.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
@@ -96,8 +97,13 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             return super.stop();
         } else if (this.state === "started") {
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
-            await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
-            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            try {
+                await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+            } catch (e) {
+                if (e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING) throw e;
+                log(e);
+            }
+            if (this._startRpcSubscriptionId) await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
             this._setStartedState("stopped");
             this._setRpcClientState("stopped");
             this._startRpcSubscriptionId = undefined;
