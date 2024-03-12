@@ -72,9 +72,7 @@ export class DbHandler {
         this._knex.initialize();
     }
     async destoryConnection() {
-        if (this.isDbInMemory())
-            return;
-        await this._knex?.destroy();
+        await this._knex.destroy();
         await this._keyv.disconnect();
     }
     async createTransaction(transactionId) {
@@ -251,11 +249,6 @@ export class DbHandler {
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
-    }
-    isDbInMemory() {
-        // Is database stored in memory rather on disk?
-        //@ts-expect-error
-        return this._dbConfig.connection.filename === ":memory:";
     }
     async _copyTable(srcTable, dstTable, currentDbVersion) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
@@ -663,8 +656,6 @@ export class DbHandler {
     }
     // Start lock
     async lockSubStart(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-            return;
         const log = Logger("plebbit-js:lock:start");
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
@@ -685,8 +676,6 @@ export class DbHandler {
         }
     }
     async unlockSubStart(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-            return;
         const log = Logger("plebbit-js:lock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
@@ -710,8 +699,6 @@ export class DbHandler {
     }
     // Subplebbit state lock
     async lockSubState(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-            return;
         const log = Logger("plebbit-js:lock:lockSubState");
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
@@ -729,8 +716,6 @@ export class DbHandler {
         }
     }
     async unlockSubState(subAddress = this._subplebbit.address) {
-        if (subAddress === this._subplebbit.address && this.isDbInMemory())
-            return;
         const log = Logger("plebbit-js:lock:unlockSubState");
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);

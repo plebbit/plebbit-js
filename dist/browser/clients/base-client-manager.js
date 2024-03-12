@@ -1,12 +1,12 @@
 import assert from "assert";
-import { delay, throwWithErrorCode, timestamp } from "../util.js";
+import { delay, isIpns, throwWithErrorCode, timestamp } from "../util.js";
 import Hash from "ipfs-only-hash";
 import { nativeFunctions } from "../runtime/browser/util.js";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as cborg from "cborg";
-import { ensResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
+import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import { createLibp2pNode } from "../runtime/browser/browser-libp2p-pubsub.js";
 import last from "it-last";
@@ -364,19 +364,21 @@ export class BaseClientsManager {
             throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
     }
     // Resolver methods here
+    _getKeyOfCachedDomainTextRecord(domainAddress, txtRecord) {
+        return `${domainAddress}_${txtRecord}`;
+    }
     async _getCachedTextRecord(address, txtRecord) {
-        const resolveCache = await this._plebbit._storage.getItem(`${address}_${txtRecord}`);
-        if (typeof resolveCache === "string") {
-            const resolvedTimestamp = await this._plebbit._storage.getItem(`${address}_${txtRecord}_timestamp`);
-            assert(typeof resolvedTimestamp === "number", `Cache of address (${address}) txt record (${txtRecord}) has no timestamp`);
-            const stale = timestamp() - resolvedTimestamp > 3600; // Only resolve again if cache was stored over an hour ago
-            return { stale, resolveCache };
+        const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
+        const resolveCache = await this._plebbit._storage.getItem(cacheKey);
+        if (resolveCache) {
+            const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
+            return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
         return undefined;
     }
     async _resolveTextRecordWithCache(address, txtRecord) {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain = address.endsWith(".eth") ? "eth" : undefined;
+        const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain)
             throw Error(`Can't figure out the chain of the address`);
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
@@ -398,21 +400,23 @@ export class BaseClientsManager {
         let isUsingCache = true;
         try {
             let resolvedTextRecord;
-            if (ensResolverPromiseCache.has(cacheKey))
-                resolvedTextRecord = await ensResolverPromiseCache.get(cacheKey);
+            if (domainResolverPromiseCache.has(cacheKey))
+                resolvedTextRecord = await domainResolverPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
                 const resolvePromise = this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
-                ensResolverPromiseCache.set(cacheKey, resolvePromise);
+                domainResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }
+            if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
+                throw Error("Resolved text record to a non IPNS string");
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
             if (!isUsingCache)
                 await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         }
         catch (e) {
-            ensResolverPromiseCache.delete(cacheKey);
+            domainResolverPromiseCache.delete(cacheKey);
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
             if (!isUsingCache)
                 await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
@@ -420,7 +424,7 @@ export class BaseClientsManager {
         }
     }
     async _resolveTextRecordConcurrently(address, txtRecordName, chain) {
-        const log = Logger("plebbit-js:plebbit:client-manager:_resolveEnsTextRecord");
+        const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
         const _firstResolve = (promises) => {
             return new Promise((resolve) => promises.forEach((promise) => promise.then((res) => {
@@ -438,7 +442,7 @@ export class BaseClientsManager {
                 return cachedTextRecord.resolveCache;
             log.trace(`Retrying to resolve address (${address}) text record (${txtRecordName}) for the ${i}th time`);
             if (!this._plebbit.clients.chainProviders[chain]) {
-                log.error(`Plebbit has no chain provider for (${chain}), `, this._plebbit.clients.chainProviders);
+                throw Error(`Plebbit has no chain provider for (${chain})`);
             }
             // Only sort if we have more than 3 gateways
             const providersSorted = this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit
@@ -460,8 +464,10 @@ export class BaseClientsManager {
                 else {
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
-                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}`, resolvedTextRecord);
-                        await this._plebbit._storage.setItem(`${address}_${txtRecordName}_timestamp`, timestamp());
+                        // Only cache valid text records, not null
+                        const resolvedCache = { timestampSeconds: timestamp(), valueOfTextRecord: resolvedTextRecord };
+                        const resolvedCacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecordName);
+                        await this._plebbit._storage.setItem(resolvedCacheKey, resolvedCache);
                     }
                     return resolvedTextRecord;
                 }
@@ -480,6 +486,10 @@ export class BaseClientsManager {
         if (!this._plebbit.resolver.isDomain(subplebbitAddress))
             return subplebbitAddress;
         return this._resolveTextRecordWithCache(subplebbitAddress, "subplebbit-address");
+    }
+    async clearDomainCache(domainAddress, txtRecordName) {
+        const cacheKey = this._getKeyOfCachedDomainTextRecord(domainAddress, txtRecordName);
+        await this._plebbit._storage.removeItem(cacheKey);
     }
     async resolveAuthorAddressIfNeeded(authorAddress) {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");

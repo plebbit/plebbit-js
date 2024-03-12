@@ -11,7 +11,7 @@ export declare const postTimestampConfig: Omit<LRUStorageConstructor, "plebbit">
 export declare const commentPostUpdatesParentsPathConfig: Omit<LRUStorageConstructor, "plebbit">;
 export declare const subplebbitForPublishingCache: LRUCache<string, Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">, unknown>;
 export declare const pageCidToSortTypesCache: LRUCache<string, string[], unknown>;
-export declare const ensResolverPromiseCache: LRUCache<string, Promise<string>, unknown>;
+export declare const domainResolverPromiseCache: LRUCache<string, Promise<string>, unknown>;
 export declare const gatewayFetchPromiseCache: LRUCache<string, Promise<string>, unknown>;
 export declare const p2pIpnsPromiseCache: LRUCache<string, Promise<string>, unknown>;
 export declare const p2pCidPromiseCache: LRUCache<string, Promise<string>, unknown>;

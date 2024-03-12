@@ -58,7 +58,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     return { challenge, verify, type };
 };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
-    return { getChallenge, optionInputs, type, description };
+    return { getChallenge, optionInputs, type, description, caseInsensitive: true };
 }
 export default ChallengeFileFactory;
 //# sourceMappingURL=index.js.map

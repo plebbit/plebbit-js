@@ -103,8 +103,16 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             return super.update();
     }
     async delete() {
-        await this.stop();
+        if (this._startRpcSubscriptionId) {
+            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            this._startRpcSubscriptionId = undefined;
+            this._setStartedState("stopped");
+        }
+        if (this.state === "updating")
+            await super.stop();
         await this.plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
+        this._setRpcClientState("stopped");
+        this._setState("stopped");
     }
 }
 //# sourceMappingURL=rpc-local-subplebbit.js.map

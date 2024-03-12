@@ -5,6 +5,7 @@ import { BasePages } from "./pages.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import extName from "ext-name";
+import { multihash as isIpfsMultihash } from "is-ipfs";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -117,37 +118,36 @@ export function removeKeysWithUndefinedValues(object) {
 export function throwWithErrorCode(code, details) {
     throw new PlebbitError(code, details);
 }
-const isJsonString = (jsonString) => {
+const parseIfJsonString = (jsonString) => {
     if (typeof jsonString !== "string" || (!jsonString.startsWith("{") && !jsonString.startsWith("[")))
-        return false;
+        return undefined;
     try {
-        JSON.parse(jsonString);
-        return true;
+        return JSON.parse(jsonString);
     }
     catch {
-        return false;
+        return undefined;
     }
 };
 // Only for DB
-export const parseJsonStrings = (obj) => {
+export const parseDbResponses = (obj) => {
+    // This function is gonna be called for every query on db, it should be optimized
     if (obj === "[object Object]")
         throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj))
-        return obj.map((o) => parseJsonStrings(o));
-    if (!isJsonString(obj) && !lodash.isPlainObject(obj))
+        return obj.map((o) => parseDbResponses(o));
+    const parsedJsonString = parseIfJsonString(obj);
+    if (!lodash.isPlainObject(obj) && !parsedJsonString)
         return obj;
-    const newObj = removeNullAndUndefinedValues(isJsonString(obj) ? JSON.parse(obj) : lodash.cloneDeep(obj));
+    const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
     //prettier-ignore
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed"];
+    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]")
             throw Error(`key (${key}) shouldn't be [object Object]`);
-        if (booleanFields.includes(key) && typeof value === "number")
+        if (booleanFields.includes(key) && (value === 1 || value === 0))
             newObj[key] = Boolean(value);
-        else if (isJsonString(value))
-            newObj[key] = JSON.parse(value);
-        if (lodash.isPlainObject(newObj[key]))
-            newObj[key] = removeNullAndUndefinedValues(parseJsonStrings(newObj[key]));
+        else
+            newObj[key] = parseIfJsonString(value) || value;
     }
     return newObj;
 };
@@ -220,10 +220,10 @@ export function getErrorCodeFromMessage(message) {
             return code;
     throw Error(`No error code was found for message (${message})`);
 }
-export function doesEnsAddressHaveCapitalLetter(ensAddress) {
-    if (!ensAddress.endsWith(".eth"))
+export function doesDomainAddressHaveCapitalLetter(domainAddress) {
+    if (!domainAddress.includes("."))
         return false;
-    return /[A-Z]/.test(ensAddress); // Regex test for capital letters in English only
+    return /[A-Z]/.test(domainAddress); // Regex test for capital letters in English only
 }
 export function decodePubsubMsgFromRpc(pubsubMsg) {
     //@ts-expect-error
@@ -282,5 +282,9 @@ export async function genToArray(gen) {
 }
 export function isStringDomain(x) {
     return typeof x === "string" && x.includes(".");
+}
+export function isIpns(x) {
+    // This function will test if a string is of IPNS address (12D)
+    return isIpfsMultihash(x);
 }
 //# sourceMappingURL=util.js.map

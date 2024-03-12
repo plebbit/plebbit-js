@@ -13,3 +13,11 @@ declare const Plebbit: {
     challenges: Record<string, import("./subplebbit/types.js").ChallengeFileFactory>;
 };
 export default Plebbit;
+export declare const setNativeFunctions: (newNativeFunctions: Partial<import("./types.js").NativeFunctions>) => void;
+export declare const nativeFunctions: {
+    node: import("./types.js").NativeFunctions;
+    browser: import("./types.js").NativeFunctions;
+};
+export declare const getShortCid: typeof shortifyCid;
+export declare const getShortAddress: typeof shortifyAddress;
+export declare const challenges: Record<string, import("./subplebbit/types.js").ChallengeFileFactory>;

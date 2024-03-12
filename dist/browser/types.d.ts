@@ -8,7 +8,7 @@ import { ChallengeFile, Flair } from "./subplebbit/types.js";
 import { Plebbit } from "./plebbit.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 export type ProtocolVersion = "1.0.0";
-export type Chain = "eth" | "matic" | "avax";
+export type Chain = "eth" | "matic" | "avax" | "sol";
 export type ChainProvider = {
     urls: string[];
     chainId: number;
@@ -176,6 +176,7 @@ export interface PubsubMessage {
 export interface ChallengeType {
     challenge: string;
     type: "image/png" | "text/plain" | "chain/<chainTicker>";
+    caseInsensitive?: boolean;
 }
 export interface ChallengeRequestMessageType extends PubsubMessage {
     challengeRequestId: Uint8Array;

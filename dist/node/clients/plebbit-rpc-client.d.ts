@@ -12,6 +12,8 @@ export default class PlebbitRpcClient {
     private _pendingSubscriptionMsgs;
     private _timeoutSeconds;
     private _openConnectionPromise;
+    private _listSubsSubscriptionId?;
+    private _lastListedSubs?;
     constructor(plebbit: Plebbit);
     _init(): Promise<void>;
     destroy(): Promise<void>;

@@ -1,7 +1,7 @@
 import polyfill from "./runtime/browser/polyfill.js";
 polyfill();
 import * as PlebbitClass from "./plebbit.js";
-import { setNativeFunctions } from "./runtime/browser/util.js";
+import { setNativeFunctions as utilSetNativeFunctions } from "./runtime/browser/util.js";
 import nodeNativeFunctions from "./runtime/browser/native-functions.js";
 import browserNativeFunctions from "./runtime/browser/native-functions.js";
 import { shortifyAddress, shortifyCid } from "./util.js";
@@ -11,10 +11,15 @@ const Plebbit = async function Plebbit(plebbitOptions = {}) {
     await plebbit._init(plebbitOptions);
     return plebbit;
 };
-Plebbit.setNativeFunctions = setNativeFunctions;
+Plebbit.setNativeFunctions = utilSetNativeFunctions;
 Plebbit.nativeFunctions = { node: nodeNativeFunctions, browser: browserNativeFunctions };
 Plebbit.getShortCid = shortifyCid;
 Plebbit.getShortAddress = shortifyAddress;
 Plebbit.challenges = plebbitJsChallenges;
 export default Plebbit;
+export const setNativeFunctions = Plebbit.setNativeFunctions;
+export const nativeFunctions = Plebbit.nativeFunctions;
+export const getShortCid = Plebbit.getShortCid;
+export const getShortAddress = Plebbit.getShortAddress;
+export const challenges = Plebbit.challenges;
 //# sourceMappingURL=index.js.map

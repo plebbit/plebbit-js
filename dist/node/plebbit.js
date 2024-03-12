@@ -1,6 +1,6 @@
 import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util.js";
 import { Comment } from "./comment.js";
-import { doesEnsAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
 import Vote from "./vote.js";
 import { createSigner } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
@@ -133,6 +133,10 @@ export class Plebbit extends TypedEmitter {
                 matic: {
                     urls: ["https://polygon-rpc.com"],
                     chainId: 137
+                },
+                sol: {
+                    urls: ["@solana/web3.js"],
+                    chainId: null // no chain ID for solana
                 }
             };
         if (this.chainProviders?.eth && !this.chainProviders.eth.chainId)
@@ -345,8 +349,8 @@ export class Plebbit extends TypedEmitter {
         log.trace("Received options: ", options);
         if (options?.hasOwnProperty("address") && !options?.address)
             throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { subplebbitAddress: options?.address });
-        if (options?.address && doesEnsAddressHaveCapitalLetter(options?.address))
-            throw new PlebbitError("ERR_ENS_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
+        if (options?.address && doesDomainAddressHaveCapitalLetter(options?.address))
+            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
         if (this.plebbitRpcClient)
             return this._createSubplebbitRpc(options);
         const canCreateLocalSub = this._canCreateNewLocalSub();

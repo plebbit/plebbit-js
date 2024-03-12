@@ -34,7 +34,6 @@ export declare class DbHandler {
     private _createCommentEditsTable;
     getDbVersion(): Promise<number>;
     createTablesIfNeeded(): Promise<void>;
-    isDbInMemory(): boolean;
     private _copyTable;
     deleteVote(authorSignerAddress: VotesTableRow["authorSignerAddress"], commentCid: VotesTableRow["commentCid"], trx?: Transaction): Promise<void>;
     insertVote(vote: VotesTableRowInsert, trx?: Transaction): Promise<void>;

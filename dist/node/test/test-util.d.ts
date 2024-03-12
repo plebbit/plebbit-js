@@ -39,7 +39,7 @@ export declare function mockDefaultOptionsForNodeAndBrowserTests(): {
     pubsubHttpClientsOptions: string[];
     plebbitRpcClientsOptions?: undefined;
 };
-export declare function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub?: boolean, stubStorage?: boolean): Promise<Plebbit>;
+export declare function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub?: boolean, stubStorage?: boolean, mockResolve?: boolean): Promise<Plebbit>;
 export declare function mockRemotePlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function createOnlinePlebbit(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;
 export declare function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions): Promise<Plebbit>;

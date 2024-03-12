@@ -179,8 +179,9 @@ export interface ChallengeResult {
 }
 export interface ChallengeFile {
     optionInputs?: OptionInput[];
-    type: "image/png" | "text/plain" | "chain/<chainTicker>";
-    challenge?: string;
+    type: ChallengeType["type"];
+    challenge?: ChallengeType["challenge"];
+    caseInsensitive?: ChallengeType["caseInsensitive"];
     description?: string;
     getChallenge: (challenge: SubplebbitChallengeSettings, challengeRequest: DecryptedChallengeRequestMessageType, challengeIndex: number, subplebbit: LocalSubplebbit) => Promise<Challenge | ChallengeResult>;
 }
