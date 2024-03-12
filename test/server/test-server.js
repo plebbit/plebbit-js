@@ -298,5 +298,9 @@ const setUpMockGateways = async () => {
     // create a test server to be able to use npm module 'wait-on'
     // to know when the test server is finished getting ready
     // and able to start the automated tests
-    http.createServer((req, res) => res.end("test server ready")).listen(14952, hostName);
+    http.createServer((req, res) => res.end("test server ready"))
+        .listen(14952)
+        .on("error", (err) => {
+            throw err;
+        });
 })();
