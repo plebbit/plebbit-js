@@ -127,7 +127,11 @@ const setUpMockGateways = async () => {
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else res.end("Unknown CID");
-    }).listen(33415, hostName);
+    })
+        .listen(33415, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // Create an HTTP server that mocks an ipfs gateway, and returns 429 always to imitate cloudflare-ipfs
     http.createServer((req, res) => {
@@ -135,14 +139,22 @@ const setUpMockGateways = async () => {
         res.statusCode = 429;
         res.statusMessage = "Too Many Requests";
         res.end();
-    }).listen(33416, hostName);
+    })
+        .listen(33416, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // Create an HTTP server that takes 10s to respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 10000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end("Yes");
-    }).listen(33417, hostName);
+    })
+        .listen(33417, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
@@ -156,21 +168,33 @@ const setUpMockGateways = async () => {
         await new Promise((resolve) => setTimeout(resolve, 11000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
-    }).listen(44000, hostName);
+    })
+        .listen(44000, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // This gateway will fetch from normal gateway, await some time (3s) than respond
     http.createServer(async (req, res) => {
         await new Promise((resolve) => setTimeout(resolve, 3000));
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
-    }).listen(44002, hostName);
+    })
+        .listen(44002, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // this gateway will respond with an error immedietly
     http.createServer((req, res) => {
         res.statusCode = 430;
         res.statusMessage = "Error";
         res.end();
-    }).listen(44003, hostName);
+    })
+        .listen(44003, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // This gateway will respond immedietly with subplebbit IPNS record that is 30 minutes old
     http.createServer(async (req, res) => {
@@ -181,7 +205,11 @@ const setUpMockGateways = async () => {
         subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
-    }).listen(44004, hostName);
+    })
+        .listen(44004, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // This gateway will respond immedietly with subplebbit IPNS record that is 60 minutes old
     http.createServer(async (req, res) => {
@@ -192,7 +220,11 @@ const setUpMockGateways = async () => {
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
-    }).listen(44005, hostName);
+    })
+        .listen(44005, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 
     // This gateway will respond immedietly with subplebbit IPNS record that is 120 minutes old
     http.createServer(async (req, res) => {
@@ -203,7 +235,11 @@ const setUpMockGateways = async () => {
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
-    }).listen(44006, hostName);
+    })
+        .listen(44006, hostName)
+        .on("error", (err) => {
+            throw err;
+        });
 };
 
 (async () => {
