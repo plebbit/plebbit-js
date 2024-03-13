@@ -9,8 +9,7 @@ import {
     CommentEditType,
     PublicationTypeName
 } from "./types.js";
-import { throwWithErrorCode } from "./util.js";
-import { cid as isIpfsCid } from "is-ipfs";
+import { isIpfsCid, throwWithErrorCode } from "./util.js";
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;

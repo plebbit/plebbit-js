@@ -32,7 +32,7 @@ import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
-import { multihash as isIpfsMultihash } from "is-ipfs";
+import * as isIpfs from "is-ipfs";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -348,5 +348,13 @@ export function isStringDomain(x: string | undefined) {
 
 export function isIpns(x: string | Uint8Array) {
     // This function will test if a string is of IPNS address (12D)
-    return isIpfsMultihash(x);
+    return isIpfs.multihash(x);
+}
+
+export function isIpfsCid(x: string | Uint8Array) {
+    return isIpfs.cid(x);
+}
+
+export function isIpfsPath(x: string | Uint8Array) {
+    return isIpfs.path(x);
 }

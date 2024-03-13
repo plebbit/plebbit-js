@@ -1,9 +1,8 @@
 import Publication from "./publication.js";
 import { PublicationTypeName, VotePubsubMessage, VotesTableRowInsert, VoteType } from "./types.js";
 import { Plebbit } from "./plebbit.js";
-import { cid as isIpfsCid } from "is-ipfs";
 import { verifyVote } from "./signer/index.js";
-import { throwWithErrorCode } from "./util.js";
+import { isIpfsCid, throwWithErrorCode } from "./util.js";
 
 class Vote extends Publication implements VoteType {
     commentCid: string;

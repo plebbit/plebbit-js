@@ -5,7 +5,6 @@ import PlebbitIndex from "../index.js";
 import Vote from "../vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
-import { cid as isIpfsCid } from "is-ipfs";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants.js";
@@ -103,7 +102,6 @@ export async function generateMockVote(
 }
 
 export async function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]> {
-    if (!isIpfsCid(pageCid)) throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments: Comment[] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {

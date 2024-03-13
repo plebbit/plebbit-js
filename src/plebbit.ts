@@ -24,13 +24,12 @@ import {
     PubsubSubscriptionHandler
 } from "./types.js";
 import { Comment } from "./comment.js";
-import { doesDomainAddressHaveCapitalLetter, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, isIpfsCid, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
 import Vote from "./vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
 import { CommentEdit } from "./comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
-import { cid as isIpfsCid } from "is-ipfs";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import lodash from "lodash";
