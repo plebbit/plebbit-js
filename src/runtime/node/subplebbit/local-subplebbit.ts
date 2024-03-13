@@ -1394,7 +1394,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     async update() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        if (this.state == "stopped") return; // No need to do anything if subplebbit is already updating
+        if (this.state === "updating" || this.state === "started") return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
             if (this.state === "updating")
                 this._updateOnce()
