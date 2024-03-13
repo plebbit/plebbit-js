@@ -43,6 +43,18 @@ describe("publishing comments", async () => {
         await waitTillCommentIsInParentPages(post, plebbit, { link });
     });
 
+    it("Can publish posts and comments with emoji for title and content", async () => {
+        const emojiContents = [
+            "Hey 👋 Mate.\nCongratulations 🎉, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n🌟 CG Watchlist $8 / 1000\n🌟 CG Thumb 👍 Votes \n\n⭐️ CoinGecko Trendings\n    🔘 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    🔘 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
+            "Hey \ud83d\udc4b Mate.\nCongratulations \ud83c\udf89, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n\ud83c\udf1f CG Watchlist $8 / 1000\n\ud83c\udf1f CG Thumb \ud83d\udc4d Votes \n\n⭐️ CoinGecko Trendings\n    \ud83d\udd18 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    \ud83d\udd18 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1"
+        ];
+
+        for (const content of emojiContents) {
+            const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content }, true);
+            expect(publishedPostContent.content).to.equal(content);
+        }
+    });
+
     it(`comment.author.shortAddress is defined throughout publishing`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         expect(post.author.shortAddress).to.be.a("string").with.length.above(0);
