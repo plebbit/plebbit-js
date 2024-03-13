@@ -116,25 +116,8 @@ jobs:
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
 
   test-plebbit-rpc:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: "npm"
-      
-      # Setup plebbit-js deps
-      - run: npm ci
-      - run: npm run build
-      - run: npm run webpack
-      # disable hosts we shouldn't use
-      - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
-      - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
-      # Setup tests for plebbit-js using rpc here
-      - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
-      - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+    uses: ./.github/workflows/CI-test-plebbit-rpc.yml
+    secrets: inherit
 
 
       # Setup tests for rpc directory here (skipped for now)
