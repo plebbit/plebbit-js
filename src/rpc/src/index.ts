@@ -333,7 +333,7 @@ class PlebbitWsServer extends EventEmitter {
             const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
             const watchAbortController = new AbortController();
             fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
-                if (filename.endsWith(".lock")) return; // we only care about subplebbits
+                if (filename?.endsWith(".lock")) return; // we only care about subplebbits
                 const currentSubs = await getListedSubsWithTimestamp();
                 if (
                     !this._lastListedSubs ||
