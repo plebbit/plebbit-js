@@ -251,6 +251,7 @@ class PlebbitWsServer extends EventEmitter {
                 subplebbit.removeAllListeners("challengerequest");
                 subplebbit.removeAllListeners("challengeverification");
             };
+            subplebbit.started = true; // a small hack to make sure first update has started=true
             subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
             await subplebbit.start();
             startedSubplebbits[address] = subplebbit;
@@ -448,9 +449,11 @@ class PlebbitWsServer extends EventEmitter {
         // const startedSubplebbit = await getStartedSubplebbit(address)
 
         const subplebbit = <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
-        subplebbit.on("update", () =>
-            sendEvent("update", subplebbit["signer"] ? subplebbit["toJSONInternalRpc"]() : subplebbit.toJSONIpfs())
-        );
+        subplebbit.on("update", () => {
+            const jsonToSend = subplebbit instanceof LocalSubplebbit ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs();
+
+            sendEvent("update", jsonToSend);
+        });
         subplebbit.on("updatingstatechange", () => sendEvent("updatingstatechange", subplebbit.updatingState));
         subplebbit.on("error", (error: any) => sendEvent("error", error));
 
