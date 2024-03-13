@@ -335,16 +335,16 @@ describe("plebbit.getSubplebbit (Remote)", async () => {
 if (!isRpcFlagOn())
 describe(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js
-    const stallingGateway = "http://localhost:44000"; // This gateaway will wait for 11s then respond
+    const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
     const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record
     const errorGateway = `http://localhost:33416`; // this gateway will respond with an error immedietly
-    const normalWithStallingGateway = `http://localhost:44002`; // This gateway will fetch from normal gateway, await some time (less than 10s) than respond
-    const errorGateway2 = `http://localhost:44003`; // this gateway will respond with an error immedietly
+    const normalWithStallingGateway = `http://localhost:14002`; // This gateway will fetch from normal gateway, await some time (less than 10s) than respond
+    const errorGateway2 = `http://localhost:14003`; // this gateway will respond with an error immedietly
 
     // These two gateways will respond with old record
-    const thirtyMinuteLateGateway = `http://localhost:44004`; // This gateway will respond immedietly with subplebbitRecordThirtyMinuteOld
-    const hourLateGateway = `http://localhost:44005`; // This gateway will respond immedietly with subplebbitRecordHourOld;
-    const twoHoursLateGateway = `http://localhost:44006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
+    const thirtyMinuteLateGateway = `http://localhost:14004`; // This gateway will respond immedietly with subplebbitRecordThirtyMinuteOld
+    const hourLateGateway = `http://localhost:14005`; // This gateway will respond immedietly with subplebbitRecordHourOld;
+    const twoHoursLateGateway = `http://localhost:14006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
 
     const subAddress = signers[0].address;
     let plebbit;
