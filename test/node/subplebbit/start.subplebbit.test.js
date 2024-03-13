@@ -51,26 +51,69 @@ describe(`subplebbit.start`, async () => {
         await newSub.stop();
     });
 
-    //prettier-ignore
-    if(!isRpcFlagOn())
-    it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
-        // There are cases where ipfs node can fail and be restarted
-        // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
-        // The restoration of subscription should happen within the sync loop of Subplebbit
-        await subplebbit.plebbit._clientsManager
-            .getDefaultPubsub()
-            ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        const listedTopics = async () => await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
-        expect(await listedTopics()).to.not.include(subplebbit.address);
+    if (!isRpcFlagOn())
+        it(`Sub can receive publications after pubsub topic subscription disconnects`, async () => {
+            // There are cases where ipfs node can fail and be restarted
+            // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
+            // The restoration of subscription should happen within the sync loop of Subplebbit
+            await subplebbit.plebbit._clientsManager
+                .getDefaultPubsub()
+                ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
+            const listedTopics = async () => await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
+            expect(await listedTopics()).to.not.include(subplebbit.address);
 
-        await resolveWhenConditionIsTrue(subplebbit, async () => {
-            return (await listedTopics()).includes(subplebbit.address);
+            await resolveWhenConditionIsTrue(subplebbit, async () => {
+                return (await listedTopics()).includes(subplebbit.address);
+            });
+
+            await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
         });
-        
-        await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
-    });
 });
 
+describe(`subplebbit.started`, async () => {
+    let plebbit, sub;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        sub = await createSubWithNoChallenge({}, plebbit);
+    });
+
+    after(async () => {
+        await sub.delete();
+    });
+
+    it(`subplebbit.started is false by default`, async () => {
+        expect(sub.started).to.be.false;
+    });
+
+    it(`subplebbit.started is true after start()`, async () => {
+        await sub.start();
+        expect(sub.started).to.be.true;
+    });
+
+    it(`subplebbit.started is true for other instances`, async () => {
+        const anotherSub = await plebbit.createSubplebbit({ address: sub.address });
+        expect(anotherSub.started).to.be.true;
+    });
+
+    it(`subplebbit.started is false after stopping`, async () => {
+        await sub.stop();
+        expect(sub.started).to.be.false;
+    });
+
+    it(`subplebbit.started is false for other instances after stopping`, async () => {
+        const anotherSub = await plebbit.createSubplebbit({ address: sub.address });
+        expect(anotherSub.started).to.be.false;
+    });
+
+    it(`subplebbit.started is false after deleting subplebbit`, async () => {
+        const anotherSub = await createSubWithNoChallenge({}, plebbit);
+        await anotherSub.start();
+        expect(anotherSub.started).to.be.true;
+        await resolveWhenConditionIsTrue(anotherSub, () => typeof anotherSub.updatedAt === "number");
+        await anotherSub.delete();
+        expect(anotherSub.started).to.be.false;
+    });
+});
 describe(`Start lock`, async () => {
     let plebbit, dataPath;
     before(async () => {
