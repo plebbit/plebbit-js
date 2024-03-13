@@ -902,7 +902,6 @@ export class DbHandler {
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
-                realpath: false,
                 retries: 5,
                 onCompromised: () => {}
             });
@@ -918,7 +917,11 @@ export class DbHandler {
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath)) return;
-        await lockfile.unlock(subDbPath, { lockfilePath, realpath: false });
+        try {
+            await lockfile.unlock(subDbPath, { lockfilePath });
+        } catch (e) {
+            if (e.code !== "ENOTACQUIRED") throw e;
+        }
     }
 
     // Misc functions
