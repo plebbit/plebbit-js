@@ -170,6 +170,8 @@ SubplebbitSuggested { // values suggested by the sub owner, the client/user can 
   // TODO: menu links, wiki pages, sidebar widgets
 }
 SubplebbitFeatures { // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
+  requirePostLink?: boolean // require post.link be defined
+  requirePostLinkIsMedia?: boolean // require post.link be media, e.g. for imageboards
   noVideos?: boolean
   noSpoilers?: boolean // author can't comment.spoiler = true their own comments
   noImages?: boolean
