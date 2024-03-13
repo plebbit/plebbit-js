@@ -1220,9 +1220,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.clientsManager.updateIpfsState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
-            this._setStartedState("succeeded");
-            this.clientsManager.updateIpfsState("stopped");
-            this.emit("update", this);
         } catch (e) {
             this._setStartedState("failed");
             this.clientsManager.updateIpfsState("stopped");
