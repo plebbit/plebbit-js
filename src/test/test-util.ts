@@ -274,8 +274,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
-        publishInterval: 1000,
-        updateInterval: 1000,
+        publishInterval: 3000,
+        updateInterval: 3000,
         ...plebbitOptions
     });
 
