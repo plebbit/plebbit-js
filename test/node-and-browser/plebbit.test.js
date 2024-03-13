@@ -199,7 +199,7 @@ describe("plebbit.fetchCid", async () => {
             await Promise.all([fileString1, fileString2].map((file) => ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(file)))
         ).map((res) => res.path);
 
-        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:33415"] });
+        const plebbitWithMaliciousGateway = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:13415"] });
         const fileString1FromGateway = await plebbitWithMaliciousGateway.fetchCid(cids[0]);
         expect(fileString1).to.equal(fileString1FromGateway);
 
@@ -236,7 +236,7 @@ describe("plebbit.fetchCid", async () => {
     it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
         // Have two gateways, the first is a gateway that takes 10s to respond, and the second should be near instant
         // RPC exception
-        const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://localhost:33417", "http://127.0.0.1:18080"] });
+        const multipleGatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://localhost:13417", "http://127.0.0.1:18080"] });
 
         const cid = "QmaZN2117dty2gHUDx2kHM61Vz9UcVDHFCx9PQt2bP2CEo"; // Cid from previous test
 

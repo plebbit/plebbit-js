@@ -337,7 +337,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js
     const stallingGateway = "http://localhost:14000"; // This gateaway will wait for 11s then respond
     const normalGateway = `http://localhost:18080`; // from test-server.js, should fetch records with minimal latency. Will fetch the latest record
-    const errorGateway = `http://localhost:33416`; // this gateway will respond with an error immedietly
+    const errorGateway = `http://localhost:13416`; // this gateway will respond with an error immedietly
     const normalWithStallingGateway = `http://localhost:14002`; // This gateway will fetch from normal gateway, await some time (less than 10s) than respond
     const errorGateway2 = `http://localhost:14003`; // this gateway will respond with an error immedietly
 
@@ -397,7 +397,7 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
         // gateway that respondes after taking sometime with updatedAt < 2 min => normalWithStallingGateway
         // should wait for normalWithStallingGateway
-        // Should go with maximum updatedAt
+        // Should go with maximum updatedAt, which is normal with stalling gateway
         const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [normalWithStallingGateway, hourLateGateway] });
         customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
 

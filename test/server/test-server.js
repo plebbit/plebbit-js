@@ -128,7 +128,7 @@ const setUpMockGateways = async () => {
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else res.end("Unknown CID");
     })
-        .listen(33415, hostName)
+        .listen(13415, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -140,7 +140,7 @@ const setUpMockGateways = async () => {
         res.statusMessage = "Too Many Requests";
         res.end();
     })
-        .listen(33416, hostName)
+        .listen(13416, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -151,7 +151,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end("Yes");
     })
-        .listen(33417, hostName)
+        .listen(13417, hostName)
         .on("error", (err) => {
             throw err;
         });

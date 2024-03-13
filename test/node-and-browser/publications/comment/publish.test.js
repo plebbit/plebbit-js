@@ -148,8 +148,8 @@ describe("publishing comments", async () => {
     if (!isRpcFlagOn())
         it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
             const subAddress = signers[7].address;
-            const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://localhost:33416", "http://localhost:18080"] });
-            expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal(["http://localhost:33416", "http://localhost:18080"]);
+            const gatewayPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: ["http://localhost:13416", "http://localhost:18080"] });
+            expect(Object.keys(gatewayPlebbit.clients.ipfsGateways)).to.deep.equal(["http://localhost:13416", "http://localhost:18080"]);
 
             const post = await generateMockPost(subAddress, gatewayPlebbit);
 
