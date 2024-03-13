@@ -122,7 +122,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
-
+        this.started = false;
         this._isSubRunningLocally = false;
     }
 
@@ -132,6 +132,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
+    }
+
+    private async _updateStartedValue() {
+        this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
     }
 
     async initInternalSubplebbit(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>) {
@@ -156,6 +160,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this._mergeInstanceStateWithDbState({}); // Load InternalSubplebbit from DB here
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+        await this._updateStartedValue();
 
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
@@ -218,6 +223,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._updateDbInternalState(this.toJSONInternal());
 
         await this._setChallengesToDefaultIfNotDefined(log);
+        await this._updateStartedValue();
 
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
@@ -1347,7 +1353,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:start");
 
         await this._initBeforeStarting();
+        // update started value twice because it could be started prior lockSubStart
+        await this._updateStartedValue();
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
+        await this._updateStartedValue();
         this._setState("started");
         this._setStartedState("publishing-ipns");
         this._isSubRunningLocally = true;
@@ -1377,7 +1386,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _updateOnce() {
         const log = Logger("plebbit-js:local-subplebbit:update");
         const subState = await this._getDbInternalState(false);
-
+        await this._updateStartedValue();
         if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
@@ -1414,6 +1423,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubState();
             await this.dbHandler.unlockSubStart();
+            await this._updateStartedValue();
 
             clearInterval(this._publishInterval);
             this.clientsManager.updateIpfsState("stopped");

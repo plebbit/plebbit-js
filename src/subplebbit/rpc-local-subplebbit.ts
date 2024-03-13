@@ -10,19 +10,27 @@ import {
 } from "../types.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { messages } from "../errors.js";
+import { Plebbit } from "../plebbit.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
+    started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
     protected _usingDefaultChallenge: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     settings?: SubplebbitSettings;
+
+    constructor(plebbit: Plebbit){
+        super(plebbit);
+        this.started = false;
+    }
+    
 
     toJSONInternalRpc(): InternalSubplebbitRpcType {
         return {
             ...this.toJSONIpfs(),
             settings: this.settings,
             _usingDefaultChallenge: this._usingDefaultChallenge,
-            startedState: this.startedState
+            started: this.started
         };
     }
 
@@ -30,9 +38,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
         await super.initRemoteSubplebbitProps(newProps);
         this.settings = mergedProps.settings;
-        // only use startedState from local state if we're not getting updates from rpc
-        if (!this._startRpcSubscriptionId) this._setStartedState(mergedProps.startedState);
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
+        this.started = mergedProps.started;
     }
 
     protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
@@ -106,6 +113,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             if (this._startRpcSubscriptionId) await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
             this._setStartedState("stopped");
             this._setRpcClientState("stopped");
+            this.started = false;
             this._startRpcSubscriptionId = undefined;
             log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
             this._setState("stopped");
@@ -143,6 +151,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
         await this.plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
 
+        this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");
     }
