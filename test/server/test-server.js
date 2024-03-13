@@ -169,7 +169,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
     })
-        .listen(44000, hostName)
+        .listen(14000, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -180,7 +180,7 @@ const setUpMockGateways = async () => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.end(JSON.stringify(await fetchLatestSubplebbitJson()));
     })
-        .listen(44002, hostName)
+        .listen(14002, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -191,7 +191,7 @@ const setUpMockGateways = async () => {
         res.statusMessage = "Error";
         res.end();
     })
-        .listen(44003, hostName)
+        .listen(14003, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -206,7 +206,7 @@ const setUpMockGateways = async () => {
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
     })
-        .listen(44004, hostName)
+        .listen(14004, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -221,7 +221,7 @@ const setUpMockGateways = async () => {
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
-        .listen(44005, hostName)
+        .listen(14005, hostName)
         .on("error", (err) => {
             throw err;
         });
@@ -236,7 +236,7 @@ const setUpMockGateways = async () => {
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
-        .listen(44006, hostName)
+        .listen(14006, hostName)
         .on("error", (err) => {
             throw err;
         });
