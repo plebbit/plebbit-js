@@ -29,8 +29,8 @@ jobs:
       runs-on: ubuntu-latest
       timeout-minutes: 20
       steps:
-        - uses: actions/checkout@v3
-        - uses: actions/setup-node@v3
+        - uses: actions/checkout@v4
+        - uses: actions/setup-node@v4
           with:
             node-version: 18
             cache: "npm"
@@ -52,8 +52,8 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
@@ -65,7 +65,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: sleep 10s # Needed to avoid the used gateway port problem in test:server:node
+      # - run: sleep 10s # Needed to avoid the used gateway port problem in test:server:node
       - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:remote
 
@@ -76,8 +76,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
@@ -90,7 +90,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: sleep 20s # Needed to avoid the used gateway port problem in test:server:node
+      # - run: sleep 20s # Needed to avoid the used gateway port problem in test:server:node
       - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
@@ -100,8 +100,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
@@ -114,7 +114,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: sleep 30s # Needed to avoid the used gateway port problem in test:server:node
+      # - run: sleep 30s # Needed to avoid the used gateway port problem in test:server:node
       - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
 
@@ -122,8 +122,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
@@ -136,7 +136,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # Setup tests for plebbit-js using rpc here
-      - run: sleep 40s # Needed to avoid the used gateway port problem in test:server:node
+      # - run: sleep 40s # Needed to avoid the used gateway port problem in test:server:node
       - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
 
