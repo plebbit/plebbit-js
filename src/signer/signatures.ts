@@ -440,7 +440,8 @@ export async function verifyCommentUpdate(
                     clientsManager,
                     subplebbitAddress,
                     comment.cid,
-                    overrideAuthorAddressIfInvalid
+                    overrideAuthorAddressIfInvalid,
+                    resolveDomainSubAddress
                 )
             )
         );

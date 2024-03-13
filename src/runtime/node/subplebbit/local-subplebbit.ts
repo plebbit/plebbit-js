@@ -1008,7 +1008,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdate, comment: CommentsTableRow, log: Logger) {
         // This function should be deleted at some point, once the protocol ossifies
-        const validation = await verifyCommentUpdate(newCommentUpdate, false, this.clientsManager, this.address, comment, false);
+        const validation = await verifyCommentUpdate(newCommentUpdate, false, this.clientsManager, this.address, comment, false, false);
         if (!validation.valid) {
             log.error(`CommentUpdate (${comment.cid}) signature is invalid due to (${validation.reason}). This is a critical error`);
             throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
@@ -1361,7 +1361,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._listenToIncomingRequests();
 
         this._subplebbitUpdateTrigger = true;
-        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
+        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
         await this._repinCommentsIPFSIfNeeded();
         await this._repinCommentUpdateIfNeeded();
@@ -1388,7 +1388,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     async update() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        if (this.state !== "stopped") return; // No need to do anything if subplebbit is already updating
+        if (this.state == "stopped") return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
             if (this.state === "updating")
                 this._updateOnce()
@@ -1411,7 +1411,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (this._publishLoopPromise) await this._publishLoopPromise;
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
-            await this._updateDbInternalState({ startedState: this.startedState });
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubState();
             await this.dbHandler.unlockSubStart();
