@@ -142,7 +142,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         expect(sub.startedState).to.not.equal("stopped");
 
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
-        expect(recreatedSub.startedState).to.not.equal("stopped");
+        expect(recreatedSub.startedState).to.equal("stopped"); // startedState is only set by the actual instance, not synced across instances
         expect(sub.startedState).to.not.equal("stopped");
         await sub.stop();
     });
