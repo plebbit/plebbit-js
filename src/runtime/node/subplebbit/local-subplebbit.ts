@@ -128,7 +128,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     toJSONInternal(): InternalSubplebbitType {
         return {
-            ...this.toJSONInternalRpc(),
+            ...lodash.omit(this.toJSONInternalRpc(), ["started"]),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
