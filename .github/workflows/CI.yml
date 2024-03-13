@@ -67,7 +67,7 @@ jobs:
 
       - run: DEBUG="plebbit*" npm run test:server:node | tee test_server.log & npm run test:server:wait-on
       - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:remote
-      - run: echo test_server.log
+      - run: cat test_server.log
         if: ${{ !cancelled() }}
 
     
