@@ -345,7 +345,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
-        await new Promise((resolve) => post.once("update", resolve));
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number")
         expect(post.lastChildCid).to.be.undefined;
     });
 
@@ -355,7 +355,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
 
     it(`commentUpdate.lastChildCid updates to the latest child comment when replying to post directly`, async () => {
         const reply = await publishRandomReply(post, plebbit, {}, false);
-        await new Promise((resolve) => post.once("update", resolve));
+        await resolveWhenConditionIsTrue(post, () => post.replyCount === 1);
         expect(post.replyCount).to.equal(1);
         expect(post.lastChildCid).to.equal(reply.cid);
     });
