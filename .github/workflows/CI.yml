@@ -65,6 +65,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
+      - run: sleep 10s # Needed to avoid the used gateway port problem in test:server:node
       - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:remote
 
@@ -89,6 +90,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
+      - run: sleep 20s # Needed to avoid the used gateway port problem in test:server:node
       - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
@@ -112,6 +114,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
+      - run: sleep 30s # Needed to avoid the used gateway port problem in test:server:node
       - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
 
@@ -133,6 +136,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # Setup tests for plebbit-js using rpc here
+      - run: sleep 40s # Needed to avoid the used gateway port problem in test:server:node
       - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
       - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
 
