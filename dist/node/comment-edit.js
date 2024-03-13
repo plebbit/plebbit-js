@@ -1,7 +1,6 @@
 import Publication from "./publication.js";
 import { verifyCommentEdit } from "./signer/signatures.js";
-import { throwWithErrorCode } from "./util.js";
-import { cid as isIpfsCid } from "is-ipfs";
+import { isIpfsCid, throwWithErrorCode } from "./util.js";
 export class CommentEdit extends Publication {
     constructor(props, plebbit) {
         super(props, plebbit);

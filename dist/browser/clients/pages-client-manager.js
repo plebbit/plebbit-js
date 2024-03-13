@@ -6,7 +6,7 @@ import lodash from "lodash";
 import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../util.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid } from "../util.js";
 export class BasePagesClientsManager extends BaseClientsManager {
     constructor(pages) {
         super(pages._plebbit);
@@ -150,6 +150,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
     async fetchPage(pageCid) {
+        if (!isIpfsCid(pageCid))
+            throw Error(`fetchPage: pageCid (${pageCid}) is not a valid CID`);
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes = pageCidToSortTypesCache.get(pageCid);
         let page;

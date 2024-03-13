@@ -52,3 +52,5 @@ export declare function isLinkOfMedia(link: string): boolean;
 export declare function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]>;
 export declare function isStringDomain(x: string | undefined): boolean;
 export declare function isIpns(x: string | Uint8Array): boolean;
+export declare function isIpfsCid(x: string | Uint8Array): boolean;
+export declare function isIpfsPath(x: string | Uint8Array): boolean;

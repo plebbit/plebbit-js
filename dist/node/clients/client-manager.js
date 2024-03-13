@@ -1,8 +1,7 @@
-import { getPostUpdateTimestampRange, throwWithErrorCode, timestamp } from "../util.js";
+import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
 import { verifySubplebbit } from "../signer/index.js";
 import lodash from "lodash";
-import { cid as isIpfsCid, path as isIpfsPath } from "is-ipfs";
 import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";

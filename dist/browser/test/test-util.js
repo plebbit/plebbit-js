@@ -2,7 +2,6 @@ import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
 import { Comment } from "../comment.js";
 import PlebbitIndex from "../index.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { cid as isIpfsCid } from "is-ipfs";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import lodash from "lodash";
@@ -72,8 +71,6 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit, signe
     return voteObj;
 }
 export async function loadAllPages(pageCid, pagesInstance) {
-    if (!isIpfsCid(pageCid))
-        throw Error(`loadAllPages: pageCid (${pageCid}) is not a valid CID`);
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
     let sortedComments = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
@@ -192,8 +189,8 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
-        publishInterval: 1000,
-        updateInterval: 1000,
+        publishInterval: 3000,
+        updateInterval: 3000,
         ...plebbitOptions
     });
     if (mockResolve)
