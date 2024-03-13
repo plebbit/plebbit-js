@@ -42,10 +42,12 @@ jobs:
         - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
         - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-        - run: DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+        - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
         - name: Run mocked challenge tests
           run: npm run test:mocked:challenges
         - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:local
+        - run: cat test_server.log
+          if: ${{ !cancelled() }}
 
   test-plebbit-js-node-remote:
     runs-on: ubuntu-latest
@@ -91,10 +93,13 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+      - run:  DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
       - name: Link chrome executable
         run: sudo ln -s /usr/bin/google-chrome-stable /usr/bin/chrome
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:chrome
+      - run: cat test_server.log
+        if: ${{ !cancelled() }}
+
 
   test-plebbit-js-firefox-remote:
     runs-on: ubuntu-latest
@@ -114,8 +119,10 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run:  DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+      - run:  DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
       - run:  DEBUG="plebbit*, -plebbit*trace" npm run test:browser:firefox
+      - run: cat test_server.log
+        if: ${{ !cancelled() }}
 
   test-plebbit-rpc:
     runs-on: ubuntu-latest
@@ -135,8 +142,10 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
       # Setup tests for plebbit-js using rpc here
-      - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node & npm run test:server:wait-on
+      - run: USE_RPC=1 CLIENT="node:rpc" DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
       - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:rpc
+      - run: cat test_server.log
+        if: ${{ !cancelled() }}
 
 
       # Setup tests for rpc directory here (skipped for now)
