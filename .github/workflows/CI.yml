@@ -65,7 +65,7 @@ jobs:
       - run: sudo echo "255.255.255.255 cloudflare-ipfs.com" | sudo tee -a /etc/hosts
       - run: sudo echo "255.255.255.255 pubsubprovider.xyz" | sudo tee -a /etc/hosts
 
-      - run: DEBUG="plebbit*" npm run test:server:node | tee test_server.log & npm run test:server:wait-on
+      - run: DEBUG="plebbit*" npm run test:server:node |& tee test_server.log & npm run test:server:wait-on
       - run: DEBUG="plebbit*, -plebbit*trace" npm run test:node:parallel:remote
       - run: cat test_server.log
         if: ${{ !cancelled() }}
