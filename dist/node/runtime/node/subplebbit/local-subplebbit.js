@@ -35,14 +35,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
         ];
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
+        this.started = false;
         this._isSubRunningLocally = false;
     }
     toJSONInternal() {
         return {
-            ...this.toJSONInternalRpc(),
+            ...lodash.omit(this.toJSONInternalRpc(), ["started"]),
             signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
+    }
+    async _updateStartedValue() {
+        this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
     }
     async initInternalSubplebbit(newProps) {
         const mergedProps = { ...this.toJSONInternal(), ...newProps };
@@ -65,6 +69,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._mergeInstanceStateWithDbState({}); // Load InternalSubplebbit from DB here
         if (!this.signer)
             throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
+        await this._updateStartedValue();
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
     async _importSubplebbitSignerIntoIpfsIfNeeded() {
@@ -121,6 +126,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.createdAt = timestamp();
         await this._updateDbInternalState(this.toJSONInternal());
         await this._setChallengesToDefaultIfNotDefined(log);
+        await this._updateStartedValue();
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
     async _calculateNewPostUpdates() {
@@ -192,6 +198,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             lifetime
         });
         log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`);
+        this._setStartedState("succeeded");
+        this.clientsManager.updateIpfsState("stopped");
+        this.emit("update", this);
     }
     shouldResolveDomainForVerification() {
         return this.address.includes(".") && Math.random() < 0.05; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
@@ -731,7 +740,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _validateCommentUpdateSignature(newCommentUpdate, comment, log) {
         // This function should be deleted at some point, once the protocol ossifies
-        const validation = await verifyCommentUpdate(newCommentUpdate, false, this.clientsManager, this.address, comment, false);
+        const validation = await verifyCommentUpdate(newCommentUpdate, false, this.clientsManager, this.address, comment, false, false);
         if (!validation.valid) {
             log.error(`CommentUpdate (${comment.cid}) signature is invalid due to (${validation.reason}). This is a critical error`);
             throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", validation);
@@ -908,9 +917,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.clientsManager.updateIpfsState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
-            this._setStartedState("succeeded");
-            this.clientsManager.updateIpfsState("stopped");
-            this.emit("update", this);
         }
         catch (e) {
             this._setStartedState("failed");
@@ -1026,7 +1032,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
         await this._initBeforeStarting();
+        // update started value twice because it could be started prior lockSubStart
+        await this._updateStartedValue();
         await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
+        await this._updateStartedValue();
         this._setState("started");
         this._setStartedState("publishing-ipns");
         this._isSubRunningLocally = true;
@@ -1037,7 +1046,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._importSubplebbitSignerIntoIpfsIfNeeded();
         await this._listenToIncomingRequests();
         this._subplebbitUpdateTrigger = true;
-        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger, startedState: this.startedState });
+        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
         await this._repinCommentsIPFSIfNeeded();
         await this._repinCommentUpdateIfNeeded();
         this.syncIpnsWithDb()
@@ -1050,6 +1059,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async _updateOnce() {
         const log = Logger("plebbit-js:local-subplebbit:update");
         const subState = await this._getDbInternalState(false);
+        await this._updateStartedValue();
         if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
@@ -1059,7 +1069,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async update() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        if (this.state !== "stopped")
+        if (this.state === "updating" || this.state === "started")
             return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
             if (this.state === "updating")
@@ -1080,10 +1090,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 await this._publishLoopPromise;
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
-            await this._updateDbInternalState({ startedState: this.startedState });
             await this.dbHandler.rollbackAllTransactions();
             await this.dbHandler.unlockSubState();
             await this.dbHandler.unlockSubStart();
+            await this._updateStartedValue();
             clearInterval(this._publishInterval);
             this.clientsManager.updateIpfsState("stopped");
             this.clientsManager.updatePubsubState("stopped", undefined);

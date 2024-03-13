@@ -23,6 +23,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     private _publishInterval?;
     constructor(plebbit: Plebbit);
     toJSONInternal(): InternalSubplebbitType;
+    private _updateStartedValue;
     initInternalSubplebbit(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>): Promise<void>;
     private initDbHandlerIfNeeded;
     _loadLocalSubDb(): Promise<void>;

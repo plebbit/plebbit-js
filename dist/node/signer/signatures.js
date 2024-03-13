@@ -282,7 +282,7 @@ export async function verifyCommentUpdate(update, resolveAuthorAddresses, client
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_DIFFERENT_CID_THAN_COMMENT };
     if (update.replies) {
         // Validate update.replies
-        const pagesValidity = await Promise.all(Object.keys(update.replies.pages).map((sortName) => verifyPage(update.replies.pageCids[sortName], update.replies.pages[sortName], resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid)));
+        const pagesValidity = await Promise.all(Object.keys(update.replies.pages).map((sortName) => verifyPage(update.replies.pageCids[sortName], update.replies.pages[sortName], resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid, resolveDomainSubAddress)));
         const invalidPageValidity = pagesValidity.find((validity) => !validity.valid);
         if (invalidPageValidity)
             return invalidPageValidity;

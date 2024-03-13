@@ -4,22 +4,24 @@ import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { messages } from "../errors.js";
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
+    constructor(plebbit) {
+        super(plebbit);
+        this.started = false;
+    }
     toJSONInternalRpc() {
         return {
             ...this.toJSONIpfs(),
             settings: this.settings,
             _usingDefaultChallenge: this._usingDefaultChallenge,
-            startedState: this.startedState
+            started: this.started
         };
     }
     async initRpcInternalSubplebbit(newProps) {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
         await super.initRemoteSubplebbitProps(newProps);
         this.settings = mergedProps.settings;
-        // only use startedState from local state if we're not getting updates from rpc
-        if (!this._startRpcSubscriptionId)
-            this._setStartedState(mergedProps.startedState);
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
+        this.started = mergedProps.started;
     }
     async _handleRpcUpdateProps(rpcProps) {
         await this.initRpcInternalSubplebbit(rpcProps);
@@ -87,6 +89,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                 await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
             this._setStartedState("stopped");
             this._setRpcClientState("stopped");
+            this.started = false;
             this._startRpcSubscriptionId = undefined;
             log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
             this._setState("stopped");
@@ -120,6 +123,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         if (this.state === "updating")
             await super.stop();
         await this.plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
+        this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");
     }

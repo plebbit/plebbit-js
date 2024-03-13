@@ -1,7 +1,7 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { JsonSignature, SignerType } from "../signer/constants.js";
 import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
-import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 export type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
@@ -88,9 +88,9 @@ export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateS
     signer: Pick<SignerType, "address" | "privateKey" | "type">;
     _subplebbitUpdateTrigger: boolean;
     _usingDefaultChallenge: boolean;
-    startedState: RemoteSubplebbit["startedState"];
 }
 export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {
+    started: RpcLocalSubplebbit["started"];
 }
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     createdAt?: number;

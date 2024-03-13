@@ -6,6 +6,7 @@ import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error.js";
+import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
@@ -202,6 +203,7 @@ class PlebbitWsServer extends EventEmitter {
                 subplebbit.removeAllListeners("challengerequest");
                 subplebbit.removeAllListeners("challengeverification");
             };
+            subplebbit.started = true; // a small hack to make sure first update has started=true
             subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
             await subplebbit.start();
             startedSubplebbits[address] = subplebbit;
@@ -274,7 +276,7 @@ class PlebbitWsServer extends EventEmitter {
             const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
             const watchAbortController = new AbortController();
             fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
-                if (filename.endsWith(".lock"))
+                if (filename?.endsWith(".lock"))
                     return; // we only care about subplebbits
                 const currentSubs = await getListedSubsWithTimestamp();
                 if (!this._lastListedSubs ||
@@ -367,7 +369,10 @@ class PlebbitWsServer extends EventEmitter {
         // possibly move it to a startedSubplebbitUpdate method
         // const startedSubplebbit = await getStartedSubplebbit(address)
         const subplebbit = await this.plebbit.createSubplebbit({ address });
-        subplebbit.on("update", () => sendEvent("update", subplebbit["signer"] ? subplebbit["toJSONInternalRpc"]() : subplebbit.toJSONIpfs()));
+        subplebbit.on("update", () => {
+            const jsonToSend = subplebbit instanceof LocalSubplebbit ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs();
+            sendEvent("update", jsonToSend);
+        });
         subplebbit.on("updatingstatechange", () => sendEvent("updatingstatechange", subplebbit.updatingState));
         subplebbit.on("error", (error) => sendEvent("error", error));
         // cleanup function
