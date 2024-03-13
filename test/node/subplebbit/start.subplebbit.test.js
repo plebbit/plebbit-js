@@ -230,14 +230,16 @@ describe(`Publish loop resiliency`, async () => {
     it(`Subplebbit isn't publishing updates needlessly`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
+        // there is no need to publish updates here, because we're not publishing new props or publications
+        let triggerdUpdate = false;
         sub.on("update", () => {
-            reject("Subplebbit should not publish update needlesly");
-            expect.fail("Subplebbit should not publish update needlesly");
+            triggerdUpdate = true;
         });
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 5));
+        expect(triggerdUpdate).to.be.false; // Subplebbit should not publish update needlesly
         await sub.delete();
     });
 
