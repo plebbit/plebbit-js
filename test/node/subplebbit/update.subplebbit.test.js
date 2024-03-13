@@ -1,5 +1,4 @@
-import { mockPlebbit, publishRandomPost } from "../../../dist/node/test/test-util";
-import signers from "../../fixtures/signers";
+import { createSubWithNoChallenge, mockPlebbit, publishRandomPost, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -11,7 +10,10 @@ describe(`subplebbit.update - Local subs`, async () => {
     });
 
     it(`Can receive updates from local sub`, async () => {
-        const recreatedSub = await plebbit.createSubplebbit({ address: signers[0].address });
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(recreatedSub.state).to.equal("stopped");
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
         await recreatedSub.update();
@@ -19,5 +21,6 @@ describe(`subplebbit.update - Local subs`, async () => {
         await new Promise((resolve) => recreatedSub.once("update", resolve));
         expect(recreatedSub.updatedAt).to.be.greaterThan(oldUpdatedAt);
         await recreatedSub.stop();
+        await sub.delete();
     });
 });
