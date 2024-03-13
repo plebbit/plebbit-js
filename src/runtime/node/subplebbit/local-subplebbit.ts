@@ -309,6 +309,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
         );
+        this._setStartedState("succeeded");
+        this.clientsManager.updateIpfsState("stopped");
+        this.emit("update", this);
     }
 
     private shouldResolveDomainForVerification() {
