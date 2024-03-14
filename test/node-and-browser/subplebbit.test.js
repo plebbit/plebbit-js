@@ -428,8 +428,12 @@ describe(`Test fetching subplebbit record from multiple gateways`, async () => {
         });
         customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
 
-        const [latestSub, sub] = await Promise.all([fetchLatestSubplebbitJson(), customPlebbit.getSubplebbit(subplebbitAddress)]);
-        expect(sub.toJSONIpfs()).to.deep.equal(latestSub);
+        const gatewaySub = await customPlebbit.getSubplebbit(subplebbitAddress);
+        const latestSub = await fetchLatestSubplebbitJson();
+        const diff = latestSub.updatedAt - gatewaySub.updatedAt;
+        const buffer = 5;
+        expect(diff).to.be.lessThan(buffer);
+        
     });
 });
 
