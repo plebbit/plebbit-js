@@ -355,6 +355,7 @@ export function isIpfsCid(x: string | Uint8Array) {
     return isIpfs.cid(x);
 }
 
-export function isIpfsPath(x: string | Uint8Array) {
-    return isIpfs.path(x);
+export function isIpfsPath(x: string | Uint8Array): boolean {
+    //@ts-expect-error
+    return isIpfs.default.path(x);
 }
