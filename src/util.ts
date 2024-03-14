@@ -32,7 +32,9 @@ import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
-import * as isIpfs from "is-ipfs";
+import { CID } from "kubo-rpc-client";
+import * as Digest from "multiformats/hashes/digest";
+import { base58btc } from "multiformats/bases/base58";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -346,16 +348,24 @@ export function isStringDomain(x: string | undefined) {
     return typeof x === "string" && x.includes(".");
 }
 
-export function isIpns(x: string | Uint8Array) {
+export function isIpns(x: string) {
     // This function will test if a string is of IPNS address (12D)
-    return isIpfs.multihash(x);
+    try {
+        Digest.decode(base58btc.decode(`z${x}`));
+        return true;
+    } catch {
+        return false;
+    }
 }
 
-export function isIpfsCid(x: string | Uint8Array) {
-    return isIpfs.cid(x);
+export function isIpfsCid(x: string) {
+    try {
+        return Boolean(CID.parse(x));
+    } catch {
+        return false;
+    }
 }
 
-export function isIpfsPath(x: string | Uint8Array): boolean {
-    //@ts-expect-error
-    return isIpfs.default.path(x);
+export function isIpfsPath(x: string): boolean {
+    return x.startsWith("/ipfs/");
 }
