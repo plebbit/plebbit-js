@@ -5,7 +5,9 @@ import { BasePages } from "./pages.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import extName from "ext-name";
-import * as isIpfs from "is-ipfs";
+import { CID } from "kubo-rpc-client";
+import * as Digest from "multiformats/hashes/digest";
+import { base58btc } from "multiformats/bases/base58";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -285,13 +287,23 @@ export function isStringDomain(x) {
 }
 export function isIpns(x) {
     // This function will test if a string is of IPNS address (12D)
-    return isIpfs.multihash(x);
+    try {
+        Digest.decode(base58btc.decode(`z${x}`));
+        return true;
+    }
+    catch {
+        return false;
+    }
 }
 export function isIpfsCid(x) {
-    return isIpfs.cid(x);
+    try {
+        return Boolean(CID.parse(x));
+    }
+    catch {
+        return false;
+    }
 }
 export function isIpfsPath(x) {
-    //@ts-expect-error
-    return isIpfs.default.path(x);
+    return x.startsWith("/ipfs/");
 }
 //# sourceMappingURL=util.js.map
