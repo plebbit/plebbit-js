@@ -291,6 +291,7 @@ export function isIpfsCid(x) {
     return isIpfs.cid(x);
 }
 export function isIpfsPath(x) {
-    return isIpfs.path(x);
+    //@ts-expect-error
+    return isIpfs.default.path(x);
 }
 //# sourceMappingURL=util.js.map
