@@ -147,7 +147,7 @@ Subplebbit /* (IPNS record Subplebbit.address) */ {
   roles?: {[authorAddress: string]: SubplebbitRole} // each author address can be mapped to 1 SubplebbitRole
   pubsubTopic?: string // the string to publish to in the pubsub, a public key of the subplebbit owner's choice
   lastPostCid?: string // the most recent post in the linked list of posts
-  lastCommenttCid?: string // the most recent comment (posts and replies included), last comment is often displayed with a list of forums
+  lastCommentCid?: string // the most recent comment (posts and replies included), last comment is often displayed with a list of forums
   posts?: Pages // only preload page 1 sorted by 'hot', might preload more later, comments should include Comment + CommentUpdate data
   statsCid?: string
   createdAt: number
