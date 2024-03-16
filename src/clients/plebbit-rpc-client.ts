@@ -51,8 +51,8 @@ export default class PlebbitRpcClient {
             // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
             // NOTE: it is possible to receive a subscription message before receiving the subscription id
 
-            this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions[0]);
-            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions[0]);
+            this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions![0]);
+            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions![0]);
             //@ts-expect-error
             this._webSocketClient.socket.on("message", (jsonMessage) => {
                 const message = JSON.parse(jsonMessage);
@@ -111,7 +111,7 @@ export default class PlebbitRpcClient {
             await this._openConnectionPromise;
         } catch (e) {
             throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
-                plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
+                plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions![0],
                 timeoutSeconds: this._timeoutSeconds,
                 error: e
             });

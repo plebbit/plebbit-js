@@ -12,7 +12,6 @@ import {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    IpfsClient,
     OnlyDefinedProperties,
     PageIpfs,
     PagesType,
@@ -49,7 +48,11 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
     new: { score: (...args) => newScore(...args) },
-    active: { score: (...args) => undefined },
+    active: {
+        score: (...args) => {
+            throw Error("Active sort has no scoring");
+        }
+    },
     topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
     topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
@@ -179,8 +182,19 @@ export const parseDbResponses = (obj: any) => {
     if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
 
     const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
-    //prettier-ignore
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
+    const booleanFields = [
+        "deleted",
+        "spoiler",
+        "pinned",
+        "locked",
+        "removed",
+        "commentUpdate_deleted",
+        "commentUpdate_spoiler",
+        "commentUpdate_pinned",
+        "commentUpdate_locked",
+        "commentUpdate_removed",
+        "isAuthorEdit"
+    ];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
@@ -198,7 +212,8 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promi
 }
 
 export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
-    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
+    const keys = Object.keys(pagesRaw.pages);
+    const parsedPages = await Promise.all(keys.map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
     const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
@@ -212,7 +227,7 @@ export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Bas
             pagesIpfs: undefined
         };
 
-    if (replies instanceof BasePages) return replies;
+    if (replies instanceof BasePages) return replies; // already parsed
 
     if (!replies.pages) return { pages: undefined, pagesIpfs: undefined };
 
@@ -261,12 +276,13 @@ export function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function firstResolve(promises: Promise<any>[]) {
-    return new Promise<any>((resolve) => promises.forEach((promise) => promise.then(resolve)));
+export function firstResolve<T>(promises: Promise<T>[]) {
+    return new Promise<T>((resolve) => promises.forEach((promise) => promise.then(resolve)));
 }
 
 export function getErrorCodeFromMessage(message: string): keyof typeof messages {
-    for (const code of Object.keys(messages)) if (messages[code] === message) return <keyof typeof messages>code;
+    const codes = <(keyof typeof messages)[]>Object.keys(messages);
+    for (const code of codes) if (messages[code] === message) return code;
     throw Error(`No error code was found for message (${message})`);
 }
 
@@ -284,7 +300,7 @@ export function decodePubsubMsgFromRpc(
         | EncodedDecryptedChallengeVerificationMessageType
 ) {
     //@ts-expect-error
-    const parsedPubsubMsg:
+    let parsedPubsubMsg:
         | DecryptedChallengeMessageType
         | DecryptedChallengeAnswerMessageType
         | DecryptedChallengeRequestMessageType
@@ -293,9 +309,9 @@ export function decodePubsubMsgFromRpc(
         | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
     if (pubsubMsg.encrypted) {
-        parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
-        parsedPubsubMsg.encrypted.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
-        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
+        parsedPubsubMsg.encrypted!.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
+        parsedPubsubMsg.encrypted!.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
+        parsedPubsubMsg.encrypted!.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
     }
     parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
     parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
@@ -315,7 +331,7 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
     );
 }
 
-export function isLinkValid(link: string) {
+export function isLinkValid(link: string): boolean {
     try {
         const url = new URL(link);
         if (url.protocol !== "https:") throw Error("Not a valid https url");
@@ -325,7 +341,7 @@ export function isLinkValid(link: string) {
     }
 }
 
-export function isLinkOfMedia(link: string) {
+export function isLinkOfMedia(link: string): boolean {
     if (!link) return false;
     let mime;
     try {
@@ -334,6 +350,7 @@ export function isLinkOfMedia(link: string) {
         return false;
     }
     if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio")) return true;
+    return false;
 }
 
 export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {

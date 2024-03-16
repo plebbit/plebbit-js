@@ -4,7 +4,7 @@ import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
 import Vote from "../vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
+import { CommentWithCommentUpdate, CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants.js";
@@ -154,7 +154,7 @@ async function _publishReplies(parentComment: Comment, numOfReplies: number, ple
     return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
 }
 
-async function _publishVotesOnOneComment(comment: Comment, votesPerCommentToPublish: number, plebbit: Plebbit) {
+async function _publishVotesOnOneComment(comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress">, votesPerCommentToPublish: number, plebbit: Plebbit) {
     return Promise.all(
         new Array(votesPerCommentToPublish)
             .fill(null)
@@ -430,7 +430,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
 }
 
 export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined> {
-    let currentPageCid = lodash.clone(pageCid);
+    let currentPageCid: string | undefined = lodash.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
@@ -452,10 +452,10 @@ export async function waitTillCommentIsInParentPages(
             : await plebbit.createComment({ cid: comment.parentCid });
     await parent.update();
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
-    let commentInPage: Comment;
+    let commentInPage: Comment | undefined;
     const isCommentInParentPages = async () => {
         const repliesPageCid = pagesInstance()?.pageCids?.new;
-        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+        if (repliesPageCid) commentInPage = await findCommentInPage(<string>comment.cid, repliesPageCid, pagesInstance());
         return Boolean(commentInPage);
     };
 

@@ -154,7 +154,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._receivedChallengeVerification = true;
         if (verification.publication) this._initProps(verification.publication);
         this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
-        await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+        if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
     }
 
@@ -261,12 +261,13 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
 
-        if (this._plebbit.plebbitRpcClient) {
+        if (this._plebbit.plebbitRpcClient && this._rpcPublishSubscriptionId) {
             await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, challengeAnswers);
             return;
         }
 
         assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
+        if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         const toEncryptAnswers: DecryptedChallengeAnswer = { challengeAnswers };
 
@@ -371,8 +372,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
-    private _pubsubTopicWithfallback() {
-        return this.subplebbit.pubsubTopic || this.subplebbit.address;
+    private _pubsubTopicWithfallback(): string {
+        const pubsubTopic = this.subplebbit?.pubsubTopic || this.subplebbit?.address;
+        if (typeof pubsubTopic !== "string") throw Error("Failed to load the pubsub topic of subplebbit");
+        return pubsubTopic;
     }
 
     _getSubplebbitCache() {
@@ -433,7 +436,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private async _postSucessOrFailurePublishing() {
         this._updateState("stopped");
         if (this._rpcPublishSubscriptionId) {
-            await this._plebbit.plebbitRpcClient.unsubscribe(this._rpcPublishSubscriptionId);
+            await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }

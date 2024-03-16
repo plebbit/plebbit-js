@@ -2,15 +2,15 @@ import { Plebbit } from "./plebbit.js";
 import { Chain } from "./types.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import { PublicClient as ViemPublicClient, createPublicClient, http } from "viem";
+import { createPublicClient as createViemClient, http } from "viem";
 import * as chains from "viem/chains";
 import { ethers } from "ethers";
 import { Connection as SolanaConnection, clusterApiUrl } from "@solana/web3.js";
 import { NameRegistryState, getDomainKeySync } from "@bonfida/spl-name-service";
-import * as lib from "@ensdomains/eth-ens-namehash"; // ESM
+import { normalize as normalizeEnsAddress } from "viem/ens";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
-const viemClients: Record<string, ViemPublicClient> = {};
+const viemClients: Record<string, ReturnType<typeof createViemClient>> = {};
 
 const solanaConnections: Record<string, SolanaConnection> = {};
 
@@ -34,11 +34,10 @@ export class Resolver {
 
     async _resolveViaViem(chainTicker: Chain, address: string, txtRecordName: string, chainProviderUrl: string): Promise<string | null> {
         const log = Logger("plebbit-js:resolver:_resolveViaViem");
-        let clientKey: string;
-        if (!viemClients[chainProviderUrl]) {
+        const clientCacheKey = chainTicker + chainProviderUrl;
+        if (!viemClients[clientCacheKey]) {
             if (chainProviderUrl === "viem" && chainTicker === "eth") {
-                clientKey = "viem";
-                viemClients[clientKey] = createPublicClient({
+                viemClients[clientCacheKey] = createViemClient({
                     chain: chains.mainnet,
                     transport: http()
                 });
@@ -46,20 +45,20 @@ export class Resolver {
                 const chainId = this.plebbit.chainProviders[chainTicker].chainId;
                 const chain = Object.values(chains).find((chain) => chain.id === chainId);
                 assert(chain, `Was not able to find a chain with id ${chainId}`);
-                clientKey = chainProviderUrl + chainId;
-                if (!viemClients[clientKey])
-                    viemClients[clientKey] = createPublicClient({
+                if (!viemClients[clientCacheKey])
+                    //@ts-expect-error
+                    viemClients[clientCacheKey] = createViemClient({
                         chain,
                         transport: http(chainProviderUrl)
                     });
             }
 
-            log(`Created a new viem client at`, clientKey);
+            log(`Created a new viem client at chain ${chainTicker} with chain provider url ${chainProviderUrl}`);
         }
 
-        const chainProvider = viemClients[clientKey];
+        const chainProvider = viemClients[clientCacheKey];
 
-        const txtRecordResult = await chainProvider.getEnsText({ name: lib.normalize(address), key: txtRecordName });
+        const txtRecordResult = await chainProvider.getEnsText({ name: normalizeEnsAddress(address), key: txtRecordName });
         return txtRecordResult || null;
     }
 
@@ -77,9 +76,9 @@ export class Resolver {
         if (!res?.pubkey) return null;
         try {
             const registryState = await NameRegistryState.retrieve(connection, res.pubkey);
-            const recordValue = uint8ArrayToString(registryState.registry.data);
+            const recordValue = uint8ArrayToString(<Uint8Array>registryState.registry.data);
             return recordValue;
-        } catch (e) {
+        } catch (e: any) {
             log.error(
                 `Failed to resolve solana address (${address}) text-record (${txtRecordName}) with chainProviderUrl (${chainProviderUrl})`,
                 e
@@ -105,6 +104,7 @@ export class Resolver {
         const ethersClient = ethersClients[clientKey];
 
         const resolver = await ethersClient.getResolver(address);
+        if (!resolver) throw Error("ethersClient.getResolver returned null");
         return resolver.getText(txtRecordName);
     }
 

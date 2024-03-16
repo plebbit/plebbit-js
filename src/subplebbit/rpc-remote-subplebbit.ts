@@ -49,7 +49,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         try {
-            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient.subplebbitUpdate(this.address);
+            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address);
             this._setState("updating");
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
@@ -57,10 +57,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             this._setUpdatingState("failed");
             throw e;
         }
-        this.plebbit.plebbitRpcClient
-            .getSubscription(this._updateRpcSubscriptionId)
+        this.plebbit
+            .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
-                log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`); // we're assuming single rpc client
                 const rpcSubProps = <SubplebbitIpfsType | InternalSubplebbitRpcType>updateProps.params.result;
                 await this._handleRpcUpdateProps(rpcSubProps);
                 this.emit("update", this);
@@ -72,13 +72,13 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             })
             .on("error", (args) => this.emit("error", args.params.result));
 
-        this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+        this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
     async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
 
-        await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+        if (this._updateRpcSubscriptionId) await this.plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);

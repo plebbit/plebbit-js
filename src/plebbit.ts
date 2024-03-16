@@ -65,7 +65,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
     browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
-    resolveAuthorAddresses?: boolean;
+    resolveAuthorAddresses: boolean;
     chainProviders: { [chainTicker: string]: ChainProvider };
     _storage: StorageInterface;
     stats: Stats;
@@ -121,16 +121,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   this.ipfsHttpClientsOptions ||
                   fallbackPubsubProviders;
 
-        this.publishInterval = this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
-            ? options.publishInterval
-            : 20000; // Default to 20s
-        this.updateInterval = this.parsedPlebbitOptions.updateInterval = options.hasOwnProperty("updateInterval")
-            ? options.updateInterval
-            : 60000; // Default to 1 minute
-        this.noData = this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
-        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish = options.hasOwnProperty("browserLibp2pJsPublish")
-            ? options.browserLibp2pJsPublish
-            : false;
+        this.publishInterval = this.parsedPlebbitOptions.publishInterval =
+            typeof options.publishInterval === "number" ? options.publishInterval : 20000; // Default to 20s
+        this.updateInterval = this.parsedPlebbitOptions.updateInterval =
+            typeof options.updateInterval === "number" ? options.updateInterval : 60000; // Default to 1 minute
+        this.noData = this.parsedPlebbitOptions.noData = typeof options.noData === "boolean" ? options.noData : false;
+        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish =
+            typeof options.browserLibp2pJsPublish === "boolean" ? options.browserLibp2pJsPublish : false;
+
+        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses =
+            typeof options.resolveAuthorAddresses === "boolean" ? options.resolveAuthorAddresses : true;
 
         this._initIpfsClients();
         this._initPubsubClients();
@@ -179,7 +179,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private _initRpcClients() {
         this.clients.plebbitRpcClients = {};
         if (this.parsedPlebbitOptions.plebbitRpcClientsOptions)
-            for (const rpcUrl of this.plebbitRpcClientsOptions)
+            for (const rpcUrl of <string[]>this.plebbitRpcClientsOptions)
                 this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
     }
 
@@ -198,15 +198,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   },
                   sol: {
                       urls: ["@solana/web3.js", "https://solana.api.onfinality.io/public"],
-                      chainId: null // no chain ID for solana
+                      chainId: -1 // no chain ID for solana
                   }
               };
         if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
         this.clients.chainProviders = this.chainProviders;
 
-        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses")
-            ? options.resolveAuthorAddresses
-            : true;
         this.resolver = new Resolver({
             resolveAuthorAddresses: this.resolveAuthorAddresses,
             chainProviders: this.chainProviders
@@ -308,6 +305,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             clonedOptions.author = { ...clonedOptions.author, address: (<SignerType>clonedOptions.signer).address };
             log(`author.address was not provided, will define it to signer.address (${clonedOptions.author.address})`);
         }
+        clonedOptions["protocolVersion"] = clonedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
+
         delete clonedOptions.author["shortAddress"]; // Forcefully delete shortAddress so it won't be a part of the signature
         return clonedOptions;
     }
@@ -342,7 +341,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (options["cid"] && !isIpfsCid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
 
         const formattedOptions = options instanceof Comment ? options.toJSON() : options;
-        formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
 
         if (options["signature"] || options["cid"]) return this._createCommentInstance(formattedOptions);
         else {
@@ -391,7 +389,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 return remoteSub;
             }
         } else {
-            const newLocalSub = await this.plebbitRpcClient.createSubplebbit(options);
+            const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
             log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
             return newLocalSub;
         }
@@ -484,7 +482,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
-        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
 
         if (options["signature"]) return new Vote(<VoteType>options, this);
         //@ts-ignore
@@ -495,7 +492,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
-        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
 
         if (options["signature"]) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
         //@ts-ignore
