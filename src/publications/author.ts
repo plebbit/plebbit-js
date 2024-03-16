@@ -1,7 +1,6 @@
-import assert from "assert";
-import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "./types.js";
-import { shortifyAddress } from "./util.js";
-import { Flair } from "./subplebbit/types.js";
+import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
+import { shortifyAddress } from "../util.js";
+import { Flair } from "../subplebbit/types.js";
 
 class Author implements AuthorTypeWithCommentUpdate {
     address: string;
@@ -42,7 +41,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         };
     }
     toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate {
-        assert(this.subplebbit);
+        if (!this.subplebbit) throw Error("Calling author.toJSONIpfsWithCommentUpdate() without defining author.subplebbit");
         return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
 }

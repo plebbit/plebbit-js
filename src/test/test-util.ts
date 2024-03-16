@@ -1,14 +1,14 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
-import { Comment } from "../comment.js";
+import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
-import Vote from "../vote.js";
+import Vote from "../publications/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { CommentWithCommentUpdate, CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants.js";
-import Publication from "../publication.js";
+import Publication from "../publications/publication.js";
 import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
@@ -154,7 +154,11 @@ async function _publishReplies(parentComment: Comment, numOfReplies: number, ple
     return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
 }
 
-async function _publishVotesOnOneComment(comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress">, votesPerCommentToPublish: number, plebbit: Plebbit) {
+async function _publishVotesOnOneComment(
+    comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress">,
+    votesPerCommentToPublish: number,
+    plebbit: Plebbit
+) {
     return Promise.all(
         new Array(votesPerCommentToPublish)
             .fill(null)
@@ -162,7 +166,11 @@ async function _publishVotesOnOneComment(comment: Pick<CommentWithCommentUpdate,
     );
 }
 
-async function _publishVotes(comments: Comment[], votesPerCommentToPublish: number, plebbit: Plebbit) {
+async function _publishVotes(
+    comments: Pick<CommentWithCommentUpdate, "cid" | "depth" | "subplebbitAddress">[],
+    votesPerCommentToPublish: number,
+    plebbit: Plebbit
+) {
     const votes: Vote[] = lodash.flattenDeep(
         await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit)))
     );
@@ -343,7 +351,11 @@ export async function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions) {
 
 export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], plebbitRpcClientsOptions: undefined, ...plebbitOptions });
+    const plebbit = await mockRemotePlebbit({
+        ipfsGatewayUrls: ["http://localhost:18080"],
+        plebbitRpcClientsOptions: undefined,
+        ...plebbitOptions
+    });
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;

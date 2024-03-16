@@ -1,6 +1,6 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
-import { Comment } from "./comment.js";
+import { Comment } from "./publications/comment/comment.js";
 import {
     CommentEditSignedPropertyNamesUnion,
     CommentSignedPropertyNamesUnion,
@@ -12,7 +12,7 @@ import {
     SignerType,
     VoteSignedPropertyNamesUnion
 } from "./signer/constants.js";
-import Publication from "./publication.js";
+import Publication from "./publications/publication.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { ChallengeFile, Flair } from "./subplebbit/types.js";
 import { Plebbit } from "./plebbit.js";

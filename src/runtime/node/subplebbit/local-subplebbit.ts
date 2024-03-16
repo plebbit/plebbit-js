@@ -72,7 +72,7 @@ import { getErrorCodeFromMessage } from "../../../util.js";
 import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifySubplebbit, verifyVote } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
-import Author from "../../../author.js";
+import Author from "../../../publications/author.js";
 import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants.js";
 import {
     GetChallengeAnswers,

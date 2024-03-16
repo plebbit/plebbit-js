@@ -15,7 +15,7 @@ import {
     VotePubsubMessage
 } from "../../types.js";
 import WebSocket from "ws";
-import Publication from "../../publication.js";
+import Publication from "../../publications/publication.js";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error.js";

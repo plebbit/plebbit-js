@@ -1,15 +1,15 @@
-import { Plebbit } from "./plebbit.js";
+import { Plebbit } from "../plebbit.js";
 import Publication from "./publication.js";
-import { verifyCommentEdit } from "./signer/signatures.js";
-import { Flair } from "./subplebbit/types.js";
+import { verifyCommentEdit } from "../signer/signatures.js";
+import { Flair } from "../subplebbit/types.js";
 import {
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
     CommentEditsTableRowInsert,
     CommentEditType,
     PublicationTypeName
-} from "./types.js";
-import { isIpfsCid, throwWithErrorCode } from "./util.js";
+} from "../types.js";
+import { isIpfsCid, throwWithErrorCode } from "../util.js";
 
 export class CommentEdit extends Publication implements CommentEditType {
     commentCid: string;

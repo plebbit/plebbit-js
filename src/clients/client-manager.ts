@@ -1,6 +1,6 @@
-import Publication from "../publication.js";
+import Publication from "../publications/publication.js";
 import { Plebbit } from "../plebbit.js";
-import { Comment } from "../comment.js";
+import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
 import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types.js";

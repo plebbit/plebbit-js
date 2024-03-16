@@ -4,7 +4,7 @@ import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, te
 import { testRateLimit } from "./rate-limiter.js";
 import { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from "../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../types.js";
-import { Comment } from "../../../../../comment.js";
+import { Comment } from "../../../../../publications/comment/comment.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
 
 const shouldExcludePublication = (

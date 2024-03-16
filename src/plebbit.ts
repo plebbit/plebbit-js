@@ -23,12 +23,12 @@ import {
     LRUStorageConstructor,
     PubsubSubscriptionHandler
 } from "./types.js";
-import { Comment } from "./comment.js";
+import { Comment } from "./publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, isIpfsCid, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
-import Vote from "./vote.js";
+import Vote from "./publications/vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { Resolver } from "./resolver.js";
-import { CommentEdit } from "./comment-edit.js";
+import { CommentEdit } from "./publications/comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
