@@ -11,7 +11,7 @@ import {
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
-import Hash from "ipfs-only-hash";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import {
     doesDomainAddressHaveCapitalLetter,
@@ -439,12 +439,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
                     trxForInsert
                 );
-                const commentInDb = await this.dbHandler.queryComment(commentToInsert.cid, trxForInsert);
-                const validity = await verifyComment(commentInDb, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
+                // Everything below here is for verification purposes
+                const commentInDb = await this.dbHandler.queryComment(<string>commentToInsert.cid, trxForInsert);
+                // TODO need to compute ipfs hash also, and make sure it's the same as commentInDb.cid
+                if (!commentInDb) throw Error("Failed to query the comment we just inserted");
+                const commentInDbInstance = await this.plebbit.createComment(commentInDb);
+                const validity = await verifyComment(commentInDbInstance, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
                 if (!validity.valid)
                     throw Error(
                         "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
                     );
+                const calculatedHash = await calculateIpfsHash(deterministicStringify(commentInDbInstance.toJSONIpfs()));
+                if (calculatedHash !== commentInDb.cid)
+                    throw Error("There is a problem with db processing comment rows, the cids don't match");
             } catch (e) {
                 log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
                 await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
