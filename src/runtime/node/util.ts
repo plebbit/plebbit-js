@@ -145,7 +145,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
         const subsThatWereDeletedSuccessfully: string[] = [];
         await Promise.all(
             deletedPersistentSubs.map(async (subAddress) => {
-                const subPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
+                const subPath = path.join(<string>plebbit.dataPath, "subplebbits", subAddress);
                 try {
                     await fs.rm(subPath, { force: true });
                     log(`Succeeded in deleting old db path (${subAddress})`);
@@ -171,7 +171,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
 
 export async function listSubplebbits(plebbit: Plebbit) {
     const log = Logger("plebbit-js:listSubplebbits");
-
+    if (typeof plebbit.dataPath !== "string") throw Error("plebbit.dataPath needs to be defined to listSubplebbits");
     const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
 
     await fs.mkdir(subplebbitsPath, { recursive: true });

@@ -43,6 +43,7 @@ export class ClientsManager extends BaseClientsManager {
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
+        this._plebbit = plebbit;
         //@ts-expect-error
         this.clients = {};
         this._initIpfsGateways();
@@ -210,6 +211,8 @@ export class ClientsManager extends BaseClientsManager {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
+        if (!ipnsName) throw Error("Failed to resolve subplebbit address to an IPNS name");
+
         return this._fetchSubplebbitIpns(ipnsName);
     }
 
@@ -288,8 +291,10 @@ export class ClientsManager extends BaseClientsManager {
 
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
-            const bestGatewayUrl = lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord.updatedAt);
-            const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord.updatedAt; // how old is the record, relative to now, in seconds
+            const bestGatewayUrl = <string>(
+                lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord!.updatedAt)
+            );
+            const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord!.updatedAt; // how old is the record, relative to now, in seconds
 
             if (bestGatewayRecordAge <= freshThreshold) {
                 // A very recent subplebbit, a good thing
@@ -541,7 +546,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, cid: string) {
         if (!subIpns.posts?.pages?.hot) return undefined;
-        const findInCommentAndChildren = (comment: PageIpfs["comments"][0]): PageIpfs["comments"][0]["comment"] => {
+        const findInCommentAndChildren = (comment: PageIpfs["comments"][0]): PageIpfs["comments"][0]["comment"] | undefined => {
             if (comment.comment.cid === cid) return comment.comment;
             if (!comment.update.replies?.pages?.topAll) return undefined;
             for (const childComment of comment.update.replies.pages.topAll.comments) {
@@ -575,11 +580,12 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const pathCache: string = await parentsPathCache.getItem(this._comment.cid);
+        const commentProps = this._comment.toJSONAfterChallengeVerification();
+        const pathCache: string = await parentsPathCache.getItem(commentProps.cid);
         if (pathCache) return pathCache.split("/").reverse().join("/");
 
         const postTimestampCache = await this._plebbit._createStorageLRU(postTimestampConfig);
-        if (this._comment.depth === 0) await postTimestampCache.setItem(this._comment.cid, this._comment.timestamp);
+        if (this._comment.depth === 0) await postTimestampCache.setItem(commentProps.cid, this._comment.timestamp);
         let parentCid = this._comment.parentCid;
         let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
         while (parentCid) {
@@ -600,7 +606,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
         }
 
-        await parentsPathCache.setItem(this._comment.cid, reversedPath);
+        await parentsPathCache.setItem(commentProps.cid, reversedPath);
 
         const finalParentsPath = reversedPath.split("/").reverse().join("/"); // will be postCid/replyCid/nestedReplyCid
 
@@ -611,8 +617,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = await this.fetchSubplebbit(this._comment.subplebbitAddress);
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
-        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(this._comment.postCid);
-        if (typeof postTimestamp !== "number") throw Error("Failed to fetch post timestamp");
+        const postTimestamp = await (
+            await this._plebbit._createStorageLRU(postTimestampConfig)
+        ).getItem(this._comment.toJSONAfterChallengeVerification().postCid);
+        if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
+        if (!subIpns.postUpdates) throw Error("Subplebbit IPNS record has no postUpdates field");
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
         if (timestampRanges.length === 0) throw Error("Post has no timestamp range bucket");
 

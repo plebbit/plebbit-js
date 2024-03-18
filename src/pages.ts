@@ -3,11 +3,12 @@ import {
     CommentIpfsType,
     CommentWithCommentUpdate,
     PagesType,
-    PagesTypeIpfs,
     PagesTypeJson,
     PageType,
     PostSortName,
+    PostsPagesTypeIpfs,
     PostsPagesTypeJson,
+    RepliesPagesTypeIpfs,
     RepliesPagesTypeJson,
     ReplySortName
 } from "./types.js";
@@ -23,21 +24,17 @@ type ConstructorProps = PagesType & {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];
     parentCid?: CommentIpfsType["parentCid"];
-    pagesIpfs?: BasePages["_pagesIpfs"];
+    pagesIpfs?: PostsPagesTypeIpfs | RepliesPagesTypeIpfs;
 };
 export class BasePages implements PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
-
-    clients: BasePagesClientsManager["clients"];
-
-    _clientsManager: BasePagesClientsManager;
-
+    pages!: Partial<Record<PostSortName | ReplySortName, PageType>>;
+    pageCids!: Partial<Record<PostSortName | ReplySortName, string>>;
+    clients!: BasePagesClientsManager["clients"];
+    _clientsManager!: BasePagesClientsManager;
     _plebbit: Plebbit;
-    _subplebbitAddress: string;
+    _subplebbitAddress!: string;
     _parentCid: CommentIpfsType["parentCid"];
-    private _pagesIpfs?: PagesTypeIpfs["pages"];
+    private _pagesIpfs?: ConstructorProps["pagesIpfs"];
     constructor(props: ConstructorProps) {
         this._plebbit = props.plebbit;
         this._initClientsManager();
@@ -91,13 +88,14 @@ export class BasePages implements PagesType {
     toJSON(): PagesTypeJson | undefined {
         if (!this.pages) return undefined;
         const pagesJson = lodash.mapValues(this.pages, (page) => {
+            if (!page) return undefined;
             const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
             return { comments: commentsJson, nextCid: page.nextCid };
         });
         return { pages: pagesJson, pageCids: this.pageCids };
     }
 
-    toJSONIpfs(): PagesTypeIpfs | undefined {
+    toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
         if (!this.pages) return undefined;
         if (!this._pagesIpfs) {
             Logger("plebbit-js:pages:toJSONIpfs").error(
@@ -106,21 +104,21 @@ export class BasePages implements PagesType {
             return;
         }
         return {
-            pages: this._pagesIpfs,
+            pages: this._pagesIpfs.pages,
             pageCids: this.pageCids
         };
     }
 }
 
 export class RepliesPages extends BasePages {
-    pages: Partial<Record<ReplySortName, PageType>>;
+    pages!: Partial<Record<ReplySortName, PageType>>;
 
-    pageCids: Partial<Record<ReplySortName, string>>;
+    pageCids!: Partial<Record<ReplySortName, string>>;
 
-    clients: RepliesPagesClientsManager["clients"];
-    _parentCid: string;
+    clients!: RepliesPagesClientsManager["clients"];
+    _parentCid!: string;
 
-    _clientsManager: RepliesPagesClientsManager;
+    _clientsManager!: RepliesPagesClientsManager;
 
     constructor(props: ConstructorProps & { parentCid: string }) {
         super(props);
@@ -140,16 +138,20 @@ export class RepliesPages extends BasePages {
     toJSON(): RepliesPagesTypeJson | undefined {
         return super.toJSON();
     }
+
+    toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
+        return super.toJSONIpfs();
+    }
 }
 
 export class PostsPages extends BasePages {
-    pages: Partial<Record<PostSortName, PageType>>;
+    pages!: Partial<Record<PostSortName, PageType>>;
 
-    pageCids: Partial<Record<PostSortName, string>>;
+    pageCids!: Partial<Record<PostSortName, string>>;
 
-    clients: PostsPagesClientsManager["clients"];
+    clients!: PostsPagesClientsManager["clients"];
 
-    _clientsManager: PostsPagesClientsManager;
+    _clientsManager!: PostsPagesClientsManager;
 
     constructor(props: Omit<ConstructorProps, "parentCid">) {
         super(props);
@@ -166,5 +168,9 @@ export class PostsPages extends BasePages {
 
     toJSON(): PostsPagesTypeJson | undefined {
         return super.toJSON();
+    }
+
+    toJSONIpfs(): PostsPagesTypeIpfs | undefined {
+        return super.toJSONIpfs();
     }
 }

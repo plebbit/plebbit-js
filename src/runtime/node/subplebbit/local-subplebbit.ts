@@ -53,7 +53,8 @@ import type {
     VotePubsubMessage,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     VoteType,
-    CommentPubsubMessage
+    CommentPubsubMessage,
+    ChallengeRequestPostWithSubplebbitAuthor
 } from "../../../types.js";
 import {
     ValidationResult,
@@ -90,6 +91,7 @@ import {
     getPublicKeyFromPrivateKey
 } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
+import * as radash from "radash";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -348,6 +350,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:handleCommentEdit");
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
         const commentToBeEdited = await this.dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+        if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
 
         const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
@@ -366,24 +369,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return undefined;
     }
 
-    private isPublicationVote(publication: DecryptedChallengeRequestMessageType["publication"]) {
-        return publication.hasOwnProperty("vote");
+    private isPublicationVote(publication: DecryptedChallengeRequestMessageType["publication"]): publication is ChallengeRequestVoteWithSubplebbitAuthor {
+        return "vote" in publication && typeof publication.vote === "number";
     }
 
-    private isPublicationComment(publication: DecryptedChallengeRequestMessageType["publication"]) {
+    private isPublicationComment(publication: DecryptedChallengeRequestMessageType["publication"]): publication is ChallengeRequestPostWithSubplebbitAuthor | ChallengeRequestCommentWithSubplebbitAuthor {
         return !this.isPublicationVote(publication) && !this.isPublicationCommentEdit(publication);
     }
 
-    private isPublicationReply(publication: DecryptedChallengeRequestMessageType["publication"]) {
-        return this.isPublicationComment(publication) && typeof publication["parentCid"] === "string";
+    private isPublicationReply(publication: DecryptedChallengeRequestMessageType["publication"]): publication is ChallengeRequestCommentWithSubplebbitAuthor {
+        return this.isPublicationComment(publication) && "parentCid" in publication && typeof publication.parentCid === "string";
     }
 
-    private isPublicationPost(publication: DecryptedChallengeRequestMessageType["publication"]) {
-        return this.isPublicationComment(publication) && !publication["parentCid"];
+    private isPublicationPost(publication: DecryptedChallengeRequestMessageType["publication"]): publication is ChallengeRequestPostWithSubplebbitAuthor {
+        return this.isPublicationComment(publication) && !("parentCid" in publication);
     }
 
-    private isPublicationCommentEdit(publication: DecryptedChallengeRequestMessageType["publication"]) {
-        return !this.isPublicationVote(publication) && publication.hasOwnProperty("commentCid");
+    private isPublicationCommentEdit(publication: DecryptedChallengeRequestMessageType["publication"]): publication is ChallengeRequestCommentEditWithSubplebbitAuthor {
+        return !this.isPublicationVote(publication) && "commentCid" in publication && typeof publication.commentCid === "string";
     }
 
     private async storePublication(
@@ -393,9 +396,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const publication = request.publication;
         const publicationHash = sha256(deterministicStringify(publication));
-        if (this.isPublicationVote(publication)) return this.storeVote(<VoteType>publication, request.challengeRequestId);
+        if (this.isPublicationVote(publication)) return this.storeVote(publication, request.challengeRequestId);
         else if (this.isPublicationCommentEdit(publication))
-            return this.storeCommentEdit(<CommentEditPubsubMessage>publication, request.challengeRequestId);
+            return this.storeCommentEdit(publication, request.challengeRequestId);
         else {
             const commentToInsert = await this.plebbit.createComment(publication);
 
@@ -419,6 +422,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentToInsert.setPostCid(file.path);
                 commentToInsert.setCid(file.path);
             } else {
+                if (!commentToInsert.parentCid) throw Error("Reply has to have parentCid");
                 // Reply
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 const [commentsUnderParent, parent] = await Promise.all([
@@ -426,6 +430,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     this.dbHandler.queryComment(commentToInsert.parentCid, trx)
                 ]);
                 await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
+                if (!parent) throw Error("Failed to find parent of reply");
                 commentToInsert.setPreviousCid(commentsUnderParent[0]?.cid);
                 commentToInsert.setDepth(parent.depth + 1);
                 commentToInsert.setPostCid(parent.postCid);
@@ -441,7 +446,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 );
                 // Everything below here is for verification purposes
                 const commentInDb = await this.dbHandler.queryComment(<string>commentToInsert.cid, trxForInsert);
-                // TODO need to compute ipfs hash also, and make sure it's the same as commentInDb.cid
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
                 const commentInDbInstance = await this.plebbit.createComment(commentInDb);
                 const validity = await verifyComment(commentInDbInstance, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
@@ -478,8 +482,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             decrypted = JSON.parse(
                 await decryptEd25519AesGcmPublicKeyBuffer(request.encrypted, this.signer.privateKey, request.signature.publicKey)
             );
-            if (request.type === "CHALLENGEREQUEST") return { ...request, ...(<DecryptedChallengeRequest>decrypted) };
-            else if (request.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
+            if (request?.type === "CHALLENGEREQUEST") return { ...request, ...(<DecryptedChallengeRequest>decrypted) };
+            else if (request?.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
+            else throw Error("Decrypted message is not a challenge request or challenge answer");
         } catch (e) {
             log.error(`Failed to decrypt request (${request?.challengeRequestId?.toString()}) due to error`, e);
             if (request?.challengeRequestId?.toString())
@@ -515,10 +520,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 this.clientsManager,
                 false
             );
+        else throw Error("Can't detect the type of publication");
 
         if (!validity.valid) {
             await this._publishFailedChallengeVerification({ reason: validity.reason }, request.challengeRequestId);
-            throwWithErrorCode(getErrorCodeFromMessage(validity.reason), { publication: request.publication, validity });
+            throwWithErrorCode(getErrorCodeFromMessage(validity.reason!), { publication: request.publication, validity });
         }
     }
 
@@ -613,14 +619,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
                 await this.storePublication(request);
 
-            if (lodash.isPlainObject(publication)) {
+            if (radash.isObject(publication)) {
                 const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
-                publication.author.subplebbit = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
+                const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
+                if (subplebbitAuthor) publication.author.subplebbit = subplebbitAuthor;
             }
             // could contain "publication" or "reason"
-            const encrypted = lodash.isPlainObject(publication)
+            const encrypted = radash.isObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
-                      deterministicStringify({ publication: publication }),
+                      <string>deterministicStringify({ publication }),
                       this.signer.privateKey,
                       request.signature.publicKey
                   )
@@ -682,9 +689,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     ): Promise<messages | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest:checkPublicationValidity");
 
-        const publication = lodash.cloneDeep(request.publication);
+        const publication = lodash.cloneDeep(request.publication); // not sure if we need to clone
 
-        if (publication["signer"]) return messages.ERR_FORBIDDEN_SIGNER_FIELD;
+        if ("signer" in publication) return messages.ERR_FORBIDDEN_SIGNER_FIELD;
 
         if (publication.subplebbitAddress !== this.address) return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
 
@@ -694,14 +701,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         delete publication.author.subplebbit; // author.subplebbit is generated by the sub so we need to remove it
         const forbiddenAuthorFields: (keyof Author)[] = ["shortAddress"];
 
-        if (Object.keys(publication.author).some((key: keyof Author) => forbiddenAuthorFields.includes(key)))
-            return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
+        if (radash.intersects(Object.keys(publication.author), forbiddenAuthorFields)) return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
 
         if (!this.isPublicationPost(publication)) {
             const parentCid: string | undefined = this.isPublicationReply(publication)
-                ? publication["parentCid"]
+                ? publication.parentCid
                 : this.isPublicationVote(publication) || this.isPublicationCommentEdit(publication)
-                  ? publication["commentCid"]
+                  ? publication.commentCid
                   : undefined;
 
             if (!parentCid) return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
@@ -737,7 +743,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
-            const publicationComment = <ChallengeRequestCommentWithSubplebbitAuthor>publication;
             const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
                 "cid",
                 "signer",
@@ -758,16 +763,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 "shortCid"
             ];
 
-            if (Object.keys(publicationComment).some((key: keyof CommentType) => forbiddenCommentFields.includes(key)))
-                return messages.ERR_FORBIDDEN_COMMENT_FIELD;
+            if (radash.intersects(Object.keys(publication), forbiddenCommentFields)) return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
-            if (!publicationComment.content && !publicationComment.link && !publicationComment.title)
+            if (!publication.content && !publication.link && !publication.title)
                 return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
 
             if (this.isPublicationPost(publication)) {
-                if (this.features?.requirePostLink && !isLinkValid(publicationComment.link))
+                if (this.features?.requirePostLink && publication.link && !isLinkValid(publication.link))
                     return messages.ERR_POST_HAS_INVALID_LINK_FIELD;
-                if (this.features?.requirePostLinkIsMedia && !isLinkOfMedia(publicationComment.link))
+                if (this.features?.requirePostLinkIsMedia && publication.link && !isLinkOfMedia(publication.link))
                     return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
             }
 
@@ -775,35 +779,34 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const publicationInDb = await this.dbHandler.queryCommentByRequestPublicationHash(publicationHash);
             if (publicationInDb) return messages.ERR_DUPLICATE_COMMENT;
 
-            if (lodash.isString(publicationComment.link) && publicationComment.link.length > 2000)
+            if (radash.isString(publication.link) && publication.link.length > 2000)
                 return messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT;
         }
 
-        if (this.isPublicationVote(request.publication)) {
-            const publicationVote = <ChallengeRequestVoteWithSubplebbitAuthor>publication;
-            if (![1, 0, -1].includes(publicationVote.vote)) return messages.INCORRECT_VOTE_VALUE;
-            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publicationVote.signature.publicKey);
-            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publicationVote.commentCid, authorSignerAddress);
-            if (lastVote && publicationVote.signature.publicKey !== lastVote.signature.publicKey)
+        if (this.isPublicationVote(publication)) {
+            if (![1, 0, -1].includes(publication.vote)) return messages.INCORRECT_VOTE_VALUE;
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+            const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publication.commentCid, authorSignerAddress);
+            if (lastVote && publication.signature.publicKey !== lastVote.signature.publicKey)
                 return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
 
-        if (this.isPublicationCommentEdit(request.publication)) {
-            const editPublication = <ChallengeRequestCommentEditWithSubplebbitAuthor>publication;
+        if (this.isPublicationCommentEdit(publication)) {
 
-            const commentToBeEdited = await this.dbHandler.queryComment(editPublication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
-            const editSignedByOriginalAuthor = editPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const editorModRole = this.roles && this.roles[editPublication.author.address];
+            const commentToBeEdited = await this.dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+            if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
+            const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
+            const editorModRole = this.roles && this.roles[publication.author.address];
 
-            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(editPublication);
-            const isAuthorEdit = this._isAuthorEdit(editPublication, editSignedByOriginalAuthor);
+            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);
+            const isAuthorEdit = this._isAuthorEdit(publication, editSignedByOriginalAuthor);
 
             if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            for (const editField of Object.keys(removeKeysWithUndefinedValues(editPublication)))
+            for (const editField of Object.keys(removeKeysWithUndefinedValues(publication)))
                 if (!allowedEditFields.includes(<any>editField)) {
                     log(
                         `The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`,
@@ -815,7 +818,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
                 }
 
-            if (editorModRole && typeof editPublication.locked === "boolean" && commentToBeEdited.depth !== 0)
+            if (editorModRole && typeof publication.locked === "boolean" && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
         }
 
@@ -933,10 +936,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
         try {
             msgParsed = cborg.decode(pubsubMsg.data);
-            if (msgParsed.type === "CHALLENGEREQUEST") {
+            if (msgParsed?.type === "CHALLENGEREQUEST") {
                 await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
             } else if (
-                msgParsed.type === "CHALLENGEANSWER" &&
+                msgParsed?.type === "CHALLENGEANSWER" &&
                 !this._ongoingChallengeExchanges.has(msgParsed.challengeRequestId.toString())
             )
                 // Respond with error to answers without challenge request
@@ -944,7 +947,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
                     msgParsed.challengeRequestId
                 );
-            else if (msgParsed.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
+            else if (msgParsed?.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
+            else throw Error("Wasn't able to detect the type of challenge message");
         } catch (e) {
             e.message = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${e.message}`;
             log.error(`(${msgParsed?.challengeRequestId}): `, String(e));
@@ -1127,9 +1131,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
             const commentInstance = await this.plebbit.createComment(unpinnedCommentRow);
             const commentIpfsJson = commentInstance.toJSONIpfs();
+            //@ts-expect-error
             if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
-            const contentHash: string = await Hash.of(commentIpfsContent);
+            const contentHash: string = await calculateIpfsHash(commentIpfsContent);
             assert.equal(contentHash, unpinnedCommentRow.cid);
             await this.clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
         }
@@ -1192,6 +1197,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         for (const post of commentUpdateOfPosts) {
             const currentTimestampBucketOfPost = Number(post.ipfsPath.split("/")[3]);
             const newTimestampBucketOfPost = this._postUpdatesBuckets.find((bucket) => timestamp() - bucket <= post.timestamp);
+            if (typeof newTimestampBucketOfPost !== "number") throw Error("Failed to calculate the timestamp bucket of post");
             if (currentTimestampBucketOfPost !== newTimestampBucketOfPost) {
                 log(
                     `Post (${post.cid}) current postUpdates timestamp bucket (${currentTimestampBucketOfPost}) is outdated. Will move it to bucket (${newTimestampBucketOfPost})`

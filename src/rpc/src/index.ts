@@ -75,8 +75,9 @@ class PlebbitWsServer extends EventEmitter {
         });
 
         // block non-localhost requests without auth key for security
-        // @ts-ignore
+        // @ts-expect-error
         this.ws._server.on("upgrade", (req) => {
+            //@ts-expect-error
             const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === "x-forwarded-for" && i % 2 === 0));
 
             // client is on localhost and server is not forwarded by a proxy
@@ -331,7 +332,7 @@ class PlebbitWsServer extends EventEmitter {
             // set up fs watch here
 
             await this.plebbit.listSubplebbits(); // Just to mkdir plebbitDataPath/subplebbits
-            const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
+            const subsPath = path.join(this.plebbit.dataPath!, "subplebbits");
             const watchAbortController = new AbortController();
             fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
                 if (filename?.endsWith(".lock")) return; // we only care about subplebbits
@@ -466,7 +467,7 @@ class PlebbitWsServer extends EventEmitter {
 
         // if fail, cleanup
         try {
-            if (subplebbit["signer"])
+            if ("signer" in subplebbit)
                 // need to send an update when fetching sub from db for first time
                 subplebbit.emit("update", subplebbit);
             await subplebbit.update();
@@ -674,8 +675,8 @@ const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }: PlebbitW
 
     const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions, authKey });
 
-    let error: Error;
-    const errorListener = (err) => (error = err);
+    let error: Error | undefined = undefined;
+    const errorListener = (err: Error) => (error = err);
     plebbitWss.on("error", errorListener);
 
     await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5s to see if there are any errors

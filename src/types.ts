@@ -79,10 +79,17 @@ export interface PostsPagesTypeJson extends PagesTypeJson {
     pageCids: Partial<Record<PostSortName, string>>;
 }
 
-export interface PagesTypeIpfs {
-    pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+export interface RepliesPagesTypeIpfs {
+    pages: Partial<Record<ReplySortName, PageIpfs>>;
+    pageCids: Partial<Record<ReplySortName, string>>;
 }
+
+export interface PostsPagesTypeIpfs {
+    pages: Partial<Record<PostSortName, PageIpfs>>;
+    pageCids: Partial<Record<PostSortName, string>>;
+}
+
+export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 
 export interface CreateCommentOptions extends CreatePublicationOptions {
     signer: Pick<SignerType, "privateKey" | "type">;
@@ -371,7 +378,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     edit?: AuthorCommentEdit; // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-    replies?: PagesTypeIpfs; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
+    replies?: RepliesPagesTypeIpfs; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
     flair?: Flair; // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler?: boolean;
     pinned?: boolean;
@@ -400,7 +407,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     depth?: number;
     signer?: SignerType;
     original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
-    deleted?: CommentType["edit"]["deleted"];
+    deleted?: AuthorCommentEdit["deleted"];
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
@@ -522,15 +529,15 @@ export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAn
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
 declare module "knex/types/tables" {
     interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert, null, null>;
+        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
         commentUpdates: Knex.CompositeTableType<
             CommentUpdatesRow,
             CommentUpdatesTableRowInsert,
             Omit<CommentUpdatesTableRowInsert, "cid">,
             Omit<CommentUpdatesTableRowInsert, "cid">
         >;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
+        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
+        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
     }
 }
 
@@ -623,7 +630,7 @@ export interface IpfsClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
-    _clientOptions: Parameters<typeof CreateIpfsClient>[0];
+    _clientOptions: Required<Parameters<typeof CreateIpfsClient>[0]>;
 }
 
 export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;

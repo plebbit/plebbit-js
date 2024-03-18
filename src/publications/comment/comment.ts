@@ -102,10 +102,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.clients = this._clientsManager.clients;
     }
 
-    _initProps(props: Omit<CommentType, "shortSubplebbitAddress">) {
+    _initProps(props: Omit<CommentType, "shortSubplebbitAddress" | "shortCid">) {
         // This function is called once at in the constructor
         super._initProps(props);
-        this.setCid(props.cid);
+        if (typeof props.cid === "string") this.setCid(props.cid);
         this.parentCid = props.parentCid;
         this.depth = props.depth;
         this.link = props.link;
@@ -218,7 +218,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; update: CommentUpdate } {
-        assert(this.cid && this.postCid);
+        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONPagesIpfs");
         return {
             comment: {
                 ...this.toJSONIpfs(),
@@ -258,7 +258,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONAfterChallengeVerification(): CommentIpfsWithCid {
-        assert(this.cid && this.postCid);
+        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
 
@@ -266,7 +266,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"],
         authorSignerAddress: string
     ): CommentsTableRowInsert {
-        assert(this.cid && this.postCid);
+        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONCommentsTableRowInsert");
         return {
             ...this.toJSONIpfs(),
             postCid: this.postCid,
@@ -278,7 +278,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     }
 
     toJSONMerged(): CommentWithCommentUpdate {
-        assert(typeof this.updatedAt === "number" && this.original && this.shortCid);
+        assert(
+            typeof this.updatedAt === "number" &&
+                this.original &&
+                this.shortCid &&
+                typeof this.upvoteCount === "number" &&
+                typeof this.downvoteCount === "number" &&
+                typeof this.replyCount === "number",
+            "updatedAt, original, shortCid, upvoteCount, downvoteCount, replyCount should be defined before calling toJSONMerged"
+        );
         return {
             ...this.toJSONAfterChallengeVerification(),
             shortCid: this.shortCid,

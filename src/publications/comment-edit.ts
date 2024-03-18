@@ -12,7 +12,7 @@ import {
 import { isIpfsCid, throwWithErrorCode } from "../util.js";
 
 export class CommentEdit extends Publication implements CommentEditType {
-    commentCid: string;
+    commentCid!: string;
     content?: string;
     reason?: string;
     deleted?: boolean;

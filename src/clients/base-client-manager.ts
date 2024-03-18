@@ -100,7 +100,7 @@ export class BaseClientsManager {
             const pubsubProviderUrl = providersSorted[i];
             try {
                 return this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
-            } catch (e) {
+            } catch (e: unknown) {
                 providerToError[pubsubProviderUrl] = e;
             }
         }
@@ -259,7 +259,7 @@ export class BaseClientsManager {
         let isUsingCache = true;
         try {
             let resText: string;
-            if (gatewayFetchPromiseCache.has(cacheKey)) resText = await gatewayFetchPromiseCache.get(cacheKey);
+            if (gatewayFetchPromiseCache.has(cacheKey)) resText = <string>await gatewayFetchPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
                 const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(loadType, url, abortController, log);

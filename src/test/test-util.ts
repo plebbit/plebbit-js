@@ -201,16 +201,16 @@ async function _populateSubplebbit(
     console.log(`Have successfully published ${posts.length} posts`);
     const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    const postVotes = await _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const postVotes = await _publishVotes(<CommentWithCommentUpdate[]>posts, props.votesPerCommentToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
 
-    const repliesVotes = await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const repliesVotes = await _publishVotes(<CommentWithCommentUpdate[]>replies, props.votesPerCommentToPublish, subplebbit.plebbit);
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
 type TestServerSubs = {
     // string will be the address
-    onlineSub: string;
+    onlineSub?: string;
     ensSub: string;
     mainSub: string;
     mathSub: string;
@@ -306,8 +306,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         };
 
     if (stubStorage) {
-        plebbit._storage.getItem = () => undefined;
-        plebbit._storage.setItem = () => undefined;
+        plebbit._storage.getItem = async () => undefined;
+        plebbit._storage.setItem = async () => undefined;
     }
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
@@ -354,14 +354,10 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     const plebbit = await mockRemotePlebbit({
         ipfsGatewayUrls: ["http://localhost:18080"],
         plebbitRpcClientsOptions: undefined,
+        ipfsHttpClientsOptions: undefined,
+        pubsubHttpClientsOptions: undefined,
         ...plebbitOptions
     });
-    delete plebbit.clients.ipfsClients;
-    delete plebbit.ipfsHttpClientsOptions;
-    delete plebbit._clientsManager.clients.ipfsClients;
-    delete plebbit.plebbitRpcClient;
-    delete plebbit.plebbitRpcClientsOptions;
-    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
     return plebbit;
 }
 
@@ -380,7 +376,7 @@ export async function publishRandomReply(
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(reply, plebbit);
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(reply.toJSONAfterChallengeVerification(), plebbit);
     return reply;
 }
 
@@ -396,7 +392,7 @@ export async function publishRandomPost(
         ...postProps
     });
     await publishWithExpectedResult(post, true);
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(post, plebbit);
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(post.toJSONAfterChallengeVerification(), plebbit);
     return post;
 }
 
@@ -453,11 +449,12 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 }
 
 export async function waitTillCommentIsInParentPages(
-    comment: Comment,
+    comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
     plebbit: Plebbit,
     propsToCheckFor: Partial<CreateCommentOptions> = {},
     checkInAllPages = false
 ) {
+    if (!comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
     const parent =
         comment.depth === 0
             ? await plebbit.getSubplebbit(comment.subplebbitAddress)
@@ -475,21 +472,26 @@ export async function waitTillCommentIsInParentPages(
 
     await parent.stop();
 
+    if (!commentInPage) throw Error("Failed to find comment in page");
+
     const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
 
-    assert(lodash.isPlainObject(pageCids));
+    if (!lodash.isPlainObject(pageCids)) throw Error("pageCids aren't defined");
+    const commentKeys = <(keyof CreateCommentOptions)[]>Object.keys(propsToCheckFor);
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
             const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
-            for (const [key, value] of Object.entries(propsToCheckFor))
-                if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
-                    throw Error(`commentInPage[${key}] is incorrect`);
+            if (!commentInPage) throw Error("Failed to find comment in page");
+            for (const commentKey of commentKeys) {
+                if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
+                    throw Error(`commentInPage[${commentKey}] is incorrect`);
+            }
         }
     else
-        for (const [key, value] of Object.entries(propsToCheckFor))
-            if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
-                throw Error(`commentInPage[${key}] is incorrect`);
+        for (const commentKey of commentKeys)
+            if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
+                throw Error(`commentInPage[${commentKey}] is incorrect`);
 }
 
 export async function createSubWithNoChallenge(props: CreateSubplebbitOptions, plebbit: Plebbit) {
@@ -510,8 +512,8 @@ export async function generatePostToAnswerMathQuestion(props: CreateCommentOptio
 
 export function isRpcFlagOn(): boolean {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
-    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
-    const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
+    // const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
+    const isRpcFlagOn = isPartOfProcessEnv;
     return isRpcFlagOn;
 }
 

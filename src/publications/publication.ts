@@ -67,7 +67,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     challengeCommentCids?: string[];
 
     // private
-    protected subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
+    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
     private _challengeAnswer: ChallengeAnswerMessage;
     private _publishedChallengeRequests: ChallengeRequestMessage[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
@@ -107,11 +107,16 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.clients = this._clientsManager.clients;
     }
 
+    private _setSubplebbitAddress(subplebbitAddress: string){
+        this.subplebbitAddress = subplebbitAddress;
+         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
+
+    }
+
     _initProps(props: PublicationType) {
-        this.subplebbitAddress = props.subplebbitAddress;
-        if (this.subplebbitAddress) this.shortSubplebbitAddress = shortifyAddress(this.subplebbitAddress);
+        this._setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
-        this.signer = this.signer || props["signer"];
+        this.signer = this.signer || "signer" in props ? props.signer : undefined;
         this.signature = props.signature;
         if (props.author) this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
@@ -194,7 +199,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 await decryptEd25519AesGcm(
                     msgParsed.encrypted,
                     this._challengeIdToPubsubSigner[msgParsed.challengeRequestId.toString()].privateKey,
-                    this.subplebbit.encryption.publicKey
+                    this.subplebbit!.encryption.publicKey
                 )
             );
             this._challenge = {
@@ -231,7 +236,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                         await decryptEd25519AesGcm(
                             msgParsed.encrypted,
                             this._challengeIdToPubsubSigner[msgParsed.challengeRequestId.toString()].privateKey,
-                            this.subplebbit.encryption.publicKey
+                            this.subplebbit!.encryption.publicKey
                         )
                     );
                     decryptedPublication = decryptedProps.publication;

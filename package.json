@@ -84,6 +84,7 @@
         "p-timeout": "6.1.2",
         "peer-id": "0.16.0",
         "probe-image-size": "7.2.3",
+        "radash": "12.1.0",
         "retry": "0.13.1",
         "rpc-websockets": "7.9.0",
         "safe-stable-stringify": "2.4.3",
