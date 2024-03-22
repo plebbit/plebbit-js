@@ -134,7 +134,7 @@ export class Plebbit extends TypedEmitter {
                     chainId: 137
                 },
                 sol: {
-                    urls: ["@solana/web3.js", "https://solana.api.onfinality.io/public"],
+                    urls: ["web3.js", "https://solana.api.onfinality.io/public"],
                     chainId: null // no chain ID for solana
                 }
             };
