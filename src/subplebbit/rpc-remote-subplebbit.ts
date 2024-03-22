@@ -60,7 +60,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.plebbit.plebbitRpcClient
             .getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
-                log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+                log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
                 const rpcSubProps = <SubplebbitIpfsType | InternalSubplebbitRpcType>updateProps.params.result;
                 await this._handleRpcUpdateProps(rpcSubProps);
                 this.emit("update", this);
