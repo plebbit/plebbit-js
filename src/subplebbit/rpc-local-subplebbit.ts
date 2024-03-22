@@ -11,6 +11,7 @@ import {
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
+import * as remeda from "remeda"; // tree-shaking supported!
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
@@ -19,11 +20,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     protected _usingDefaultChallenge: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     settings?: SubplebbitSettings;
 
-    constructor(plebbit: Plebbit){
+    constructor(plebbit: Plebbit) {
         super(plebbit);
         this.started = false;
     }
-    
 
     toJSONInternalRpc(): InternalSubplebbitRpcType {
         return {
@@ -96,7 +96,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
             .on("error", (args) => this.emit("error", args.params.result));
 
-        this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
+        this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
 
     async stop() {
@@ -105,12 +105,12 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         } else if (this.state === "started") {
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
             try {
-                await this.plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+                await this.plebbit.plebbitRpcClient!.stopSubplebbit(this.address);
             } catch (e) {
                 if (e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING) throw e;
                 log(e);
             }
-            if (this._startRpcSubscriptionId) await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            if (this._startRpcSubscriptionId) await this.plebbit.plebbitRpcClient!.unsubscribe(this._startRpcSubscriptionId);
             this._setStartedState("stopped");
             this._setRpcClientState("stopped");
             this.started = false;
@@ -123,14 +123,14 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
         // settings.challenges = [] means sub has no challenges
-        if (newSubplebbitOptions.hasOwnProperty("settings") && newSubplebbitOptions.settings.hasOwnProperty("challenges"))
+        if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)
             newSubplebbitOptions.settings.challenges =
                 newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
                     ? []
                     : newSubplebbitOptions.settings.challenges;
 
         const optionsParsed = <SubplebbitEditOptions>replaceXWithY(newSubplebbitOptions, undefined, null);
-        const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed);
+        const newProps = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
         await this.initRpcInternalSubplebbit(newProps);
         return this;
     }

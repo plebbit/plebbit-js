@@ -29,7 +29,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     // Only Comment props
     shortCid?: string;
 
-    clients: CommentClientsManager["clients"];
+    clients!: CommentClientsManager["clients"];
 
     // public (CommentType)
     title?: string;
@@ -39,7 +39,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
-    protocolVersion: ProtocolVersion;
+    protocolVersion!: ProtocolVersion;
     cid?: string;
     parentCid?: string;
     content?: string;
@@ -49,15 +49,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     postCid?: string;
 
     // CommentEdit and CommentUpdate props
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: Pick<Partial<CommentIpfsType>, "author" | "content" | "flair" | "protocolVersion">;
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
     updatedAt?: number;
-    replies: RepliesPages;
+    replies!: RepliesPages;
     edit?: AuthorCommentEdit;
     flair?: Flair;
-    deleted?: CommentType["edit"]["deleted"];
+    deleted?: boolean;
     spoiler?: boolean;
     pinned?: boolean;
     locked?: boolean;
@@ -67,7 +67,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     lastReplyTimestamp?: number;
 
     // updating states
-    updatingState:
+    updatingState!:
         | "stopped"
         | "resolving-author-address"
         | "fetching-ipfs"
@@ -83,8 +83,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     private _isUpdating: boolean;
     private _rawCommentUpdate?: CommentUpdate;
     private _rawCommentIpfs?: CommentIpfsType;
-    private _loadingOperation: RetryOperation;
-    _clientsManager: CommentClientsManager;
+    private _loadingOperation?: RetryOperation;
+    _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number;
 
     constructor(props: CommentType, plebbit: Plebbit) {
@@ -133,12 +133,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             });
     }
 
-    async _initCommentUpdate(props: CommentUpdate) {
+    async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdate) {
         if (!this.original)
             this.original = removeNullAndUndefinedValuesRecursively(
                 lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
             );
-        this._rawCommentUpdate = props;
+        this._rawCommentUpdate = "depth" in props ? undefined : props;
 
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
@@ -333,20 +333,20 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.updatedAt = newUpdatedAt;
     }
 
-    private async _retryLoadingCommentIpfs(log: Logger): Promise<CommentIpfsType> {
+    private async _retryLoadingCommentIpfs(cid: string, log: Logger): Promise<CommentIpfsType> {
         return new Promise((resolve) => {
-            this._loadingOperation.attempt(async (curAttempt) => {
+            this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     this._setUpdatingState("fetching-ipfs");
-                    const res = await this._clientsManager.fetchCommentCid(this.cid);
+                    const res = await this._clientsManager.fetchCommentCid(cid);
                     this._setUpdatingState("succeeded");
                     resolve(res);
                 } catch (e) {
-                    if (e["details"]) e.details.commentCid = this.cid;
+                    if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e.toString());
-                    this._loadingOperation.retry(e);
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
+                    this._loadingOperation!.retry(<Error>e);
                 }
             });
         });
@@ -354,16 +354,16 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
         return new Promise((resolve) => {
-            this._loadingOperation.attempt(async (curAttempt) => {
+            this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate();
                     resolve(update);
                 } catch (e) {
-                    if (e["details"]) e.details.commentCid = this.cid;
+                    if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e.toString());
-                    this._loadingOperation.retry(e);
+                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
+                    this._loadingOperation!.retry(<Error>e);
                 }
             });
         });
@@ -374,7 +374,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
         if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(log); // Will keep retrying to load until comment.stop() is called
+            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
                 this._rawCommentIpfs,
@@ -464,6 +464,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         const log = Logger("plebbit-js:comment:update");
 
         if (this._plebbit.plebbitRpcClient) {
+            const rpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
+            if (!rpcUrl) throw Error("Failed to get rpc url");
+            if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
             try {
                 this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
                 this._updateState("updating");
@@ -477,12 +480,12 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
                     if (updateProps.params.result.subplebbitAddress) {
-                        log(`Received new CommentIpfs (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                        log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
                         //@ts-expect-error
                         this._rawCommentIpfs = lodash.omit(updateProps.params.result, "cid");
                         this._initProps(updateProps.params.result);
                     } else {
-                        log(`Received new CommentUpdate (${this.cid}) from RPC (${this._plebbit.plebbitRpcClientsOptions[0]})`);
+                        log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);
                         await this._initCommentUpdate(updateProps.params.result);
                     }
 
@@ -523,7 +526,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._updateInterval = clearTimeout(this._updateInterval);
         this._isUpdating = false;
         if (this._updateRpcSubscriptionId) {
-            await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
+            await this._plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }

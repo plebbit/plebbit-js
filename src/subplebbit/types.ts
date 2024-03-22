@@ -1,6 +1,6 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { JsonSignature, SignerType } from "../signer/constants.js";
-import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
+import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, PostsPagesTypeIpfs, ProtocolVersion } from "../types.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export type SubplebbitStats = {
@@ -89,7 +89,7 @@ export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database"
 }
 
 export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings" | "signer"> {
-    posts?: PagesTypeIpfs;
+    posts?: PostsPagesTypeIpfs;
     challenges: Required<SubplebbitType["challenges"]>;
 }
 

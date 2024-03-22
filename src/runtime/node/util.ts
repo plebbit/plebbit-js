@@ -15,7 +15,7 @@ import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import os from "os";
 import * as fileType from "file-type";
-import { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types.js";
+import type { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types.js";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import { sha256 } from "js-sha256";
@@ -59,7 +59,7 @@ export async function getThumbnailUrlOfLink(
 
     //@ts-expect-error
     const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
-    const options: OpenGraphScraperOptions = {
+    const options: OpenGraphScraperOptions & { agent?: { https: any; http: any } } = {
         url,
         fetchOptions: {
             headers: {
@@ -88,9 +88,11 @@ export async function getThumbnailUrlOfLink(
         thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
         thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
         if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
-            const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
-            thumbnail.thumbnailHeight = dimensions?.height;
-            thumbnail.thumbnailWidth = dimensions?.width;
+            const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
+            if (probedDimensions) {
+                thumbnail.thumbnailHeight = probedDimensions.height;
+                thumbnail.thumbnailWidth = probedDimensions.width;
+            }
         }
         return thumbnail;
     } catch (e) {
@@ -106,14 +108,15 @@ export async function getThumbnailUrlOfLink(
     }
 }
 
-async function fetchDimensionsOfImage(imageUrl: string): Promise<{ width: number; height: number } | undefined> {
-    const result = await probe(imageUrl);
-    return { width: result.width, height: result.height };
+async function fetchDimensionsOfImage(imageUrl: string, agent?: any): Promise<{ width: number; height: number } | undefined> {
+    const result = await probe(imageUrl, { agent });
+    if (typeof result?.width === "number") return { width: result.width, height: result.height };
 }
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
     if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
+    //@ts-expect-error
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
 };
 

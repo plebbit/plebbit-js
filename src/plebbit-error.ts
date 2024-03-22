@@ -5,8 +5,8 @@ export class PlebbitError extends CustomError {
     code: keyof typeof messages;
     message: messages;
     stack?: string;
-    details: {}; // Used to hold key-value of related props. Could be cid of a comment that failed to update
-    constructor(code: keyof typeof messages, details?: {}) {
+    details: Record<string, any>; // Used to hold key-value of related props. Could be cid of a comment that failed to update
+    constructor(code: keyof typeof messages, details?: any) {
         super(messages[code]);
         this.code = code;
         this.message = messages[code];

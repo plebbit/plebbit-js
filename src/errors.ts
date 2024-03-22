@@ -103,6 +103,7 @@ export enum messages {
     ERR_NO_CHAIN_PROVIDER_FOR_CHAIN_TICKER = "no chain provider options set for chain ticker",
     ERR_DOMAIN_TXT_RECORD_NOT_FOUND = "Domain resolver did not find the text record",
     ERR_DOMAIN_SUB_ADDRESS_TXT_RECORD_POINT_TO_DIFFERENT_ADDRESS = "subplebbit-address text record of domain is pointing to a different address than subplebbit.signer.address",
+    ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS = "Resolved the text record value to a string that is non IPNS",
 
     // Local sub errors
     ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE = "subplebbit.signer needs to be defined before proceeding",

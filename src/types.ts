@@ -37,12 +37,15 @@ export interface PlebbitOptions {
     browserLibp2pJsPublish?: boolean; // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
 }
 
-export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
+export interface ParsedPlebbitOptions
+    extends Required<
+        Omit<PlebbitOptions, "ipfsHttpClientsOptions" | "pubsubHttpClientsOptions" | "plebbitRpcClientsOptions" | "dataPath">
+    > {
     // These will be the final options after parsing/processing
     ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     plebbitRpcClientsOptions: string[] | undefined;
-
+    chainProviders: { [chainTicker: string]: ChainProvider } | {}; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
 export interface PageType {
@@ -103,13 +106,25 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     flair?: Flair; // Author or mod chosen colored label for the comment
 }
 
+export interface CommentOptionsToSign extends CreateCommentOptions {
+    signer: SignerType;
+    timestamp: number;
+    author: Partial<AuthorIpfsType> & { address: string };
+}
+
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;
     signer: Pick<SignerType, "privateKey" | "type">;
 }
 
-export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
+export interface VoteOptionsToSign extends CreateVoteOptions {
+    signer: SignerType;
+    timestamp: number;
+    author: Partial<AuthorIpfsType> & { address: string };
+}
+
+export interface VoteType extends Omit<CreateVoteOptions, "signer" | "protocolVersion">, PublicationType {
     author: CommentIpfsType["author"];
     timestamp: number;
     signer?: SignerType;
@@ -155,6 +170,7 @@ export interface PublicationType
 export interface CreatePublicationOptions {
     author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
+    protocolVersion?: ProtocolVersion;
     timestamp?: number; // // Time of publishing in seconds, Defaults to Math.round(Date.now() / 1000) if undefined
     challengeAnswers?: string[]; // Optional pre-answers to subplebbit.challenges
     challengeCommentCids?: string[]; // Optional comment cids for subplebbit.challenges related to author karma/age in other subs
@@ -186,8 +202,14 @@ export interface ModeratorCommentEdit
     extends ModeratorCommentEditOptions,
         Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {}
 export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
-export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
-    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
+export interface CreateCommentEditOptions extends Omit<AuthorCommentEdit, "signature">, Omit<ModeratorCommentEdit, "signature"> {
+    signer: Pick<SignerType, "privateKey" | "type">;
+}
+
+export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
+    signer: SignerType;
+    timestamp: number;
+    author: Partial<AuthorIpfsType> & { address: string };
 }
 
 //*********************
@@ -437,7 +459,7 @@ export interface CommentWithCommentUpdate
 }
 
 export interface CommentIpfsType
-    extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">,
+    extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author" | "protocolVersion">,
         PublicationType,
         Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">,
         Pick<Required<CommentType>, "depth"> {
@@ -630,7 +652,7 @@ export interface IpfsClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: ReturnType<typeof CreateIpfsClient>; // Private API, shouldn't be used by consumers
-    _clientOptions: Required<Parameters<typeof CreateIpfsClient>[0]>;
+    _clientOptions: IpfsHttpClientOptions;
 }
 
 export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
@@ -641,7 +663,7 @@ export interface PubsubClient {
     sessionStats?: undefined; // Should be defined, will change later
     subplebbitStats?: undefined; // Should be defined, will change later
     _client: Pick<IpfsClient["_client"], "pubsub">; // Private API, shouldn't be used by consumers
-    _clientOptions: IpfsHttpClientOptions;
+    _clientOptions: IpfsClient["_clientOptions"];
 }
 
 export interface GatewayClient {

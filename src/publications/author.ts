@@ -10,7 +10,7 @@ class Author implements AuthorTypeWithCommentUpdate {
     avatar?: Nft;
     flair?: Flair;
     subplebbit?: SubplebbitAuthor;
-    shortAddress: string;
+    shortAddress: string; // not part of ipfs
 
     constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate) {
         this.address = props.address;

@@ -34,6 +34,8 @@ import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
+import * as remeda from "remeda"; // tree-shaking supported!
+
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -76,16 +78,16 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function replaceXWithY(obj: Object, x: any, y: any): any {
+export function replaceXWithY(obj: Record<string, any>, x: any, y: any): any {
     // obj is a JS object
     if (!lodash.isPlainObject(obj)) return obj;
-    const newObj = {};
+    const newObj: Record<string, any> = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x) newObj[key] = y;
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (lodash.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
+        else if (remeda.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
         else if (Array.isArray(value)) newObj[key] = value.map((iterValue) => replaceXWithY(iterValue, x, y));
         else newObj[key] = value;
     });
@@ -138,15 +140,15 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
 }
 
 export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
-    return <T>lodash.omitBy(obj, lodash.isNil);
+    return <T>remeda.omitBy(obj, lodash.isNil);
 }
 
 export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
-    if (!lodash.isPlainObject(obj)) return obj;
+    if (!remeda.isPlainObject(obj)) return obj;
     const cleanedObj = removeNullAndUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
 
     return cleanedObj;
 }

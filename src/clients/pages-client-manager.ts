@@ -72,14 +72,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
         const cid = path.split("/")[2];
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(cid);
+        const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
 
     postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
         const cid = path.split("/")[2];
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(cid);
+        const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
@@ -112,9 +112,9 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this._updatePageCidsSortCache(nextPageCid, sortTypes);
     }
 
-    updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]) {
+    updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
-        assert(typeof this._defaultIpfsProviderUrl === "string");
+        assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
             if (this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state === newState) continue;
             this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state = newState;
@@ -122,7 +122,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]) {
+    updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
             if (this.clients.ipfsGateways[sortType][gateway].state === newState) continue;
@@ -131,7 +131,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[]) {
+    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[] | undefined) {
         if (!Array.isArray(sortTypes)) return;
         for (const sortType of sortTypes) {
             if (this.clients.plebbitRpcClients[sortType][rpcUrl].state === newState) continue;
@@ -141,14 +141,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
     }
 
     private async _fetchPageWithRpc(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
-        const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
+        const currentRpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
 
         log.trace(`Fetching page cid (${pageCid}) using rpc`);
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
             const page = this._pages._parentCid
-                ? await this._plebbit.plebbitRpcClient.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
-                : await this._plebbit.plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
+                ? await this._plebbit.plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
+                : await this._plebbit.plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
             this.updateRpcState("stopped", currentRpcUrl, sortTypes);
 
             return page;
@@ -187,7 +187,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
 }
 
 export class RepliesPagesClientsManager extends BasePagesClientsManager {
-    clients: {
+    clients!: {
         ipfsGateways: Record<ReplySortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<ReplySortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<ReplySortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
@@ -199,7 +199,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
 }
 
 export class PostsPagesClientsManager extends BasePagesClientsManager {
-    clients: {
+    clients!: {
         ipfsGateways: Record<PostSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<PostSortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<PostSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
