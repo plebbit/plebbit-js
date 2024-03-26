@@ -93,7 +93,7 @@ import {
 } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as radash from "radash";
-import * as remeda from "remeda"; // tree-shaking supported!
+import * as remeda from "remeda";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -819,7 +819,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             const publicationEditFields = <(keyof ChallengeRequestCommentEditWithSubplebbitAuthor)[]>Object.keys(publication);
             for (const editField of publicationEditFields)
-                if (!allowedEditFields.includes(editField)) {
+                if (!allowedEditFields.includes(<any>editField)) {
                     log(
                         `The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`,
                         `isAuthorEdit:${isAuthorEdit}`,
@@ -1080,13 +1080,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         } catch (e) {
             if (e instanceof Error && e.message !== "file does not exist") throw e; // A critical error
         }
-    }
-
-    private _isCurrentSubplebbitEqualToLatestPublishedRecord(newSubRecord: SubplebbitIpfsType): boolean {
-        const fieldsToOmit = ["posts", "updatedAt"];
-        const rawSubplebbitTypeFiltered = lodash.omit(newSubRecord, fieldsToOmit);
-        const currentSubplebbitFiltered = lodash.omit(this.toJSONIpfs(), fieldsToOmit);
-        return lodash.isEqual(rawSubplebbitTypeFiltered, currentSubplebbitFiltered);
     }
 
     private async _switchDbWhileRunningIfNeeded() {

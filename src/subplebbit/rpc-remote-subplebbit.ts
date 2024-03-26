@@ -13,16 +13,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
-    protected _updateRpcClientStateFromStartedState(startedState: RemoteSubplebbit["startedState"]) {
-        const mapper: Record<RemoteSubplebbit["startedState"], RemoteSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
-            failed: ["stopped"],
-            "publishing-ipns": ["publishing-ipns"],
-            stopped: ["stopped"],
-            succeeded: ["stopped"]
-        };
-
-        mapper[startedState].forEach(this._setRpcClientState.bind(this));
-    }
+    
 
     protected _updateRpcClientStateFromUpdatingState(updatingState: RemoteSubplebbit["updatingState"]) {
         // We're deriving the the rpc state from updating state

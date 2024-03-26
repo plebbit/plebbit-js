@@ -1,4 +1,4 @@
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
 
 const optionInputs = [
@@ -27,7 +27,8 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number
-) => {
+): Promise<Challenge | ChallengeResult> => {
+    if (!subplebbitChallengeSettings?.options?.question) throw Error("No option question");
     let answer = subplebbitChallengeSettings?.options?.answer;
     if (!answer) {
         throw Error("no option answer");

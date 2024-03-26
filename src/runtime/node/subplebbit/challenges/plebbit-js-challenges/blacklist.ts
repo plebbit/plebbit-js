@@ -1,4 +1,4 @@
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
 
 const optionInputs = [
@@ -26,7 +26,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number
-) => {
+): Promise<ChallengeResult> => {
     // add a custom error message to display to the author
     const error = subplebbitChallengeSettings?.options?.error;
     const blacklist = subplebbitChallengeSettings?.options?.blacklist?.split(",");

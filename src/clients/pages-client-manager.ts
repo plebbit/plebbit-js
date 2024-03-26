@@ -8,7 +8,8 @@ import lodash from "lodash";
 import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid } from "../util.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid, throwWithErrorCode } from "../util.js";
+import { verifyPage } from "../signer/signatures.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']

@@ -14,13 +14,17 @@ import {
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     OnlyDefinedProperties,
     PageIpfs,
-    PagesType,
+    PagesInstanceType,
     PagesTypeIpfs,
     PagesTypeJson,
-    PageType,
+    PageInstanceType,
     PostSort,
     ReplySort,
-    Timeframe
+    Timeframe,
+    RepliesPagesTypeIpfs,
+    PostsPagesTypeIpfs,
+    PostSortName,
+    ReplySortName
 } from "./types.js";
 import { messages } from "./errors.js";
 import lodash from "lodash";
@@ -30,12 +34,12 @@ import { PlebbitError } from "./plebbit-error.js";
 import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
+//@ts-expect-error
 import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
-import * as remeda from "remeda"; // tree-shaking supported!
-
+import * as remeda from "remeda";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -80,7 +84,7 @@ export function timestamp() {
 
 export function replaceXWithY(obj: Record<string, any>, x: any, y: any): any {
     // obj is a JS object
-    if (!lodash.isPlainObject(obj)) return obj;
+    if (!remeda.isPlainObject(obj)) return obj;
     const newObj: Record<string, any> = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x) newObj[key] = y;
@@ -139,14 +143,14 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
     return -comment.comment.timestamp;
 }
 
-export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
-    return <T>remeda.omitBy(obj, lodash.isNil);
+export function removeNullAndUndefinedValues<T extends Object>(obj: T) {
+    return remeda.omitBy(obj, remeda.isNil);
 }
 
-export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
+export function removeNullAndUndefinedValuesRecursively<T>(obj: any): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
     if (!remeda.isPlainObject(obj)) return obj;
-    const cleanedObj = removeNullAndUndefinedValues(obj);
+    const cleanedObj: any = removeNullAndUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
         if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
 
@@ -176,7 +180,7 @@ const parseIfJsonString = (jsonString: any) => {
 };
 
 // Only for DB
-export const parseDbResponses = (obj: any) => {
+export const parseDbResponses = (obj: any): any => {
     // This function is gonna be called for every query on db, it should be optimized
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseDbResponses(o));
@@ -206,32 +210,33 @@ export const parseDbResponses = (obj: any) => {
     return <any>newObj;
 };
 
-export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType> {
+export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageInstanceType> {
     const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
     await Promise.all(finalComments.map((comment, i) => comment._initCommentUpdate(pageIpfs.comments[i].update)));
 
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
-    const keys = Object.keys(pagesRaw.pages);
-    const parsedPages = await Promise.all(keys.map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
-    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesInstanceType> {
+    const keys = <(keyof (typeof pagesRaw)["pages"])[]>Object.keys(pagesRaw.pages);
+    const parsedPages = await Promise.all(Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs, plebbit)));
+    const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 
 // To use for both subplebbit.posts and comment.replies
 
-export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit) {
+export async function parseRawPages(
+    replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined,
+    plebbit: Plebbit
+): Promise<Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined }> {
     if (!replies)
         return {
-            pages: undefined,
+            pages: {},
             pagesIpfs: undefined
         };
 
-    if (replies instanceof BasePages) return replies; // already parsed
-
-    if (!replies.pages) return { pages: undefined, pagesIpfs: undefined };
+    // if (remeda.isEmpty(replies.pages)) return { pages: {}, pagesIpfs: undefined }; // not sure why it's needed
 
     const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
 
@@ -240,20 +245,25 @@ export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | Bas
         const parsedPages = await parsePagesIpfs(replies, plebbit);
         return {
             pages: parsedPages.pages,
-            pagesIpfs: replies.pages
+            pagesIpfs: replies
         };
-    } else {
+    } else if (replies instanceof BasePages)
+        return { pages: replies.pages, pagesIpfs: replies.toJSONIpfs() }; // already parsed
+    else {
         replies = replies as PagesTypeJson;
-        const repliesClone = lodash.cloneDeep(replies) as PagesType;
-        //@ts-expect-error
-        const pageKeys: (keyof PagesType["pages"])[] = Object.keys(repliesClone.pages);
-        for (const key of pageKeys)
-            repliesClone.pages[key].comments = await Promise.all(
-                replies.pages[key].comments.map((comment) => plebbit.createComment.bind(plebbit)(comment))
-            );
+        const pagesWithCommentInstancesEntries = await Promise.all(
+            remeda.entries.strict(replies.pages).map(async ([pageKey, pageJson]) => {
+                const comments = await Promise.all(
+                    pageJson.comments.map((commentJson) => plebbit.createComment.bind(plebbit)(commentJson))
+                );
+                return remeda.entries.strict({ [pageKey]: { comments, nextCid: pageJson.nextCid } })[0];
+            })
+        );
+
+        const pagesWithCommentInstances = remeda.fromEntries.strict(pagesWithCommentInstancesEntries);
 
         return {
-            pages: repliesClone.pages,
+            pages: pagesWithCommentInstances,
             pagesIpfs: undefined
         };
     }

@@ -2,9 +2,10 @@ import { parsePageIpfs } from "./util.js";
 import {
     CommentIpfsType,
     CommentWithCommentUpdate,
-    PagesType,
+    PageInstanceType,
+    PageIpfs,
+    PagesInstanceType,
     PagesTypeJson,
-    PageType,
     PostSortName,
     PostsPagesTypeIpfs,
     PostsPagesTypeJson,
@@ -13,40 +14,43 @@ import {
     ReplySortName
 } from "./types.js";
 import { verifyPage } from "./signer/signatures.js";
-import lodash from "lodash";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager.js";
 import { Plebbit } from "./plebbit.js";
 import { PlebbitError } from "./plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
 
-type ConstructorProps = PagesType & {
+type BaseProps = {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];
-    parentCid?: CommentIpfsType["parentCid"];
-    pagesIpfs?: PostsPagesTypeIpfs | RepliesPagesTypeIpfs;
 };
-export class BasePages implements PagesType {
-    pages!: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids!: Partial<Record<PostSortName | ReplySortName, string>>;
+
+type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & { pagesIpfs?: PostsPagesTypeIpfs };
+type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> & BaseProps & { parentCid: string; pagesIpfs?: RepliesPagesTypeIpfs };
+
+export class BasePages {
+    pages!: PostsPages["pages"] | RepliesPages["pages"];
+    pageCids!: PostsPages["pageCids"] | RepliesPages["pageCids"];
     clients!: BasePagesClientsManager["clients"];
     _clientsManager!: BasePagesClientsManager;
     _plebbit: Plebbit;
     _subplebbitAddress!: string;
-    _parentCid: CommentIpfsType["parentCid"];
-    private _pagesIpfs?: ConstructorProps["pagesIpfs"];
-    constructor(props: ConstructorProps) {
+    protected _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"];
+    protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
+
+    constructor(props: PostsProps | RepliesProps) {
         this._plebbit = props.plebbit;
         this._initClientsManager();
         this.updateProps(props);
     }
 
-    updateProps(props: ConstructorProps) {
+    updateProps(props: PostsProps | RepliesProps) {
         this.pages = props.pages;
         this.pageCids = props.pageCids;
         this._plebbit = props.plebbit;
         this._subplebbitAddress = props.subplebbitAddress;
-        this._parentCid = props.parentCid;
+        if ("parentCid" in props) this._parentCid = props.parentCid;
         this._pagesIpfs = props.pagesIpfs;
         if (this.pageCids) this._clientsManager.updatePageCidsToSortTypes(this.pageCids);
     }
@@ -81,50 +85,52 @@ export class BasePages implements PagesType {
         return pageIpfs;
     }
 
-    async getPage(pageCid: string): Promise<PageType> {
+    async getPage(pageCid: string): Promise<PageInstanceType> {
+        assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         return await parsePageIpfs(await this._fetchAndVerifyPage(pageCid), this._plebbit);
     }
 
-    toJSON(): PagesTypeJson | undefined {
-        if (!this.pages) return undefined;
-        const pagesJson = lodash.mapValues(this.pages, (page) => {
+    toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined {
+        if (remeda.isEmpty(this.pages)) return undefined;
+        const pagesJson: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"] = remeda.mapValues(this.pages, (page) => {
             if (!page) return undefined;
             const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
             return { comments: commentsJson, nextCid: page.nextCid };
         });
+        if (remeda.isEmpty(this.pageCids)) throw Error("pageInstance.pageCids should not be empty while pageInstance.pages is defined");
         return { pages: pagesJson, pageCids: this.pageCids };
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
-        if (!this.pages) return undefined;
+        if (!this.pages) return undefined; // I forgot why this line is here
         if (!this._pagesIpfs) {
             Logger("plebbit-js:pages:toJSONIpfs").error(
                 `toJSONIpfs() is called on sub(${this._subplebbitAddress}) and parentCid (${this._parentCid}) even though _pagesIpfs is undefined. This error should not persist`
             );
             return;
         }
-        return {
-            pages: this._pagesIpfs.pages,
-            pageCids: this.pageCids
-        };
+        return this._pagesIpfs;
     }
 }
 
 export class RepliesPages extends BasePages {
-    pages!: Partial<Record<ReplySortName, PageType>>;
+    pages!: Partial<Record<ReplySortName, PageInstanceType>>;
 
-    pageCids!: Partial<Record<ReplySortName, string>>;
+    pageCids!: Record<ReplySortName, string> | {};
 
     clients!: RepliesPagesClientsManager["clients"];
-    _parentCid!: string;
 
     _clientsManager!: RepliesPagesClientsManager;
 
-    constructor(props: ConstructorProps & { parentCid: string }) {
+    protected _parentCid!: string;
+
+    protected _pagesIpfs: RepliesPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
+
+    constructor(props: RepliesProps) {
         super(props);
     }
 
-    updateProps(props: ConstructorProps & { parentCid: string }): void {
+    updateProps(props: RepliesProps) {
         super.updateProps(props);
     }
 
@@ -133,31 +139,31 @@ export class RepliesPages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    // TODO override toJSON, toJSONIpfs
-
     toJSON(): RepliesPagesTypeJson | undefined {
-        return super.toJSON();
+        return <RepliesPagesTypeJson | undefined>super.toJSON();
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
-        return super.toJSONIpfs();
+        return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
 }
 
 export class PostsPages extends BasePages {
-    pages!: Partial<Record<PostSortName, PageType>>;
+    pages!: Partial<Record<PostSortName, PageInstanceType>>;
 
-    pageCids!: Partial<Record<PostSortName, string>>;
+    pageCids!: Record<PostSortName, string> | {};
 
     clients!: PostsPagesClientsManager["clients"];
 
     _clientsManager!: PostsPagesClientsManager;
+    protected _parentCid: undefined;
+    protected _pagesIpfs: PostsPagesTypeIpfs | undefined;
 
-    constructor(props: Omit<ConstructorProps, "parentCid">) {
+    constructor(props: PostsProps) {
         super(props);
     }
 
-    updateProps(props: Omit<ConstructorProps, "parentCid">): void {
+    updateProps(props: PostsProps) {
         super.updateProps(props);
     }
 
@@ -167,10 +173,10 @@ export class PostsPages extends BasePages {
     }
 
     toJSON(): PostsPagesTypeJson | undefined {
-        return super.toJSON();
+        return <PostsPagesTypeJson | undefined>super.toJSON();
     }
 
     toJSONIpfs(): PostsPagesTypeIpfs | undefined {
-        return super.toJSONIpfs();
+        return <PostsPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
 }

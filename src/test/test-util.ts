@@ -287,23 +287,23 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
         ...plebbitOptions
     });
 
-    if (mockResolve)
-        plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
-            log(
-                `Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`
-            );
-            if (address === "plebbit.eth" && textRecord === "subplebbit-address")
-                return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
-            else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
-                return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
-            else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
-                return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
-            else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
-                return (await plebbit.createSigner()).address;
-            else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
-                return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
-            else return null;
-        };
+    // if (mockResolve)
+    //     plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
+    //         log(
+    //             `Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`
+    //         );
+    //         if (address === "plebbit.eth" && textRecord === "subplebbit-address")
+    //             return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
+    //         else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
+    //             return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+    //         else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
+    //             return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+    //         else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
+    //             return (await plebbit.createSigner()).address;
+    //         else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
+    //             return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
+    //         else return null;
+    //     };
 
     if (stubStorage) {
         plebbit._storage.getItem = async () => undefined;

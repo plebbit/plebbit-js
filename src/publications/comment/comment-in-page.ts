@@ -16,8 +16,11 @@ export class CommentInPage extends Comment {
     replyCount: number;
     updatedAt: number;
 
-
-    constructor(props: CommentWithCommentUpdate, plebbit: Plebbit){
+    constructor(props: CommentWithCommentUpdate, plebbit: Plebbit) {
         super(props, plebbit);
+    }
+
+    publish(): Promise<void> {
+        throw Error("Should not call publish() on a comment that's already published");
     }
 }

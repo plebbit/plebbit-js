@@ -252,7 +252,7 @@ export default class PlebbitRpcClient {
             });
             this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
         }
-        if (!this._lastListedSubs) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
+        if (!Array.isArray(this._lastListedSubs)) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
 
         return this._lastListedSubs;
     }

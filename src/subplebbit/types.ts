@@ -1,6 +1,14 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { JsonSignature, SignerType } from "../signer/constants.js";
-import { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, PostsPagesTypeIpfs, ProtocolVersion } from "../types.js";
+import {
+    ChallengeType,
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    PagesTypeIpfs,
+    PagesTypeJson,
+    PostsPagesTypeIpfs,
+    ProtocolVersion
+} from "../types.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export type SubplebbitStats = {
@@ -196,11 +204,13 @@ export interface Challenge {
     verify: (answer: string) => Promise<ChallengeResult>;
     type: ChallengeType["type"];
 }
-export interface ChallengeResult {
-    // if the result of a challenge can be optained by getChallenge, return the result
-    success: boolean;
-    error?: string; // the reason why the challenge failed, add it to ChallengeVerificationMessage.errors
-}
+
+export type ChallengeResult =
+    | { success: true }
+    | {
+          success: false;
+          error: string; // the reason why the challenge failed, add it to ChallengeVerificationMessage.errors
+      };
 
 export interface ChallengeFile {
     // the result of the function exported by the challenge file
@@ -211,7 +221,7 @@ export interface ChallengeFile {
     description?: string; // describe what the challenge does to display in the UI
     getChallenge: (
         challenge: SubplebbitChallengeSettings,
-        challengeRequest: DecryptedChallengeRequestMessageType,
+        challengeRequest: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
         challengeIndex: number,
         subplebbit: LocalSubplebbit
     ) => Promise<Challenge | ChallengeResult>;

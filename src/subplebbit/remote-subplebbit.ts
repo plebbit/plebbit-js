@@ -2,7 +2,7 @@ import { doesDomainAddressHaveCapitalLetter, isIpns, parseRawPages, shortifyAddr
 import { PostsPages } from "../pages.js";
 import { Plebbit } from "../plebbit.js";
 
-import { ProtocolVersion, SubplebbitEvents } from "../types.js";
+import { PostsPagesTypeIpfs, ProtocolVersion, SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
 import { JsonSignature } from "../signer/constants.js";
@@ -10,7 +10,7 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
-import {
+import type {
     CreateSubplebbitOptions,
     Flair,
     FlairOwner,
@@ -23,6 +23,7 @@ import {
     SubplebbitSuggested,
     SubplebbitType
 } from "./types.js";
+import * as remeda from "remeda";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
     // public
@@ -37,28 +38,27 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>;
-    address: string;
-    shortAddress: string;
+    address!: string;
+    shortAddress!: string;
     statsCid?: string;
-    createdAt: number;
-    updatedAt: number;
-    encryption: SubplebbitEncryption;
-    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    createdAt!: number;
+    updatedAt!: number;
+    encryption!: SubplebbitEncryption;
+    protocolVersion!: ProtocolVersion; // semantic version of the protocol https://semver.org/
+    signature!: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
     challenges: SubplebbitType["challenges"];
     postUpdates?: { [timestampRange: string]: string };
 
     // Only for Subplebbit instance
-    state: "stopped" | "updating" | "started";
-    startedState: "stopped" | "publishing-ipns" | "failed" | "succeeded"; // TODO Should move to rpc-local-subplebbit
-    updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    state!: "stopped" | "updating" | "started";
+    updatingState!: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
     plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
 
     // should be used internally
-    _ipnsLoadingOperation: RetryOperation;
+    _ipnsLoadingOperation?: RetryOperation;
 
     // private
     protected _updateTimeout?: NodeJS.Timeout;
@@ -67,7 +67,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         super();
         this.plebbit = plebbit;
         this._setState("stopped");
-        this._setStartedState("stopped");
         this._setUpdatingState("stopped");
 
         // these functions might get separated from their `this` when used
@@ -82,21 +81,22 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.clients = this.clientsManager.clients;
 
         this.posts = new PostsPages({
-            pageCids: undefined,
-            pages: undefined,
+            pageCids: {},
+            pages: {},
             plebbit: this.plebbit,
-            subplebbitAddress: undefined,
+            subplebbitAddress: this.address,
             pagesIpfs: undefined
         });
     }
 
     async initRemoteSubplebbitProps(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>) {
         const mergedProps = { ...this.toJSONIpfs(), ...newProps };
+        this._setAddress(mergedProps.address);
+        this.protocolVersion = mergedProps.protocolVersion;
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
         this.lastCommentCid = mergedProps.lastCommentCid;
-        this._setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challenges = mergedProps.challenges;
         this.statsCid = mergedProps.statsCid;
@@ -110,22 +110,29 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.flairs = mergedProps.flairs;
         this.signature = mergedProps.signature;
         this.postUpdates = mergedProps.postUpdates;
-        if (mergedProps.posts) {
-            const parsedPages = await parseRawPages(mergedProps.posts, this.plebbit);
+
+        // TODO check if we need to update this.posts, most of the time we don't need to
+
+        // need to also check if this.address differs from this.posts.subplebbitAddress
+        // when this.posts.pageCids differs from mergedProps.posts.pageCids OR
+        // when this.address !== this.posts.subplebbitAddress
+        const shouldUpdatePosts =
+            this.address !== this.posts._subplebbitAddress ||
+            ("posts" in newProps &&
+                remeda.isPlainObject(newProps.posts?.pageCids) &&
+                !remeda.isDeepEqual(this.posts.pageCids, newProps.posts.pageCids));
+
+        if (shouldUpdatePosts ) {
+            const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
+                await parseRawPages(mergedProps.posts, this.plebbit)
+            );
             this.posts.updateProps({
                 ...parsedPages,
                 plebbit: this.plebbit,
                 subplebbitAddress: this.address,
-                pageCids: mergedProps.posts.pageCids
+                pageCids: mergedProps.posts?.pageCids || {}
             });
-        } else
-            this.posts.updateProps({
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: undefined,
-                pages: undefined,
-                pagesIpfs: undefined
-            });
+        }
     }
 
     protected _setAddress(newAddress: string) {
@@ -176,7 +183,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     toJSONIpfs(): SubplebbitIpfsType {
         return {
             ...this._toJSONBase(),
-            posts: this.posts?.toJSONIpfs()
+            posts: this.posts.toJSONIpfs()
         };
     }
 
@@ -192,28 +199,22 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.emit("updatingstatechange", this.updatingState);
     }
 
-    protected _setStartedState(newState: RemoteSubplebbit["startedState"]) {
-        if (newState === this.startedState) return;
-        this.startedState = newState;
-        this.emit("startedstatechange", this.startedState);
-    }
-
     private _isCriticalErrorWhenLoading(err: PlebbitError) {
         return err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID";
     }
 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
         return new Promise((resolve) => {
-            this._ipnsLoadingOperation.attempt(async (curAttempt) => {
+            this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this.clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
                     resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e.toString());
-                    if (this._isCriticalErrorWhenLoading(e)) return <PlebbitError>e;
-                    else this._ipnsLoadingOperation.retry(e);
+                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
+                    if (e instanceof PlebbitError && this._isCriticalErrorWhenLoading(e)) resolve(e);
+                    else this._ipnsLoadingOperation!.retry(<Error>e);
                 }
             });
         });

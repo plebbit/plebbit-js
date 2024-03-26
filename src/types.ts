@@ -17,6 +17,7 @@ import { PlebbitError } from "./plebbit-error.js";
 import { ChallengeFile, Flair } from "./subplebbit/types.js";
 import { Plebbit } from "./plebbit.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 
 export type ProtocolVersion = "1.0.0";
 export type Chain = "eth" | "matic" | "avax" | "sol";
@@ -45,11 +46,11 @@ export interface ParsedPlebbitOptions
     ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     plebbitRpcClientsOptions: string[] | undefined;
-    chainProviders: { [chainTicker: string]: ChainProvider } | {}; // chain providers could be empty if we're using rpc
+    chainProviders: { [chainTicker: string]: ChainProvider }; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
-export interface PageType {
-    comments: Comment[];
+export interface PageInstanceType {
+    comments: Comment[]; // This type should be CommentWithinPage
     nextCid?: string;
 }
 
@@ -58,38 +59,39 @@ export interface PageTypeJson {
     nextCid?: string;
 }
 
-export interface PageIpfs extends Omit<PageType, "comments"> {
+export interface PageIpfs {
     comments: { comment: CommentIpfsWithCid; update: CommentUpdate }[];
+    nextCid?: string;
 }
 
-export interface PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+export interface PagesInstanceType {
+    pages: Partial<Record<PostSortName | ReplySortName, PageInstanceType>>;
+    pageCids: Record<PostSortName | ReplySortName, string> | {}; // defaults to empty if page instance is not initialized yet
 }
 
 export interface PagesTypeJson {
-    pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+    pages: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"];
+    pageCids: RepliesPagesTypeJson["pageCids"] | PostsPagesTypeJson["pageCids"];
 }
 
-export interface RepliesPagesTypeJson extends PagesTypeJson {
+export interface RepliesPagesTypeJson {
     pages: Partial<Record<ReplySortName, PageTypeJson>>;
-    pageCids: Partial<Record<ReplySortName, string>>;
+    pageCids: Record<ReplySortName, string>;
 }
 
-export interface PostsPagesTypeJson extends PagesTypeJson {
+export interface PostsPagesTypeJson {
     pages: Partial<Record<PostSortName, PageTypeJson>>;
-    pageCids: Partial<Record<PostSortName, string>>;
+    pageCids: Record<PostSortName, string>;
 }
 
 export interface RepliesPagesTypeIpfs {
     pages: Partial<Record<ReplySortName, PageIpfs>>;
-    pageCids: Partial<Record<ReplySortName, string>>;
+    pageCids: Record<ReplySortName, string>;
 }
 
 export interface PostsPagesTypeIpfs {
     pages: Partial<Record<PostSortName, PageIpfs>>;
-    pageCids: Partial<Record<PostSortName, string>>;
+    pageCids: Record<PostSortName, string>;
 }
 
 export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
@@ -575,7 +577,7 @@ export interface SubplebbitEvents {
     // State changes
     statechange: (newState: RemoteSubplebbit["state"]) => void;
     updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
-    startedstatechange: (newState: RemoteSubplebbit["startedState"]) => void;
+    startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
 
     update: (updatedSubplebbit: RemoteSubplebbit) => void;
 }

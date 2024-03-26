@@ -5,7 +5,7 @@ import { createInstance as CreateLocalForageLRU } from "./localforage-lru.js";
 
 export default class LRUStorage implements LRUStorageInterface {
     private _opts: LRUStorageConstructor;
-    private _cache: ReturnType<typeof CreateLocalForageLRU>;
+    private _cache!: ReturnType<typeof CreateLocalForageLRU>;
 
     constructor(opts: LRUStorageConstructor) {
         this._opts = opts;
