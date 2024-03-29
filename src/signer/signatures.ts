@@ -371,11 +371,16 @@ export async function verifySubplebbit(
         return { valid: true };
     }
 
-    const resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
+    let resolvedSubAddress: string;
+
+    try {
+        resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
+    } catch (e) {
+        log.error(e);
+    }
 
     if (addressIsDomain && resolveDomainSubAddress && !resolvedSubAddress)
         return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
-
 
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
     const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
@@ -455,7 +460,13 @@ export async function verifyCommentUpdate(
         return { valid: true };
     }
     const updateSignatureAddress: string = await getPlebbitAddressFromPublicKey(update.signature.publicKey);
-    const subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+    let subplebbitResolvedAddress: string;
+    try {
+        subplebbitResolvedAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbitAddress);
+    } catch (e) {
+        log.error(e);
+    }
+    if (!subplebbitResolvedAddress) return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
     if (updateSignatureAddress !== subplebbitResolvedAddress) {
         log.error(
             `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`
