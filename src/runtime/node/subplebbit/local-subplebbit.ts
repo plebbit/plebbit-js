@@ -331,6 +331,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         if (this.shouldResolveDomainForVerification()) {
             try {
+                log(`Resolving domain ${this.address} to make sure it's the same as signer.address ${this.signer.address}`);
                 const resolvedSubAddress = await this.clientsManager.resolveSubplebbitAddressIfNeeded(this.address);
                 if (resolvedSubAddress !== this.signer.address)
                     log.error(
@@ -1313,6 +1314,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             let newRoles = lodash.omitBy(newSubplebbitOptions.roles, lodash.isNil); // remove author addresses with undefined or null
             if (Object.keys(newRoles).length === 0) newRoles = undefined; // if there are no mods then remove sub.roles entirely
             newSubplebbitOptions.roles = newRoles;
+            log("New roles after edit", newSubplebbitOptions.roles);
         }
 
         const newProps: Partial<
