@@ -2,6 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { messages } from "../errors.js";
+import lodash from "lodash";
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     constructor(plebbit) {
@@ -24,7 +25,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.started = mergedProps.started;
     }
     async _handleRpcUpdateProps(rpcProps) {
-        await this.initRpcInternalSubplebbit(rpcProps);
+        // Need to make sure rpcProps has all the props so it overrides anything from this.toJSONInternalRpc()
+        const filledRpcProps = lodash.mapValues(this.toJSONInternalRpc(), () => undefined);
+        await this.initRpcInternalSubplebbit({ ...filledRpcProps, ...rpcProps });
     }
     async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
@@ -43,7 +46,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("update", async (updateProps) => {
             log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
             const newRpcRecord = updateProps.params.result;
-            await this.initRpcInternalSubplebbit(newRpcRecord);
+            await this._handleRpcUpdateProps(newRpcRecord);
             this.emit("update", this);
         })
             .on("startedstatechange", (args) => {
@@ -105,7 +108,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                     : newSubplebbitOptions.settings.challenges;
         const optionsParsed = replaceXWithY(newSubplebbitOptions, undefined, null);
         const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed);
-        await this.initRpcInternalSubplebbit(newProps);
+        await this._handleRpcUpdateProps(newProps);
         return this;
     }
     async update() {
