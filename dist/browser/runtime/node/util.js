@@ -213,7 +213,8 @@ export function createIpfsClient(ipfsHttpClientOptions) {
     const onehourMs = 1000 * 60 * 60;
     storedIpfsClients[cacheKey] = CreateKuboRpcClient({
         ...ipfsHttpClientOptions,
-        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs })
+        agent: ipfsHttpClientOptions.agent || new Agent({ keepAlive: true, maxSockets: Infinity, timeout: onehourMs }),
+        timeout: onehourMs
     });
     return storedIpfsClients[cacheKey];
 }

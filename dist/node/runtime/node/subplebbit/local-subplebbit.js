@@ -559,20 +559,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const editPublication = publication;
             const commentToBeEdited = await this.dbHandler.queryComment(editPublication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             const editSignedByOriginalAuthor = editPublication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const editorModRole = this.roles && this.roles[editPublication.author.address];
+            const modRoles = ["moderator", "owner", "admin"];
+            const isEditorMod = this.roles?.[editPublication.author.address] && modRoles.includes(this.roles[editPublication.author.address]?.role);
             const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(editPublication);
             const isAuthorEdit = this._isAuthorEdit(editPublication, editSignedByOriginalAuthor);
             if (isAuthorEdit && editHasUniqueModFields)
                 return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
-            const allowedEditFields = isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : editorModRole ? MOD_EDIT_FIELDS : undefined;
+            const allowedEditFields = isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : isEditorMod ? MOD_EDIT_FIELDS : undefined;
             if (!allowedEditFields)
                 return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             for (const editField of Object.keys(removeKeysWithUndefinedValues(editPublication)))
                 if (!allowedEditFields.includes(editField)) {
-                    log(`The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`, `isAuthorEdit:${isAuthorEdit}`, `editHasUniqueModFields:${editHasUniqueModFields}`, `editorModRole:${editorModRole}`, `editSignedByOriginalAuthor:${editSignedByOriginalAuthor}`);
+                    log(`The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`, `isAuthorEdit:${isAuthorEdit}`, `editHasUniqueModFields:${editHasUniqueModFields}`, `isEditorMod:${isEditorMod}`, `editSignedByOriginalAuthor:${editSignedByOriginalAuthor}`);
                     return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
                 }
-            if (editorModRole && typeof editPublication.locked === "boolean" && commentToBeEdited.depth !== 0)
+            if (isEditorMod && typeof editPublication.locked === "boolean" && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
         }
         return undefined;
