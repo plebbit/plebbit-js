@@ -11,6 +11,7 @@ import {
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
+import lodash from "lodash";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
@@ -19,11 +20,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     protected _usingDefaultChallenge: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     settings?: SubplebbitSettings;
 
-    constructor(plebbit: Plebbit){
+    constructor(plebbit: Plebbit) {
         super(plebbit);
         this.started = false;
     }
-    
 
     toJSONInternalRpc(): InternalSubplebbitRpcType {
         return {
@@ -43,7 +43,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
-        await this.initRpcInternalSubplebbit(rpcProps);
+        // Need to make sure rpcProps has all the props so it overrides anything from this.toJSONInternalRpc()
+        const filledRpcProps = lodash.mapValues(this.toJSONInternalRpc(), () => undefined);
+        await this.initRpcInternalSubplebbit({ ...filledRpcProps, ...rpcProps });
     }
 
     async start() {
@@ -62,7 +64,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("update", async (updateProps) => {
                 log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
                 const newRpcRecord = <InternalSubplebbitRpcType>updateProps.params.result;
-                await this.initRpcInternalSubplebbit(newRpcRecord);
+                await this._handleRpcUpdateProps(newRpcRecord);
                 this.emit("update", this);
             })
             .on("startedstatechange", (args) => {
@@ -131,7 +133,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
         const optionsParsed = <SubplebbitEditOptions>replaceXWithY(newSubplebbitOptions, undefined, null);
         const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed);
-        await this.initRpcInternalSubplebbit(newProps);
+        await this._handleRpcUpdateProps(newProps);
         return this;
     }
 
