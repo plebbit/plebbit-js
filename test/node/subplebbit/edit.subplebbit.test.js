@@ -305,7 +305,22 @@ describe(`Edit misc`, async () => {
         await newSub.delete();
     });
 
+    it.skip(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
+        const customPlebbit = await mockPlebbit();
+        const remotePlebbit = await mockRemotePlebbit();
+        const newSub = await customPlebbit.createSubplebbit();
+        await newSub.start();
+        await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
         await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
+
+        const newRoles = { "author-address.eth": { role: null } };
+        await newSub.edit({ roles: newRoles });
+        expect(newSub.roles["author-address.eth"].role).to.be.null;
+        await new Promise((resolve) => newSub.once("update", resolve));
+        expect(newSub.roles["author-address.eth"].role).to.be.null;
+
+        const remoteSub = await remotePlebbit.getSubplebbit(newSub.address); // no issues with signature
+        expect(remoteSub.roles["author-address.eth"].role).to.be.null;
 
         await newSub.delete();
     });
