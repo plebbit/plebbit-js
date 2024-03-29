@@ -31,7 +31,17 @@ export class Signer implements SignerType {
     }
 }
 
-export const createSigner = async (createSignerOptions: CreateSignerOptions = {}) => {
+class SignerWithPublicKeyAddress extends Signer {
+    publicKey: string;
+    constructor(props: SignerType & {publicKey: string}){
+        super(props);
+        this.publicKey = props.publicKey;
+    }
+}
+
+export const createSigner = async (
+    createSignerOptions: CreateSignerOptions = {}
+): Promise<Signer & Required<Pick<Signer, "publicKey" | "address">>> => {
     let { privateKey, type: signerType } = createSignerOptions;
     if (privateKey) {
         if (signerType !== "ed25519") throw Error("invalid signer createSignerOptions.type, not 'ed25519'");
@@ -43,7 +53,7 @@ export const createSigner = async (createSignerOptions: CreateSignerOptions = {}
 
     const [publicKey, address] = await Promise.all([getPublicKeyFromPrivateKey(privateKey), getPlebbitAddressFromPrivateKey(privateKey)]);
 
-    return new Signer({
+    return new SignerWithPublicKeyAddress({
         type: signerType,
         publicKey,
         address,

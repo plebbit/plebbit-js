@@ -20,7 +20,7 @@ import {
     SortProps
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -110,7 +110,7 @@ export class SortHandler {
 
         if (commentsSorted.length === 0) return undefined;
 
-        const commentsChunks = lodash.chunk(commentsSorted, options.pageSize);
+        const commentsChunks = remeda.chunk(commentsSorted, options.pageSize);
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
@@ -143,10 +143,10 @@ export class SortHandler {
         if (rawPosts.length === 0) return undefined;
 
         const sortResults = await Promise.all(
-            Object.keys(POSTS_SORT_TYPES).map((sortName) => this.sortComments(rawPosts, <PostSortName>sortName, pageOptions))
+            remeda.keys.strict(POSTS_SORT_TYPES).map((sortName) => this.sortComments(rawPosts, sortName, pageOptions))
         );
 
-        return this._generationResToPages(sortResults);
+        return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
     private async _generateCommentReplies(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
@@ -161,10 +161,10 @@ export class SortHandler {
         const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
 
         const sortResults = await Promise.all(
-            Object.keys(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, <ReplySortName>sortName, pageOptions))
+            remeda.keys.strict(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, sortName, pageOptions))
         );
 
-        return this._generationResToPages(sortResults);
+        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
     async generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {

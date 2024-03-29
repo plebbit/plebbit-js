@@ -36,7 +36,6 @@ import { CommentEdit } from "./publications/comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
-import lodash from "lodash";
 import { signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -53,6 +52,7 @@ import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
+import * as remeda from "remeda";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -99,7 +99,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "noData",
             "browserLibp2pJsPublish"
         ];
-        for (const option of Object.keys(options))
+        for (const option of remeda.keys(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
 
         this._userPlebbitOptions = options;
@@ -174,8 +174,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     _clientOptions: clientOptions,
                     peers: async () => {
                         const topics = await ipfsClient.pubsub.ls();
-                        const topicPeers = lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
-                        const peers = lodash.uniq(topicPeers.map((topicPeer) => topicPeer.toString()));
+                        const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                        const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                         return peers;
                     }
                 };
@@ -213,7 +213,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
     private _initIpfsGateways() {
         // If user did not provide ipfsGatewayUrls
-        const fallbackGateways = this.plebbitRpcClient ? undefined : lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+        const fallbackGateways = this.plebbitRpcClient ? undefined : remeda.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         this.clients.ipfsGateways = {};
         if (this.parsedPlebbitOptions.ipfsGatewayUrls) for (const gatewayUrl of this.parsedPlebbitOptions.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
         else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
@@ -433,14 +433,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
+                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
             );
         } else {
             await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
+                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
             );
         }
 
@@ -505,7 +505,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return new CommentEdit(signedEdit, this);
     }
 
-    createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer> {
+    createSigner(createSignerOptions?: CreateSignerOptions) {
         return createSigner(createSignerOptions);
     }
 

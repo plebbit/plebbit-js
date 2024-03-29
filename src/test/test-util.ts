@@ -9,13 +9,13 @@ import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants.js";
 import Publication from "../publications/publication.js";
-import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
 import { BasePages } from "../pages.js";
 import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -171,7 +171,7 @@ async function _publishVotes(
     votesPerCommentToPublish: number,
     plebbit: Plebbit
 ) {
-    const votes: Vote[] = lodash.flattenDeep(
+    const votes: Vote[] = remeda.flattenDeep(
         await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit)))
     );
 
@@ -240,7 +240,7 @@ export async function startSubplebbits(props: {
     numOfPostsToPublish: number;
     startOnlineSub: boolean;
 }): Promise<TestServerSubs> {
-    const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, remeda.pick(props, ["noData", "dataPath"]));
     const signer = await plebbit.createSigner(props.signers[0]);
     const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
@@ -387,8 +387,8 @@ export async function publishRandomPost(
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${uuidv4()} ${lodash.uniqueId()}`,
-        title: `Random post Title ${uuidv4()} ${lodash.uniqueId()}`,
+        content: `Random post Content ${uuidv4()}`,
+        title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
@@ -438,7 +438,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
 }
 
 export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined> {
-    let currentPageCid: string | undefined = lodash.clone(pageCid);
+    let currentPageCid: string | undefined = remeda.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
@@ -463,8 +463,9 @@ export async function waitTillCommentIsInParentPages(
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment | undefined;
     const isCommentInParentPages = async () => {
-        const repliesPageCid = pagesInstance()?.pageCids?.new;
-        if (repliesPageCid) commentInPage = await findCommentInPage(<string>comment.cid, repliesPageCid, pagesInstance());
+        const instance = pagesInstance();
+        const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
+        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
         return Boolean(commentInPage);
     };
 
@@ -474,9 +475,12 @@ export async function waitTillCommentIsInParentPages(
 
     if (!commentInPage) throw Error("Failed to find comment in page");
 
-    const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
+    const pagesJson = parent instanceof Comment ? parent.replies.toJSON() : parent.posts.toJSON();
 
-    if (!lodash.isPlainObject(pageCids)) throw Error("pageCids aren't defined");
+    if (!pagesJson) throw Error("Failed to retrieve pages");
+
+    const pageCids = pagesJson.pageCids;
+
     const commentKeys = <(keyof CreateCommentOptions)[]>Object.keys(propsToCheckFor);
 
     if (checkInAllPages)

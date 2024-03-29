@@ -40,18 +40,18 @@ import { SubplebbitIpfsType } from "../subplebbit/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
     // Only publication props
-    clients: PublicationClientsManager["clients"];
+    clients!: PublicationClientsManager["clients"];
 
-    subplebbitAddress: string;
-    shortSubplebbitAddress: string;
-    timestamp: number;
-    signature: JsonSignature;
+    subplebbitAddress!: string;
+    shortSubplebbitAddress!: string;
+    timestamp!: number;
+    signature!: JsonSignature;
     signer: Signer;
-    author: Author;
-    protocolVersion: ProtocolVersion;
+    author!: Author;
+    protocolVersion!: ProtocolVersion;
 
-    state: "stopped" | "updating" | "publishing";
-    publishingState:
+    state!: "stopped" | "updating" | "publishing";
+    publishingState!:
         | "stopped"
         | "resolving-subplebbit-address"
         | "fetching-subplebbit-ipns"

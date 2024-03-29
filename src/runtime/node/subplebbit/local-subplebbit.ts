@@ -1437,7 +1437,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         if (this.state === "started") {
             this._isSubRunningLocally = false;
-            if (this._publishLoopPromise) await this._publishLoopPromise;
+            if (this._publishLoopPromise) await this._publishLoopPromise; // should be in try/catch
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this.dbHandler.rollbackAllTransactions();

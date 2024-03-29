@@ -27,7 +27,8 @@ type BaseProps = {
 };
 
 type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & { pagesIpfs?: PostsPagesTypeIpfs };
-type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> & BaseProps & { parentCid: string; pagesIpfs?: RepliesPagesTypeIpfs };
+type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> &
+    BaseProps & { parentCid: RepliesPages["_parentCid"]; pagesIpfs?: RepliesPagesTypeIpfs };
 
 export class BasePages {
     pages!: PostsPages["pages"] | RepliesPages["pages"];
@@ -36,7 +37,7 @@ export class BasePages {
     _clientsManager!: BasePagesClientsManager;
     _plebbit: Plebbit;
     _subplebbitAddress!: string;
-    protected _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"];
+    _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"];
     protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
@@ -122,7 +123,7 @@ export class RepliesPages extends BasePages {
 
     _clientsManager!: RepliesPagesClientsManager;
 
-    protected _parentCid!: string;
+    _parentCid!: string | undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
 
     protected _pagesIpfs: RepliesPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
 
@@ -156,7 +157,7 @@ export class PostsPages extends BasePages {
     clients!: PostsPagesClientsManager["clients"];
 
     _clientsManager!: PostsPagesClientsManager;
-    protected _parentCid: undefined;
+    _parentCid: undefined;
     protected _pagesIpfs: PostsPagesTypeIpfs | undefined;
 
     constructor(props: PostsProps) {

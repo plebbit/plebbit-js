@@ -688,7 +688,7 @@ export interface StorageInterface {
 type LRUStorageCacheNames = "plebbitjs_lrustorage_postTimestamp" | "plebbitjs_lrustorage_commentPostUpdatesParentsPath";
 
 export interface LRUStorageConstructor {
-    maxItems?: number; // Will start evicting after this number of items is stored
+    maxItems: number; // Will start evicting after this number of items is stored
     cacheName: LRUStorageCacheNames | string; // The cache name will be used as the name of the table in sqlite. For browser it will be used as the name of the local forage instance
     plebbit: Pick<Plebbit, "dataPath" | "noData">;
 }

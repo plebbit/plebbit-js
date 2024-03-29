@@ -25,7 +25,7 @@ export default class PlebbitRpcClient {
     private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
-    private _openConnectionPromise: Promise<any>;
+    private _openConnectionPromise?: Promise<any>;
     private _listSubsSubscriptionId?: number;
     private _lastListedSubs?: string[];
     constructor(plebbit: Plebbit) {
@@ -95,8 +95,12 @@ export default class PlebbitRpcClient {
                 } catch (e) {
                     //e is an error json representation of PlebbitError
                     if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
-                    if (e?.code) throw new PlebbitError(e?.code, e?.details);
-                    else throw new Error(e.message);
+                    if (!(e instanceof Error)) throw Error("plebbit rpc client call throwed a non Error");
+
+                    if ("code" in e) {
+                        const actualPlebError = e as PlebbitError;
+                        throw new PlebbitError(actualPlebError.code, actualPlebError.details);
+                    } else throw new Error(e.message);
                 }
             };
         }

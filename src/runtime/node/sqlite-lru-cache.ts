@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import cbor from "cbor";
 import debounce from "debounce";
+import * as remeda from "remeda";
 
 export interface SqliteCacheConfiguration {
     /**
@@ -77,7 +78,6 @@ export class SqliteCache<TData = any> {
     private readonly db: ReturnType<typeof initSqliteCache>;
     private _config: SqliteCacheConfiguration;
     private readonly checkInterval: NodeJS.Timeout;
-    private;
     private isClosed: boolean = false;
 
     constructor(configuration: SqliteCacheConfiguration) {
@@ -99,11 +99,11 @@ export class SqliteCache<TData = any> {
             now: now()
         });
 
-        if (!res) {
+        if (!remeda.isPlainObject(res) || !("value" in res)) {
             return undefined;
         }
 
-        let value: Buffer = res.value;
+        let value = <Buffer>res.value;
 
         return cbor.decode(value);
     }
@@ -182,7 +182,7 @@ export class SqliteCache<TData = any> {
             }
         },
         100,
-        true
+        { immediate: true }
     );
 }
 

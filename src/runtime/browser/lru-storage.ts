@@ -9,7 +9,6 @@ export default class LRUStorage implements LRUStorageInterface {
 
     constructor(opts: LRUStorageConstructor) {
         this._opts = opts;
-        if (typeof this._opts.maxItems !== "number") throw Error("Invalid paramters for LRU storage");
     }
 
     toJSON() {

@@ -12,7 +12,8 @@ import {
     CommentUpdate,
     CommentWithCommentUpdate,
     ProtocolVersion,
-    PublicationTypeName
+    PublicationTypeName,
+    RepliesPagesTypeIpfs
 } from "../../types.js";
 
 import Logger from "@plebbit/plebbit-logger";
@@ -24,6 +25,7 @@ import { PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
+import * as remeda from "remeda";
 
 export class Comment extends Publication implements Omit<CommentType, "replies"> {
     // Only Comment props
@@ -95,6 +97,15 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.publish = this.publish.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
+
+        this.replies = new RepliesPages({
+            pages: {},
+            pageCids: {},
+            plebbit: this._plebbit,
+            subplebbitAddress: this.subplebbitAddress,
+            pagesIpfs: undefined,
+            parentCid: this.cid
+        });
     }
 
     _initClients() {
@@ -122,15 +133,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.linkHeight = props.linkHeight;
         this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
         this.setPreviousCid(props.previousCid);
-        if (!this.replies)
-            this.replies = new RepliesPages({
-                pages: undefined,
-                pageCids: undefined,
-                plebbit: this._plebbit,
-                subplebbitAddress: this.subplebbitAddress,
-                pagesIpfs: undefined,
-                parentCid: this.cid
-            });
     }
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdate) {
@@ -166,15 +168,24 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
-        assert(this.cid);
+        assert(this.cid, "Can't update comment.replies without comment.cid being defined");
+        // reasons to update this.replies
 
-        if (props.replies) {
-            const parsedPages = await parseRawPages(props.replies, this._plebbit);
+        // this.cid !== this.replies.parentCid
+        // this.replies.pageCids !== props.replies.pageCids
+
+        const shouldUpdateReplies =
+            this.cid !== this.replies._parentCid ||
+            (remeda.isPlainObject(props.replies?.pageCids) && !remeda.isDeepEqual(this.replies.pageCids, props.replies.pageCids));
+        if (shouldUpdateReplies) {
+            const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
+                await parseRawPages(props.replies, this._plebbit)
+            );
             this.replies.updateProps({
                 ...parsedPages,
                 plebbit: this._plebbit,
                 subplebbitAddress: this.subplebbitAddress,
-                pageCids: props.replies.pageCids,
+                pageCids: props.replies?.pageCids || {},
                 parentCid: this.cid
             });
         }

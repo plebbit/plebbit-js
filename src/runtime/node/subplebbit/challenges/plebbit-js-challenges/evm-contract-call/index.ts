@@ -111,7 +111,7 @@ const verifyAuthorWalletAddress = async (props: {
     // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
     const cache = await props.plebbit._createStorageLRU({
         cacheName: "challenge_evm_contract_call_v1_wallet_last_timestamp",
-        maxItems: undefined
+        maxItems: Number.MAX_SAFE_INTEGER // We don't want to evacuate 
     });
     const cacheKey = props.chainTicker + authorWallet.address;
     const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);

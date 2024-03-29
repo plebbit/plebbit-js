@@ -6,7 +6,7 @@ import lodash from "lodash";
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
-    private _store: LocalForage;
+    private _store!: LocalForage;
     constructor(plebbit: Storage["_plebbit"]) {
         this._plebbit = plebbit;
     }
