@@ -1309,6 +1309,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     ? []
                     : newSubplebbitOptions.settings.challenges;
 
+        if ("roles" in newSubplebbitOptions) {
+            let newRoles = lodash.omitBy(newSubplebbitOptions.roles, lodash.isNil); // remove author addresses with undefined or null
+            if (Object.keys(newRoles).length === 0) newRoles = undefined; // if there are no mods then remove sub.roles entirely
+            newSubplebbitOptions.roles = newRoles;
+        }
+
         const newProps: Partial<
             SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger">
         > = {
