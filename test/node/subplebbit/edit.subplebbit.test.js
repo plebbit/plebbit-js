@@ -302,10 +302,57 @@ describe(`Edit misc`, async () => {
 
         await newSub.delete();
     });
+});
 
+describe(`Editing subplebbit.roles`, async () => {
+    let plebbit, sub, remotePlebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbit();
+        sub = await plebbit.createSubplebbit();
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => Boolean(sub.updatedAt));
+    });
+
+    after(async () => {
+        await sub.delete();
+    });
+
+    it(`Setting sub.roles[author-address] to null removes the role`, async () => {
+        const authorAddress = "hello.eth";
+        const secondAuthorAddress = "hello2.eth";
+        await sub.edit({ roles: { [authorAddress]: { role: "admin" }, [secondAuthorAddress]: { role: "moderator" } } });
+
+        expect(sub.roles[authorAddress].role).to.equal("admin");
+        expect(sub.roles[secondAuthorAddress].role).to.equal("moderator");
+
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        let remoteSub = await remotePlebbit.getSubplebbit(sub.address);
+        expect(remoteSub.roles[authorAddress].role).to.equal("admin");
+        expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
+
+        await sub.edit({ roles: { [authorAddress]: null, [secondAuthorAddress]: { role: "moderator" } } });
+        expect(sub.roles[authorAddress]).to.be.undefined;
+        expect(sub.roles[secondAuthorAddress].role).to.equal("moderator");
+
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        remoteSub = await remotePlebbit.getSubplebbit(sub.address);
+        expect(remoteSub.roles[authorAddress]).to.be.undefined;
+        expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
+
+        // Now set the other author role to null, this should set subplebbit.roles to undefined
+        await sub.edit({ roles: { [authorAddress]: null, [secondAuthorAddress]: null } });
+        expect(sub.roles).to.be.undefined;
+
+        await new Promise((resolve) => sub.once("update", resolve));
+
+        remoteSub = await remotePlebbit.getSubplebbit(sub.address);
+        expect(remoteSub.roles).to.be.undefined;
+    });
     it.skip(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
-        const customPlebbit = await mockPlebbit();
-        const remotePlebbit = await mockRemotePlebbit();
         const newSub = await customPlebbit.createSubplebbit();
         await newSub.start();
         await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
