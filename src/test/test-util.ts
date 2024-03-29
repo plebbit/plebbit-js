@@ -343,7 +343,11 @@ export async function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions) {
 
 export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     // Keep only pubsub and gateway
-    const plebbit = await mockRemotePlebbit({ ipfsGatewayUrls: ["http://localhost:18080"], plebbitRpcClientsOptions: undefined, ...plebbitOptions });
+    const plebbit = await mockRemotePlebbit({
+        ipfsGatewayUrls: ["http://localhost:18080"],
+        plebbitRpcClientsOptions: undefined,
+        ...plebbitOptions
+    });
     delete plebbit.clients.ipfsClients;
     delete plebbit.ipfsHttpClientsOptions;
     delete plebbit._clientsManager.clients.ipfsClients;
@@ -417,11 +421,11 @@ export async function publishWithExpectedResult(publication: Publication, expect
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
                     verificationMsg.challengeSuccess
-                }). Reason (${verificationMsg.reason}): ${JSON.stringify(verificationMsg)}`;
+                }). Reason (${verificationMsg.reason}): ${JSON.stringify(lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
                 reject(msg);
             } else if (expectedReason && expectedReason !== verificationMsg.reason) {
                 const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(
-                    verificationMsg
+                    lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"])
                 )}`;
                 reject(msg);
             } else resolve(1);
