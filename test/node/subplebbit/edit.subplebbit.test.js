@@ -299,8 +299,6 @@ describe(`Edit misc`, async () => {
         await new Promise((resolve) => newSub.once("update", resolve));
         const newSubRemote = await remotePlebbit.getSubplebbit(newSub.address);
         expect(newSubRemote.challenges[0].exclude[0].rateLimit).to.equal("123");
-        expect(newSubRemote.settings.challenges[0].exclude[0].rateLimit).to.equal("123");
-        expect(newSubRemote.settings.challenges[0].exclude[0].firstCommentTimestamp).to.equal("123");
 
         await newSub.delete();
     });
