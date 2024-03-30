@@ -372,7 +372,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             // Should actually create an instance here, instead of calling getSubplebbit
             if (isSubRpcLocal) {
                 const sub = new RpcLocalSubplebbit(this);
-                await sub.initRemoteSubplebbitProps({ address: options.address });
+                sub.setAddress(options.address);
                 // wait for one update here, and then stop
                 await sub.update();
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
@@ -389,7 +389,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 return sub;
             } else {
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                await remoteSub.initRemoteSubplebbitProps(options);
+                await remoteSub.initRemoteSubplebbitPropsWithMerge(options);
                 return remoteSub;
             }
         } else {
@@ -408,7 +408,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const subplebbit = new RemoteSubplebbit(this);
-        await subplebbit.initRemoteSubplebbitProps(options);
+        await subplebbit.initRemoteSubplebbitPropsWithMerge(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
@@ -426,14 +426,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
-            await subplebbit.initRemoteSubplebbitProps({ address: options.address });
+            subplebbit.setAddress(options.address);
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
             );
         } else {
-            await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
+            // This is a new sub
+            await subplebbit.initInternalSubplebbitWithMerge(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
