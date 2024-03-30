@@ -232,7 +232,7 @@ export async function startSubplebbits(props: {
     numOfPostsToPublish: number;
     startOnlineSub: boolean;
 }): Promise<TestServerSubs> {
-    const plebbit = await _mockSubplebbitPlebbit(props.signers, lodash.pick(props, ["noData", "dataPath"]));
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, { ...lodash.pick(props, ["noData", "dataPath"]), publishInterval: 3000 });
     const signer = await plebbit.createSigner(props.signers[0]);
     const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
@@ -274,8 +274,8 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
-        publishInterval: 3000,
-        updateInterval: 3000,
+        publishInterval: 1000,
+        updateInterval: 1000,
         ...plebbitOptions
     });
 
