@@ -34,18 +34,23 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         };
     }
 
-    async initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>) {
+    async initRpcInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitRpcType>) {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
-        await super.initRemoteSubplebbitProps(newProps);
+        await super.initRemoteSubplebbitPropsWithMerge(newProps);
         this.settings = mergedProps.settings;
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
         this.started = mergedProps.started;
     }
 
+    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType){
+        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        this.settings = newProps.settings;
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.started = newProps.started;
+    }
+
     protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
-        // Need to make sure rpcProps has all the props so it overrides anything from this.toJSONInternalRpc()
-        const filledRpcProps = lodash.mapValues(this.toJSONInternalRpc(), () => undefined);
-        await this.initRpcInternalSubplebbit({ ...filledRpcProps, ...rpcProps });
+        await this.initRpcInternalSubplebbitNoMerge(rpcProps);
     }
 
     async start() {

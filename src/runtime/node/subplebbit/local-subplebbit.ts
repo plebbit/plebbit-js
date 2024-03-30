@@ -125,12 +125,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
         this._isSubRunningLocally = false;
+        this._subplebbitUpdateTrigger = false;
     }
 
     toJSONInternal(): InternalSubplebbitType {
         return {
             ...lodash.omit(this.toJSONInternalRpc(), ["started"]),
-            signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
+            signer: lodash.pick(this.signer, ["privateKey", "type", "address"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
     }
@@ -139,11 +140,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
     }
 
-    async initInternalSubplebbit(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>) {
-        const mergedProps = { ...this.toJSONInternal(), ...newProps };
-        await this.initRpcInternalSubplebbit(newProps);
+    async initInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>) {
+        await this.initRpcInternalSubplebbitWithMerge(newProps);
         if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
-        this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+        this._subplebbitUpdateTrigger = "_subplebbitUpdateTrigger" in newProps && newProps._subplebbitUpdateTrigger;
+    }
+
+    async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {
+        await this.initRpcInternalSubplebbitNoMerge({ ...newProps, started: this.started });
+        if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
+        this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
     }
 
     private async initDbHandlerIfNeeded() {
@@ -196,7 +202,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _mergeInstanceStateWithDbState(overrideProps: Partial<InternalSubplebbitType>) {
         const currentDbState = lodash.omit(await this._getDbInternalState(), "address");
-        await this.initInternalSubplebbit({ ...currentDbState, ...overrideProps }); // Not sure about this line
+        await this.initInternalSubplebbitNoMerge({ address: this.address, ...currentDbState, ...overrideProps }); // Not sure about this line
     }
 
     async _setChallengesToDefaultIfNotDefined(log: Logger) {
@@ -287,8 +293,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             postUpdates: newPostUpdates
         };
         const signature = await signSubplebbit(newIpns, this.signer);
-        await this._validateSubSignatureBeforePublishing({ ...newIpns, signature }); // this commented line should be taken out later
-        await this.initRemoteSubplebbitProps({ ...newIpns, signature });
+        await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
         this._subplebbitUpdateTrigger = false;
 
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
@@ -1080,7 +1085,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.dbHandler.rollbackAllTransactions();
             await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
             await this.dbHandler.destoryConnection();
-            this._setAddress(internalState.address);
+            this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(currentDbAddress, internalState.address);
             await this.dbHandler.initDestroyedConnection();
             await this.dbHandler.lockSubStart(internalState.address); // Lock the new address start
@@ -1346,13 +1351,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
                 await this.dbHandler.destoryConnection();
                 await this.dbHandler.changeDbFilename(this.address, newSubplebbitOptions.address);
-                this._setAddress(newProps.address);
+                this.setAddress(newProps.address);
             }
         } else {
             await this._updateDbInternalState(newProps);
         }
 
-        await this.initRpcInternalSubplebbit(newProps);
+        const latestState = await this._getDbInternalState(true);
+
+        await this.initInternalSubplebbitNoMerge(latestState); // we merge because
 
         log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
         if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
@@ -1401,7 +1408,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
-            await this.initInternalSubplebbit(subState);
+            await this.initInternalSubplebbitNoMerge(subState);
             this.emit("update", this);
         }
     }

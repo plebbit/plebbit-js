@@ -90,13 +90,51 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         });
     }
 
-    async initRemoteSubplebbitProps(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>) {
+    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType) {
+        // for now it's copy pasted, TODO remove duplicate code
+        this.title = newProps.title;
+        this.description = newProps.description;
+        this.lastPostCid = newProps.lastPostCid;
+        this.lastCommentCid = newProps.lastCommentCid;
+        this.setAddress(newProps.address);
+        this.pubsubTopic = newProps.pubsubTopic;
+        this.challenges = newProps.challenges;
+        this.statsCid = newProps.statsCid;
+        this.createdAt = newProps.createdAt;
+        this.updatedAt = newProps.updatedAt;
+        this.encryption = newProps.encryption;
+        this.roles = newProps.roles;
+        this.features = newProps.features;
+        this.suggested = newProps.suggested;
+        this.rules = newProps.rules;
+        this.flairs = newProps.flairs;
+        this.signature = newProps.signature;
+        this.postUpdates = newProps.postUpdates;
+        if (newProps.posts) {
+            const parsedPages = await parseRawPages(newProps.posts, this.plebbit);
+            this.posts.updateProps({
+                ...parsedPages,
+                plebbit: this.plebbit,
+                subplebbitAddress: this.address,
+                pageCids: newProps.posts.pageCids
+            });
+        } else
+            this.posts.updateProps({
+                plebbit: this.plebbit,
+                subplebbitAddress: this.address,
+                pageCids: undefined,
+                pages: undefined,
+                pagesIpfs: undefined
+            });
+    }
+
+    async initRemoteSubplebbitPropsWithMerge(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>) {
         const mergedProps = { ...this.toJSONIpfs(), ...newProps };
         this.title = mergedProps.title;
         this.description = mergedProps.description;
         this.lastPostCid = mergedProps.lastPostCid;
         this.lastCommentCid = mergedProps.lastCommentCid;
-        this._setAddress(mergedProps.address);
+        this.setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
         this.challenges = mergedProps.challenges;
         this.statsCid = mergedProps.statsCid;
@@ -128,7 +166,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             });
     }
 
-    protected _setAddress(newAddress: string) {
+    setAddress(newAddress: string) {
         // check if domain or ipns
         // else, throw an error
         if (doesDomainAddressHaveCapitalLetter(newAddress))
@@ -232,7 +270,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         // Signature already has been validated
 
         if ((this.updatedAt || 0) < loadedSubIpfs.updatedAt) {
-            await this.initRemoteSubplebbitProps(loadedSubIpfs);
+            await this.initRemoteSubplebbitPropsNoMerge(loadedSubIpfs);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
         } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");

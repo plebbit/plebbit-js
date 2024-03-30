@@ -40,7 +40,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     }
 
     protected async _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType) {
-        await this.initRemoteSubplebbitProps(rpcProps);
+        await this.initRemoteSubplebbitPropsNoMerge(rpcProps);
     }
 
     async update() {
