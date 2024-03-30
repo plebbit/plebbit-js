@@ -11,7 +11,7 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
-import { removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
+import { removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
 import { Plebbit } from "../plebbit.js";
 
 import {
@@ -62,6 +62,13 @@ export interface ValidationResult {
     reason?: string; // Reason why it's invalid
 }
 
+const cborgEncodeOptions = {
+    typeEncoders: {
+        undefined: () => {
+            throw Error("Object to be encoded through cborg should not have undefined"); // we're not disallowing undefined, this is merely to catch bugs
+        }
+    }
+};
 const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
 
 export const signBufferEd25519 = async (bufferToSign: Uint8Array, privateKeyBase64: string) => {
@@ -108,7 +115,8 @@ async function _signJson(
 ): Promise<JsonSignature> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
-    const publicationEncoded = bufferCleanedObject(signedPropertyNames, publication); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    // we assume here that publication already has been cleaned
+    const publicationEncoded = cborg.encode(lodash.pick(publication, signedPropertyNames), cborgEncodeOptions);
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -126,7 +134,8 @@ async function _signPubsubMsg(
 ): Promise<PubsubSignature> {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
-    const publicationEncoded = bufferCleanedObject(signedPropertyNames, msg); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    // we assume here that pubsub msg already has been cleaned
+    const publicationEncoded = cborg.encode(lodash.pick(msg, signedPropertyNames), cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
     const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
     return {
@@ -135,6 +144,14 @@ async function _signPubsubMsg(
         type: signer.type,
         signedPropertyNames: signedPropertyNames
     };
+}
+
+export function cleanUpBeforePublishing<T extends PublicationsToSign | PubsubMsgsToSign | PageIpfs>(msg: T): T {
+    // removing values that are undefined/null recursively
+    //  removing values that are empty objects recursively, like subplebbit.roles.name: {} or subplebbit.posts: {}
+    // We may add other steps in the future
+
+    return removeNullUndefinedEmptyObjectsValuesRecursively(msg);
 }
 
 export async function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit) {
@@ -236,14 +253,6 @@ const _verifyAuthor = async (
 };
 
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
-const bufferCleanedObject = (signedPropertyNames: readonly string[], objectToSign: PublicationsToSign | PubsubMsgsToSign) => {
-    const propsToSign = removeNullAndUndefinedValuesRecursively(lodash.pick(objectToSign, signedPropertyNames));
-
-    const bufferToSign = cborg.encode(propsToSign);
-    return bufferToSign;
-};
-
-// DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
 const _verifyJsonSignature = async (publicationToBeVerified: PublicationToVerify): Promise<boolean> => {
     const propsToSign = {};
     for (const propertyName of publicationToBeVerified.signature.signedPropertyNames)
@@ -252,7 +261,7 @@ const _verifyJsonSignature = async (publicationToBeVerified: PublicationToVerify
         }
 
     const signatureIsValid = await verifyBufferEd25519(
-        cborg.encode(propsToSign),
+        cborg.encode(propsToSign, cborgEncodeOptions),
         uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
         publicationToBeVerified.signature.publicKey
     );
@@ -267,7 +276,11 @@ const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
         }
 
     const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
-    const signatureIsValid = await verifyBufferEd25519(cborg.encode(propsToSign), msg.signature.signature, publicKeyBase64);
+    const signatureIsValid = await verifyBufferEd25519(
+        cborg.encode(propsToSign, cborgEncodeOptions),
+        msg.signature.signature,
+        publicKeyBase64
+    );
     return signatureIsValid;
 };
 

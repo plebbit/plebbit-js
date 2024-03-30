@@ -33,7 +33,7 @@ import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import lodash from "lodash";
-import { signComment, signCommentEdit, signVote } from "./signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants.js";
@@ -348,8 +348,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         else {
             //@ts-expect-error
             const fieldsFilled = <CommentType>await this._initMissingFields(formattedOptions, log);
-            fieldsFilled.signature = await signComment(<CreateCommentOptions>fieldsFilled, fieldsFilled.signer, this);
-            return this._createCommentInstance(fieldsFilled);
+            const cleanedFieldsFilled = cleanUpBeforePublishing(<CreateCommentOptions>fieldsFilled);
+            const signature = await signComment(cleanedFieldsFilled, fieldsFilled.signer, this);
+            const finalOptions = { ...cleanedFieldsFilled, signature };
+            return this._createCommentInstance(finalOptions);
         }
     }
 
@@ -489,8 +491,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (options["signature"]) return new Vote(<VoteType>options, this);
         //@ts-ignore
         const finalOptions: VoteType = <VoteType>await this._initMissingFields(options, log);
-        finalOptions.signature = await signVote(<CreateVoteOptions>finalOptions, finalOptions.signer, this);
-        return new Vote(finalOptions, this);
+        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateVoteOptions>finalOptions);
+        const signature = await signVote(cleanedFinalOptions, finalOptions.signer, this);
+
+        return new Vote(<VoteType>{ ...cleanedFinalOptions, signature }, this);
     }
 
     async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
@@ -500,9 +504,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if (options["signature"]) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
         //@ts-ignore
         const finalOptions: CommentEditType = <CommentEditType>await this._initMissingFields(options, log);
-        //@ts-expect-error
-        finalOptions.signature = await signCommentEdit(<CreateCommentEditOptions>finalOptions, options.signer, this);
-        return new CommentEdit(finalOptions, this);
+        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateCommentEditOptions>finalOptions);
+        const signature = await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this);
+        return new CommentEdit(<CommentEditType>{ ...cleanedFinalOptions, signature }, this);
     }
 
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer> {

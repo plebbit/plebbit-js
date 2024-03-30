@@ -1,10 +1,4 @@
-import {
-    POSTS_SORT_TYPES,
-    removeNullAndUndefinedValuesRecursively,
-    REPLIES_SORT_TYPES,
-    TIMEFRAMES_TO_SECONDS,
-    timestamp
-} from "../../../util.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import {
@@ -19,6 +13,7 @@ import {
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
+import { cleanUpBeforePublishing } from "../../../signer/signatures.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -56,7 +51,7 @@ export class SortHandler {
             })
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs: PageIpfs = removeNullAndUndefinedValuesRecursively({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
+            const pageIpfs: PageIpfs = cleanUpBeforePublishing({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
             cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
             listOfPage[i] = pageIpfs;
         }

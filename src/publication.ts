@@ -25,8 +25,20 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import { Plebbit } from "./plebbit.js";
-import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures.js";
-import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util.js";
+import {
+    cleanUpBeforePublishing,
+    signChallengeAnswer,
+    signChallengeRequest,
+    verifyChallengeMessage,
+    verifyChallengeVerification
+} from "./signer/signatures.js";
+import {
+    decodePubsubMsgFromRpc,
+    removeNullUndefinedEmptyObjectsValuesRecursively,
+    shortifyAddress,
+    throwWithErrorCode,
+    timestamp
+} from "./util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment.js";
 import { PlebbitError } from "./plebbit-error.js";
@@ -276,14 +288,14 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this.subplebbit.encryption.publicKey
         );
 
-        const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = {
+        const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGEANSWER",
             challengeRequestId: this._challenge.challengeRequestId,
             encrypted: encryptedChallengeAnswers,
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
         this._challengeAnswer = new ChallengeAnswerMessage({
             ...toSignAnswer,
             signature: await signChallengeAnswer(
@@ -534,7 +546,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(pubsubMessageSigner.publicKey);
 
         this._challengeIdToPubsubSigner[challengeRequestId.toString()] = pubsubMessageSigner;
-        const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = {
+        const toSignMsg: Omit<ChallengeRequestMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGEREQUEST",
             encrypted,
             challengeRequestId,
@@ -542,7 +554,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
 
         const challengeRequest = new ChallengeRequestMessage({
             ...toSignMsg,
@@ -554,7 +566,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             }) to pubsub topic (${this._pubsubTopicWithfallback()}) with provider (${
                 this._pubsubProviders[this._currentPubsubProviderIndex]
             }): `,
-            this.toJSONPubsubMessagePublication()
+            removeNullUndefinedEmptyObjectsValuesRecursively(this.toJSONPubsubMessagePublication())
         );
 
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {

@@ -20,7 +20,7 @@ import {
     isLinkOfMedia,
     isLinkValid,
     removeKeysWithUndefinedValues,
-    removeNullAndUndefinedValuesRecursively,
+    removeNullUndefinedEmptyObjectsValuesRecursively,
     throwWithErrorCode,
     timestamp
 } from "../../../util.js";
@@ -58,6 +58,7 @@ import type {
 } from "../../../types.js";
 import {
     ValidationResult,
+    cleanUpBeforePublishing,
     signChallengeMessage,
     signChallengeVerification,
     signCommentUpdate,
@@ -283,7 +284,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._mergeInstanceStateWithDbState({});
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
-        const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
+        const newIpns: Omit<SubplebbitIpfsType, "signature"> = cleanUpBeforePublishing({
             ...lodash.omit(this._toJSONBase(), "signature"),
             lastPostCid: latestPost?.cid,
             lastCommentCid: latestComment?.cid,
@@ -291,12 +292,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             updatedAt,
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined,
             postUpdates: newPostUpdates
-        };
+        });
         const signature = await signSubplebbit(newIpns, this.signer);
+        const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
+        await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
         await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
         this._subplebbitUpdateTrigger = false;
 
-        const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
         await this._updateDbInternalState(lodash.omit(this.toJSONInternal(), "address"));
 
         await this._unpinStaleCids();
@@ -528,7 +530,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
         const toEncryptChallenge: DecryptedChallenge = { challenges: challenges };
-        const toSignChallenge: Omit<ChallengeMessageType, "signature"> = {
+        const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGE",
             protocolVersion: env.PROTOCOL_VERSION,
             userAgent: env.USER_AGENT,
@@ -539,7 +541,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 request.signature.publicKey
             ),
             timestamp: timestamp()
-        };
+        });
 
         const challengeMessage = new ChallengeMessage({
             ...toSignChallenge,
@@ -567,7 +569,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // challengeSucess=false
         const log = Logger("plebbit-js:local-subplebbit:_publishFailedChallengeVerification");
 
-        const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = {
+        const toSignVerification: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGEVERIFICATION",
             challengeRequestId: challengeRequestId,
             challengeSuccess: false,
@@ -576,7 +578,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
 
         const challengeVerification = new ChallengeVerificationMessage({
             ...toSignVerification,
@@ -626,7 +628,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                   )
                 : undefined;
 
-            const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = {
+            const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
                 challengeSuccess: true,
@@ -636,7 +638,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
-            };
+            });
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
                 signature: await signChallengeVerification(toSignMsg, this.signer)
@@ -1004,12 +1006,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
-        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
+        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = cleanUpBeforePublishing({
             ...calculatedCommentUpdate,
             replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
             updatedAt: newUpdatedAt,
             protocolVersion: env.PROTOCOL_VERSION
-        };
+        });
 
         const newCommentUpdate: CommentUpdate = {
             ...commentUpdatePriorToSigning,

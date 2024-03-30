@@ -134,16 +134,22 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
     return -comment.comment.timestamp;
 }
 
-export function removeNullAndUndefinedValues<T extends Object>(obj: T): T {
+function removeNullUndefinedValues<T extends Object>(obj: T): T {
     return <T>lodash.omitBy(obj, lodash.isNil);
 }
 
-export function removeNullAndUndefinedValuesRecursively<T>(obj: T): T {
-    if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
+function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
+    const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
+    const secondStep = <T>lodash.omitBy(firstStep, (value) => lodash.isPlainObject(value) && lodash.isEmpty(value)); // remove empty {} values
+    return secondStep;
+}
+
+export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
+    if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!lodash.isPlainObject(obj)) return obj;
-    const cleanedObj = removeNullAndUndefinedValues(obj);
+    const cleanedObj = removeNullUndefinedEmptyObjectValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
 
     return cleanedObj;
 }
@@ -178,7 +184,7 @@ export const parseDbResponses = (obj: any) => {
     const parsedJsonString = parseIfJsonString(obj);
     if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
 
-    const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
+    const newObj = removeNullUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
     //prettier-ignore
     const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
     for (const [key, value] of Object.entries(newObj)) {
