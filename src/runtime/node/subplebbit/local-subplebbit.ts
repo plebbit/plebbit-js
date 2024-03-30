@@ -316,7 +316,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private shouldResolveDomainForVerification() {
-        return this.address.includes(".") && Math.random() < 0.05; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+        return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
     private async _validateSubSignatureBeforePublishing(recordTobePublished: SubplebbitIpfsType) {
@@ -338,7 +338,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                         `The domain address (${this.address}) subplebbit-address text record to resolves to ${resolvedSubAddress} when it should resolve to ${this.signer.address}`
                     );
             } catch (e) {
-                log.error(`Failed to resolve sub domain ${this.address}`);
+                log.error(`Failed to resolve sub domain ${this.address}`, e);
             }
         }
     }
