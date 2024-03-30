@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { messages } from "../../../dist/node/errors.js";
-import { verifySubplebbit, signSubplebbit } from "../../../dist/node/signer/signatures.js";
+import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing } from "../../../dist/node/signer/signatures.js";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 import lodash from "lodash";
 import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
@@ -26,8 +26,7 @@ describe("Sign subplebbit", async () => {
     });
     it(`Can sign and validate live subplebbit correctly`, async () => {
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
-        const subplebbitToSign = lodash.cloneDeep(subplebbit.toJSONIpfs());
-
+        const subplebbitToSign = cleanUpBeforePublishing(subplebbit.toJSONIpfs());
         delete subplebbitToSign["signature"];
         subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, signers[0], plebbit);
         expect(subplebbitToSign.signature).to.deep.equal(subplebbit.signature);

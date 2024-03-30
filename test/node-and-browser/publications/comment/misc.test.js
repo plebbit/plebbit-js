@@ -22,7 +22,7 @@ import { domainResolverPromiseCache } from "../../../../dist/node/constants.js";
 
 import { createMockIpfsClient } from "../../../../dist/node/test/mock-ipfs-client.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+import { cleanUpBeforePublishing, verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -130,7 +130,7 @@ describe(`comment.update`, async () => {
     it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-        const postJson = subplebbit.posts.pages.hot.comments[0].toJSONIpfs();
+        const postJson = cleanUpBeforePublishing(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
 
         postJson.title += "1234"; // Invalidate signature
 
@@ -345,7 +345,7 @@ describe(`commentUpdate.lastChildCid`, async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
-        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number")
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
         expect(post.lastChildCid).to.be.undefined;
     });
 

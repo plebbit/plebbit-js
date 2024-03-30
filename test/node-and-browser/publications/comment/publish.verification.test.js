@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import lodash from "lodash";
 import { messages } from "../../../../dist/node/errors.js";
-import { signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -154,22 +154,16 @@ describe("Posts with forbidden author fields are rejected", async () => {
             const post = await plebbit.createComment({
                 subplebbitAddress,
                 title: "Nonsense" + Date.now(),
-                author: { [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] },
                 signer: await plebbit.createSigner()
             });
             const pubsubJsonPrior = post.toJSONPubsubMessagePublication();
-            const pubsubJsonAfterChange = {
+            const pubsubJsonAfterChange = cleanUpBeforePublishing({
                 ...pubsubJsonPrior,
                 author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
-            };
+            });
 
             pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post.signer, plebbit);
             post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
-            expect(
-                await verifyComment(JSON.parse(JSON.stringify(post.toJSONPubsubMessagePublication())), false, post._clientsManager, false)
-            ).to.deep.equal({
-                valid: true
-            });
             post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
         })

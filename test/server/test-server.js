@@ -3,7 +3,7 @@
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
 import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
-import { signSubplebbit } from "../../dist/node/signer/signatures";
+import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures";
 
 import PlebbitWsServer from "../../rpc";
 import signers from "../fixtures/signers";
@@ -159,7 +159,7 @@ const setUpMockGateways = async () => {
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
     const fetchLatestSubplebbitJson = async () => {
-        const subRecord = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        const subRecord = cleanUpBeforePublishing((await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs());
         return subRecord;
     };
 
