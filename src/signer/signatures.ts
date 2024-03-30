@@ -203,7 +203,13 @@ const _verifyAuthor = async (
     // Is it a domain?
     if (publicationJson.author.address.includes(".")) {
         if (!resolveAuthorAddresses) return { useDerivedAddress: false };
-        const resolvedAuthorAddress = await clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
+        let resolvedAuthorAddress: string;
+        try {
+            resolvedAuthorAddress = await clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
+        } catch (e) {
+            log.error("Failed to resolve author address to verify author", e);
+            return { useDerivedAddress: true, derivedAddress, reason: messages.ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN };
+        }
         if (resolvedAuthorAddress !== derivedAddress) {
             // Means plebbit-author-address text record is resolving to another address (outdated?)
             // Will always use address derived from publication.signature.publicKey as truth
