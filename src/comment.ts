@@ -1,5 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "./util.js";
+import { parseRawPages, removeNullUndefinedEmptyObjectsValuesRecursively, shortifyCid, throwWithErrorCode } from "./util.js";
 import Publication from "./publication.js";
 import { RepliesPages } from "./pages.js";
 import {
@@ -49,7 +49,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     postCid?: string;
 
     // CommentEdit and CommentUpdate props
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: CommentType["original"];
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
@@ -135,7 +135,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async _initCommentUpdate(props: CommentUpdate) {
         if (!this.original)
-            this.original = removeNullAndUndefinedValuesRecursively(
+            this.original = removeNullUndefinedEmptyObjectsValuesRecursively(
                 lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
             );
         this._rawCommentUpdate = props;

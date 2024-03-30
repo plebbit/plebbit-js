@@ -371,7 +371,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
         await this.dbHandler.deleteVote(authorSignerAddress, newVote.commentCid);
         await this.dbHandler.insertVote(newVote.toJSONForDb(authorSignerAddress));
-        log.trace(`(${challengeRequestId.toString()}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
+        log.trace(`inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         return undefined;
     }
 
@@ -462,10 +462,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
-            log(
-                `(${request.challengeRequestId.toString()}): `,
-                `New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`
-            );
+            log(`New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
 
             return commentToInsert.toJSONAfterChallengeVerification();
         }
@@ -553,7 +550,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log.trace(
             `Published ${challengeMessage.type} over pubsub: `,
-            removeNullAndUndefinedValuesRecursively(lodash.omit(toSignChallenge, ["encrypted"]))
+            lodash.pick(toSignChallenge, ["timestamp"]),
+            toEncryptChallenge.challenges.map((challenge) => challenge.type)
         );
         this.clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
         this.emit("challenge", {
@@ -656,7 +654,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log(
                 `Published ${challengeVerification.type} over pubsub:`,
-                removeNullAndUndefinedValuesRecursively(lodash.omit(objectToEmit, ["encrypted", "signature"]))
+                removeNullUndefinedEmptyObjectsValuesRecursively(
+                    lodash.pick(objectToEmit, ["publication", "challengeSuccess", "reason", "challengeErrors", "timestamp"])
+                )
             );
         }
     }
