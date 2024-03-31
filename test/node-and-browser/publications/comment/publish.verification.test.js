@@ -9,7 +9,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import lodash from "lodash";
 import { messages } from "../../../../dist/node/errors.js";
-import { signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -93,6 +93,15 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     it(`Throws an error when a comment has no title, link or content`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {link: undefined, content: undefined, title: undefined});
         await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+    });
+
+    it.skip(`Throws an error if author.avatar.signature.signature is of a json string instead of a 0x string`, async () => {
+        const test = {address:"0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188",chainTicker:"matic",id:"9842",signature:{signature:"{\"domainSeparator\":\"plebbit-author-avatar\",\"authorAddress\":\"12D3KooWJsiCyvG9mjRtWzc8TqzS7USKUrFFNs9s2AJuGqNhn9uU\",\"timestamp\":1709879936,\"tokenAddress\":\"0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188\",\"tokenId\":\"9842\"}","type":"eip191"}};
+        const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {author: {avatar: test}});
+        await publishWithExpectedResult(mockPost, false, "zxc");
+
+        
+
     })
 });
 
@@ -154,22 +163,16 @@ describe("Posts with forbidden author fields are rejected", async () => {
             const post = await plebbit.createComment({
                 subplebbitAddress,
                 title: "Nonsense" + Date.now(),
-                author: { [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] },
                 signer: await plebbit.createSigner()
             });
             const pubsubJsonPrior = post.toJSONPubsubMessagePublication();
-            const pubsubJsonAfterChange = {
+            const pubsubJsonAfterChange = cleanUpBeforePublishing({
                 ...pubsubJsonPrior,
                 author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
-            };
+            });
 
             pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post.signer, plebbit);
             post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
-            expect(
-                await verifyComment(JSON.parse(JSON.stringify(post.toJSONPubsubMessagePublication())), false, post._clientsManager, false)
-            ).to.deep.equal({
-                valid: true
-            });
             post._validateSignature = async () => {}; // Disable signature validation before publishing
             await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
         })

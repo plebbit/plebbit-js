@@ -57,7 +57,7 @@ async function _resolveViaViem(
 async function _resolveViaSolana(address: string, txtRecordName: string, chainProviderUrl: string) {
     const log = Logger("plebbit-js:resolver:_resolveViaSolana");
     if (!solanaConnections[chainProviderUrl]) {
-        const endPoint = chainProviderUrl === "@solana/web3.js" ? clusterApiUrl("mainnet-beta") : chainProviderUrl;
+        const endPoint = chainProviderUrl === "web3.js" ? clusterApiUrl("mainnet-beta") : chainProviderUrl;
         log("Creating a new connection instance for Solana at", endPoint);
         solanaConnections[chainProviderUrl] = new SolanaConnection(endPoint);
     }

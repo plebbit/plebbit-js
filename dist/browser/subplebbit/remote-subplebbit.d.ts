@@ -43,8 +43,9 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     _ipnsLoadingOperation: RetryOperation;
     protected _updateTimeout?: NodeJS.Timeout;
     constructor(plebbit: Plebbit);
-    initRemoteSubplebbitProps(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>): Promise<void>;
-    protected _setAddress(newAddress: string): void;
+    initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType): Promise<void>;
+    initRemoteSubplebbitPropsWithMerge(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>): Promise<void>;
+    setAddress(newAddress: string): void;
     toJSON(): SubplebbitType;
     protected _toJSONBase(): {
         title: string;

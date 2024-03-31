@@ -35,16 +35,23 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         };
     }
 
-    async initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>) {
+    async initRpcInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitRpcType>) {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
-        await super.initRemoteSubplebbitProps(newProps);
+        await super.initRemoteSubplebbitPropsWithMerge(newProps);
         this.settings = mergedProps.settings;
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
         this.started = mergedProps.started;
     }
 
+    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType){
+        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        this.settings = newProps.settings;
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.started = newProps.started;
+    }
+
     protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
-        await this.initRpcInternalSubplebbit(rpcProps);
+        await this.initRpcInternalSubplebbitNoMerge(rpcProps);
     }
 
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {
@@ -80,7 +87,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("update", async (updateProps) => {
                 log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
                 const newRpcRecord = <InternalSubplebbitRpcType>updateProps.params.result;
-                await this.initRpcInternalSubplebbit(newRpcRecord);
+                await this._handleRpcUpdateProps(newRpcRecord);
                 this.emit("update", this);
             })
             .on("startedstatechange", (args) => {
@@ -149,7 +156,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
         const optionsParsed = <SubplebbitEditOptions>replaceXWithY(newSubplebbitOptions, undefined, null);
         const newProps = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
-        await this.initRpcInternalSubplebbit(newProps);
+        await this._handleRpcUpdateProps(newProps);
         return this;
     }
 

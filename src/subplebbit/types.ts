@@ -1,6 +1,6 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
-import { JsonSignature, SignerType } from "../signer/constants.js";
-import {
+import type { JsonSignature, SignerType } from "../signer/constants.js";
+import type {
     ChallengeType,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -9,7 +9,7 @@ import {
     PostsPagesTypeIpfs,
     ProtocolVersion
 } from "../types.js";
-import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
+import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;

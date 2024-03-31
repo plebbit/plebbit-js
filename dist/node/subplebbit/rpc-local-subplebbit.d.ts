@@ -8,7 +8,8 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     settings?: SubplebbitSettings;
     constructor(plebbit: Plebbit);
     toJSONInternalRpc(): InternalSubplebbitRpcType;
-    initRpcInternalSubplebbit(newProps: Partial<InternalSubplebbitRpcType>): Promise<void>;
+    initRpcInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitRpcType>): Promise<void>;
+    initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType): Promise<void>;
     protected _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType): Promise<void>;
     start(): Promise<void>;
     stop(): Promise<void>;

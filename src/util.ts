@@ -143,16 +143,22 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
     return -comment.comment.timestamp;
 }
 
-export function removeNullAndUndefinedValues<T extends Object>(obj: T) {
+export function removeNullUndefinedValues<T extends Object>(obj: T) {
     return remeda.omitBy(obj, remeda.isNil);
 }
 
-export function removeNullAndUndefinedValuesRecursively<T>(obj: any): T {
-    if (Array.isArray(obj)) return <T>obj.map(removeNullAndUndefinedValuesRecursively);
+function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
+    const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
+    const secondStep = <T>remeda.omitBy(firstStep, (value) => remeda.isPlainObject(value) && remeda.isEmpty(value)); // remove empty {} values
+    return secondStep;
+}
+
+export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
+    if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!remeda.isPlainObject(obj)) return obj;
-    const cleanedObj: any = removeNullAndUndefinedValues(obj);
+    const cleanedObj: any = removeNullUndefinedEmptyObjectValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
 
     return cleanedObj;
 }
@@ -187,7 +193,7 @@ export const parseDbResponses = (obj: any): any => {
     const parsedJsonString = parseIfJsonString(obj);
     if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
 
-    const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
+    const newObj = removeNullUndefinedValues(parsedJsonString || obj); // we may need clone here
     const booleanFields = [
         "deleted",
         "spoiler",

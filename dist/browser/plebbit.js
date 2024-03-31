@@ -9,7 +9,7 @@ import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import lodash from "lodash";
-import { signComment, signCommentEdit, signVote } from "./signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "./stats.js";
@@ -134,7 +134,7 @@ export class Plebbit extends TypedEmitter {
                     chainId: 137
                 },
                 sol: {
-                    urls: ["@solana/web3.js", "https://solana.api.onfinality.io/public"],
+                    urls: ["web3.js", "https://solana.api.onfinality.io/public"],
                     chainId: null // no chain ID for solana
                 }
             };
@@ -261,8 +261,10 @@ export class Plebbit extends TypedEmitter {
         else {
             //@ts-expect-error
             const fieldsFilled = await this._initMissingFields(formattedOptions, log);
-            fieldsFilled.signature = await signComment(fieldsFilled, fieldsFilled.signer, this);
-            return this._createCommentInstance(fieldsFilled);
+            const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
+            const signature = await signComment(cleanedFieldsFilled, fieldsFilled.signer, this);
+            const finalOptions = { ...cleanedFieldsFilled, signature };
+            return this._createCommentInstance(finalOptions);
         }
     }
     _canCreateNewLocalSub() {
@@ -279,7 +281,7 @@ export class Plebbit extends TypedEmitter {
             // Should actually create an instance here, instead of calling getSubplebbit
             if (isSubRpcLocal) {
                 const sub = new RpcLocalSubplebbit(this);
-                await sub.initRemoteSubplebbitProps({ address: options.address });
+                sub.setAddress(options.address);
                 // wait for one update here, and then stop
                 await sub.update();
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
@@ -297,7 +299,7 @@ export class Plebbit extends TypedEmitter {
             }
             else {
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                await remoteSub.initRemoteSubplebbitProps(options);
+                await remoteSub.initRemoteSubplebbitPropsWithMerge(options);
                 return remoteSub;
             }
         }
@@ -315,7 +317,7 @@ export class Plebbit extends TypedEmitter {
                 options
             });
         const subplebbit = new RemoteSubplebbit(this);
-        await subplebbit.initRemoteSubplebbitProps(options);
+        await subplebbit.initRemoteSubplebbitPropsWithMerge(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
@@ -332,12 +334,13 @@ export class Plebbit extends TypedEmitter {
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
-            await subplebbit.initRemoteSubplebbitProps({ address: options.address });
+            subplebbit.setAddress(options.address);
             await subplebbit._loadLocalSubDb();
             log.trace(`Created instance of existing local subplebbit (${subplebbit.address}) with props:`, removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"])));
         }
         else {
-            await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
+            // This is a new sub
+            await subplebbit.initInternalSubplebbitWithMerge(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(`Created a new local subplebbit (${subplebbit.address}) with props:`, removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"])));
         }
@@ -388,8 +391,9 @@ export class Plebbit extends TypedEmitter {
             return new Vote(options, this);
         //@ts-ignore
         const finalOptions = await this._initMissingFields(options, log);
-        finalOptions.signature = await signVote(finalOptions, finalOptions.signer, this);
-        return new Vote(finalOptions, this);
+        const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+        const signature = await signVote(cleanedFinalOptions, finalOptions.signer, this);
+        return new Vote({ ...cleanedFinalOptions, signature }, this);
     }
     async createCommentEdit(options) {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
@@ -398,9 +402,9 @@ export class Plebbit extends TypedEmitter {
             return new CommentEdit(options, this); // User just wants to instantiate a CommentEdit object, not publish
         //@ts-ignore
         const finalOptions = await this._initMissingFields(options, log);
-        //@ts-expect-error
-        finalOptions.signature = await signCommentEdit(finalOptions, options.signer, this);
-        return new CommentEdit(finalOptions, this);
+        const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+        const signature = await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this);
+        return new CommentEdit({ ...cleanedFinalOptions, signature }, this);
     }
     createSigner(createSignerOptions) {
         return createSigner(createSignerOptions);

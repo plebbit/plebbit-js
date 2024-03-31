@@ -420,6 +420,7 @@ export interface CommentUpdate {
     signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
 }
 
+// A representation of Commment instance in JSON
 export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
     author: AuthorTypeWithCommentUpdate;
     timestamp: number;
@@ -430,7 +431,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     previousCid?: string; // each post is a linked list
     depth?: number;
     signer?: SignerType;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: Pick<Partial<CommentPubsubMessage>, "author" | "content" | "flair" | "protocolVersion">;
     deleted?: AuthorCommentEdit["deleted"];
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
@@ -491,9 +492,9 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
 export interface CommentPubsubMessage
-    extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
+    extends Pick<CommentIpfsType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
 export interface PostPubsubMessage
-    extends Pick<PostType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
+    extends Pick<PostIpfsWithCid, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
 export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 export interface CommentEditPubsubMessage
     extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}

@@ -36,7 +36,8 @@ import { CommentEdit } from "./publications/comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
-import { signComment, signCommentEdit, signVote } from "./signer/signatures.js";
+import lodash from "lodash";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { CreateSignerOptions, SignerType } from "./signer/constants.js";
@@ -203,7 +204,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                       chainId: 137
                   },
                   sol: {
-                      urls: ["@solana/web3.js", "https://solana.api.onfinality.io/public"],
+                      urls: ["web3.js", "https://solana.api.onfinality.io/public"],
                       chainId: -1 // no chain ID for solana
                   }
               };
@@ -354,7 +355,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         else {
             // we're creating a new comment to sign and publish here
             const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
-            const signedComment = { ...fieldsFilled, signature: await signComment(fieldsFilled, fieldsFilled.signer, this) };
+            const cleanedFieldsFilled = cleanUpBeforePublishing(<CreateCommentOptions>fieldsFilled);
+            const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
             return this._createCommentInstance(signedComment);
         }
     }
@@ -375,7 +377,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             // Should actually create an instance here, instead of calling getSubplebbit
             if (isSubRpcLocal) {
                 const sub = new RpcLocalSubplebbit(this);
-                await sub.initRemoteSubplebbitProps({ address: options.address });
+                sub.setAddress(options.address);
                 // wait for one update here, and then stop
                 await sub.update();
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
@@ -392,7 +394,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 return sub;
             } else {
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                await remoteSub.initRemoteSubplebbitProps(options);
+                await remoteSub.initRemoteSubplebbitPropsWithMerge(options);
                 return remoteSub;
             }
         } else {
@@ -411,7 +413,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const subplebbit = new RemoteSubplebbit(this);
-        await subplebbit.initRemoteSubplebbitProps(options);
+        await subplebbit.initRemoteSubplebbitPropsWithMerge(options);
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
@@ -429,14 +431,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
-            await subplebbit.initRemoteSubplebbitProps({ address: options.address });
+            subplebbit.setAddress(options.address);
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
                 removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
             );
         } else {
-            await subplebbit.initInternalSubplebbit(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
+            // This is a new sub
+            await subplebbit.initInternalSubplebbitWithMerge(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
@@ -492,7 +495,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         if ("signature" in options) return new Vote(<VoteType | VotePubsubMessage>options, this);
         const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
-        const signedVote = { ...finalOptions, signature: await signVote(finalOptions, finalOptions.signer, this) };
+        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateVoteOptions>finalOptions);
+        const signedVote = { ...cleanedFinalOptions, signature: await signVote(cleanedFinalOptions, finalOptions.signer, this) };
         return new Vote(signedVote, this);
     }
 
@@ -501,7 +505,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         if ("signature" in options) return new CommentEdit(options, this); // User just wants to instantiate a CommentEdit object, not publish
         const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
-        const signedEdit = { ...finalOptions, signature: await signCommentEdit(finalOptions, finalOptions.signer, this) };
+        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateCommentEditOptions>finalOptions);
+        const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
         return new CommentEdit(signedEdit, this);
     }
 

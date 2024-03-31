@@ -56,4 +56,5 @@ export declare function createSubWithNoChallenge(props: CreateSubplebbitOptions,
 export declare function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit): Promise<Comment>;
 export declare function isRpcFlagOn(): boolean;
 export declare function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>): Promise<void>;
+export declare function differenceBetweenTwoObjects<T extends Object>(object: T, base: T): unknown;
 export {};

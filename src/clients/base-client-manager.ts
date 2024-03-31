@@ -462,7 +462,12 @@ export class BaseClientsManager {
         const chainId = this._plebbit.chainProviders[chain].chainId;
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
-            if (cachedTextRecord.stale) this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
+            if (cachedTextRecord.stale)
+                this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId)
+                    .then((newTextRecordValue) =>
+                        log(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`)
+                    )
+                    .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
             return cachedTextRecord.resolveCache;
         } else return this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
     }

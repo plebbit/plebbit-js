@@ -318,7 +318,7 @@ export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "rep
     previousCid?: string;
     depth?: number;
     signer?: SignerType;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: Pick<Partial<CommentPubsubMessage>, "author" | "content" | "flair" | "protocolVersion">;
     deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
@@ -346,9 +346,9 @@ export interface CommentEditType extends PublicationType, Omit<CreateCommentEdit
     signer?: SignerType;
 }
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
-export interface CommentPubsubMessage extends Pick<CommentType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
+export interface CommentPubsubMessage extends Pick<CommentIpfsType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
 }
-export interface PostPubsubMessage extends Pick<PostType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
+export interface PostPubsubMessage extends Pick<PostIpfsWithCid, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
 }
 export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
 }

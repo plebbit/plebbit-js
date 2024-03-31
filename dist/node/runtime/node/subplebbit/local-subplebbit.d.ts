@@ -24,7 +24,8 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     constructor(plebbit: Plebbit);
     toJSONInternal(): InternalSubplebbitType;
     private _updateStartedValue;
-    initInternalSubplebbit(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>): Promise<void>;
+    initInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>): Promise<void>;
+    initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType): Promise<void>;
     private initDbHandlerIfNeeded;
     _loadLocalSubDb(): Promise<void>;
     private _importSubplebbitSignerIntoIpfsIfNeeded;

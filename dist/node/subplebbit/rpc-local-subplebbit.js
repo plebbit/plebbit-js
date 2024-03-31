@@ -16,15 +16,21 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             started: this.started
         };
     }
-    async initRpcInternalSubplebbit(newProps) {
+    async initRpcInternalSubplebbitWithMerge(newProps) {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
-        await super.initRemoteSubplebbitProps(newProps);
+        await super.initRemoteSubplebbitPropsWithMerge(newProps);
         this.settings = mergedProps.settings;
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
         this.started = mergedProps.started;
     }
+    async initRpcInternalSubplebbitNoMerge(newProps) {
+        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        this.settings = newProps.settings;
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.started = newProps.started;
+    }
     async _handleRpcUpdateProps(rpcProps) {
-        await this.initRpcInternalSubplebbit(rpcProps);
+        await this.initRpcInternalSubplebbitNoMerge(rpcProps);
     }
     async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
@@ -43,7 +49,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("update", async (updateProps) => {
             log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
             const newRpcRecord = updateProps.params.result;
-            await this.initRpcInternalSubplebbit(newRpcRecord);
+            await this._handleRpcUpdateProps(newRpcRecord);
             this.emit("update", this);
         })
             .on("startedstatechange", (args) => {
@@ -105,7 +111,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                     : newSubplebbitOptions.settings.challenges;
         const optionsParsed = replaceXWithY(newSubplebbitOptions, undefined, null);
         const newProps = await this.plebbit.plebbitRpcClient.editSubplebbit(this.address, optionsParsed);
-        await this.initRpcInternalSubplebbit(newProps);
+        await this._handleRpcUpdateProps(newProps);
         return this;
     }
     async update() {

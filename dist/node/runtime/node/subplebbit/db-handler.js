@@ -211,10 +211,7 @@ export class DbHandler {
         const needToMigrate = currentDbVersion < env.DB_VERSION;
         if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = OFF");
-            if (currentDbVersion <= 10) {
-                // Remove unneeded tables
-                await Promise.all(["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications"].map((tableName) => this._knex.schema.dropTableIfExists(tableName)));
-            }
+            await Promise.all(["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications", "signers"].map((tableName) => this._knex.schema.dropTableIfExists(tableName)));
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
         }
         const createTableFunctions = [

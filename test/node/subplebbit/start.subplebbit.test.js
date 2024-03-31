@@ -265,6 +265,8 @@ describe(`Publish loop resiliency`, async () => {
             await sub.delete();
         });
 
+    it(`A subplebbit doesn't resolve domain when verifying new IPNS record before publishing`);
+
     if (!isRpcFlagOn())
         it(`Subplebbit can publish a new IPNS record with one of its comments having invalid ENS author address`, async () => {
             const mockPost = await plebbit.createComment({

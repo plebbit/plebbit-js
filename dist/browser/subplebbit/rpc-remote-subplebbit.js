@@ -31,7 +31,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         mapper[updatingState].forEach(this._setRpcClientState.bind(this));
     }
     async _handleRpcUpdateProps(rpcProps) {
-        await this.initRemoteSubplebbitProps(rpcProps);
+        await this.initRemoteSubplebbitPropsNoMerge(rpcProps);
     }
     async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
@@ -50,7 +50,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.plebbit.plebbitRpcClient
             .getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
-            log(`Received new subplebbitUpdate from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
+            log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
             const rpcSubProps = updateProps.params.result;
             await this._handleRpcUpdateProps(rpcSubProps);
             this.emit("update", this);
