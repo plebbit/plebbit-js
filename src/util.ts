@@ -27,7 +27,6 @@ import {
     ReplySortName
 } from "./types.js";
 import { messages } from "./errors.js";
-import lodash from "lodash";
 import assert from "assert";
 import { BasePages } from "./pages.js";
 import { PlebbitError } from "./plebbit-error.js";
@@ -74,7 +73,7 @@ export const POSTS_SORT_TYPES: PostSort = {
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
-    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
     old: { score: (...args) => oldScore(...args) }
 };
 
@@ -110,7 +109,7 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
-    return lodash.round(sign * order + seconds / 45000, 7);
+    return remeda.round(sign * order + seconds / 45000, 7);
 }
 
 export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
@@ -165,7 +164,7 @@ export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
 
 // TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
-    const newObj = lodash.cloneDeep(object);
+    const newObj = remeda.clone(object);
     for (const prop in newObj)
         if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}") delete newObj[prop];
 
@@ -191,9 +190,9 @@ export const parseDbResponses = (obj: any): any => {
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseDbResponses(o));
     const parsedJsonString = parseIfJsonString(obj);
-    if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
+    if (!remeda.isPlainObject(obj) && !parsedJsonString) return obj;
 
-    const newObj = removeNullUndefinedValues(parsedJsonString || obj); // we may need clone here
+    const newObj = removeNullUndefinedValues(parsedJsonString || obj); // we may need clone here, not sure
     const booleanFields = [
         "deleted",
         "spoiler",

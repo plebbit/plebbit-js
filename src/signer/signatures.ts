@@ -38,7 +38,6 @@ import {
     VotePubsubMessage
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
 import { messages } from "../errors.js";
 import assert from "assert";
 import {
@@ -122,7 +121,7 @@ async function _signJson(
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     // we assume here that publication already has been cleaned
-    const publicationEncoded = cborg.encode(lodash.pick(publication, signedPropertyNames), cborgEncodeOptions);
+    const publicationEncoded = cborg.encode(remeda.pick(publication, signedPropertyNames), cborgEncodeOptions);
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -141,7 +140,7 @@ async function _signPubsubMsg(
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     // we assume here that pubsub msg already has been cleaned
-    const publicationEncoded = cborg.encode(lodash.pick(msg, signedPropertyNames), cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    const publicationEncoded = cborg.encode(remeda.pick(msg, signedPropertyNames), cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
     const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
     return {
@@ -228,7 +227,7 @@ const _verifyAuthor = async (
     // Is it a domain?
     if (publicationJson.author.address.includes(".")) {
         if (!resolveAuthorAddresses) return { useDerivedAddress: false };
-        let resolvedAuthorAddress: string;
+        let resolvedAuthorAddress: string | null;
         try {
             resolvedAuthorAddress = await clientsManager.resolveAuthorAddressIfNeeded(publicationJson.author.address);
         } catch (e) {
@@ -410,13 +409,14 @@ export async function verifySubplebbit(
     try {
         resolvedSubAddress = await clientsManager.resolveSubplebbitAddressIfNeeded(subplebbit.address);
     } catch (e) {
-        log.error("failed to verify the subplebbit record due to domain resolving failure",e);
-        return {valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN};
+        log.error("failed to verify the subplebbit record due to domain resolving failure", e);
+        return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
     }
 
     if (addressIsDomain && resolveDomainSubAddress && !resolvedSubAddress)
-        return { valid: false, reason: messages.DOMAIN };
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_DOMAIN_HAS_NO_TEXT_RECORD };
 
+    if (!resolvedSubAddress) throw Error("resolved sub address should be defined at this point");
     const subPeerId = PeerId.createFromB58String(resolvedSubAddress);
     const signaturePeerId = await getPeerIdFromPublicKey(subplebbit.signature.publicKey);
     if (!subPeerId.equals(signaturePeerId)) return { valid: false, reason: messages.ERR_SUBPLEBBIT_ADDRESS_DOES_NOT_MATCH_PUBLIC_KEY };
@@ -504,7 +504,6 @@ export async function verifyCommentUpdate(
         log.error(e);
         return { valid: false, reason: messages.ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN };
     }
-    if (!subplebbitResolvedAddress) return { valid: false, reason: messages.DOMAIN };
     if (updateSignatureAddress !== subplebbitResolvedAddress) {
         log.error(
             `Comment (${update.cid}), CommentUpdate's signature address (${updateSignatureAddress}) is not the same as the B58 address of the subplebbit (${subplebbitResolvedAddress})`

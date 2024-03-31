@@ -14,7 +14,6 @@ import {
     SortProps
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
 import { cleanUpBeforePublishing } from "../../../signer/signatures.js";
 import * as remeda from "remeda";
 

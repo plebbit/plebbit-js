@@ -1,7 +1,7 @@
 import { Plebbit } from "./plebbit.js";
 import assert from "assert";
-import lodash from "lodash";
 import { Chain } from "./types.js";
+import * as remeda from "remeda";
 
 type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
 export default class Stats {
@@ -69,7 +69,7 @@ export default class Stats {
                   : type === "eth" || type === "avax" || type === "matic"
                     ? "chainProviders"
                     : undefined;
-        assert(gatewayType);
+        assert(gatewayType, "Can't find the gateway type to sort");
         const gateways =
             gatewayType === "chainProviders"
                 ? this._plebbit.clients.chainProviders[type].urls
@@ -83,7 +83,7 @@ export default class Stats {
             return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
 
-        const gatewaysSorted = lodash.sortBy(gateways, score);
+        const gatewaysSorted = remeda.sortBy(gateways, score);
         return gatewaysSorted;
     }
 }

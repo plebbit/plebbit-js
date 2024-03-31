@@ -242,7 +242,7 @@ export default class PlebbitRpcClient {
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        const res = <string | undefined>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
+        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
         return res;
     }
 

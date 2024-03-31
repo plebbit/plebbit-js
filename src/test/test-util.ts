@@ -240,7 +240,11 @@ export async function startSubplebbits(props: {
     numOfPostsToPublish: number;
     startOnlineSub: boolean;
 }): Promise<TestServerSubs> {
-    const plebbit = await _mockSubplebbitPlebbit(props.signers, { ...remeda.pick(props, ["noData", "dataPath"]), publishInterval: 3000, updateInterval: 3000 });
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, {
+        ...remeda.pick(props, ["noData", "dataPath"]),
+        publishInterval: 3000,
+        updateInterval: 3000
+    });
     const signer = await plebbit.createSigner(props.signers[0]);
     const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
@@ -425,11 +429,11 @@ export async function publishWithExpectedResult(publication: Publication, expect
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
                 const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${
                     verificationMsg.challengeSuccess
-                }). Reason (${verificationMsg.reason}): ${JSON.stringify(lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
+                }). Reason (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
                 reject(msg);
             } else if (expectedReason && expectedReason !== verificationMsg.reason) {
                 const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(
-                    lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"])
+                    remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"])
                 )}`;
                 reject(msg);
             } else resolve(1);
@@ -530,13 +534,4 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
                 if (conditionStatus) resolve(conditionStatus);
             });
         });
-}
-
-// Not used in actual plebbit-js code, just for testing
-export function differenceBetweenTwoObjects<T extends Object>(object: T, base: T) {
-    return lodash.transform(object, (result, value, key) => {
-        if (!lodash.isEqual(value, base[key])) {
-            result[key] = lodash.isObject(value) && lodash.isObject(base[key]) ? differenceBetweenTwoObjects(value, base[key]) : value;
-        }
-    });
 }

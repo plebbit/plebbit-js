@@ -625,7 +625,7 @@ export class BaseClientsManager {
         await this._plebbit._storage.removeItem(cacheKey);
     }
 
-    async resolveAuthorAddressIfNeeded(authorAddress: string) {
+    async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null> {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!isStringDomain(authorAddress)) return authorAddress;
         else if (this._plebbit.plebbitRpcClient) return this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress);

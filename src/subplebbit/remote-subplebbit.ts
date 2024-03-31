@@ -89,6 +89,30 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         });
     }
 
+    async _updateLocalPostsInstanceIfNeeded(newPosts: SubplebbitIpfsType["posts"] | SubplebbitType["posts"]) {
+        if (!newPosts) return;
+        // TODO check if we need to update this.posts, most of the time we don't need to
+
+        // need to also check if this.address differs from this.posts.subplebbitAddress
+        // when this.posts.pageCids differs from mergedProps.posts.pageCids OR
+        // when this.address !== this.posts.subplebbitAddress
+
+        if (this.address !== this.posts._subplebbitAddress) this.posts._subplebbitAddress = this.address;
+        const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
+
+        if (shouldUpdatePosts) {
+            const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
+                await parseRawPages(newPosts, this.plebbit)
+            );
+            this.posts.updateProps({
+                ...parsedPages,
+                plebbit: this.plebbit,
+                subplebbitAddress: this.address,
+                pageCids: newPosts.pageCids
+            });
+        }
+    }
+
     async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType) {
         // for now it's copy pasted, TODO remove duplicate code
         this.title = newProps.title;
@@ -109,24 +133,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.flairs = newProps.flairs;
         this.signature = newProps.signature;
         this.postUpdates = newProps.postUpdates;
-        if (newProps.posts) {
-            const parsedPages = await parseRawPages(newProps.posts, this.plebbit);
-            this.posts.updateProps({
-                ...parsedPages,
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: newProps.posts.pageCids
-            });
-        } else
-            this.posts.updateProps({
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: undefined,
-                pages: undefined,
-                pagesIpfs: undefined
-            });
+        await this._updateLocalPostsInstanceIfNeeded(newProps.posts);
     }
 
+    // we should remove this function over the long run
     async initRemoteSubplebbitPropsWithMerge(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>) {
         const mergedProps = { ...this.toJSONIpfs(), ...newProps };
         this.title = mergedProps.title;
@@ -148,35 +158,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.signature = mergedProps.signature;
         this.postUpdates = mergedProps.postUpdates;
 
-        // TODO check if we need to update this.posts, most of the time we don't need to
-
-        // need to also check if this.address differs from this.posts.subplebbitAddress
-        // when this.posts.pageCids differs from mergedProps.posts.pageCids OR
-        // when this.address !== this.posts.subplebbitAddress
-        const shouldUpdatePosts =
-            this.address !== this.posts._subplebbitAddress ||
-            ("posts" in newProps &&
-                remeda.isPlainObject(newProps.posts?.pageCids) &&
-                !remeda.isDeepEqual(this.posts.pageCids, newProps.posts.pageCids));
-
-        if (shouldUpdatePosts ) {
-            const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
-                await parseRawPages(mergedProps.posts, this.plebbit)
-            );
-            this.posts.updateProps({
-                ...parsedPages,
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: mergedProps.posts?.pageCids || {}
-            });
-        } else
-            this.posts.updateProps({
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: undefined,
-                pages: undefined,
-                pagesIpfs: undefined
-            });
+        await this._updateLocalPostsInstanceIfNeeded(mergedProps.posts);
     }
 
     setAddress(newAddress: string) {

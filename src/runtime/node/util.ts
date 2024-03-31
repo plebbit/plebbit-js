@@ -11,7 +11,6 @@ import { PlebbitError } from "../../plebbit-error.js";
 import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit.js";
 import { STORAGE_KEYS } from "../../constants.js";
-import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import os from "os";
 import * as fileType from "file-type";
@@ -22,6 +21,7 @@ import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
@@ -158,7 +158,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
                         `Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`
                     );
                 }
-                const newPersistentDeletedSubplebbits = lodash.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+                const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
                 if (newPersistentDeletedSubplebbits.length === 0)
                     await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
                 else
