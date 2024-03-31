@@ -10,6 +10,7 @@ import signers from "../fixtures/signers";
 import http from "http";
 import path from "path";
 import fs from "fs";
+import { removeUndefinedValuesRecursively } from "../../dist/node/util";
 
 const ipfsPath = getIpfsPath();
 
@@ -159,7 +160,10 @@ const setUpMockGateways = async () => {
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
     const fetchLatestSubplebbitJson = async () => {
-        const subRecord = cleanUpBeforePublishing((await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs());
+        const subjsonIpfs = (await plebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+
+        const subRecord = cleanUpBeforePublishing(subjsonIpfs);
+        if (subjsonIpfs.posts) subRecord.posts = removeUndefinedValuesRecursively(subjsonIpfs.posts);
         return subRecord;
     };
 
