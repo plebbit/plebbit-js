@@ -576,8 +576,8 @@ describe("comment.updatingState", async () => {
     //prettier-ignore
     if (isRpcFlagOn())
     it(`updating states is in correct order upon updating a comment with RPC`, async () => {
-        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 3 + 1));
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
+        const postToUpdate = await plebbit.createComment({cid: mockPost.cid});
         const expectedStates = [
             "fetching-ipfs",
             "succeeded",
@@ -588,13 +588,13 @@ describe("comment.updatingState", async () => {
             "stopped",
           ]
         const recordedStates = [];
-        mockPost.on("updatingstatechange", (newState) => recordedStates.push(newState));
+        postToUpdate.on("updatingstatechange", (newState) => recordedStates.push(newState));
 
-        await mockPost.update();
+        await postToUpdate.update();
 
-        await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
-        await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
-        await mockPost.stop();
+        await new Promise((resolve) => postToUpdate.once("update", resolve)); // CommentIpfs update
+        await new Promise(resolve => postToUpdate.once("update", resolve));  // CommentUpdate update
+        await postToUpdate.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates);
         expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
@@ -1017,8 +1017,8 @@ describe(`comment.clients`, async () => {
         });
 
         it(`Correct order of comment.clients.plebbitRpcClients states when updating a comment`, async () => {
-            const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-            await new Promise(resolve => setTimeout(resolve, plebbit.publishInterval * 2 + 1))
+            const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
+            const postToUpdate = await plebbit.createComment({cid: mockPost.cid});
             const expectedStates = [
                 "fetching-ipfs",
                 "stopped",
@@ -1029,13 +1029,13 @@ describe(`comment.clients`, async () => {
               ]
             const recordedStates = [];
             const currentRpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
-            mockPost.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
+            postToUpdate.clients.plebbitRpcClients[currentRpcUrl].on("statechange", (newState) => recordedStates.push(newState));
     
-            await mockPost.update();
+            await postToUpdate.update();
     
-            await new Promise((resolve) => mockPost.once("update", resolve)); // CommentIpfs update
-            await new Promise(resolve => mockPost.once("update", resolve));  // CommentUpdate update
-            await mockPost.stop();
+            await new Promise((resolve) => postToUpdate.once("update", resolve)); // CommentIpfs update
+            await new Promise(resolve => postToUpdate.once("update", resolve));  // CommentUpdate update
+            await postToUpdate.stop();
     
             expect(recordedStates).to.deep.equal(expectedStates);
             expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
