@@ -4,8 +4,8 @@ import assert from "assert";
 import { decryptEd25519AesGcm, encryptEd25519AesGcm } from "./signer/index.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
-import { signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures.js";
-import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "./util.js";
+import { cleanUpBeforePublishing, signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "./signer/signatures.js";
+import { decodePubsubMsgFromRpc, removeNullUndefinedEmptyObjectsValuesRecursively, shortifyAddress, throwWithErrorCode, timestamp } from "./util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment.js";
 import { PlebbitError } from "./plebbit-error.js";
@@ -166,14 +166,14 @@ class Publication extends TypedEmitter {
         assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
         const toEncryptAnswers = { challengeAnswers };
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(JSON.stringify(toEncryptAnswers), this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()].privateKey, this.subplebbit.encryption.publicKey);
-        const toSignAnswer = {
+        const toSignAnswer = cleanUpBeforePublishing({
             type: "CHALLENGEANSWER",
             challengeRequestId: this._challenge.challengeRequestId,
             encrypted: encryptedChallengeAnswers,
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
         this._challengeAnswer = new ChallengeAnswerMessage({
             ...toSignAnswer,
             signature: await signChallengeAnswer(toSignAnswer, this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()])
@@ -371,7 +371,7 @@ class Publication extends TypedEmitter {
         const encrypted = await encryptEd25519AesGcm(JSON.stringify(this.toJSONPubsubMessage()), pubsubMessageSigner.privateKey, this.subplebbit.encryption.publicKey);
         const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(pubsubMessageSigner.publicKey);
         this._challengeIdToPubsubSigner[challengeRequestId.toString()] = pubsubMessageSigner;
-        const toSignMsg = {
+        const toSignMsg = cleanUpBeforePublishing({
             type: "CHALLENGEREQUEST",
             encrypted,
             challengeRequestId,
@@ -379,12 +379,12 @@ class Publication extends TypedEmitter {
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
         const challengeRequest = new ChallengeRequestMessage({
             ...toSignMsg,
             signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
         });
-        log(`Attempting to publish ${this.getType()} with challenge id (${challengeRequest.challengeRequestId}) to pubsub topic (${this._pubsubTopicWithfallback()}) with provider (${this._pubsubProviders[this._currentPubsubProviderIndex]}): `, this.toJSONPubsubMessagePublication());
+        log(`Attempting to publish ${this.getType()} with challenge id (${challengeRequest.challengeRequestId}) to pubsub topic (${this._pubsubTopicWithfallback()}) with provider (${this._pubsubProviders[this._currentPubsubProviderIndex]}): `, removeNullUndefinedEmptyObjectsValuesRecursively(this.toJSONPubsubMessagePublication()));
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
             this._updatePublishingState("publishing-challenge-request");
             this._clientsManager.updatePubsubState("subscribing-pubsub", this._pubsubProviders[this._currentPubsubProviderIndex]);

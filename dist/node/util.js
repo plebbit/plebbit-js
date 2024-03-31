@@ -95,18 +95,23 @@ export function oldScore(comment) {
     assert(typeof comment.comment.timestamp === "number");
     return -comment.comment.timestamp;
 }
-export function removeNullAndUndefinedValues(obj) {
+function removeNullUndefinedValues(obj) {
     return lodash.omitBy(obj, lodash.isNil);
 }
-export function removeNullAndUndefinedValuesRecursively(obj) {
+function removeNullUndefinedEmptyObjectValues(obj) {
+    const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
+    const secondStep = lodash.omitBy(firstStep, (value) => lodash.isPlainObject(value) && lodash.isEmpty(value)); // remove empty {} values
+    return secondStep;
+}
+export function removeNullUndefinedEmptyObjectsValuesRecursively(obj) {
     if (Array.isArray(obj))
-        return obj.map(removeNullAndUndefinedValuesRecursively);
+        return obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!lodash.isPlainObject(obj))
         return obj;
-    const cleanedObj = removeNullAndUndefinedValues(obj);
+    const cleanedObj = removeNullUndefinedEmptyObjectValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
         if (lodash.isPlainObject(value) || Array.isArray(value))
-            cleanedObj[key] = removeNullAndUndefinedValuesRecursively(value);
+            cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
     return cleanedObj;
 }
 // TODO rename
@@ -140,7 +145,7 @@ export const parseDbResponses = (obj) => {
     const parsedJsonString = parseIfJsonString(obj);
     if (!lodash.isPlainObject(obj) && !parsedJsonString)
         return obj;
-    const newObj = removeNullAndUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
+    const newObj = removeNullUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
     //prettier-ignore
     const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
     for (const [key, value] of Object.entries(newObj)) {

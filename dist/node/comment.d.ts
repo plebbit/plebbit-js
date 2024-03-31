@@ -21,7 +21,7 @@ export declare class Comment extends Publication implements Omit<CommentType, "r
     previousCid?: string;
     depth?: number;
     postCid?: string;
-    original?: Pick<Partial<CommentType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: CommentType["original"];
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;

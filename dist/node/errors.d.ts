@@ -46,6 +46,7 @@ export declare enum messages {
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
     ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Subplebbit signature is invalid",
     ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN = "Failed to resolve the subplebbit domain address to use for verification",
+    ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN = "Failed to resolve the author domain address to use for verification",
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
     ERR_PARENT_CID_NOT_AS_EXPECTED = "Comment under parent comment/post should have parentCid initialized",
     ERR_PAGE_SIGNATURE_IS_INVALID = "The signature of one of the comment in the page is invalid",

@@ -28,8 +28,7 @@ export declare function oldScore(comment: {
     comment: CommentsTableRow;
     update: CommentUpdatesRow;
 }): number;
-export declare function removeNullAndUndefinedValues<T extends Object>(obj: T): T;
-export declare function removeNullAndUndefinedValuesRecursively<T>(obj: T): T;
+export declare function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T;
 export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;
 export declare const parseDbResponses: (obj: any) => any;

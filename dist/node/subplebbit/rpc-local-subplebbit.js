@@ -2,7 +2,6 @@ import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { messages } from "../errors.js";
-import lodash from "lodash";
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     constructor(plebbit) {
@@ -17,17 +16,21 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             started: this.started
         };
     }
-    async initRpcInternalSubplebbit(newProps) {
+    async initRpcInternalSubplebbitWithMerge(newProps) {
         const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
-        await super.initRemoteSubplebbitProps(newProps);
+        await super.initRemoteSubplebbitPropsWithMerge(newProps);
         this.settings = mergedProps.settings;
         this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
         this.started = mergedProps.started;
     }
+    async initRpcInternalSubplebbitNoMerge(newProps) {
+        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        this.settings = newProps.settings;
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.started = newProps.started;
+    }
     async _handleRpcUpdateProps(rpcProps) {
-        // Need to make sure rpcProps has all the props so it overrides anything from this.toJSONInternalRpc()
-        const filledRpcProps = lodash.mapValues(this.toJSONInternalRpc(), () => undefined);
-        await this.initRpcInternalSubplebbit({ ...filledRpcProps, ...rpcProps });
+        await this.initRpcInternalSubplebbitNoMerge(rpcProps);
     }
     async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");

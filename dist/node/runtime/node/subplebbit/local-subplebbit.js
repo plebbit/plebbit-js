@@ -3,12 +3,12 @@ import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
-import { doesDomainAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullAndUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
+import { doesDomainAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
 import lodash from "lodash";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
-import { signChallengeMessage, signChallengeVerification, signCommentUpdate, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentUpdate } from "../../../signer/signatures.js";
+import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signCommentUpdate, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentUpdate } from "../../../signer/signatures.js";
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
@@ -37,23 +37,29 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
         this._isSubRunningLocally = false;
+        this._subplebbitUpdateTrigger = false;
     }
     toJSONInternal() {
         return {
             ...lodash.omit(this.toJSONInternalRpc(), ["started"]),
-            signer: this.signer ? lodash.pick(this.signer, ["privateKey", "type", "address"]) : undefined,
+            signer: lodash.pick(this.signer, ["privateKey", "type", "address"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
     }
     async _updateStartedValue() {
         this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
     }
-    async initInternalSubplebbit(newProps) {
-        const mergedProps = { ...this.toJSONInternal(), ...newProps };
-        await this.initRpcInternalSubplebbit(newProps);
+    async initInternalSubplebbitWithMerge(newProps) {
+        await this.initRpcInternalSubplebbitWithMerge(newProps);
         if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey)
             await this._initSignerProps(newProps.signer);
-        this._subplebbitUpdateTrigger = mergedProps._subplebbitUpdateTrigger;
+        this._subplebbitUpdateTrigger = "_subplebbitUpdateTrigger" in newProps && newProps._subplebbitUpdateTrigger;
+    }
+    async initInternalSubplebbitNoMerge(newProps) {
+        await this.initRpcInternalSubplebbitNoMerge({ ...newProps, started: this.started });
+        if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey)
+            await this._initSignerProps(newProps.signer);
+        this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
     }
     async initDbHandlerIfNeeded() {
         if (!this.dbHandler) {
@@ -103,7 +109,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _mergeInstanceStateWithDbState(overrideProps) {
         const currentDbState = lodash.omit(await this._getDbInternalState(), "address");
-        await this.initInternalSubplebbit({ ...currentDbState, ...overrideProps }); // Not sure about this line
+        await this.initInternalSubplebbitNoMerge({ address: this.address, ...currentDbState, ...overrideProps }); // Not sure about this line
     }
     async _setChallengesToDefaultIfNotDefined(log) {
         if (this._usingDefaultChallenge !== false &&
@@ -169,7 +175,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.push(this.statsCid);
         await this._mergeInstanceStateWithDbState({});
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
-        const newIpns = {
+        const newIpns = cleanUpBeforePublishing({
             ...lodash.omit(this._toJSONBase(), "signature"),
             lastPostCid: latestPost?.cid,
             lastCommentCid: latestComment?.cid,
@@ -177,12 +183,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             updatedAt,
             posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined,
             postUpdates: newPostUpdates
-        };
+        });
         const signature = await signSubplebbit(newIpns, this.signer);
-        await this._validateSubSignatureBeforePublishing({ ...newIpns, signature }); // this commented line should be taken out later
-        await this.initRemoteSubplebbitProps({ ...newIpns, signature });
-        this._subplebbitUpdateTrigger = false;
         const newSubplebbitRecord = { ...newIpns, signature };
+        await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
+        await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
+        this._subplebbitUpdateTrigger = false;
         await this._updateDbInternalState(lodash.omit(this.toJSONInternal(), "address"));
         await this._unpinStaleCids();
         const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
@@ -203,7 +209,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.emit("update", this);
     }
     shouldResolveDomainForVerification() {
-        return this.address.includes(".") && Math.random() < 0.05; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
+        return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
     async _validateSubSignatureBeforePublishing(recordTobePublished) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSignatureBeforePublishing");
@@ -223,7 +229,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     log.error(`The domain address (${this.address}) subplebbit-address text record to resolves to ${resolvedSubAddress} when it should resolve to ${this.signer.address}`);
             }
             catch (e) {
-                log.error(`Failed to resolve sub domain ${this.address}`);
+                log.error(`Failed to resolve sub domain ${this.address}`, e);
             }
         }
     }
@@ -243,7 +249,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
         await this.dbHandler.deleteVote(authorSignerAddress, newVote.commentCid);
         await this.dbHandler.insertVote(newVote.toJSONForDb(authorSignerAddress));
-        log.trace(`(${challengeRequestId.toString()}): `, `inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
+        log.trace(`inserted new vote (${newVote.vote}) for comment ${newVote.commentCid}`);
         return undefined;
     }
     isPublicationVote(publication) {
@@ -318,7 +324,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 throw e;
             }
             await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-            log(`(${request.challengeRequestId.toString()}): `, `New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
+            log(`New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
             return commentToInsert.toJSONAfterChallengeVerification();
         }
     }
@@ -355,21 +361,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async _publishChallenges(challenges, request) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
         const toEncryptChallenge = { challenges: challenges };
-        const toSignChallenge = {
+        const toSignChallenge = cleanUpBeforePublishing({
             type: "CHALLENGE",
             protocolVersion: env.PROTOCOL_VERSION,
             userAgent: env.USER_AGENT,
             challengeRequestId: request.challengeRequestId,
             encrypted: await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify(toEncryptChallenge), this.signer.privateKey, request.signature.publicKey),
             timestamp: timestamp()
-        };
+        });
         const challengeMessage = new ChallengeMessage({
             ...toSignChallenge,
             signature: await signChallengeMessage(toSignChallenge, this.signer)
         });
         this.clientsManager.updatePubsubState("publishing-challenge", undefined);
         await this.clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
-        log.trace(`Published ${challengeMessage.type} over pubsub: `, removeNullAndUndefinedValuesRecursively(lodash.omit(toSignChallenge, ["encrypted"])));
+        log.trace(`Published ${challengeMessage.type} over pubsub: `, lodash.pick(toSignChallenge, ["timestamp"]), toEncryptChallenge.challenges.map((challenge) => challenge.type));
         this.clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
         this.emit("challenge", {
             ...challengeMessage,
@@ -379,7 +385,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async _publishFailedChallengeVerification(result, challengeRequestId) {
         // challengeSucess=false
         const log = Logger("plebbit-js:local-subplebbit:_publishFailedChallengeVerification");
-        const toSignVerification = {
+        const toSignVerification = cleanUpBeforePublishing({
             type: "CHALLENGEVERIFICATION",
             challengeRequestId: challengeRequestId,
             challengeSuccess: false,
@@ -388,7 +394,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             userAgent: env.USER_AGENT,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
-        };
+        });
         const challengeVerification = new ChallengeVerificationMessage({
             ...toSignVerification,
             signature: await signChallengeVerification(toSignVerification, this.signer)
@@ -421,7 +427,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const encrypted = lodash.isPlainObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify({ publication: publication }), this.signer.privateKey, request.signature.publicKey)
                 : undefined;
-            const toSignMsg = {
+            const toSignMsg = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
                 challengeSuccess: true,
@@ -431,7 +437,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 userAgent: env.USER_AGENT,
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
-            };
+            });
             const challengeVerification = new ChallengeVerificationMessage({
                 ...toSignMsg,
                 signature: await signChallengeVerification(toSignMsg, this.signer)
@@ -443,7 +449,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
-            log(`Published ${challengeVerification.type} over pubsub:`, removeNullAndUndefinedValuesRecursively(lodash.omit(objectToEmit, ["encrypted", "signature"])));
+            log(`Published ${challengeVerification.type} over pubsub:`, removeNullUndefinedEmptyObjectsValuesRecursively(lodash.pick(objectToEmit, ["publication", "challengeSuccess", "reason", "challengeErrors", "timestamp"])));
         }
     }
     _commentEditIncludesUniqueModFields(request) {
@@ -725,12 +731,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.push(...pageCidsToUnPin);
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
-        const commentUpdatePriorToSigning = {
+        const commentUpdatePriorToSigning = cleanUpBeforePublishing({
             ...calculatedCommentUpdate,
             replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
             updatedAt: newUpdatedAt,
             protocolVersion: env.PROTOCOL_VERSION
-        };
+        });
         const newCommentUpdate = {
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
@@ -797,7 +803,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.dbHandler.rollbackAllTransactions();
             await this._movePostUpdatesFolderToNewAddress(currentDbAddress, internalState.address);
             await this.dbHandler.destoryConnection();
-            this._setAddress(internalState.address);
+            this.setAddress(internalState.address);
             await this.dbHandler.changeDbFilename(currentDbAddress, internalState.address);
             await this.dbHandler.initDestroyedConnection();
             await this.dbHandler.lockSubStart(internalState.address); // Lock the new address start
@@ -1026,13 +1032,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
                 await this.dbHandler.destoryConnection();
                 await this.dbHandler.changeDbFilename(this.address, newSubplebbitOptions.address);
-                this._setAddress(newProps.address);
+                this.setAddress(newProps.address);
             }
         }
         else {
             await this._updateDbInternalState(newProps);
         }
-        await this.initRpcInternalSubplebbit(newProps);
+        const latestState = await this._getDbInternalState(true);
+        await this.initInternalSubplebbitNoMerge(latestState); // we merge because
         log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
         if (!this._isSubRunningLocally)
             await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
@@ -1072,7 +1079,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
-            await this.initInternalSubplebbit(subState);
+            await this.initInternalSubplebbitNoMerge(subState);
             this.emit("update", this);
         }
     }

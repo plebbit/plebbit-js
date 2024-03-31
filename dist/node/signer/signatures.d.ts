@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit.js";
 import { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, CommentUpdate, CommentWithCommentUpdate, CreateCommentEditOptions, CreateCommentOptions, CreateVoteOptions, PageIpfs, VotePubsubMessage } from "../types.js";
-import { JsonSignature, PubsubSignature, SignerType } from "./constants.js";
+import { JsonSignature, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./constants.js";
 import { BaseClientsManager } from "../clients/base-client-manager.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 export interface ValidationResult {
@@ -9,6 +9,7 @@ export interface ValidationResult {
 }
 export declare const signBufferEd25519: (bufferToSign: Uint8Array, privateKeyBase64: string) => Promise<Uint8Array>;
 export declare const verifyBufferEd25519: (bufferToSign: Uint8Array, bufferSignature: Uint8Array, publicKeyBase64: string) => Promise<boolean>;
+export declare function cleanUpBeforePublishing<T extends PublicationsToSign | PubsubMsgsToSign | PageIpfs>(msg: T): T;
 export declare function signComment(comment: CreateCommentOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;
 export declare function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType): Promise<JsonSignature>;
 export declare function signVote(vote: CreateVoteOptions, signer: SignerType, plebbit: Plebbit): Promise<JsonSignature>;

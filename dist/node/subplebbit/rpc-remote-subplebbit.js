@@ -31,7 +31,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         mapper[updatingState].forEach(this._setRpcClientState.bind(this));
     }
     async _handleRpcUpdateProps(rpcProps) {
-        await this.initRemoteSubplebbitProps(rpcProps);
+        await this.initRemoteSubplebbitPropsNoMerge(rpcProps);
     }
     async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
