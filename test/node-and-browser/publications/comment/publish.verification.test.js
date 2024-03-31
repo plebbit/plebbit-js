@@ -93,6 +93,15 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     it(`Throws an error when a comment has no title, link or content`, async () => {
         const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {link: undefined, content: undefined, title: undefined});
         await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+    });
+
+    it.skip(`Throws an error if author.avatar.signature.signature is of a json string instead of a 0x string`, async () => {
+        const test = {address:"0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188",chainTicker:"matic",id:"9842",signature:{signature:"{\"domainSeparator\":\"plebbit-author-avatar\",\"authorAddress\":\"12D3KooWJsiCyvG9mjRtWzc8TqzS7USKUrFFNs9s2AJuGqNhn9uU\",\"timestamp\":1709879936,\"tokenAddress\":\"0x52e6cD20f5FcA56DA5a0E489574C92AF118B8188\",\"tokenId\":\"9842\"}","type":"eip191"}};
+        const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {author: {avatar: test}});
+        await publishWithExpectedResult(mockPost, false, "zxc");
+
+        
+
     })
 });
 
