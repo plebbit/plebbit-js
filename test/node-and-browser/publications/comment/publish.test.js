@@ -17,6 +17,7 @@ import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
+import { removeUndefinedValuesRecursively } from "../../../../dist/node/util.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -131,6 +132,34 @@ describe("publishing comments", async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
         await publishWithExpectedResult(post, true);
         await post.stop();
+    });
+
+    it(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        post.author.displayName = null;
+        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
+        await publishWithExpectedResult(post, true);
+        expect(post.author.displayName).to.be.null;
+        await waitTillCommentIsInParentPages(post, plebbit);
+        await post.stop();
+        expect(post.author.displayName).to.be.null;
+
+        const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
+        expect(loadedPost.author.displayName).to.be.null;
+    });
+
+    it(`A comment with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        post.author.wallets = {};
+        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
+        await publishWithExpectedResult(post, true);
+        expect(post.author.wallets).to.deep.equal({});
+        await waitTillCommentIsInParentPages(post, plebbit);
+        await post.stop();
+        expect(post.author.wallets).to.deep.equal({});
+
+        const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
+        expect(loadedPost.author.wallets).deep.equal({})
     });
 
     if (!isRpcFlagOn())
