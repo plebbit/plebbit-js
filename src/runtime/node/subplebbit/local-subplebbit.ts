@@ -1149,7 +1149,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash: string = await Hash.of(commentIpfsContent);
-            assert.equal(contentHash, unpinnedCommentRow.cid);
+            if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
             await this.clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
         }
 
