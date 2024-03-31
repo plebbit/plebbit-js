@@ -19,10 +19,10 @@ declare class Vote extends Publication implements VoteType {
             avatar?: import("./types.js").Nft;
             flair?: import("./subplebbit/types.js").Flair;
         };
-        signature: import("./signer/constants.js").JsonSignature;
-        protocolVersion: "1.0.0";
         timestamp: number;
         subplebbitAddress: string;
+        protocolVersion: "1.0.0";
+        signature: import("./signer/constants.js").JsonSignature;
         vote: 0 | 1 | -1;
         commentCid: string;
     };
