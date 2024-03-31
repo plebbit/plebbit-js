@@ -13,7 +13,6 @@ import {
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import { cleanUpBeforePublishing } from "../../../signer/signatures.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -51,8 +50,8 @@ export class SortHandler {
             })
         );
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs: PageIpfs = cleanUpBeforePublishing({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
-            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
+            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunksWithReplies[i] };
+            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };

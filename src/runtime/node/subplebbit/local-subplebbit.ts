@@ -21,6 +21,7 @@ import {
     isLinkValid,
     removeKeysWithUndefinedValues,
     removeNullUndefinedEmptyObjectsValuesRecursively,
+    removeUndefinedValuesRecursively,
     throwWithErrorCode,
     timestamp
 } from "../../../util.js";
@@ -284,15 +285,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._mergeInstanceStateWithDbState({});
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
-        const newIpns: Omit<SubplebbitIpfsType, "signature"> = cleanUpBeforePublishing({
-            ...lodash.omit(this._toJSONBase(), "signature"),
-            lastPostCid: latestPost?.cid,
-            lastCommentCid: latestComment?.cid,
-            statsCid,
-            updatedAt,
-            posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined,
-            postUpdates: newPostUpdates
-        });
+        const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
+            ...cleanUpBeforePublishing({
+                ...lodash.omit(this._toJSONBase(), "signature"),
+                lastPostCid: latestPost?.cid,
+                lastCommentCid: latestComment?.cid,
+                statsCid,
+                updatedAt,
+                postUpdates: newPostUpdates
+            })
+        };
+        // posts should not be cleaned up because we want to make sure not to modify authors' posts
+        if (subplebbitPosts)
+            newIpns.posts = removeUndefinedValuesRecursively({
+                pageCids: subplebbitPosts.pageCids,
+                pages: lodash.pick(subplebbitPosts.pages, "hot")
+            });
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
@@ -1006,12 +1014,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
-        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = cleanUpBeforePublishing({
-            ...calculatedCommentUpdate,
-            replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
-            updatedAt: newUpdatedAt,
-            protocolVersion: env.PROTOCOL_VERSION
-        });
+        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
+            ...cleanUpBeforePublishing({
+                ...calculatedCommentUpdate,
+                updatedAt: newUpdatedAt,
+                protocolVersion: env.PROTOCOL_VERSION
+            })
+        };
+        // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
+        if (generatedPages)
+            commentUpdatePriorToSigning.replies = removeUndefinedValuesRecursively({
+                pageCids: generatedPages.pageCids,
+                pages: lodash.pick(generatedPages.pages, "topAll")
+            });
 
         const newCommentUpdate: CommentUpdate = {
             ...commentUpdatePriorToSigning,
