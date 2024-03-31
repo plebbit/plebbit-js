@@ -462,8 +462,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     throw Error(
                         "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
                     );
+                // need to make sure generated CID is the same also
+                // TODO remove this code once we're confident that no issues will occur with signatures
+                const recreatedCommentInstance = await this.plebbit.createComment(commentInDb);
+                const recreatedCommentIpfsString = deterministicStringify(recreatedCommentInstance.toJSONIpfs());
+                const hashOfRecreatedCommentIpfsString = <string>await Hash.of(recreatedCommentIpfsString);
+                if (hashOfRecreatedCommentIpfsString !== commentInDb.cid)
+                    throw Error("The CID generated when inserting the comment is not the same when we query it");
             } catch (e) {
-                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
+                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment. This is a critical error`, e);
                 await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
                 throw e;
             }
