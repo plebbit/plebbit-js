@@ -34,7 +34,7 @@ export async function generateMockPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
     randomTimestamp = false,
-    postProps: Partial<CreateCommentOptions | PostType> = {}
+    postProps: Partial<CreateCommentOptions> = {}
 ): Promise<Comment> {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
@@ -232,7 +232,11 @@ export async function startSubplebbits(props: {
     numOfPostsToPublish: number;
     startOnlineSub: boolean;
 }): Promise<TestServerSubs> {
-    const plebbit = await _mockSubplebbitPlebbit(props.signers, { ...lodash.pick(props, ["noData", "dataPath"]), publishInterval: 3000, updateInterval: 3000 });
+    const plebbit = await _mockSubplebbitPlebbit(props.signers, {
+        ...lodash.pick(props, ["noData", "dataPath"]),
+        publishInterval: 3000,
+        updateInterval: 3000
+    });
     const signer = await plebbit.createSigner(props.signers[0]);
     const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
