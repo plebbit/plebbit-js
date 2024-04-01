@@ -11,7 +11,7 @@ import env from "../../../version.js";
 import lodash from "lodash";
 import * as lockfile from "@plebbit/proper-lockfile";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants.js";
+import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -351,8 +351,8 @@ export class DbHandler {
         return maxTimestamp;
     }
     async queryCommentsForPages(options, trx) {
-        //prettier-ignore
-        const commentUpdateColumns = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp", "signature"];
+        // protocolVersion, signature
+        const commentUpdateColumns = [...CommentUpdateSignedPropertyNames, "protocolVersion", "signature"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
         const commentsRaw = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
         //@ts-expect-error

@@ -30,7 +30,7 @@ import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS } from "../../../signer/constants.js";
+import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as radash from "radash";
@@ -454,8 +454,8 @@ export class DbHandler {
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
     ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
-        //prettier-ignore
-        const commentUpdateColumns: (keyof CommentUpdate)[] = ["cid", "author", "downvoteCount", "edit", "flair", "locked", "pinned", "protocolVersion", "reason", "removed", "replyCount", "spoiler", "updatedAt", "upvoteCount", "replies", "lastChildCid", "lastReplyTimestamp", "signature"];
+        // protocolVersion, signature
+        const commentUpdateColumns: (keyof CommentUpdate)[] = [...CommentUpdateSignedPropertyNames, "protocolVersion", "signature"];
         const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);

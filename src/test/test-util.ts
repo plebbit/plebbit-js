@@ -34,7 +34,7 @@ export async function generateMockPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
     randomTimestamp = false,
-    postProps: Partial<CreateCommentOptions | PostType> = {}
+    postProps: Partial<CreateCommentOptions> = {}
 ): Promise<Comment> {
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();

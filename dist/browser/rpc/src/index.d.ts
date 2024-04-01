@@ -30,17 +30,17 @@ declare class PlebbitWsServer extends EventEmitter {
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
     getComment(params: any): Promise<{
         author: import("../../types.js").AuthorIpfsType;
-        flair?: import("../../subplebbit/types.js").Flair;
-        spoiler?: boolean;
-        title?: string;
         challengeAnswers?: string[];
         challengeCommentCids?: string[];
-        subplebbitAddress: string;
         parentCid?: string;
         content?: string;
+        title?: string;
         link?: string;
         linkWidth?: number;
         linkHeight?: number;
+        spoiler?: boolean;
+        flair?: import("../../subplebbit/types.js").Flair;
+        subplebbitAddress: string;
         signature: import("../../signer/constants.js").JsonSignature;
         protocolVersion: "1.0.0";
         timestamp: number;

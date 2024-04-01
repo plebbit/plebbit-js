@@ -3,7 +3,7 @@ import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import Hash from "ipfs-only-hash";
-import { doesDomainAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
+import { doesDomainAddressHaveCapitalLetter, genToArray, isLinkOfMedia, isLinkValid, removeKeysWithUndefinedValues, removeNullUndefinedEmptyObjectsValuesRecursively, removeUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
 import lodash from "lodash";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -175,15 +175,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.push(this.statsCid);
         await this._mergeInstanceStateWithDbState({});
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
-        const newIpns = cleanUpBeforePublishing({
-            ...lodash.omit(this._toJSONBase(), "signature"),
-            lastPostCid: latestPost?.cid,
-            lastCommentCid: latestComment?.cid,
-            statsCid,
-            updatedAt,
-            posts: subplebbitPosts ? { pageCids: subplebbitPosts.pageCids, pages: lodash.pick(subplebbitPosts.pages, "hot") } : undefined,
-            postUpdates: newPostUpdates
-        });
+        const newIpns = {
+            ...cleanUpBeforePublishing({
+                ...lodash.omit(this._toJSONBase(), "signature"),
+                lastPostCid: latestPost?.cid,
+                lastCommentCid: latestComment?.cid,
+                statsCid,
+                updatedAt,
+                postUpdates: newPostUpdates
+            })
+        };
+        // posts should not be cleaned up because we want to make sure not to modify authors' posts
+        if (subplebbitPosts)
+            newIpns.posts = removeUndefinedValuesRecursively({
+                pageCids: subplebbitPosts.pageCids,
+                pages: lodash.pick(subplebbitPosts.pages, "hot")
+            });
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = { ...newIpns, signature };
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
@@ -317,9 +324,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const validity = await verifyComment(commentInDb, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
                 if (!validity.valid)
                     throw Error("There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error");
+                // need to make sure generated CID is the same also
+                // TODO remove this code once we're confident that no issues will occur with signatures
+                const recreatedCommentInstance = await this.plebbit.createComment(commentInDb);
+                const recreatedCommentIpfsString = deterministicStringify(recreatedCommentInstance.toJSONIpfs());
+                const hashOfRecreatedCommentIpfsString = await Hash.of(recreatedCommentIpfsString);
+                if (hashOfRecreatedCommentIpfsString !== commentInDb.cid)
+                    throw Error("The CID generated when inserting the comment is not the same when we query it");
             }
             catch (e) {
-                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment`, e);
+                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment. This is a critical error`, e);
                 await this.dbHandler.rollbackTransaction(request.challengeRequestId.toString());
                 throw e;
             }
@@ -731,12 +745,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._cidsToUnPin.push(...pageCidsToUnPin);
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
-        const commentUpdatePriorToSigning = cleanUpBeforePublishing({
-            ...calculatedCommentUpdate,
-            replies: generatedPages ? { pageCids: generatedPages.pageCids, pages: lodash.pick(generatedPages.pages, "topAll") } : undefined,
-            updatedAt: newUpdatedAt,
-            protocolVersion: env.PROTOCOL_VERSION
-        });
+        const commentUpdatePriorToSigning = {
+            ...cleanUpBeforePublishing({
+                ...calculatedCommentUpdate,
+                updatedAt: newUpdatedAt,
+                protocolVersion: env.PROTOCOL_VERSION
+            })
+        };
+        // we have to make sure not clean up submissions of authors by calling cleanUpBeforePublishing
+        if (generatedPages)
+            commentUpdatePriorToSigning.replies = removeUndefinedValuesRecursively({
+                pageCids: generatedPages.pageCids,
+                pages: lodash.pick(generatedPages.pages, "topAll")
+            });
         const newCommentUpdate = {
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
@@ -842,7 +863,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash = await Hash.of(commentIpfsContent);
-            assert.equal(contentHash, unpinnedCommentRow.cid);
+            if (contentHash !== unpinnedCommentRow.cid)
+                throw Error("Unable to recreate the CommentIpfs. This is a critical error");
             await this.clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
         }
         await this.dbHandler.deleteAllCommentUpdateRows(); // delete CommentUpdate rows to force a new production of CommentUpdate

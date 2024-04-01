@@ -9,7 +9,7 @@ import Publication from "../publication.js";
 import { BasePages } from "../pages.js";
 import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
-export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions | PostType>): Promise<Comment>;
+export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockComment(parentPostOrComment: Comment, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: Comment, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
 export declare function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]>;

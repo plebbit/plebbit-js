@@ -2,7 +2,6 @@ import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp 
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
 import lodash from "lodash";
-import { cleanUpBeforePublishing } from "../../../signer/signatures.js";
 export class SortHandler {
     constructor(subplebbit) {
         this.subplebbit = subplebbit;
@@ -18,8 +17,8 @@ export class SortHandler {
             }));
         }));
         for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs = cleanUpBeforePublishing({ nextCid: cids[i + 1], comments: chunksWithReplies[i] });
-            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path;
+            const pageIpfs = { nextCid: cids[i + 1], comments: chunksWithReplies[i] };
+            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
