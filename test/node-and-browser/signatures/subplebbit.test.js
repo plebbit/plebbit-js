@@ -6,7 +6,7 @@ const { expect, assert } = chai;
 import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing } from "../../../dist/node/signer/signatures.js";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
 import validSubplebbitWithEnsCommentsFixture from "../../fixtures/valid_subplebbit_with_ens_comments.json" assert { type: "json" };
 import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";

@@ -1,5 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import { parseRawPages, removeNullAndUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { parseRawPages, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import { RepliesPages } from "../../pages.js";
 import {
@@ -18,7 +18,6 @@ import {
 
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
-import lodash from "lodash";
 import { verifyComment, verifyCommentUpdate } from "../../signer/signatures.js";
 import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -137,8 +136,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdate) {
         if (!this.original)
-            this.original = removeNullAndUndefinedValuesRecursively(
-                lodash.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
+            this.original = removeUndefinedValuesRecursively(
+                remeda.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
             );
         this._rawCommentUpdate = "depth" in props ? undefined : props;
 

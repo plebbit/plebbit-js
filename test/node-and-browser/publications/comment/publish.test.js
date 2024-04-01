@@ -12,7 +12,7 @@ import {
     generatePostToAnswerMathQuestion,
     isRpcFlagOn
 } from "../../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -159,7 +159,7 @@ describe("publishing comments", async () => {
         expect(post.author.wallets).to.deep.equal({});
 
         const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
-        expect(loadedPost.author.wallets).deep.equal({})
+        expect(loadedPost.author.wallets).deep.equal({});
     });
 
     if (!isRpcFlagOn())

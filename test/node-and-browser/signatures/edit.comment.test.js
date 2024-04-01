@@ -4,7 +4,7 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";

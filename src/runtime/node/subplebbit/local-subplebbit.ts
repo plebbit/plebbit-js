@@ -2,8 +2,10 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit.js";
 import {
     Challenge,
+    CreateNewLocalSubplebbitOptions,
     CreateSubplebbitOptions,
     InternalSubplebbitType,
+    SubplebbitChallengeSettings,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitRole,
@@ -101,7 +103,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     signer!: Signer;
     private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
-    private _defaultSubplebbitChallenges: Required<SubplebbitSettings["challenges"]> = [
+    private _defaultSubplebbitChallenges: SubplebbitChallengeSettings[] = [
         {
             name: "captcha-canvas-v3",
             exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
@@ -145,10 +147,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
     }
 
-    async initInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>) {
+    async initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitOptions) {
         await this.initRpcInternalSubplebbitWithMerge(newProps);
         if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
-        this._subplebbitUpdateTrigger = "_subplebbitUpdateTrigger" in newProps && newProps._subplebbitUpdateTrigger;
     }
 
     async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {
@@ -291,7 +292,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...cleanUpBeforePublishing({
-                ...lodash.omit(this._toJSONBase(), "signature"),
+                ...remeda.omit(this._toJSONBase(), ["signature"]),
                 lastPostCid: latestPost?.cid,
                 lastCommentCid: latestComment?.cid,
                 statsCid,
@@ -303,7 +304,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (subplebbitPosts)
             newIpns.posts = removeUndefinedValuesRecursively({
                 pageCids: subplebbitPosts.pageCids,
-                pages: lodash.pick(subplebbitPosts.pages, "hot")
+                pages: remeda.pick(subplebbitPosts.pages, ["hot"])
             });
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
@@ -311,9 +312,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
         this._subplebbitUpdateTrigger = false;
 
-        await this._updateDbInternalState(lodash.omit(this.toJSONInternal(), "address"));
+        await this._updateDbInternalState(remeda.omit(this.toJSONInternal(), ["address"]));
 
-        await this._unpinStaleCids();
+        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
         const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
         this._cidsToUnPin = [file.path];
         // If this._isSubRunningLocally = false, then this is the last publish before stopping
@@ -582,7 +583,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
         log.trace(
             `Published ${challengeMessage.type} over pubsub: `,
-            lodash.pick(toSignChallenge, ["timestamp"]),
+            remeda.pick(toSignChallenge, ["timestamp"]),
             toEncryptChallenge.challenges.map((challenge) => challenge.type)
         );
         this.clientsManager.updatePubsubState("waiting-challenge-answers", undefined);
@@ -645,13 +646,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
                 await this.storePublication(request);
 
-            if (radash.isObject(publication)) {
+            if (remeda.isPlainObject(publication)) {
                 const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
                 const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
                 if (subplebbitAuthor) publication.author.subplebbit = subplebbitAuthor;
             }
             // could contain "publication" or "reason"
-            const encrypted = radash.isObject(publication)
+            const encrypted = remeda.isPlainObject(publication)
                 ? await encryptEd25519AesGcmPublicKeyBuffer(
                       <string>deterministicStringify({ publication }),
                       this.signer.privateKey,
@@ -688,7 +689,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log(
                 `Published ${challengeVerification.type} over pubsub:`,
                 removeNullUndefinedEmptyObjectsValuesRecursively(
-                    lodash.pick(objectToEmit, ["publication", "challengeSuccess", "reason", "challengeErrors", "timestamp"])
+                    remeda.pick(objectToEmit, ["publication", "challengeSuccess", "reason", "challengeErrors", "timestamp"])
                 )
             );
         }
@@ -696,12 +697,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
-        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+        return remeda.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
     private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessage) {
         const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
-        return lodash.intersection(modOnlyFields, Object.keys(request)).length > 0;
+        return remeda.intersection(modOnlyFields, Object.keys(request)).length > 0;
     }
 
     _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
@@ -717,7 +718,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     ): Promise<messages | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest:checkPublicationValidity");
 
-        const publication = lodash.cloneDeep(request.publication); // not sure if we need to clone
+        const publication = remeda.clone(request.publication); // not sure if we need to clone
 
         if ("signer" in publication) return messages.ERR_FORBIDDEN_SIGNER_FIELD;
 
@@ -729,7 +730,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         delete publication.author.subplebbit; // author.subplebbit is generated by the sub so we need to remove it
         const forbiddenAuthorFields: (keyof Author)[] = ["shortAddress"];
 
-        if (radash.intersects(Object.keys(publication.author), forbiddenAuthorFields)) return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
+        if (remeda.intersection(Object.keys(publication.author), forbiddenAuthorFields).length > 0)
+            return messages.ERR_FORBIDDEN_AUTHOR_FIELD;
 
         if (!this.isPublicationPost(publication)) {
             const parentCid: string | undefined = this.isPublicationReply(publication)
@@ -791,7 +793,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 "shortCid"
             ];
 
-            if (radash.intersects(Object.keys(publication), forbiddenCommentFields)) return messages.ERR_FORBIDDEN_COMMENT_FIELD;
+            if (remeda.intersection(Object.keys(publication), forbiddenCommentFields).length > 0)
+                return messages.ERR_FORBIDDEN_COMMENT_FIELD;
 
             if (!publication.content && !publication.link && !publication.title) return messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE;
 
@@ -860,7 +863,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
             throwWithErrorCode(getErrorCodeFromMessage(requestSignatureValidation.reason), {
-                challengeRequest: lodash.omit(request, ["encrypted"])
+                challengeRequest: remeda.omit(request, ["encrypted"])
             });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
@@ -1032,8 +1035,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (calculatedCommentUpdate.replyCount > 0) assert(generatedPages);
 
         if (storedCommentUpdate?.replies?.pageCids && generatedPages) {
-            const newPageCids = lodash.uniq(Object.values(generatedPages.pageCids));
-            const pageCidsToUnPin = lodash.uniq(
+            const newPageCids = remeda.unique(Object.values(generatedPages.pageCids));
+            const pageCidsToUnPin = remeda.unique(
                 Object.values(storedCommentUpdate.replies.pageCids).filter((oldPageCid) => !newPageCids.includes(oldPageCid))
             );
             this._cidsToUnPin.push(...pageCidsToUnPin);
@@ -1051,7 +1054,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (generatedPages)
             commentUpdatePriorToSigning.replies = removeUndefinedValuesRecursively({
                 pageCids: generatedPages.pageCids,
-                pages: lodash.pick(generatedPages.pages, "topAll")
+                pages: remeda.pick(generatedPages.pages, ["topAll"])
             });
 
         const newCommentUpdate: CommentUpdate = {
@@ -1142,9 +1145,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         log(`Will update ${commentsToUpdate.length} comments in this update loop for subplebbit (${this.address})`);
 
-        const commentsGroupedByDepth = lodash.groupBy(commentsToUpdate, "depth");
+        const commentsGroupedByDepth = remeda.groupBy.strict(commentsToUpdate, (x) => x.depth);
 
-        const depthsKeySorted = Object.keys(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
+        const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
         for (const depthKey of depthsKeySorted) for (const comment of commentsGroupedByDepth[depthKey]) await this._updateComment(comment);
     }
@@ -1154,7 +1157,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const dbCommentsCids = await this.dbHandler.queryAllCommentsCid();
         const pinnedCids = (await genToArray(this.clientsManager.getDefaultIpfs()._client.pin.ls())).map((cid) => String(cid.cid));
 
-        const unpinnedCommentsCids = lodash.difference(dbCommentsCids, pinnedCids);
+        const unpinnedCommentsCids = remeda.difference(dbCommentsCids, pinnedCids);
 
         if (unpinnedCommentsCids.length === 0) return;
 
@@ -1179,7 +1182,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _unpinStaleCids() {
         const log = Logger("plebbit-js:local-subplebbit:unpinStaleCids");
-        this._cidsToUnPin = lodash.uniq(this._cidsToUnPin);
+        this._cidsToUnPin = remeda.uniq(this._cidsToUnPin);
         if (this._cidsToUnPin.length > 0) {
             await Promise.all(
                 this._cidsToUnPin.map(async (cid) => {
@@ -1348,8 +1351,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     ? []
                     : newSubplebbitOptions.settings.challenges;
 
-        if ("roles" in newSubplebbitOptions) {
-            let newRoles = lodash.omitBy(newSubplebbitOptions.roles, lodash.isNil); // remove author addresses with undefined or null
+        if ("roles" in newSubplebbitOptions && remeda.isPlainObject(newSubplebbitOptions.roles)) {
+            let newRoles: SubplebbitIpfsType["roles"] = remeda.omitBy(newSubplebbitOptions.roles, remeda.isNil); // remove author addresses with undefined or null
             if (Object.keys(newRoles).length === 0) newRoles = undefined; // if there are no mods then remove sub.roles entirely
             newSubplebbitOptions.roles = newRoles;
             log("New roles after edit", newSubplebbitOptions.roles);
@@ -1364,7 +1367,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         if (Array.isArray(newProps?.settings?.challenges)) {
             newProps.challenges = newProps.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
-            newProps._usingDefaultChallenge = lodash.isEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
+            newProps._usingDefaultChallenge = remeda.isDeepEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
         }
 
         await this.dbHandler.initDestroyedConnection();
@@ -1394,7 +1397,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this.initInternalSubplebbitNoMerge(latestState); // we merge because
 
-        log(`Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited`);
+        log(
+            `Subplebbit (${this.address}) props (${Object.keys(newProps)}) has been edited: `,
+            remeda.pick(latestState, remeda.keys.strict(newProps))
+        );
         if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
 
         return this;

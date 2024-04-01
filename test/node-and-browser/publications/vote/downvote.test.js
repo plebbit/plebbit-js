@@ -8,7 +8,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 import chai from "chai";
 import { expect, assert } from "chai";

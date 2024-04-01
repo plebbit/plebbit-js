@@ -31,17 +31,15 @@ export class Signer implements SignerType {
     }
 }
 
-class SignerWithPublicKeyAddress extends Signer {
+export class SignerWithPublicKeyAddress extends Signer {
     publicKey: string;
-    constructor(props: SignerType & {publicKey: string}){
+    constructor(props: SignerType & { publicKey: string }) {
         super(props);
         this.publicKey = props.publicKey;
     }
 }
 
-export const createSigner = async (
-    createSignerOptions: CreateSignerOptions = {}
-): Promise<Signer & Required<Pick<Signer, "publicKey" | "address">>> => {
+export const createSigner = async (createSignerOptions: CreateSignerOptions = {}): Promise<SignerWithPublicKeyAddress> => {
     let { privateKey, type: signerType } = createSignerOptions;
     if (privateKey) {
         if (signerType !== "ed25519") throw Error("invalid signer createSignerOptions.type, not 'ed25519'");

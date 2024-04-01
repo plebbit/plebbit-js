@@ -10,7 +10,7 @@ import {
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
 import signers from "../../fixtures/signers";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";

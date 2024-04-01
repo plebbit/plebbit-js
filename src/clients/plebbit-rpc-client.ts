@@ -14,8 +14,9 @@ import { PlebbitError } from "../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util.js";
-import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types.js";
+import type { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import * as remeda from "remeda";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -94,8 +95,7 @@ export default class PlebbitRpcClient {
                     return await originalWebsocketCall(...args);
                 } catch (e) {
                     //e is an error json representation of PlebbitError
-                    if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
-                    if (!(e instanceof Error)) throw Error("plebbit rpc client call throwed a non Error");
+                    if (!(e instanceof Error)) throw Error("plebbit rpc client call throwed a non Error" + e);
 
                     if ("code" in e) {
                         const actualPlebError = e as PlebbitError;
@@ -127,10 +127,11 @@ export default class PlebbitRpcClient {
 
         this._webSocketClient.close();
 
+        //@ts-expect-error
         this._webSocketClient =
             this._listSubsSubscriptionId =
-            this._lastListedSubs =
-            this._subscriptionEvents =
+            this._lastListedSubs = //@ts-expect-error
+            this._subscriptionEvents = //@ts-expect-error
             this._pendingSubscriptionMsgs =
                 undefined;
     }

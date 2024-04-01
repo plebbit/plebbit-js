@@ -5,7 +5,7 @@ import {
 } from "../../dist/node/runtime/node/subplebbit/challenges/exclude";
 import { addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
 import { expect } from "chai";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { Plebbit, authors } from "./fixtures/fixtures";
 import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 import validCommentFixture from "..//fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };

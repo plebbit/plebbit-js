@@ -17,13 +17,13 @@ import {
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
 import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
-import lodash from "lodash";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
+import * as remeda from "remeda";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -371,8 +371,8 @@ class PlebbitWsServer extends EventEmitter {
 
     async getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized> {
         const plebbitOptions = this.plebbit.parsedPlebbitOptions;
-        const challenges = lodash.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
-            lodash.omit(challengeFactory({}), "getChallenge")
+        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
+            remeda.omit(challengeFactory({}), ["getChallenge"])
         );
         return { plebbitOptions, challenges };
     }

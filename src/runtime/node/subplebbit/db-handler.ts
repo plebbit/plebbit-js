@@ -23,7 +23,6 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
-import lodash from "lodash";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
@@ -33,7 +32,7 @@ import { v4 as uuidV4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
-import * as radash from "radash";
+import * as remeda from "remeda";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -338,7 +337,7 @@ export class DbHandler {
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            const srcRecordFiltered = srcRecords.map((record) => radash.pick(record, dstTableColumns));
+            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of Object.keys(srcRecord))
@@ -429,7 +428,7 @@ export class DbHandler {
         };
         const children = await this.queryCommentsForPages(options, trx);
 
-        return children.length + radash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
+        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
 
     async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
@@ -462,10 +461,10 @@ export class DbHandler {
 
         //@ts-expect-error
         const comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
-            comment: lodash.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
-            update: lodash.mapKeys(
-                lodash.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
-                (value, key) => key.replace("commentUpdate_", "")
+            comment: remeda.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+            update: remeda.mapKeys(
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
+                (key, value) => key.replace("commentUpdate_", "")
             )
         }));
 
@@ -561,13 +560,16 @@ export class DbHandler {
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
-        const comments = lodash.uniqBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
 
-        const parents = lodash.flattenDeep(
+        const parents = remeda.flattenDeep(
             await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx)))
         );
-        const authorComments = await this.queryCommentsOfAuthors(radash.unique(comments.map((comment) => comment.authorSignerAddress)), trx);
-        const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const authorComments = await this.queryCommentsOfAuthors(
+            remeda.unique(comments.map((comment) => comment.authorSignerAddress)),
+            trx
+        );
+        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
 
         return uniqComments;
     }
@@ -581,7 +583,7 @@ export class DbHandler {
         for (const timeframe of timeframes) {
             const propertyName = `${timeframe.toLowerCase()}ActiveUserCount`;
             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-            const authors = lodash.uniq([
+            const authors = remeda.unique([
                 ...commentsRaw
                     .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
                     .map((comment) => comment.authorSignerAddress),
@@ -809,14 +811,14 @@ export class DbHandler {
         const authorReplies = authorComments.filter((comment) => comment.depth > 0);
 
         const postScore: number =
-            lodash.sumBy(authorPosts, (post) => post.upvoteCount) - lodash.sumBy(authorPosts, (post) => post.downvoteCount);
+            remeda.sumBy(authorPosts, (post) => post.upvoteCount) - remeda.sumBy(authorPosts, (post) => post.downvoteCount);
 
         const replyScore: number =
-            lodash.sumBy(authorReplies, (reply) => reply.upvoteCount) - lodash.sumBy(authorReplies, (reply) => reply.downvoteCount);
+            remeda.sumBy(authorReplies, (reply) => reply.upvoteCount) - remeda.sumBy(authorReplies, (reply) => reply.downvoteCount);
 
-        const lastCommentCid = radash.max(authorComments, (comment) => comment.id)?.cid;
+        const lastCommentCid = remeda.maxBy(authorComments, (comment) => comment.id)?.cid;
         if (!lastCommentCid) throw Error("Failed to query subplebbitAuthor.lastCommentCid");
-        const firstCommentTimestamp = radash.min(authorComments, (comment) => comment.id)?.timestamp;
+        const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
         if (typeof firstCommentTimestamp !== "number") throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
 
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);

@@ -10,7 +10,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/util.js";
 
 const subplebbitAddress = "plebbit.eth";

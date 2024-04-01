@@ -13,7 +13,7 @@ import { messages } from "../../../dist/node/errors.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
 import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
 import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" assert { type: "json" };

@@ -6,7 +6,7 @@ const { expect, assert } = chai;
 import { messages } from "../../../dist/node/errors.js";
 import { verifyVote, signVote } from "../../../dist/node/signer/signatures.js";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { timestamp } from "../../../dist/node/util.js";
 import validVoteFixture from "../../fixtures/valid_vote.json" assert { type: "json" };
 

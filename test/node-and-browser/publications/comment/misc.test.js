@@ -14,7 +14,7 @@ import {
     isRpcFlagOn,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";

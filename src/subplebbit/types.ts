@@ -1,5 +1,6 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import type { JsonSignature, SignerType } from "../signer/constants.js";
+import { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type {
     ChallengeType,
     DecryptedChallengeRequestMessageType,
@@ -120,6 +121,22 @@ export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
     encryption?: SubplebbitEncryption;
     signature?: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
+
+// These are the options that go straight into _createLocalSub, create a new brand local sub,
+
+export type CreateNewLocalSubplebbitOptions = Omit<
+    CreateSubplebbitOptions,
+    "createdAt" | "updatedAt" | "signature" | "address" | "signer"
+> & {
+    address: SignerType["address"];
+    signer: SignerWithPublicKeyAddress;
+};
+
+// or load an already existing sub through plebbit.createSubplebbit
+
+export type CreateInstanceOfLocalSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
+
+export type CreateLocalSubplebbitOptions = CreateNewLocalSubplebbitOptions | CreateInstanceOfLocalSubplebbitOptions;
 
 export interface SubplebbitEditOptions {
     title?: string;

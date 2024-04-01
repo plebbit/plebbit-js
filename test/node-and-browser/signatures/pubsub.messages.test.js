@@ -18,7 +18,7 @@ import signers from "../../fixtures/signers.js";
 import { expect, assert } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 import { ChallengeAnswerMessage } from "../../../dist/node/challenge.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { default as PlebbitJsVersion } from "../../../dist/node/version.js";
 import { encode as cborgEncode, decode as cborgDecode } from "cborg";
 import { getBufferedPlebbitAddressFromPublicKey } from "../../../dist/node/signer/util.js";

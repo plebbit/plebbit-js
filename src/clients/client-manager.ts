@@ -3,9 +3,9 @@ import { Plebbit } from "../plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
-import { Chain, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types.js";
+import { ChainTicker, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types.js";
 import { verifySubplebbit } from "../signer/index.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
@@ -37,7 +37,7 @@ export class ClientsManager extends BaseClientsManager {
         ipfsGateways: { [ipfsGatewayUrl: string]: GenericIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
-        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: { [plebbitRpcClientUrl: string]: GenericPlebbitRpcStateClient };
     };
 
@@ -71,7 +71,7 @@ export class ClientsManager extends BaseClientsManager {
     protected _initChainProviders() {
         //@ts-expect-error
         this.clients.chainProviders = {};
-        for (const chain of Object.keys(this._plebbit.chainProviders)) {
+        for (const chain of remeda.keys.strict(this._plebbit.chainProviders)) {
             this.clients.chainProviders[chain] = {};
             const chainProvider = this._plebbit.chainProviders[chain];
             for (const chainProviderUrl of chainProvider.urls)
@@ -114,7 +114,7 @@ export class ClientsManager extends BaseClientsManager {
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {
         const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
@@ -125,7 +125,7 @@ export class ClientsManager extends BaseClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         resolvedTextRecord: string,
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ): void {
         this.updateChainProviderState("stopped", chain, chainProviderUrl);
@@ -134,7 +134,7 @@ export class ClientsManager extends BaseClientsManager {
     postResolveTextRecordFailure(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {
         this.updateChainProviderState("stopped", chain, chainProviderUrl);
@@ -166,7 +166,7 @@ export class ClientsManager extends BaseClientsManager {
         this.clients.ipfsGateways[gateway].emit("statechange", newState);
     }
 
-    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: string, chainProviderUrl: string) {
+    updateChainProviderState(newState: GenericChainProviderClient["state"], chainTicker: ChainTicker, chainProviderUrl: string) {
         assert(typeof newState === "string", "Can't update chain provider state to undefined");
         if (this.clients.chainProviders[chainTicker][chainProviderUrl].state === newState) return;
         this.clients.chainProviders[chainTicker][chainProviderUrl].state = newState;
@@ -174,7 +174,7 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     async fetchCid(cid: string) {
-        let finalCid = lodash.clone(cid);
+        let finalCid = remeda.clone(cid);
         if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
@@ -239,7 +239,7 @@ export class ClientsManager extends BaseClientsManager {
 
         this.postFetchSubplebbitJsonSuccess(subJson); // We successfully fetched the json
 
-        subplebbitForPublishingCache.set(subJson.address, lodash.pick(subJson, ["encryption", "pubsubTopic", "address"]));
+        subplebbitForPublishingCache.set(subJson.address, remeda.pick(subJson, ["encryption", "pubsubTopic", "address"]));
 
         return subJson;
     }
@@ -292,7 +292,7 @@ export class ClientsManager extends BaseClientsManager {
             const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
             const bestGatewayUrl = <string>(
-                lodash.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord!.updatedAt)
+                remeda.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord!.updatedAt)
             );
             const bestGatewayRecordAge = timestamp() - gatewayFetches[bestGatewayUrl].subplebbitRecord!.updatedAt; // how old is the record, relative to now, in seconds
 
@@ -344,9 +344,7 @@ export class ClientsManager extends BaseClientsManager {
             );
         } catch {
             cleanUp();
-            const gatewayToError: Record<string, Error> = {};
-            for (const gatewayUrl of Object.keys(gatewayFetches))
-                if (gatewayFetches[gatewayUrl].error) gatewayToError[gatewayUrl] = gatewayFetches[gatewayUrl].error;
+            const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error);
             const combinedError = new PlebbitError("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", { ipnsName, gatewayToError });
             delete combinedError.stack;
             throw combinedError;
@@ -391,11 +389,11 @@ export class ClientsManager extends BaseClientsManager {
 }
 
 export class PublicationClientsManager extends ClientsManager {
-    clients: {
+    clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: PublicationIpfsGatewayClient | CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: PublicationIpfsClient | CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
-        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, PublicationPlebbitRpcStateClient>;
     };
     _publication: Publication;
@@ -428,10 +426,10 @@ export class PublicationClientsManager extends ClientsManager {
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string,
-        chain: string
+        chain: ChainTicker,
+        chainProviderUrl: string
     ): void {
-        super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
         const isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
         if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish)
             this._publication._updatePublishingState("resolving-subplebbit-address");
@@ -441,7 +439,7 @@ export class PublicationClientsManager extends ClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         resolvedTextRecord: string,
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ): void {
         // TODO should check for regex of ipns eventually
@@ -504,11 +502,11 @@ export class PublicationClientsManager extends ClientsManager {
 }
 
 export class CommentClientsManager extends PublicationClientsManager {
-    clients: {
+    clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: CommentIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: CommentIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PublicationPubsubClient };
-        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, CommentPlebbitRpcStateClient>;
     };
     private _comment: Comment;
@@ -533,10 +531,11 @@ export class CommentClientsManager extends PublicationClientsManager {
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string,
-        chain: string
+        chain: ChainTicker,
+        chainProviderUrl: string,
+
     ): void {
-        super.preResolveTextRecord(address, txtRecordName, resolvedTextRecord, chain);
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
         if (this._comment.state === "updating") {
             if (txtRecordName === "subplebbit-address")
                 this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for Subplebbit
@@ -691,7 +690,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         resolvedTextRecord: string,
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
@@ -743,11 +742,11 @@ type SubplebbitGatewayFetch = {
 };
 
 export class SubplebbitClientsManager extends ClientsManager {
-    clients: {
+    clients!: {
         ipfsGateways: { [ipfsGatewayUrl: string]: SubplebbitIpfsGatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: SubplebbitIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: SubplebbitPubsubClient };
-        chainProviders: Record<Chain, { [chainProviderUrl: string]: GenericChainProviderClient }>;
+        chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
         plebbitRpcClients: Record<string, SubplebbitPlebbitRpcStateClient>;
     };
     private _subplebbit: RemoteSubplebbit;
@@ -805,7 +804,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
@@ -821,7 +820,7 @@ export class SubplebbitClientsManager extends ClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         resolvedTextRecord: string,
-        chain: string,
+        chain: ChainTicker,
         chainProviderUrl: string
     ): void {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);

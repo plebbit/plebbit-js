@@ -121,7 +121,9 @@ async function _signJson(
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     // we assume here that publication already has been cleaned
-    const publicationEncoded = cborg.encode(remeda.pick(publication, signedPropertyNames), cborgEncodeOptions);
+    //@ts-expect-error
+    const propsToSign = remeda.pick(publication, signedPropertyNames);
+    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
@@ -140,7 +142,9 @@ async function _signPubsubMsg(
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
 
     // we assume here that pubsub msg already has been cleaned
-    const publicationEncoded = cborg.encode(remeda.pick(msg, signedPropertyNames), cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    //@ts-expect-error
+    const propsToSign = remeda.pick(msg, signedPropertyNames);
+    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
     const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
     const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
     return {

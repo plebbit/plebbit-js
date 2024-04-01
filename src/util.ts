@@ -147,7 +147,7 @@ export function removeNullUndefinedValues<T extends Object>(obj: T) {
 }
 
 function removeUndefinedValues<T extends Object>(obj: T): T {
-    return <T>lodash.omitBy(obj, lodash.isUndefined);
+    return <T>remeda.omitBy(obj, (val, key) => val === undefined);
 }
 
 function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
@@ -159,10 +159,10 @@ function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
 // A safe function that you can use that will not modify a JSON by removing null or empty objects
 export function removeUndefinedValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeUndefinedValuesRecursively);
-    if (!lodash.isPlainObject(obj)) return obj;
-    const cleanedObj = removeUndefinedValues(obj);
+    if (!remeda.isPlainObject(obj)) return obj;
+    const cleanedObj: any = removeUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeUndefinedValuesRecursively(value);
+        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeUndefinedValuesRecursively(value);
     return cleanedObj;
 }
 

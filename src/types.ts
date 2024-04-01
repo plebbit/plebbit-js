@@ -20,7 +20,7 @@ import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 
 export type ProtocolVersion = "1.0.0";
-export type Chain = "eth" | "matic" | "avax" | "sol";
+export type ChainTicker = "eth" | "matic" | "avax" | "sol";
 export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
     // Options as inputted by user
@@ -29,7 +29,7 @@ export interface PlebbitOptions {
     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     plebbitRpcClientsOptions?: string[]; // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
     dataPath?: string;
-    chainProviders?: { [chainTicker: string]: ChainProvider };
+    chainProviders?: Partial<Record<ChainTicker, ChainProvider>>;
     resolveAuthorAddresses?: boolean;
     // Options for tests only. Should not be used in production
     publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
@@ -46,7 +46,8 @@ export interface ParsedPlebbitOptions
     ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     plebbitRpcClientsOptions: string[] | undefined;
-    chainProviders: { [chainTicker: string]: ChainProvider }; // chain providers could be empty if we're using rpc
+    // ChainTicker -> ChainProvider
+    chainProviders: Partial<Record<ChainTicker, ChainProvider>>; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
 export interface PageInstanceType {
@@ -112,6 +113,7 @@ export interface CommentOptionsToSign extends CreateCommentOptions {
     signer: SignerType;
     timestamp: number;
     author: Partial<AuthorIpfsType> & { address: string };
+    protocolVersion: ProtocolVersion;
 }
 
 export interface CreateVoteOptions extends CreatePublicationOptions {
@@ -124,6 +126,7 @@ export interface VoteOptionsToSign extends CreateVoteOptions {
     signer: SignerType;
     timestamp: number;
     author: Partial<AuthorIpfsType> & { address: string };
+    protocolVersion: ProtocolVersion;
 }
 
 export interface VoteType extends Omit<CreateVoteOptions, "signer" | "protocolVersion">, PublicationType {
@@ -212,6 +215,7 @@ export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
     signer: SignerType;
     timestamp: number;
     author: Partial<AuthorIpfsType> & { address: string };
+    protocolVersion: ProtocolVersion;
 }
 
 //*********************

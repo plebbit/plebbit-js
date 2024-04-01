@@ -10,7 +10,7 @@ import {
     mockRemotePlebbitIpfsOnly
 } from "../../dist/node/test/test-util.js";
 
-import lodash from "lodash";
+import * as remeda from "remeda";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);

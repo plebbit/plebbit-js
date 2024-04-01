@@ -2,7 +2,7 @@ import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
 import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 let subplebbit;
 const subCommentPages = {};

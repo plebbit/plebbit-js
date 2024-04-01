@@ -1,5 +1,5 @@
 import { Plebbit } from "./plebbit.js";
-import { Chain } from "./types.js";
+import { ChainTicker } from "./types.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
 import { createPublicClient as createViemClient, http } from "viem";
@@ -19,7 +19,7 @@ const ethersClients: Record<string, ReturnType<typeof ethers.getDefaultProvider>
 // TODO Should be rename to domain resolver
 
 async function _resolveViaViem(
-    chainTicker: Chain,
+    chainTicker: ChainTicker,
     address: string,
     txtRecordName: string,
     chainProviderUrl: string,
@@ -81,7 +81,7 @@ async function _resolveViaSolana(address: string, txtRecordName: string, chainPr
     return null;
 }
 
-async function _resolveViaEthers(chainTicker: Chain, address: string, txtRecordName: string) {
+async function _resolveViaEthers(chainTicker: ChainTicker, address: string, txtRecordName: string) {
     const log = Logger("plebbit-js:resolver:_resolveViaEthers");
 
     const clientKey = "ethers.js";
@@ -100,7 +100,7 @@ async function _resolveViaEthers(chainTicker: Chain, address: string, txtRecordN
 export async function resolveTxtRecord(
     address: string,
     txtRecordName: string,
-    chain: Chain,
+    chain: ChainTicker,
     chainProviderUrl: string,
     chainId: number | undefined
 ): Promise<string | null> {

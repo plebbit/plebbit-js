@@ -7,7 +7,7 @@ import {
     publishRandomPost,
     isRpcFlagOn
 } from "../../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import { cleanUpBeforePublishing, signComment, verifyComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";

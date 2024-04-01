@@ -1,9 +1,9 @@
 import { Plebbit } from "./plebbit.js";
 import assert from "assert";
-import { Chain } from "./types.js";
+import { ChainTicker } from "./types.js";
 import * as remeda from "remeda";
 
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
 export default class Stats {
     private _plebbit: Pick<Plebbit, "_storage" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {

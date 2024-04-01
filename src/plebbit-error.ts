@@ -1,4 +1,4 @@
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "./errors.js";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {

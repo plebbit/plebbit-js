@@ -9,7 +9,7 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../../dist/node/util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 const subplebbitAddress = signers[0].address;
 

@@ -5,7 +5,7 @@ import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
@@ -14,7 +14,7 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
@@ -288,7 +288,7 @@ export class BaseClientsManager {
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
                 if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                return { error: lodash.omit(<PlebbitError>e, "stack") };
+                return { error: remeda.omit(<PlebbitError>e, ["stack"]) };
             }
         }
     }
@@ -448,18 +448,18 @@ export class BaseClientsManager {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
 
         const resolveCache: CachedResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
-        if (lodash.isPlainObject(resolveCache)) {
-            const stale = timestamp() - resolveCache!.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
-            return { stale, resolveCache: resolveCache!.valueOfTextRecord };
+        if (remeda.isPlainObject(resolveCache)) {
+            const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
+            return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
         return undefined;
     }
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+        const chain: ChainTicker | undefined = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address`);
-        const chainId = this._plebbit.chainProviders[chain].chainId;
+        const chainId = this._plebbit.chainProviders[chain]?.chainId;
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
             if (cachedTextRecord.stale)
@@ -475,7 +475,7 @@ export class BaseClientsManager {
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {}
 
@@ -483,14 +483,14 @@ export class BaseClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         resolvedTextRecord: string | null,
-        chain: Chain,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {}
 
     postResolveTextRecordFailure(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainProviderUrl: string,
         error: Error
     ) {}
@@ -498,7 +498,7 @@ export class BaseClientsManager {
     private async _resolveTextRecordSingleChainProvider(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainproviderUrl: string,
         chainId: number | undefined
     ): Promise<string | null | { error: PlebbitError }> {
@@ -538,7 +538,7 @@ export class BaseClientsManager {
     private async _resolveTextRecordConcurrently(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainId?: number
     ): Promise<string | null> {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");

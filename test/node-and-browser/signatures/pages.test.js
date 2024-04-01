@@ -2,7 +2,7 @@ import { verifyPage } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
 import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 

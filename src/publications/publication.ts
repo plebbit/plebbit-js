@@ -34,7 +34,7 @@ import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
 import { CommentClientsManager, PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
 import { JsonSignature } from "../signer/constants.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 
@@ -173,7 +173,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         if (
             !this._publishedChallengeRequests.some((requestMsg) =>
-                lodash.isEqual(msgParsed?.challengeRequestId, requestMsg.challengeRequestId)
+                remeda.isDeepEqual(msgParsed?.challengeRequestId, requestMsg.challengeRequestId)
             )
         )
             return; // Process only this publication's challenge requests
