@@ -173,7 +173,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
     const nftAvatar = props.publication.author.avatar;
     const chainProvider = props.plebbit.chainProviders[<ChainTicker>nftAvatar.chainTicker];
     if (!chainProvider) return "The subplebbit does not support NFTs from this chain";
-    const viemClient = await getViemClient(props.plebbit, nftAvatar.chainTicker, chainProvider.urls[0]);
+    const viemClient = await getViemClient(props.plebbit, <ChainTicker>nftAvatar.chainTicker, chainProvider.urls[0]);
 
     let currentOwner: "0x${string}";
     try {
@@ -236,7 +236,7 @@ const getContractCallResponse = async (props: {
     try {
         const viemClient = await getViemClient(
             props.plebbit,
-            props.chainTicker,
+            <ChainTicker>props.chainTicker,
             _getChainProviderWithSafety(props.plebbit, <ChainTicker>props.chainTicker).urls[0]
         );
 
