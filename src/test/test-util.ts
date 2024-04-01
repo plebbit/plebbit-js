@@ -22,7 +22,7 @@ function generateRandomTimestamp(parentTimestamp?: number): number {
 
     let randomTimestamp: number = -1;
     while (randomTimestamp === -1) {
-        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        const randomTimeframeIndex = (remeda.keys.strict(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
         const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit) randomTimestamp = tempTimestamp;
     }
@@ -114,7 +114,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages): P
 async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
 
-    for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+    for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
         plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
 
     return plebbit;
@@ -316,7 +316,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
 
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)
-        for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
             plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
 
     plebbit.on("error", () => {});
@@ -485,7 +485,7 @@ export async function waitTillCommentIsInParentPages(
 
     const pageCids = pagesJson.pageCids;
 
-    const commentKeys = <(keyof CreateCommentOptions)[]>Object.keys(propsToCheckFor);
+    const commentKeys = remeda.keys.strict(propsToCheckFor);
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {

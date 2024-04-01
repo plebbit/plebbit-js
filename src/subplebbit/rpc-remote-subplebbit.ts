@@ -1,19 +1,18 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import type { InternalSubplebbitRpcType, SubplebbitIpfsType } from "./types.js";
+import * as remeda from "remeda";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number;
 
     protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         const currentState = this.clients.plebbitRpcClients[currentRpcUrl].state;
         if (newState === currentState) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
-
-    
 
     protected _updateRpcClientStateFromUpdatingState(updatingState: RemoteSubplebbit["updatingState"]) {
         // We're deriving the the rpc state from updating state

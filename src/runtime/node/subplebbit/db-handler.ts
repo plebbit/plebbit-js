@@ -146,12 +146,12 @@ export class DbHandler {
         }
 
         log.trace(
-            `Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${Object.keys(this._currentTrxs).length}`
+            `Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${remeda.keys.strict(this._currentTrxs).length}`
         );
     }
 
     async rollbackAllTransactions() {
-        return Promise.all(Object.keys(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
     }
 
     private _baseTransaction(trx?: Transaction): Transaction | Knex {
@@ -332,7 +332,7 @@ export class DbHandler {
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
-        const dstTableColumns: string[] = Object.keys(await this._knex(dstTable).columnInfo());
+        const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords: any[] = await this._knex(srcTable).select("*");
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
@@ -340,7 +340,7 @@ export class DbHandler {
             const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
-                for (const srcRecordKey of Object.keys(srcRecord))
+                for (const srcRecordKey of remeda.keys.strict(srcRecord))
                     if (Array.isArray(srcRecord[srcRecordKey])) {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
@@ -578,7 +578,7 @@ export class DbHandler {
         commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[],
         votesRaw: Pick<VotesTableRow, "authorSignerAddress" | "timestamp">[]
     ) {
-        const timeframes = <(keyof typeof TIMEFRAMES_TO_SECONDS)[]>Object.keys(TIMEFRAMES_TO_SECONDS);
+        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
         const res = {};
         for (const timeframe of timeframes) {
             const propertyName = `${timeframe.toLowerCase()}ActiveUserCount`;
@@ -597,7 +597,7 @@ export class DbHandler {
     }
 
     private _calcPostCount(commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[]) {
-        const timeframes = <(keyof typeof TIMEFRAMES_TO_SECONDS)[]>Object.keys(TIMEFRAMES_TO_SECONDS);
+        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
         const res = {};
         for (const timeframe of timeframes) {
             const propertyName = `${timeframe.toLowerCase()}PostCount`;

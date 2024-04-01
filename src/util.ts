@@ -143,16 +143,16 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
 }
 
 export function removeNullUndefinedValues<T extends Object>(obj: T) {
-    return remeda.omitBy(obj, remeda.isNil);
+    return remeda.pickBy(obj, remeda.isNonNullish);
 }
 
-function removeUndefinedValues<T extends Object>(obj: T): T {
-    return <T>remeda.omitBy(obj, (val, key) => val === undefined);
+function removeUndefinedValues<T extends Object>(obj: T) {
+    return remeda.pickBy(obj, remeda.isDefined.strict);
 }
 
-function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
+function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T) {
     const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
-    const secondStep = <T>remeda.omitBy(firstStep, (value) => remeda.isPlainObject(value) && remeda.isEmpty(value)); // remove empty {} values
+    const secondStep = remeda.omitBy(firstStep, (value) => remeda.isPlainObject(value) && remeda.isEmpty(value)); // remove empty {} values
     return secondStep;
 }
 
@@ -237,7 +237,7 @@ export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promi
 }
 
 export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesInstanceType> {
-    const keys = <(keyof (typeof pagesRaw)["pages"])[]>Object.keys(pagesRaw.pages);
+    const keys = remeda.keys.strict(pagesRaw.pages);
     const parsedPages = await Promise.all(Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs, plebbit)));
     const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
@@ -312,7 +312,7 @@ export function firstResolve<T>(promises: Promise<T>[]) {
 }
 
 export function getErrorCodeFromMessage(message: string): keyof typeof messages {
-    const codes = <(keyof typeof messages)[]>Object.keys(messages);
+    const codes = remeda.keys.strict(messages);
     for (const code of codes) if (messages[code] === message) return code;
     throw Error(`No error code was found for message (${message})`);
 }
@@ -354,7 +354,8 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
     if (!postUpdates) throw Error("subplebbit has no post updates");
     if (!postTimestamp) throw Error("post has no timestamp");
     return (
-        Object.keys(postUpdates)
+        remeda.keys
+            .strict(postUpdates)
             // sort from smallest to biggest
             .sort((a, b) => Number(a) - Number(b))
             // find the smallest timestamp range where comment.timestamp is newer

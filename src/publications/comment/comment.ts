@@ -450,7 +450,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.emit("updatingstatechange", this.updatingState);
     }
     protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);

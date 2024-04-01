@@ -46,9 +46,9 @@ export class BaseClientsManager {
         this._plebbit = plebbit;
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
-        this._defaultPubsubProviderUrl = Object.keys(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
+        this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
-            for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
+            for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
         }
     }
 
@@ -122,8 +122,7 @@ export class BaseClientsManager {
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
-            const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
+        for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
             } catch {}
@@ -329,8 +328,8 @@ export class BaseClientsManager {
 
         // Only sort if we have more than 3 gateways
         const gatewaysSorted =
-            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
-                ? Object.keys(this._plebbit.clients.ipfsGateways)
+            remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
+                ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
         const gatewayFetches: GenericGatewayFetch = {};

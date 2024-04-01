@@ -73,7 +73,7 @@ export default class Stats {
         const gateways =
             gatewayType === "chainProviders"
                 ? this._plebbit.clients.chainProviders[type].urls
-                : Object.keys(this._plebbit.clients[gatewayType]);
+                : remeda.keys.strict(this._plebbit.clients[gatewayType]);
 
         const score = async (gatewayUrl: string) => {
             const failureCounts: number = (await this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;

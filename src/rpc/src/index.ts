@@ -326,7 +326,7 @@ class PlebbitWsServer extends EventEmitter {
         };
 
         const newSubscriptionId = generateSubscriptionId();
-        const watchNotConfigured = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 0;
+        const watchNotConfigured = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 0;
         if (watchNotConfigured) {
             // First time listSubplebbits is called, need to set up everything
             // set up fs watch here
@@ -635,7 +635,7 @@ class PlebbitWsServer extends EventEmitter {
         const subscriptionId = <number>params[0];
 
         if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
-            const noClientSubscribingToListSubs = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 1;
+            const noClientSubscribingToListSubs = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 1;
             if (noClientSubscribingToListSubs)
                 // clean up fs watch only when there is no rpc client listening for listSubplebbits
                 this.subscriptionCleanups[connectionId][subscriptionId]();
@@ -652,13 +652,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async destroy() {
-        for (const subplebbitAddress of Object.keys(startedSubplebbits)) {
+        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
             const startedSub = await getStartedSubplebbit(subplebbitAddress);
             await startedSub.stop();
             delete startedSubplebbits[subplebbitAddress];
         }
-        for (const connectionId of Object.keys(this.subscriptionCleanups))
-            for (const subscriptionId of Object.keys(this.subscriptionCleanups[connectionId]))
+        for (const connectionId of remeda.keys.strict(this.subscriptionCleanups))
+            for (const subscriptionId of remeda.keys.strict(this.subscriptionCleanups[connectionId]))
                 await this.unsubscribe([Number(subscriptionId)], connectionId);
 
         this.ws.close();

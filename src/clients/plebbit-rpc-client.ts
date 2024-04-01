@@ -123,7 +123,7 @@ export default class PlebbitRpcClient {
     }
 
     async destroy() {
-        for (const subscriptionId of Object.keys(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
+        for (const subscriptionId of remeda.keys.strict(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
 
         this._webSocketClient.close();
 

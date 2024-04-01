@@ -54,33 +54,32 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initIpfsGateways() {
-        for (const gatewayUrl of Object.keys(this._plebbit.clients.ipfsGateways))
+        for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
             this.clients.ipfsGateways = { ...this.clients.ipfsGateways, [gatewayUrl]: new GenericIpfsGatewayClient("stopped") };
     }
 
     protected _initIpfsClients() {
-        for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+        for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
             this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new GenericIpfsClient("stopped") };
     }
 
     protected _initPubsubClients() {
-        for (const pubsubUrl of Object.keys(this._plebbit.clients.pubsubClients))
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new GenericPubsubClient("stopped") };
     }
 
     protected _initChainProviders() {
         //@ts-expect-error
         this.clients.chainProviders = {};
-        for (const chain of remeda.keys.strict(this._plebbit.chainProviders)) {
+        for (const [chain, chainProvider] of remeda.entries.strict(this._plebbit.chainProviders)) {
             this.clients.chainProviders[chain] = {};
-            const chainProvider = this._plebbit.chainProviders[chain];
             for (const chainProviderUrl of chainProvider.urls)
                 this.clients.chainProviders[chain][chainProviderUrl] = new GenericChainProviderClient("stopped");
         }
     }
 
     protected _initPlebbitRpcClients() {
-        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+        for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new GenericPlebbitRpcStateClient("stopped") };
     }
 
@@ -255,8 +254,8 @@ export class ClientsManager extends BaseClientsManager {
 
         // Only sort if we have more than 3 gateways
         const gatewaysSorted =
-            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
-                ? Object.keys(this._plebbit.clients.ipfsGateways)
+            remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
+                ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore("ipns");
 
         const gatewayFetches: SubplebbitGatewayFetch = {};
@@ -280,7 +279,7 @@ export class ClientsManager extends BaseClientsManager {
         const _findRecentSubplebbit = () => {
             // Try to find a very recent subplebbit
             // If not then go with the most recent subplebbit record after fetching from 3 gateways
-            const gatewaysWithSub = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord);
+            const gatewaysWithSub = remeda.keys.strict(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord);
             if (gatewaysWithSub.length === 0) return undefined;
 
             const totalGateways = gatewaysSorted.length;
@@ -289,7 +288,7 @@ export class ClientsManager extends BaseClientsManager {
 
             const freshThreshold = 60 * 60; // if a record is as old as 60 min, then use it immediately
 
-            const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+            const gatewaysWithError = remeda.keys.strict(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
 
             const bestGatewayUrl = <string>(
                 remeda.maxBy(gatewaysWithSub, (gatewayUrl) => gatewayFetches[gatewayUrl].subplebbitRecord!.updatedAt)
@@ -329,7 +328,7 @@ export class ClientsManager extends BaseClientsManager {
                             Object.values(gatewayFetches)[i].error = res
                                 ? res.error
                                 : new Error("Fetching from gateway has been aborted/timed out");
-                            const gatewaysWithError = Object.keys(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+                            const gatewaysWithError = remeda.keys.strict(gatewayFetches).filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
                             if (gatewaysWithError.length === gatewaysSorted.length)
                                 // All gateways failed
                                 reject("All gateways failed to fetch subplebbit record " + ipnsName);
@@ -405,17 +404,17 @@ export class PublicationClientsManager extends ClientsManager {
 
     protected _initIpfsClients(): void {
         if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
                 this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new PublicationIpfsClient("stopped") };
     }
 
     protected _initPubsubClients(): void {
-        for (const pubsubUrl of Object.keys(this._plebbit.clients.pubsubClients))
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
     }
 
     protected _initPlebbitRpcClients() {
-        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+        for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = {
                 ...this.clients.plebbitRpcClients,
                 [rpcUrl]: new PublicationPlebbitRpcStateClient("stopped")
@@ -518,12 +517,12 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     protected _initIpfsClients(): void {
         if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
                 this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new CommentIpfsClient("stopped") };
     }
 
     protected _initPlebbitRpcClients() {
-        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+        for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
     }
 
@@ -532,8 +531,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
         chain: ChainTicker,
-        chainProviderUrl: string,
-
+        chainProviderUrl: string
     ): void {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
         if (this._comment.state === "updating") {
@@ -758,17 +756,17 @@ export class SubplebbitClientsManager extends ClientsManager {
 
     protected _initIpfsClients(): void {
         if (this._plebbit.clients.ipfsClients)
-            for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+            for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
                 this.clients.ipfsClients = { ...this.clients.ipfsClients, [ipfsUrl]: new SubplebbitIpfsClient("stopped") };
     }
 
     protected _initPubsubClients(): void {
-        for (const pubsubUrl of Object.keys(this._plebbit.clients.pubsubClients))
+        for (const pubsubUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients))
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new SubplebbitPubsubClient("stopped") };
     }
 
     protected _initPlebbitRpcClients() {
-        for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+        for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = {
                 ...this.clients.plebbitRpcClients,
                 [rpcUrl]: new SubplebbitPlebbitRpcStateClient("stopped")

@@ -42,7 +42,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.clients.ipfsGateways = {};
         for (const sortType of this.getSortTypes()) {
             this.clients.ipfsGateways[sortType] = {};
-            for (const gatewayUrl of Object.keys(this._plebbit.clients.ipfsGateways))
+            for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
                 this.clients.ipfsGateways[sortType][gatewayUrl] = new PagesIpfsGatewayClient("stopped");
         }
     }
@@ -52,7 +52,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.clients.ipfsClients = {};
             for (const sortType of this.getSortTypes()) {
                 this.clients.ipfsClients[sortType] = {};
-                for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
                     this.clients.ipfsClients[sortType][ipfsUrl] = new PagesIpfsClient("stopped");
             }
         }
@@ -63,7 +63,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.clients.plebbitRpcClients = {};
             for (const sortType of this.getSortTypes()) {
                 this.clients.plebbitRpcClients[sortType] = {};
-                for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+                for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
                     this.clients.plebbitRpcClients[sortType][rpcUrl] = new PagesPlebbitRpcStateClient("stopped");
             }
         }
@@ -195,7 +195,7 @@ export class RepliesPagesClientsManager extends BasePagesClientsManager {
     };
 
     protected getSortTypes() {
-        return Object.keys(REPLIES_SORT_TYPES);
+        return remeda.keys.strict(REPLIES_SORT_TYPES);
     }
 }
 
@@ -207,6 +207,6 @@ export class PostsPagesClientsManager extends BasePagesClientsManager {
     };
 
     protected getSortTypes() {
-        return Object.keys(POSTS_SORT_TYPES);
+        return remeda.keys.strict(POSTS_SORT_TYPES);
     }
 }

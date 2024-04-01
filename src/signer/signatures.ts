@@ -377,7 +377,7 @@ export async function verifySubplebbit(
     if (subplebbitVerificationCache.has(cacheKey)) return { valid: true };
 
     if (subplebbit.posts?.pages)
-        for (const pageSortName of <PostSortName[]>Object.keys(subplebbit.posts.pages)) {
+        for (const pageSortName of remeda.keys.strict(subplebbit.posts.pages)) {
             const pageCid = subplebbit.posts.pageCids[pageSortName];
             if (typeof pageCid !== "string") throw Error("Failed to find page cid of subplebbit to verify");
             const page = subplebbit.posts.pages[pageSortName];
@@ -475,7 +475,7 @@ export async function verifyCommentUpdate(
 
     if (update.replies) {
         // Validate update.replies
-        const replyPageKeys = <(keyof RepliesPagesTypeIpfs["pages"])[]>Object.keys(update.replies.pages);
+        const replyPageKeys = remeda.keys.strict(update.replies.pages);
         for (const replyKey of replyPageKeys) {
             const pageCid = update.replies.pageCids[replyKey];
             if (!pageCid) throw Error("Failed to find page cid of the page");

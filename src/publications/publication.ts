@@ -25,7 +25,13 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
 import { Plebbit } from "../plebbit.js";
-import { cleanUpBeforePublishing, signChallengeAnswer, signChallengeRequest, verifyChallengeMessage, verifyChallengeVerification } from "../signer/signatures.js";
+import {
+    cleanUpBeforePublishing,
+    signChallengeAnswer,
+    signChallengeRequest,
+    verifyChallengeMessage,
+    verifyChallengeVerification
+} from "../signer/signatures.js";
 import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
@@ -107,10 +113,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.clients = this._clientsManager.clients;
     }
 
-    private _setSubplebbitAddress(subplebbitAddress: string){
+    private _setSubplebbitAddress(subplebbitAddress: string) {
         this.subplebbitAddress = subplebbitAddress;
-         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
-
+        this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
     _initProps(props: PublicationType) {
@@ -371,7 +376,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("statechange", this.state);
     }
     protected _setRpcClientState(newState: Publication["clients"]["plebbitRpcClients"][""]["state"]) {
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
@@ -402,7 +407,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
             this._currentPubsubProviderIndex === this._pubsubProviders.length && this._publishedChallengeRequests.length === 0;
 
         const allProvidersDoneWithWaiting =
-            Object.keys(this._pubsubProvidersDoneWaiting).length === 0
+            remeda.keys.strict(this._pubsubProvidersDoneWaiting).length === 0
                 ? false
                 : Object.values(this._pubsubProvidersDoneWaiting).every((b) => b);
         return allProvidersFailedToPublish || allProvidersDoneWithWaiting;
@@ -511,7 +516,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         if (!this._publishedChallengeRequests) {
             this._publishedChallengeRequests = [];
-            this._pubsubProviders = Object.keys(this._plebbit.clients.pubsubClients);
+            this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
             this._pubsubProvidersDoneWaiting = {};
             this._currentPubsubProviderIndex = 0;
             if (this._pubsubProviders.length === 1) this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
