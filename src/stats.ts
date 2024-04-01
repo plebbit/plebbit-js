@@ -83,7 +83,7 @@ export default class Stats {
             return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
 
-        const gatewaysSorted = remeda.sortBy(gateways, score);
+        const gatewaysSorted = remeda.sortBy.strict(gateways, score);
         return gatewaysSorted;
     }
 }
