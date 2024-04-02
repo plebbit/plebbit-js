@@ -328,7 +328,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     setCid(newCid: string) {
         this.cid = newCid;
-        if (this.cid) this.shortCid = shortifyCid(this.cid);
+        this.shortCid = shortifyCid(this.cid);
     }
 
     setPreviousCid(newPreviousCid?: string) {

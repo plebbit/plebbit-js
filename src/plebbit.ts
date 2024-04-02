@@ -214,7 +214,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                       chainId: -1 // no chain ID for solana
                   }
               };
-        if ("eth" in this.chainProviders && this.chainProviders.eth.chainId !== 1) this.chainProviders.eth.chainId = 1;
+        if ("eth" in this.chainProviders && remeda.isPlainObject(this.chainProviders.eth) && this.chainProviders.eth.chainId !== 1)
+            this.chainProviders.eth.chainId = 1;
         this.clients.chainProviders = this.chainProviders;
     }
 
@@ -316,7 +317,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const filledAuthor = { ...pubOptions.author, address: pubOptions.author?.address || filledSigner.address };
         const filledProtocolVersion = pubOptions.protocolVersion || env.PROTOCOL_VERSION;
 
-        // make sure author.shortAddress is not part of the publication signature
         return {
             ...pubOptions,
             timestamp: filledTimestamp,

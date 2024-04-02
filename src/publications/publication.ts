@@ -52,7 +52,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     shortSubplebbitAddress!: string;
     timestamp!: number;
     signature!: JsonSignature;
-    signer: Signer;
+    signer?: Signer;
     author!: Author;
     protocolVersion!: ProtocolVersion;
 
@@ -73,20 +73,20 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     challengeCommentCids?: string[];
 
     // private
-    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">;
-    private _challengeAnswer: ChallengeAnswerMessage;
-    private _publishedChallengeRequests: ChallengeRequestMessage[];
+    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing
+    private _challengeAnswer?: ChallengeAnswerMessage;
+    private _publishedChallengeRequests?: ChallengeRequestMessage[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
     private _pubsubProviders: string[];
-    private _pubsubProvidersDoneWaiting: Record<string, boolean>;
-    private _currentPubsubProviderIndex: number;
+    private _pubsubProvidersDoneWaiting?: Record<string, boolean>;
+    private _currentPubsubProviderIndex?: number;
     private _receivedChallengeFromSub: boolean;
     private _receivedChallengeVerification: boolean;
     private _challenge?: DecryptedChallengeMessageType;
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
     private _rpcPublishSubscriptionId?: number;
-    _clientsManager: PublicationClientsManager | CommentClientsManager;
+    _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
     constructor(props: PublicationType, plebbit: Plebbit) {
@@ -106,6 +106,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
+        this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
     }
 
     protected _initClients() {
@@ -177,7 +178,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
         const msgParsed: ChallengeMessageType | ChallengeVerificationMessageType = cborg.decode(pubsubMsg.data);
         if (
-            !this._publishedChallengeRequests.some((requestMsg) =>
+            !this._publishedChallengeRequests!.some((requestMsg) =>
                 remeda.isDeepEqual(msgParsed?.challengeRequestId, requestMsg.challengeRequestId)
             )
         )
@@ -271,12 +272,14 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
 
-        if (this._plebbit.plebbitRpcClient && this._rpcPublishSubscriptionId) {
+        if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
             await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, challengeAnswers);
             return;
         }
 
         assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
+        if (typeof this._currentPubsubProviderIndex !== "number")
+            throw Error("currentPubsubProviderIndex should be defined prior to publishChallengeAnswers");
         if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         const toEncryptAnswers: DecryptedChallengeAnswer = { challengeAnswers };
@@ -404,18 +407,18 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // OR they're done with waiting
 
         const allProvidersFailedToPublish =
-            this._currentPubsubProviderIndex === this._pubsubProviders.length && this._publishedChallengeRequests.length === 0;
+            this._currentPubsubProviderIndex === this._pubsubProviders.length && this._publishedChallengeRequests!.length === 0;
 
         const allProvidersDoneWithWaiting =
-            remeda.keys.strict(this._pubsubProvidersDoneWaiting).length === 0
+            remeda.keys.strict(this._pubsubProvidersDoneWaiting!).length === 0
                 ? false
-                : Object.values(this._pubsubProvidersDoneWaiting).every((b) => b);
+                : Object.values(this._pubsubProvidersDoneWaiting!).every((b) => b);
         return allProvidersFailedToPublish || allProvidersDoneWithWaiting;
     }
 
     _setProviderToFailIfNoResponse(providerIndex: number) {
         setTimeout(async () => {
-            this._pubsubProvidersDoneWaiting[this._pubsubProviders[providerIndex]] = true;
+            this._pubsubProvidersDoneWaiting![this._pubsubProviders[providerIndex]] = true;
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 const log = Logger("plebbit-js:publication:publish");
                 log.error(
@@ -515,13 +518,10 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
 
         if (this._plebbit.plebbitRpcClient) return this._publishWithRpc();
 
-        if (!this._publishedChallengeRequests) {
-            this._publishedChallengeRequests = [];
-            this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
-            this._pubsubProvidersDoneWaiting = {};
-            this._currentPubsubProviderIndex = 0;
-            if (this._pubsubProviders.length === 1) this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
-        }
+        if (typeof this._currentPubsubProviderIndex !== "number") this._currentPubsubProviderIndex = 0;
+        this._publishedChallengeRequests = this._publishedChallengeRequests || [];
+        this._pubsubProvidersDoneWaiting = this._pubsubProvidersDoneWaiting || {};
+        if (this._pubsubProviders.length === 1) this._pubsubProviders.push(this._pubsubProviders[0]); // Same provider should be retried twice if publishing fails
 
         assert(this._currentPubsubProviderIndex < this._pubsubProviders.length, "There is miscalculation of current pubsub provider index");
         this._updateState("publishing");
@@ -627,6 +627,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         // to handle cases where request is published but we didn't receive response within certain timeframe (20s for now)
         // Maybe the sub didn't receive the request, or the provider did not relay the challenge from sub for some reason
         setTimeout(async () => {
+            if (typeof this._currentPubsubProviderIndex !== "number") throw Error("_currentPubsubProviderIndex should be defined");
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 if (this._isAllAttemptsExhausted()) {
                     // plebbit-js tried all providers and still no response is received

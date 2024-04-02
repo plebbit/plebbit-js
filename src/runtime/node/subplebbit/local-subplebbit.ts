@@ -1394,7 +1394,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const latestState = await this._getDbInternalState(true);
 
-        await this.initInternalSubplebbitNoMerge(latestState); // we merge because
+        await this.initInternalSubplebbitNoMerge(latestState);
 
         log(
             `Subplebbit (${this.address}) props (${remeda.keys.strict(newProps)}) has been edited: `,

@@ -14,7 +14,7 @@ export class PlebbitError extends CustomError {
     }
 
     toString() {
-        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(lodash.omit(this.details, "stack"))}`;
+        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(remeda.omit(this.details, ["stack"]))}`;
     }
 
     toJSON() {

@@ -98,7 +98,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         if (!curSortTypes) {
             pageCidToSortTypesCache.set(pageCid, sortTypes);
         } else {
-            const newSortTypes = lodash.uniq([...curSortTypes, ...sortTypes]);
+            const newSortTypes = remeda.unique([...curSortTypes, ...sortTypes]);
             pageCidToSortTypesCache.set(pageCid, newSortTypes);
         }
     }
