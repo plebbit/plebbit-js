@@ -457,62 +457,63 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         }
     }
 
+    async _publishWithRpc() {
+        const log = Logger("plebbit-js:publication:_publishWithRpc");
+
+        if (!this._plebbit.plebbitRpcClient) throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
+        this._updateState("publishing");
+        try {
+            this._rpcPublishSubscriptionId =
+                this.getType() === "comment"
+                    ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessage())
+                    : this.getType() === "commentedit"
+                      ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
+                      : this.getType() === "vote"
+                        ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
+                        : undefined;
+        } catch (e) {
+            log.error("Failed to publish to RPC due to error", String(e));
+            this._updateState("stopped");
+            this._updatePublishingState("failed");
+            throw e;
+        }
+        assert(typeof this._rpcPublishSubscriptionId === "number", "Failed to start publishing with RPC");
+
+        this._plebbit.plebbitRpcClient
+            .getSubscription(this._rpcPublishSubscriptionId)
+            .on("challengerequest", (args) => {
+                const request = new ChallengeRequestMessage(
+                    <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result)
+                );
+                if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
+                else this._publishedChallengeRequests.push(request);
+                this.emit("challengerequest", {
+                    ...request,
+                    ...this.toJSONPubsubMessage()
+                });
+            })
+            .on("challenge", (args) => this._handleRpcChallenge(<DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result)))
+            .on("challengeanswer", (args) =>
+                this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
+            )
+            .on("challengeverification", (args) =>
+                this._handleRpcChallengeVerification(<DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(args.params.result))
+            )
+            .on("publishingstatechange", (args) => {
+                this._updatePublishingState(args.params.result);
+                this._updateRpcClientStateFromPublishingState(args.params.result);
+            })
+            .on("statechange", (args) => this._updateState(args.params.result))
+            .on("error", (args) => this.emit("error", args.params.result));
+        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
+        return;
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
 
-        if (this._plebbit.plebbitRpcClient) {
-            this._updateState("publishing");
-            try {
-                this._rpcPublishSubscriptionId =
-                    this.getType() === "comment"
-                        ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessage())
-                        : this.getType() === "commentedit"
-                          ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
-                          : this.getType() === "vote"
-                            ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
-                            : undefined;
-            } catch (e) {
-                log.error("Failed to publish to RPC due to error", String(e));
-                this._updateState("stopped");
-                this._updatePublishingState("failed");
-                throw e;
-            }
-            assert(typeof this._rpcPublishSubscriptionId === "number", "Failed to start publishing with RPC");
-
-            this._plebbit.plebbitRpcClient
-                .getSubscription(this._rpcPublishSubscriptionId)
-                .on("challengerequest", (args) => {
-                    const request = new ChallengeRequestMessage(
-                        <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result)
-                    );
-                    if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
-                    else this._publishedChallengeRequests.push(request);
-                    this.emit("challengerequest", {
-                        ...request,
-                        ...this.toJSONPubsubMessage()
-                    });
-                })
-                .on("challenge", (args) =>
-                    this._handleRpcChallenge(<DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result))
-                )
-                .on("challengeanswer", (args) =>
-                    this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
-                )
-                .on("challengeverification", (args) =>
-                    this._handleRpcChallengeVerification(
-                        <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(args.params.result)
-                    )
-                )
-                .on("publishingstatechange", (args) => {
-                    this._updatePublishingState(args.params.result);
-                    this._updateRpcClientStateFromPublishingState(args.params.result);
-                })
-                .on("statechange", (args) => this._updateState(args.params.result))
-                .on("error", (args) => this.emit("error", args.params.result));
-            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
-            return;
-        }
+        if (this._plebbit.plebbitRpcClient) return this._publishWithRpc();
 
         if (!this._publishedChallengeRequests) {
             this._publishedChallengeRequests = [];
