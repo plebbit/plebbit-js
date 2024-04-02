@@ -88,8 +88,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number;
 
-    constructor(props: CommentType, plebbit: Plebbit) {
-        super(props, plebbit);
+    constructor(plebbit: Plebbit) {
+        super(plebbit);
         this._isUpdating = false;
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used

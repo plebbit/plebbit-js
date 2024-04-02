@@ -116,6 +116,8 @@ export interface CommentOptionsToSign extends CreateCommentOptions {
     protocolVersion: ProtocolVersion;
 }
 
+export type LocalPublicationProps = CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign;
+
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;

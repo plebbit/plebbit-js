@@ -17,6 +17,7 @@ import {
     DecryptedChallengeVerification,
     DecryptedChallengeVerificationMessageType,
     IpfsHttpClientPubsubMessage,
+    LocalPublicationProps,
     ProtocolVersion,
     PublicationEvents,
     PublicationType,
@@ -89,7 +90,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
-    constructor(props: PublicationType, plebbit: Plebbit) {
+    constructor(plebbit: Plebbit) {
         super();
         this._plebbit = plebbit;
         this._receivedChallengeFromSub = this._receivedChallengeVerification = false;
@@ -97,7 +98,6 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
-        this._initProps(props);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.publish = this.publish.bind(this);
         this.on("error", (...args) => this._plebbit.emit("error", ...args));
@@ -117,6 +117,17 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     private _setSubplebbitAddress(subplebbitAddress: string) {
         this.subplebbitAddress = subplebbitAddress;
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
+    }
+
+    _initLocalProps(props: LocalPublicationProps) {
+        this._setSubplebbitAddress(props.subplebbitAddress);
+        this.timestamp = props.timestamp;
+        this.signer = new Signer(props.signer);
+        this.signature = props.signature;
+        this.author = new Author(props.author);
+        this.protocolVersion = props.protocolVersion;
+        this.challengeAnswers = props.challengeAnswers;
+        this.challengeCommentCids = props.challengeCommentCids;
     }
 
     _initProps(props: PublicationType) {

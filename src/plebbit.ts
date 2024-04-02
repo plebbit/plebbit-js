@@ -326,22 +326,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         };
     }
 
-    private async _createCommentInstance(
-        options:
-            | CreateCommentOptions
-            | CommentIpfsType
-            | CommentPubsubMessage
-            | CommentWithCommentUpdate
-            | Pick<CommentWithCommentUpdate, "cid">
-    ) {
-        const comment = new Comment(<CommentType>options, this);
-
-        if ("updatedAt" in options && typeof options["updatedAt"] === "number") {
-            await comment._initCommentUpdate(options);
-        }
-        return comment;
-    }
-
     async createComment(
         options:
             | CreateCommentOptions
@@ -358,14 +342,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
 
         const formattedOptions = options instanceof Comment ? options.toJSON() : options;
 
-        if ("signature" in options || "cid" in options) return this._createCommentInstance(formattedOptions);
-        else {
+        const commentInstance = new Comment(this);
+        if ("cid" in formattedOptions && typeof formattedOptions.cid === "string") commentInstance.setCid(formattedOptions.cid);
+
+        if ("signature" in formattedOptions) {
+            const correctTypeOptions = formattedOptions as CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType;
+            // We're loading a remote comment
+            commentInstance._setIpfsProps(correctTypeOptions);
+            if ("updatedAt" in correctTypeOptions && typeof correctTypeOptions.updatedAt === "number")
+                await commentInstance._initCommentUpdate(correctTypeOptions);
+        } else if ("signer" in formattedOptions) {
             // we're creating a new comment to sign and publish here
-            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(formattedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
             const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
-            return this._createCommentInstance(signedComment);
-        }
+            commentInstance._setLocalProps(signedComment);
+        } else throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
+        return commentInstance;
     }
 
     _canCreateNewLocalSub(): boolean {
