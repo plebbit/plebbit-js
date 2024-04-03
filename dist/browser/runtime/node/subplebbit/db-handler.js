@@ -388,10 +388,6 @@ export class DbHandler {
             authorSignerAddresses = [authorSignerAddresses];
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
     }
-    async queryAllCommentsCid(trx) {
-        const res = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
-        return res.map((row) => row.cid);
-    }
     async queryCommentsByCids(cids, trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }
@@ -583,6 +579,9 @@ export class DbHandler {
     }
     async queryLatestCommentCid(trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
+    }
+    async queryAllCommentsOrderedByIdAsc(trx) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).orderBy("id", "ASC");
     }
     async queryAuthorModEdits(authorSignerAddress, trx) {
         const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS)

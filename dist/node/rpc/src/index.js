@@ -234,7 +234,11 @@ class PlebbitWsServer extends EventEmitter {
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
-        const subplebbit = (await getStartedSubplebbit(address)) || await this.plebbit.createSubplebbit({ address });
+        let subplebbit;
+        if (startedSubplebbits[address] instanceof LocalSubplebbit)
+            subplebbit = startedSubplebbits[address];
+        else
+            subplebbit = await this.plebbit.createSubplebbit({ address });
         await subplebbit.edit(editSubplebbitOptions);
         if (editSubplebbitOptions.address && startedSubplebbits[address]) {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];

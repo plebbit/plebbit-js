@@ -179,7 +179,7 @@ export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
     const res = await fetch(url, {
         method: "POST",
         body: data,
-        headers: ipfsNode?.headers // We're assuming that only IPFS one client will be used
+        headers: ipfsNode.headers
     });
     if (res.status !== 200)
         throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });

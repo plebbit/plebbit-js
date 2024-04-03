@@ -54,7 +54,6 @@ export declare class DbHandler {
     deleteAllCommentUpdateRows(trx?: Transaction): Promise<number>;
     queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]>;
     queryCommentsOfAuthor(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryAllCommentsCid(trx?: Transaction): Promise<string[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction): Promise<CommentsTableRow>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
@@ -74,8 +73,9 @@ export declare class DbHandler {
     private _queryModCommentFlair;
     private _queryLastChildCidAndLastReplyTimestamp;
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;
-    queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
-    queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid">>;
+    queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined>;
+    queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined>;
+    queryAllCommentsOrderedByIdAsc(trx?: Transaction): Promise<CommentsTableRow[]>;
     queryAuthorModEdits(authorSignerAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
     querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;
