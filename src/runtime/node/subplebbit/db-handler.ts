@@ -501,11 +501,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
     }
 
-    async queryAllCommentsCid(trx?: Transaction): Promise<string[]> {
-        const res = await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid");
-        return res.map((row) => row.cid);
-    }
-
     async queryCommentsByCids(cids: string[], trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }
@@ -753,12 +748,16 @@ export class DbHandler {
         };
     }
 
-    async queryLatestPostCid(trx?: Transaction) {
+    async queryLatestPostCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where({ depth: 0 }).orderBy("id", "desc").first();
     }
 
-    async queryLatestCommentCid(trx?: Transaction) {
+    async queryLatestCommentCid(trx?: Transaction): Promise<Pick<CommentsTableRow, "cid"> | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").orderBy("id", "desc").first();
+    }
+
+    async queryAllCommentsOrderedByIdAsc(trx?: Transaction) {
+        return this._baseTransaction(trx)(TABLES.COMMENTS).orderBy("id", "ASC");
     }
 
     async queryAuthorModEdits(
