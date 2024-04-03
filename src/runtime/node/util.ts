@@ -201,7 +201,7 @@ export async function listSubplebbits(plebbit: Plebbit) {
     return filtered_results;
 }
 
-export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: { url: string; headers?: Object }) {
+export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: IpfsClient["_clientOptions"]) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
     if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
@@ -214,7 +214,7 @@ export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uin
     const res = await fetch(url, {
         method: "POST",
         body: data,
-        headers: <Record<string, string>>ipfsNode?.headers // We're assuming that only IPFS one client will be used
+        headers: ipfsNode.headers
     });
 
     if (res.status !== 200)
