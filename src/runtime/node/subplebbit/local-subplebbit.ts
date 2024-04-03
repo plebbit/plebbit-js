@@ -1407,15 +1407,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this._setChallengesToDefaultIfNotDefined(log);
         // Import subplebbit keys onto ipfs node
-
         await this._importSubplebbitSignerIntoIpfsIfNeeded();
-        await this._listenToIncomingRequests();
 
         this._subplebbitUpdateTrigger = true;
         await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
         await this._repinCommentsIPFSIfNeeded();
         await this._repinCommentUpdateIfNeeded();
+        await this._listenToIncomingRequests();
 
         this.syncIpnsWithDb()
             .then(() => this._publishLoop(this.plebbit.publishInterval))
