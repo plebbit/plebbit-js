@@ -33,6 +33,7 @@ Comment extends Publication /* (IPFS file) */ {
   link?: string
   linkWidth?: number // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
   linkHeight?: number
+  linkHtmlTagName?: 'a' | 'img' | 'video' | 'audio' // author can optionally provide the HTML element to use for the link
   spoiler?: boolean
   flair?: Flair // arbitrary colored string added by the author or mods to describe the author or comment
   // below are added by subplebbit owner, not author
