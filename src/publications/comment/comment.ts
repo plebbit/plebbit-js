@@ -8,9 +8,12 @@ import {
     CommentIpfsWithCid,
     CommentPubsubMessage,
     CommentsTableRowInsert,
-    CommentType,
+    CommentTypeJson,
     CommentUpdate,
-    CommentWithCommentUpdate,
+    CommentWithCommentUpdateJson,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    LocalCommentOptions,
+    PageTypeJson,
     ProtocolVersion,
     PublicationTypeName,
     RepliesPagesTypeIpfs
@@ -25,8 +28,9 @@ import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
+import Author from "../author.js";
 
-export class Comment extends Publication implements Omit<CommentType, "replies"> {
+export class Comment extends Publication {
     // Only Comment props
     shortCid?: string;
 
@@ -50,7 +54,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
     postCid?: string;
 
     // CommentEdit and CommentUpdate props
-    original?: Pick<Partial<CommentIpfsType>, "author" | "content" | "flair" | "protocolVersion">;
+    original?: CommentWithCommentUpdateJson["original"];
     upvoteCount?: number;
     downvoteCount?: number;
     replyCount?: number;
@@ -112,33 +116,47 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this.clients = this._clientsManager.clients;
     }
 
-    _initProps(props: Omit<CommentType, "shortSubplebbitAddress" | "shortCid">) {
-        // This function is called once at in the constructor
-        super._initProps(props);
-        if (typeof props.cid === "string") this.setCid(props.cid);
-        this.parentCid = props.parentCid;
-        this.depth = props.depth;
-        this.link = props.link;
-        this.title = props.title;
-        this.thumbnailUrl = props.thumbnailUrl;
-        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
-        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
-        this.content = props.content;
-        this.original = props.original;
-        this.spoiler = props.spoiler;
-        this.protocolVersion = props.protocolVersion;
-        this.flair = props.flair;
-        this.linkWidth = props.linkWidth;
-        this.linkHeight = props.linkHeight;
-        this.postCid = props.postCid ? props.postCid : this.depth === 0 ? this.cid : undefined;
-        this.setPreviousCid(props.previousCid);
-    }
-
-    async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdate) {
+    private _setOriginalFieldBeforeModifying() {
         if (!this.original)
             this.original = removeUndefinedValuesRecursively(
                 remeda.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
             );
+    }
+
+    _initLocalProps(props: LocalCommentOptions) {
+        super._initBaseLocalProps(props);
+        this.content = props.content;
+        this.flair = props.flair;
+        this.link = props.link;
+        this.linkHeight = props.linkHeight;
+        this.linkWidth = props.linkWidth;
+        this.parentCid = props.parentCid;
+        this.spoiler = props.spoiler;
+        this.timestamp = props.timestamp;
+        this.title = props.title;
+    }
+
+    _initIpfsProps(props: CommentIpfsType) {
+        // we're loading remote CommentIpfs
+        super._initBaseRemoteProps(props);
+        this.content = props.content;
+        this.depth = props.depth;
+        this.flair = props.flair;
+        this.link = props.link;
+        this.linkHeight = props.linkHeight;
+        this.linkWidth = props.linkWidth;
+        this.parentCid = props.parentCid;
+        this.postCid = props.postCid;
+        this.previousCid = props.previousCid;
+        this.spoiler = props.spoiler;
+        this.thumbnailUrl = props.thumbnailUrl;
+        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
+        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        this.title = props.title;
+    }
+
+    async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
+        this._setOriginalFieldBeforeModifying();
         this._rawCommentUpdate = "depth" in props ? undefined : props;
 
         this.upvoteCount = props.upvoteCount;
@@ -190,11 +208,31 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         }
     }
 
+    protected _updateLocalCommentPropsWithVerification(
+        props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
+    ) {
+        if (!props) return;
+        // comment.author will change after challenge verification so we need to make sure the original comment.author is stored somewhere
+        this._setOriginalFieldBeforeModifying();
+
+        this.setCid(props.cid);
+        this.thumbnailUrl = props.thumbnailUrl;
+        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
+        this.author = new Author(props.author);
+        this.depth = props.depth;
+
+        this.linkWidth = props.linkWidth;
+        this.linkHeight = props.linkHeight;
+        this.postCid = props.postCid;
+        this.setPreviousCid(props.previousCid);
+    }
+
     getType(): PublicationTypeName {
         return "comment";
     }
 
-    toJSON(): CommentType {
+    toJSON(): CommentTypeJson {
         const base = this.cid
             ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
             : this.toJSONPubsubMessagePublication();
@@ -255,7 +293,11 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
 
     toJSONPubsubMessagePublication(): CommentPubsubMessage {
         return {
-            ...super.toJSONPubsubMessagePublication(),
+            subplebbitAddress: this.subplebbitAddress,
+            timestamp: this.timestamp,
+            signature: this.signature,
+            author: this.author.toJSONIpfs(),
+            protocolVersion: this.protocolVersion,
             content: this.content,
             parentCid: this.parentCid,
             flair: this.flair,
@@ -287,7 +329,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         };
     }
 
-    toJSONMerged(): CommentWithCommentUpdate {
+    toJSONCommentWithinPage(): PageTypeJson["comments"][0] {
         assert(
             typeof this.updatedAt === "number" &&
                 this.original &&
@@ -299,8 +341,6 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         );
         return {
             ...this.toJSONAfterChallengeVerification(),
-            shortCid: this.shortCid,
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
             author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,
@@ -318,7 +358,9 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
             flair: this.flair,
             replies: this.replies?.toJSON(),
             lastChildCid: this.lastChildCid,
-            lastReplyTimestamp: this.lastReplyTimestamp
+            lastReplyTimestamp: this.lastReplyTimestamp,
+            shortSubplebbitAddress: this.shortSubplebbitAddress,
+            shortCid: this.shortCid
         };
     }
 
@@ -384,10 +426,10 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
         if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            this._rawCommentIpfs = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
+            const newCommentIpfs = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
             // Can potentially throw if resolver if not working
             const commentIpfsValidation = await verifyComment(
-                this._rawCommentIpfs,
+                newCommentIpfs,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 true
@@ -398,6 +440,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 this._updateState("stopped");
                 await this._stopUpdateLoop();
                 this._setUpdatingState("failed");
+                this._rawCommentIpfs = undefined;
                 this.emit(
                     "error",
                     new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
@@ -409,7 +452,8 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 return;
             }
             log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-            this._initProps({ ...this._rawCommentIpfs, cid: this.cid });
+            this._rawCommentIpfs = newCommentIpfs;
+            this._initIpfsProps(this._rawCommentIpfs);
             this.emit("update", this);
         }
 
@@ -418,7 +462,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
             //@ts-expect-error
-            const commentInstance: Pick<CommentWithCommentUpdate, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
+            const commentInstance: Pick<CommentIpfsWithCid, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
                 commentUpdate,
@@ -436,6 +480,7 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 return;
             }
             this._setUpdatingState("succeeded");
+            this._rawCommentUpdate = commentUpdate;
             await this._initCommentUpdate(commentUpdate);
             this.emit("update", this);
         } else if (commentUpdate) {
@@ -490,13 +535,14 @@ export class Comment extends Publication implements Omit<CommentType, "replies">
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
                     if (updateProps.params.result.subplebbitAddress) {
+                        const commentIpfsFromRpc = <CommentIpfsWithCid>updateProps.params.result;
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
-                        //@ts-expect-error
-                        this._rawCommentIpfs = lodash.omit(updateProps.params.result, "cid");
-                        this._initProps(updateProps.params.result);
+                        this._rawCommentIpfs = remeda.omit(commentIpfsFromRpc, ["cid"]);
+                        this._initIpfsProps(this._rawCommentIpfs);
                     } else {
                         log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);
-                        await this._initCommentUpdate(updateProps.params.result);
+                        const commentUpdateFromRpc = <CommentUpdate>updateProps.params.result;
+                        await this._initCommentUpdate(commentUpdateFromRpc);
                     }
 
                     this.emit("update", this);

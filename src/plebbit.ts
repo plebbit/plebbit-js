@@ -2,14 +2,10 @@ import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunct
 import {
     StorageInterface,
     ChainProvider,
-    CommentEditType,
     CommentIpfsType,
     CommentPubsubMessage,
-    CommentType,
-    CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
-    CreatePublicationOptions,
     CreateVoteOptions,
     GatewayClient,
     IpfsClient,
@@ -17,16 +13,18 @@ import {
     PlebbitOptions,
     PubsubClient,
     VotePubsubMessage,
-    VoteType,
     ParsedPlebbitOptions,
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
-    ProtocolVersion,
-    PublicationType,
     CommentOptionsToSign,
     VoteOptionsToSign,
-    CommentEditOptionsToSign
+    CommentEditOptionsToSign,
+    LocalVoteOptions,
+    CommentEditPubsubMessage,
+    CommentWithCommentUpdateJson,
+    CommentIpfsWithCid,
+    CommentTypeJson
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, isIpfsCid, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
@@ -326,38 +324,41 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         };
     }
 
+    private async _createCommentInstanceFromExistingCommentInstance(options: Comment): Promise<Comment> {
+        const commentInstance = new Comment(this);
+        if (typeof options.cid === "string") commentInstance.setCid(options.cid);
+        if (typeof options.depth === "number") commentInstance._initIpfsProps(options.toJSONIpfs());
+        if (typeof options.updatedAt) await commentInstance._initCommentUpdate(options.toJSONCommentWithinPage());
+        return commentInstance;
+    }
+
     async createComment(
-        options:
-            | CreateCommentOptions
-            | CommentWithCommentUpdate
-            | CommentIpfsType
-            | CommentPubsubMessage
-            | CommentType
-            | Comment
-            | Pick<CommentWithCommentUpdate, "cid">
+        options: CreateCommentOptions | CommentTypeJson | CommentIpfsType | CommentPubsubMessage | Comment | Pick<CommentIpfsWithCid, "cid">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
         if ("cid" in options && typeof options.cid === "string" && !isIpfsCid(options.cid))
             throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options.cid });
 
-        const formattedOptions = options instanceof Comment ? options.toJSON() : options;
-
+        if (options instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(options);
         const commentInstance = new Comment(this);
-        if ("cid" in formattedOptions && typeof formattedOptions.cid === "string") commentInstance.setCid(formattedOptions.cid);
+        if ("cid" in options && typeof options.cid === "string") {
+            commentInstance.setCid(options.cid);
+            if (Object.keys(options).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
+        }
 
-        if ("signature" in formattedOptions) {
-            const correctTypeOptions = formattedOptions as CommentWithCommentUpdate | CommentIpfsType | CommentPubsubMessage | CommentType;
+        if ("signature" in options && "depth" in options) {
             // We're loading a remote comment
-            commentInstance._setIpfsProps(correctTypeOptions);
-            if ("updatedAt" in correctTypeOptions && typeof correctTypeOptions.updatedAt === "number")
-                await commentInstance._initCommentUpdate(correctTypeOptions);
-        } else if ("signer" in formattedOptions) {
+            commentInstance._initIpfsProps(options);
+        } else if ("signer" in options) {
             // we're creating a new comment to sign and publish here
-            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(formattedOptions, log);
+            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
             const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
-            commentInstance._setLocalProps(signedComment);
+            commentInstance._initLocalProps(signedComment);
         } else throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
+
+        if ("updatedAt" in options) await commentInstance._initCommentUpdate(options);
+
         return commentInstance;
     }
 
@@ -490,24 +491,38 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else throw Error("Did you fail to provide address or signer? critical error in plebbit.createSubplebbit");
     }
 
-    async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
+        const voteInstance = new Vote(this);
 
-        if ("signature" in options) return new Vote(<VoteType | VotePubsubMessage>options, this);
-        const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
-        const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-        const signedVote = { ...cleanedFinalOptions, signature: await signVote(cleanedFinalOptions, finalOptions.signer, this) };
-        return new Vote(signedVote, this);
+        if ("signature" in options) {
+            voteInstance._initRemoteProps(options);
+        } else {
+            const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signedVote: LocalVoteOptions = {
+                ...cleanedFinalOptions,
+                signature: await signVote(cleanedFinalOptions, finalOptions.signer, this)
+            };
+
+            voteInstance._initLocalProps(signedVote);
+        }
+        return voteInstance;
     }
 
-    async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
+    async createCommentEdit(options: CreateCommentEditOptions | CommentEditPubsubMessage): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
+        const editInstance = new CommentEdit(this);
 
-        if ("signature" in options) return new CommentEdit(options, this); // User just wants to instantiate a CommentEdit object, not publish
-        const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
-        const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-        const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
-        return new CommentEdit(signedEdit, this);
+        if ("signature" in options) {
+            editInstance._initRemoteProps(options); // User just wants to instantiate a CommentEdit object, not publish
+        } else {
+            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
+            editInstance._initLocalProps(signedEdit);
+        }
+        return editInstance;
     }
 
     createSigner(createSignerOptions?: CreateSignerOptions) {

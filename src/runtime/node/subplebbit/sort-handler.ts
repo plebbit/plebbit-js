@@ -2,9 +2,9 @@ import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp 
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import {
+    CommentIpfsWithCid,
     CommentsTableRow,
     CommentUpdatesRow,
-    CommentWithCommentUpdate,
     PageIpfs,
     PagesTypeIpfs,
     PostSortName,
@@ -14,7 +14,6 @@ import {
     SortProps
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
-import { cleanUpBeforePublishing } from "../../../signer/signatures.js";
 import * as remeda from "remeda";
 
 export type PageOptions = {
@@ -144,7 +143,7 @@ export class SortHandler {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    private async _generateCommentReplies(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
+    private async _generateCommentReplies(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
@@ -162,7 +161,7 @@ export class SortHandler {
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
+    async generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
         const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
 
         const pages = await this._generateCommentReplies(comment);

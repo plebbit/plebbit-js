@@ -7,21 +7,22 @@ import {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentIpfsWithCid,
+    CommentEditPubsubMessage,
+    CommentIpfsType,
     DecryptedChallenge,
     DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
     DecryptedChallengeRequestMessageType,
-    DecryptedChallengeVerification,
-    DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
     ProtocolVersion,
     PublicationEvents,
-    PublicationType,
-    PublicationTypeName
+    PublicationPubsubMessage,
+    PublicationTypeName,
+    VotePubsubMessage
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
@@ -38,14 +39,14 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
-import { CommentClientsManager, PublicationClientsManager } from "../clients/client-manager.js";
+import { PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
 import { JsonSignature } from "../signer/constants.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 
-class Publication extends TypedEmitter<PublicationEvents> implements PublicationType {
+class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
     clients!: PublicationClientsManager["clients"];
 
@@ -119,7 +120,7 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
-    _initLocalProps(props: LocalPublicationProps) {
+    _initBaseLocalProps(props: LocalPublicationProps) {
         this._setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signer = new Signer(props.signer);
@@ -130,15 +131,18 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.challengeCommentCids = props.challengeCommentCids;
     }
 
-    _initProps(props: PublicationType) {
+    _initBaseRemoteProps(props: CommentIpfsType | VotePubsubMessage | CommentEditPubsubMessage) {
         this._setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
-        this.signer = this.signer || "signer" in props ? props.signer : undefined;
         this.signature = props.signature;
-        if (props.author) this.author = new Author(props.author);
+        this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
-        this.challengeAnswers = props.challengeAnswers;
-        this.challengeCommentCids = props.challengeCommentCids;
+    }
+
+    protected _updateLocalCommentPropsWithVerification(
+        publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
+    ) {
+        throw Error("should be handled in comment, not publication");
     }
 
     protected getType(): PublicationTypeName {
@@ -146,18 +150,15 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
     }
 
     // This is the publication that user publishes over pubsub
-    toJSONPubsubMessagePublication(): PublicationType {
-        return {
-            subplebbitAddress: this.subplebbitAddress,
-            timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author.toJSONIpfs(),
-            protocolVersion: this.protocolVersion
-        };
+    toJSONPubsubMessagePublication(): PublicationPubsubMessage {
+        throw Error("Should be overridden");
+    }
+
+    toJSON() {
+        throw Error("should be overridden");
     }
 
     toJSONPubsubMessage(): DecryptedChallengeRequest {
-        // These will be the props to encrypt in ChallengeRequest
         return {
             publication: this.toJSONPubsubMessagePublication(),
             challengeAnswers: this.challengeAnswers,
@@ -172,9 +173,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
         this.emit("challenge", this._challenge);
     }
 
-    private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
+    private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) {
         this._receivedChallengeVerification = true;
-        if (verification.publication) this._initProps(verification.publication);
+        if (verification.publication) this._updateLocalCommentPropsWithVerification(verification.publication);
         this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
@@ -244,12 +245,12 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 return;
             }
             this._receivedChallengeVerification = true;
-            let decryptedPublication: CommentIpfsWithCid | undefined;
+            let decryptedPublication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"];
             if (msgParsed.challengeSuccess) {
                 this._updatePublishingState("succeeded");
                 log(`Challenge (${msgParsed.challengeRequestId}) has passed`);
                 if (msgParsed.encrypted) {
-                    const decryptedProps: DecryptedChallengeVerification = JSON.parse(
+                    const decryptedProps: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = JSON.parse(
                         await decryptEd25519AesGcm(
                             msgParsed.encrypted,
                             this._challengeIdToPubsubSigner[msgParsed.challengeRequestId.toString()].privateKey,
@@ -258,7 +259,8 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                     );
                     decryptedPublication = decryptedProps.publication;
                     if (decryptedPublication) {
-                        this._initProps(decryptedPublication);
+                        decryptedPublication;
+                        this._updateLocalCommentPropsWithVerification(decryptedPublication);
                         log("Updated the props of this instance with challengeVerification.publication");
                     }
                 }
@@ -511,7 +513,9 @@ class Publication extends TypedEmitter<PublicationEvents> implements Publication
                 this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
             )
             .on("challengeverification", (args) =>
-                this._handleRpcChallengeVerification(<DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(args.params.result))
+                this._handleRpcChallengeVerification(
+                    <DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(args.params.result)
+                )
             )
             .on("publishingstatechange", (args) => {
                 this._updatePublishingState(args.params.result);

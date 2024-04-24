@@ -1,4 +1,4 @@
-import { AuthorIpfsType, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
+import { AuthorIpfsType, AuthorTypeJson, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
 import { shortifyAddress } from "../util.js";
 import { Flair } from "../subplebbit/types.js";
 
@@ -23,7 +23,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         this.shortAddress = shortifyAddress(this.address);
     }
 
-    toJSON() {
+    toJSON(): AuthorTypeJson {
         return {
             ...(this.subplebbit ? this.toJSONIpfsWithCommentUpdate() : this.toJSONIpfs()),
             shortAddress: this.shortAddress

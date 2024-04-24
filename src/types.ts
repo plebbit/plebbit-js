@@ -56,7 +56,7 @@ export interface PageInstanceType {
 }
 
 export interface PageTypeJson {
-    comments: CommentWithCommentUpdate[];
+    comments: CommentWithCommentUpdateJson[];
     nextCid?: string;
 }
 
@@ -98,7 +98,6 @@ export interface PostsPagesTypeIpfs {
 export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 
 export interface CreateCommentOptions extends CreatePublicationOptions {
-    signer: Pick<SignerType, "privateKey" | "type">;
     parentCid?: string; // The parent comment CID, undefined if comment is a post, same as postCid if comment is top level
     content?: string; // Content of the comment, link posts have no content
     title?: string; // If comment is a post, it needs a title
@@ -112,11 +111,11 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
 export interface CommentOptionsToSign extends CreateCommentOptions {
     signer: SignerType;
     timestamp: number;
-    author: Partial<AuthorIpfsType> & { address: string };
+    author: AuthorIpfsType;
     protocolVersion: ProtocolVersion;
 }
 
-export type LocalPublicationProps = CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign;
+export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
@@ -127,15 +126,24 @@ export interface CreateVoteOptions extends CreatePublicationOptions {
 export interface VoteOptionsToSign extends CreateVoteOptions {
     signer: SignerType;
     timestamp: number;
-    author: Partial<AuthorIpfsType> & { address: string };
+    author: AuthorIpfsType;
     protocolVersion: ProtocolVersion;
 }
 
-export interface VoteType extends Omit<CreateVoteOptions, "signer" | "protocolVersion">, PublicationType {
-    author: CommentIpfsType["author"];
-    timestamp: number;
-    signer?: SignerType;
-}
+// Below is what's used to initialize a local publication to be published
+
+export type LocalCommentOptions = CommentOptionsToSign & { signature: JsonSignature } & Pick<
+        CreatePublicationOptions,
+        "challengeAnswers" | "challengeCommentCids"
+    >;
+export type LocalVoteOptions = VoteOptionsToSign & { signature: JsonSignature } & Pick<
+        CreatePublicationOptions,
+        "challengeAnswers" | "challengeCommentCids"
+    >;
+export type LocalCommentEditOptions = CommentEditOptionsToSign & { signature: JsonSignature } & Pick<
+        CreatePublicationOptions,
+        "challengeAnswers" | "challengeCommentCids"
+    >;
 
 export interface SubplebbitAuthor {
     postScore: number; // total post karma in the subplebbit
@@ -146,6 +154,7 @@ export interface SubplebbitAuthor {
     lastCommentCid: string; // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
 }
 
+// TODO should be renamed to AuthorPubsubType
 export interface AuthorIpfsType {
     address: string;
     previousCommentCid?: string; // linked list of the author's comments
@@ -166,15 +175,11 @@ export type Wallet = {
     // ...will add more stuff later, like signer or send/sign or balance
 };
 
-export interface PublicationType
-    extends Required<Omit<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">>,
-        Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids"> {
-    author: AuthorIpfsType;
-    signature: JsonSignature; // sign immutable fields like author, title, content, timestamp to prevent tampering
-    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-}
+export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 
+// creating a new local publication
 export interface CreatePublicationOptions {
+    signer: Pick<SignerType, "privateKey" | "type">;
     author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
     protocolVersion?: ProtocolVersion;
@@ -203,20 +208,29 @@ export interface AuthorCommentEditOptions {
     spoiler?: boolean;
     reason?: string;
 }
-export interface AuthorCommentEdit extends AuthorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {}
+export interface CreateCommentEditOptions extends AuthorCommentEditOptions, ModeratorCommentEditOptions, CreatePublicationOptions {}
 
-export interface ModeratorCommentEdit
-    extends ModeratorCommentEditOptions,
-        Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {}
-export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
-export interface CreateCommentEditOptions extends Omit<AuthorCommentEdit, "signature">, Omit<ModeratorCommentEdit, "signature"> {
-    signer: Pick<SignerType, "privateKey" | "type">;
+export interface AuthorCommentEdit extends AuthorCommentEditOptions {
+    signature: JsonSignature;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
+    subplebbitAddress: string;
+    timestamp: number;
 }
+
+export interface ModeratorCommentEdit extends ModeratorCommentEditOptions {
+    signature: JsonSignature;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
+    subplebbitAddress: string;
+    timestamp: number;
+}
+export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
 
 export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
     signer: SignerType;
     timestamp: number;
-    author: Partial<AuthorIpfsType> & { address: string };
+    author: AuthorIpfsType;
     protocolVersion: ProtocolVersion;
 }
 
@@ -256,7 +270,7 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
 
 export interface DecryptedChallengeRequest {
     // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
-    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
+    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage;
     challengeAnswers: string[] | undefined; // some challenges might be included in subplebbit.challenges and can be pre-answered
     challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 }
@@ -272,9 +286,6 @@ export type ChallengeRequestCommentEditWithSubplebbitAuthor = CommentEditPubsubM
 export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
     author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
 };
-export type ChallengeRequestPostWithSubplebbitAuthor = PostPubsubMessage & {
-    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
-};
 
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
     // This interface will query author.subplebbit and embed it within publication.author
@@ -282,8 +293,7 @@ export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extend
     publication:
         | ChallengeRequestVoteWithSubplebbitAuthor
         | ChallengeRequestCommentEditWithSubplebbitAuthor
-        | ChallengeRequestCommentWithSubplebbitAuthor
-        | ChallengeRequestPostWithSubplebbitAuthor;
+        | ChallengeRequestCommentWithSubplebbitAuthor;
 }
 
 export interface EncodedDecryptedChallengeRequestMessageType
@@ -426,84 +436,49 @@ export interface CommentUpdate {
     signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
 }
 
-// A representation of Commment instance in JSON
-export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
-    author: AuthorTypeWithCommentUpdate;
-    timestamp: number;
-    protocolVersion: ProtocolVersion;
-    signature: JsonSignature;
+export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<CommentUpdate, "author" | "replies">, CommentTypeJsonBase {
     replies?: PagesTypeJson;
+    original: Pick<CommentPubsubMessage, "author" | "content" | "flair" | "protocolVersion">;
+    shortCid: string;
+    author: CommentIpfsWithCid["author"] & { shortAddress: string };
+    deleted?: boolean;
+}
+
+export interface CommentIpfsType extends Omit<CommentPubsubMessage, "challengeAnswers" | "challengeCommentCids"> {
+    depth: number;
     postCid?: string;
-    previousCid?: string; // each post is a linked list
-    depth?: number;
-    signer?: SignerType;
-    original?: Pick<Partial<CommentPubsubMessage>, "author" | "content" | "flair" | "protocolVersion">;
-    deleted?: AuthorCommentEdit["deleted"];
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
-    cid?: string; // (Not for publishing) Gives access to Comment.on('update') for a comment already fetched
-    shortCid?: string;
+    previousCid?: string;
+    author: AuthorTypeWithCommentUpdate;
+}
+
+export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid"> {
+    // We're using CommentUpdate["cid"] here because we want cid strings to be defined in a global place, instead of cid:string everywhere
+    cid: CommentUpdate["cid"];
+    postCid: CommentUpdate["cid"];
+}
+
+export interface CommentEditTypeJson extends CommentEditPubsubMessage {
     shortSubplebbitAddress: string;
+    author: AuthorTypeJson;
 }
 
-export interface CommentWithCommentUpdate
-    extends Omit<
-            CommentType,
-            | "replyCount"
-            | "downvoteCount"
-            | "upvoteCount"
-            | "replies"
-            | "updatedAt"
-            | "original"
-            | "cid"
-            | "shortCid"
-            | "postCid"
-            | "depth"
-            | "signer"
-        >,
-        Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>,
-        Omit<CommentUpdate, "author" | "replies"> {
-    replies?: PagesTypeJson;
-}
+export type AuthorTypeJson = (AuthorIpfsType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
-export interface CommentIpfsType
-    extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author" | "protocolVersion">,
-        PublicationType,
-        Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">,
-        Pick<Required<CommentType>, "depth"> {
-    author: AuthorIpfsType;
-}
-
-export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid">, Pick<CommentWithCommentUpdate, "cid" | "postCid"> {}
-
-export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
-    depth: 0;
-    parentCid: undefined;
-}
-
-export interface PostIpfsWithCid
-    extends Omit<
-            CommentIpfsType,
-            "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"
-        >,
-        Pick<CommentWithCommentUpdate, "cid" | "postCid">,
-        Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> {}
-
-export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
-    author: CommentIpfsType["author"];
-    signer?: SignerType;
+export interface VoteTypeJson extends VotePubsubMessage {
+    shortSubplebbitAddress: string;
+    author: AuthorTypeJson;
 }
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
-export interface CommentPubsubMessage
-    extends Pick<CommentIpfsType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
-export interface PostPubsubMessage
-    extends Pick<PostIpfsWithCid, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {}
-export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
+export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
+
+export interface VotePubsubMessage extends Pick<LocalVoteOptions, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 export interface CommentEditPubsubMessage
-    extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
+    extends Pick<LocalCommentEditOptions, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 
 export type NativeFunctions = {
     fetch: typeof fetch;
@@ -516,9 +491,27 @@ export type OnlyDefinedProperties<T> = Pick<
     }[keyof T]
 >;
 
+type CommentTypeJsonBase = {
+    shortSubplebbitAddress: string;
+};
+
+interface CommentTypeJsonBeforeChallengeVerification extends CommentPubsubMessage, CommentTypeJsonBase {
+    author: CommentPubsubMessage["author"] & { shortAddress: string };
+}
+
+interface CommentTypeJsonAfterChallengeVerificationNoCommentUpdate extends CommentIpfsWithCid, CommentTypeJsonBase {
+    shortCid: string;
+    author: CommentIpfsWithCid["author"] & { shortAddress: string };
+}
+
+export type CommentTypeJson =
+    | CommentWithCommentUpdateJson
+    | CommentTypeJsonAfterChallengeVerificationNoCommentUpdate
+    | CommentTypeJsonBeforeChallengeVerification;
+
 // Define database tables and fields here
 
-export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids"> {
+export interface CommentsTableRow extends CommentIpfsWithCid {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestPublicationSha256: string;
     ipnsName?: string;
@@ -540,7 +533,7 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 
 // Votes table
 
-export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
+export interface VotesTableRow extends VotePubsubMessage {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     authorSignerAddress: string;
@@ -550,7 +543,7 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 
 // Comment edits table
 
-export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
+export interface CommentEditsTableRow extends CommentEditPubsubMessage {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     isAuthorEdit: boolean; // If false, then mod edit

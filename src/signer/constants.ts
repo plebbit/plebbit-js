@@ -15,7 +15,6 @@ import {
     CreateCommentOptions,
     CreateVoteOptions,
     ModeratorCommentEdit,
-    PublicationType,
     PublicationTypeName,
     VotePubsubMessage
 } from "../types.js";
@@ -210,16 +209,13 @@ export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage |
 // Export constants of CommentType fields
 
 // Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
-const PUBLICATION_FIELDS: (keyof Required<Omit<PublicationType, "challengeCommentCids" | "challengeAnswers">>)[] = [
+
+export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
     "author",
     "protocolVersion",
     "signature",
     "subplebbitAddress",
-    "timestamp"
-];
-
-export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
-    ...PUBLICATION_FIELDS,
+    "timestamp",
     "commentCid",
     "flair",
     "spoiler",
@@ -231,7 +227,11 @@ export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
 ];
 
 export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
-    ...PUBLICATION_FIELDS,
+    "author",
+    "protocolVersion",
+    "signature",
+    "subplebbitAddress",
+    "timestamp",
     "commentCid",
     "content",
     "flair",

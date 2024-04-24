@@ -15,7 +15,6 @@ import {
     CommentUpdate,
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
-    CommentWithCommentUpdate,
     SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
@@ -644,7 +643,7 @@ export class DbHandler {
     private async _queryCommentCounts(
         cid: string,
         trx?: Transaction
-    ): Promise<Pick<CommentWithCommentUpdate, "replyCount" | "upvoteCount" | "downvoteCount">> {
+    ): Promise<Pick<CommentUpdate, "replyCount" | "upvoteCount" | "downvoteCount">> {
         const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
             this.queryReplyCount(cid, trx),
             this._queryCommentUpvote(cid, trx),

@@ -3,13 +3,11 @@ import { Plebbit } from "../../../plebbit.js";
 import {
     Challenge,
     CreateNewLocalSubplebbitOptions,
-    CreateSubplebbitOptions,
     InternalSubplebbitType,
     SubplebbitChallengeSettings,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
-    SubplebbitRole,
-    SubplebbitSettings
+    SubplebbitRole
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
@@ -42,7 +40,6 @@ import type {
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
     CommentIpfsWithCid,
-    CommentType,
     CommentUpdate,
     CommentUpdatesRow,
     CommentsTableRow,
@@ -56,9 +53,8 @@ import type {
     ModeratorCommentEditOptions,
     VotePubsubMessage,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    VoteType,
     CommentPubsubMessage,
-    ChallengeRequestPostWithSubplebbitAuthor
+    CommentWithCommentUpdateJson
 } from "../../../types.js";
 import {
     ValidationResult,
@@ -379,7 +375,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
     }
 
-    private async storeVote(newVoteProps: VoteType, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]) {
+    private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]) {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
         const newVote = await this.plebbit.createVote(newVoteProps);
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
@@ -397,7 +393,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private isPublicationComment(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestPostWithSubplebbitAuthor | ChallengeRequestCommentWithSubplebbitAuthor {
+    ): publication is ChallengeRequestCommentWithSubplebbitAuthor {
         return !this.isPublicationVote(publication) && !this.isPublicationCommentEdit(publication);
     }
 
@@ -407,9 +403,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return this.isPublicationComment(publication) && "parentCid" in publication && typeof publication.parentCid === "string";
     }
 
-    private isPublicationPost(
-        publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestPostWithSubplebbitAuthor {
+    private isPublicationPost(publication: DecryptedChallengeRequestMessageType["publication"]) {
         return this.isPublicationComment(publication) && !("parentCid" in publication);
     }
 
@@ -428,7 +422,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const publicationHash = sha256(deterministicStringify(publication));
         if (this.isPublicationVote(publication)) return this.storeVote(publication, request.challengeRequestId);
         else if (this.isPublicationCommentEdit(publication)) return this.storeCommentEdit(publication, request.challengeRequestId);
-        else {
+        else if (this.isPublicationComment(publication)) {
             const commentToInsert = await this.plebbit.createComment(publication);
 
             if (commentToInsert.link && this.settings?.fetchThumbnailUrls) {
@@ -441,7 +435,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
             const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
 
-            if (this.isPublicationPost(commentToInsert)) {
+            if (this.isPublicationPost(publication)) {
                 // Post
                 const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
                 commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
@@ -477,7 +471,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const commentInDb = await this.dbHandler.queryComment(<string>commentToInsert.cid, trxForInsert);
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
                 const commentInDbInstance = await this.plebbit.createComment(commentInDb);
-                const validity = await verifyComment(commentInDbInstance, this.plebbit.resolveAuthorAddresses, this.clientsManager, false);
+                const validity = await verifyComment(
+                    commentInDbInstance.toJSONIpfs(),
+                    this.plebbit.resolveAuthorAddresses,
+                    this.clientsManager,
+                    false
+                );
                 if (!validity.valid)
                     throw Error(
                         "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
@@ -773,7 +772,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
-            const forbiddenCommentFields: (keyof CommentType | "deleted")[] = [
+            const forbiddenCommentFields: (keyof CommentWithCommentUpdateJson | "deleted" | "signer")[] = [
                 "cid",
                 "signer",
                 "previousCid",

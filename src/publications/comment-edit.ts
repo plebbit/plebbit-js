@@ -5,13 +5,14 @@ import { Flair } from "../subplebbit/types.js";
 import {
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
+    CommentEditTypeJson,
     CommentEditsTableRowInsert,
-    CommentEditType,
+    LocalCommentEditOptions,
     PublicationTypeName
 } from "../types.js";
 import { isIpfsCid, throwWithErrorCode } from "../util.js";
 
-export class CommentEdit extends Publication implements CommentEditType {
+export class CommentEdit extends Publication {
     commentCid!: string;
     content?: string;
     reason?: string;
@@ -23,15 +24,14 @@ export class CommentEdit extends Publication implements CommentEditType {
     removed?: boolean;
     commentAuthor?: CommentAuthorEditOptions;
 
-    constructor(props: CommentEditType, plebbit: Plebbit) {
-        super(props, plebbit);
+    constructor(plebbit: Plebbit) {
+        super(plebbit);
 
         // public method should be bound
         this.publish = this.publish.bind(this);
     }
 
-    _initProps(props: CommentEditType) {
-        super._initProps(props);
+    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessage) {
         this.commentCid = props.commentCid;
         this.content = props.content;
         this.reason = props.reason;
@@ -44,9 +44,23 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.commentAuthor = props.commentAuthor;
     }
 
+    _initLocalProps(props: LocalCommentEditOptions) {
+        super._initBaseLocalProps(props);
+        this._initEditProps(props);
+    }
+
+    _initRemoteProps(props: CommentEditPubsubMessage): void {
+        super._initBaseRemoteProps(props);
+        this._initEditProps(props);
+    }
+
     toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
         return {
-            ...super.toJSONPubsubMessagePublication(),
+            subplebbitAddress: this.subplebbitAddress,
+            timestamp: this.timestamp,
+            signature: this.signature,
+            author: this.author.toJSONIpfs(),
+            protocolVersion: this.protocolVersion,
             commentCid: this.commentCid,
             content: this.content,
             reason: this.reason,
@@ -60,7 +74,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSON() {
+    toJSON(): CommentEditTypeJson {
         return {
             ...this.toJSONPubsubMessagePublication(),
             shortSubplebbitAddress: this.shortSubplebbitAddress,

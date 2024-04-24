@@ -22,18 +22,12 @@ import {
     CommentEditOptionsToSign,
     CommentEditPubsubMessage,
     CommentIpfsType,
+    CommentIpfsWithCid,
     CommentOptionsToSign,
     CommentPubsubMessage,
     CommentUpdate,
-    CommentWithCommentUpdate,
-    CreateCommentEditOptions,
-    CreateCommentOptions,
-    CreateVoteOptions,
     PageIpfs,
-    PostSortName,
     PubsubMessage,
-    RepliesPagesTypeIpfs,
-    ReplySortName,
     VoteOptionsToSign,
     VotePubsubMessage
 } from "../types.js";
@@ -445,7 +439,7 @@ export async function verifyCommentUpdate(
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,
-    comment: Pick<CommentWithCommentUpdate, "signature" | "cid">,
+    comment: Pick<CommentIpfsWithCid, "signature" | "cid">,
     overrideAuthorAddressIfInvalid: boolean,
     resolveDomainSubAddress = true
 ): Promise<ValidationResult> {

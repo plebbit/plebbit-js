@@ -4,7 +4,7 @@ import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
 import Vote from "../publications/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { CommentWithCommentUpdate, CreateCommentOptions, PlebbitOptions, PostType, VoteType } from "../types.js";
+import { CommentIpfsWithCid, CreateCommentOptions, CreateVoteOptions, PlebbitOptions } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { SignerType } from "../signer/constants.js";
@@ -155,7 +155,7 @@ async function _publishReplies(parentComment: Comment, numOfReplies: number, ple
 }
 
 async function _publishVotesOnOneComment(
-    comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress">,
+    comment: Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress">,
     votesPerCommentToPublish: number,
     plebbit: Plebbit
 ) {
@@ -167,7 +167,7 @@ async function _publishVotesOnOneComment(
 }
 
 async function _publishVotes(
-    comments: Pick<CommentWithCommentUpdate, "cid" | "depth" | "subplebbitAddress">[],
+    comments: Pick<CommentIpfsWithCid, "cid" | "depth" | "subplebbitAddress">[],
     votesPerCommentToPublish: number,
     plebbit: Plebbit
 ) {
@@ -201,10 +201,10 @@ async function _populateSubplebbit(
     console.log(`Have successfully published ${posts.length} posts`);
     const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    const postVotes = await _publishVotes(<CommentWithCommentUpdate[]>posts, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const postVotes = await _publishVotes(<CommentIpfsWithCid[]>posts, props.votesPerCommentToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
 
-    const repliesVotes = await _publishVotes(<CommentWithCommentUpdate[]>replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const repliesVotes = await _publishVotes(<CommentIpfsWithCid[]>replies, props.votesPerCommentToPublish, subplebbit.plebbit);
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
@@ -387,7 +387,7 @@ export async function publishRandomReply(
 export async function publishRandomPost(
     subplebbitAddress: string,
     plebbit: Plebbit,
-    postProps?: Partial<PostType>,
+    postProps?: Partial<CreateCommentOptions>,
     verifyCommentPropsInParentPages = true
 ) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
@@ -405,7 +405,7 @@ export async function publishVote(
     subplebbitAddress: string,
     vote: 1 | 0 | -1,
     plebbit: Plebbit,
-    voteProps?: Partial<VoteType>
+    voteProps?: Partial<CreateVoteOptions>
 ) {
     const voteObj = await plebbit.createVote({
         commentCid,
@@ -453,7 +453,7 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 }
 
 export async function waitTillCommentIsInParentPages(
-    comment: Pick<CommentWithCommentUpdate, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
+    comment: Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
     plebbit: Plebbit,
     propsToCheckFor: Partial<CreateCommentOptions> = {},
     checkInAllPages = false

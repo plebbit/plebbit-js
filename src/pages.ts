@@ -1,11 +1,6 @@
 import { parsePageIpfs } from "./util.js";
 import {
-    CommentIpfsType,
-    CommentWithCommentUpdate,
     PageInstanceType,
-    PageIpfs,
-    PagesInstanceType,
-    PagesTypeJson,
     PostSortName,
     PostsPagesTypeIpfs,
     PostsPagesTypeJson,
@@ -93,12 +88,12 @@ export class BasePages {
 
     toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined {
         if (remeda.isEmpty(this.pages)) return undefined;
+        if (remeda.isEmpty(this.pageCids)) throw Error("pageInstance.pageCids should not be empty while pageInstance.pages is defined");
         const pagesJson: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"] = remeda.mapValues(this.pages, (page) => {
             if (!page) return undefined;
-            const commentsJson: CommentWithCommentUpdate[] = page.comments.map((comment) => comment.toJSONMerged());
+            const commentsJson = page.comments.map((comment) => comment.toJSONCommentWithinPage());
             return { comments: commentsJson, nextCid: page.nextCid };
         });
-        if (remeda.isEmpty(this.pageCids)) throw Error("pageInstance.pageCids should not be empty while pageInstance.pages is defined");
         return { pages: pagesJson, pageCids: this.pageCids };
     }
 

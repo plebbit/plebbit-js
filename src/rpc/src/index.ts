@@ -415,7 +415,7 @@ class PlebbitWsServer extends EventEmitter {
         const comment = await this.plebbit.createComment({ cid });
         comment.on("update", () =>
             //@ts-expect-error
-            sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : { cid, ...comment._rawCommentIpfs })
+            sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : <CommentIpfsWithCid>{ cid, ...comment._rawCommentIpfs })
         );
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
         comment.on("error", (error: any) => sendEvent("error", error));
