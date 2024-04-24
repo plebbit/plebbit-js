@@ -390,6 +390,7 @@ PubsubSignature {
   - `subplebbit.updatedAt`
   - `subplebbit.statsCid`
   - `subplebbit.signer`
+  - `subplebbit.started`
   - `subplebbit.state`
   - `subplebbit.updatingState`
   - `subplebbit.startedState`  
