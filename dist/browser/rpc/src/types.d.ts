@@ -1,16 +1,14 @@
 import { Plebbit } from "../../plebbit.js";
 import { PlebbitOptions } from "../../types.js";
+import { Server as RpcWebsocketsServer } from "rpc-websockets";
 export type PlebbitWsServerClassOptions = {
-    port: number;
+    rpcOptions: ConstructorParameters<typeof RpcWebsocketsServer>[0];
     plebbit: Plebbit;
-    plebbitOptions?: PlebbitOptions;
     authKey?: string;
 };
-export type PlebbitWsServerOptions = {
-    port: number;
+export interface PlebbitWsServerOptions extends Omit<PlebbitWsServerClassOptions, "plebbit"> {
     plebbitOptions?: PlebbitOptions;
-    authKey?: string;
-};
+}
 export type JsonRpcSendNotificationOptions = {
     method: string;
     result: any;

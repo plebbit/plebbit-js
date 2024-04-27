@@ -21,7 +21,7 @@ const getStartedSubplebbit = async (address) => {
     return startedSubplebbits[address];
 };
 class PlebbitWsServer extends EventEmitter {
-    constructor({ port, plebbit, plebbitOptions, authKey }) {
+    constructor({ rpcOptions, plebbit, authKey }) {
         super();
         this.connections = {};
         this.subscriptionCleanups = {};
@@ -32,11 +32,7 @@ class PlebbitWsServer extends EventEmitter {
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
-        this.rpcWebsockets = new RpcWebsocketsServer({
-            port
-            // might be needed to specify host for security later
-            // host: 'localhost'
-        });
+        this.rpcWebsockets = new RpcWebsocketsServer(rpcOptions);
         // rpc-sockets uses this library https://www.npmjs.com/package/ws
         this.ws = this.rpcWebsockets.wss;
         // forward errors to PlebbitWsServer
@@ -551,12 +547,9 @@ class PlebbitWsServer extends EventEmitter {
         await this.plebbit.destroy();
     }
 }
-const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }) => {
-    if (typeof port !== "number") {
-        throw Error(`createPlebbitWsServer port '${port}' not a number`);
-    }
+const createPlebbitWsServer = async ({ rpcOptions, plebbitOptions, authKey }) => {
     const plebbit = await PlebbitJs.Plebbit(plebbitOptions);
-    const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions, authKey });
+    const plebbitWss = new PlebbitWsServer({ plebbit, rpcOptions, authKey });
     let error;
     const errorListener = (err) => (error = err);
     plebbitWss.on("error", errorListener);
@@ -564,7 +557,7 @@ const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }) => {
     if (error)
         throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
             error: error,
-            options: { port, plebbitOptions, authKey }
+            options: { rpcOptions, plebbitOptions, authKey }
         });
     plebbitWss.removeListener("error", errorListener);
     return plebbitWss;
