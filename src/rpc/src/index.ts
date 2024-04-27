@@ -48,17 +48,13 @@ class PlebbitWsServer extends EventEmitter {
     private _listSubsSubscriptionIdToConnectionId: Record<string, string> = {};
     private _lastListedSubs?: { subs: string[]; timestamp: number };
 
-    constructor({ port, plebbit, plebbitOptions, authKey }: PlebbitWsServerClassOptions) {
+    constructor({ rpcOptions, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
         const log = Logger("plebbit:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
-        this.rpcWebsockets = new RpcWebsocketsServer({
-            port
-            // might be needed to specify host for security later
-            // host: 'localhost'
-        });
+        this.rpcWebsockets = new RpcWebsocketsServer(rpcOptions);
         // rpc-sockets uses this library https://www.npmjs.com/package/ws
         this.ws = this.rpcWebsockets.wss;
 
@@ -667,14 +663,10 @@ class PlebbitWsServer extends EventEmitter {
     }
 }
 
-const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }: PlebbitWsServerOptions) => {
-    if (typeof port !== "number") {
-        throw Error(`createPlebbitWsServer port '${port}' not a number`);
-    }
-
+const createPlebbitWsServer = async ({ rpcOptions, plebbitOptions, authKey }: PlebbitWsServerOptions) => {
     const plebbit = await PlebbitJs.Plebbit(plebbitOptions);
 
-    const plebbitWss = new PlebbitWsServer({ plebbit, port, plebbitOptions, authKey });
+    const plebbitWss = new PlebbitWsServer({ plebbit, rpcOptions, authKey });
 
     let error: Error;
     const errorListener = (err) => (error = err);
@@ -685,7 +677,7 @@ const createPlebbitWsServer = async ({ port, plebbitOptions, authKey }: PlebbitW
     if (error)
         throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
             error: error,
-            options: { port, plebbitOptions, authKey }
+            options: { rpcOptions, plebbitOptions, authKey }
         });
 
     plebbitWss.removeListener("error", errorListener);
