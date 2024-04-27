@@ -39,7 +39,7 @@
         "dist/"
     ],
     "dependencies": {
-        "@bonfida/spl-name-service": "2.3.8",
+        "@bonfida/spl-name-service": "2.4.2",
         "@chainsafe/libp2p-gossipsub": "12.0.0",
         "@chainsafe/libp2p-noise": "15.0.0",
         "@chainsafe/libp2p-yamux": "6.0.2",
