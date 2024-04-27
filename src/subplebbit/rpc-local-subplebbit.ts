@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
-import { InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitSettings } from "./types.js";
+import { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions, SubplebbitSettings } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import {
     DecryptedChallengeAnswerMessageType,
@@ -18,6 +18,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     private _startRpcSubscriptionId?: number;
     protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded";
+    signer!: InternalSubplebbitRpcType["signer"];
     settings?: SubplebbitSettings;
 
     constructor(plebbit: Plebbit) {
@@ -26,12 +27,21 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._setStartedState("stopped");
     }
 
+    override toJSON(): LocalSubplebbitRpcJsonType | LocalSubplebbitJsonType {
+        return {
+            ...this.toJSONInternalRpc(),
+            posts: this.posts.toJSON(),
+            shortAddress: this.shortAddress
+        };
+    }
+
     toJSONInternalRpc(): InternalSubplebbitRpcType {
         return {
             ...this.toJSONIpfs(),
             settings: this.settings,
             _usingDefaultChallenge: this._usingDefaultChallenge,
-            started: this.started
+            started: this.started,
+            signer: this.signer
         };
     }
 
@@ -40,6 +50,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.settings = newProps.settings;
         this._usingDefaultChallenge = newProps._usingDefaultChallenge;
         this.started = newProps.started;
+        this.signer = newProps.signer;
     }
 
     protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {

@@ -4,6 +4,7 @@ import {
     Challenge,
     CreateNewLocalSubplebbitOptions,
     InternalSubplebbitType,
+    LocalSubplebbitJsonType,
     SubplebbitChallengeSettings,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
@@ -71,7 +72,14 @@ import {
 import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
-import { Signer, decryptEd25519AesGcmPublicKeyBuffer, verifyComment, verifySubplebbit, verifyVote } from "../../../signer/index.js";
+import {
+    Signer,
+    SignerWithPublicKeyAddress,
+    decryptEd25519AesGcmPublicKeyBuffer,
+    verifyComment,
+    verifySubplebbit,
+    verifyVote
+} from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
 import Author from "../../../publications/author.js";
@@ -96,7 +104,7 @@ import * as remeda from "remeda";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
-    signer!: Signer;
+    signer!: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
     private _defaultSubplebbitChallenges: SubplebbitChallengeSettings[] = [
@@ -134,8 +142,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     toJSONInternal(): InternalSubplebbitType {
         return {
             ...remeda.omit(this.toJSONInternalRpc(), ["started"]),
-            signer: remeda.pick(this.signer, ["privateKey", "type", "address"]),
+            signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+        };
+    }
+
+    override toJSON(): LocalSubplebbitJsonType {
+        return {
+            ...this.toJSONInternal(),
+            posts: this.posts.toJSON(),
+            shortAddress: this.shortAddress
         };
     }
 
@@ -151,13 +167,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        this.challenges = newProps.challenges;
+        if (newProps.challenges) this.challenges = newProps.challenges;
         this.roles = newProps.roles;
         this.features = newProps.features;
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
-        this.stats = newProps.stats;
         if (newProps.encryption) this.encryption = newProps.encryption;
     }
 
@@ -1313,7 +1328,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _initSignerProps(newSignerProps: InternalSubplebbitType["signer"]) {
-        this.signer = new Signer(newSignerProps);
+        this.signer = new SignerWithPublicKeyAddress(newSignerProps);
         if (!this.signer?.ipfsKey?.byteLength || this.signer?.ipfsKey?.byteLength <= 0)
             this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(this.signer.privateKey));
         if (!this.signer.ipnsKeyName) this.signer.ipnsKeyName = this.signer.address;

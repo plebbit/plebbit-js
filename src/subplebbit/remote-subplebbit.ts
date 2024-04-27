@@ -14,18 +14,18 @@ import type {
     CreateSubplebbitOptions,
     Flair,
     FlairOwner,
+    RemoteSubplebbitJsonType,
     SubplebbitEditOptions,
     SubplebbitEncryption,
     SubplebbitFeatures,
     SubplebbitIpfsType,
     SubplebbitRole,
     SubplebbitStats,
-    SubplebbitSuggested,
-    SubplebbitType
+    SubplebbitSuggested
 } from "./types.js";
 import * as remeda from "remeda";
 
-export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
+export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
     title?: string;
     description?: string;
@@ -40,14 +40,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     flairs?: Record<FlairOwner, Flair[]>;
     address!: string;
     shortAddress!: string;
-    statsCid?: string;
+    statsCid!: string;
     createdAt!: number;
     updatedAt!: number;
     encryption!: SubplebbitEncryption;
     protocolVersion!: ProtocolVersion; // semantic version of the protocol https://semver.org/
     signature!: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
     rules?: string[];
-    challenges: SubplebbitType["challenges"];
+    challenges!: SubplebbitIpfsType["challenges"];
     postUpdates?: { [timestampRange: string]: string };
 
     // Only for Subplebbit instance
@@ -89,7 +89,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         });
     }
 
-    async _updateLocalPostsInstanceIfNeeded(newPosts: SubplebbitIpfsType["posts"] | SubplebbitType["posts"]) {
+    async _updateLocalPostsInstanceIfNeeded(newPosts: SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"]) {
         if (!newPosts) return;
 
         // need to also check if this.address differs from this.posts.subplebbitAddress
@@ -111,7 +111,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
     }
 
-    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | SubplebbitType) {
+    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | RemoteSubplebbitJsonType) {
         // for now it's copy pasted, TODO remove duplicate code
         this.title = newProps.title;
         this.description = newProps.description;
@@ -173,10 +173,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         if (this.address !== this.posts._subplebbitAddress) this.posts._subplebbitAddress = this.address;
     }
 
-    toJSON(): SubplebbitType {
+    toJSON(): RemoteSubplebbitJsonType {
         return {
             ...this._toJSONBase(),
-            posts: this.posts?.toJSON(),
+            posts: this.posts.toJSON(),
             shortAddress: this.shortAddress
         };
     }

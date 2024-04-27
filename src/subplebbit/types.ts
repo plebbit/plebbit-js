@@ -8,6 +8,7 @@ import type {
     PagesTypeIpfs,
     PagesTypeJson,
     PostsPagesTypeIpfs,
+    PostsPagesTypeJson,
     ProtocolVersion
 } from "../types.js";
 import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
@@ -82,30 +83,47 @@ export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export type FlairOwner = "post" | "author";
 
-// A JSON representation of Subplebbit, sub.toJSON()
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
+export type RemoteSubplebbitJsonType = Omit<SubplebbitIpfsType, "posts"> & {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+};
+
+export type LocalSubplebbitJsonType = Omit<InternalSubplebbitType, "posts"> & {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+};
+
+export type LocalSubplebbitRpcJsonType = Omit<InternalSubplebbitRpcType, "posts"> & {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+};
+
+export interface SubplebbitIpfsType {
+    posts?: PostsPagesTypeIpfs;
+    challenges: SubplebbitChallenge[];
     signature: JsonSignature;
     encryption: SubplebbitEncryption;
     address: string;
-    shortAddress: string;
-    signer?: SignerType;
     createdAt: number;
     updatedAt: number;
     pubsubTopic?: string;
-    statsCid?: string;
+    statsCid: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts?: PagesTypeJson;
     postUpdates?: { [timestampRange: string]: string }; // Timestamp range to cid of folder
-}
-
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings" | "signer"> {
-    posts?: PostsPagesTypeIpfs;
-    challenges: Required<SubplebbitType["challenges"]>;
+    title?: string;
+    description?: string;
+    roles?: { [authorAddress: string]: SubplebbitRole };
+    rules?: string[];
+    lastPostCid?: string;
+    lastCommentCid?: string;
+    features?: SubplebbitFeatures;
+    suggested?: SubplebbitSuggested;
+    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
 }
 
 // This type will be stored in the db as the current state
 export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateSubplebbitOptions, "settings"> {
-    signer: Pick<SignerType, "address" | "privateKey" | "type">;
+    signer: Pick<SignerWithPublicKeyAddress, "address" | "privateKey" | "type" | "shortAddress" | "publicKey">;
     _subplebbitUpdateTrigger: boolean;
     _usingDefaultChallenge: boolean;
 }
@@ -113,6 +131,7 @@ export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateS
 // This will be transmitted over RPC connection for local subs
 export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {
     started: RpcLocalSubplebbit["started"];
+    signer: Omit<InternalSubplebbitType["signer"], "privateKey">;
 }
 
 export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
@@ -147,7 +166,6 @@ export interface SubplebbitEditOptions {
     lastPostCid?: string;
     lastCommentCid?: string;
     pubsubTopic?: string;
-    stats?: SubplebbitStats;
     features?: SubplebbitFeatures;
     suggested?: SubplebbitSuggested;
     flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
