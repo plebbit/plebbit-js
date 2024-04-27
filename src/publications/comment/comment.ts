@@ -136,23 +136,28 @@ export class Comment extends Publication {
         this.title = props.title;
     }
 
-    _initIpfsProps(props: CommentIpfsType) {
-        // we're loading remote CommentIpfs
+    _initPubsubMessageProps(props: CommentPubsubMessage){
         super._initBaseRemoteProps(props);
         this.content = props.content;
-        this.depth = props.depth;
         this.flair = props.flair;
         this.link = props.link;
         this.linkHeight = props.linkHeight;
         this.linkWidth = props.linkWidth;
         this.parentCid = props.parentCid;
+        this.spoiler = props.spoiler;
+        this.title = props.title;
+
+    }
+
+    _initIpfsProps(props: CommentIpfsType) {
+        // we're loading remote CommentIpfs
+        this._initPubsubMessageProps(props);
+        this.depth = props.depth;
         this.postCid = props.postCid;
         this.previousCid = props.previousCid;
-        this.spoiler = props.spoiler;
         this.thumbnailUrl = props.thumbnailUrl;
         this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.thumbnailUrlWidth = props.thumbnailUrlWidth;
-        this.title = props.title;
     }
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {

@@ -91,13 +91,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
     async _updateLocalPostsInstanceIfNeeded(newPosts: SubplebbitIpfsType["posts"] | SubplebbitType["posts"]) {
         if (!newPosts) return;
-        // TODO check if we need to update this.posts, most of the time we don't need to
 
         // need to also check if this.address differs from this.posts.subplebbitAddress
         // when this.posts.pageCids differs from mergedProps.posts.pageCids OR
         // when this.address !== this.posts.subplebbitAddress
 
-        if (this.address !== this.posts._subplebbitAddress) this.posts._subplebbitAddress = this.address;
         const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
 
         if (shouldUpdatePosts) {
@@ -113,7 +111,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         }
     }
 
-    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType) {
+    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | SubplebbitType) {
         // for now it's copy pasted, TODO remove duplicate code
         this.title = newProps.title;
         this.description = newProps.description;
@@ -172,6 +170,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
+        if (this.address !== this.posts._subplebbitAddress) this.posts._subplebbitAddress = this.address;
     }
 
     toJSON(): SubplebbitType {

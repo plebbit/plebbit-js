@@ -9,6 +9,7 @@ import {
     ChallengeVerificationMessageType,
     CommentEditPubsubMessage,
     CommentIpfsType,
+    CommentPubsubMessage,
     DecryptedChallenge,
     DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
@@ -131,7 +132,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.challengeCommentCids = props.challengeCommentCids;
     }
 
-    _initBaseRemoteProps(props: CommentIpfsType | VotePubsubMessage | CommentEditPubsubMessage) {
+    _initBaseRemoteProps(props: CommentIpfsType | CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage) {
         this._setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signature = props.signature;

@@ -346,16 +346,21 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             if (Object.keys(options).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
 
-        if ("signature" in options && "depth" in options) {
-            // We're loading a remote comment
+        if ("depth" in options) {
+            // Options is CommentIpfs
             commentInstance._initIpfsProps(options);
+        } else if ("signature" in options) {
+            // Options is CommentPubsubMessage
+            commentInstance._initPubsubMessageProps(options);
         } else if ("signer" in options) {
             // we're creating a new comment to sign and publish here
             const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
             const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
             commentInstance._initLocalProps(signedComment);
-        } else throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
+        } else {
+            throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
+        }
 
         if ("updatedAt" in options) await commentInstance._initCommentUpdate(options);
 
@@ -405,7 +410,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         }
     }
 
-    private async _createRemoteSubplebbitInstance(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+    private async _createRemoteSubplebbitInstance(options: RemoteSubplebbit | SubplebbitType | SubplebbitIpfsType) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
@@ -414,7 +419,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const subplebbit = new RemoteSubplebbit(this);
-        await subplebbit.initRemoteSubplebbitPropsWithMerge(options);
+        if (options instanceof RemoteSubplebbit) await subplebbit.initRemoteSubplebbitPropsNoMerge(options.toJSONIpfs());
+        else await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
+
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
@@ -452,7 +459,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async createSubplebbit(
-        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
+        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType | RemoteSubplebbit = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
@@ -469,13 +476,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if ("signer" in options && !canCreateLocalSub)
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
-        if (!canCreateLocalSub) return this._createRemoteSubplebbitInstance(options);
+        if (!canCreateLocalSub)
+            return this._createRemoteSubplebbitInstance(<SubplebbitType | SubplebbitIpfsType | RemoteSubplebbit>options);
 
         if (typeof options.address === "string" && !("signer" in options)) {
+            // sub is already created, need to check if it's local or remote
             const localSubs = await this.listSubplebbits();
             const isSubLocal = localSubs.includes(options.address);
             if (isSubLocal) return this._createLocalSub({ address: options.address });
-            else return this._createRemoteSubplebbitInstance(options);
+            else return this._createRemoteSubplebbitInstance(<SubplebbitType | SubplebbitIpfsType | RemoteSubplebbit>options);
         } else if (typeof options.address !== "string" && !("signer" in options)) {
             // no address, no signer, create signer and assign address to signer.address
 
@@ -484,7 +493,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
             return this._createLocalSub(localOptions);
-        } else if (typeof options.address !== "string" && "signer" in options && remeda.isPlainObject(options.signer)) {
+        } else if (typeof options.address !== "string" && "signer" in options) {
             const signer = await this.createSigner(options.signer);
             const localOptions: CreateLocalSubplebbitOptions = { ...options, address: signer.address, signer };
             return this._createLocalSub(localOptions);

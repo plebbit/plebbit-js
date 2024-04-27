@@ -140,12 +140,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _updateStartedValue() {
-        this.started = await this.dbHandler.isSubStartLocked(this.address); // should be false now
+        this.started = await this.dbHandler.isSubStartLocked(this.address);
     }
 
     async initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitOptions) {
-        await this.initRpcInternalSubplebbitWithMerge(newProps);
-        if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
+        if (newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
+        this.title = newProps.title;
+        this.description = newProps.description;
+        this.lastPostCid = newProps.lastPostCid;
+        this.lastCommentCid = newProps.lastCommentCid;
+        this.setAddress(newProps.address);
+        this.pubsubTopic = newProps.pubsubTopic;
+        this.challenges = newProps.challenges;
+        this.roles = newProps.roles;
+        this.features = newProps.features;
+        this.suggested = newProps.suggested;
+        this.rules = newProps.rules;
+        this.flairs = newProps.flairs;
+        this.stats = newProps.stats;
+        if (newProps.encryption) this.encryption = newProps.encryption;
     }
 
     async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {
@@ -472,7 +485,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
                 const commentInDbInstance = await this.plebbit.createComment(commentInDb);
                 const validity = await verifyComment(
-                    commentInDbInstance.toJSONIpfs(),
+                    removeUndefinedValuesRecursively(commentInDbInstance.toJSONIpfs()),
                     this.plebbit.resolveAuthorAddresses,
                     this.clientsManager,
                     false
@@ -966,7 +979,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange");
 
-        let msgParsed: ChallengeRequestMessageType | ChallengeAnswerMessageType | undefined;
+        let msgParsed:
+            | ChallengeRequestMessageType
+            | ChallengeAnswerMessageType
+            | ChallengeMessageType
+            | ChallengeVerificationMessage
+            | undefined;
         try {
             msgParsed = cborg.decode(pubsubMsg.data);
             if (msgParsed?.type === "CHALLENGEREQUEST") {
@@ -981,6 +999,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     msgParsed.challengeRequestId
                 );
             else if (msgParsed?.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
+            else if (msgParsed?.type === "CHALLENGE" || msgParsed?.type === "CHALLENGEVERIFICATION")
+                log(`Received a pubsub message that is not meant to by processed by the sub - ${msgParsed?.type}`);
             else throw Error("Wasn't able to detect the type of challenge message");
         } catch (e) {
             (<Error>e).message =

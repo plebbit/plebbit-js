@@ -82,6 +82,7 @@ export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export type FlairOwner = "post" | "author";
 
+// A JSON representation of Subplebbit, sub.toJSON()
 export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
     signature: JsonSignature;
     encryption: SubplebbitEncryption;

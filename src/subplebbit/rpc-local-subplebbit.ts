@@ -17,7 +17,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
     protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
-    startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded"; // TODO Should move to rpc-local-subplebbit
+    startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded";
     settings?: SubplebbitSettings;
 
     constructor(plebbit: Plebbit) {
@@ -35,15 +35,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         };
     }
 
-    async initRpcInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitRpcType>) {
-        const mergedProps = { ...this.toJSONInternalRpc(), ...newProps };
-        await super.initRemoteSubplebbitPropsWithMerge(newProps);
-        this.settings = mergedProps.settings;
-        this._usingDefaultChallenge = mergedProps._usingDefaultChallenge;
-        this.started = mergedProps.started;
-    }
-
-    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType){
+    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType) {
         await super.initRemoteSubplebbitPropsNoMerge(newProps);
         this.settings = newProps.settings;
         this._usingDefaultChallenge = newProps._usingDefaultChallenge;

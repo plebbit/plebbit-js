@@ -98,8 +98,8 @@ export class BasePages {
     }
 
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
-        if (!this.pages) return undefined; // I forgot why this line is here
-        if (!this._pagesIpfs) {
+        if (remeda.isEmpty(this.pages)) return undefined; // I forgot why this line is here
+        if (!this._pagesIpfs && !remeda.isEmpty(this.pages)) {
             Logger("plebbit-js:pages:toJSONIpfs").error(
                 `toJSONIpfs() is called on sub(${this._subplebbitAddress}) and parentCid (${this._parentCid}) even though _pagesIpfs is undefined. This error should not persist`
             );
