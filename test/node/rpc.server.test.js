@@ -14,7 +14,7 @@ describe(`Setting up rpc server`, async () => {
     it(`Rpc server throws is rpc port is already taken`, async () => {
         const rpcServerPort = 9138;
         const options = {
-            rpcOptions: { port: rpcServerPort },
+            port: rpcServerPort,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
                 dataPath: plebbit.plebbitDataPath
