@@ -48,13 +48,13 @@ class PlebbitWsServer extends EventEmitter {
     private _listSubsSubscriptionIdToConnectionId: Record<string, string> = {};
     private _lastListedSubs?: { subs: string[]; timestamp: number };
 
-    constructor({ rpcOptions, plebbit, authKey }: PlebbitWsServerClassOptions) {
+    constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
         const log = Logger("plebbit:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
-        this.rpcWebsockets = new RpcWebsocketsServer(rpcOptions);
+        this.rpcWebsockets = new RpcWebsocketsServer({ port, server });
         // rpc-sockets uses this library https://www.npmjs.com/package/ws
         this.ws = this.rpcWebsockets.wss;
 
@@ -663,10 +663,10 @@ class PlebbitWsServer extends EventEmitter {
     }
 }
 
-const createPlebbitWsServer = async ({ rpcOptions, plebbitOptions, authKey }: PlebbitWsServerOptions) => {
+const createPlebbitWsServer = async ({ port, server, plebbitOptions, authKey }: PlebbitWsServerOptions) => {
     const plebbit = await PlebbitJs.Plebbit(plebbitOptions);
 
-    const plebbitWss = new PlebbitWsServer({ plebbit, rpcOptions, authKey });
+    const plebbitWss = new PlebbitWsServer({ plebbit, port, server, authKey });
 
     let error: Error;
     const errorListener = (err) => (error = err);
@@ -677,7 +677,7 @@ const createPlebbitWsServer = async ({ rpcOptions, plebbitOptions, authKey }: Pl
     if (error)
         throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
             error: error,
-            options: { rpcOptions, plebbitOptions, authKey }
+            options: { port, server, plebbitOptions, authKey }
         });
 
     plebbitWss.removeListener("error", errorListener);
