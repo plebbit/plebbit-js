@@ -2,8 +2,7 @@ import { Plebbit } from "../../plebbit.js";
 import { PlebbitOptions } from "../../types.js";
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 
-export type PlebbitWsServerClassOptions = {
-    rpcOptions: ConstructorParameters<typeof RpcWebsocketsServer>[0];
+export type PlebbitWsServerClassOptions = Pick<ConstructorParameters<typeof RpcWebsocketsServer>[0], "port" | "server"> & {
     plebbit: Plebbit;
     authKey?: string;
 };
