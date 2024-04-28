@@ -10,11 +10,11 @@ import { NameRegistryState, getDomainKeySync } from "@bonfida/spl-name-service";
 import { normalize as normalizeEnsAddress } from "viem/ens";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
-const viemClients: Record<string, ReturnType<typeof createViemClient>> = {};
+export const viemClients: Record<string, ReturnType<typeof createViemClient>> = {};
 
-const solanaConnections: Record<string, SolanaConnection> = {};
+export const solanaConnections: Record<string, SolanaConnection> = {};
 
-const ethersClients: Record<string, ReturnType<typeof ethers.getDefaultProvider>> = {};
+export const ethersClients: Record<string, ReturnType<typeof ethers.getDefaultProvider>> = {};
 
 // TODO Should be rename to domain resolver
 
@@ -54,7 +54,7 @@ async function _resolveViaViem(
     return txtRecordResult || null;
 }
 
-async function _resolveViaSolana(address: string, txtRecordName: string, chainProviderUrl: string) {
+async function _resolveViaSolana(address: string, txtRecordName: string, chainProviderUrl: string): Promise<string | null> {
     const log = Logger("plebbit-js:resolver:_resolveViaSolana");
     if (!solanaConnections[chainProviderUrl]) {
         const endPoint = chainProviderUrl === "web3.js" ? clusterApiUrl("mainnet-beta") : chainProviderUrl;
@@ -81,7 +81,7 @@ async function _resolveViaSolana(address: string, txtRecordName: string, chainPr
     return null;
 }
 
-async function _resolveViaEthers(chainTicker: ChainTicker, address: string, txtRecordName: string) {
+async function _resolveViaEthers(chainTicker: ChainTicker, address: string, txtRecordName: string): Promise<string | null> {
     const log = Logger("plebbit-js:resolver:_resolveViaEthers");
 
     const clientKey = "ethers.js";

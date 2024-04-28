@@ -90,15 +90,15 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async _updateLocalPostsInstanceIfNeeded(newPosts: SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"]) {
-        if (!newPosts) return;
-
+        const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
         // need to also check if this.address differs from this.posts.subplebbitAddress
         // when this.posts.pageCids differs from mergedProps.posts.pageCids OR
         // when this.address !== this.posts.subplebbitAddress
 
-        const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
+        const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts?.pageCids || {});
 
         if (shouldUpdatePosts) {
+            log.trace(`Updating the props of subplebbit (${this.address}) posts`);
             const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
                 await parseRawPages(newPosts, this.plebbit)
             );
@@ -106,7 +106,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
                 ...parsedPages,
                 plebbit: this.plebbit,
                 subplebbitAddress: this.address,
-                pageCids: newPosts.pageCids
+                pageCids: newPosts?.pageCids || {}
             });
         }
     }

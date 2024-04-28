@@ -328,6 +328,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 pageCids: subplebbitPosts.pageCids,
                 pages: remeda.pick(subplebbitPosts.pages, ["hot"])
             });
+        else delete newIpns.posts;
+
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
@@ -1384,8 +1386,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     : newSubplebbitOptions.settings.challenges;
 
         if ("roles" in newSubplebbitOptions && remeda.isPlainObject(newSubplebbitOptions.roles)) {
-            const newRoles: SubplebbitIpfsType["roles"] = remeda.omitBy(newSubplebbitOptions.roles, remeda.isNil); // remove author addresses with undefined or null
-            newSubplebbitOptions.roles = newRoles;
+            // remove author addresses with undefined, null or empty object {}
+            const newRoles: SubplebbitIpfsType["roles"] = remeda.omitBy(
+                newSubplebbitOptions.roles,
+                (val, key) => val?.role === undefined || val?.role === null
+            );
+            newSubplebbitOptions.roles = remeda.isEmpty(newRoles) ? undefined : newRoles;
             log("New roles after edit", newSubplebbitOptions.roles);
         }
 

@@ -16,6 +16,8 @@ import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -458,11 +460,11 @@ export async function waitTillCommentIsInParentPages(
     propsToCheckFor: Partial<CreateCommentOptions> = {},
     checkInAllPages = false
 ) {
-    if (!comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
+    if (comment.depth > 0 && !comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
     const parent =
         comment.depth === 0
             ? await plebbit.getSubplebbit(comment.subplebbitAddress)
-            : await plebbit.createComment({ cid: comment.parentCid });
+            : await plebbit.createComment({ cid: <string>comment.parentCid });
     await parent.update();
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage: Comment | undefined;
@@ -502,10 +504,13 @@ export async function waitTillCommentIsInParentPages(
                 throw Error(`commentInPage[${commentKey}] is incorrect`);
 }
 
-export async function createSubWithNoChallenge(props: CreateSubplebbitOptions, plebbit: Plebbit) {
+export async function createSubWithNoChallenge(
+    props: CreateSubplebbitOptions,
+    plebbit: Plebbit
+): Promise<LocalSubplebbit | RpcLocalSubplebbit> {
     const sub = await plebbit.createSubplebbit(props);
     await sub.edit({ settings: { challenges: undefined } }); // No challenge
-    return sub;
+    return <LocalSubplebbit | RpcLocalSubplebbit>sub;
 }
 
 export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
