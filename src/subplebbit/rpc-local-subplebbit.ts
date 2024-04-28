@@ -16,7 +16,7 @@ import * as remeda from "remeda"; // tree-shaking supported!
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
-    protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
+    protected _usingDefaultChallenge!: boolean;
     startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded";
     signer!: InternalSubplebbitRpcType["signer"];
     settings?: SubplebbitSettings;

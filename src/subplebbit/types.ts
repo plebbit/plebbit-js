@@ -158,20 +158,24 @@ export type CreateInstanceOfLocalSubplebbitOptions = { address: SubplebbitIpfsTy
 
 export type CreateLocalSubplebbitOptions = CreateNewLocalSubplebbitOptions | CreateInstanceOfLocalSubplebbitOptions;
 
-export interface SubplebbitEditOptions {
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole };
-    rules?: string[];
-    lastPostCid?: string;
-    lastCommentCid?: string;
-    pubsubTopic?: string;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-    address?: string;
+export interface SubplebbitEditOptions
+    extends Partial<
+        Pick<
+            SubplebbitIpfsType,
+            | "flairs"
+            | "address"
+            | "title"
+            | "description"
+            | "roles"
+            | "rules"
+            | "lastPostCid"
+            | "lastCommentCid"
+            | "pubsubTopic"
+            | "features"
+            | "suggested"
+        >
+    > {
     settings?: SubplebbitSettings;
-    challenges?: SubplebbitChallenge[] | null;
 }
 
 interface ExcludeSubplebbit {

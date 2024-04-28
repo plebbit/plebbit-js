@@ -54,7 +54,7 @@ export class CommentEdit extends Publication {
         this._initEditProps(props);
     }
 
-    toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
+    override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
@@ -74,7 +74,7 @@ export class CommentEdit extends Publication {
         };
     }
 
-    toJSON(): CommentEditTypeJson {
+    override toJSON(): CommentEditTypeJson {
         return {
             ...this.toJSONPubsubMessagePublication(),
             shortSubplebbitAddress: this.shortSubplebbitAddress,
@@ -92,7 +92,7 @@ export class CommentEdit extends Publication {
         };
     }
 
-    getType(): PublicationTypeName {
+    override getType(): PublicationTypeName {
         return "commentedit";
     }
 
@@ -102,7 +102,7 @@ export class CommentEdit extends Publication {
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
-    async publish(): Promise<void> {
+    override async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
         if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 

@@ -3,8 +3,8 @@ import { messages } from "./errors.js";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {
     code: keyof typeof messages;
-    message: messages;
-    stack?: string;
+    override message: messages;
+    override stack?: string;
     details: Record<string, any>; // Used to hold key-value of related props. Could be cid of a comment that failed to update
     constructor(code: keyof typeof messages, details?: any) {
         super(messages[code]);
@@ -13,7 +13,7 @@ export class PlebbitError extends CustomError {
         this.details = details;
     }
 
-    toString() {
+    override toString() {
         return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(remeda.omit(this.details, ["stack"]))}`;
     }
 

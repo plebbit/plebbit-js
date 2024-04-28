@@ -110,69 +110,69 @@ export class BasePages {
 }
 
 export class RepliesPages extends BasePages {
-    pages!: Partial<Record<ReplySortName, PageInstanceType>>;
+    override pages!: Partial<Record<ReplySortName, PageInstanceType>>;
 
-    pageCids!: Record<ReplySortName, string> | {};
+    override pageCids!: Record<ReplySortName, string> | {};
 
-    clients!: RepliesPagesClientsManager["clients"];
+    override clients!: RepliesPagesClientsManager["clients"];
 
-    _clientsManager!: RepliesPagesClientsManager;
+    override _clientsManager!: RepliesPagesClientsManager;
 
-    _parentCid!: string | undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
+    override _parentCid!: string | undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
 
-    protected _pagesIpfs: RepliesPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
+    protected override _pagesIpfs: RepliesPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: RepliesProps) {
         super(props);
     }
 
-    updateProps(props: RepliesProps) {
+    override updateProps(props: RepliesProps) {
         super.updateProps(props);
     }
 
-    protected _initClientsManager(): void {
+    protected override _initClientsManager(): void {
         this._clientsManager = new RepliesPagesClientsManager(this);
         this.clients = this._clientsManager.clients;
     }
 
-    toJSON(): RepliesPagesTypeJson | undefined {
+    override toJSON(): RepliesPagesTypeJson | undefined {
         return <RepliesPagesTypeJson | undefined>super.toJSON();
     }
 
-    toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
+    override toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
         return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
 }
 
 export class PostsPages extends BasePages {
-    pages!: Partial<Record<PostSortName, PageInstanceType>>;
+    override pages!: Partial<Record<PostSortName, PageInstanceType>>;
 
-    pageCids!: Record<PostSortName, string> | {};
+    override pageCids!: Record<PostSortName, string> | {};
 
-    clients!: PostsPagesClientsManager["clients"];
+    override clients!: PostsPagesClientsManager["clients"];
 
-    _clientsManager!: PostsPagesClientsManager;
-    _parentCid: undefined;
-    protected _pagesIpfs: PostsPagesTypeIpfs | undefined;
+    override _clientsManager!: PostsPagesClientsManager;
+    override _parentCid: undefined;
+    protected override _pagesIpfs: PostsPagesTypeIpfs | undefined;
 
     constructor(props: PostsProps) {
         super(props);
     }
 
-    updateProps(props: PostsProps) {
+    override updateProps(props: PostsProps) {
         super.updateProps(props);
     }
 
-    protected _initClientsManager(): void {
+    protected override _initClientsManager(): void {
         this._clientsManager = new PostsPagesClientsManager(this);
         this.clients = this._clientsManager.clients;
     }
 
-    toJSON(): PostsPagesTypeJson | undefined {
+    override toJSON(): PostsPagesTypeJson | undefined {
         return <PostsPagesTypeJson | undefined>super.toJSON();
     }
 
-    toJSONIpfs(): PostsPagesTypeIpfs | undefined {
+    override toJSONIpfs(): PostsPagesTypeIpfs | undefined {
         return <PostsPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
 }

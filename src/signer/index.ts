@@ -32,7 +32,7 @@ export class Signer implements SignerType {
 }
 
 export class SignerWithPublicKeyAddress extends Signer {
-    publicKey: string;
+    override publicKey: string;
     constructor(props: SignerType & { publicKey: string }) {
         super(props);
         this.publicKey = props.publicKey;

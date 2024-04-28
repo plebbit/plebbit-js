@@ -35,7 +35,7 @@ class Vote extends Publication  {
         this.vote = props.vote;
     }
 
-    toJSONPubsubMessagePublication(): VotePubsubMessage {
+    override toJSONPubsubMessagePublication(): VotePubsubMessage {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
@@ -47,7 +47,7 @@ class Vote extends Publication  {
         };
     }
 
-    toJSON(): VoteTypeJson {
+    override toJSON(): VoteTypeJson {
         return {
             ...this.toJSONPubsubMessagePublication(),
             shortSubplebbitAddress: this.shortSubplebbitAddress,
@@ -55,7 +55,7 @@ class Vote extends Publication  {
         };
     }
 
-    getType(): PublicationTypeName {
+    override getType(): PublicationTypeName {
         return "vote";
     }
 
@@ -73,7 +73,7 @@ class Vote extends Publication  {
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
-    async publish(): Promise<void> {
+    override async publish(): Promise<void> {
         if (![-1, 0, 1].includes(this.vote)) throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { vote: this.vote });
         if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 

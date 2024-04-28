@@ -104,7 +104,7 @@ import * as remeda from "remeda";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
-    signer!: SignerWithPublicKeyAddress;
+    override signer!: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
     private _defaultSubplebbitChallenges: SubplebbitChallengeSettings[] = [
@@ -125,7 +125,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private _sortHandler!: SortHandler;
     public dbHandler!: DbHandler;
-    protected _usingDefaultChallenge!: boolean;
     private _isSubRunningLocally: boolean;
     private _publishLoopPromise?: Promise<void>;
     private _publishInterval?: NodeJS.Timeout;
@@ -167,7 +166,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        if (newProps.challenges) this.challenges = newProps.challenges;
         this.roles = newProps.roles;
         this.features = newProps.features;
         this.suggested = newProps.suggested;
@@ -1392,7 +1390,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         const newProps: Partial<
-            SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger">
+            SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges">
         > = {
             ...newSubplebbitOptions,
             _subplebbitUpdateTrigger: true
@@ -1439,7 +1437,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return this;
     }
 
-    async start() {
+    override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
 
         await this._initBeforeStarting();

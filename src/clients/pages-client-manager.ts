@@ -9,7 +9,6 @@ import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid, throwWithErrorCode } from "../util.js";
-import { verifyPage } from "../signer/signatures.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -71,25 +70,25 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     // Override methods from BaseClientsManager here
 
-    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
+    override preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
         const cid = path.split("/")[2];
         const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
 
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
+    override postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
         const cid = path.split("/")[2];
         const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
 
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
+    override postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     }
 
-    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void {
+    override postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void {
         this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
     }
 
@@ -188,25 +187,25 @@ export class BasePagesClientsManager extends BaseClientsManager {
 }
 
 export class RepliesPagesClientsManager extends BasePagesClientsManager {
-    clients!: {
+    override clients!: {
         ipfsGateways: Record<ReplySortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<ReplySortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<ReplySortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 
-    protected getSortTypes() {
+    protected override getSortTypes() {
         return remeda.keys.strict(REPLIES_SORT_TYPES);
     }
 }
 
 export class PostsPagesClientsManager extends BasePagesClientsManager {
-    clients!: {
+    override clients!: {
         ipfsGateways: Record<PostSortName, { [ipfsGatewayUrl: string]: PagesIpfsGatewayClient }>;
         ipfsClients: Record<PostSortName, { [ipfsClientUrl: string]: PagesIpfsGatewayClient }>;
         plebbitRpcClients: Record<PostSortName, { [rpcUrl: string]: PagesPlebbitRpcStateClient }>;
     };
 
-    protected getSortTypes() {
+    protected override getSortTypes() {
         return remeda.keys.strict(POSTS_SORT_TYPES);
     }
 }

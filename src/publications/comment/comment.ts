@@ -34,7 +34,7 @@ export class Comment extends Publication {
     // Only Comment props
     shortCid?: string;
 
-    clients!: CommentClientsManager["clients"];
+    override clients!: CommentClientsManager["clients"];
 
     // public (CommentType)
     title?: string;
@@ -44,7 +44,6 @@ export class Comment extends Publication {
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
-    protocolVersion!: ProtocolVersion;
     cid?: string;
     parentCid?: string;
     content?: string;
@@ -89,7 +88,7 @@ export class Comment extends Publication {
     private _rawCommentUpdate?: CommentUpdate;
     private _rawCommentIpfs?: CommentIpfsType;
     private _loadingOperation?: RetryOperation;
-    _clientsManager!: CommentClientsManager;
+    override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number;
 
     constructor(plebbit: Plebbit) {
@@ -111,7 +110,7 @@ export class Comment extends Publication {
         });
     }
 
-    _initClients() {
+    override _initClients() {
         this._clientsManager = new CommentClientsManager(this);
         this.clients = this._clientsManager.clients;
     }
@@ -212,7 +211,7 @@ export class Comment extends Publication {
         }
     }
 
-    protected _updateLocalCommentPropsWithVerification(
+    protected override _updateLocalCommentPropsWithVerification(
         props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
     ) {
         if (!props) return;
@@ -232,11 +231,11 @@ export class Comment extends Publication {
         this.setPreviousCid(props.previousCid);
     }
 
-    getType(): PublicationTypeName {
+    override getType(): PublicationTypeName {
         return "comment";
     }
 
-    toJSON(): CommentTypeJson {
+    override toJSON(): CommentTypeJson {
         const base = this.cid
             ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
             : this.toJSONPubsubMessagePublication();
@@ -295,7 +294,7 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONPubsubMessagePublication(): CommentPubsubMessage {
+    override toJSONPubsubMessagePublication(): CommentPubsubMessage {
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
@@ -497,7 +496,7 @@ export class Comment extends Publication {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
-    protected _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
+    protected override _setRpcClientState(newState: Comment["clients"]["plebbitRpcClients"][""]["state"]) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         if (newState === this.clients.plebbitRpcClients[currentRpcUrl].state) return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
@@ -591,7 +590,7 @@ export class Comment extends Publication {
         }
     }
 
-    async stop() {
+    override async stop() {
         await super.stop();
         this._setUpdatingState("stopped");
         await this._stopUpdateLoop();
@@ -603,7 +602,7 @@ export class Comment extends Publication {
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
-    async publish(): Promise<void> {
+    override async publish(): Promise<void> {
         await this._validateSignature();
         return super.publish();
     }
