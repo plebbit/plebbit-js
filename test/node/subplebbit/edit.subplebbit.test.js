@@ -10,10 +10,12 @@ import {
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
 import signers from "../../fixtures/signers";
-import * as remeda from "remeda";
+import Sinon from "sinon";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";
+import * as remeda from "remeda";
+import * as resolverClass from "../../../dist/node/resolver";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -21,24 +23,33 @@ import { v4 as uuidV4 } from "uuid";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
+const resolverSandbox = Sinon.createSandbox();
+const originalResolveTxtRecord = resolverClass.resolveTxtRecord;
+
 if (!isRpcFlagOn())
     describe(`subplebbit.edit`, async () => {
         let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
         before(async () => {
-            plebbit = await mockPlebbit({}, true, false);
+            const testEthRpc = `testEthRpc-${uuidV4()}.com`;
+            plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } }, true, false);
             subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
             ethAddress = `test-edit-${uuidV4()}.eth`;
-            const originalPlebbit = await mockPlebbit();
-            const subplebbitAddress = lodash.clone(subplebbit.address);
-            plebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-                if (ensName === ethAddress && txtRecordName) return subplebbitAddress;
-                else return originalPlebbit.resolver.resolveTxtRecord(ensName, txtRecordName);
+
+            resolverClass.viemClients["eth" + testEthRpc] = {
+                getEnsText: ({ name, key }) => {
+                    if (name === ethAddress && key === "subplebbit-address") return subplebbit.signer.address;
+                    else return null;
+                }
             };
+
+            await plebbit.resolveAuthorAddress("esteban.eth");
             await subplebbit.start();
             await new Promise((resolve) => subplebbit.once("update", resolve));
             await publishRandomPost(subplebbit.address, plebbit);
         });
-        after(async () => await subplebbit.stop());
+        after(async () => {
+            await subplebbit.stop();
+        });
 
         [{ title: `Test subplebbit title edit ${Date.now()}` }, { description: `Test subplebbit description edit ${Date.now()}` }].map(
             (editArgs) =>
@@ -76,8 +87,8 @@ if (!isRpcFlagOn())
         });
 
         it(`Local subplebbit resets posts after changing address`, async () => {
-            expect(subplebbit.posts.pages).to.be.undefined;
-            expect(subplebbit.posts.pageCids).to.undefined;
+            expect(subplebbit.posts.pages).to.deep.equal({});
+            expect(subplebbit.posts.pageCids).to.deep.equal({});
         });
 
         it(`Start locks are moved to the new address`, async () => {
@@ -97,8 +108,8 @@ if (!isRpcFlagOn())
             const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
             // subplebbit.posts should omit all comments that referenced the old subplebbit address
             // So in essence it be undefined
-            expect(loadedSubplebbit.posts.pages).to.be.undefined;
-            expect(loadedSubplebbit.posts.pageCids).to.undefined;
+            expect(loadedSubplebbit.posts.pages).to.deep.equal({});
+            expect(loadedSubplebbit.posts.pageCids).to.deep.equal({});
         });
 
         it(`Started Sub can receive publications on new ENS address`, async () => {
@@ -154,14 +165,18 @@ if (!isRpcFlagOn())
             { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
         ].map((editArgs) =>
             it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
-                const plebbit = await mockPlebbit();
+                const ethRpcTest = `testEthRpc${uuidV4()}.com`;
+                const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest] } } });
                 // create subplebbit
                 const subplebbitTitle = "subplebbit title" + timestamp();
                 const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
-                const subplebbitSignerAddress = lodash.clone(subplebbit.address);
                 if (editArgs.address)
-                    plebbit.resolver.resolveTxtRecord = async (subAddress, txtRecordName) =>
-                        subAddress === editArgs.address ? subplebbitSignerAddress : subAddress;
+                    resolverClass.viemClients["eth" + ethRpcTest] = {
+                        getEnsText: ({ name, key }) => {
+                            if (name === editArgs.address && key === "subplebbit-address") return subplebbit.signer.address;
+                            else return null;
+                        }
+                    };
 
                 // subplebbit is updating
                 const updatingSubplebbit = await createSubWithNoChallenge({ address: subplebbit.address }, plebbit);
@@ -232,15 +247,18 @@ if (!isRpcFlagOn())
         );
 
         it(`Can edit a local sub address, then start it`, async () => {
-            const customPlebbit = await mockPlebbit();
+            const ethRpcTest = `testEthRpc${uuidV4()}.com`;
+            const customPlebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest] } } });
             const signer = await customPlebbit.createSigner();
             const domain = `edit-before-start-${uuidV4()}.eth`;
 
             const originalPlebbit = await mockPlebbit();
 
-            customPlebbit.resolver.resolveTxtRecord = (ensName, txtRecordName) => {
-                if (ensName === domain && txtRecordName === "subplebbit-address") return signer.address;
-                else return originalPlebbit.resolver.resolveTxtRecord(ensName, txtRecordName);
+            resolverClass.viemClients["eth" + ethRpcTest] = {
+                getEnsText: ({ name, key }) => {
+                    if (name === domain && key === "subplebbit-address") return signer.address;
+                    else return null;
+                }
             };
             const sub = await createSubWithNoChallenge({ signer }, customPlebbit);
             await sub.edit({ address: domain });
@@ -289,7 +307,7 @@ describe(`Edit misc`, async () => {
         await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
         await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
 
-        const newSettings = lodash.cloneDeep(newSub.settings);
+        const newSettings = remeda.clone(newSub.settings);
         newSettings.challenges[0].exclude[0].rateLimit = "123";
         newSettings.challenges[0].exclude[0].firstCommentTimestamp = "123";
 
@@ -354,20 +372,21 @@ describe(`Editing subplebbit.roles`, async () => {
         remoteSub = await remotePlebbit.getSubplebbit(sub.address);
         expect(remoteSub.roles).to.be.undefined;
     });
-    it.skip(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
-        const newSub = await customPlebbit.createSubplebbit();
+    it(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
+        const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
         await assert.isFulfilled(remotePlebbit.getSubplebbit(newSub.address)); // no problem with signature
 
-        const newRoles = { "author-address.eth": { role: null } };
+        const newRoles = { "author-address.eth": { role: null }, "author-address2.eth": { role: "admin" } };
         await newSub.edit({ roles: newRoles });
-        expect(newSub.roles["author-address.eth"].role).to.be.null;
+        expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
+
         await new Promise((resolve) => newSub.once("update", resolve));
-        expect(newSub.roles["author-address.eth"].role).to.be.null;
+        expect(newSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
 
         const remoteSub = await remotePlebbit.getSubplebbit(newSub.address); // no issues with signature
-        expect(remoteSub.roles["author-address.eth"].role).to.be.null;
+        expect(remoteSub.roles).to.deep.equal({ "author-address2.eth": { role: "admin" } });
 
         await newSub.delete();
     });
