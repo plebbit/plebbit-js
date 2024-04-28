@@ -8,7 +8,8 @@
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
         "sourceMap": true,
-        "strict": true
+        "strict": true,
+        "noImplicitOverride": true
     },
     "include": ["../src/**/*"],
     "exclude": ["../node_modules"]
