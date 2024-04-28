@@ -136,7 +136,7 @@ export class Comment extends Publication {
         this.title = props.title;
     }
 
-    _initPubsubMessageProps(props: CommentPubsubMessage){
+    _initPubsubMessageProps(props: CommentPubsubMessage) {
         super._initBaseRemoteProps(props);
         this.content = props.content;
         this.flair = props.flair;
@@ -146,7 +146,6 @@ export class Comment extends Publication {
         this.parentCid = props.parentCid;
         this.spoiler = props.spoiler;
         this.title = props.title;
-
     }
 
     _initIpfsProps(props: CommentIpfsType) {
@@ -466,8 +465,7 @@ export class Comment extends Publication {
 
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
-            //@ts-expect-error
-            const commentInstance: Pick<CommentIpfsWithCid, "cid" | "signature"> = lodash.pick(this, ["cid", "signature"]);
+            const commentInstance = remeda.pick(this.toJSONAfterChallengeVerification(), ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
                 commentUpdate,

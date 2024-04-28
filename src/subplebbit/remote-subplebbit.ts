@@ -143,7 +143,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.lastCommentCid = mergedProps.lastCommentCid;
         this.setAddress(mergedProps.address);
         this.pubsubTopic = mergedProps.pubsubTopic;
-        this.challenges = mergedProps.challenges;
+        if (Array.isArray(mergedProps.challenges)) this.challenges = mergedProps.challenges;
         this.statsCid = mergedProps.statsCid;
         this.createdAt = mergedProps.createdAt;
         this.updatedAt = mergedProps.updatedAt;

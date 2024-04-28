@@ -33,7 +33,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         await this.initRemoteSubplebbitPropsNoMerge(rpcProps);
     }
 
-    async update() {
+    override async update() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:update");
 
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
@@ -65,7 +65,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
-    async stop() {
+    override async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
 
         if (this._updateRpcSubscriptionId) await this.plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);

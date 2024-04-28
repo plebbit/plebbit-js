@@ -53,7 +53,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.signer = newProps.signer;
     }
 
-    protected async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
+    protected override async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
         await this.initRpcInternalSubplebbitNoMerge(rpcProps);
     }
 
@@ -74,7 +74,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         mapper[startedState].forEach(this._setRpcClientState.bind(this));
     }
 
-    async start() {
+    override async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
         try {
             this._startRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.startSubplebbit(this.address);
@@ -127,7 +127,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
 
-    async stop() {
+    override async stop() {
         if (this.state === "updating") {
             return super.stop();
         } else if (this.state === "started") {
@@ -148,7 +148,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         }
     }
 
-    async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
         // settings.challenges = [] means sub has no challenges
         if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)
@@ -163,12 +163,12 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         return this;
     }
 
-    async update() {
+    override async update() {
         if (this.state === "started") return;
         else return super.update();
     }
 
-    async delete() {
+    override async delete() {
         if (this._startRpcSubscriptionId) {
             await this.plebbit.plebbitRpcClient!.unsubscribe(this._startRpcSubscriptionId);
             this._startRpcSubscriptionId = undefined;

@@ -160,7 +160,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     async initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitOptions) {
-        if (newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
+        await this._initSignerProps(newProps.signer);
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
@@ -178,7 +178,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {
         await this.initRpcInternalSubplebbitNoMerge({ ...newProps, started: this.started });
-        if (newProps.signer && newProps.signer.privateKey !== this.signer?.privateKey) await this._initSignerProps(newProps.signer);
+        await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
     }
 
@@ -1374,7 +1374,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
     }
 
-    async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const log = Logger("plebbit-js:local-subplebbit:edit");
 
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
@@ -1485,7 +1485,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    async update() {
+    override async update() {
         const log = Logger("plebbit-js:local-subplebbit:update");
         if (this.state === "updating" || this.state === "started") return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
@@ -1502,7 +1502,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this.plebbit.updateInterval)));
     }
 
-    async stop() {
+    override async stop() {
         const log = Logger("plebbit-js:local-subplebbit:stop");
 
         if (this.state === "started") {
@@ -1528,7 +1528,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._setState("stopped");
     }
 
-    async delete() {
+    override async delete() {
         await this.stop();
 
         const ipfsClient = this.clientsManager.getDefaultIpfs();
