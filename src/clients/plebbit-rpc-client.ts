@@ -29,7 +29,7 @@ export default class PlebbitRpcClient {
     private _listSubsSubscriptionId?: number;
     private _lastListedSubs?: string[];
     constructor(plebbit: Plebbit) {
-        assert(plebbit.plebbitRpcClientsOptions);
+        assert(plebbit.plebbitRpcClientsOptions, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
         this._plebbit = plebbit;
         this._timeoutSeconds = 20;
 
@@ -46,6 +46,7 @@ export default class PlebbitRpcClient {
     async _init() {
         const log = Logger("plebbit-js:plebbit-rpc-client:_init");
         // wait for websocket connection to open
+        let lastWebsocketError: Error | undefined;
         if (!(this._webSocketClient instanceof WebSocketClient)) {
             // Set up events here
             // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
@@ -71,13 +72,10 @@ export default class PlebbitRpcClient {
                 }
             });
 
-            // debug raw JSON RPC messages in console (optional)
-            //@ts-expect-error
-            this._webSocketClient.socket.on("message", (message) => log.trace("from RPC server:", message.toString()));
-
             // forward errors to Plebbit
             this._webSocketClient.on("error", (error) => {
                 this._plebbit.emit("error", error);
+                lastWebsocketError = error;
             });
 
             this._webSocketClient.on("close", () => {
@@ -113,15 +111,19 @@ export default class PlebbitRpcClient {
             throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
                 plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
                 timeoutSeconds: this._timeoutSeconds,
-                error: e
+                error: lastWebsocketError
             });
         }
     }
 
     async destroy() {
-        for (const subscriptionId of Object.keys(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
+        try {
+            for (const subscriptionId of Object.keys(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
+        } catch {}
 
-        this._webSocketClient.close();
+        try {
+            this._webSocketClient.close();
+        } catch {}
 
         this._webSocketClient =
             this._listSubsSubscriptionId =
