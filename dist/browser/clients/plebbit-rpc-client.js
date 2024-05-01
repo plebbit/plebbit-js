@@ -11,7 +11,7 @@ export default class PlebbitRpcClient {
     constructor(plebbit) {
         this._subscriptionEvents = {}; // subscription ID -> event emitter
         this._pendingSubscriptionMsgs = {};
-        assert(plebbit.plebbitRpcClientsOptions);
+        assert(plebbit.plebbitRpcClientsOptions, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
         this._plebbit = plebbit;
         this._timeoutSeconds = 20;
         // temporary place holder because we don't want to initialize the web socket client until we call
@@ -26,6 +26,7 @@ export default class PlebbitRpcClient {
     async _init() {
         const log = Logger("plebbit-js:plebbit-rpc-client:_init");
         // wait for websocket connection to open
+        let lastWebsocketError;
         if (!(this._webSocketClient instanceof WebSocketClient)) {
             // Set up events here
             // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
@@ -49,12 +50,10 @@ export default class PlebbitRpcClient {
                         this._subscriptionEvents[subscriptionId].emit(message?.params?.event, message);
                 }
             });
-            // debug raw JSON RPC messages in console (optional)
-            //@ts-expect-error
-            this._webSocketClient.socket.on("message", (message) => log.trace("from RPC server:", message.toString()));
             // forward errors to Plebbit
             this._webSocketClient.on("error", (error) => {
                 this._plebbit.emit("error", error);
+                lastWebsocketError = error;
             });
             this._webSocketClient.on("close", () => {
                 log.error("connection with web socket has been closed");
@@ -92,14 +91,20 @@ export default class PlebbitRpcClient {
             throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
                 plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
                 timeoutSeconds: this._timeoutSeconds,
-                error: e
+                error: lastWebsocketError
             });
         }
     }
     async destroy() {
-        for (const subscriptionId of Object.keys(this._subscriptionEvents))
-            await this.unsubscribe(Number(subscriptionId));
-        this._webSocketClient.close();
+        try {
+            for (const subscriptionId of Object.keys(this._subscriptionEvents))
+                await this.unsubscribe(Number(subscriptionId));
+        }
+        catch { }
+        try {
+            this._webSocketClient.close();
+        }
+        catch { }
         this._webSocketClient =
             this._listSubsSubscriptionId =
                 this._lastListedSubs =

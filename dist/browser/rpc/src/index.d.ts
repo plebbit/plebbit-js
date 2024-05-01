@@ -25,6 +25,7 @@ declare class PlebbitWsServer extends EventEmitter {
     authKey: string | undefined;
     private _listSubsSubscriptionIdToConnectionId;
     private _lastListedSubs?;
+    private _getIpFromConnectionRequest;
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;

@@ -28,11 +28,33 @@ class PlebbitWsServer extends EventEmitter {
         // store publishing publications so they can be used by publishChallengeAnswers
         this.publishing = {};
         this._listSubsSubscriptionIdToConnectionId = {};
-        const log = Logger("plebbit:PlebbitWsServer");
+        this._getIpFromConnectionRequest = (req) => req.socket.remoteAddress; // we set it up here so we can mock it in tests
+        const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
         this.plebbit = plebbit;
-        this.rpcWebsockets = new RpcWebsocketsServer({ port, server });
+        this.rpcWebsockets = new RpcWebsocketsServer({
+            port,
+            server,
+            verifyClient: ({ req }, callback) => {
+                // block non-localhost requests without auth key for security
+                const requestOriginatorIp = this._getIpFromConnectionRequest(req);
+                log.trace("Received new connection request from", requestOriginatorIp, "with url", req.url);
+                const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === "x-forwarded-for" && i % 2 === 0));
+                // client is on localhost and server is not forwarded by a proxy
+                // req.socket.localAddress is the local address of the rpc server
+                const isLocalhost = req.socket.localAddress && req.socket.localAddress === requestOriginatorIp && !xForwardedFor;
+                // the request path is the auth key, e.g. localhost:9138/some-random-auth-key (not secure on http)
+                const hasAuth = this.authKey && `/${this.authKey}` === req.url;
+                // if isn't localhost and doesn't have auth, block access
+                if (!isLocalhost && !hasAuth) {
+                    log("Rejecting RPC connection request because there is no auth key");
+                    callback(false, 403, "You need to set the auth key to connect remotely");
+                }
+                else
+                    callback(true);
+            }
+        });
         // rpc-sockets uses this library https://www.npmjs.com/package/ws
         this.ws = this.rpcWebsockets.wss;
         // forward errors to PlebbitWsServer
@@ -44,19 +66,6 @@ class PlebbitWsServer extends EventEmitter {
         });
         this.on("error", (err) => {
             log.error(err);
-        });
-        // block non-localhost requests without auth key for security
-        // @ts-ignore
-        this.ws._server.on("upgrade", (req) => {
-            const xForwardedFor = Boolean(req.rawHeaders.find((item, i) => item.toLowerCase() === "x-forwarded-for" && i % 2 === 0));
-            // client is on localhost and server is not forwarded by a proxy
-            const localHostUrls = ["::1", "::ffff:127.0.0.1"];
-            const isLocalhost = localHostUrls.includes(req.socket.remoteAddress) && !xForwardedFor;
-            // the request path is the auth key, e.g. localhost:9138/some-random-auth-key (not secure on http)
-            const hasAuth = this.authKey && `/${this.authKey}` === req.url;
-            // if isn't localhost and doesn't have auth, block access
-            if (!isLocalhost && !hasAuth)
-                req.destroy();
         });
         // save connections to send messages to them later
         this.ws.on("connection", (ws) => {
