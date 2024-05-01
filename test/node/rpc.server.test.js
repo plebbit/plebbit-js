@@ -2,14 +2,30 @@ import PlebbitWsServer from "../../dist/node/rpc/src/index";
 import { mockPlebbit } from "../../dist/node/test/test-util";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import os from "os";
+import Plebbit from "../../dist/node";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
+
+const getLanIpV4Address = () => {
+    const allInterfaces = os.networkInterfaces();
+    for (const k in allInterfaces) {
+        const specificInterfaceInfos = allInterfaces[k];
+        if (!specificInterfaceInfos) continue;
+
+        const lanAddress = specificInterfaceInfos.filter((info) => info.family === "IPv4" && !info.internal)[0]?.address;
+        if (lanAddress) return lanAddress;
+    }
+    return undefined;
+};
 
 describe(`Setting up rpc server`, async () => {
     let plebbit;
 
+    const lanAddress = getLanIpV4Address(); // LAN address (non-internal)
     before(async () => {
         plebbit = await mockPlebbit();
+        expect(lanAddress).to.be.a("string");
     });
     it(`Rpc server throws is rpc port is already taken`, async () => {
         const rpcServerPort = 9138;
@@ -28,7 +44,208 @@ describe(`Setting up rpc server`, async () => {
         } catch (e) {
             expect(e.code).to.equal("ERR_FAILED_TO_CREATE_WS_RPC_SERVER");
             expect(e.details.error.code).to.equal("EADDRINUSE");
+        } finally {
+            await rpcServer.destroy();
         }
+    });
+
+    it(`Can connect to rpc server locally with ws://localhost:port`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://localhost:${rpcServerPort}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Can connect to rpc server locally with ws://127.0.0.1:port`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://127.0.0.1:${rpcServerPort}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Can connect to rpc server locally with ws://localhost:port/authkey`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://localhost:${rpcServerPort}/${authKey}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Can connect to rpc server locally with ws://127.0.0.1:port/authkey`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://127.0.0.1:${rpcServerPort}/${authKey}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Fails to connect to rpc server with remote device with no auth key`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        rpcServer._getIpFromConnectionRequest = () => "::ffff:192.168.1.80"; // random ip address, trying to emulate a remote device
+
+        const rpcUrl = `ws://${lanAddress}:${rpcServerPort}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] });
+        clientPlebbit.on("error", () => {});
+
+        try {
+            await clientPlebbit.createSubplebbit({});
+            expect.fail("Should throw an error");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC");
+        } finally {
+            await clientPlebbit.destroy();
+            await rpcServer.destroy();
+        }
+    });
+
+    it(`Succeeds in connecting to rpc server from remote device with auth key`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        rpcServer._getIpFromConnectionRequest = () => "::ffff:192.168.1.80"; // random ip address, trying to emulate a remote device
+
+        const rpcUrl = `ws://${lanAddress}:${rpcServerPort}/${authKey}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Can connect to rpc server if from local device and used remote address (no auth key)`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://${lanAddress}:${rpcServerPort}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
+        await rpcServer.destroy();
+    });
+
+    it(`Can connect to rpc server if from local device but used remote address (with auth key)`, async () => {
+        const rpcServerPort = 9139;
+        const authKey = "dwadwa";
+        const options = {
+            port: rpcServerPort,
+            authKey,
+            plebbitOptions: {
+                ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                dataPath: plebbit.plebbitDataPath
+            }
+        };
+        const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
+
+        const rpcUrl = `ws://${lanAddress}:${rpcServerPort}/${authKey}`;
+        const clientPlebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl], dataPath: undefined });
+
+        const sub = await clientPlebbit.createSubplebbit({});
+        expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
+        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+
+        await clientPlebbit.destroy();
         await rpcServer.destroy();
     });
 });
