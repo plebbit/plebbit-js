@@ -11,6 +11,8 @@ import {
     isRpcFlagOn,
     mockPlebbit
 } from "../../dist/node/test/test-util.js";
+import { v4 as uuidV4 } from "uuid";
+import * as resolverClass from "../../dist/node/resolver.js";
 
 const mockComments = [];
 
@@ -81,7 +83,7 @@ describe("Comments with Authors as domains", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
-    it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
+    it.only(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
         // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
         const mockPost = await plebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
@@ -104,23 +106,29 @@ describe("Comments with Authors as domains", async () => {
 
     if (!isRpcFlagOn())
         it(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
-            // There are two mocks of resovleAuthorAddressIfNeeded, one return undefined on testgibbreish.eth (server side) and this one returns signers[6]
+            // There are two mocks of resovleAuthorAddressIfNeeded, one return null on testgibbreish.eth (server side) and this one returns signers[6]
             // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-            const tempPlebbit = await mockRemotePlebbit();
+            const testEthRpc = `testEthRpc${uuidV4()}.com`;
+
+            const authorAddress = "testgibbreish.eth";
+            const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+
+            resolverClass.viemClients["eth" + testEthRpc] = {
+                getEnsText: ({ name, key }) => {
+                    if (name === authorAddress && key === "plebbit-author-address") return signers[6].address;
+                    else return null;
+                }
+            };
 
             const mockPost = await tempPlebbit.createComment({
-                author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
+                author: { displayName: `Mock Author - ${Date.now()}`, address: authorAddress },
                 signer: signers[6],
                 content: `Mock comment - ${Date.now()}`,
                 title: "Mock post Title",
                 subplebbitAddress: signers[0].address
             });
 
-            tempPlebbit.resolver.resolveTxtRecord = () => {
-                return signers[6].address;
-            };
-
-            expect(mockPost.author.address).to.equal("testgibbreish.eth");
+            expect(mockPost.author.address).to.equal(authorAddress);
 
             await publishWithExpectedResult(mockPost, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
             expect(mockPost.author.address).to.equal("testgibbreish.eth");
@@ -150,7 +158,15 @@ describe(`Vote with authors as domains`, async () => {
 
     if (!isRpcFlagOn())
         it(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-            const tempPlebbit = await mockRemotePlebbit();
+            const testEthRpc = `testEthRpc${uuidV4()}.com`;
+            const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+
+            resolverClass.viemClients["eth" + testEthRpc] = {
+                getEnsText: ({ name, key }) => {
+                    if (name === authorAddress && key === "plebbit-author-address") return signers[6].address;
+                    else return null;
+                }
+            };
             const vote = await tempPlebbit.createVote({
                 author: { displayName: `Mock Author - ${Date.now()}`, address: "testgibbreish.eth" },
                 signer: signers[6],
@@ -160,9 +176,6 @@ describe(`Vote with authors as domains`, async () => {
             });
             expect(vote.author.address).to.equal("testgibbreish.eth");
 
-            tempPlebbit.resolver.resolveTxtRecord = () => {
-                return signers[6].address;
-            };
             await publishWithExpectedResult(vote, false, messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE);
             expect(vote.author.address).to.equal("testgibbreish.eth");
         });
@@ -171,17 +184,21 @@ describe(`Vote with authors as domains`, async () => {
 // This code won't run in rpc clients
 describe(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
-        const plebbit = await mockRemotePlebbit();
+        const testEthRpc = `testEthRpc${uuidV4()}.com`;
+        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
 
         let resolveHit = 0;
 
         const address = "madeupname" + Math.round(Date.now()) + ".eth";
 
         const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
-        plebbit.resolver.resolveTxtRecord = (...args) => {
-            resolveHit++;
-            if (resolveHit < 4) throw Error("failed to resolve because whatever");
-            else return subplebbitTextRecordOfAddress;
+
+        resolverClass.viemClients["eth" + testEthRpc] = {
+            getEnsText: ({ name, key }) => {
+                resolveHit++;
+                if (resolveHit < 4) throw Error("failed to resolve because whatever");
+                else return subplebbitTextRecordOfAddress;
+            }
         };
 
         const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);

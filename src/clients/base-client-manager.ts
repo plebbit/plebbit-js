@@ -527,11 +527,11 @@ export class BaseClientsManager {
             if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
-            if (!(e instanceof PlebbitError)) throw Error("Failed to detect PlebbitError" + e);
             domainResolverPromiseCache.delete(cacheKey);
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
+            const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_GENERIC_RESOLVER_ERROR", { error: e });
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
             if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
-            return { error: e };
+            return { error: parsedError };
         }
     }
     private async _resolveTextRecordConcurrently(
