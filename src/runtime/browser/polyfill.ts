@@ -21,6 +21,8 @@ if (window && !window?.crypto?.subtle) {
     console.log("window.crypto.subtle is not set, attempting to polyfill window.crypto.subtle.digest");
 
     //@ts-expect-error
+    if (!window.crypto) window.crypto = {}; // to handle vitest in plebbit-react-hooks
+    //@ts-expect-error
     window.crypto.subtle = {
         digest: (hashMethod, arrayBuffer) => {
             if (hashMethod === "SHA-512") return sha512.digest(arrayBuffer);
