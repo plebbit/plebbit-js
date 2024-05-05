@@ -23,6 +23,7 @@ import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
+import pTimeout, { TimeoutError } from "p-timeout";
 export class Plebbit extends TypedEmitter {
     constructor(options = {}) {
         super();
@@ -189,12 +190,16 @@ export class Plebbit extends TypedEmitter {
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         let updateError;
-        const errorPromise = new Promise((resolve) => subplebbit.once("error", (err) => resolve((updateError = err))));
+        subplebbit.on("error", (err) => (updateError = err));
         try {
             await subplebbit.update();
-            await Promise.race([updatePromise, errorPromise, new Promise((_, reject) => setTimeout(() => reject("timed out"), timeoutMs))]);
+            await pTimeout(updatePromise, {
+                milliseconds: timeoutMs,
+                message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbitAddress}) timed out after ${timeoutMs}ms`)
+            });
         }
         catch (e) {
+            subplebbit.removeAllListeners("error");
             await subplebbit.stop();
             if (updateError)
                 throw updateError;
@@ -202,6 +207,7 @@ export class Plebbit extends TypedEmitter {
                 throw subplebbit._ipnsLoadingOperation.mainError();
             throw Error("Timed out without error. Should not happen" + e);
         }
+        subplebbit.removeAllListeners("error");
         await subplebbit.stop();
         return subplebbit;
     }

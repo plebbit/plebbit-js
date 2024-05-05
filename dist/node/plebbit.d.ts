@@ -61,7 +61,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pleb
     private _initResolver;
     private _parseUrlToOption;
     _init(options: PlebbitOptions): Promise<void>;
-    getSubplebbit(subplebbitAddress: string): Promise<LocalSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | RemoteSubplebbit>;
+    getSubplebbit(subplebbitAddress: string): Promise<RemoteSubplebbit>;
     getComment(cid: string): Promise<Comment>;
     private _initMissingFields;
     private _createCommentInstance;
