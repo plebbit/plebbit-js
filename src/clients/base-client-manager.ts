@@ -456,7 +456,7 @@ export class BaseClientsManager {
             if (cachedTextRecord.stale)
                 this._resolveTextRecordConcurrently(address, txtRecord, chain)
                     .then((newTextRecordValue) =>
-                        log(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`)
+                        log.trace(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`)
                     )
                     .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
             return cachedTextRecord.resolveCache;

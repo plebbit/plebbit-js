@@ -159,7 +159,7 @@ describe("publishing comments", async () => {
         expect(post.author.wallets).to.deep.equal({});
 
         const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
-        expect(loadedPost.author.wallets).deep.equal({})
+        expect(loadedPost.author.wallets).deep.equal({});
     });
 
     if (!isRpcFlagOn())
