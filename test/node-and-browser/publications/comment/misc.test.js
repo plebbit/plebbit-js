@@ -93,7 +93,7 @@ describe("createComment", async () => {
     });
 
     it(`Can recreate a stringified Post instance with plebbit.createComment`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { signer: lodash.sample(signers) });
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
         expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
     });
@@ -102,8 +102,8 @@ describe("createComment", async () => {
         const post = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
         expect(post.replies).to.be.a("object");
         await publishRandomReply(post, plebbit, {}, true);
-        await Promise.all([post.update(), new Promise((resolve) => post.once("update", resolve))]);
-        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        await post.update();
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
         expect(post.content).to.be.a("string");
         expect(post.replyCount).to.equal(1);
         expect(post.replies.pages.topAll.comments.length).to.equal(1);
@@ -404,8 +404,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         plebbit = await mockRemotePlebbit();
         post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await post.update();
-        await new Promise((resolve) => post.once("update", resolve));
-        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
     });
 
     after(async () => await post.stop());
@@ -963,7 +962,7 @@ describe(`comment.clients`, async () => {
     describe(`comment.clients.chainProviders`, async () => {
         it(`comment.clients.chainProviders[url][chainTicker].state is stopped by default`, async () => {
             const mockPost = await generateMockPost(subplebbitAddress, plebbit);
-            expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(4);
+            expect(Object.keys(mockPost.clients.chainProviders).length).to.equal(1);
             for (const chain of Object.keys(mockPost.clients.chainProviders)) {
                 expect(Object.keys(mockPost.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockPost.clients.chainProviders[chain]))
@@ -979,7 +978,9 @@ describe(`comment.clients`, async () => {
 
             const actualStates = [];
 
-            mockPost.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
+            const chainProviderUrl = Object.keys(mockPost.clients.chainProviders.eth)[0];
+
+            mockPost.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await publishWithExpectedResult(mockPost, true);
 
@@ -1048,39 +1049,42 @@ describe(`comment.clients`, async () => {
         before(async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             commentCid = subplebbit.posts.pages.hot.comments.find((comment) => comment.replyCount > 0).cid;
+            expect(commentCid).to.be.a("string");
         });
-        //prettier-ignore
-        if (!isRpcFlagOn()) 
-        describe(`comment.replies.clients.ipfsClients`, async () => {
-            it(`comment.replies.clients.ipfsClients is undefined for gateway plebbit`, async () => {
-                const comment = await gatewayPlebbit.getComment(commentCid);
-                expect(comment.replies.clients.ipfsClients).to.be.undefined;
-            });
+        if (!isRpcFlagOn())
+            describe(`comment.replies.clients.ipfsClients`, async () => {
+                it(`comment.replies.clients.ipfsClients is {} for gateway plebbit`, async () => {
+                    const comment = await gatewayPlebbit.getComment(commentCid);
+                    const sortTypes = Object.keys(comment.replies.clients.ipfsClients);
+                    expect(sortTypes).to.deep.equal(["topAll", "new", "controversialAll", "old"]);
 
-            it(`comment.replies.clients.ipfsClients[sortType][url] is stopped by default`, async () => {
-                const comment = await plebbit.getComment(commentCid);
-                const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
-                expect(Object.keys(comment.replies.clients.ipfsClients["new"]).length).to.equal(1);
-                expect(comment.replies.clients.ipfsClients["new"][ipfsUrl].state).to.equal("stopped");
-            });
-
-            it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
-                const comment = await plebbit.getComment(commentCid);
-                await comment.update();
-                await new Promise((resolve) => comment.once("update", resolve));
-                const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
-
-                const expectedStates = ["fetching-ipfs", "stopped"];
-                const actualStates = [];
-                comment.replies.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
-                    actualStates.push(newState);
+                    for (const sortType of sortTypes) expect(comment.replies.clients.ipfsClients[sortType]).to.deep.equal({}); // should be empty
                 });
 
-                await comment.replies.getPage(comment.replies.pageCids.new);
-                await comment.stop();
-                expect(actualStates).to.deep.equal(expectedStates);
+                it(`comment.replies.clients.ipfsClients[sortType][url] is stopped by default`, async () => {
+                    const comment = await plebbit.getComment(commentCid);
+                    const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
+                    expect(Object.keys(comment.replies.clients.ipfsClients["new"]).length).to.equal(1);
+                    expect(comment.replies.clients.ipfsClients["new"][ipfsUrl].state).to.equal("stopped");
+                });
+
+                it(`Correct state of 'new' sort is updated after fetching from comment.replies.pageCids.new`, async () => {
+                    const comment = await plebbit.getComment(commentCid);
+                    await comment.update();
+                    await new Promise((resolve) => comment.once("update", resolve));
+                    const ipfsUrl = Object.keys(comment.clients.ipfsClients)[0];
+
+                    const expectedStates = ["fetching-ipfs", "stopped"];
+                    const actualStates = [];
+                    comment.replies.clients.ipfsClients["new"][ipfsUrl].on("statechange", (newState) => {
+                        actualStates.push(newState);
+                    });
+
+                    await comment.replies.getPage(comment.replies.pageCids.new);
+                    await comment.stop();
+                    expect(actualStates).to.deep.equal(expectedStates);
+                });
             });
-        });
 
         //prettier-ignore
         if (!isRpcFlagOn()) 
