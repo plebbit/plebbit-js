@@ -444,7 +444,7 @@ export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<C
     deleted?: boolean;
 }
 
-export interface CommentIpfsType extends Omit<CommentPubsubMessage, "challengeAnswers" | "challengeCommentCids"> {
+export interface CommentIpfsType extends CommentPubsubMessage {
     depth: number;
     postCid?: string;
     thumbnailUrl?: string;
