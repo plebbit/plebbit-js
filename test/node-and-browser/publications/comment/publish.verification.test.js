@@ -63,7 +63,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     it("Subplebbit reject a comment under a non existent parent", async () => {
         const comment = await plebbit.createComment({
             parentCid: "gibberish", // invalid parentCid,
-            signer: lodash.sample(signers),
+            signer: remeda.sample(signers, 1)[0],
             subplebbitAddress
         });
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);

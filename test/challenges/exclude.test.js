@@ -172,17 +172,17 @@ describe("shouldExcludePublication", () => {
         // high-karma.eth is a mod
         const modAuthor = { address: "high-karma.eth" };
 
-        const commentEditOfMod = lodash.cloneDeep(validCommentEditFixture);
+        const commentEditOfMod = remeda.clone(validCommentEditFixture);
         commentEditOfMod.author = modAuthor;
 
-        const postOfMod = lodash.cloneDeep(validCommentFixture);
+        const postOfMod = remeda.clone(validCommentFixture);
         postOfMod.author = modAuthor;
 
         const replyOfMod = {
             ...postOfMod,
             parentCid: "Qm..."
         };
-        const voteOfMod = lodash.cloneDeep(validVoteFixture);
+        const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
         expect(shouldExcludePublication(subplebbitChallenge, commentEditOfMod)).to.equal(true);

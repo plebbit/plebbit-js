@@ -49,7 +49,7 @@ describe("sign comment", async () => {
         const signedComment = { signature: signature, ...comment };
         const verificaiton = await verifyComment(signedComment, plebbit.resolveAuthorAddresses);
         expect(verificaiton).to.deep.equal({ valid: true });
-        signedCommentClone = lodash.cloneDeep(signedComment);
+        signedCommentClone = remeda.clone(signedComment);
     });
 
     it("Can sign a comment with an imported key", async () => {
@@ -85,13 +85,13 @@ describe("sign comment", async () => {
     });
 
     it(`signComment throws with author.address not being an IPNS or domain`, async () => {
-        const cloneComment = lodash.cloneDeep(signedCommentClone);
+        const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = "gibbreish";
         await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
     });
     it(`signComment throws with author.address=undefined`, async () => {
-        const cloneComment = lodash.cloneDeep(signedCommentClone);
+        const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = undefined;
         await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
@@ -126,7 +126,7 @@ describe("verify Comment", async () => {
     });
 
     it("verifyComment failure with wrong signature", async () => {
-        const invalidSignature = lodash.cloneDeep(fixtureSignature);
+        const invalidSignature = remeda.clone(fixtureSignature);
         invalidSignature.signedPropertyNames = invalidSignature.signedPropertyNames.slice(1); // Invalidate signature
 
         const wronglySignedPublication = { ...fixtureComment, signature: invalidSignature };
@@ -136,26 +136,26 @@ describe("verify Comment", async () => {
 
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
 
-        const comment = lodash.cloneDeep(validCommentFixture);
+        const comment = remeda.clone(validCommentFixture);
 
         const verification = await verifyComment(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
-        const comment = lodash.cloneDeep(validCommentAvatarFixture);
+        const comment = remeda.clone(validCommentAvatarFixture);
         const verification = await verifyComment(comment, plebbit, true);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`verifyComment invalidates a comment with author.address not a domain or IPNS`, async () => {
-        const comment = lodash.cloneDeep({ ...fixtureComment, signature: fixtureSignature });
+        const comment = remeda.clone({ ...fixtureComment, signature: fixtureSignature });
         comment.author.address = "gibbresish"; // Not a domain or IPNS
         const verification = await verifyComment(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyComment invalidates a comment with author.address = undefined", async () => {
-        const comment = lodash.cloneDeep({ ...fixtureComment, signature: fixtureSignature });
+        const comment = remeda.clone({ ...fixtureComment, signature: fixtureSignature });
         comment.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyComment(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
@@ -174,7 +174,7 @@ describe(`Comment with author.address as domain`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
-        const commentWithInvalidDomain = lodash.cloneDeep(fixtureComment);
+        const commentWithInvalidDomain = remeda.clone(fixtureComment);
         commentWithInvalidDomain.author.address = "testDomain.eth";
         const signedPublication = {
             ...commentWithInvalidDomain,
@@ -188,7 +188,7 @@ describe(`Comment with author.address as domain`, async () => {
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
     it(`Comment with invalid author domain address will will be invalidated (overrideAuthorAddressIfInvalid=false)`, async () => {
-        const comment = lodash.cloneDeep(validCommentAuthorAddressDomainFixture);
+        const comment = remeda.clone(validCommentAuthorAddressDomainFixture);
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
@@ -210,7 +210,7 @@ describe(`commentupdate`, async () => {
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
-        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[0]); // Same signer as the subplebbit that signed the CommentUpdate
         const verification = await verifyCommentUpdate(
@@ -231,7 +231,7 @@ describe(`commentupdate`, async () => {
     });
 
     it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {
-        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
         const verification = await verifyCommentUpdate(
             update,
@@ -244,7 +244,7 @@ describe(`commentupdate`, async () => {
     });
 
     it(`verifyCommentUpdate invalidate commentUpdate if it was signed by other than subplebbit key`, async () => {
-        const update = lodash.cloneDeep(validCommentUpdateFixture);
+        const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit
         const verification = await verifyCommentUpdate(
@@ -258,7 +258,7 @@ describe(`commentupdate`, async () => {
     });
 
     it(`A commentUpdate with an edit signed by other than original author will be rejected`, async () => {
-        const update = lodash.cloneDeep(validCommentUpdateWithAuthorEditFixture);
+        const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
             await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)
@@ -276,7 +276,7 @@ describe(`commentupdate`, async () => {
     });
 
     it(`commentUpdate.edit is invalidated if any prop is changed and not signed by original author`, async () => {
-        const update = lodash.cloneDeep(validCommentUpdateWithAuthorEditFixture);
+        const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
             await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)

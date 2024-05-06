@@ -37,12 +37,12 @@ describe("Sign Vote", async () => {
     });
 
     it(`signVote throws with author.address not being an IPNS or domain`, async () => {
-        const cloneVote = lodash.cloneDeep(voteProps);
+        const cloneVote = remeda.clone(voteProps);
         cloneVote.author.address = "gibbreish";
         assert.isRejected(signVote(cloneVote, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
     });
     it(`signVote throws with author.address=undefined`, async () => {
-        const cloneVote = lodash.cloneDeep(voteProps);
+        const cloneVote = remeda.clone(voteProps);
         cloneVote.author.address = undefined;
         assert.isRejected(signVote(cloneVote, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
     });
@@ -56,26 +56,26 @@ describe("Verify vote", async () => {
         plebbit = await mockRemotePlebbit();
     });
     it(`Valid vote signature fixture is validated correctly`, async () => {
-        const vote = lodash.cloneDeep(validVoteFixture);
+        const vote = remeda.clone(validVoteFixture);
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid vote signature gets invalidated correctly`, async () => {
-        const vote = lodash.cloneDeep(validVoteFixture);
+        const vote = remeda.clone(validVoteFixture);
         vote.commentCid += "1234"; // Should invalidate signature
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyVote invalidates a vote with author.address not a domain or IPNS`, async () => {
-        const vote = lodash.cloneDeep(validVoteFixture);
+        const vote = remeda.clone(validVoteFixture);
         vote.author.address = "gibbresish"; // Not a domain or IPNS
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyVote invalidates a vote with author.address = undefined", async () => {
-        const vote = lodash.cloneDeep(validVoteFixture);
+        const vote = remeda.clone(validVoteFixture);
         vote.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyVote(vote, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });

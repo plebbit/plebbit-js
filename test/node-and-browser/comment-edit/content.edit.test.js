@@ -46,7 +46,7 @@ describe("Editing comment.content", async () => {
         const editedText = "edit test" + Date.now();
         const editReason = "To test editing a comment" + Date.now();
 
-        const originalContent = lodash.clone(commentToBeEdited.content);
+        const originalContent = remeda.clone(commentToBeEdited.content);
         const commentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: commentToBeEdited.subplebbitAddress,
             commentCid: commentToBeEdited.cid,
@@ -95,7 +95,7 @@ describe("Editing comment.content", async () => {
     roles.map((roleTest) =>
         it(`${roleTest.role} Can modify their own comment content`, async () => {
             const commentToEdit = await publishRandomPost(subplebbitAddress, plebbit, { signer: roleTest.signer });
-            const originalContent = lodash.clone(commentToEdit.content);
+            const originalContent = remeda.clone(commentToEdit.content);
             await commentToEdit.update();
             const editedText = `${roleTest.role} role testing CommentEdit`;
             const editReason = `For ${roleTest.role} role to test editing a comment`;

@@ -35,7 +35,7 @@ describe(`Test Downvote`, async () => {
     });
 
     it("Can downvote a post", async () => {
-        const originalDownvote = lodash.clone(postToVote.downvoteCount);
+        const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await generateMockVote(postToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
@@ -50,7 +50,7 @@ describe(`Test Downvote`, async () => {
     });
 
     it(`Can downvote a reply`, async () => {
-        const originalDownvote = lodash.clone(replyToVote.downvoteCount);
+        const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await generateMockVote(replyToVote, -1, plebbit);
         await publishWithExpectedResult(vote, true);
 
@@ -66,8 +66,8 @@ describe(`Test Downvote`, async () => {
     });
 
     it("Can change post downvote to upvote", async () => {
-        const originalUpvote = lodash.clone(postToVote.upvoteCount);
-        const originalDownvote = lodash.clone(postToVote.downvoteCount);
+        const originalUpvote = remeda.clone(postToVote.upvoteCount);
+        const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
             ...previousVotes[0].toJSON(),
             signature: undefined,
@@ -86,8 +86,8 @@ describe(`Test Downvote`, async () => {
     });
 
     it("Can change reply downvote to upvote", async () => {
-        const originalUpvote = lodash.clone(replyToVote.upvoteCount);
-        const originalDownvote = lodash.clone(replyToVote.downvoteCount);
+        const originalUpvote = remeda.clone(replyToVote.upvoteCount);
+        const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
             ...previousVotes[1].toJSON(),
             signer: previousVotes[1].signer,

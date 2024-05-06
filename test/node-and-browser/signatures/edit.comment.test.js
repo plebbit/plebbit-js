@@ -37,12 +37,12 @@ describe("Sign commentedit", async () => {
     });
 
     it(`signCommentEdit throws with author.address not being an IPNS or domain`, async () => {
-        const cloneEdit = lodash.cloneDeep(editProps);
+        const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = "gibbreish";
         assert.isRejected(signCommentEdit(cloneEdit, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
     });
     it(`SignCommentEdit throws with author.address=undefined`, async () => {
-        const cloneEdit = lodash.cloneDeep(editProps);
+        const cloneEdit = remeda.clone(editProps);
         cloneEdit.author.address = undefined;
         assert.isRejected(signCommentEdit(cloneEdit, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58);
     });
@@ -56,26 +56,26 @@ describe("Verify CommentEdit", async () => {
         plebbit = await mockRemotePlebbit();
     });
     it(`Valid CommentEdit signature fixture is validated correctly`, async () => {
-        const edit = lodash.cloneDeep(validCommentEditFixture);
+        const edit = remeda.clone(validCommentEditFixture);
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`Invalid CommentEdit signature gets invalidated correctly`, async () => {
-        const edit = lodash.cloneDeep(validCommentEditFixture);
+        const edit = remeda.clone(validCommentEditFixture);
         edit.reason += "1234"; // Should invalidate comment edit
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`verifyCommentEdit invalidates a commentEdit with author.address not a domain or IPNS`, async () => {
-        const edit = lodash.cloneDeep(validCommentEditFixture);
+        const edit = remeda.clone(validCommentEditFixture);
         edit.author.address = "gibbresish"; // Not a domain or IPNS
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
     it("verifyCommentEdit invalidates a commentEdit with author.address = undefined", async () => {
-        const edit = lodash.cloneDeep(validCommentEditFixture);
+        const edit = remeda.clone(validCommentEditFixture);
         edit.author.address = undefined; // Not a domain or IPNS
         const verification = await verifyCommentEdit(edit, plebbit.resolveAuthorAddresses, plebbit._clientsManager, false);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });

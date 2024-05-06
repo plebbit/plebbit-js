@@ -72,22 +72,22 @@ describe(`Removing post`, async () => {
     });
 
     it(`Sub rejects votes on removed post`, async () => {
-        const vote = await generateMockVote(postToRemove, 1, plebbit, lodash.sample(signers));
+        const vote = await generateMockVote(postToRemove, 1, plebbit, remeda.sample(signers, 1)[0]);
         await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
     });
 
     it(`Sub rejects replies on removed post`, async () => {
-        const reply = await generateMockComment(postToRemove, plebbit, false, { signer: lodash.sample(signers) });
+        const reply = await generateMockComment(postToRemove, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED);
     });
 
     it(`Sub rejects votes on a reply of a removed post`, async () => {
-        const vote = await generateMockVote(postReply, 1, plebbit, lodash.sample(signers));
+        const vote = await generateMockVote(postReply, 1, plebbit, remeda.sample(signers, 1)[0]);
         await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
     });
 
     it(`Sub rejects replies on a reply of a removed post`, async () => {
-        const reply = await generateMockComment(postReply, plebbit, false, { signer: lodash.sample(signers) });
+        const reply = await generateMockComment(postReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED);
     });
 
@@ -243,8 +243,8 @@ describe(`Removing reply`, async () => {
         //     -- replyUnderRemovedReply (removed = false)
         // We're testing publishing under replyUnderRemovedReply
         const [reply, vote] = [
-            await generateMockComment(replyUnderRemovedReply, plebbit, false, { signer: lodash.sample(signers) }),
-            await generateMockVote(replyUnderRemovedReply, 1, plebbit, lodash.sample(signers))
+            await generateMockComment(replyUnderRemovedReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] }),
+            await generateMockVote(replyUnderRemovedReply, 1, plebbit, remeda.sample(signers, 1)[0])
         ];
         await Promise.all([reply, vote].map((pub) => publishWithExpectedResult(pub, true)));
     });

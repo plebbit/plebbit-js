@@ -49,8 +49,8 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const subJson = lodash.cloneDeep(validSubplebbitFixture);
-        const subObj = await plebbit.createSubplebbit(lodash.cloneDeep(validSubplebbitFixture));
+        const subJson = remeda.cloneDeep(validSubplebbitFixture);
+        const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitFixture));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
@@ -108,7 +108,7 @@ describe("subplebbit.update (remote)", async () => {
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
         const subplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
         expect(subplebbit.address).to.equal("plebbit.eth");
-        const oldUpdatedAt = lodash.clone(subplebbit.updatedAt);
+        const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
         await subplebbit.update();
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Invoke an update
         await new Promise((resolve) => subplebbit.once("update", resolve));

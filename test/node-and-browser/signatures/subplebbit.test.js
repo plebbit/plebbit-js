@@ -19,8 +19,8 @@ describe("Sign subplebbit", async () => {
         plebbit = await mockRemotePlebbit();
     });
     it(`Can sign and validate fixture subplebbit correctly`, async () => {
-        const subFixture = lodash.cloneDeep(validSubplebbitFixture);
-        const subFixtureClone = lodash.cloneDeep(subFixture);
+        const subFixture = remeda.clone(validSubplebbitFixture);
+        const subFixtureClone = remeda.clone(subFixture);
         delete subFixtureClone["signature"];
         const signature = await signSubplebbit(subFixtureClone, signers[0]);
         expect(signature).to.deep.equal(subFixture.signature);
@@ -54,7 +54,7 @@ describe("Verify subplebbit", async () => {
         ).to.deep.equal({ valid: true });
     });
     it(`Valid subplebbit fixture is validated correctly`, async () => {
-        const sub = lodash.cloneDeep(validSubplebbitFixture);
+        const sub = remeda.clone(validSubplebbitFixture);
         expect(await verifySubplebbit(sub, plebbit.resolveAuthorAddresses, plebbit._clientsManager)).to.deep.equal({ valid: true });
     });
     it(`Subplebbit with domain that does not match public key will get invalidated`, async () => {
@@ -86,7 +86,7 @@ describe("Verify subplebbit", async () => {
     it(`subplebbit signature is valid if subplebbit.posts has a comment.authorAddress who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
         // Publish a comment with ENS domain here
 
-        const subJson = lodash.cloneDeep(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
+        const subJson = remeda.clone(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
         const commentWithEnsCid = subJson.posts.pages.hot.comments.find((comment) => comment.comment.author.address === "plebbit.eth")
             .comment.cid;
 

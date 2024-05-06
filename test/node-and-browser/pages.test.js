@@ -165,7 +165,7 @@ describe("Test pages sorting", async () => {
         it(`posts are the same within all pages`, async () => {
             // We need to separate pages by timeframe
 
-            const pagesByTimeframe = lodash.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
+            const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
 
             for (const pagesGrouped of Object.values(pagesByTimeframe)) {
                 const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);

@@ -259,7 +259,7 @@ describe(`Pinning replies`, async () => {
         plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-        post = await plebbit.createComment(lodash.maxBy(allPosts, (c) => c.replyCount));
+        post = await plebbit.createComment(remeda.maxBy(allPosts, (c) => c.replyCount));
         await post.update();
         await populatePost();
         expect(post.replyCount).to.be.greaterThan(5); // Arbitary number
