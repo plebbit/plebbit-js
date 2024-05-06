@@ -116,13 +116,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.clients = this._clientsManager.clients;
     }
 
-    private _setSubplebbitAddress(subplebbitAddress: string) {
+    setSubplebbitAddress(subplebbitAddress: string) {
         this.subplebbitAddress = subplebbitAddress;
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
     _initBaseLocalProps(props: LocalPublicationProps) {
-        this._setSubplebbitAddress(props.subplebbitAddress);
+        this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signer = new Signer(props.signer);
         this.signature = props.signature;
@@ -133,7 +133,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     _initBaseRemoteProps(props: CommentIpfsType | CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage) {
-        this._setSubplebbitAddress(props.subplebbitAddress);
+        this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signature = props.signature;
         this.author = new Author(props.author);

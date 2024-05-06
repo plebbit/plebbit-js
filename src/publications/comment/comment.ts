@@ -116,7 +116,8 @@ export class Comment extends Publication {
     }
 
     private _setOriginalFieldBeforeModifying() {
-        if (!this.original)
+        // Need to make sure we have the props first
+        if (!this.original && this.protocolVersion)
             this.original = removeUndefinedValuesRecursively(
                 remeda.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
             );
@@ -149,10 +150,13 @@ export class Comment extends Publication {
 
     _initIpfsProps(props: CommentIpfsType) {
         // we're loading remote CommentIpfs
+        this._setOriginalFieldBeforeModifying();
         this._initPubsubMessageProps(props);
         this.depth = props.depth;
-        this.postCid = props.postCid;
-        this.previousCid = props.previousCid;
+        const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
+        if (!postCid) throw Error("There is no way to set comment.postCid");
+        this.setPostCid(postCid);
+        this.setPreviousCid(props.previousCid);
         this.thumbnailUrl = props.thumbnailUrl;
         this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.thumbnailUrlWidth = props.thumbnailUrlWidth;
@@ -160,7 +164,7 @@ export class Comment extends Publication {
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
         this._setOriginalFieldBeforeModifying();
-        this._rawCommentUpdate = "depth" in props ? undefined : props;
+        if (!("depth" in props)) this._rawCommentUpdate = props;
 
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
@@ -191,12 +195,8 @@ export class Comment extends Publication {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         // reasons to update this.replies
 
-        // this.cid !== this.replies.parentCid
-        // this.replies.pageCids !== props.replies.pageCids
-
         const shouldUpdateReplies =
-            this.cid !== this.replies._parentCid ||
-            (remeda.isPlainObject(props.replies?.pageCids) && !remeda.isDeepEqual(this.replies.pageCids, props.replies.pageCids));
+            remeda.isPlainObject(props.replies?.pageCids) && !remeda.isDeepEqual(this.replies.pageCids, props.replies.pageCids);
         if (shouldUpdateReplies) {
             const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
                 await parseRawPages(props.replies, this._plebbit)
@@ -214,21 +214,9 @@ export class Comment extends Publication {
     protected override _updateLocalCommentPropsWithVerification(
         props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
     ) {
-        if (!props) return;
-        // comment.author will change after challenge verification so we need to make sure the original comment.author is stored somewhere
-        this._setOriginalFieldBeforeModifying();
-
+        if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
-        this.thumbnailUrl = props.thumbnailUrl;
-        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
-        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
-        this.author = new Author(props.author);
-        this.depth = props.depth;
-
-        this.linkWidth = props.linkWidth;
-        this.linkHeight = props.linkHeight;
-        this.postCid = props.postCid;
-        this.setPreviousCid(props.previousCid);
+        this._initIpfsProps(props);
     }
 
     override getType(): PublicationTypeName {
@@ -374,6 +362,12 @@ export class Comment extends Publication {
     setCid(newCid: string) {
         this.cid = newCid;
         this.shortCid = shortifyCid(this.cid);
+        this.replies._parentCid = this.cid;
+    }
+
+    override setSubplebbitAddress(newSubplebbitAddress: string) {
+        super.setSubplebbitAddress(newSubplebbitAddress);
+        this.replies._subplebbitAddress = newSubplebbitAddress;
     }
 
     setPreviousCid(newPreviousCid?: string) {
@@ -591,7 +585,7 @@ export class Comment extends Publication {
     }
 
     override async stop() {
-        await super.stop();
+        if (this.state === "publishing") await super.stop();
         this._setUpdatingState("stopped");
         await this._stopUpdateLoop();
     }

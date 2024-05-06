@@ -19,7 +19,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         this.wallets = props.wallets;
         this.avatar = props.avatar;
         this.flair = props.flair;
-        this.subplebbit = props.hasOwnProperty("subplebbit") ? (<AuthorTypeWithCommentUpdate>props).subplebbit : undefined;
+        this.subplebbit = "subplebbit" in props ? props.subplebbit : undefined;
         this.shortAddress = shortifyAddress(this.address);
     }
 

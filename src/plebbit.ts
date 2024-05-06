@@ -304,19 +304,22 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         pubOptions: CreateCommentOptions | CreateCommentEditOptions | CreateVoteOptions,
         log: Logger
     ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign> {
-        if (!pubOptions.signer) throw Error("User did not provide a signer to create a local publication");
-        if (pubOptions.author && "shortAddress" in pubOptions.author)
-            throw Error("author.shortAddress shouldn't be part of publication signature");
-        const filledTimestamp = typeof pubOptions.timestamp !== "number" ? timestamp() : pubOptions.timestamp;
+        const finalOptions = remeda.clone(pubOptions);
+        if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
+        if (finalOptions.author && "shortAddress" in finalOptions.author) {
+            log("Removed author.shortAddress before creating the signature");
+            delete finalOptions["author"]["shortAddress"];
+        }
+        const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
         const filledSigner: SignerType = {
-            ...pubOptions.signer,
-            address: await getPlebbitAddressFromPrivateKey(pubOptions.signer.privateKey)
+            ...finalOptions.signer,
+            address: await getPlebbitAddressFromPrivateKey(finalOptions.signer.privateKey)
         };
-        const filledAuthor = { ...pubOptions.author, address: pubOptions.author?.address || filledSigner.address };
-        const filledProtocolVersion = pubOptions.protocolVersion || env.PROTOCOL_VERSION;
+        const filledAuthor = { ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
+        const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
         return {
-            ...pubOptions,
+            ...finalOptions,
             timestamp: filledTimestamp,
             signer: filledSigner,
             author: filledAuthor,
@@ -328,12 +331,21 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const commentInstance = new Comment(this);
         if (typeof options.cid === "string") commentInstance.setCid(options.cid);
         if (typeof options.depth === "number") commentInstance._initIpfsProps(options.toJSONIpfs());
-        if (typeof options.updatedAt) await commentInstance._initCommentUpdate(options.toJSONCommentWithinPage());
+        else if (typeof options.author.address === "string")
+            commentInstance._initPubsubMessageProps(options.toJSONPubsubMessagePublication());
+        if (typeof options.updatedAt === "number") await commentInstance._initCommentUpdate(options.toJSONCommentWithinPage());
         return commentInstance;
     }
 
     async createComment(
-        options: CreateCommentOptions | CommentTypeJson | CommentIpfsType | CommentPubsubMessage | Comment | Pick<CommentIpfsWithCid, "cid">
+        options:
+            | CreateCommentOptions
+            | CommentTypeJson
+            | CommentIpfsType
+            | CommentPubsubMessage
+            | Comment
+            | Pick<CommentIpfsWithCid, "cid">
+            | Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
         if ("cid" in options && typeof options.cid === "string" && !isIpfsCid(options.cid))
@@ -358,11 +370,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
             const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
             commentInstance._initLocalProps(signedComment);
-        } else {
+        } else if ("subplebbitAddress" in options && typeof options.subplebbitAddress === "string")
+            commentInstance.setSubplebbitAddress(options.subplebbitAddress);
+        else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
 
-        if ("updatedAt" in options) await commentInstance._initCommentUpdate(options);
+        if ("updatedAt" in options && typeof options.updatedAt === "number") await commentInstance._initCommentUpdate(options);
 
         return commentInstance;
     }
@@ -373,7 +387,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createSubplebbitRpc(
-        options: CreateSubplebbitOptions  | SubplebbitIpfsType | InternalSubplebbitType
+        options: CreateSubplebbitOptions | SubplebbitIpfsType | InternalSubplebbitType
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
