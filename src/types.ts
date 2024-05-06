@@ -440,7 +440,7 @@ export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<C
     replies?: PagesTypeJson;
     original: Pick<CommentPubsubMessage, "author" | "content" | "flair" | "protocolVersion">;
     shortCid: string;
-    author: CommentIpfsWithCid["author"] & { shortAddress: string };
+    author: AuthorTypeWithCommentUpdate & { shortAddress: string };
     deleted?: boolean;
 }
 
@@ -451,7 +451,6 @@ export interface CommentIpfsType extends Omit<CommentPubsubMessage, "challengeAn
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
     previousCid?: string;
-    author: AuthorTypeWithCommentUpdate;
 }
 
 export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid"> {
