@@ -18,6 +18,8 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import { v4 as uuidV4 } from "uuid";
+import * as resolverClass from "../resolver.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -285,31 +287,34 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
 
 export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
+    const mockEthResolver = `mockEthRpc${uuidV4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
         publishInterval: 1000,
         updateInterval: 1000,
+        chainProviders: { eth: { urls: [mockEthResolver], chainId: 1 } },
         ...plebbitOptions
     });
 
-    // if (mockResolve)
-    //     plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
-    //         log(
-    //             `Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`
-    //         );
-    //         if (address === "plebbit.eth" && textRecord === "subplebbit-address")
-    //             return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
-    //         else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
-    //             return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
-    //         else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
-    //             return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
-    //         else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
-    //             return (await plebbit.createSigner()).address;
-    //         else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
-    //             return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
-    //         else return null;
-    //     };
+    if (mockResolve) {
+        //@ts-expect-error
+        resolverClass.viemClients["eth" + mockEthResolver] = {
+            getEnsText: async ({ name, key }) => {
+                log(`Attempting to mock resolve address (${name}) textRecord (${key}) chainProviderUrl (${mockEthResolver})`);
+                if (name === "plebbit.eth" && key === "subplebbit-address")
+                    return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
+                else if (name === "plebbit.eth" && key === "plebbit-author-address")
+                    return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+                else if (name === "rpc-edit-test.eth" && key === "subplebbit-address")
+                    return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+                else if (name === "different-signer.eth" && key === "subplebbit-address") return (await plebbit.createSigner()).address;
+                else if (name === "estebanabaroa.eth" && key === "plebbit-author-address")
+                    return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
+                else return null;
+            }
+        };
+    }
 
     if (stubStorage) {
         plebbit._storage.getItem = async () => undefined;
