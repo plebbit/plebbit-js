@@ -95,7 +95,8 @@ export const verifyBufferEd25519 = async (bufferToSign: Uint8Array, bufferSignat
 };
 
 async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign["author"], signer: SignerType, plebbit: Plebbit) {
-    if (!author?.address) throw Error("Author.address is not defined while signing");
+    if (!author?.address)
+        throwWithErrorCode("ERR_AUTHOR_ADDRESS_UNDEFINED", { authorAddress: author.address, signerAddress: signer.address });
     if (isStringDomain(author.address)) {
         // As of now do nothing to verify authors with domain as addresses
         // This may change in the future
