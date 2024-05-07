@@ -351,6 +351,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         if ("cid" in options && typeof options.cid === "string" && !isIpfsCid(options.cid))
             throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options.cid });
 
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment");
+
         if (options instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(options);
         const commentInstance = new Comment(this);
         if ("cid" in options && typeof options.cid === "string") {
@@ -518,6 +520,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createVote");
         const voteInstance = new Vote(this);
 
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed vote");
+
         if ("signature" in options) {
             voteInstance._initRemoteProps(options);
         } else {
@@ -537,9 +541,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         const editInstance = new CommentEdit(this);
 
-        if ("signature" in options) {
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment edit");
+
+        if ("signature" in options)
             editInstance._initRemoteProps(options); // User just wants to instantiate a CommentEdit object, not publish
-        } else {
+        else {
             const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
