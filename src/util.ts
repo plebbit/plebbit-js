@@ -255,9 +255,7 @@ export async function parseRawPages(
             pagesIpfs: undefined
         };
 
-    // if (remeda.isEmpty(replies.pages)) return { pages: {}, pagesIpfs: undefined }; // not sure why it's needed
-
-    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
+    const isIpfs = typeof Object.values(replies.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
 
     if (isIpfs) {
         replies = replies as PagesTypeIpfs;
