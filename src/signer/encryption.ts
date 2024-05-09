@@ -4,9 +4,9 @@ import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
 import { Encrypted } from "./constants.js";
 
-const isProbablyBuffer = (arg) => arg && typeof arg !== "string" && typeof arg !== "number";
+const isProbablyBuffer = (arg: any) => arg && typeof arg !== "string" && typeof arg !== "number";
 
-const uint8ArrayToNodeForgeBuffer = (uint8Array) => {
+const uint8ArrayToNodeForgeBuffer = (uint8Array: Uint8Array) => {
     const forgeBuffer = forge.util.createBuffer();
     for (const byte of uint8Array) {
         forgeBuffer.putByte(byte);

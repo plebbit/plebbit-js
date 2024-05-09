@@ -1,21 +1,22 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
-    CommentIpfsType,
+    CommentIpfsWithCid,
     DecryptedChallengeRequest,
     PageIpfs,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
 } from "../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
-import { Comment } from "../comment.js";
+import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import assert from "assert";
 import { PlebbitError } from "../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util.js";
-import { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions, SubplebbitType } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import * as remeda from "remeda";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -25,7 +26,7 @@ export default class PlebbitRpcClient {
     private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
-    private _openConnectionPromise: Promise<any>;
+    private _openConnectionPromise?: Promise<any>;
     private _listSubsSubscriptionId?: number;
     private _lastListedSubs?: string[];
     constructor(plebbit: Plebbit) {
@@ -52,8 +53,8 @@ export default class PlebbitRpcClient {
             // save all subscription messages (ie json rpc messages without 'id', also called json rpc 'notifications')
             // NOTE: it is possible to receive a subscription message before receiving the subscription id
 
-            this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions[0]);
-            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions[0]);
+            this._webSocketClient = new WebSocketClient(this._plebbit.plebbitRpcClientsOptions![0]);
+            log("Created a new WebSocket instance with url " + this._plebbit.plebbitRpcClientsOptions![0]);
             //@ts-expect-error
             this._webSocketClient.socket.on("message", (jsonMessage) => {
                 const message = JSON.parse(jsonMessage);
@@ -92,9 +93,12 @@ export default class PlebbitRpcClient {
                     return await originalWebsocketCall(...args);
                 } catch (e) {
                     //e is an error json representation of PlebbitError
-                    if (Object.keys(e).length === 0) throw Error("RPC server sent an empty error for call " + args[0]);
-                    if (e?.code) throw new PlebbitError(e?.code, e?.details);
-                    else throw new Error(e.message);
+                    if (!(e instanceof Error)) throw Error("plebbit rpc client call throwed a non Error" + e);
+
+                    if ("code" in e) {
+                        const actualPlebError = e as PlebbitError;
+                        throw new PlebbitError(actualPlebError.code, actualPlebError.details);
+                    } else throw new Error(e.message);
                 }
             };
         }
@@ -109,7 +113,7 @@ export default class PlebbitRpcClient {
             await this._openConnectionPromise;
         } catch (e) {
             throwWithErrorCode("ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC", {
-                plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions[0],
+                plebbitRpcUrl: this._plebbit.plebbitRpcClientsOptions![0],
                 timeoutSeconds: this._timeoutSeconds,
                 error: lastWebsocketError
             });
@@ -125,10 +129,11 @@ export default class PlebbitRpcClient {
             this._webSocketClient.close();
         } catch {}
 
+        //@ts-expect-error
         this._webSocketClient =
             this._listSubsSubscriptionId =
-            this._lastListedSubs =
-            this._subscriptionEvents =
+            this._lastListedSubs = //@ts-expect-error
+            this._subscriptionEvents = //@ts-expect-error
             this._pendingSubscriptionMsgs =
                 undefined;
     }
@@ -158,7 +163,7 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
-        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [commentCid]);
+        const commentProps = <CommentIpfsWithCid>await this._webSocketClient.call("getComment", [commentCid]);
         return this._plebbit.createComment(commentProps);
     }
 
@@ -172,7 +177,7 @@ export default class PlebbitRpcClient {
         return pageIpfs;
     }
 
-    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<RpcLocalSubplebbit> {
+    async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
         const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
@@ -240,7 +245,7 @@ export default class PlebbitRpcClient {
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        const res = <string | undefined>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
+        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
         return res;
     }
 
@@ -254,7 +259,7 @@ export default class PlebbitRpcClient {
             });
             this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
         }
-        if (!this._lastListedSubs) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
+        if (!Array.isArray(this._lastListedSubs)) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
 
         return this._lastListedSubs;
     }

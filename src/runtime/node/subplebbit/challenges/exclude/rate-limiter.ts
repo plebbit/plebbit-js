@@ -21,6 +21,7 @@ const getOrCreateRateLimiter = (
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"]
 ) => {
+    if (!exclude.rateLimit) throw Error("Can't create a RateLimiter without exclude.rateLimit");
     const rateLimiterName = getRateLimiterName(exclude, publication, publicationType, challengeSuccess);
     let rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
@@ -54,13 +55,13 @@ const getRateLimitersToTest = (
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
+    if (typeof exclude.post === "boolean" && testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
-    if (testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
+    if (typeof exclude.reply === "boolean" && testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
-    if (testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
+    if (typeof exclude.vote === "boolean" && testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;

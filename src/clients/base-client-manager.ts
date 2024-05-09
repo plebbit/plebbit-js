@@ -1,12 +1,11 @@
 import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { delay, isIpns, throwWithErrorCode, timestamp } from "../util.js";
-import Hash from "ipfs-only-hash";
+import { delay, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
@@ -15,7 +14,9 @@ import last from "it-last";
 import { concat as uint8ArrayConcat } from "uint8arrays/concat";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import all from "it-all";
-import lodash from "lodash";
+import * as remeda from "remeda";
+import { resolveTxtRecord } from "../resolver.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -39,16 +40,15 @@ export class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string; // The URL of the pubsub that is used by default for pubsub
     _defaultIpfsProviderUrl: string | undefined; // The URL of the ipfs node that is used by default for IPFS ipfs/ipns retrieval
-    providerSubscriptions: Record<string, string[]>; // To keep track of subscriptions of each provider
+    providerSubscriptions: Record<string, string[]> = {}; // To keep track of subscriptions of each provider
 
     constructor(plebbit: Plebbit) {
         this._plebbit = plebbit;
         if (plebbit.clients.ipfsClients)
             this._defaultIpfsProviderUrl = <string>Object.values(plebbit.clients.ipfsClients)[0]?._clientOptions?.url;
-        this._defaultPubsubProviderUrl = Object.keys(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
+        this._defaultPubsubProviderUrl = remeda.keys.strict(plebbit.clients.pubsubClients)[0]; // TODO Should be the gateway with the best score
         if (this._defaultPubsubProviderUrl) {
-            this.providerSubscriptions = {};
-            for (const provider of Object.keys(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
+            for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
         }
     }
 
@@ -101,8 +101,8 @@ export class BaseClientsManager {
             const pubsubProviderUrl = providersSorted[i];
             try {
                 return this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
-            } catch (e) {
-                providerToError[pubsubProviderUrl] = e;
+            } catch (e: unknown) {
+                providerToError[pubsubProviderUrl] = <PlebbitError>e;
             }
         }
 
@@ -122,8 +122,7 @@ export class BaseClientsManager {
 
     async pubsubUnsubscribe(pubsubTopic: string, handler?: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        for (let i = 0; i < Object.keys(this._plebbit.clients.pubsubClients).length; i++) {
-            const pubsubProviderUrl = Object.keys(this._plebbit.clients.pubsubClients)[i];
+        for (const pubsubProviderUrl of remeda.keys.strict(this._plebbit.clients.pubsubClients)) {
             try {
                 await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
             } catch {}
@@ -147,7 +146,7 @@ export class BaseClientsManager {
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
             this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
-            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, error);
+            this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, <PlebbitError>error);
             await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
@@ -165,7 +164,7 @@ export class BaseClientsManager {
                 return await this.pubsubPublishOnProvider(pubsubTopic, data, pubsubProviderUrl);
             } catch (e) {
                 log.error(`Failed to publish to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
-                providerToError[pubsubProviderUrl] = e;
+                providerToError[pubsubProviderUrl] = <PlebbitError>e;
             }
         }
 
@@ -191,19 +190,20 @@ export class BaseClientsManager {
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
             if (res?.body?.getReader === undefined) return await res.text();
         } catch (e) {
-            if (e.message.includes("over limit"))
+            if (e instanceof Error && e.message.includes("over limit"))
                 throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
             const errorCode = url.includes("/ipfs/")
                 ? "ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY"
                 : url.includes("/ipns/")
                   ? "ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY"
                   : "ERR_FAILED_TO_FETCH_GENERIC";
+            //@ts-expect-error
             throwWithErrorCode(errorCode, { url, status: res?.status, statusText: res?.statusText, fetchError: String(e) });
 
             // If error is not related to size limit, then throw it again
         }
 
-        //@ts-ignore
+        //@ts-expect-error
         if (res?.body?.getReader !== undefined) {
             let totalBytesRead = 0;
 
@@ -224,6 +224,8 @@ export class BaseClientsManager {
             }
             return resText;
         }
+
+        throw Error("should not reach this block in _fetchWithLimit");
     }
 
     preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType) {}
@@ -260,7 +262,7 @@ export class BaseClientsManager {
         let isUsingCache = true;
         try {
             let resText: string;
-            if (gatewayFetchPromiseCache.has(cacheKey)) resText = await gatewayFetchPromiseCache.get(cacheKey);
+            if (gatewayFetchPromiseCache.has(cacheKey)) resText = <string>await gatewayFetchPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
                 const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(loadType, url, abortController, log);
@@ -279,13 +281,13 @@ export class BaseClientsManager {
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
-            if (e?.details?.fetchError?.includes("AbortError")) {
+            if (e instanceof PlebbitError && e?.details?.fetchError?.includes("AbortError")) {
                 this.postFetchGatewayAborted(gateway, path, loadType);
                 return undefined;
             } else {
-                this.postFetchGatewayFailure(gateway, path, loadType, e);
+                this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
                 if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                return { error: lodash.omit(<PlebbitError>e, "stack") };
+                return { error: remeda.omit(<PlebbitError>e, ["stack"]) };
             }
         }
     }
@@ -326,8 +328,8 @@ export class BaseClientsManager {
 
         // Only sort if we have more than 3 gateways
         const gatewaysSorted =
-            Object.keys(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
-                ? Object.keys(this._plebbit.clients.ipfsGateways)
+            remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
+                ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
                 : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
 
         const gatewayFetches: GenericGatewayFetch = {};
@@ -351,7 +353,11 @@ export class BaseClientsManager {
 
         const gatewayPromises = Object.values(gatewayFetches).map((fetching) => fetching.promise);
 
-        const res = await Promise.race([this._firstResolve(gatewayPromises), Promise.allSettled(gatewayPromises)]);
+        //@ts-expect-error
+        const res: { res: string; i: number } | { value: { error: PlebbitError } }[] = await Promise.race([
+            this._firstResolve(gatewayPromises),
+            Promise.allSettled(gatewayPromises)
+        ]);
         if (Array.isArray(res)) {
             cleanUp();
             const gatewayToError: Record<string, PlebbitError> = {};
@@ -373,20 +379,21 @@ export class BaseClientsManager {
 
         try {
             let cid: string;
-            if (p2pIpnsPromiseCache.has(ipnsName)) cid = await p2pIpnsPromiseCache.get(ipnsName);
+            if (p2pIpnsPromiseCache.has(ipnsName)) cid = <string>await p2pIpnsPromiseCache.get(ipnsName);
             else {
                 const cidPromise = last(ipfsClient._client.name.resolve(ipnsName));
                 p2pIpnsPromiseCache.set(ipnsName, cidPromise);
-                cid = await cidPromise;
+                cid = <string>await cidPromise;
                 p2pIpnsPromiseCache.delete(ipnsName);
             }
             if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName });
             return cid;
         } catch (error) {
             p2pIpnsPromiseCache.delete(ipnsName);
-            if (error?.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
+            if (error instanceof PlebbitError && error?.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
             else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName, error });
         }
+        throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
 
     // TODO rename this to _fetchPathP2P
@@ -400,7 +407,7 @@ export class BaseClientsManager {
 
             if (typeof fileContent !== "string") throwWithErrorCode("ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS", { cid });
             if (fileContent.length === DOWNLOAD_LIMIT_BYTES) {
-                const calculatedCid: string = await Hash.of(fileContent);
+                const calculatedCid: string = await calculateIpfsHash(fileContent);
                 if (calculatedCid !== cid) throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
             }
             return fileContent;
@@ -408,7 +415,7 @@ export class BaseClientsManager {
 
         // TODO the caching of subplebbit ipns should extend to its signature, it's a waste of processing power to verify a subplebbit multiple times
         try {
-            if (p2pCidPromiseCache.has(cid)) return await p2pCidPromiseCache.get(cid);
+            if (p2pCidPromiseCache.has(cid)) return <string>await p2pCidPromiseCache.get(cid);
             else {
                 const promise = fetchPromise();
                 p2pCidPromiseCache.set(cid, promise);
@@ -421,7 +428,7 @@ export class BaseClientsManager {
     }
 
     private async _verifyContentIsSameAsCid(content: string, cid: string) {
-        const calculatedCid: string = await Hash.of(content);
+        const calculatedCid: string = await calculateIpfsHash(content);
         if (content.length === DOWNLOAD_LIMIT_BYTES && calculatedCid !== cid)
             throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { cid, downloadLimit: DOWNLOAD_LIMIT_BYTES });
         if (calculatedCid !== cid) throwWithErrorCode("ERR_CALCULATED_CID_DOES_NOT_MATCH", { calculatedCid, cid });
@@ -440,7 +447,7 @@ export class BaseClientsManager {
         const cacheKey = this._getKeyOfCachedDomainTextRecord(address, txtRecord);
 
         const resolveCache: CachedResolve | undefined = await this._plebbit._storage.getItem(cacheKey);
-        if (lodash.isPlainObject(resolveCache)) {
+        if (remeda.isPlainObject(resolveCache)) {
             const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
             return { stale, resolveCache: resolveCache.valueOfTextRecord };
         }
@@ -449,39 +456,40 @@ export class BaseClientsManager {
 
     private async _resolveTextRecordWithCache(address: string, txtRecord: "subplebbit-address" | "plebbit-author-address") {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
-        const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
+        const chain: ChainTicker | undefined = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain) throw Error(`Can't figure out the chain of the address`);
+        const chainId = this._plebbit.chainProviders[chain]?.chainId;
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
             if (cachedTextRecord.stale)
-                this._resolveTextRecordConcurrently(address, txtRecord, chain)
+                this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId)
                     .then((newTextRecordValue) =>
                         log.trace(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`)
                     )
                     .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
             return cachedTextRecord.resolveCache;
-        } else return this._resolveTextRecordConcurrently(address, txtRecord, chain);
+        } else return this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
     }
 
     preResolveTextRecord(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {}
 
     postResolveTextRecordSuccess(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        resolvedTextRecord: string,
-        chain: Chain,
+        resolvedTextRecord: string | null,
+        chain: ChainTicker,
         chainProviderUrl: string
     ) {}
 
     postResolveTextRecordFailure(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
+        chain: ChainTicker,
         chainProviderUrl: string,
         error: Error
     ) {}
@@ -489,44 +497,54 @@ export class BaseClientsManager {
     private async _resolveTextRecordSingleChainProvider(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain,
-        chainproviderUrl: string
-    ) {
+        chain: ChainTicker,
+        chainproviderUrl: string,
+        chainId: number | undefined
+    ): Promise<string | null | { error: PlebbitError }> {
         this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl);
         const timeBefore = Date.now();
         const cacheKey = sha256(address + txtRecordName + chain + chainproviderUrl);
         let isUsingCache = true;
         try {
             let resolvedTextRecord: string | null;
-            if (domainResolverPromiseCache.has(cacheKey)) resolvedTextRecord = await domainResolverPromiseCache.get(cacheKey);
+            if (domainResolverPromiseCache.has(cacheKey))
+                resolvedTextRecord = <string | null>await domainResolverPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
-                const resolvePromise = this._plebbit.resolver.resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl);
+                const resolvePromise = resolveTxtRecord(address, txtRecordName, chain, chainproviderUrl, chainId);
                 domainResolverPromiseCache.set(cacheKey, resolvePromise);
                 resolvedTextRecord = await resolvePromise;
             }
             if (typeof resolvedTextRecord === "string" && !isIpns(resolvedTextRecord))
-                throw Error("Resolved text record to a non IPNS string");
+                throwWithErrorCode("ERR_RESOLVED_TEXT_RECORD_TO_NON_IPNS", {
+                    resolvedTextRecord,
+                    address,
+                    txtRecordName,
+                    chain,
+                    chainproviderUrl
+                });
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
             if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
             domainResolverPromiseCache.delete(cacheKey);
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, e);
+            const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { error: e });
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
             if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
-            return { error: e };
+            return { error: parsedError };
         }
     }
     private async _resolveTextRecordConcurrently(
         address: string,
         txtRecordName: "subplebbit-address" | "plebbit-author-address",
-        chain: Chain
-    ): Promise<string | undefined> {
+        chain: ChainTicker,
+        chainId?: number
+    ): Promise<string | null> {
         const log = Logger("plebbit-js:plebbit:client-manager:_resolveTextRecordConcurrently");
         const timeouts = [0, 0, 100, 1000];
 
         const _firstResolve = (promises: Promise<string | null | { error: PlebbitError }>[]) => {
-            return new Promise<any>((resolve) =>
+            return new Promise<string | null>((resolve) =>
                 promises.forEach((promise) =>
                     promise.then((res) => {
                         if (typeof res === "string" || res === null) resolve(res);
@@ -555,21 +573,24 @@ export class BaseClientsManager {
 
             try {
                 const providerPromises = providersSorted.map((providerUrl) =>
-                    queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl))
+                    queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId))
                 );
 
-                const resolvedTextRecord: string | null | Promise<{ error: PlebbitError }>[] = await Promise.race([
+                //@ts-expect-error
+                const resolvedTextRecord: string | null | { value: { error: PlebbitError } }[] = await Promise.race([
                     _firstResolve(providerPromises),
                     Promise.allSettled(providerPromises)
                 ]);
                 if (Array.isArray(resolvedTextRecord)) {
                     // It means none of the promises settled with string or null, they all failed
-                    const errorsCombined = {};
-                    for (let i = 0; i < providersSorted.length; i++)
-                        errorsCombined[providersSorted[i]] = resolvedTextRecord[i]["value"]["error"];
+                    const errorsCombined: Record<string, PlebbitError> = {};
+                    for (let i = 0; i < providersSorted.length; i++) errorsCombined[providersSorted[i]] = resolvedTextRecord[i].value.error;
 
                     throwWithErrorCode("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { errors: errorsCombined, address, txtRecordName, chain });
                 } else {
+                    // result could be either the value of the text record
+                    // or null if it doesn't have any value
+                    // TODO abort ongoing resolving
                     queueLimit.clearQueue();
                     if (typeof resolvedTextRecord === "string") {
                         // Only cache valid text records, not null
@@ -583,16 +604,18 @@ export class BaseClientsManager {
             } catch (e) {
                 if (i === timeouts.length - 1) {
                     log.error(`Failed to resolve address (${address}) text record (${txtRecordName}) using providers `, providersSorted, e);
-                    this.emitError(e);
+                    this.emitError(<PlebbitError>e);
                     throw e;
                 }
             }
         }
+
+        throw Error("Should not reach this block within _resolveTextRecordConcurrently");
     }
 
-    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined> {
+    async resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | null> {
         assert(typeof subplebbitAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        if (!this._plebbit.resolver.isDomain(subplebbitAddress)) return subplebbitAddress;
+        if (!isStringDomain(subplebbitAddress)) return subplebbitAddress;
         return this._resolveTextRecordWithCache(subplebbitAddress, "subplebbit-address");
     }
 
@@ -601,9 +624,9 @@ export class BaseClientsManager {
         await this._plebbit._storage.removeItem(cacheKey);
     }
 
-    async resolveAuthorAddressIfNeeded(authorAddress: string) {
+    async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null> {
         assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
-        if (!this._plebbit.resolver.isDomain(authorAddress)) return authorAddress;
+        if (!isStringDomain(authorAddress)) return authorAddress;
         else if (this._plebbit.plebbitRpcClient) return this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress);
         else return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
     }

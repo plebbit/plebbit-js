@@ -8,7 +8,7 @@ import SqliteCache from "./sqlite-lru-cache.js";
 
 export default class LRUStorage implements LRUStorageInterface {
     private _opts: LRUStorageConstructor;
-    private _cache: SqliteCache;
+    private _cache!: SqliteCache;
 
     constructor(opts: LRUStorageConstructor) {
         this._opts = opts;

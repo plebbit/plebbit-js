@@ -12,29 +12,33 @@ import {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    IpfsClient,
     OnlyDefinedProperties,
     PageIpfs,
-    PagesType,
+    PagesInstanceType,
     PagesTypeIpfs,
     PagesTypeJson,
-    PageType,
+    PageInstanceType,
     PostSort,
     ReplySort,
-    Timeframe
+    Timeframe,
+    RepliesPagesTypeIpfs,
+    PostsPagesTypeIpfs,
+    PostSortName,
+    ReplySortName
 } from "./types.js";
 import { messages } from "./errors.js";
-import lodash from "lodash";
 import assert from "assert";
 import { BasePages } from "./pages.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { Plebbit } from "./plebbit.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
+//@ts-expect-error
 import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
+import * as remeda from "remeda";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -49,7 +53,11 @@ export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
 export const POSTS_SORT_TYPES: PostSort = {
     hot: { score: (...args) => hotScore(...args) },
     new: { score: (...args) => newScore(...args) },
-    active: { score: (...args) => undefined },
+    active: {
+        score: (...args) => {
+            throw Error("Active sort has no scoring");
+        }
+    },
     topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
     topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
@@ -65,7 +73,7 @@ export const POSTS_SORT_TYPES: PostSort = {
 };
 
 export const REPLIES_SORT_TYPES: ReplySort = {
-    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
     old: { score: (...args) => oldScore(...args) }
 };
 
@@ -73,16 +81,16 @@ export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
 
-export function replaceXWithY(obj: Object, x: any, y: any): any {
+export function replaceXWithY(obj: Record<string, any>, x: any, y: any): any {
     // obj is a JS object
-    if (!lodash.isPlainObject(obj)) return obj;
-    const newObj = {};
+    if (!remeda.isPlainObject(obj)) return obj;
+    const newObj: Record<string, any> = {};
     Object.entries(obj).forEach(([key, value]) => {
         if (obj[key] === x) newObj[key] = y;
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (lodash.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
+        else if (remeda.isPlainObject(value)) newObj[key] = replaceXWithY(value, x, y);
         else if (Array.isArray(value)) newObj[key] = value.map((iterValue) => replaceXWithY(iterValue, x, y));
         else newObj[key] = value;
     });
@@ -101,7 +109,7 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
-    return lodash.round(sign * order + seconds / 45000, 7);
+    return remeda.round(sign * order + seconds / 45000, 7);
 }
 
 export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
@@ -134,43 +142,43 @@ export function oldScore(comment: { comment: CommentsTableRow; update: CommentUp
     return -comment.comment.timestamp;
 }
 
-function removeNullUndefinedValues<T extends Object>(obj: T): T {
-    return <T>lodash.omitBy(obj, lodash.isNil);
+export function removeNullUndefinedValues<T extends Object>(obj: T) {
+    return remeda.pickBy(obj, remeda.isNonNullish);
 }
 
-function removeUndefinedValues<T extends Object>(obj: T): T {
-    return <T>lodash.omitBy(obj, lodash.isUndefined);
+function removeUndefinedValues<T extends Object>(obj: T) {
+    return remeda.pickBy(obj, remeda.isDefined.strict);
 }
 
-function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T): T {
+function removeNullUndefinedEmptyObjectValues<T extends Object>(obj: T) {
     const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
-    const secondStep = <T>lodash.omitBy(firstStep, (value) => lodash.isPlainObject(value) && lodash.isEmpty(value)); // remove empty {} values
+    const secondStep = remeda.omitBy(firstStep, (value) => remeda.isPlainObject(value) && remeda.isEmpty(value)); // remove empty {} values
     return secondStep;
 }
 
 // A safe function that you can use that will not modify a JSON by removing null or empty objects
 export function removeUndefinedValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeUndefinedValuesRecursively);
-    if (!lodash.isPlainObject(obj)) return obj;
-    const cleanedObj = removeUndefinedValues(obj);
+    if (!remeda.isPlainObject(obj)) return obj;
+    const cleanedObj: any = removeUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeUndefinedValuesRecursively(value);
+        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeUndefinedValuesRecursively(value);
     return cleanedObj;
 }
 
 export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
-    if (!lodash.isPlainObject(obj)) return obj;
-    const cleanedObj = removeNullUndefinedEmptyObjectValues(obj);
+    if (!remeda.isPlainObject(obj)) return obj;
+    const cleanedObj: any = removeNullUndefinedEmptyObjectValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
+        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
 
     return cleanedObj;
 }
 
 // TODO rename
 export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
-    const newObj = lodash.cloneDeep(object);
+    const newObj = remeda.clone(object);
     for (const prop in newObj)
         if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}") delete newObj[prop];
 
@@ -191,16 +199,27 @@ const parseIfJsonString = (jsonString: any) => {
 };
 
 // Only for DB
-export const parseDbResponses = (obj: any) => {
+export const parseDbResponses = (obj: any): any => {
     // This function is gonna be called for every query on db, it should be optimized
     if (obj === "[object Object]") throw Error(`Object shouldn't be [object Object]`);
     if (Array.isArray(obj)) return obj.map((o) => parseDbResponses(o));
     const parsedJsonString = parseIfJsonString(obj);
-    if (!lodash.isPlainObject(obj) && !parsedJsonString) return obj;
+    if (!remeda.isPlainObject(obj) && !parsedJsonString) return obj;
 
-    const newObj = removeNullUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
-    //prettier-ignore
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
+    const newObj = removeNullUndefinedValues(parsedJsonString || obj); // we may need clone here, not sure
+    const booleanFields = [
+        "deleted",
+        "spoiler",
+        "pinned",
+        "locked",
+        "removed",
+        "commentUpdate_deleted",
+        "commentUpdate_spoiler",
+        "commentUpdate_pinned",
+        "commentUpdate_locked",
+        "commentUpdate_removed",
+        "isAuthorEdit"
+    ];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 
@@ -210,53 +229,58 @@ export const parseDbResponses = (obj: any) => {
     return <any>newObj;
 };
 
-export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageType> {
+export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageInstanceType> {
     const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
     await Promise.all(finalComments.map((comment, i) => comment._initCommentUpdate(pageIpfs.comments[i].update)));
 
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesType> {
-    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
-    const pagesType: PagesType["pages"] = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesInstanceType> {
+    const keys = remeda.keys.strict(pagesRaw.pages);
+    const parsedPages = await Promise.all(Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs, plebbit)));
+    const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 
 // To use for both subplebbit.posts and comment.replies
 
-export async function parseRawPages(replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined, plebbit: Plebbit) {
+export async function parseRawPages(
+    replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined,
+    plebbit: Plebbit
+): Promise<Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined }> {
     if (!replies)
         return {
-            pages: undefined,
+            pages: {},
             pagesIpfs: undefined
         };
 
-    if (replies instanceof BasePages) return replies;
-
-    if (!replies.pages) return { pages: undefined, pagesIpfs: undefined };
-
-    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
+    const isIpfs = typeof Object.values(replies.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
 
     if (isIpfs) {
         replies = replies as PagesTypeIpfs;
         const parsedPages = await parsePagesIpfs(replies, plebbit);
         return {
             pages: parsedPages.pages,
-            pagesIpfs: replies.pages
+            pagesIpfs: replies
         };
-    } else {
+    } else if (replies instanceof BasePages)
+        return { pages: replies.pages, pagesIpfs: replies.toJSONIpfs() }; // already parsed
+    else {
         replies = replies as PagesTypeJson;
-        const repliesClone = lodash.cloneDeep(replies) as PagesType;
-        //@ts-expect-error
-        const pageKeys: (keyof PagesType["pages"])[] = Object.keys(repliesClone.pages);
-        for (const key of pageKeys)
-            repliesClone.pages[key].comments = await Promise.all(
-                replies.pages[key].comments.map((comment) => plebbit.createComment.bind(plebbit)(comment))
-            );
+        const pagesWithCommentInstancesEntries = await Promise.all(
+            remeda.entries.strict(replies.pages).map(async ([pageKey, pageJson]) => {
+                const comments = await Promise.all(
+                    pageJson.comments.map((commentJson) => plebbit.createComment.bind(plebbit)(commentJson))
+                );
+                return remeda.entries.strict({ [pageKey]: { comments, nextCid: pageJson.nextCid } })[0];
+            })
+        );
+
+        const pagesWithCommentInstances = remeda.fromEntries.strict(pagesWithCommentInstancesEntries);
 
         return {
-            pages: repliesClone.pages,
+            pages: pagesWithCommentInstances,
             pagesIpfs: undefined
         };
     }
@@ -281,12 +305,13 @@ export function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function firstResolve(promises: Promise<any>[]) {
-    return new Promise<any>((resolve) => promises.forEach((promise) => promise.then(resolve)));
+export function firstResolve<T>(promises: Promise<T>[]) {
+    return new Promise<T>((resolve) => promises.forEach((promise) => promise.then(resolve)));
 }
 
 export function getErrorCodeFromMessage(message: string): keyof typeof messages {
-    for (const code of Object.keys(messages)) if (messages[code] === message) return <keyof typeof messages>code;
+    const codes = remeda.keys.strict(messages);
+    for (const code of codes) if (messages[code] === message) return code;
     throw Error(`No error code was found for message (${message})`);
 }
 
@@ -304,7 +329,7 @@ export function decodePubsubMsgFromRpc(
         | EncodedDecryptedChallengeVerificationMessageType
 ) {
     //@ts-expect-error
-    const parsedPubsubMsg:
+    let parsedPubsubMsg:
         | DecryptedChallengeMessageType
         | DecryptedChallengeAnswerMessageType
         | DecryptedChallengeRequestMessageType
@@ -313,9 +338,9 @@ export function decodePubsubMsgFromRpc(
         | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
     if (pubsubMsg.encrypted) {
-        parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
-        parsedPubsubMsg.encrypted.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
-        parsedPubsubMsg.encrypted.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
+        parsedPubsubMsg.encrypted!.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
+        parsedPubsubMsg.encrypted!.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
+        parsedPubsubMsg.encrypted!.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
     }
     parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
     parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
@@ -327,7 +352,8 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
     if (!postUpdates) throw Error("subplebbit has no post updates");
     if (!postTimestamp) throw Error("post has no timestamp");
     return (
-        Object.keys(postUpdates)
+        remeda.keys
+            .strict(postUpdates)
             // sort from smallest to biggest
             .sort((a, b) => Number(a) - Number(b))
             // find the smallest timestamp range where comment.timestamp is newer
@@ -335,7 +361,7 @@ export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["pos
     );
 }
 
-export function isLinkValid(link: string) {
+export function isLinkValid(link: string): boolean {
     try {
         const url = new URL(link);
         if (url.protocol !== "https:") throw Error("Not a valid https url");
@@ -345,7 +371,7 @@ export function isLinkValid(link: string) {
     }
 }
 
-export function isLinkOfMedia(link: string) {
+export function isLinkOfMedia(link: string): boolean {
     if (!link) return false;
     let mime;
     try {
@@ -354,6 +380,7 @@ export function isLinkOfMedia(link: string) {
         return false;
     }
     if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio")) return true;
+    return false;
 }
 
 export async function genToArray<T>(gen: AsyncIterable<T>): Promise<T[]> {

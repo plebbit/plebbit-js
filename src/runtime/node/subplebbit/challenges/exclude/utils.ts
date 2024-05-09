@@ -12,19 +12,18 @@ const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstC
     excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
 
 const isVote = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    Boolean(publication["vote"] !== undefined && publication["commentCid"]);
+    Boolean("vote" in publication && typeof publication.vote === "number" && publication["commentCid"]);
 const isReply = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    Boolean(publication["parentCid"] && !publication["commentCid"]);
+    Boolean("parentCid" in publication && !("commentCid" in publication));
 const isPost = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    Boolean(!publication["parentCid"] && !publication["commentCid"]);
+    Boolean(!("parentCid" in publication) && !("commentCid" in publication));
 
 // boilerplate function to test if an exclude of a specific publication type passes
 const testType = (
-    excludePublicationType: boolean | undefined,
+    excludePublicationType: boolean,
     publication: DecryptedChallengeRequestMessageType["publication"],
     isType: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean
 ) => {
-    if (excludePublicationType === undefined) return true;
     if (excludePublicationType === true) {
         if (isType(publication)) return true;
         else return false;

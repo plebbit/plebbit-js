@@ -2,14 +2,10 @@ import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunct
 import {
     StorageInterface,
     ChainProvider,
-    CommentEditType,
     CommentIpfsType,
     CommentPubsubMessage,
-    CommentType,
-    CommentWithCommentUpdate,
     CreateCommentEditOptions,
     CreateCommentOptions,
-    CreatePublicationOptions,
     CreateVoteOptions,
     GatewayClient,
     IpfsClient,
@@ -17,22 +13,26 @@ import {
     PlebbitOptions,
     PubsubClient,
     VotePubsubMessage,
-    VoteType,
     ParsedPlebbitOptions,
     LRUStorageInterface,
     LRUStorageConstructor,
-    PubsubSubscriptionHandler
+    PubsubSubscriptionHandler,
+    CommentOptionsToSign,
+    VoteOptionsToSign,
+    CommentEditOptionsToSign,
+    LocalVoteOptions,
+    CommentEditPubsubMessage,
+    CommentIpfsWithCid,
+    CommentTypeJson
 } from "./types.js";
-import { Comment } from "./comment.js";
+import { Comment } from "./publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, isIpfsCid, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
-import Vote from "./vote.js";
+import Vote from "./publications/vote.js";
 import { createSigner, Signer } from "./signer/index.js";
-import { Resolver } from "./resolver.js";
-import { CommentEdit } from "./comment-edit.js";
+import { CommentEdit } from "./publications/comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
-import lodash from "lodash";
 import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -43,15 +43,41 @@ import { ClientsManager } from "./clients/client-manager.js";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client.js";
-import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitIpfsType, SubplebbitType } from "./subplebbit/types.js";
+import {
+    CreateInstanceOfLocalOrRemoteSubplebbitOptions,
+    CreateNewLocalSubplebbitParsedOptions,
+    CreateNewLocalSubplebbitUserOptions,
+    CreateRemoteSubplebbitOptions,
+    InternalSubplebbitRpcType,
+    InternalSubplebbitType,
+    RemoteSubplebbitJsonType,
+    SubplebbitIpfsType
+} from "./subplebbit/types.js";
 import LRUStorage from "./runtime/node/lru-storage.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
+import * as remeda from "remeda";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
+    plebbitRpcClient?: PlebbitRpcClient;
+    ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
+    pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
+    plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
+    dataPath?: ParsedPlebbitOptions["dataPath"];
+    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
+    resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
+    chainProviders!: ParsedPlebbitOptions["chainProviders"];
+    _storage!: StorageInterface;
+    stats!: Stats;
+    parsedPlebbitOptions: ParsedPlebbitOptions;
+    publishInterval: ParsedPlebbitOptions["publishInterval"];
+    updateInterval: ParsedPlebbitOptions["updateInterval"];
+    noData: ParsedPlebbitOptions["noData"];
+
+    // Only Plebbit instance has these props
     clients: {
         ipfsGateways: { [ipfsGatewayUrl: string]: GatewayClient };
         ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
@@ -59,27 +85,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: GenericPlebbitRpcStateClient };
     };
-    resolver: Resolver;
-    plebbitRpcClient?: PlebbitRpcClient;
-    ipfsHttpClientsOptions?: IpfsClient["_clientOptions"][];
-    pubsubHttpClientsOptions: IpfsClient["_clientOptions"][];
-    plebbitRpcClientsOptions?: string[];
-    dataPath?: string;
-    browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
-    resolveAuthorAddresses?: boolean;
-    chainProviders: { [chainTicker: string]: ChainProvider };
-    _storage: StorageInterface;
-    stats: Stats;
-    parsedPlebbitOptions: ParsedPlebbitOptions;
-
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler>;
-    _clientsManager: ClientsManager;
-    publishInterval: number;
-    updateInterval: number;
-    noData: boolean;
-    private _userPlebbitOptions: PlebbitOptions;
+    _clientsManager!: ClientsManager;
+    private _userPlebbitOptions: PlebbitOptions; // this is the raw input from user
 
-    private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to interface
+    private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
 
     constructor(options: PlebbitOptions = {}) {
         super();
@@ -96,12 +106,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             "noData",
             "browserLibp2pJsPublish"
         ];
-        for (const option of Object.keys(options))
+        for (const option of remeda.keys.strict(options))
             if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
 
         this._userPlebbitOptions = options;
         //@ts-expect-error
-        this.parsedPlebbitOptions = lodash.cloneDeep(options);
+        this.parsedPlebbitOptions = remeda.clone(options);
         this.parsedPlebbitOptions.plebbitRpcClientsOptions = this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
         if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
@@ -122,20 +132,22 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   this.ipfsHttpClientsOptions ||
                   fallbackPubsubProviders;
 
-        this.publishInterval = this.parsedPlebbitOptions.publishInterval = options.hasOwnProperty("publishInterval")
-            ? options.publishInterval
-            : 20000; // Default to 20s
-        this.updateInterval = this.parsedPlebbitOptions.updateInterval = options.hasOwnProperty("updateInterval")
-            ? options.updateInterval
-            : 60000; // Default to 1 minute
-        this.noData = this.parsedPlebbitOptions.noData = options.hasOwnProperty("noData") ? options.noData : false;
-        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish = options.hasOwnProperty("browserLibp2pJsPublish")
-            ? options.browserLibp2pJsPublish
-            : false;
+        this.publishInterval = this.parsedPlebbitOptions.publishInterval =
+            typeof options.publishInterval === "number" ? options.publishInterval : 20000; // Default to 20s
+        this.updateInterval = this.parsedPlebbitOptions.updateInterval =
+            typeof options.updateInterval === "number" ? options.updateInterval : 60000; // Default to 1 minute
+        this.noData = this.parsedPlebbitOptions.noData = typeof options.noData === "boolean" ? options.noData : false;
+        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish =
+            typeof options.browserLibp2pJsPublish === "boolean" ? options.browserLibp2pJsPublish : false;
+
+        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses =
+            typeof options.resolveAuthorAddresses === "boolean" ? options.resolveAuthorAddresses : true;
 
         this._initIpfsClients();
         this._initPubsubClients();
         this._initRpcClients();
+        this._initIpfsGateways();
+        this._initChainProviders(options);
 
         if (!this.noData && !this.plebbitRpcClient)
             this.dataPath = this.parsedPlebbitOptions.dataPath = options.dataPath || getDefaultDataPath();
@@ -169,8 +181,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                     _clientOptions: clientOptions,
                     peers: async () => {
                         const topics = await ipfsClient.pubsub.ls();
-                        const topicPeers = lodash.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
-                        const peers = lodash.uniq(topicPeers.map((topicPeer) => topicPeer.toString()));
+                        const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                        const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
                         return peers;
                     }
                 };
@@ -180,11 +192,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     private _initRpcClients() {
         this.clients.plebbitRpcClients = {};
         if (this.parsedPlebbitOptions.plebbitRpcClientsOptions)
-            for (const rpcUrl of this.plebbitRpcClientsOptions)
+            for (const rpcUrl of <string[]>this.plebbitRpcClientsOptions)
                 this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
     }
 
-    private _initResolver(options: PlebbitOptions) {
+    private _initChainProviders(options: PlebbitOptions) {
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClient
             ? {}
             : options.chainProviders || {
@@ -199,23 +211,25 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                   },
                   sol: {
                       urls: ["web3.js", "https://solana.api.onfinality.io/public"],
-                      chainId: null // no chain ID for solana
+                      chainId: -1 // no chain ID for solana
                   }
               };
-        if (this.chainProviders?.eth && !this.chainProviders.eth.chainId) this.chainProviders.eth.chainId = 1;
+        if ("eth" in this.chainProviders && remeda.isPlainObject(this.chainProviders.eth) && this.chainProviders.eth.chainId !== 1)
+            this.chainProviders.eth.chainId = 1;
         this.clients.chainProviders = this.chainProviders;
+    }
 
-        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses = options.hasOwnProperty("resolveAuthorAddresses")
-            ? options.resolveAuthorAddresses
-            : true;
-        this.resolver = new Resolver({
-            resolveAuthorAddresses: this.resolveAuthorAddresses,
-            chainProviders: this.chainProviders
-        });
+    private _initIpfsGateways() {
+        // If user did not provide ipfsGatewayUrls
+        const fallbackGateways = this.plebbitRpcClient ? undefined : remeda.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
+        this.clients.ipfsGateways = {};
+        if (this.parsedPlebbitOptions.ipfsGatewayUrls)
+            for (const gatewayUrl of this.parsedPlebbitOptions.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
+        else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
     private _parseUrlToOption(urlStrings: string[]): IpfsClient["_clientOptions"][] {
-        const parsed = [];
+        const parsed: IpfsClient["_clientOptions"][] = [];
         for (const urlString of urlStrings) {
             const url = new URL(urlString);
             const authorization =
@@ -231,20 +245,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     async _init(options: PlebbitOptions) {
         const log = Logger("plebbit-js:plebbit:_init");
 
-        // If user did not provide ipfsGatewayUrls
-        const fallbackGateways = this.plebbitRpcClient ? undefined : lodash.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
-        this.clients.ipfsGateways = {};
-        if (options.ipfsGatewayUrls) for (const gatewayUrl of options.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
-        else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
-
         // Init storage
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
         await this._storage.init();
 
         // Init stats
         this.stats = new Stats({ _storage: this._storage, clients: this.clients });
-        // Init resolver
-        this._initResolver(options);
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
     }
@@ -301,64 +307,87 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return comment;
     }
 
-    private async _initMissingFields(pubOptions: CreatePublicationOptions & { signer: CreateCommentOptions["signer"] }, log: Logger) {
-        const clonedOptions = lodash.cloneDeep(pubOptions); // Clone to avoid modifying actual arguments provided by users
-        if (!clonedOptions.timestamp) {
-            clonedOptions.timestamp = timestamp();
-            log.trace(`User hasn't provided a timestamp, defaulting to (${clonedOptions.timestamp})`);
+    private async _initMissingFieldsOfPublicationBeforeSigning(
+        pubOptions: CreateCommentOptions | CreateCommentEditOptions | CreateVoteOptions,
+        log: Logger
+    ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign> {
+        const finalOptions = remeda.clone(pubOptions);
+        if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
+        if (finalOptions.author && "shortAddress" in finalOptions.author) {
+            log("Removed author.shortAddress before creating the signature");
+            delete finalOptions["author"]["shortAddress"];
         }
-        if (!(<SignerType>clonedOptions.signer).address)
-            (<SignerType>clonedOptions.signer).address = await getPlebbitAddressFromPrivateKey(clonedOptions.signer.privateKey);
+        const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
+        const filledSigner: SignerType = {
+            ...finalOptions.signer,
+            address: await getPlebbitAddressFromPrivateKey(finalOptions.signer.privateKey)
+        };
+        const filledAuthor = { ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
+        const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
-        if (!clonedOptions?.author?.address) {
-            clonedOptions.author = { ...clonedOptions.author, address: (<SignerType>clonedOptions.signer).address };
-            log(`author.address was not provided, will define it to signer.address (${clonedOptions.author.address})`);
-        }
-        delete clonedOptions.author["shortAddress"]; // Forcefully delete shortAddress so it won't be a part of the signature
-        return clonedOptions;
+        return {
+            ...finalOptions,
+            timestamp: filledTimestamp,
+            signer: filledSigner,
+            author: filledAuthor,
+            protocolVersion: filledProtocolVersion
+        };
     }
 
-    private async _createCommentInstance(
-        options:
-            | CreateCommentOptions
-            | CommentIpfsType
-            | CommentPubsubMessage
-            | CommentWithCommentUpdate
-            | Pick<CommentWithCommentUpdate, "cid">
-    ) {
-        options = options as CreateCommentOptions | CommentIpfsType | CommentPubsubMessage;
-        const comment = new Comment(<CommentType>options, this);
-
-        //@ts-expect-error
-        if (typeof options["updatedAt"] === "number") await comment._initCommentUpdate(<CommentUpdate>options);
-        return comment;
+    private async _createCommentInstanceFromExistingCommentInstance(options: Comment): Promise<Comment> {
+        const commentInstance = new Comment(this);
+        if (typeof options.cid === "string") commentInstance.setCid(options.cid);
+        if (typeof options.depth === "number") commentInstance._initIpfsProps(options.toJSONIpfs());
+        else if (typeof options.author.address === "string")
+            commentInstance._initPubsubMessageProps(options.toJSONPubsubMessagePublication());
+        if (typeof options.updatedAt === "number") await commentInstance._initCommentUpdate(options.toJSONCommentWithinPage());
+        return commentInstance;
     }
 
     async createComment(
         options:
             | CreateCommentOptions
-            | CommentWithCommentUpdate
+            | CommentTypeJson
             | CommentIpfsType
             | CommentPubsubMessage
-            | CommentType
             | Comment
-            | Pick<CommentWithCommentUpdate, "cid">
+            | Pick<CommentIpfsWithCid, "cid">
+            | Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress">
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
-        if (options["cid"] && !isIpfsCid(options["cid"])) throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options["cid"] });
+        if ("cid" in options && typeof options.cid === "string" && !isIpfsCid(options.cid))
+            throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options.cid });
 
-        const formattedOptions = options instanceof Comment ? options.toJSON() : options;
-        formattedOptions["protocolVersion"] = formattedOptions["protocolVersion"] || env.PROTOCOL_VERSION;
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment");
 
-        if (options["signature"] || options["cid"]) return this._createCommentInstance(formattedOptions);
-        else {
-            //@ts-expect-error
-            const fieldsFilled = <CommentType>await this._initMissingFields(formattedOptions, log);
-            const cleanedFieldsFilled = cleanUpBeforePublishing(<CreateCommentOptions>fieldsFilled);
-            const signature = await signComment(cleanedFieldsFilled, fieldsFilled.signer, this);
-            const finalOptions = { ...cleanedFieldsFilled, signature };
-            return this._createCommentInstance(finalOptions);
+        if (options instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(options);
+        const commentInstance = new Comment(this);
+        if ("cid" in options && typeof options.cid === "string") {
+            commentInstance.setCid(options.cid);
+            if (Object.keys(options).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
+
+        if ("depth" in options) {
+            // Options is CommentIpfs
+            commentInstance._initIpfsProps(options);
+        } else if ("signature" in options) {
+            // Options is CommentPubsubMessage
+            commentInstance._initPubsubMessageProps(options);
+        } else if ("signer" in options) {
+            // we're creating a new comment to sign and publish here
+            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
+            const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
+            commentInstance._initLocalProps(signedComment);
+        } else if ("subplebbitAddress" in options && typeof options.subplebbitAddress === "string")
+            commentInstance.setSubplebbitAddress(options.subplebbitAddress);
+        else {
+            throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
+        }
+
+        if ("updatedAt" in options && typeof options.updatedAt === "number") await commentInstance._initCommentUpdate(options);
+
+        return commentInstance;
     }
 
     _canCreateNewLocalSub(): boolean {
@@ -367,12 +396,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createSubplebbitRpc(
-        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType
+        options:
+            | CreateNewLocalSubplebbitUserOptions
+            | CreateRemoteSubplebbitOptions
+            | SubplebbitIpfsType
+            | InternalSubplebbitRpcType
+            | RpcRemoteSubplebbit
+            | RpcLocalSubplebbit
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
-        if (options.address && !options["signer"]) {
-            options = options as CreateSubplebbitOptions;
+        if ("address" in options && typeof options.address === "string" && !("signer" in options)) {
             const rpcSubs = await this.listSubplebbits();
             const isSubRpcLocal = rpcSubs.includes(options.address);
             // Should actually create an instance here, instead of calling getSubplebbit
@@ -393,19 +427,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 if (error) throw error;
 
                 return sub;
-            } else {
+            } else if (typeof options.address === "string") {
+                // Remote subplebbit
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                await remoteSub.initRemoteSubplebbitPropsWithMerge(options);
+                const parsedOptions = options instanceof RpcRemoteSubplebbit ? options.toJSONIpfs() : options;
+                await remoteSub.initRemoteSubplebbitPropsNoMerge(parsedOptions);
                 return remoteSub;
-            }
-        } else {
-            const newLocalSub = await this.plebbitRpcClient.createSubplebbit(options);
+            } else throw Error("Can't create a remote subplebbit without defining address");
+        } else if (!("address" in options)) {
+            const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
             log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
             return newLocalSub;
-        }
+        } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
 
-    private async _createRemoteSubplebbitInstance(options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType) {
+    private async _createRemoteSubplebbitInstance(
+        options: RemoteSubplebbit | RemoteSubplebbitJsonType | SubplebbitIpfsType | CreateRemoteSubplebbitOptions
+    ) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
@@ -414,109 +452,141 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 options
             });
         const subplebbit = new RemoteSubplebbit(this);
-        await subplebbit.initRemoteSubplebbitPropsWithMerge(options);
+        const subProps = options instanceof RemoteSubplebbit ? options.toJSONIpfs() : options;
+        await subplebbit.initRemoteSubplebbitPropsNoMerge(subProps);
+
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
     }
 
-    private async _createLocalSub(options: CreateSubplebbitOptions): Promise<LocalSubplebbit> {
+    private async _createLocalSub(
+        options: CreateNewLocalSubplebbitParsedOptions | CreateInstanceOfLocalOrRemoteSubplebbitOptions
+    ): Promise<LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createLocalSubplebbit");
         log.trace("Received subplebbit options to create a local subplebbit instance:", options);
 
         const canCreateLocalSub = this._canCreateNewLocalSub();
         if (!canCreateLocalSub) throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
-        if (!options.address)
-            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
-                options
-            });
+
         const isLocalSub = (await this.listSubplebbits()).includes(options.address); // Sub exists already, only pass address so we don't override other props
         const subplebbit = new LocalSubplebbit(this);
         if (isLocalSub) {
+            // If the sub is already created before, then load it with address only. We don't care about other props
             subplebbit.setAddress(options.address);
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
+                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
             );
-        } else {
+            return subplebbit;
+        } else if ("signer" in options) {
             // This is a new sub
-            await subplebbit.initInternalSubplebbitWithMerge(options); // Are we trying to create a new sub with options, or just trying to load an existing sub
+
+            await subplebbit.initNewLocalSubPropsNoMerge(options); // We're initializing a new local sub props here
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(lodash.omit(subplebbit.toJSON(), ["signer"]))
+                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
             );
-        }
-
-        return subplebbit;
+            return subplebbit;
+        } else throw Error("Are you trying to create a local sub with no address or signer? This is a critical error");
     }
 
     async createSubplebbit(
-        options: CreateSubplebbitOptions | SubplebbitType | SubplebbitIpfsType | InternalSubplebbitType = {}
+        options:
+            | CreateNewLocalSubplebbitUserOptions
+            | CreateRemoteSubplebbitOptions
+            | RemoteSubplebbitJsonType
+            | SubplebbitIpfsType
+            | InternalSubplebbitType
+            | RemoteSubplebbit
+            | RpcLocalSubplebbit
+            | RpcRemoteSubplebbit
+            | LocalSubplebbit = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        if ("address" in options && typeof options.address !== "string")
+            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { options });
         log.trace("Received options: ", options);
 
-        if (options?.hasOwnProperty("address") && !options?.address)
-            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { subplebbitAddress: options?.address });
-        if (options?.address && doesDomainAddressHaveCapitalLetter(options?.address))
-            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: options?.address });
+        if ("address" in options && options?.address && doesDomainAddressHaveCapitalLetter(options.address))
+            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...options });
 
         if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
 
         const canCreateLocalSub = this._canCreateNewLocalSub();
 
-        if (options["signer"] && !canCreateLocalSub)
+        if ("signer" in options && !canCreateLocalSub)
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
-        if (!canCreateLocalSub) return this._createRemoteSubplebbitInstance(options);
+        if (!canCreateLocalSub)
+            return this._createRemoteSubplebbitInstance(
+                <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
+            );
 
-        if (options.address && !options["signer"]) {
+        if ("address" in options && !("signer" in options)) {
+            // sub is already created, need to check if it's local or remote
             const localSubs = await this.listSubplebbits();
             const isSubLocal = localSubs.includes(options.address);
-            if (isSubLocal) return this._createLocalSub(options);
-            else return this._createRemoteSubplebbitInstance(options);
-        } else if (!options.address && !options["signer"]) {
-            options = options as CreateSubplebbitOptions;
-            options.signer = await this.createSigner();
-            options.address = (<Signer>options.signer).address;
-            log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${options.address})`);
+            if (isSubLocal) return this._createLocalSub({ address: options.address });
+            else
+                return this._createRemoteSubplebbitInstance(
+                    <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
+                );
+        } else if (!("address" in options) && !("signer" in options)) {
+            // no address, no signer, create signer and assign address to signer.address
+            const signer = await this.createSigner();
+            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, signer, address: signer.address };
+            log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
-            return this._createLocalSub(options);
-        } else if (!options.address && options["signer"]) {
-            options = options as CreateSubplebbitOptions;
-            options.signer = await this.createSigner(options.signer);
-            options.address = (<Signer>options.signer).address;
-            return this._createLocalSub(options);
-        } else return this._createLocalSub(options);
+            return this._createLocalSub(localOptions);
+        } else if (!("address" in options) && "signer" in options) {
+            const signer = await this.createSigner(options.signer);
+            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, address: signer.address, signer };
+            return this._createLocalSub(localOptions);
+        } else if ("address" in options && "signer" in options) return this._createLocalSub(options);
+        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { options });
     }
 
-    async createVote(options: CreateVoteOptions | VoteType | VotePubsubMessage): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VotePubsubMessage): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
-        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
+        const voteInstance = new Vote(this);
 
-        if (options["signature"]) return new Vote(<VoteType>options, this);
-        //@ts-ignore
-        const finalOptions: VoteType = <VoteType>await this._initMissingFields(options, log);
-        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateVoteOptions>finalOptions);
-        const signature = await signVote(cleanedFinalOptions, finalOptions.signer, this);
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed vote");
 
-        return new Vote(<VoteType>{ ...cleanedFinalOptions, signature }, this);
+        if ("signature" in options) {
+            voteInstance._initRemoteProps(options);
+        } else {
+            const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signedVote: LocalVoteOptions = {
+                ...cleanedFinalOptions,
+                signature: await signVote(cleanedFinalOptions, finalOptions.signer, this)
+            };
+
+            voteInstance._initLocalProps(signedVote);
+        }
+        return voteInstance;
     }
 
-    async createCommentEdit(options: CreateCommentEditOptions | CommentEditType): Promise<CommentEdit> {
+    async createCommentEdit(options: CreateCommentEditOptions | CommentEditPubsubMessage): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
-        options["protocolVersion"] = options["protocolVersion"] || env.PROTOCOL_VERSION;
+        const editInstance = new CommentEdit(this);
 
-        if (options["signature"]) return new CommentEdit(<CommentEditType>options, this); // User just wants to instantiate a CommentEdit object, not publish
-        //@ts-ignore
-        const finalOptions: CommentEditType = <CommentEditType>await this._initMissingFields(options, log);
-        const cleanedFinalOptions = cleanUpBeforePublishing(<CreateCommentEditOptions>finalOptions);
-        const signature = await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this);
-        return new CommentEdit(<CommentEditType>{ ...cleanedFinalOptions, signature }, this);
+        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment edit");
+
+        if ("signature" in options)
+            editInstance._initRemoteProps(options); // User just wants to instantiate a CommentEdit object, not publish
+        else {
+            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
+            editInstance._initLocalProps(signedEdit);
+        }
+        return editInstance;
     }
 
-    createSigner(createSignerOptions?: CreateSignerOptions): Promise<Signer> {
+    createSigner(createSignerOptions?: CreateSignerOptions) {
         return createSigner(createSignerOptions);
     }
 

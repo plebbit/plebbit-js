@@ -34,5 +34,6 @@ export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptio
 export const nativeFunctions: NativeFunctions = browserNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
     if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
+    //@ts-expect-error
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
 };

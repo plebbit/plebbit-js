@@ -1,18 +1,19 @@
-import { Plebbit } from "./plebbit.js";
+import { Plebbit } from "../plebbit.js";
 import Publication from "./publication.js";
-import { verifyCommentEdit } from "./signer/signatures.js";
-import { Flair } from "./subplebbit/types.js";
+import { verifyCommentEdit } from "../signer/signatures.js";
+import { Flair } from "../subplebbit/types.js";
 import {
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
+    CommentEditTypeJson,
     CommentEditsTableRowInsert,
-    CommentEditType,
+    LocalCommentEditOptions,
     PublicationTypeName
-} from "./types.js";
-import { isIpfsCid, throwWithErrorCode } from "./util.js";
+} from "../types.js";
+import { isIpfsCid, throwWithErrorCode } from "../util.js";
 
-export class CommentEdit extends Publication implements CommentEditType {
-    commentCid: string;
+export class CommentEdit extends Publication {
+    commentCid!: string;
     content?: string;
     reason?: string;
     deleted?: boolean;
@@ -23,15 +24,14 @@ export class CommentEdit extends Publication implements CommentEditType {
     removed?: boolean;
     commentAuthor?: CommentAuthorEditOptions;
 
-    constructor(props: CommentEditType, plebbit: Plebbit) {
-        super(props, plebbit);
+    constructor(plebbit: Plebbit) {
+        super(plebbit);
 
         // public method should be bound
         this.publish = this.publish.bind(this);
     }
 
-    _initProps(props: CommentEditType) {
-        super._initProps(props);
+    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessage) {
         this.commentCid = props.commentCid;
         this.content = props.content;
         this.reason = props.reason;
@@ -44,9 +44,23 @@ export class CommentEdit extends Publication implements CommentEditType {
         this.commentAuthor = props.commentAuthor;
     }
 
-    toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
+    _initLocalProps(props: LocalCommentEditOptions) {
+        super._initBaseLocalProps(props);
+        this._initEditProps(props);
+    }
+
+    _initRemoteProps(props: CommentEditPubsubMessage): void {
+        super._initBaseRemoteProps(props);
+        this._initEditProps(props);
+    }
+
+    override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
         return {
-            ...super.toJSONPubsubMessagePublication(),
+            subplebbitAddress: this.subplebbitAddress,
+            timestamp: this.timestamp,
+            signature: this.signature,
+            author: this.author.toJSONIpfs(),
+            protocolVersion: this.protocolVersion,
             commentCid: this.commentCid,
             content: this.content,
             reason: this.reason,
@@ -60,7 +74,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    toJSON() {
+    override toJSON(): CommentEditTypeJson {
         return {
             ...this.toJSONPubsubMessagePublication(),
             shortSubplebbitAddress: this.shortSubplebbitAddress,
@@ -78,7 +92,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         };
     }
 
-    getType(): PublicationTypeName {
+    override getType(): PublicationTypeName {
         return "commentedit";
     }
 
@@ -88,7 +102,7 @@ export class CommentEdit extends Publication implements CommentEditType {
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
-    async publish(): Promise<void> {
+    override async publish(): Promise<void> {
         // TODO if publishing with content,reason, deleted, verify that publisher is original author
         if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
 

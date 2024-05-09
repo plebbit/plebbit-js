@@ -2,7 +2,7 @@ import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
 import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 let subplebbit;
 const subCommentPages = {};
@@ -63,13 +63,13 @@ const testCommentFields = (comment) => {
 };
 
 const activeScore = async (comment) => {
-    if (!comment.replies.pages) return comment.timestamp;
+    if (Object.keys(comment.replies.pageCids).length === 0) return comment.timestamp;
     let maxTimestamp = comment.timestamp;
 
     const updateMaxTimestamp = async (localComments) => {
         for (const localComment of localComments) {
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
-            if (localComment.replies.pages) {
+            if (Object.keys(localComment.replies.pageCids).length > 0) {
                 const childrenComments = await loadAllPages(localComment.replies.pageCids.new, localComment.replies);
                 await updateMaxTimestamp(childrenComments);
             }
@@ -165,7 +165,7 @@ describe("Test pages sorting", async () => {
         it(`posts are the same within all pages`, async () => {
             // We need to separate pages by timeframe
 
-            const pagesByTimeframe = lodash.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
+            const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
 
             for (const pagesGrouped of Object.values(pagesByTimeframe)) {
                 const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);
@@ -190,7 +190,7 @@ describe("Test pages sorting", async () => {
 
         it(`Stringified comment.replies still have all props`, async () => {
             for (const post of posts) {
-                if (!post.replies.pages) continue;
+                if (Object.keys(post.replies.pages).length === 0) continue;
                 const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
                 for (const reply of stringifiedReplies) testCommentFields(reply);
             }

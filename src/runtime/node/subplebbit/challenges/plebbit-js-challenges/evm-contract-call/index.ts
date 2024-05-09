@@ -1,7 +1,7 @@
 import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
-import type { DecryptedChallengeRequestMessageType } from "../../../../../../types.js";
-import type { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
+import type { ChainTicker, DecryptedChallengeRequestMessageType } from "../../../../../../types.js";
+import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
@@ -61,6 +61,12 @@ const nftAbi = [
 
 const supportedConditionOperators = ["=", ">", "<"];
 
+const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: ChainTicker) => {
+    const chainProvider = plebbit.chainProviders[chainTicker];
+    if (!chainProvider) throw Error("plebbit.chainProviders[chainTicker] is not defined");
+    return chainProvider;
+};
+
 const verifyAuthorWalletAddress = async (props: {
     publication: DecryptedChallengeRequestMessageType["publication"];
     chainTicker: string;
@@ -91,9 +97,9 @@ const verifyAuthorWalletAddress = async (props: {
     // verify the signature of the wallet
 
     // validate if wallet.signature matches JSON {domainSeparator:"plebbit-author-wallet",authorAddress:"${authorAddress},{timestamp:${wallet.timestamp}"}
-    const viemClient = await getViemClient(props.plebbit, "eth", props.plebbit.chainProviders.eth.urls[0]);
+    const viemClient = await getViemClient(props.plebbit, "eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
 
-    const messageToBeSigned = {};
+    const messageToBeSigned: any = {};
     messageToBeSigned["domainSeparator"] = "plebbit-author-wallet";
     messageToBeSigned["authorAddress"] = props.publication.author.address;
     messageToBeSigned["timestamp"] = authorWallet.timestamp;
@@ -111,7 +117,7 @@ const verifyAuthorWalletAddress = async (props: {
     // cache the timestamp and validate that no one has used a more recently timestamp with the same wallet.address in the cache
     const cache = await props.plebbit._createStorageLRU({
         cacheName: "challenge_evm_contract_call_v1_wallet_last_timestamp",
-        maxItems: undefined
+        maxItems: Number.MAX_SAFE_INTEGER // We don't want to evacuate
     });
     const cacheKey = props.chainTicker + authorWallet.address;
     const lastTimestampOfAuthor = <number | undefined>await cache.getItem(cacheKey);
@@ -138,11 +144,13 @@ const verifyAuthorWalletAddress = async (props: {
 
 const verifyAuthorENSAddress = async (props: Parameters<typeof verifyAuthorWalletAddress>[0]): Promise<string | undefined> => {
     if (!props.publication.author.address.endsWith(".eth")) return "Author address is not an ENS domain";
-    const viemClient = await getViemClient(props.plebbit, "eth", props.plebbit.chainProviders["eth"].urls[0]);
+    const viemClient = await getViemClient(props.plebbit, "eth", _getChainProviderWithSafety(props.plebbit, "eth").urls[0]);
 
     const ownerOfAddress = await viemClient.getEnsAddress({
         name: normalize(props.publication.author.address)
     });
+
+    if (!ownerOfAddress) throw Error("Failed to get owner of ENS address of author.address");
 
     // No need to verify if owner has their plebbit-author-address, it's already part of verifyComment
     const walletValidationFailure = await validateWalletAddressWithCondition({
@@ -163,11 +171,9 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
     const log = Logger("plebbit-js:local-subplebbit:evm-contract-call-v1:verifyAuthorNftWalletAddress");
 
     const nftAvatar = props.publication.author.avatar;
-    const viemClient = await getViemClient(
-        props.plebbit,
-        nftAvatar.chainTicker,
-        props.plebbit.chainProviders[nftAvatar.chainTicker].urls[0]
-    );
+    const chainProvider = props.plebbit.chainProviders[<ChainTicker>nftAvatar.chainTicker];
+    if (!chainProvider) return "The subplebbit does not support NFTs from this chain";
+    const viemClient = await getViemClient(props.plebbit, <ChainTicker>nftAvatar.chainTicker, chainProvider.urls[0]);
 
     let currentOwner: "0x${string}";
     try {
@@ -182,7 +188,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
         return "Failed to read NFT contract";
     }
 
-    const messageToBeSigned = {};
+    const messageToBeSigned: any = {};
     // the property names must be in this order for the signature to match
     // insert props one at a time otherwise babel/webpack will reorder
     messageToBeSigned["domainSeparator"] = "plebbit-author-avatar";
@@ -228,7 +234,11 @@ const getContractCallResponse = async (props: {
     // TODO res should be cached for each authorWalletAddress at least for 30s
 
     try {
-        const viemClient = await getViemClient(props.plebbit, props.chainTicker, props.plebbit.chainProviders[props.chainTicker].urls[0]);
+        const viemClient = await getViemClient(
+            props.plebbit,
+            <ChainTicker>props.chainTicker,
+            _getChainProviderWithSafety(props.plebbit, <ChainTicker>props.chainTicker).urls[0]
+        );
 
         // need to create data first
         const encodedParameters = encodeFunctionData({
@@ -238,8 +248,9 @@ const getContractCallResponse = async (props: {
 
         const encodedData = await viemClient.call({
             data: encodedParameters,
-            to: props.contractAddress
+            to: <"0x{string}">props.contractAddress
         });
+        if (!encodedData.data) throw Error("The call did not return with data");
         const decodedData = decodeFunctionResult({
             abi: [props.abi],
             data: encodedData.data
@@ -253,6 +264,7 @@ const getContractCallResponse = async (props: {
 
 const evaluateConditionString = (condition: string, responseValue: any) => {
     const operatorInCondition = supportedConditionOperators.find((op) => condition.startsWith(op));
+    if (!operatorInCondition) throw Error("Incorrect condition is set, make sure the condition operator is supported");
     const valueInCondition = condition.split(operatorInCondition)[1];
     const isAllValueNumber = /^\d+$/.test(valueInCondition);
     const conditionValueParsed = isAllValueNumber ? BigInt(valueInCondition) : valueInCondition;
@@ -304,7 +316,7 @@ const getChallenge = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
-) => {
+): Promise<ChallengeResult> => {
     let { chainTicker, address, abi, condition, error } = subplebbitChallengeSettings?.options || {};
 
     if (!chainTicker) {
@@ -328,9 +340,9 @@ const getChallenge = async (
     const publication = challengeRequestMessage.publication;
 
     // Run the contract call and validate condition, by this order:
-    // - author wallet address
-    // - ENS author address (if they have ENS)
-    // - NFT wallet address
+    // - author wallet address (if they have author.wallets set)
+    // - ENS author address (if they have author.address as an ENS name)
+    // - NFT wallet address (if they have author.avatar set)
     // If any of them pass, then the challenge pass
 
     // First try to validate author

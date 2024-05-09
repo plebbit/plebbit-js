@@ -7,7 +7,9 @@
         "moduleResolution": "Bundler",
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "strict": true,
+        "noImplicitOverride": true
     },
     "include": ["../src/**/*"],
     "exclude": ["../node_modules"]

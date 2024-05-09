@@ -10,7 +10,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/util.js";
 
 const subplebbitAddress = "plebbit.eth";
@@ -42,7 +42,7 @@ describe(`Pinning posts`, async () => {
     let plebbit, postToPin, secondPostToPin, sub;
 
     const populateSub = async (subplebbit) => {
-        if (!subplebbit.posts.pageCids) {
+        if (Object.keys(subplebbit.posts.pageCids).length === 0) {
             await Promise.all(new Array(5).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false)));
             await new Promise((resolve) => subplebbit.once("update", resolve));
         }
@@ -259,7 +259,7 @@ describe(`Pinning replies`, async () => {
         plebbit = await mockRemotePlebbit();
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         const allPosts = await loadAllPages(sub.posts.pageCids.new, sub.posts);
-        post = await plebbit.createComment(lodash.maxBy(allPosts, (c) => c.replyCount));
+        post = await plebbit.createComment(remeda.maxBy(allPosts, (c) => c.replyCount));
         await post.update();
         await populatePost();
         expect(post.replyCount).to.be.greaterThan(5); // Arbitary number

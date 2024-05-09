@@ -12,7 +12,7 @@ import {
     generatePostToAnswerMathQuestion,
     isRpcFlagOn
 } from "../../../../dist/node/test/test-util.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -97,7 +97,7 @@ describe("publishing comments", async () => {
         const post = await plebbit.createComment({ ...commentProps, signer: signers[6] });
 
         await publishWithExpectedResult(post, true);
-        await waitTillCommentIsInParentPages(post, plebbit, lodash.omit(commentProps, "author"));
+        await waitTillCommentIsInParentPages(post, plebbit, remeda.omit(commentProps, ["author"]));
         const postSubplebbit = await plebbit.getSubplebbit(post.subplebbitAddress);
         // Should have post
         const postInPage = await findCommentInPage(post.cid, postSubplebbit.posts.pageCids.new, postSubplebbit.posts);
@@ -392,7 +392,7 @@ describe(`Publishing replies`, async () => {
             await waitTillCommentIsInParentPages(
                 reply,
                 plebbit,
-                { ...lodash.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
+                { ...remeda.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
                 true
             );
 

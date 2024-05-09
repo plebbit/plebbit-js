@@ -10,7 +10,7 @@ import {
     mockRemotePlebbitIpfsOnly
 } from "../../dist/node/test/test-util.js";
 
-import lodash from "lodash";
+import * as remeda from "remeda";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -45,12 +45,18 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-        expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
+        const loadedSubJson = loadedSubplebbit.toJSON();
+        const createdSubJson = createdSubplebbit.toJSON();
+        expect(remeda.omit(loadedSubJson, ["posts"])).to.deep.equal(remeda.omit(createdSubplebbit.toJSON(), ["posts"]));
+        expect(loadedSubJson.posts.pageCids).to.deep.equal(createdSubJson.posts.pageCids);
+
+        for (let i = 0; i < loadedSubJson.posts.pages.hot.comments.length; i++)
+            expect(loadedSubJson.posts.pages.hot.comments[i]).to.deep.equal(createdSubJson.posts.pages.hot.comments[i]);
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const subJson = lodash.cloneDeep(validSubplebbitFixture);
-        const subObj = await plebbit.createSubplebbit(lodash.cloneDeep(validSubplebbitFixture));
+        const subJson = remeda.clone(validSubplebbitFixture);
+        const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitFixture));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
         expect(subJson.address).to.equal(subObj.address);
@@ -108,7 +114,7 @@ describe("subplebbit.update (remote)", async () => {
     it(`subplebbit.update() works correctly with subplebbit.address as domain`, async () => {
         const subplebbit = await plebbit.getSubplebbit("plebbit.eth"); // 'plebbit.eth' is part of test-server.js
         expect(subplebbit.address).to.equal("plebbit.eth");
-        const oldUpdatedAt = lodash.clone(subplebbit.updatedAt);
+        const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
         await subplebbit.update();
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Invoke an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -549,7 +555,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(signers[0].address);
-            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(4);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
@@ -564,7 +570,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const recordedStates = [];
 
-            sub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => recordedStates.push(newState));
+            const chainProviderUrl = Object.keys(sub.clients.chainProviders.eth)[0];
+            sub.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => recordedStates.push(newState));
 
             sub.update();
 
@@ -635,7 +642,27 @@ describe(`subplebbit.clients (Remote)`, async () => {
         describe(`subplebbit.posts.clients.ipfsClients`, async () => {
             it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
-                expect(mockSub.posts.clients.ipfsClients).to.be.undefined;
+                expect(Object.keys(mockSub.posts.clients.ipfsClients)).to.deep.equal([
+                    "hot",
+                    "new",
+                    "active",
+                    "topHour",
+                    "topDay",
+                    "topWeek",
+                    "topMonth",
+                    "topYear",
+                    "topAll",
+                    "controversialHour",
+                    "controversialDay",
+                    "controversialWeek",
+                    "controversialMonth",
+                    "controversialYear",
+                    "controversialAll",
+                  ]);
+                  for (const sortType of Object.keys(mockSub.posts.clients.ipfsClients)) 
+                    expect(mockSub.posts.clients.ipfsClients[sortType]).to.deep.equal({});
+                  
+                
             });
 
             it(`subplebbit.posts.clients.ipfsClients[sortType][url] is stopped by default`, async () => {

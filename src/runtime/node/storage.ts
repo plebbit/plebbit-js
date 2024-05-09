@@ -7,7 +7,7 @@ import Keyv from "keyv";
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage implements StorageInterface {
     private _plebbit: Pick<Plebbit, "dataPath" | "noData">;
-    private _keyv: Keyv;
+    private _keyv!: Keyv;
     constructor(plebbit: Storage["_plebbit"]) {
         this._plebbit = plebbit;
     }

@@ -11,17 +11,17 @@ import { PlebbitError } from "../../plebbit-error.js";
 import probe from "probe-image-size";
 import { Plebbit } from "../../plebbit.js";
 import { STORAGE_KEYS } from "../../constants.js";
-import lodash from "lodash";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import os from "os";
 import * as fileType from "file-type";
-import { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types.js";
+import type { OpenGraphScraperOptions } from "open-graph-scraper/dist/lib/types.js";
 import { Agent as HttpAgent } from "http";
 import { Agent as HttpsAgent } from "https";
 import { sha256 } from "js-sha256";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
@@ -59,7 +59,7 @@ export async function getThumbnailUrlOfLink(
 
     //@ts-expect-error
     const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
-    const options: OpenGraphScraperOptions = {
+    const options: OpenGraphScraperOptions & { agent?: { https: any; http: any } } = {
         url,
         fetchOptions: {
             headers: {
@@ -88,9 +88,11 @@ export async function getThumbnailUrlOfLink(
         thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
         thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
         if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
-            const dimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl);
-            thumbnail.thumbnailHeight = dimensions?.height;
-            thumbnail.thumbnailWidth = dimensions?.width;
+            const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
+            if (probedDimensions) {
+                thumbnail.thumbnailHeight = probedDimensions.height;
+                thumbnail.thumbnailWidth = probedDimensions.width;
+            }
         }
         return thumbnail;
     } catch (e) {
@@ -106,14 +108,15 @@ export async function getThumbnailUrlOfLink(
     }
 }
 
-async function fetchDimensionsOfImage(imageUrl: string): Promise<{ width: number; height: number } | undefined> {
-    const result = await probe(imageUrl);
-    return { width: result.width, height: result.height };
+async function fetchDimensionsOfImage(imageUrl: string, agent?: any): Promise<{ width: number; height: number } | undefined> {
+    const result = await probe(imageUrl, { agent });
+    if (typeof result?.width === "number") return { width: result.width, height: result.height };
 }
 
 export const nativeFunctions: NativeFunctions = nodeNativeFunctions;
 export const setNativeFunctions = (newNativeFunctions: Partial<NativeFunctions>) => {
     if (!newNativeFunctions) throw Error(`User passed an undefined object to setNativeFunctions`);
+    //@ts-expect-error
     for (const i in newNativeFunctions) nativeFunctions[i] = newNativeFunctions[i];
 };
 
@@ -145,7 +148,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
         const subsThatWereDeletedSuccessfully: string[] = [];
         await Promise.all(
             deletedPersistentSubs.map(async (subAddress) => {
-                const subPath = path.join(plebbit.dataPath, "subplebbits", subAddress);
+                const subPath = path.join(<string>plebbit.dataPath, "subplebbits", subAddress);
                 try {
                     await fs.rm(subPath, { force: true });
                     log(`Succeeded in deleting old db path (${subAddress})`);
@@ -155,7 +158,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
                         `Failed to delete stale db (${subAddress}). This error should go away after restarting the daemon or process`
                     );
                 }
-                const newPersistentDeletedSubplebbits = lodash.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
+                const newPersistentDeletedSubplebbits = remeda.difference(deletedPersistentSubs, subsThatWereDeletedSuccessfully);
                 if (newPersistentDeletedSubplebbits.length === 0)
                     await plebbit._storage.removeItem(STORAGE_KEYS[STORAGE_KEYS.PERSISTENT_DELETED_SUBPLEBBITS]);
                 else
@@ -171,7 +174,7 @@ async function _handlePersistentSubsIfNeeded(plebbit: Plebbit, log: Logger) {
 
 export async function listSubplebbits(plebbit: Plebbit) {
     const log = Logger("plebbit-js:listSubplebbits");
-
+    if (typeof plebbit.dataPath !== "string") throw Error("plebbit.dataPath needs to be defined to listSubplebbits");
     const subplebbitsPath = path.join(plebbit.dataPath, "subplebbits");
 
     await fs.mkdir(subplebbitsPath, { recursive: true });

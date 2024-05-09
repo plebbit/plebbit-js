@@ -1,5 +1,5 @@
 import { LRUCache } from "lru-cache";
-import { LRUStorageConstructor } from "./types.js";
+import { ChainTicker, LRUStorageConstructor } from "./types.js";
 import { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { PublicClient as ViemClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
@@ -49,7 +49,7 @@ export const commentUpdateVerificationCache = new LRUCache<string, boolean>({ ma
 // Storing clients of viem here, and re-using them as needed
 export const _viemClients: Record<string, ViemClient> = {}; // Should not be accessed
 
-export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chainProviderUrl: string): Promise<ViemClient> => {
+export const getViemClient = async (plebbit: Plebbit, chainTicker: ChainTicker, chainProviderUrl: string): Promise<ViemClient> => {
     const cacheKey = chainTicker + chainProviderUrl;
     if (_viemClients[cacheKey]) return _viemClients[cacheKey];
     const log = Logger("plebbit-js:getViemClient");
@@ -62,9 +62,10 @@ export const getViemClient = async (plebbit: Plebbit, chainTicker: string, chain
         });
     } else {
         // TODO should use viem's extractChain here
-        const chainId = plebbit.chainProviders[chainTicker].chainId;
+        const chainId = plebbit.chainProviders[chainTicker]?.chainId;
         const chain = Object.values(chains).find((chain) => chain.id === chainId);
         if (!chain) throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
+        //@ts-expect-error
         _viemClients[cacheKey] = createPublicClient({
             chain,
             transport: http(chainProviderUrl)

@@ -8,6 +8,7 @@ import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotific
 import { Plebbit } from "../../plebbit.js";
 import {
     CommentEditPubsubMessage,
+    CommentIpfsWithCid,
     CommentPubsubMessage,
     DecryptedChallengeRequest,
     PlebbitWsServerSettings,
@@ -15,15 +16,15 @@ import {
     VotePubsubMessage
 } from "../../types.js";
 import WebSocket from "ws";
-import Publication from "../../publication.js";
-import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
-import lodash from "lodash";
+import Publication from "../../publications/publication.js";
+import { CreateNewLocalSubplebbitUserOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
+import * as remeda from "remeda";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -185,11 +186,10 @@ class PlebbitWsServer extends EventEmitter {
         this.connections[connectionId]?.send?.(JSON.stringify(message));
     }
 
-    async getComment(params: any) {
+    async getComment(params: any): Promise<CommentIpfsWithCid> {
         const cid = <string>params[0];
         const comment = await this.plebbit.getComment(cid);
-        //@ts-expect-error
-        return { cid, ...comment._rawCommentIpfs };
+        return comment.toJSONAfterChallengeVerification();
     }
 
     async getSubplebbitPage(params: any) {
@@ -208,8 +208,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async createSubplebbit(params: any) {
-        const createSubplebbitOptions = <CreateSubplebbitOptions>params[0];
-        if (createSubplebbitOptions?.address) {
+        const createSubplebbitOptions = <CreateNewLocalSubplebbitUserOptions>params[0];
+        if ("address" in createSubplebbitOptions) {
             throw Error(
                 `createSubplebbitOptions?.address '${createSubplebbitOptions?.address}' must be undefined to create a new subplebbit`
             );
@@ -238,9 +238,9 @@ class PlebbitWsServer extends EventEmitter {
             const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
             subplebbit.on("update", () => sendEvent("update", subplebbit.toJSONInternalRpc()));
             subplebbit.on("startedstatechange", () => sendEvent("startedstatechange", subplebbit.startedState));
-            subplebbit.on("challenge", (challenge: any) => sendEvent("challenge", encodePubsubMsg(challenge)));
-            subplebbit.on("challengeanswer", (answer: any) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-            subplebbit.on("challengerequest", (request: any) => sendEvent("challengerequest", encodePubsubMsg(request)));
+            subplebbit.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
+            subplebbit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
+            subplebbit.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
             subplebbit.on("challengeverification", (challengeVerification) =>
                 sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
             );
@@ -331,13 +331,13 @@ class PlebbitWsServer extends EventEmitter {
         };
 
         const newSubscriptionId = generateSubscriptionId();
-        const watchNotConfigured = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 0;
+        const watchNotConfigured = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 0;
         if (watchNotConfigured) {
             // First time listSubplebbits is called, need to set up everything
             // set up fs watch here
 
             await this.plebbit.listSubplebbits(); // Just to mkdir plebbitDataPath/subplebbits
-            const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
+            const subsPath = path.join(this.plebbit.dataPath!, "subplebbits");
             const watchAbortController = new AbortController();
             fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
                 if (filename?.endsWith(".lock")) return; // we only care about subplebbits
@@ -376,8 +376,8 @@ class PlebbitWsServer extends EventEmitter {
 
     async getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized> {
         const plebbitOptions = this.plebbit.parsedPlebbitOptions;
-        const challenges = lodash.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
-            lodash.omit(challengeFactory({}), "getChallenge")
+        const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
+            remeda.omit(challengeFactory({}), ["getChallenge"])
         );
         return { plebbitOptions, challenges };
     }
@@ -420,7 +420,7 @@ class PlebbitWsServer extends EventEmitter {
         const comment = await this.plebbit.createComment({ cid });
         comment.on("update", () =>
             //@ts-expect-error
-            sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : { cid, ...comment._rawCommentIpfs })
+            sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : <CommentIpfsWithCid>{ cid, ...comment._rawCommentIpfs })
         );
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
         comment.on("error", (error: any) => sendEvent("error", error));
@@ -472,7 +472,7 @@ class PlebbitWsServer extends EventEmitter {
 
         // if fail, cleanup
         try {
-            if (subplebbit["signer"])
+            if ("signer" in subplebbit)
                 // need to send an update when fetching sub from db for first time
                 subplebbit.emit("update", subplebbit);
             await subplebbit.update();
@@ -640,7 +640,7 @@ class PlebbitWsServer extends EventEmitter {
         const subscriptionId = <number>params[0];
 
         if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
-            const noClientSubscribingToListSubs = Object.keys(this._listSubsSubscriptionIdToConnectionId).length === 1;
+            const noClientSubscribingToListSubs = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 1;
             if (noClientSubscribingToListSubs)
                 // clean up fs watch only when there is no rpc client listening for listSubplebbits
                 this.subscriptionCleanups[connectionId][subscriptionId]();
@@ -657,13 +657,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async destroy() {
-        for (const subplebbitAddress of Object.keys(startedSubplebbits)) {
+        for (const subplebbitAddress of remeda.keys.strict(startedSubplebbits)) {
             const startedSub = await getStartedSubplebbit(subplebbitAddress);
             await startedSub.stop();
             delete startedSubplebbits[subplebbitAddress];
         }
-        for (const connectionId of Object.keys(this.subscriptionCleanups))
-            for (const subscriptionId of Object.keys(this.subscriptionCleanups[connectionId]))
+        for (const connectionId of remeda.keys.strict(this.subscriptionCleanups))
+            for (const subscriptionId of remeda.keys.strict(this.subscriptionCleanups[connectionId]))
                 await this.unsubscribe([Number(subscriptionId)], connectionId);
 
         this.ws.close();
@@ -676,8 +676,8 @@ const createPlebbitWsServer = async ({ port, server, plebbitOptions, authKey }: 
 
     const plebbitWss = new PlebbitWsServer({ plebbit, port, server, authKey });
 
-    let error: Error;
-    const errorListener = (err) => (error = err);
+    let error: Error | undefined = undefined;
+    const errorListener = (err: Error) => (error = err);
     plebbitWss.on("error", errorListener);
 
     await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5s to see if there are any errors

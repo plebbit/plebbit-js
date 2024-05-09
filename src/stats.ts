@@ -1,9 +1,9 @@
 import { Plebbit } from "./plebbit.js";
 import assert from "assert";
-import lodash from "lodash";
-import { Chain } from "./types.js";
+import { ChainTicker } from "./types.js";
+import * as remeda from "remeda";
 
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
 export default class Stats {
     private _plebbit: Pick<Plebbit, "_storage" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {
@@ -69,11 +69,11 @@ export default class Stats {
                   : type === "eth" || type === "avax" || type === "matic"
                     ? "chainProviders"
                     : undefined;
-        assert(gatewayType);
+        assert(gatewayType, "Can't find the gateway type to sort");
         const gateways =
             gatewayType === "chainProviders"
                 ? this._plebbit.clients.chainProviders[type].urls
-                : Object.keys(this._plebbit.clients[gatewayType]);
+                : remeda.keys.strict(this._plebbit.clients[gatewayType]);
 
         const score = async (gatewayUrl: string) => {
             const failureCounts: number = (await this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;
@@ -83,7 +83,7 @@ export default class Stats {
             return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
 
-        const gatewaysSorted = lodash.sortBy(gateways, score);
+        const gatewaysSorted = remeda.sortBy.strict(gateways, score);
         return gatewaysSorted;
     }
 }

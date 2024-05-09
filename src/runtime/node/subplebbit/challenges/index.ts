@@ -42,26 +42,26 @@ const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
 };
 
 const validateChallengeFileFactory = (challengeFileFactory: ChallengeFileFactory, challengeIndex: number, subplebbit: LocalSubplebbit) => {
-    const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
+    const subplebbitChallengeSettings = subplebbit?.settings?.challenges?.[challengeIndex];
     if (typeof challengeFileFactory !== "function") {
         throw Error(
-            `invalid challenge file factory export from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`
+            `invalid challenge file factory export from subplebbit challenge '${subplebbitChallengeSettings?.name || subplebbitChallengeSettings?.path}' (challenge #${challengeIndex + 1})`
         );
     }
 };
 
 const validateChallengeFile = (challengeFile: ChallengeFile, challengeIndex: number, subplebbit: LocalSubplebbit) => {
-    const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
+    const subplebbitChallengeSettings = subplebbit.settings?.challenges?.[challengeIndex];
     if (typeof challengeFile?.getChallenge !== "function") {
         throw Error(
-            `invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`
+            `invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings?.name || subplebbitChallengeSettings?.path}' (challenge #${challengeIndex + 1})`
         );
     }
 };
 
 const validateChallengeResult = (challengeResult: ChallengeResult, challengeIndex: number, subplebbit: LocalSubplebbit) => {
-    const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-    const error = `invalid challenge result from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
+    const subplebbitChallengeSettings = subplebbit.settings?.challenges?.[challengeIndex];
+    const error = `invalid challenge result from subplebbit challenge '${subplebbitChallengeSettings?.name || subplebbitChallengeSettings?.path}' (challenge #${challengeIndex + 1})`;
     if (typeof challengeResult?.success !== "boolean") {
         throw Error(error);
     }
@@ -69,23 +69,17 @@ const validateChallengeResult = (challengeResult: ChallengeResult, challengeInde
 
 const validateChallengeOrChallengeResult = (
     challengeOrChallengeResult: Challenge | ChallengeResult,
-    getChallengeError: Error,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
 ) => {
-    if (challengeOrChallengeResult?.["success"] !== undefined) {
-        validateChallengeResult(<ChallengeResult>challengeOrChallengeResult, challengeIndex, subplebbit);
+    if ("success" in challengeOrChallengeResult) {
+        validateChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
     } else if (
         typeof challengeOrChallengeResult?.["challenge"] !== "string" ||
         typeof challengeOrChallengeResult?.["type"] !== "string" ||
         typeof challengeOrChallengeResult?.["verify"] !== "function"
     ) {
-        const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
-        let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
-        if (getChallengeError) {
-            getChallengeError.message = `${errorMessage}: ${getChallengeError.message}`;
-        }
-        throw getChallengeError || Error(errorMessage);
+        throw Error("The challenge does not contain the correct {challenge, type, verify}");
     }
 };
 
@@ -93,11 +87,14 @@ const getPendingChallengesOrChallengeVerification = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     subplebbit: LocalSubplebbit
 ) => {
-    const challengeResults: (Challenge | ChallengeResult)[] = [];
+    // if sub has no challenges, no need to send a challenge
+    if (!subplebbit.settings?.challenges || (Array.isArray(subplebbit.settings?.challenges) && subplebbit.settings.challenges.length === 0))
+        return { challengeSuccess: true };
+    const challengeOrChallengeResults: (Challenge | ChallengeResult)[] = [];
     // interate over all challenges of the subplebbit, can be more than 1
-    for (const i in subplebbit.settings?.challenges) {
+    for (const i in subplebbit.settings.challenges) {
         const challengeIndex = Number(i);
-        const subplebbitChallengeSettings = subplebbit.settings?.challenges[challengeIndex];
+        const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
 
         // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
         let challengeFile: ChallengeFile;
@@ -108,7 +105,8 @@ const getPendingChallengesOrChallengeVerification = async (
                 challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
                 validateChallengeFile(challengeFile, challengeIndex, subplebbit);
             } catch (e) {
-                e.message = `failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
+                if (e instanceof Error)
+                    e.message = `failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
                 throw e;
             }
         }
@@ -121,31 +119,35 @@ const getPendingChallengesOrChallengeVerification = async (
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
             challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
             validateChallengeFile(challengeFile, challengeIndex, subplebbit);
-        }
+        } else throw Error("Failed to set up challenge file instance");
 
-        let challengeResult: Challenge | ChallengeResult, getChallengeError: Error;
+        let challengeOrChallengeResult: Challenge | ChallengeResult;
         try {
             // the getChallenge function could throw
-            challengeResult = await challengeFile.getChallenge(
+            challengeOrChallengeResult = await challengeFile.getChallenge(
                 subplebbitChallengeSettings,
                 challengeRequestMessage,
                 challengeIndex,
                 subplebbit
             );
         } catch (e) {
-            getChallengeError = e;
+            if (e instanceof Error) {
+                let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
+                e.message = `${errorMessage}: ${e.message}`;
+            }
+            throw e;
         }
-        validateChallengeOrChallengeResult(challengeResult, getChallengeError, challengeIndex, subplebbit);
-        challengeResults.push(challengeResult);
+        validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
+        challengeOrChallengeResults.push(challengeOrChallengeResult);
     }
 
     // check failures and errors
     let challengeFailureCount = 0;
     let pendingChallenges: PendingChallenge[] = [];
-    const challengeErrors: string[] = new Array(challengeResults.length);
-    for (const i in challengeResults) {
+    const challengeErrors: string[] = new Array(challengeOrChallengeResults.length);
+    for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
-        const challengeResult = challengeResults[challengeIndex];
+        const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
 
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
         const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
@@ -159,18 +161,18 @@ const getPendingChallengesOrChallengeVerification = async (
         }
 
         // exclude based on other challenges successes
-        if (shouldExcludeChallengeSuccess(subplebbitChallenge, challengeResults)) {
+        if (shouldExcludeChallengeSuccess(subplebbitChallenge, challengeOrChallengeResults)) {
             continue;
         }
 
-        if (challengeResult["success"] === false) {
+        if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === false) {
             challengeFailureCount++;
-            challengeErrors[challengeIndex] = (<ChallengeResult>challengeResult).error;
-        } else if (challengeResult["success"] === true) {
+            challengeErrors[challengeIndex] = (challengeOrChallengeResult).error;
+        } else if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === true) {
             // do nothing
         } else {
             // index is needed to exlude based on other challenge success in getChallengeVerification
-            pendingChallenges.push({ ...(<Challenge>challengeResult), index: challengeIndex });
+            pendingChallenges.push({ ...(challengeOrChallengeResult), index: challengeIndex });
         }
     }
 
@@ -224,9 +226,11 @@ const getChallengeVerificationFromChallengeAnswers = async (
     }
 
     let challengeFailureCount = 0;
-    const challengeErrors: ChallengeResult["error"][] = [];
+    const challengeErrors: string[] = [];
     for (let i in challengeResults) {
         const challengeIndex = Number(i);
+        if (!subplebbit.settings?.challenges?.[challengeIndex])
+            throw Error("subplebbit.settings.challenges[challengeIndex] does not exist");
         const challengeResult = challengeResults[challengeIndex];
 
         // the challenge results that were filtered out were already successful
@@ -270,6 +274,7 @@ const getChallengeVerification = async (
     if (typeof getChallengeAnswers !== "function") {
         throw Error(`getChallengeVerification invalid getChallengeAnswers argument '${getChallengeAnswers}' not a function`);
     }
+    if (!subplebbit.settings?.challenges) throw Error("subplebbit.settings?.challenges is not defined");
 
     const { pendingChallenges, challengeSuccess, challengeErrors } = await getPendingChallengesOrChallengeVerification(
         challengeRequestMessage,
@@ -307,7 +312,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
     }
 
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
-    let challengeFile: ChallengeFile;
+    let challengeFile: ChallengeFile | undefined = undefined;
     if (subplebbitChallengeSettings.path) {
         try {
             const ChallengeFileFactory = require(subplebbitChallengeSettings.path);
@@ -319,7 +324,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
                 throw Error(`invalid challenge file`);
             }
         } catch (e) {
-            e.message = `getSubplebbitChallengeFromSubplebbitChallengeSettings failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
+            if (e instanceof Error)
+                e.message = `getSubplebbitChallengeFromSubplebbitChallengeSettings failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
             throw e;
         }
     }
@@ -343,6 +349,7 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
             );
         }
     }
+    if (!challengeFile) throw Error("Failed to load challenge file");
     const { challenge, type } = challengeFile;
     return {
         exclude: subplebbitChallengeSettings.exclude,

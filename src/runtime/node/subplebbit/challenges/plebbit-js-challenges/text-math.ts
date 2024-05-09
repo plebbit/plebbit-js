@@ -1,4 +1,4 @@
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
 
 const optionInputs = [
@@ -39,7 +39,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number
-) => {
+): Promise<Challenge> => {
     const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1";
     const difficulty = Number(difficultyString);
 
@@ -54,7 +54,7 @@ const getChallenge = async (
         throw Error(`invalid challenge difficulty '${difficulty}'`);
     }
 
-    const verify = async (_answer: string) => {
+    const verify = async (_answer: string): Promise<ChallengeResult> => {
         if (String(eval(challenge)) === _answer) {
             return { success: true };
         }

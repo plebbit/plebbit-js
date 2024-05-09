@@ -5,7 +5,7 @@ import {
 } from "../../dist/node/runtime/node/subplebbit/challenges/exclude";
 import { addToRateLimiter } from "../../dist/node/runtime/node/subplebbit/challenges/exclude/rate-limiter";
 import { expect } from "chai";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { Plebbit, authors } from "./fixtures/fixtures";
 import validCommentEditFixture from "../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 import validCommentFixture from "..//fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
@@ -172,17 +172,17 @@ describe("shouldExcludePublication", () => {
         // high-karma.eth is a mod
         const modAuthor = { address: "high-karma.eth" };
 
-        const commentEditOfMod = lodash.cloneDeep(validCommentEditFixture);
+        const commentEditOfMod = remeda.clone(validCommentEditFixture);
         commentEditOfMod.author = modAuthor;
 
-        const postOfMod = lodash.cloneDeep(validCommentFixture);
+        const postOfMod = remeda.clone(validCommentFixture);
         postOfMod.author = modAuthor;
 
         const replyOfMod = {
             ...postOfMod,
             parentCid: "Qm..."
         };
-        const voteOfMod = lodash.cloneDeep(validVoteFixture);
+        const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
         expect(shouldExcludePublication(subplebbitChallenge, commentEditOfMod)).to.equal(true);

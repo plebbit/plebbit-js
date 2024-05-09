@@ -1,6 +1,16 @@
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import type { JsonSignature, SignerType } from "../signer/constants.js";
-import type { ChallengeType, DecryptedChallengeRequestMessageType, PagesTypeIpfs, PagesTypeJson, ProtocolVersion } from "../types.js";
+import { SignerWithPublicKeyAddress } from "../signer/index.js";
+import type {
+    ChallengeType,
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    PagesTypeIpfs,
+    PagesTypeJson,
+    PostsPagesTypeIpfs,
+    PostsPagesTypeJson,
+    ProtocolVersion
+} from "../types.js";
 import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 
 export type SubplebbitStats = {
@@ -73,29 +83,48 @@ export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export type FlairOwner = "post" | "author";
 
-export interface SubplebbitType extends Omit<CreateSubplebbitOptions, "database" | "signer"> {
+export interface RemoteSubplebbitJsonType extends Omit<SubplebbitIpfsType, "posts"> {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+}
+
+export interface LocalSubplebbitJsonType extends Omit<InternalSubplebbitType, "posts" | "signer"> {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+    signer: InternalSubplebbitRpcType["signer"];
+}
+
+export type LocalSubplebbitRpcJsonType = Omit<InternalSubplebbitRpcType, "posts"> & {
+    shortAddress: string;
+    posts?: PostsPagesTypeJson;
+};
+
+export interface SubplebbitIpfsType {
+    posts?: PostsPagesTypeIpfs;
+    challenges: SubplebbitChallenge[];
     signature: JsonSignature;
     encryption: SubplebbitEncryption;
     address: string;
-    shortAddress: string;
-    signer?: SignerType;
     createdAt: number;
     updatedAt: number;
     pubsubTopic?: string;
-    statsCid?: string;
+    statsCid: string;
     protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    posts?: PagesTypeJson;
     postUpdates?: { [timestampRange: string]: string }; // Timestamp range to cid of folder
-}
-
-export interface SubplebbitIpfsType extends Omit<SubplebbitType, "posts" | "shortAddress" | "settings" | "signer"> {
-    posts?: PagesTypeIpfs;
-    challenges: Required<SubplebbitType["challenges"]>;
+    title?: string;
+    description?: string;
+    roles?: { [authorAddress: string]: SubplebbitRole };
+    rules?: string[];
+    lastPostCid?: string;
+    lastCommentCid?: string;
+    features?: SubplebbitFeatures;
+    suggested?: SubplebbitSuggested;
+    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
 }
 
 // This type will be stored in the db as the current state
-export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateSubplebbitOptions, "settings"> {
-    signer: Pick<SignerType, "address" | "privateKey" | "type">;
+export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<SubplebbitEditOptions, "settings"> {
+    signer: Pick<SignerWithPublicKeyAddress, "address" | "privateKey" | "type" | "shortAddress" | "publicKey">;
     _subplebbitUpdateTrigger: boolean;
     _usingDefaultChallenge: boolean;
 }
@@ -103,31 +132,49 @@ export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateS
 // This will be transmitted over RPC connection for local subs
 export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {
     started: RpcLocalSubplebbit["started"];
+    signer: Omit<InternalSubplebbitType["signer"], "privateKey">;
 }
 
-export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
-    createdAt?: number;
-    updatedAt?: number;
+// If you're trying to create a subplebbit instance with any props, all props are optional except address
+export interface CreateRemoteSubplebbitOptions extends Partial<SubplebbitIpfsType> {
+    address: SubplebbitIpfsType["address"];
+}
+
+// These are the options to create a new local sub, provided by user (not modified like CreateNewLocalSubplebbitOptions)
+
+export interface CreateNewLocalSubplebbitUserOptions extends Omit<SubplebbitEditOptions, "address"> {
     signer?: Pick<SignerType, "privateKey" | "type">;
-    encryption?: SubplebbitEncryption;
-    signature?: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
 }
 
-export interface SubplebbitEditOptions {
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole };
-    rules?: string[];
-    lastPostCid?: string;
-    lastCommentCid?: string;
-    pubsubTopic?: string;
-    stats?: SubplebbitStats;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-    address?: string;
+// These are the options that go straight into _createLocalSub, create a new brand local sub. This is after parsing of plebbit-js
+
+export type CreateNewLocalSubplebbitParsedOptions = CreateNewLocalSubplebbitUserOptions & {
+    address: SignerType["address"];
+    signer: SignerWithPublicKeyAddress;
+};
+
+// or load an already existing sub through plebbit.createSubplebbit
+
+export type CreateInstanceOfLocalOrRemoteSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
+
+export interface SubplebbitEditOptions
+    extends Partial<
+        Pick<
+            SubplebbitIpfsType,
+            | "flairs"
+            | "address"
+            | "title"
+            | "description"
+            | "roles"
+            | "rules"
+            | "lastPostCid"
+            | "lastCommentCid"
+            | "pubsubTopic"
+            | "features"
+            | "suggested"
+        >
+    > {
     settings?: SubplebbitSettings;
-    challenges?: SubplebbitChallenge[];
 }
 
 interface ExcludeSubplebbit {
@@ -196,11 +243,13 @@ export interface Challenge {
     verify: (answer: string) => Promise<ChallengeResult>;
     type: ChallengeType["type"];
 }
-export interface ChallengeResult {
-    // if the result of a challenge can be optained by getChallenge, return the result
-    success: boolean;
-    error?: string; // the reason why the challenge failed, add it to ChallengeVerificationMessage.errors
-}
+
+export type ChallengeResult =
+    | { success: true }
+    | {
+          success: false;
+          error: string; // the reason why the challenge failed, add it to ChallengeVerificationMessage.errors
+      };
 
 export interface ChallengeFile {
     // the result of the function exported by the challenge file
@@ -211,7 +260,7 @@ export interface ChallengeFile {
     description?: string; // describe what the challenge does to display in the UI
     getChallenge: (
         challenge: SubplebbitChallengeSettings,
-        challengeRequest: DecryptedChallengeRequestMessageType,
+        challengeRequest: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
         challengeIndex: number,
         subplebbit: LocalSubplebbit
     ) => Promise<Challenge | ChallengeResult>;

@@ -653,7 +653,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await mockSub.delete();
         })
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
-            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(4);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
@@ -666,7 +666,8 @@ describe(`subplebbit.clients (Local)`, async () => {
             const expectedStates = ["resolving-author-address", "stopped"];
 
             const actualStates = [];
-            mockSub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => actualStates.push(newState));
+            const chainProviderUrl = Object.keys(mockSub.clients.chainProviders["eth"])[0];
+            mockSub.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => actualStates.push(newState));
 
             await mockSub.start();
 

@@ -437,14 +437,14 @@ export class Comment extends Publication {
     ipnsName: string | undefined;
     upvoteCount: number | undefined;
     downvoteCount: number | undefined;
-    content: string | undefined;
+    override content: string | undefined;
     parentCid: string | undefined;
     replies: any;
     updatedAt: number | undefined;
     subplebbitAddress: string | undefined;
-    state: string;
+    override state: string;
     updatingState: string;
-    publishingState: string;
+    override publishingState: string;
 
     constructor(createCommentOptions?: any) {
         super();

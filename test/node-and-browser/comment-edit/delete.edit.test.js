@@ -11,7 +11,7 @@ import {
 } from "../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -101,22 +101,22 @@ describe("Deleting a post", async () => {
     });
 
     it(`Can't publish vote on deleted post`, async () => {
-        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, lodash.sample(signers));
+        const voteUnderDeletedPost = await generateMockVote(postToDelete, 1, plebbit, remeda.sample(signers, 1)[0]);
         await publishWithExpectedResult(voteUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish reply under deleted post`, async () => {
-        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, false, { signer: lodash.sample(signers) });
+        const replyUnderDeletedPost = await generateMockComment(postToDelete, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
         await publishWithExpectedResult(replyUnderDeletedPost, false, messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish a reply under a reply of a deleted post`, async () => {
-        const reply = await generateMockComment(postReply, plebbit, false, { signer: lodash.sample(signers) });
+        const reply = await generateMockComment(postReply, plebbit, false, { signer: remeda.sample(signers, 1)[0] });
         await publishWithExpectedResult(reply, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
     });
 
     it(`Can't publish a vote under a reply of a deleted post`, async () => {
-        const vote = await generateMockVote(postReply, 1, plebbit, lodash.sample(signers));
+        const vote = await generateMockVote(postReply, 1, plebbit, remeda.sample(signers, 1)[0]);
         await publishWithExpectedResult(vote, false, messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_DELETED);
     });
     it(`Mod can delete their own post`, async () => {

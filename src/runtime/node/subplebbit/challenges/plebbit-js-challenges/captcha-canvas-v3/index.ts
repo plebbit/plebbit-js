@@ -1,6 +1,6 @@
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants.js";
 
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../types.js";
 import { createCaptcha } from "captcha-canvas";
 
@@ -43,7 +43,7 @@ const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
-) => {
+): Promise<Challenge> => {
     // setCaptchaOptions https://captcha-canvas.js.org/global.html#SetCaptchaOptions
 
     const width = subplebbitChallengeSettings?.options?.width ? Number(subplebbitChallengeSettings?.options?.width) : 300;
@@ -58,7 +58,7 @@ const getChallenge = async (
 
     const imageBase64 = (await res.image).toString("base64");
 
-    const verify = async (_answer: string) => {
+    const verify = async (_answer: string): Promise<ChallengeResult> => {
         if (res.text.toLowerCase() === _answer.toLowerCase().trim()) {
             return { success: true };
         }
