@@ -163,8 +163,14 @@ export class Comment extends Publication {
     }
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
-        this._setOriginalFieldBeforeModifying();
-        if (!("depth" in props)) this._rawCommentUpdate = props;
+        if ("depth" in props)
+            // CommentWithCommentUpdateJson
+            this.original = props.original;
+        else {
+            // CommentUpdate
+            this._setOriginalFieldBeforeModifying();
+            this._rawCommentUpdate = props;
+        }
 
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
