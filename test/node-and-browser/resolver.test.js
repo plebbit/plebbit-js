@@ -83,7 +83,7 @@ describe("Comments with Authors as domains", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
-    it.only(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
+    it(`Sub accepts posts with author.address as a domain that resolves to comment signer `, async () => {
         // I've mocked plebbit.resolver.resolveAuthorAddressIfNeeded to return signers[6] address for plebbit.eth
         const mockPost = await plebbit.createComment({
             author: { displayName: `Mock Author - ${Date.now()}`, address: "plebbit.eth" },
