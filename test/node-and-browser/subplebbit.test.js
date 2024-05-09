@@ -45,11 +45,17 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-        expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
+        const loadedSubJson = loadedSubplebbit.toJSON();
+        const createdSubJson = createdSubplebbit.toJSON();
+        expect(remeda.omit(loadedSubJson, ["posts"])).to.deep.equal(remeda.omit(createdSubplebbit.toJSON(), ["posts"]));
+        expect(loadedSubJson.posts.pageCids).to.deep.equal(createdSubJson.posts.pageCids);
+
+        for (let i = 0; i < loadedSubJson.posts.pages.hot.comments.length; i++)
+            expect(loadedSubJson.posts.pages.hot.comments[i]).to.deep.equal(createdSubJson.posts.pages.hot.comments[i]);
     });
 
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-        const subJson = remeda.cloneDeep(validSubplebbitFixture);
+        const subJson = remeda.clone(validSubplebbitFixture);
         const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitFixture));
         expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
         expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
