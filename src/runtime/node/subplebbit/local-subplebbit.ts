@@ -2,7 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit.js";
 import {
     Challenge,
-    CreateNewLocalSubplebbitOptions,
+    CreateNewLocalSubplebbitParsedOptions,
     InternalSubplebbitType,
     LocalSubplebbitJsonType,
     SubplebbitChallengeSettings,
@@ -21,7 +21,6 @@ import {
     isLinkOfMedia,
     isLinkValid,
     isStringDomain,
-    removeKeysWithUndefinedValues,
     removeNullUndefinedEmptyObjectsValuesRecursively,
     removeUndefinedValuesRecursively,
     throwWithErrorCode,
@@ -158,7 +157,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.started = await this.dbHandler.isSubStartLocked(this.address);
     }
 
-    async initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitOptions) {
+    async initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitParsedOptions) {
         await this._initSignerProps(newProps.signer);
         this.title = newProps.title;
         this.description = newProps.description;
@@ -171,7 +170,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
-        if (newProps.encryption) this.encryption = newProps.encryption;
     }
 
     async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {

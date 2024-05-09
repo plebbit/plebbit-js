@@ -11,7 +11,7 @@ import { PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
-    CreateSubplebbitOptions,
+    CreateRemoteSubplebbitOptions,
     Flair,
     FlairOwner,
     RemoteSubplebbitJsonType,
@@ -111,52 +111,30 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         }
     }
 
-    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | RemoteSubplebbitJsonType) {
-        // for now it's copy pasted, TODO remove duplicate code
+    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        this.challenges = newProps.challenges;
-        this.statsCid = newProps.statsCid;
-        this.createdAt = newProps.createdAt;
-        this.updatedAt = newProps.updatedAt;
-        this.encryption = newProps.encryption;
+
         this.roles = newProps.roles;
         this.features = newProps.features;
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
-        this.signature = newProps.signature;
         this.postUpdates = newProps.postUpdates;
-        await this._updateLocalPostsInstanceIfNeeded(newProps.posts);
-    }
-
-    // we should remove this function over the long run
-    async initRemoteSubplebbitPropsWithMerge(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>) {
-        const mergedProps = { ...this.toJSONIpfs(), ...newProps };
-        this.title = mergedProps.title;
-        this.description = mergedProps.description;
-        this.lastPostCid = mergedProps.lastPostCid;
-        this.lastCommentCid = mergedProps.lastCommentCid;
-        this.setAddress(mergedProps.address);
-        this.pubsubTopic = mergedProps.pubsubTopic;
-        if (Array.isArray(mergedProps.challenges)) this.challenges = mergedProps.challenges;
-        this.statsCid = mergedProps.statsCid;
-        this.createdAt = mergedProps.createdAt;
-        this.updatedAt = mergedProps.updatedAt;
-        this.encryption = mergedProps.encryption;
-        this.roles = mergedProps.roles;
-        this.features = mergedProps.features;
-        this.suggested = mergedProps.suggested;
-        this.rules = mergedProps.rules;
-        this.flairs = mergedProps.flairs;
-        this.signature = mergedProps.signature;
-        this.postUpdates = mergedProps.postUpdates;
-
-        await this._updateLocalPostsInstanceIfNeeded(mergedProps.posts);
+        // A potential issue here is that if SubplebbitIpfsType or RemoteSubplebbitJsonType had a required prop as undefined or null
+        // The subplebbit instance will not update its prop accordingly because it checks if it's defined
+        // The way to fix this is with zod I believe
+        if (Array.isArray(newProps.challenges)) this.challenges = newProps.challenges;
+        if (newProps.statsCid) this.statsCid = newProps.statsCid;
+        if (typeof newProps.createdAt === "number") this.createdAt = newProps.createdAt;
+        if (typeof newProps.updatedAt === "number") this.updatedAt = newProps.updatedAt;
+        if (newProps.encryption) this.encryption = newProps.encryption;
+        if (newProps.signature) this.signature = newProps.signature;
+        if (newProps.posts) await this._updateLocalPostsInstanceIfNeeded(newProps.posts);
     }
 
     setAddress(newAddress: string) {
@@ -170,7 +148,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
-        if (this.address !== this.posts._subplebbitAddress) this.posts._subplebbitAddress = this.address;
+        this.posts._subplebbitAddress = this.address;
     }
 
     toJSON(): RemoteSubplebbitJsonType {
@@ -206,6 +184,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     toJSONIpfs(): SubplebbitIpfsType {
+        // TODO should verify all props of SubplebbitIpfsType is there
         return {
             ...this._toJSONBase(),
             posts: this.posts.toJSONIpfs()

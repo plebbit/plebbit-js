@@ -122,7 +122,7 @@ export interface SubplebbitIpfsType {
 }
 
 // This type will be stored in the db as the current state
-export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<CreateSubplebbitOptions, "settings"> {
+export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<SubplebbitEditOptions, "settings"> {
     signer: Pick<SignerWithPublicKeyAddress, "address" | "privateKey" | "type" | "shortAddress" | "publicKey">;
     _subplebbitUpdateTrigger: boolean;
     _usingDefaultChallenge: boolean;
@@ -134,29 +134,28 @@ export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, 
     signer: Omit<InternalSubplebbitType["signer"], "privateKey">;
 }
 
-export interface CreateSubplebbitOptions extends SubplebbitEditOptions {
-    createdAt?: number;
-    updatedAt?: number;
-    signer?: Pick<SignerType, "privateKey" | "type">;
-    encryption?: SubplebbitEncryption;
-    signature?: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+// If you're trying to create a subplebbit instance with any props, all props are optional except address
+export interface CreateRemoteSubplebbitOptions extends Partial<SubplebbitIpfsType> {
+    address: SubplebbitIpfsType["address"];
 }
 
-// These are the options that go straight into _createLocalSub, create a new brand local sub,
+// These are the options to create a new local sub, provided by user (not modified like CreateNewLocalSubplebbitOptions)
 
-export type CreateNewLocalSubplebbitOptions = Omit<
-    CreateSubplebbitOptions,
-    "createdAt" | "updatedAt" | "signature" | "address" | "signer"
-> & {
+export interface CreateNewLocalSubplebbitUserOptions extends Omit<SubplebbitEditOptions, "address"> {
+    signer?: Pick<SignerType, "privateKey" | "type">;
+}
+
+// These are the options that go straight into _createLocalSub, create a new brand local sub. This is after parsing of plebbit-js
+
+export type CreateNewLocalSubplebbitParsedOptions = CreateNewLocalSubplebbitUserOptions & {
     address: SignerType["address"];
     signer: SignerWithPublicKeyAddress;
 };
 
 // or load an already existing sub through plebbit.createSubplebbit
 
-export type CreateInstanceOfLocalSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
+export type CreateInstanceOfLocalOrRemoteSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
 
-export type CreateLocalSubplebbitOptions = CreateNewLocalSubplebbitOptions | CreateInstanceOfLocalSubplebbitOptions;
 
 export interface SubplebbitEditOptions
     extends Partial<

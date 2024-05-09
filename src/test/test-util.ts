@@ -12,7 +12,6 @@ import Publication from "../publications/publication.js";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
 import { BasePages } from "../pages.js";
-import { CreateSubplebbitOptions } from "../subplebbit/types.js";
 import { EventEmitter } from "events";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
@@ -20,6 +19,7 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
+import { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -510,7 +510,7 @@ export async function waitTillCommentIsInParentPages(
 }
 
 export async function createSubWithNoChallenge(
-    props: CreateSubplebbitOptions,
+    props: CreateNewLocalSubplebbitUserOptions,
     plebbit: Plebbit
 ): Promise<LocalSubplebbit | RpcLocalSubplebbit> {
     const sub = await plebbit.createSubplebbit(props);

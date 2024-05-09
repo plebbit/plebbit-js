@@ -51,7 +51,7 @@ export interface ParsedPlebbitOptions
     dataPath: string | undefined;
 }
 export interface PageInstanceType {
-    comments: Comment[]; // This type should be CommentWithinPage
+    comments: Comment[];
     nextCid?: string;
 }
 

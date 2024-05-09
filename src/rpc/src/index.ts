@@ -8,6 +8,7 @@ import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotific
 import { Plebbit } from "../../plebbit.js";
 import {
     CommentEditPubsubMessage,
+    CommentIpfsWithCid,
     CommentPubsubMessage,
     DecryptedChallengeRequest,
     PlebbitWsServerSettings,
@@ -16,7 +17,7 @@ import {
 } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
-import { CreateSubplebbitOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
+import { CreateNewLocalSubplebbitUserOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
@@ -182,11 +183,10 @@ class PlebbitWsServer extends EventEmitter {
         this.connections[connectionId]?.send?.(JSON.stringify(message));
     }
 
-    async getComment(params: any) {
+    async getComment(params: any): Promise<CommentIpfsWithCid> {
         const cid = <string>params[0];
         const comment = await this.plebbit.getComment(cid);
-        //@ts-expect-error
-        return { cid, ...comment._rawCommentIpfs };
+        return comment.toJSONAfterChallengeVerification();
     }
 
     async getSubplebbitPage(params: any) {
@@ -205,8 +205,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async createSubplebbit(params: any) {
-        const createSubplebbitOptions = <CreateSubplebbitOptions>params[0];
-        if (createSubplebbitOptions?.address) {
+        const createSubplebbitOptions = <CreateNewLocalSubplebbitUserOptions>params[0];
+        if ("address" in createSubplebbitOptions) {
             throw Error(
                 `createSubplebbitOptions?.address '${createSubplebbitOptions?.address}' must be undefined to create a new subplebbit`
             );
@@ -235,9 +235,9 @@ class PlebbitWsServer extends EventEmitter {
             const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
             subplebbit.on("update", () => sendEvent("update", subplebbit.toJSONInternalRpc()));
             subplebbit.on("startedstatechange", () => sendEvent("startedstatechange", subplebbit.startedState));
-            subplebbit.on("challenge", (challenge: any) => sendEvent("challenge", encodePubsubMsg(challenge)));
-            subplebbit.on("challengeanswer", (answer: any) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-            subplebbit.on("challengerequest", (request: any) => sendEvent("challengerequest", encodePubsubMsg(request)));
+            subplebbit.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
+            subplebbit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
+            subplebbit.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
             subplebbit.on("challengeverification", (challengeVerification) =>
                 sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
             );

@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
-    CommentIpfsType,
+    CommentIpfsWithCid,
     DecryptedChallengeRequest,
     PageIpfs,
     PlebbitWsServerSettings,
@@ -14,7 +14,7 @@ import { PlebbitError } from "../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util.js";
-import type { CreateSubplebbitOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
@@ -161,7 +161,7 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
-        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [commentCid]);
+        const commentProps = <CommentIpfsWithCid>await this._webSocketClient.call("getComment", [commentCid]);
         return this._plebbit.createComment(commentProps);
     }
 
@@ -175,7 +175,7 @@ export default class PlebbitRpcClient {
         return pageIpfs;
     }
 
-    async createSubplebbit(createSubplebbitOptions: CreateSubplebbitOptions): Promise<RpcLocalSubplebbit> {
+    async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
         const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
