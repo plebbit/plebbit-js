@@ -490,9 +490,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received options: ", options);
 
-        if (!("address" in options) || !options?.address)
-            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { ...options });
-        if (options?.address && doesDomainAddressHaveCapitalLetter(options.address))
+        if ("address" in options && options?.address && doesDomainAddressHaveCapitalLetter(options.address))
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...options });
 
         if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
@@ -507,7 +505,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
             );
 
-        if (typeof options.address === "string" && !("signer" in options)) {
+        if ("address" in options && !("signer" in options)) {
             // sub is already created, need to check if it's local or remote
             const localSubs = await this.listSubplebbits();
             const isSubLocal = localSubs.includes(options.address);
@@ -516,14 +514,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 return this._createRemoteSubplebbitInstance(
                     <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
                 );
-        } else if (typeof options.address !== "string" && !("signer" in options)) {
+        } else if (!("address" in options) && !("signer" in options)) {
             // no address, no signer, create signer and assign address to signer.address
             const signer = await this.createSigner();
             const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, signer, address: signer.address };
             log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
             return this._createLocalSub(localOptions);
-        } else if (typeof options.address !== "string" && "signer" in options) {
+        } else if (!("address" in options) && "signer" in options) {
             const signer = await this.createSigner(options.signer);
             const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, address: signer.address, signer };
             return this._createLocalSub(localOptions);
