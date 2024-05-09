@@ -50,7 +50,7 @@ describe("createComment", async () => {
         };
         const comment = await plebbit.createComment(props);
 
-        const nestedComment = await plebbit.createComment(comment);
+        const nestedComment = await plebbit.createComment(remeda.omit(comment, ["signer"]));
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);

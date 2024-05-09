@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
+import * as remeda from "remeda";
 import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
@@ -50,14 +51,13 @@ describe("CommentEdit", async () => {
             signer: signers[7] // Create a new signer, different than the signer of the original comment
         };
         const edit = await plebbit.createCommentEdit(props);
-        const editFromEdit = await plebbit.createCommentEdit(edit);
+        const editFromEdit = await plebbit.createCommentEdit(remeda.omit(edit, ["signer"]));
         [edit, editFromEdit].forEach((curEdit) => {
             expect(curEdit.subplebbitAddress).to.equal(props.subplebbitAddress);
             expect(curEdit.commentCid).to.equal(props.commentCid);
             expect(curEdit.reason).to.equal(props.reason);
             expect(curEdit.content).to.equal(props.content);
             expect(curEdit.author.address).to.deep.equal(props.signer.address);
-            expect(curEdit.signer).to.deep.equal(props.signer);
         });
         expect(edit.timestamp).to.equal(editFromEdit.timestamp);
 
