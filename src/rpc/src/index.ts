@@ -25,6 +25,7 @@ import path from "path";
 import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
+import type { IncomingMessage } from "http";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -48,7 +49,7 @@ class PlebbitWsServer extends EventEmitter {
     authKey: string | undefined;
     private _listSubsSubscriptionIdToConnectionId: Record<string, string> = {};
     private _lastListedSubs?: { subs: string[]; timestamp: number };
-    private _getIpFromConnectionRequest = (req) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
+    private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();

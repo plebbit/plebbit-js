@@ -1194,8 +1194,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await genToArray(this.clientsManager.getDefaultIpfs()._client.pin.ls({ paths: latestCommentCid.cid }));
             return; // the comment is already pinned, we assume the rest of the comments are so too
         } catch (e) {
-            e = e as Error;
-            if (!e.message.includes("is not pinned")) throw e;
+            if (!(<Error>e).message.includes("is not pinned")) throw e;
         }
 
         log("The latest comment is not pinned in the ipfs node, plebbit-js will repin all existing comment ipfs");
@@ -1246,8 +1245,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.clientsManager.getDefaultIpfs()._client.files.stat(`/${this.address}`, { hash: true });
             return; // if the directory of this sub exists, we assume all the comment updates are there
         } catch (e) {
-            e as Error;
-            if (!e.message.includes("file does not exist")) throw e;
+            if (!(<Error>e).message.includes("file does not exist")) throw e;
         }
 
         // here we will go ahead to and rewrite all comment updates
@@ -1259,10 +1257,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         for (const commentUpdate of storedCommentUpdates) {
             // means the comment update is not on the ipfs node, need to add it
             // We should calculate new ipfs path
-            const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(
-                await this.dbHandler.queryComment(commentUpdate.cid),
-                undefined
-            );
+            const commentInDb = await this.dbHandler.queryComment(commentUpdate.cid);
+            if (!commentInDb) throw Error("Can't create a new CommentUpdate with comment not existing in db" + commentUpdate.cid);
+            const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(commentInDb, undefined);
             await this._writeCommentUpdateToIpfsFilePath(commentUpdate, newIpfsPath, undefined);
             await this.dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
             log(`Added the CommentUpdate of (${commentUpdate.cid}) to IPFS files`);

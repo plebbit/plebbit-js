@@ -24,6 +24,7 @@ if (window && !window?.crypto?.subtle) {
     if (!window.crypto) window.crypto = {}; // to handle vitest in plebbit-react-hooks
     //@ts-expect-error
     window.crypto.subtle = {
+        //@ts-expect-error
         digest: (hashMethod, arrayBuffer) => {
             if (hashMethod === "SHA-512") return sha512.digest(arrayBuffer);
             else if (hashMethod?.name === "SHA-256") return sha256.digest(arrayBuffer);
