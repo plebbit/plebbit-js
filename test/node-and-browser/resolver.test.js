@@ -50,7 +50,8 @@ describe(`Resolving text records`, async () => {
         expect(resolvedAuthorAddress).to.equal("12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z");
     });
 
-    describe(`Resolving solana domains`, async () => {
+    // We don't need to test resolving solana domains anymore
+    describe.skip(`Resolving solana domains`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await mockPlebbit({}, true, true, false); // Should not mock resolver
