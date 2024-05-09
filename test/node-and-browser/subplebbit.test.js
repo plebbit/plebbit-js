@@ -549,7 +549,7 @@ describe(`subplebbit.clients (Remote)`, async () => {
     describe(`subplebbit.clients.chainProviders`, async () => {
         it(`subplebbit.clients.chainProviders[url].state is stopped by default`, async () => {
             const mockSub = await plebbit.getSubplebbit(signers[0].address);
-            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(4);
+            expect(Object.keys(mockSub.clients.chainProviders).length).to.equal(1);
             for (const chain of Object.keys(mockSub.clients.chainProviders)) {
                 expect(Object.keys(mockSub.clients.chainProviders[chain]).length).to.be.greaterThan(0);
                 for (const chainUrl of Object.keys(mockSub.clients.chainProviders[chain]))
@@ -564,7 +564,8 @@ describe(`subplebbit.clients (Remote)`, async () => {
 
             const recordedStates = [];
 
-            sub.clients.chainProviders["eth"]["viem"].on("statechange", (newState) => recordedStates.push(newState));
+            const chainProviderUrl = Object.keys(sub.clients.chainProviders.eth)[0];
+            sub.clients.chainProviders["eth"][chainProviderUrl].on("statechange", (newState) => recordedStates.push(newState));
 
             sub.update();
 
@@ -635,7 +636,27 @@ describe(`subplebbit.clients (Remote)`, async () => {
         describe(`subplebbit.posts.clients.ipfsClients`, async () => {
             it(`subplebbit.posts.clients.ipfsClients is undefined for gateway plebbit`, async () => {
                 const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
-                expect(mockSub.posts.clients.ipfsClients).to.be.undefined;
+                expect(Object.keys(mockSub.posts.clients.ipfsClients)).to.deep.equal([
+                    "hot",
+                    "new",
+                    "active",
+                    "topHour",
+                    "topDay",
+                    "topWeek",
+                    "topMonth",
+                    "topYear",
+                    "topAll",
+                    "controversialHour",
+                    "controversialDay",
+                    "controversialWeek",
+                    "controversialMonth",
+                    "controversialYear",
+                    "controversialAll",
+                  ]);
+                  for (const sortType of Object.keys(mockSub.posts.clients.ipfsClients)) 
+                    expect(mockSub.posts.clients.ipfsClients[sortType]).to.deep.equal({});
+                  
+                
             });
 
             it(`subplebbit.posts.clients.ipfsClients[sortType][url] is stopped by default`, async () => {

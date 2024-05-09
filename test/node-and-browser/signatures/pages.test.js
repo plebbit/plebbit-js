@@ -59,7 +59,7 @@ describe(`verify pages`, async () => {
         // verifyPage would override the incorrect domain
         const invalidPage = remeda.clone(validPageFixture);
         const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
-            plebbit.resolver.isDomain(comment.comment.author.address)
+            comment.comment.author.address.includes(".")
         );
         expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
 
@@ -79,7 +79,7 @@ describe(`verify pages`, async () => {
     it(`verifyPage will invalidate validate a page with comment.author.address (domain) that resolves to address different than author's (overrideAuthorAddress=false)`, async () => {
         const invalidPage = remeda.clone(validPageFixture);
         const commentWithDomainAddressIndex = invalidPage.comments.findIndex((comment) =>
-            plebbit.resolver.isDomain(comment.comment.author.address)
+            (comment.comment.author.address).includes(".")
         );
         expect(commentWithDomainAddressIndex).to.be.greaterThanOrEqual(0);
 

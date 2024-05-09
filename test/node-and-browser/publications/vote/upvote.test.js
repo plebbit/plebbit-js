@@ -70,8 +70,7 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...previousVotes[0].toJSON(),
-            signature: undefined,
+            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
             signer: previousVotes[0].signer,
             vote: -1
         });
@@ -89,8 +88,7 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...previousVotes[1].toJSON(),
-            signature: undefined,
+            ...remeda.omit(previousVotes[1].toJSON(), ["signature"]),
             signer: previousVotes[1].signer,
             vote: -1
         });
@@ -106,9 +104,8 @@ describe("Test upvote", async () => {
 
     it("Does not throw an error when vote is duplicated", async () => {
         const vote = await plebbit.createVote({
-            ...previousVotes[0].toJSON(),
+            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
             signer: previousVotes[0].signer,
-            signature: undefined,
             timestamp: timestamp()
         });
         await publishWithExpectedResult(vote, true);

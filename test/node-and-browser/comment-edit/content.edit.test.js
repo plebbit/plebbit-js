@@ -1,5 +1,6 @@
 import signers from "../../fixtures/signers.js";
 import {
+    findCommentInPage,
     mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
@@ -16,12 +17,12 @@ const roles = [
 ];
 
 describe("Editing comment.content", async () => {
-    let plebbit, commentToBeEdited;
+    let plebbit, commentToBeEdited, originalContent;
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
-
-        commentToBeEdited = await publishRandomPost(subplebbitAddress, plebbit);
+        commentToBeEdited = await publishRandomPost(subplebbitAddress, plebbit, { content: "original content" });
+        originalContent = remeda.clone(commentToBeEdited.content);
         await commentToBeEdited.update();
     });
 
@@ -44,9 +45,8 @@ describe("Editing comment.content", async () => {
 
     it("Original Author can edit content", async function () {
         const editedText = "edit test" + Date.now();
-        const editReason = "To test editing a comment" + Date.now();
+        const editReason = "To test editing content" + Date.now();
 
-        const originalContent = remeda.clone(commentToBeEdited.content);
         const commentEdit = await plebbit.createCommentEdit({
             subplebbitAddress: commentToBeEdited.subplebbitAddress,
             commentCid: commentToBeEdited.cid,
@@ -68,6 +68,60 @@ describe("Editing comment.content", async () => {
         expect(commentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
         expect(commentToBeEdited.edit.authorAddress).to.be.undefined;
         expect(commentToBeEdited.edit.challengeRequestId).to.be.undefined;
+    });
+
+    it(`The new content is reflected correctly in comment.toJSON() and toJSONCommentWithinPage`, async () => {
+        const recreatedComment = await plebbit.getComment(commentToBeEdited.cid);
+        await recreatedComment.update();
+
+        await resolveWhenConditionIsTrue(recreatedComment, () => recreatedComment.updatedAt);
+        await recreatedComment.stop();
+
+        for (const commentJson of [
+            commentToBeEdited.toJSON(),
+            recreatedComment.toJSON(),
+            commentToBeEdited.toJSONCommentWithinPage(),
+            recreatedComment.toJSONCommentWithinPage()
+        ]) {
+            expect(commentJson.content.startsWith("edit test")).to.be.true;
+            expect(commentJson.edit.content.startsWith("edit test")).to.be.true;
+            expect(commentJson.original.content).to.equal(originalContent);
+            expect(commentJson.reason.startsWith("To test editing content")).to.be.true;
+        }
+    });
+
+    it(`The new content should be reflected in subplebbit.posts`, async () => {
+        const subplebbit1 = await plebbit.getSubplebbit(commentToBeEdited.subplebbitAddress);
+        const subplebbit2 = await plebbit.createSubplebbit(subplebbit1); // we're testing if posts from subplebbit are parsed correctly
+        const subplebbit3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(subplebbit1)));
+        const subplebbit4 = await plebbit.createSubplebbit(subplebbit1.toJSON());
+        for (const subplebbit of [subplebbit1, subplebbit2, subplebbit3, subplebbit4]) {
+            const editedCommentInPage = await findCommentInPage(commentToBeEdited.cid, subplebbit.posts.pageCids.new, subplebbit.posts);
+            expect(editedCommentInPage).to.be.a("object");
+            // Should reflect the new content, and also have original.content
+            expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
+            expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
+            expect(editedCommentInPage.original.content).to.equal(originalContent);
+            expect(editedCommentInPage.reason.startsWith("To test editing content")).to.be.true;
+        }
+    });
+
+    it(`The new content should be reflected in subplebbit.toJSON().posts.pages`, async () => {
+        const sub1 = await plebbit.getSubplebbit(commentToBeEdited.subplebbitAddress);
+        const sub2 = await plebbit.createSubplebbit(sub1); // we're testing if posts from subplebbit are parsed correctly
+        const sub3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(sub1)));
+        const sub4 = await plebbit.createSubplebbit(sub1.toJSON());
+
+        for (const sub of [sub1, sub2, sub3, sub4]) {
+            const subJson = sub.toJSON();
+            const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
+                comment.reason?.startsWith("To test editing content")
+            );
+            expect(editedCommentInPage).to.be.a("object");
+            expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
+            expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
+            expect(editedCommentInPage.original.content.startsWith("original content")).to.be.true;
+        }
     });
 
     it(`Author can modify content again, while preserving comment.originalContent`, async () => {

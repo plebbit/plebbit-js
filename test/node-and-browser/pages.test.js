@@ -63,13 +63,13 @@ const testCommentFields = (comment) => {
 };
 
 const activeScore = async (comment) => {
-    if (!comment.replies.pages) return comment.timestamp;
+    if (Object.keys(comment.replies.pageCids).length === 0) return comment.timestamp;
     let maxTimestamp = comment.timestamp;
 
     const updateMaxTimestamp = async (localComments) => {
         for (const localComment of localComments) {
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
-            if (localComment.replies.pages) {
+            if (Object.keys(localComment.replies.pageCids).length > 0) {
                 const childrenComments = await loadAllPages(localComment.replies.pageCids.new, localComment.replies);
                 await updateMaxTimestamp(childrenComments);
             }
@@ -190,7 +190,7 @@ describe("Test pages sorting", async () => {
 
         it(`Stringified comment.replies still have all props`, async () => {
             for (const post of posts) {
-                if (!post.replies.pages) continue;
+                if (Object.keys(post.replies.pages).length === 0) continue;
                 const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
                 for (const reply of stringifiedReplies) testCommentFields(reply);
             }

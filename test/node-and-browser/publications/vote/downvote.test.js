@@ -69,8 +69,7 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...previousVotes[0].toJSON(),
-            signature: undefined,
+            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
             signer: previousVotes[0].signer,
             vote: 1
         });
@@ -89,9 +88,8 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...previousVotes[1].toJSON(),
+            ...remeda.omit(previousVotes[1].toJSON(), ["signature"]),
             signer: previousVotes[1].signer,
-            signature: undefined,
             vote: 1
         });
         await publishWithExpectedResult(vote, true);

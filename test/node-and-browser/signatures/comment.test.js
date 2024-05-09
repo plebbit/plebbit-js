@@ -94,7 +94,7 @@ describe("sign comment", async () => {
         const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = undefined;
-        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_UNDEFINED);
     });
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];

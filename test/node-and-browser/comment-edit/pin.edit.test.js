@@ -42,7 +42,7 @@ describe(`Pinning posts`, async () => {
     let plebbit, postToPin, secondPostToPin, sub;
 
     const populateSub = async (subplebbit) => {
-        if (!subplebbit.posts.pageCids) {
+        if (Object.keys(subplebbit.posts.pageCids).length === 0) {
             await Promise.all(new Array(5).fill(null).map((x) => publishRandomPost(subplebbit.address, plebbit, {}, false)));
             await new Promise((resolve) => subplebbit.once("update", resolve));
         }
