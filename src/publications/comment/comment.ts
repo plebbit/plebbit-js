@@ -198,22 +198,34 @@ export class Comment extends Publication {
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
-        assert(this.cid, "Can't update comment.replies without comment.cid being defined");
-        // reasons to update this.replies
+        if (props.replies) await this._updateRepliesPostsInstanceIfNeeded(props.replies);
+    }
 
-        const shouldUpdateReplies =
-            remeda.isPlainObject(props.replies?.pageCids) && !remeda.isDeepEqual(this.replies.pageCids, props.replies.pageCids);
-        if (shouldUpdateReplies) {
-            const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
-                await parseRawPages(props.replies, this._plebbit)
-            );
-            this.replies.updateProps({
-                ...parsedPages,
-                plebbit: this._plebbit,
-                subplebbitAddress: this.subplebbitAddress,
-                pageCids: props.replies?.pageCids || {},
-                parentCid: this.cid
-            });
+    async _updateRepliesPostsInstanceIfNeeded(
+        newReplies: NonNullable<CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">>
+    ) {
+        assert(this.cid, "Can't update comment.replies without comment.cid being defined");
+        const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
+
+        if (!("pages" in newReplies)) {
+            // only pageCids is provided
+            this.replies.pageCids = newReplies.pageCids;
+        } else {
+            const shouldUpdateReplies = !remeda.isDeepEqual(this.replies.pageCids, newReplies.pageCids);
+
+            if (shouldUpdateReplies) {
+                log.trace(`Updating the props of commennt instance (${this.cid}) replies`);
+                const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
+                    await parseRawPages(newReplies, this._plebbit)
+                );
+                this.replies.updateProps({
+                    ...parsedPages,
+                    plebbit: this._plebbit,
+                    subplebbitAddress: this.subplebbitAddress,
+                    pageCids: newReplies.pageCids,
+                    parentCid: this.cid
+                });
+            }
         }
     }
 

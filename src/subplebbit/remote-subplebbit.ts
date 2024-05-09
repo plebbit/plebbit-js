@@ -97,7 +97,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
             // only pageCids is provided
             this.posts.pageCids = newPosts.pageCids;
         } else {
-            const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts?.pageCids || {});
+            const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
 
             if (shouldUpdatePosts) {
                 log.trace(`Updating the props of subplebbit (${this.address}) posts`);

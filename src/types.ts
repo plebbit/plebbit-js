@@ -437,7 +437,7 @@ export interface CommentUpdate {
 }
 
 export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<CommentUpdate, "author" | "replies">, CommentTypeJsonBase {
-    replies?: PagesTypeJson;
+    replies?: RepliesPagesTypeJson;
     original: Pick<CommentPubsubMessage, "author" | "content" | "flair" | "protocolVersion">;
     shortCid: string;
     author: AuthorTypeWithCommentUpdate & { shortAddress: string };
