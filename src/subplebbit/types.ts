@@ -83,15 +83,16 @@ export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
 
 export type FlairOwner = "post" | "author";
 
-export type RemoteSubplebbitJsonType = Omit<SubplebbitIpfsType, "posts"> & {
+export interface RemoteSubplebbitJsonType extends Omit<SubplebbitIpfsType, "posts"> {
     shortAddress: string;
     posts?: PostsPagesTypeJson;
-};
+}
 
-export type LocalSubplebbitJsonType = Omit<InternalSubplebbitType, "posts"> & {
+export interface LocalSubplebbitJsonType extends Omit<InternalSubplebbitType, "posts" | "signer"> {
     shortAddress: string;
     posts?: PostsPagesTypeJson;
-};
+    signer: InternalSubplebbitRpcType["signer"];
+}
 
 export type LocalSubplebbitRpcJsonType = Omit<InternalSubplebbitRpcType, "posts"> & {
     shortAddress: string;
@@ -155,7 +156,6 @@ export type CreateNewLocalSubplebbitParsedOptions = CreateNewLocalSubplebbitUser
 // or load an already existing sub through plebbit.createSubplebbit
 
 export type CreateInstanceOfLocalOrRemoteSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
-
 
 export interface SubplebbitEditOptions
     extends Partial<

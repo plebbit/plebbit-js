@@ -48,6 +48,7 @@ import {
     CreateNewLocalSubplebbitParsedOptions,
     CreateNewLocalSubplebbitUserOptions,
     CreateRemoteSubplebbitOptions,
+    InternalSubplebbitRpcType,
     InternalSubplebbitType,
     RemoteSubplebbitJsonType,
     SubplebbitIpfsType
@@ -389,7 +390,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createSubplebbitRpc(
-        options: CreateNewLocalSubplebbitUserOptions | CreateRemoteSubplebbitOptions | SubplebbitIpfsType | InternalSubplebbitType
+        options:
+            | CreateNewLocalSubplebbitUserOptions
+            | CreateRemoteSubplebbitOptions
+            | SubplebbitIpfsType
+            | InternalSubplebbitRpcType
+            | RpcRemoteSubplebbit
+            | RpcLocalSubplebbit
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
@@ -417,7 +424,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             } else if (typeof options.address === "string") {
                 // Remote subplebbit
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                await remoteSub.initRemoteSubplebbitPropsNoMerge(options);
+                const parsedOptions = options instanceof RpcRemoteSubplebbit ? options.toJSONIpfs() : options;
+                await remoteSub.initRemoteSubplebbitPropsNoMerge(parsedOptions);
                 return remoteSub;
             } else throw Error("Can't create a remote subplebbit without defining address");
         } else if (!("address" in options)) {
@@ -485,9 +493,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             | RemoteSubplebbitJsonType
             | SubplebbitIpfsType
             | InternalSubplebbitType
-            | RemoteSubplebbit = {}
+            | RemoteSubplebbit
+            | RpcLocalSubplebbit
+            | RpcRemoteSubplebbit
+            | LocalSubplebbit = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        if ("address" in options && typeof options.address !== "string")
+            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { options });
         log.trace("Received options: ", options);
 
         if ("address" in options && options?.address && doesDomainAddressHaveCapitalLetter(options.address))
@@ -525,7 +538,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             const signer = await this.createSigner(options.signer);
             const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, address: signer.address, signer };
             return this._createLocalSub(localOptions);
-        } else throw Error("Did you fail to provide address or signer? critical error in plebbit.createSubplebbit");
+        } else if ("address" in options && "signer" in options) return this._createLocalSub(options);
+        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { options });
     }
 
     async createVote(options: CreateVoteOptions | VotePubsubMessage): Promise<Vote> {
