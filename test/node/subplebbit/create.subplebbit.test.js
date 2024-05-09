@@ -13,6 +13,7 @@ import { messages } from "../../../dist/node/errors";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import chai from "chai";
+import * as remeda from "remeda";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -32,11 +33,15 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address.startsWith("12D3")).to.be.true;
+        expect(newSubplebbit.signer.address).to.equal(newSubplebbit.address);
         const listedSubs = await plebbit.listSubplebbits();
         expect(listedSubs).to.include(newSubplebbit.address);
 
         const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
-        expect(deterministicStringify(subplebbitIpns.toJSON())).to.equal(deterministicStringify(newSubplebbit.toJSON()));
+
+        const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings"];
+
+        expect(subplebbitIpns.toJSON()).to.deep.equal(remeda.omit(newSubplebbit.toJSON(), internalProps));
         return newSubplebbit;
     };
 

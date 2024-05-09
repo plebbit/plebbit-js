@@ -15,6 +15,7 @@ import chai from "chai";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import chaiAsPromised from "chai-as-promised";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
+import { v4 as uuidV4 } from "uuid";
 
 import { createPublicClient, http } from "viem";
 chai.use(chaiAsPromised);
@@ -176,7 +177,12 @@ if (!isRpcFlagOn())
         const viemEthFake = {};
         const viemMaticFake = {};
         before(async () => {
-            plebbit = await mockPlebbit({ resolveAuthorAddresses: false });
+            const ethRpcUrl = `Fake${uuidV4()}eth.com`;
+            const maticRpcUrl = `Fake${uuidV4()}matic.com`;
+            plebbit = await mockPlebbit({
+                resolveAuthorAddresses: false,
+                chainProviders: { eth: { urls: [ethRpcUrl] }, matic: { urls: [maticRpcUrl] } }
+            });
             actualViemClient = createPublicClient({
                 chain: chains.mainnet,
                 transport: http()
