@@ -198,16 +198,18 @@ export class Comment extends Publication {
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
-        if (props.replies) await this._updateRepliesPostsInstanceIfNeeded(props.replies);
+        await this._updateRepliesPostsInstance(props.replies);
     }
 
-    async _updateRepliesPostsInstanceIfNeeded(
-        newReplies: NonNullable<CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">>
+    async _updateRepliesPostsInstance(
+        newReplies: CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
 
-        if (!("pages" in newReplies)) {
+        if (!newReplies) {
+            this.replies.resetPages();
+        } else if (!("pages" in newReplies)) {
             // only pageCids is provided
             this.replies.pageCids = newReplies.pageCids;
         } else {

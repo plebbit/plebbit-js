@@ -55,6 +55,13 @@ export class BasePages {
         throw Error(`This function should be overridden`);
     }
 
+    resetPages(){
+        // Called when the sub changes address and needs to remove all the comments with the old subplebbit address
+        this.pageCids = {};
+        this.pages = {};
+        this._pagesIpfs = undefined;
+    }
+
     async _fetchAndVerifyPage(pageCid: string) {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);

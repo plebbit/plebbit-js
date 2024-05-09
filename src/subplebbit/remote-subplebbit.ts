@@ -89,11 +89,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         });
     }
 
-    async _updateLocalPostsInstanceIfNeeded(
-        newPosts: NonNullable<SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"] | Pick<PostsPagesTypeIpfs, "pageCids">>
+    async _updateLocalPostsInstance(
+        newPosts: SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"] | Pick<PostsPagesTypeIpfs, "pageCids">
     ) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
-        if (!("pages" in newPosts)) {
+        if (!newPosts)
+            // The sub has changed its address, need to reset the posts
+            this.posts.resetPages();
+        else if (!("pages" in newPosts)) {
             // only pageCids is provided
             this.posts.pageCids = newPosts.pageCids;
         } else {
@@ -137,7 +140,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         if (typeof newProps.updatedAt === "number") this.updatedAt = newProps.updatedAt;
         if (newProps.encryption) this.encryption = newProps.encryption;
         if (newProps.signature) this.signature = newProps.signature;
-        if (newProps.posts) await this._updateLocalPostsInstanceIfNeeded(newProps.posts);
+        await this._updateLocalPostsInstance(newProps.posts);
     }
 
     setAddress(newAddress: string) {
