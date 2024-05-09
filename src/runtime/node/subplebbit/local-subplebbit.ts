@@ -146,10 +146,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     override toJSON(): LocalSubplebbitJsonType {
+        const internalJson = this.toJSONInternal();
         return {
-            ...this.toJSONInternal(),
+            ...internalJson,
             posts: this.posts.toJSON(),
-            shortAddress: this.shortAddress
+            shortAddress: this.shortAddress,
+            signer: remeda.omit(internalJson.signer, ["privateKey"])
         };
     }
 
