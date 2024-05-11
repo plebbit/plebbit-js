@@ -461,7 +461,7 @@ export class Comment extends Publication {
                 this.emit(
                     "error",
                     new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
-                        commentIpfs: this._rawCommentIpfs,
+                        invalidCommentIpfs: newCommentIpfs,
                         commentIpfsValidation,
                         cid: this.cid
                     })
@@ -507,6 +507,7 @@ export class Comment extends Publication {
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
+        if (newState === this.updatingState) return;
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
@@ -550,32 +551,32 @@ export class Comment extends Publication {
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
-                    if (updateProps.params.result.subplebbitAddress) {
-                        const commentIpfsFromRpc = <CommentIpfsWithCid>updateProps.params.result;
+                    const newUpdate = <CommentIpfsWithCid | CommentUpdate>updateProps.params.result;
+                    if ("subplebbitAddress" in newUpdate) {
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
-                        this._rawCommentIpfs = remeda.omit(commentIpfsFromRpc, ["cid"]);
+                        this._rawCommentIpfs = remeda.omit(newUpdate, ["cid"]);
                         this._initIpfsProps(this._rawCommentIpfs);
                     } else {
                         log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);
-                        const commentUpdateFromRpc = <CommentUpdate>updateProps.params.result;
-                        await this._initCommentUpdate(commentUpdateFromRpc);
+                        await this._initCommentUpdate(newUpdate);
                     }
 
                     this.emit("update", this);
                 })
                 .on("updatingstatechange", (args) => {
-                    const updateState: Comment["updatingState"] = args.params.result;
+                    const updateState = <Comment["updatingState"]>args.params.result;
                     this._setUpdatingState(updateState);
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })
-                .on("statechange", (args) => this._updateState(args.params.result))
+                .on("statechange", (args) => this._updateState(<Comment["state"]>args.params.result))
                 .on("error", async (args) => {
-                    if (this._isCriticalRpcError(args.params.result)) {
+                    const err = <PlebbitError>args.params.result;
+                    if (this._isCriticalRpcError(err)) {
                         this._setUpdatingState("failed");
                         this._updateState("stopped");
                         await this._stopUpdateLoop();
                     }
-                    this.emit("error", args.params.result);
+                    this.emit("error", err);
                 });
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
