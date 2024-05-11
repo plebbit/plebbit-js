@@ -466,9 +466,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
-        }
-
-        if (Array.isArray(this._pubsubProviders)) {
+        } else if (this.subplebbit) {
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
         }
