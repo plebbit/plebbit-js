@@ -1251,6 +1251,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // here we will go ahead to and rewrite all comment updates
 
         const storedCommentUpdates = await this.dbHandler.queryAllStoredCommentUpdates();
+        if (storedCommentUpdates.length === 0) return;
 
         log(`CommentUpdate directory does not exist under MFS, will repin all comment updates (${storedCommentUpdates.length})`);
 
