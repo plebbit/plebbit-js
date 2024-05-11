@@ -93,12 +93,13 @@ export default class PlebbitRpcClient {
                     return await originalWebsocketCall(...args);
                 } catch (e) {
                     //e is an error json representation of PlebbitError
-                    if (!(e instanceof Error)) throw Error("plebbit rpc client call throwed a non Error" + e);
-
-                    if ("code" in e) {
+                    if ("code" in <PlebbitError>e) {
                         const actualPlebError = e as PlebbitError;
                         throw new PlebbitError(actualPlebError.code, actualPlebError.details);
-                    } else throw new Error(e.message);
+                    } else if ("message" in <Error>e) throw new Error((<Error>e).message);
+                    else {
+                        throw Error("plebbit rpc client call throwed a non Error" + e);
+                    }
                 }
             };
         }
