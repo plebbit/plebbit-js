@@ -424,13 +424,13 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : <CommentIpfsWithCid>{ cid, ...comment._rawCommentIpfs })
         );
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
-        comment.on("error", (error: any) => sendEvent("error", error));
+        comment.on("error", (error) => sendEvent("error", error));
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            comment.stop().catch((error: any) => log.error("commentUpdate stop error", { error, params }));
             comment.removeAllListeners("update");
             comment.removeAllListeners("updatingstatechange");
+            comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
 
         // if fail, cleanup
