@@ -444,6 +444,7 @@ export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<C
     deleted?: boolean;
 }
 
+// These are the props added by the subplebbit before adding the comment to ipfs
 export interface CommentIpfsType extends CommentPubsubMessage {
     depth: number;
     postCid?: string;

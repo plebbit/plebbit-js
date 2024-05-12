@@ -3,6 +3,7 @@ import { Plebbit } from "../../../plebbit.js";
 import {
     Challenge,
     CreateNewLocalSubplebbitParsedOptions,
+    InternalSubplebbitRpcType,
     InternalSubplebbitType,
     LocalSubplebbitJsonType,
     SubplebbitChallengeSettings,
@@ -142,6 +143,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...remeda.omit(this.toJSONInternalRpc(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
             _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+        };
+    }
+
+    override toJSONInternalRpc(): InternalSubplebbitRpcType {
+        return {
+            ...super.toJSONInternalRpc(),
+            signer: remeda.pick(this.signer, ["publicKey", "address", "shortAddress", "type"])
         };
     }
 

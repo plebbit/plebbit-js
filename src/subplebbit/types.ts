@@ -132,7 +132,7 @@ export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<Subpleb
 // This will be transmitted over RPC connection for local subs
 export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {
     started: RpcLocalSubplebbit["started"];
-    signer: Omit<InternalSubplebbitType["signer"], "privateKey">;
+    signer: Pick<InternalSubplebbitType["signer"], "address" | "type" | "shortAddress" | "publicKey">;
 }
 
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
