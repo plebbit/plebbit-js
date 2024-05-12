@@ -168,12 +168,12 @@ const getPendingChallengesOrChallengeVerification = async (
 
         if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === false) {
             challengeFailureCount++;
-            challengeErrors[challengeIndex] = (challengeOrChallengeResult).error;
+            challengeErrors[challengeIndex] = challengeOrChallengeResult.error;
         } else if ("success" in challengeOrChallengeResult && challengeOrChallengeResult.success === true) {
             // do nothing
         } else {
             // index is needed to exlude based on other challenge success in getChallengeVerification
-            pendingChallenges.push({ ...(challengeOrChallengeResult), index: challengeIndex });
+            pendingChallenges.push({ ...challengeOrChallengeResult, index: challengeIndex });
         }
     }
 
