@@ -30,7 +30,8 @@ import type { IncomingMessage } from "http";
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 const startedSubplebbits: { [address: string]: "pending" | LocalSubplebbit } = {};
-const getStartedSubplebbit = async (address: string) => {
+const getStartedSubplebbit = async (address: string): Promise<LocalSubplebbit> => {
+    if (!(address in startedSubplebbits)) throw Error("Can't call getStartedSubplebbit when the sub hasn't been started");
     // if pending, wait until no longer pendng
     while (startedSubplebbits[address] === "pending") {
         await new Promise((r) => setTimeout(r, 20));
@@ -279,9 +280,9 @@ class PlebbitWsServer extends EventEmitter {
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
+        const isSubStarted = address in startedSubplebbits;
+        if (!isSubStarted) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
         const startedSubplebbit = await getStartedSubplebbit(address);
-        if (!startedSubplebbit) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
-
         await startedSubplebbit.stop();
         delete startedSubplebbits[address];
 
@@ -312,7 +313,10 @@ class PlebbitWsServer extends EventEmitter {
         const addresses = await this.plebbit.listSubplebbits();
         if (!addresses.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
 
-        const subplebbit = (await getStartedSubplebbit(address)) || <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+        const isSubStarted = address in startedSubplebbits;
+        const subplebbit = isSubStarted
+            ? await getStartedSubplebbit(address)
+            : <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
         delete startedSubplebbits[address];
 
