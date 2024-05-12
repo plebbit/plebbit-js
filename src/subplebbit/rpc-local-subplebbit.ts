@@ -1,12 +1,22 @@
 import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
-import { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions, SubplebbitSettings } from "./types.js";
+import {
+    InternalSubplebbitRpcType,
+    LocalSubplebbitJsonType,
+    LocalSubplebbitRpcJsonType,
+    SubplebbitEditOptions,
+    SubplebbitSettings
+} from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    EncodedDecryptedChallengeVerificationMessageType
 } from "../types.js";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
@@ -85,6 +95,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             this._setStartedState("failed");
             throw e;
         }
+        this.started = true;
         this.plebbit
             .plebbitRpcClient!.getSubscription(this._startRpcSubscriptionId)
             .on("update", async (updateProps) => {
@@ -94,30 +105,31 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                 this.emit("update", this);
             })
             .on("startedstatechange", (args) => {
-                const newStartedState: RpcLocalSubplebbit["startedState"] = args.params.result;
+                const newStartedState = <RpcLocalSubplebbit["startedState"]>args.params.result;
                 this._setStartedState(newStartedState);
                 this._updateRpcClientStateFromStartedState(newStartedState);
             })
             .on("challengerequest", (args) => {
+                const request = <EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>args.params.result;
                 this._setRpcClientState("waiting-challenge-requests");
-                this.emit(
-                    "challengerequest",
-                    <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(args.params.result)
-                );
+                this.emit("challengerequest", <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(request));
             })
             .on("challenge", (args) => {
                 this._setRpcClientState("publishing-challenge");
-                this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result));
+                const challenge = <EncodedDecryptedChallengeMessageType>args.params.result;
+                this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(challenge));
                 this._setRpcClientState("waiting-challenge-answers");
             })
             .on("challengeanswer", (args) => {
-                this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result));
+                const challengeAnswer = <EncodedDecryptedChallengeAnswerMessageType>args.params.result;
+                this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(challengeAnswer));
             })
             .on("challengeverification", (args) => {
+                const challengeVerification = <EncodedDecryptedChallengeVerificationMessageType>args.params.result;
                 this._setRpcClientState("publishing-challenge-verification");
                 this.emit(
                     "challengeverification",
-                    <DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(args.params.result)
+                    <DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(challengeVerification)
                 );
                 this._setRpcClientState("waiting-challenge-requests");
             })
@@ -131,6 +143,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         if (this.state === "updating") {
             return super.stop();
         } else if (this.state === "started") {
+            // Need to be careful not to stop an already running sub
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
             try {
                 await this.plebbit.plebbitRpcClient!.stopSubplebbit(this.address);
