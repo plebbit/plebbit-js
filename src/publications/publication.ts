@@ -15,7 +15,10 @@ import {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
+    DecryptedChallengeRequestComment,
+    DecryptedChallengeRequestCommentEdit,
     DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestVote,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
@@ -121,6 +124,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
+    _initChallengeRequestChallengeProps(props: Pick<LocalPublicationProps, "challengeAnswers" | "challengeCommentCids">) {
+        this.challengeAnswers = props.challengeAnswers;
+        this.challengeCommentCids = props.challengeCommentCids;
+    }
+
     _initBaseLocalProps(props: LocalPublicationProps) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
@@ -128,8 +136,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.signature = props.signature;
         this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;
-        this.challengeAnswers = props.challengeAnswers;
-        this.challengeCommentCids = props.challengeCommentCids;
+        this._initChallengeRequestChallengeProps(props);
     }
 
     _initBaseRemoteProps(props: CommentIpfsType | CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage) {
@@ -494,11 +501,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
         try {
             this._rpcPublishSubscriptionId =
                 this.getType() === "comment"
-                    ? await this._plebbit.plebbitRpcClient.publishComment(this.toJSONPubsubMessage())
+                    ? await this._plebbit.plebbitRpcClient.publishComment(<DecryptedChallengeRequestComment>this.toJSONPubsubMessage())
                     : this.getType() === "commentedit"
-                      ? await this._plebbit.plebbitRpcClient.publishCommentEdit(this.toJSONPubsubMessage())
+                      ? await this._plebbit.plebbitRpcClient.publishCommentEdit(
+                            <DecryptedChallengeRequestCommentEdit>this.toJSONPubsubMessage()
+                        )
                       : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(this.toJSONPubsubMessage())
+                        ? await this._plebbit.plebbitRpcClient.publishVote(<DecryptedChallengeRequestVote>this.toJSONPubsubMessage())
                         : undefined;
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));

@@ -1,5 +1,12 @@
 import Publication from "./publication.js";
-import { LocalVoteOptions, PublicationTypeName, VotePubsubMessage, VoteTypeJson, VotesTableRowInsert } from "../types.js";
+import {
+    DecryptedChallengeRequestVote,
+    LocalVoteOptions,
+    PublicationTypeName,
+    VotePubsubMessage,
+    VoteTypeJson,
+    VotesTableRowInsert
+} from "../types.js";
 import { Plebbit } from "../plebbit.js";
 import { verifyVote } from "../signer/index.js";
 import { isIpfsCid, throwWithErrorCode } from "../util.js";
@@ -26,6 +33,11 @@ class Vote extends Publication {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
+    }
+
+    _initChallengeRequestProps(props: DecryptedChallengeRequestVote) {
+        super._initChallengeRequestChallengeProps(props);
+        this._initRemoteProps(props.publication);
     }
 
     override toJSONPubsubMessagePublication(): VotePubsubMessage {

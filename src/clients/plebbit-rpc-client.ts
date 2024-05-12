@@ -1,7 +1,9 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
     CommentIpfsWithCid,
-    DecryptedChallengeRequest,
+    DecryptedChallengeRequestComment,
+    DecryptedChallengeRequestCommentEdit,
+    DecryptedChallengeRequestVote,
     PageIpfs,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
@@ -16,7 +18,6 @@ import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util.js";
 import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
-import * as remeda from "remeda";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -218,17 +219,17 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async publishComment(commentProps: DecryptedChallengeRequest) {
+    async publishComment(commentProps: DecryptedChallengeRequestComment) {
         const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
         return subscriptionId;
     }
 
-    async publishCommentEdit(commentEditProps: DecryptedChallengeRequest) {
+    async publishCommentEdit(commentEditProps: DecryptedChallengeRequestCommentEdit) {
         const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
         return subscriptionId;
     }
 
-    async publishVote(voteProps: DecryptedChallengeRequest) {
+    async publishVote(voteProps: DecryptedChallengeRequestVote) {
         const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
         return subscriptionId;
     }

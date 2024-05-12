@@ -23,7 +23,10 @@ import {
     LocalVoteOptions,
     CommentEditPubsubMessage,
     CommentIpfsWithCid,
-    CommentTypeJson
+    CommentTypeJson,
+    DecryptedChallengeRequestComment,
+    DecryptedChallengeRequestVote,
+    DecryptedChallengeRequestCommentEdit
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -356,6 +359,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             | CommentTypeJson
             | CommentIpfsType
             | CommentPubsubMessage
+            | DecryptedChallengeRequestComment
             | Comment
             | Pick<CommentIpfsWithCid, "cid">
             | Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress">
@@ -373,7 +377,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             if (Object.keys(options).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
 
-        if ("depth" in options) {
+        if ("publication" in options) commentInstance._initChallengeRequestProps(options);
+        else if ("depth" in options) {
             // Options is CommentIpfs
             commentInstance._initIpfsProps(options);
         } else if ("signature" in options) {
@@ -558,13 +563,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { options });
     }
 
-    async createVote(options: CreateVoteOptions | VotePubsubMessage): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VotePubsubMessage | DecryptedChallengeRequestVote): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
         const voteInstance = new Vote(this);
 
         if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed vote");
 
-        if ("signature" in options) {
+        if ("publication" in options) voteInstance._initChallengeRequestProps(options);
+        else if ("signature" in options) {
             voteInstance._initRemoteProps(options);
         } else {
             const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
@@ -579,13 +585,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return voteInstance;
     }
 
-    async createCommentEdit(options: CreateCommentEditOptions | CommentEditPubsubMessage): Promise<CommentEdit> {
+    async createCommentEdit(
+        options: CreateCommentEditOptions | CommentEditPubsubMessage | DecryptedChallengeRequestCommentEdit
+    ): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         const editInstance = new CommentEdit(this);
 
         if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment edit");
 
-        if ("signature" in options)
+        if ("publication" in options) editInstance._initChallengeRequestProps(options);
+        else if ("signature" in options)
             editInstance._initRemoteProps(options); // User just wants to instantiate a CommentEdit object, not publish
         else {
             const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);

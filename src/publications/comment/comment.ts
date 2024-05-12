@@ -11,10 +11,10 @@ import {
     CommentTypeJson,
     CommentUpdate,
     CommentWithCommentUpdateJson,
+    DecryptedChallengeRequestComment,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     LocalCommentOptions,
     PageTypeJson,
-    ProtocolVersion,
     PublicationTypeName,
     RepliesPagesTypeIpfs
 } from "../../types.js";
@@ -160,6 +160,11 @@ export class Comment extends Publication {
         this.thumbnailUrl = props.thumbnailUrl;
         this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+    }
+
+    _initChallengeRequestProps(props: DecryptedChallengeRequestComment) {
+        super._initChallengeRequestChallengeProps(props);
+        this._initPubsubMessageProps(props.publication);
     }
 
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {

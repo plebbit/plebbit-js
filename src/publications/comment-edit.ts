@@ -7,6 +7,7 @@ import {
     CommentEditPubsubMessage,
     CommentEditTypeJson,
     CommentEditsTableRowInsert,
+    DecryptedChallengeRequestCommentEdit,
     LocalCommentEditOptions,
     PublicationTypeName
 } from "../types.js";
@@ -47,11 +48,16 @@ export class CommentEdit extends Publication {
     _initLocalProps(props: LocalCommentEditOptions) {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
-    }
+    }       
 
     _initRemoteProps(props: CommentEditPubsubMessage): void {
         super._initBaseRemoteProps(props);
         this._initEditProps(props);
+    }
+
+    _initChallengeRequestProps(props: DecryptedChallengeRequestCommentEdit) {
+        super._initChallengeRequestChallengeProps(props);
+        this._initRemoteProps(props.publication);
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {

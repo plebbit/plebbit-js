@@ -7,13 +7,12 @@ const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
 import { Plebbit } from "../../plebbit.js";
 import {
-    CommentEditPubsubMessage,
     CommentIpfsWithCid,
-    CommentPubsubMessage,
-    DecryptedChallengeRequest,
+    DecryptedChallengeRequestComment,
+    DecryptedChallengeRequestCommentEdit,
+    DecryptedChallengeRequestVote,
     PlebbitWsServerSettings,
-    PlebbitWsServerSettingsSerialized,
-    VotePubsubMessage
+    PlebbitWsServerSettingsSerialized
 } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
@@ -510,17 +509,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishComment(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequest>params[0];
+        const publishOptions = <DecryptedChallengeRequestComment>params[0];
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishComment", subscription: subscriptionId, event, result, connectionId });
 
-        const comment = await this.plebbit.createComment({
-            challengeAnswers: publishOptions.challengeAnswers,
-            challengeCommentCids: publishOptions.challengeCommentCids,
-            ...(<CommentPubsubMessage>publishOptions.publication)
-        });
+        const comment = await this.plebbit.createComment(publishOptions);
         this.publishing[subscriptionId] = comment;
         comment.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
         comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
@@ -554,17 +549,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishVote(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequest>params[0];
+        const publishOptions = <DecryptedChallengeRequestVote>params[0];
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishVote", subscription: subscriptionId, event, result, connectionId });
 
-        const vote = await this.plebbit.createVote({
-            ...(<VotePubsubMessage>publishOptions.publication),
-            challengeAnswers: publishOptions.challengeAnswers,
-            challengeCommentCids: publishOptions.challengeCommentCids
-        });
+        const vote = await this.plebbit.createVote(publishOptions);
         this.publishing[subscriptionId] = vote;
         vote.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
         vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
@@ -598,17 +589,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishCommentEdit(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequest>params[0];
+        const publishOptions = <DecryptedChallengeRequestCommentEdit>params[0];
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishCommentEdit", subscription: subscriptionId, event, result, connectionId });
 
-        const commentEdit = await this.plebbit.createCommentEdit({
-            ...(<CommentEditPubsubMessage>publishOptions.publication),
-            challengeCommentCids: publishOptions.challengeCommentCids,
-            challengeAnswers: publishOptions.challengeAnswers
-        });
+        const commentEdit = await this.plebbit.createCommentEdit(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
         commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
         commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));

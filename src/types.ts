@@ -275,6 +275,18 @@ export interface DecryptedChallengeRequest {
     challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 }
 
+export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequest {
+    publication: CommentPubsubMessage;
+}
+
+export interface DecryptedChallengeRequestCommentEdit extends DecryptedChallengeRequest {
+    publication: CommentEditPubsubMessage;
+}
+
+export interface DecryptedChallengeRequestVote extends DecryptedChallengeRequest {
+    publication: VotePubsubMessage;
+}
+
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
 export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
