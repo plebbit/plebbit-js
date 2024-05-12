@@ -21,7 +21,7 @@ const getOrCreateRateLimiter = (
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"]
 ) => {
-    if (!exclude.rateLimit) throw Error("Can't create a RateLimiter without exclude.rateLimit");
+    if (typeof exclude.rateLimit !== "number") throw Error("Can't create a RateLimiter without exclude.rateLimit");
     const rateLimiterName = getRateLimiterName(exclude, publication, publicationType, challengeSuccess);
     let rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
@@ -90,12 +90,10 @@ const testRateLimit = (exclude: Exclude, publication: DecryptedChallengeRequestM
     // check all the rate limiters that match the exclude and publication type
     const rateLimiters = getRateLimitersToTest(exclude, publication, challengeSuccess);
     // if any of the matching rate limiter is out of tokens, test failed
-    for (const rateLimiter of Object.values<any>(rateLimiters)) {
+    for (const rateLimiter of Object.values(rateLimiters)) {
         const tokensRemaining = rateLimiter.getTokensRemaining();
         // token per action is 1, so any value below 1 is invalid
-        if (tokensRemaining < 1) {
-            return false;
-        }
+        if (tokensRemaining < 1) return false;
     }
     return true;
 };
