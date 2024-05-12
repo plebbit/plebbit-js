@@ -196,8 +196,13 @@ class PlebbitWsServer extends EventEmitter {
     async getSubplebbitPage(params: any) {
         const pageCid = <string>params[0];
         const subplebbitAddress = <string>params[1];
-        const subplebbit = <RemoteSubplebbit | LocalSubplebbit>await this.plebbit.createSubplebbit({ address: subplebbitAddress });
-        const page = await subplebbit.posts._fetchAndVerifyPage(pageCid);
+
+        // Use started subplebbit to fetch the page if possible, to expediete the process
+        const sub =
+            subplebbitAddress in startedSubplebbits
+                ? await getStartedSubplebbit(subplebbitAddress)
+                : <RemoteSubplebbit | LocalSubplebbit>await this.plebbit.createSubplebbit({ address: subplebbitAddress });
+        const page = await sub.posts._fetchAndVerifyPage(pageCid);
         return page;
     }
 
@@ -451,32 +456,47 @@ class PlebbitWsServer extends EventEmitter {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "subplebbitUpdate", subscription: subscriptionId, event, result, connectionId });
 
-        // assume that the user wants to know the started states
-        // possibly move it to a startedSubplebbitUpdate method
-        // const startedSubplebbit = await getStartedSubplebbit(address)
+        const isSubStarted = address in startedSubplebbits;
+        const subplebbit = isSubStarted
+            ? await getStartedSubplebbit(address)
+            : <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
 
-        const subplebbit = <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
-        subplebbit.on("update", () => {
+        const sendSubJson = () => {
             const jsonToSend = subplebbit instanceof LocalSubplebbit ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs();
-
             sendEvent("update", jsonToSend);
-        });
-        subplebbit.on("updatingstatechange", () => sendEvent("updatingstatechange", subplebbit.updatingState));
-        subplebbit.on("error", (error: any) => sendEvent("error", error));
+        };
+
+        const updateListener = () => sendSubJson();
+        subplebbit.on("update", updateListener);
+
+        const updatingStateListener = () => sendEvent("updatingstatechange", subplebbit.updatingState);
+        subplebbit.on("updatingstatechange", updatingStateListener);
+
+        // listener for startestatechange
+        const startedStateListener = () => sendEvent("updatingstatechange", (<LocalSubplebbit>subplebbit).startedState);
+        if (isSubStarted) subplebbit.on("startedstatechange", startedStateListener);
+
+        const errorListener = (error: PlebbitError) => sendEvent("error", error);
+        subplebbit.on("error", errorListener);
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            subplebbit.stop().catch((error: any) => log.error("subplebbitUpdate stop error", { error, params }));
-            subplebbit.removeAllListeners("update");
-            subplebbit.removeAllListeners("updatingstatechange");
+            subplebbit.removeListener("update", updateListener);
+            subplebbit.removeListener("updatingstatechange", updatingStateListener);
+            subplebbit.removeListener("error", errorListener);
+            subplebbit.removeListener("startedstatechange", startedStateListener);
+
+            // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
+            if (!isSubStarted) subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));
         };
 
         // if fail, cleanup
         try {
-            if ("signer" in subplebbit)
-                // need to send an update when fetching sub from db for first time
-                subplebbit.emit("update", subplebbit);
-            await subplebbit.update();
+            // need to send an update with first subplebbitUpdate if it's a local sub
+            if ("signer" in subplebbit) sendSubJson();
+
+            // No need to call .update() if it's already running locally because we're listening to update event
+            if (!isSubStarted) await subplebbit.update();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
             throw e;
@@ -505,17 +525,17 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
         );
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
-        comment.on("error", (error: any) => sendEvent("error", error));
+        comment.on("error", (error) => sendEvent("error", error));
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-            delete this.publishing[subscriptionId];
-            comment.stop().catch((error: any) => log.error("publishComment stop error", { error, params }));
             comment.removeAllListeners("challenge");
             comment.removeAllListeners("challengeanswer");
             comment.removeAllListeners("challengerequest");
             comment.removeAllListeners("challengeverification");
             comment.removeAllListeners("publishingstatechange");
+            delete this.publishing[subscriptionId];
+            comment.stop().catch((error: any) => log.error("publishComment stop error", { error, params }));
         };
 
         // if fail, cleanup

@@ -21,6 +21,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
+            "publishing-ipns": ["publishing-ipns"],
             "resolving-address": ["resolving-subplebbit-address"],
             stopped: ["stopped"],
             succeeded: ["stopped"]
@@ -56,7 +57,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
                 this.emit("update", this);
             })
             .on("updatingstatechange", (args) => {
-                const newUpdatingState: RemoteSubplebbit["updatingState"] = args.params.result;
+                const newUpdatingState = <RpcRemoteSubplebbit["updatingState"]>args.params.result;
                 this._setUpdatingState(newUpdatingState);
                 this._updateRpcClientStateFromUpdatingState(newUpdatingState);
             })

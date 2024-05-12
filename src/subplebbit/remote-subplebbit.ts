@@ -24,6 +24,7 @@ import type {
     SubplebbitSuggested
 } from "./types.js";
 import * as remeda from "remeda";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -52,7 +53,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
     // Only for Subplebbit instance
     state!: "stopped" | "updating" | "started";
-    updatingState!: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    updatingState!:
+        | "stopped"
+        | "resolving-address"
+        | "fetching-ipns"
+        | "fetching-ipfs"
+        | "failed"
+        | "succeeded"
+        | LocalSubplebbit["startedState"];
     plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
