@@ -1,17 +1,11 @@
 import Publication from "./publication.js";
-import {
-    LocalVoteOptions,
-    PublicationTypeName,
-    VotePubsubMessage,
-    VoteTypeJson,
-    VotesTableRowInsert
-} from "../types.js";
+import { LocalVoteOptions, PublicationTypeName, VotePubsubMessage, VoteTypeJson, VotesTableRowInsert } from "../types.js";
 import { Plebbit } from "../plebbit.js";
 import { verifyVote } from "../signer/index.js";
 import { isIpfsCid, throwWithErrorCode } from "../util.js";
 
 // vote.signer is inherited from Publication
-class Vote extends Publication  {
+class Vote extends Publication {
     commentCid!: string;
     vote!: 1 | 0 | -1; // (upvote, cancel vote, downvote)
 
@@ -20,7 +14,6 @@ class Vote extends Publication  {
 
         // public method should be bound
         this.publish = this.publish.bind(this);
-
     }
 
     _initLocalProps(props: LocalVoteOptions): void {

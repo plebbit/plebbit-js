@@ -503,7 +503,6 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
     }
 
-
     async queryCommentsByCids(cids: string[], trx?: Transaction) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }

@@ -55,7 +55,7 @@ export class BasePages {
         throw Error(`This function should be overridden`);
     }
 
-    resetPages(){
+    resetPages() {
         // Called when the sub changes address and needs to remove all the comments with the old subplebbit address
         this.pageCids = {};
         this.pages = {};
