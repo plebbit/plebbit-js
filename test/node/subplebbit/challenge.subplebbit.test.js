@@ -81,24 +81,23 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.delete();
     });
 
-    //prettier-ignore
     if (!isRpcFlagOn())
-    it(`plebbit-js will upgrade default challenge if there is a new one`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit.settings.challenges).to.deep.equal([
-            { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
-        ]);
-        expect(subplebbit._usingDefaultChallenge).to.be.true;
-        const differentDefaultChallenges = [];
-        subplebbit._defaultSubplebbitChallenges = differentDefaultChallenges;
-        await subplebbit.start(); // Should check value of default challenge, and upgrade to this one above
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        expect(subplebbit.settings.challenges).to.deep.equal([]);
-        expect(subplebbit.challenges).to.deep.equal([]);
-        expect(subplebbit._usingDefaultChallenge).to.be.true;
-        await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
-        await subplebbit.delete();
-    });
+        it(`plebbit-js will upgrade default challenge if there is a new one`, async () => {
+            const subplebbit = await plebbit.createSubplebbit({});
+            expect(subplebbit.settings.challenges).to.deep.equal([
+                { name: "captcha-canvas-v3", exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }] }
+            ]);
+            expect(subplebbit._usingDefaultChallenge).to.be.true;
+            const differentDefaultChallenges = [];
+            subplebbit._defaultSubplebbitChallenges = differentDefaultChallenges;
+            await subplebbit.start(); // Should check value of default challenge, and upgrade to this one above
+            await new Promise((resolve) => subplebbit.once("update", resolve));
+            expect(subplebbit.settings.challenges).to.deep.equal([]);
+            expect(subplebbit.challenges).to.deep.equal([]);
+            expect(subplebbit._usingDefaultChallenge).to.be.true;
+            await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
+            await subplebbit.delete();
+        });
 
     it(`Can set a basic question challenge system`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
