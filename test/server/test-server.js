@@ -274,12 +274,6 @@ const setUpMockGateways = async () => {
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
-        // debug raw JSON RPC messages in console (optional)
-        plebbitWebSocketServer.ws.on("connection", (socket, request) => {
-            console.log("connection");
-            socket.on("message", (message) => console.log(message.toString()));
-        });
-
         console.log(`test server plebbit wss listening on port ${rpcPort}`);
     }
 
