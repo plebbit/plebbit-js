@@ -128,6 +128,8 @@ describe(`comment.update`, async () => {
     });
 
     it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
+        // A critical error, so it shouldn't keep on updating
+
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
         const postJson = cleanUpBeforePublishing(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
@@ -145,6 +147,8 @@ describe(`comment.update`, async () => {
 
         const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
 
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
         let updateHasBeenEmitted = false;
         createdComment.once("update", () => (updateHasBeenEmitted = true));
         await createdComment.update();
@@ -156,8 +160,11 @@ describe(`comment.update`, async () => {
             })
         );
 
+        // should stop updating by itself because of the critical error
+
         expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+        expect(createdComment.updatingState).to.equal("failed");
+        expect(updatingStates).to.deep.equal(["fetching-ipfs", "succeeded", "failed"]);
         expect(updateHasBeenEmitted).to.be.false;
     });
 
