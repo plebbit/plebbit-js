@@ -86,10 +86,11 @@ const validateChallengeOrChallengeResult = (
 const getPendingChallengesOrChallengeVerification = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     subplebbit: LocalSubplebbit
-) => {
+): Promise<
+    { challengeSuccess: true } | { challengeSuccess: false; challengeErrors: string[] } | { pendingChallenges: PendingChallenge[] }
+> => {
     // if sub has no challenges, no need to send a challenge
-    if (!subplebbit.settings?.challenges || (Array.isArray(subplebbit.settings?.challenges) && subplebbit.settings.challenges.length === 0))
-        return { challengeSuccess: true };
+    if (!Array.isArray(subplebbit.settings?.challenges)) return { challengeSuccess: true };
     const challengeOrChallengeResults: (Challenge | ChallengeResult)[] = [];
     // interate over all challenges of the subplebbit, can be more than 1
     for (const i in subplebbit.settings.challenges) {
@@ -274,25 +275,20 @@ const getChallengeVerification = async (
     if (typeof getChallengeAnswers !== "function") {
         throw Error(`getChallengeVerification invalid getChallengeAnswers argument '${getChallengeAnswers}' not a function`);
     }
-    if (!subplebbit.settings?.challenges) throw Error("subplebbit.settings?.challenges is not defined");
+    if (!Array.isArray(subplebbit.settings?.challenges)) throw Error("subplebbit.settings?.challenges is not defined");
 
-    const { pendingChallenges, challengeSuccess, challengeErrors } = await getPendingChallengesOrChallengeVerification(
-        challengeRequestMessage,
-        subplebbit
-    );
+    const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
     let challengeVerification: Pick<ChallengeVerificationMessage, "challengeSuccess" | "challengeErrors">;
     // was able to verify without asking author for challenges
-    if (!pendingChallenges) {
-        challengeVerification = { challengeSuccess };
-        if (challengeErrors) {
-            challengeVerification.challengeErrors = challengeErrors;
-        }
+    if ("challengeSuccess" in res) {
+        challengeVerification = { challengeSuccess: res.challengeSuccess };
+        if ("challengeErrors" in res) challengeVerification.challengeErrors = res.challengeErrors;
     }
     // author still has some pending challenges to complete
     else {
-        const challengeAnswers = await getChallengeAnswers(pendingChallenges);
-        challengeVerification = await getChallengeVerificationFromChallengeAnswers(pendingChallenges, challengeAnswers, subplebbit);
+        const challengeAnswers = await getChallengeAnswers(res.pendingChallenges);
+        challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
     }
 
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings

@@ -75,7 +75,7 @@ const shouldExcludePublication = (
         if (exclude.address && !exclude.address.includes(author.address)) {
             shouldExclude = false;
         }
-        if (typeof exclude.role === "boolean" && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
+        if (Array.isArray(exclude.role) && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
             shouldExclude = false;
         }
 
@@ -111,7 +111,7 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge: SubplebbitChallenge,
         let shouldExclude = true;
         for (const challengeIndex of excludeItem.challenges) {
             const challengeRes = challengeResults[challengeIndex];
-            if ("success" in challengeRes && challengeRes.success !== true) {
+            if (!("success" in challengeRes) || ("success" in challengeRes && challengeRes.success !== true)) {
                 // found a false, should not exclude based on this exclude item,
                 // but try again in the next exclude item
                 shouldExclude = false;
