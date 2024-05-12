@@ -26,7 +26,13 @@ import {
     CommentTypeJson
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, isIpfsCid, removeKeysWithUndefinedValues, throwWithErrorCode, timestamp } from "./util.js";
+import {
+    doesDomainAddressHaveCapitalLetter,
+    isIpfsCid,
+    removeNullUndefinedEmptyObjectsValuesRecursively,
+    throwWithErrorCode,
+    timestamp
+} from "./util.js";
 import Vote from "./publications/vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit.js";
@@ -435,8 +441,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 return remoteSub;
             } else throw Error("Can't create a remote subplebbit without defining address");
         } else if (!("address" in options)) {
+            // We're creating a new local sub
             const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
-            log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, newLocalSub.toJSON());
+            log(
+                `Created local-RPC subplebbit (${newLocalSub.address}) with props:`,
+                removeNullUndefinedEmptyObjectsValuesRecursively(newLocalSub.toJSON())
+            );
             return newLocalSub;
         } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
@@ -476,7 +486,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
+                removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
             );
             return subplebbit;
         } else if ("signer" in options) {
@@ -486,7 +496,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
-                removeKeysWithUndefinedValues(remeda.omit(subplebbit.toJSON(), ["signer"]))
+                removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
             );
             return subplebbit;
         } else throw Error("Are you trying to create a local sub with no address or signer? This is a critical error");
