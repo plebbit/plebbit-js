@@ -406,9 +406,23 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     _getSubplebbitCache() {
-        const cachedSubplebbit: Pick<SubplebbitIpfsType, "address" | "encryption" | "pubsubTopic"> | undefined =
-            subplebbitForPublishingCache.get(this.subplebbitAddress);
-        return cachedSubplebbit;
+        return subplebbitForPublishingCache.get(this.subplebbitAddress, { allowStale: true });
+    }
+
+    async _fetchSubplebbitForPublishing() {
+        const log = Logger("plebbit-js:publish:_fetchSubplebbitForPublishing");
+        const cachedSubplebbit = this._getSubplebbitCache();
+
+        if (cachedSubplebbit) {
+            // We will use the cached subplebbit even though it's stale
+            // And in the background we will fetch a new subplebbit and update the cache
+            // cache.has will return false if the item is stale
+            if (!subplebbitForPublishingCache.has(this.subplebbitAddress)) {
+                log("The cache of subplebbit is stale, we will use the cached subplebbit and update the cache in the background");
+                this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
+            }
+            return cachedSubplebbit;
+        } else return this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
     }
 
     async stop() {
@@ -542,7 +556,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const options = { acceptedChallengeTypes: [] };
         try {
-            this.subplebbit = this._getSubplebbitCache() || (await this._clientsManager.fetchSubplebbit(this.subplebbitAddress));
+            this.subplebbit = await this._fetchSubplebbitForPublishing();
             this._validateSubFields();
         } catch (e) {
             this._updateState("stopped");
