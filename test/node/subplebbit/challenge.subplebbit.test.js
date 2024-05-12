@@ -122,10 +122,11 @@ describe(`subplebbit.settings.challenges`, async () => {
 
         const mockPost = await generateMockPost(subplebbit.address, plebbit, false, { challengeAnswers: ["2"] });
 
+        expect(mockPost.challengeAnswers).to.deep.equal(["2"]);
+
         let receivedChallenge = false;
         mockPost.once("challenge", (msg) => {
             receivedChallenge = true;
-            throw Error("Should not receive challenge");
         });
 
         await publishWithExpectedResult(mockPost, true);
