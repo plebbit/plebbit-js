@@ -4,7 +4,6 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../dist/node/errors.js";
 import { mockRemotePlebbit, loadAllPages, isRpcFlagOn, mockPlebbit } from "../../dist/node/test/test-util.js";
-import { default as Author } from "../../dist/node/author.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -128,8 +127,8 @@ describe("plebbit.getComment", async () => {
         expect(subplebbit.lastPostCid).to.be.a("string"); // Part of setting up test-server.js to publish a test post
         const expectedPostProps = JSON.parse(await plebbit.fetchCid(subplebbit.lastPostCid));
         expectedPostProps.cid = subplebbit.lastPostCid;
-        expectedPostProps.author = new Author(expectedPostProps.author);
         const loadedPost = await plebbit.getComment(subplebbit.lastPostCid);
+        expectedPostProps.author.shortAddress = expectedPostProps.author.address.slice(8).slice(0, 12);
         for (const key of Object.keys(expectedPostProps))
             expect(deterministicStringify(expectedPostProps[key])).to.equal(deterministicStringify(loadedPost[key]));
     });
@@ -151,7 +150,7 @@ describe("plebbit.getComment", async () => {
         expect(expectedCommentProps.author.address).to.be.a("string");
         expect(expectedCommentProps.protocolVersion).to.be.a("string");
         expectedCommentProps.cid = comment.cid;
-        expectedCommentProps.author = new Author(expectedCommentProps.author);
+        expectedCommentProps.author.shortAddress = expectedCommentProps.author.address.slice(8).slice(0, 12);
 
         const loadedComment = await plebbit.getComment(comment.cid);
         expect(loadedComment.constructor.name).to.equal("Comment");
