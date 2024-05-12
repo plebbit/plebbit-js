@@ -1,14 +1,8 @@
 import {
     mockPlebbit,
-    publishRandomPost,
     createSubWithNoChallenge,
-    mockGatewayPlebbit,
-    publishRandomReply,
-    publishVote,
     generateMockPost,
     publishWithExpectedResult,
-    isRpcFlagOn,
-    mockRemotePlebbitIpfsOnly,
     mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
@@ -25,6 +19,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         remotePlebbit = await mockRemotePlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {
@@ -61,6 +56,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         remotePlebbit = await mockRemotePlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
     });
 
     after(async () => {

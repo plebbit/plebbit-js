@@ -294,7 +294,7 @@ describe(`subplebbit.startedState`, async () => {
         });
 });
 
-describe(`subplebbit.updatingState (remote sub - node)`, async () => {
+describe(`subplebbit.updatingState (node)`, async () => {
     it(`subplebbit.updatingState defaults to stopped`, async () => {
         const plebbit = await mockPlebbit();
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
@@ -379,6 +379,7 @@ describe(`subplebbit.updatingState (remote sub - node)`, async () => {
 
             publishRandomPost(localSub.address, plebbit, {}, false); // to trigger an update
 
+            setTimeout(() => publishRandomPost(localSub.address, plebbit, {}, false), 1000);
             await resolveWhenConditionIsTrue(recreateLocalSub, () => recreateLocalSubUpdatingStates.length >= 2);
             await localSub.delete();
             await recreateLocalSub.stop();

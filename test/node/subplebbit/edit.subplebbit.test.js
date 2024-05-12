@@ -10,7 +10,6 @@ import {
 } from "../../../dist/node/test/test-util";
 import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
 import signers from "../../fixtures/signers";
-import Sinon from "sinon";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";
@@ -23,8 +22,6 @@ import { v4 as uuidV4 } from "uuid";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-const resolverSandbox = Sinon.createSandbox();
-const originalResolveTxtRecord = resolverClass.resolveTxtRecord;
 
 if (!isRpcFlagOn())
     describe(`subplebbit.edit`, async () => {
