@@ -16,6 +16,7 @@ function Comment(cid) {
     const karma = split[1];
     const age = split[2];
     this.subplebbitAddress = subplebbitAddress;
+    this.updatedAt = undefined;
 
     // define author
     this.author = { address: "Qm..." };
@@ -33,6 +34,7 @@ Object.setPrototypeOf(Comment.prototype, EventEmitter.prototype);
 
 Comment.prototype.update = function () {
     setTimeout(() => {
+        this.updatedAt = 123456;
         if (this.karma === "high") {
             this.author.subplebbit = {
                 postScore: 1000,
