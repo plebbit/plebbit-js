@@ -108,8 +108,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit?.settings?.challenges).to.deep.equal(challenges);
 
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
 
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
 
@@ -123,9 +122,15 @@ describe(`subplebbit.settings.challenges`, async () => {
 
         const mockPost = await generateMockPost(subplebbit.address, plebbit, false, { challengeAnswers: ["2"] });
 
-        mockPost.once("challenge", (msg) => expect.fail("it should not send a challenge since it's there in subplebbit.challenge"));
+        let receivedChallenge = false;
+        mockPost.once("challenge", (msg) => {
+            receivedChallenge = true;
+            throw Error("Should not receive challenge");
+        });
 
         await publishWithExpectedResult(mockPost, true);
+
+        expect(receivedChallenge).to.be.false;
 
         await subplebbit.delete();
     });
