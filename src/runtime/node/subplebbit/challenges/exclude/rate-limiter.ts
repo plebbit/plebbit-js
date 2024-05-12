@@ -55,13 +55,13 @@ const getRateLimitersToTest = (
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (typeof exclude.post === "boolean" && testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
+    if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
-    if (typeof exclude.reply === "boolean" && testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
+    if (testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
-    if (typeof exclude.vote === "boolean" && testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
+    if (testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;

@@ -20,7 +20,7 @@ const isPost = (publication: DecryptedChallengeRequestMessageType["publication"]
 
 // boilerplate function to test if an exclude of a specific publication type passes
 const testType = (
-    excludePublicationType: boolean,
+    excludePublicationType: boolean | undefined,
     publication: DecryptedChallengeRequestMessageType["publication"],
     isType: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean
 ) => {
@@ -35,11 +35,11 @@ const testType = (
     // excludePublicationType is invalid, return true
     return true;
 };
-const testVote = (excludeVote: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const testVote = (excludeVote: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
     testType(excludeVote, publication, isVote);
-const testReply = (excludeReply: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const testReply = (excludeReply: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
     testType(excludeReply, publication, isReply);
-const testPost = (excludePost: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const testPost = (excludePost: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
     testType(excludePost, publication, isPost);
 const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: RemoteSubplebbit["roles"]) => {
     if (excludeRole === undefined || subplebbitRoles === undefined) {
