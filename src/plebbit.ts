@@ -412,7 +412,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
-        if ("address" in options && typeof options.address === "string" && !("signer" in options)) {
+        if ("address" in options && typeof options.address === "string") {
             const rpcSubs = await this.listSubplebbits();
             const isSubRpcLocal = rpcSubs.includes(options.address);
             // Should actually create an instance here, instead of calling getSubplebbit
@@ -433,13 +433,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
                 if (error) throw error;
 
                 return sub;
-            } else if (typeof options.address === "string") {
+            } else {
                 // Remote subplebbit
                 const remoteSub = new RpcRemoteSubplebbit(this);
                 const parsedOptions = options instanceof RpcRemoteSubplebbit ? options.toJSONIpfs() : options;
                 await remoteSub.initRemoteSubplebbitPropsNoMerge(parsedOptions);
                 return remoteSub;
-            } else throw Error("Can't create a remote subplebbit without defining address");
+            }
         } else if (!("address" in options)) {
             // We're creating a new local sub
             const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
