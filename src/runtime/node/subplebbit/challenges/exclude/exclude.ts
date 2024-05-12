@@ -171,14 +171,13 @@ const shouldExcludeChallengeCommentCids = async (
         let cachedComment = commentCache.get(commentCid);
 
         // comment is not cached, add to cache
-        let comment: Comment | CommentCacheType;
+        let comment: Comment | undefined;
         if (!cachedComment) {
             comment = await plebbit.getComment(commentCid);
             // only cache useful values
-            const author = { address: comment?.author?.address };
-            cachedComment = { subplebbitAddress: comment.subplebbitAddress, author };
+            cachedComment = { subplebbitAddress: comment.subplebbitAddress, author: { address: comment.author.address } };
             commentCache.set(commentCid, cachedComment);
-        } else comment = cachedComment;
+        }
 
         // subplebbit address doesn't match filter
         if (!addressesSet.has(cachedComment.subplebbitAddress)) {
@@ -191,20 +190,20 @@ const shouldExcludeChallengeCommentCids = async (
         }
 
         // comment hasn't been updated yet
-        let cachedCommentUpdate = <CommentUpdateCacheType | undefined>commentUpdateCache.get(commentCid);
+        let cachedCommentUpdate = <CommentUpdateCacheType | null>commentUpdateCache.get(commentCid);
         if (!cachedCommentUpdate) {
-            const commentUpdate = comment instanceof Comment ? comment : await plebbit.createComment({ cid: commentCid });
-
-            const commentUpdatePromise = new Promise((resolve) => commentUpdate.once("update", resolve));
+            const commentUpdate = comment || (await plebbit.createComment({ cid: commentCid }));
+            const commentUpdatePromise = new Promise((resolve) =>
+                commentUpdate.on("update", () => typeof commentUpdate.updatedAt === "number" && resolve(1))
+            );
             await commentUpdate.update();
             await commentUpdatePromise;
             await commentUpdate.stop();
             // only cache useful values
             if (commentUpdate?.author?.subplebbit) {
-                cachedCommentUpdate = { author: { subplebbit: commentUpdate.author.subplebbit } };
+                cachedCommentUpdate = { author: { subplebbit: commentUpdate?.author?.subplebbit } };
                 commentUpdateCache.put(commentCid, cachedCommentUpdate, commentUpdateCacheTime);
             }
-
             commentUpdateCache._timeouts[commentCid].unref?.();
         }
 
