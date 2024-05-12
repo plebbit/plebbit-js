@@ -199,6 +199,7 @@ const shouldExcludeChallengeCommentCids = async (
             await commentUpdate.update();
             await commentUpdatePromise;
             await commentUpdate.stop();
+            commentUpdate.removeAllListeners("update");
             // only cache useful values
             if (commentUpdate?.author?.subplebbit) {
                 cachedCommentUpdate = { author: { subplebbit: commentUpdate?.author?.subplebbit } };
