@@ -185,27 +185,27 @@ describe(`Vote with authors as domains`, async () => {
 
 // This code won't run in rpc clients
 if (!isRpcFlagOn())
-describe(`Resolving resiliency`, async () => {
-    it(`Resolver retries four times before throwing error`, async () => {
-        const testEthRpc = `testEthRpc${uuidV4()}.com`;
-        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+    describe(`Resolving resiliency`, async () => {
+        it(`Resolver retries four times before throwing error`, async () => {
+            const testEthRpc = `testEthRpc${uuidV4()}.com`;
+            const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
 
-        let resolveHit = 0;
+            let resolveHit = 0;
 
-        const address = "madeupname" + Math.round(Date.now()) + ".eth";
+            const address = "madeupname" + Math.round(Date.now()) + ".eth";
 
-        const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
+            const subplebbitTextRecordOfAddress = "12D3KooWJJcSwxH2F3sFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // made up ipns
 
-        resolverClass.viemClients["eth" + testEthRpc] = {
-            getEnsText: ({ name, key }) => {
-                resolveHit++;
-                if (resolveHit < 4) throw Error("failed to resolve because whatever");
-                else return subplebbitTextRecordOfAddress;
-            }
-        };
+            resolverClass.viemClients["eth" + testEthRpc] = {
+                getEnsText: ({ name, key }) => {
+                    resolveHit++;
+                    if (resolveHit < 4) throw Error("failed to resolve because whatever");
+                    else return subplebbitTextRecordOfAddress;
+                }
+            };
 
-        const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);
-        expect(resolvedAuthorAddress).to.equal(subplebbitTextRecordOfAddress);
-        expect(resolveHit).to.equal(4);
+            const resolvedAuthorAddress = await plebbit.resolveAuthorAddress(address);
+            expect(resolvedAuthorAddress).to.equal(subplebbitTextRecordOfAddress);
+            expect(resolveHit).to.equal(4);
+        });
     });
-});
