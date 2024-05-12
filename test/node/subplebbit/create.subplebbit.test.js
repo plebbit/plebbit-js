@@ -39,7 +39,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
         const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
 
-        const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings"];
+        const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings", "started"];
 
         expect(subplebbitIpns.toJSON()).to.deep.equal(remeda.omit(newSubplebbit.toJSON(), internalProps));
         return newSubplebbit;
@@ -65,9 +65,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const firstSub = await plebbit.createSubplebbit(props);
         const createdSub = await plebbit.createSubplebbit(firstSub);
         expect(createdSub.title).to.equal(props.title);
-        if (!isRpcFlagOn())
-            // signer will not exist on RPC tests
-            expect(createdSub.signer.address).to.be.a("string");
+        expect(createdSub.signer.address).to.be.a("string");
         await createdSub.delete();
     });
 
@@ -75,8 +73,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const props = { title: "Test hello", description: "Hello there" };
         const sub = await createSubWithNoChallenge(props, plebbit);
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const post = await publishRandomPost(sub.address, plebbit, {}, false);
         await publishRandomReply(post, plebbit, {}, true);
         expect(sub.posts).to.be.a("object");
