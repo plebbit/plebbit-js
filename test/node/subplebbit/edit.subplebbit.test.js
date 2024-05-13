@@ -396,8 +396,9 @@ if (isRpcFlagOn())
 
         before(async () => {
             plebbit = await mockPlebbit();
-            subplebbit = await plebbit.createSubplebbit({ signer: signers[7] });
-            expect(subplebbit.address).to.equal(signers[7].address);
+            const signer = await plebbit.createSigner();
+            subplebbit = await plebbit.createSubplebbit({ signer });
+            expect(subplebbit.address).to.equal(signer.address);
             await subplebbit.start();
             await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         });
