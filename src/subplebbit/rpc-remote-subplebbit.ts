@@ -68,8 +68,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
 
     override async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
+        if (this.state !== "updating") throw Error("User call rpcRemoteSubplebbit.stop() without updating first");
 
-        if (this._updateRpcSubscriptionId) await this.plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+        if (!this._updateRpcSubscriptionId) throw Error("rpcRemoteSub.state is updating but no subscription id");
+        await this.plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);

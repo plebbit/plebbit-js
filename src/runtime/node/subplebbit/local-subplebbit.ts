@@ -1543,16 +1543,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.clientsManager.updatePubsubState("stopped", undefined);
             await this.dbHandler.destoryConnection();
             log(`Stopped the running of local subplebbit (${this.address})`);
+            this._setState("stopped");
         } else if (this.state === "updating") {
             clearTimeout(this._updateTimeout);
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
-        }
-        this._setState("stopped");
+            this._setState("stopped");
+        } else throw Error("User called localSubplebbit.stop() without updating or starting first");
     }
 
     override async delete() {
-        await this.stop();
+        if (this.state === "updating" || this.state === "started") await this.stop();
 
         const ipfsClient = this.clientsManager.getDefaultIpfs();
         if (!ipfsClient) throw Error("Ipfs client is not defined");

@@ -8,9 +8,13 @@ import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotific
 import { Plebbit } from "../../plebbit.js";
 import {
     CommentIpfsWithCid,
+    DecryptedChallengeAnswerMessageType,
+    DecryptedChallengeMessageType,
     DecryptedChallengeRequestComment,
     DecryptedChallengeRequestCommentEdit,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeRequestVote,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
 } from "../../types.js";
@@ -224,51 +228,72 @@ class PlebbitWsServer extends EventEmitter {
         return subplebbit.toJSONInternalRpc();
     }
 
+    _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number) {
+        const sendEvent = (event: string, result: any) =>
+            this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
+
+        const updateListener = () => sendEvent("update", subplebbit.toJSONInternalRpc());
+        subplebbit.on("update", updateListener);
+
+        const startedStateListener = () => sendEvent("startedstatechange", subplebbit.startedState);
+        subplebbit.on("startedstatechange", startedStateListener);
+
+        const requestListener = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
+            sendEvent("challengerequest", encodePubsubMsg(request));
+        subplebbit.on("challengerequest", requestListener);
+
+        const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodePubsubMsg(challenge));
+        subplebbit.on("challenge", challengeListener);
+
+        const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
+            sendEvent("challengeanswer", encodePubsubMsg(answer));
+        subplebbit.on("challengeanswer", challengeAnswerListener);
+
+        const challengeVerificationListener = (challengeVerification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) =>
+            sendEvent("challengeverification", encodePubsubMsg(challengeVerification));
+        subplebbit.on("challengeverification", challengeVerificationListener);
+
+        const errorListener = (error: PlebbitError) => sendEvent("error", error);
+        subplebbit.on("error", errorListener);
+
+        // cleanup function
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            subplebbit.removeListener("update", updateListener);
+            subplebbit.removeListener("startedstatechange", startedStateListener);
+            subplebbit.removeListener("challengerequest", requestListener);
+            subplebbit.removeListener("challenge", challengeListener);
+            subplebbit.removeListener("challengeanswer", challengeAnswerListener);
+            subplebbit.removeListener("challengeverification", challengeVerificationListener);
+        };
+    }
+
     async startSubplebbit(params: any, connectionId: string) {
         const address = <string>params[0];
-
-        if (startedSubplebbits[address]) throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: address });
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
 
-        startedSubplebbits[address] = "pending";
-
         const subscriptionId = generateSubscriptionId();
 
-        const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
-
-        try {
-            const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
-            subplebbit.on("update", () => sendEvent("update", subplebbit.toJSONInternalRpc()));
-            subplebbit.on("startedstatechange", () => sendEvent("startedstatechange", subplebbit.startedState));
-            subplebbit.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
-            subplebbit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-            subplebbit.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
-            subplebbit.on("challengeverification", (challengeVerification) =>
-                sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
-            );
-            subplebbit.on("error", (error) => sendEvent("error", error));
-
-            // cleanup function
-            this.subscriptionCleanups[connectionId][subscriptionId] = () => {
-                subplebbit.removeAllListeners("update");
-                subplebbit.removeAllListeners("startedstatechange");
-                subplebbit.removeAllListeners("challenge");
-                subplebbit.removeAllListeners("challengeanswer");
-                subplebbit.removeAllListeners("challengerequest");
-                subplebbit.removeAllListeners("challengeverification");
-            };
-            subplebbit.started = true; // a small hack to make sure first update has started=true
-            subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
-            await subplebbit.start();
-            startedSubplebbits[address] = subplebbit;
-        } catch (e) {
-            if (this.subscriptionCleanups?.[connectionId]?.[subscriptionId]) this.subscriptionCleanups[connectionId][subscriptionId]();
-            delete startedSubplebbits[address];
-            throw e;
+        const isSubStarted = address in startedSubplebbits;
+        if (isSubStarted) {
+            const subplebbit = await getStartedSubplebbit(address);
+            this._setupStartedEvents(subplebbit, connectionId, subscriptionId);
+        } else {
+            try {
+                startedSubplebbits[address] = "pending";
+                const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
+                this._setupStartedEvents(subplebbit, connectionId, subscriptionId);
+                subplebbit.started = true; // a small hack to make sure first update has started=true
+                subplebbit.emit("update", subplebbit); // Need to emit an update so rpc user can receive sub props prior to running
+                await subplebbit.start();
+                startedSubplebbits[address] = subplebbit;
+            } catch (e) {
+                if (this.subscriptionCleanups?.[connectionId]?.[subscriptionId]) this.subscriptionCleanups[connectionId][subscriptionId]();
+                delete startedSubplebbits[address];
+                throw e;
+            }
         }
 
         return subscriptionId;

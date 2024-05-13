@@ -277,6 +277,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async stop() {
+        if (this.state !== "updating") throw Error("User call remoteSubplebbit.stop() without updating first");
         this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
 
