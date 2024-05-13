@@ -1,5 +1,5 @@
 import localForage from "localforage";
-import lodash from "lodash";
+import { v4 as uuidV4 } from "uuid";
 // Storage is for long term items, no eviction based on ttl or anything like that
 export default class Storage {
     constructor(plebbit) {
@@ -9,7 +9,7 @@ export default class Storage {
         return undefined;
     }
     async init() {
-        const storageName = this._plebbit.noData ? lodash.uniqueId() : "plebbitjs_storage";
+        const storageName = this._plebbit.noData ? `Browser-storage-no-data-${uuidV4()}` : "plebbitjs_storage";
         this._store = localForage.createInstance({
             name: storageName
         });

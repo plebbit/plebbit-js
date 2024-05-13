@@ -1,13 +1,14 @@
 import { messages } from "./errors.js";
-import lodash from "lodash";
 import assert from "assert";
 import { BasePages } from "./pages.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
+//@ts-expect-error
 import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
+import * as remeda from "remeda";
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS = Object.freeze({
     HOUR: 60 * 60,
@@ -20,7 +21,11 @@ export const TIMEFRAMES_TO_SECONDS = Object.freeze({
 export const POSTS_SORT_TYPES = {
     hot: { score: (...args) => hotScore(...args) },
     new: { score: (...args) => newScore(...args) },
-    active: { score: (...args) => undefined },
+    active: {
+        score: (...args) => {
+            throw Error("Active sort has no scoring");
+        }
+    },
     topHour: { timeframe: "HOUR", score: (...args) => topScore(...args) },
     topDay: { timeframe: "DAY", score: (...args) => topScore(...args) },
     topWeek: { timeframe: "WEEK", score: (...args) => topScore(...args) },
@@ -35,7 +40,7 @@ export const POSTS_SORT_TYPES = {
     controversialAll: { timeframe: "ALL", score: (...args) => controversialScore(...args) }
 };
 export const REPLIES_SORT_TYPES = {
-    ...lodash.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
+    ...remeda.pick(POSTS_SORT_TYPES, ["topAll", "new", "controversialAll"]),
     old: { score: (...args) => oldScore(...args) }
 };
 export function timestamp() {
@@ -43,7 +48,7 @@ export function timestamp() {
 }
 export function replaceXWithY(obj, x, y) {
     // obj is a JS object
-    if (!lodash.isPlainObject(obj))
+    if (!remeda.isPlainObject(obj))
         return obj;
     const newObj = {};
     Object.entries(obj).forEach(([key, value]) => {
@@ -52,7 +57,7 @@ export function replaceXWithY(obj, x, y) {
         // `typeof`` gives browser transpiling error "Uncaught ReferenceError: exports is not defined"
         // don't know why but it can be fixed by replacing with `instanceof`
         // else if (typeof value === "object" && value !== null) newObj[key] = replaceXWithY(value, x, y);
-        else if (lodash.isPlainObject(value))
+        else if (remeda.isPlainObject(value))
             newObj[key] = replaceXWithY(value, x, y);
         else if (Array.isArray(value))
             newObj[key] = value.map((iterValue) => replaceXWithY(iterValue, x, y));
@@ -70,7 +75,7 @@ export function hotScore(comment) {
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
     const seconds = comment.comment.timestamp - 1134028003;
-    return lodash.round(sign * order + seconds / 45000, 7);
+    return remeda.round(sign * order + seconds / 45000, 7);
 }
 export function controversialScore(comment) {
     assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
@@ -95,43 +100,43 @@ export function oldScore(comment) {
     assert(typeof comment.comment.timestamp === "number");
     return -comment.comment.timestamp;
 }
-function removeNullUndefinedValues(obj) {
-    return lodash.omitBy(obj, lodash.isNil);
+export function removeNullUndefinedValues(obj) {
+    return remeda.pickBy(obj, remeda.isNonNullish);
 }
 function removeUndefinedValues(obj) {
-    return lodash.omitBy(obj, lodash.isUndefined);
+    return remeda.pickBy(obj, remeda.isDefined.strict);
 }
 function removeNullUndefinedEmptyObjectValues(obj) {
     const firstStep = removeNullUndefinedValues(obj); // remove undefined and null values
-    const secondStep = lodash.omitBy(firstStep, (value) => lodash.isPlainObject(value) && lodash.isEmpty(value)); // remove empty {} values
+    const secondStep = remeda.omitBy(firstStep, (value) => remeda.isPlainObject(value) && remeda.isEmpty(value)); // remove empty {} values
     return secondStep;
 }
 // A safe function that you can use that will not modify a JSON by removing null or empty objects
 export function removeUndefinedValuesRecursively(obj) {
     if (Array.isArray(obj))
         return obj.map(removeUndefinedValuesRecursively);
-    if (!lodash.isPlainObject(obj))
+    if (!remeda.isPlainObject(obj))
         return obj;
     const cleanedObj = removeUndefinedValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value))
+        if (remeda.isPlainObject(value) || Array.isArray(value))
             cleanedObj[key] = removeUndefinedValuesRecursively(value);
     return cleanedObj;
 }
 export function removeNullUndefinedEmptyObjectsValuesRecursively(obj) {
     if (Array.isArray(obj))
         return obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
-    if (!lodash.isPlainObject(obj))
+    if (!remeda.isPlainObject(obj))
         return obj;
     const cleanedObj = removeNullUndefinedEmptyObjectValues(obj);
     for (const [key, value] of Object.entries(cleanedObj))
-        if (lodash.isPlainObject(value) || Array.isArray(value))
+        if (remeda.isPlainObject(value) || Array.isArray(value))
             cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
     return cleanedObj;
 }
 // TODO rename
 export function removeKeysWithUndefinedValues(object) {
-    const newObj = lodash.cloneDeep(object);
+    const newObj = remeda.clone(object);
     for (const prop in newObj)
         if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}")
             delete newObj[prop];
@@ -158,11 +163,22 @@ export const parseDbResponses = (obj) => {
     if (Array.isArray(obj))
         return obj.map((o) => parseDbResponses(o));
     const parsedJsonString = parseIfJsonString(obj);
-    if (!lodash.isPlainObject(obj) && !parsedJsonString)
+    if (!remeda.isPlainObject(obj) && !parsedJsonString)
         return obj;
-    const newObj = removeNullUndefinedValues(parsedJsonString || lodash.cloneDeep(obj)); // not sure why we need clone here
-    //prettier-ignore
-    const booleanFields = ["deleted", "spoiler", "pinned", "locked", "removed", "commentUpdate_deleted", "commentUpdate_spoiler", "commentUpdate_pinned", "commentUpdate_locked", "commentUpdate_removed", "isAuthorEdit"];
+    const newObj = removeNullUndefinedValues(parsedJsonString || obj); // we may need clone here, not sure
+    const booleanFields = [
+        "deleted",
+        "spoiler",
+        "pinned",
+        "locked",
+        "removed",
+        "commentUpdate_deleted",
+        "commentUpdate_spoiler",
+        "commentUpdate_pinned",
+        "commentUpdate_locked",
+        "commentUpdate_removed",
+        "isAuthorEdit"
+    ];
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]")
             throw Error(`key (${key}) shouldn't be [object Object]`);
@@ -179,39 +195,38 @@ export async function parsePageIpfs(pageIpfs, plebbit) {
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 export async function parsePagesIpfs(pagesRaw, plebbit) {
-    const parsedPages = await Promise.all(Object.keys(pagesRaw.pages).map((key) => parsePageIpfs(pagesRaw.pages[key], plebbit)));
-    const pagesType = Object.fromEntries(Object.keys(pagesRaw.pages).map((key, i) => [key, parsedPages[i]]));
+    const keys = remeda.keys.strict(pagesRaw.pages);
+    const parsedPages = await Promise.all(Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs, plebbit)));
+    const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 // To use for both subplebbit.posts and comment.replies
 export async function parseRawPages(replies, plebbit) {
     if (!replies)
         return {
-            pages: undefined,
+            pages: {},
             pagesIpfs: undefined
         };
-    if (replies instanceof BasePages)
-        return replies;
-    if (!replies.pages)
-        return { pages: undefined, pagesIpfs: undefined };
-    const isIpfs = Boolean(Object.values(replies.pages)[0]?.comments[0]["update"]);
+    const isIpfs = typeof Object.values(replies.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
     if (isIpfs) {
         replies = replies;
         const parsedPages = await parsePagesIpfs(replies, plebbit);
         return {
             pages: parsedPages.pages,
-            pagesIpfs: replies.pages
+            pagesIpfs: replies
         };
     }
+    else if (replies instanceof BasePages)
+        return { pages: replies.pages, pagesIpfs: replies.toJSONIpfs() }; // already parsed
     else {
         replies = replies;
-        const repliesClone = lodash.cloneDeep(replies);
-        //@ts-expect-error
-        const pageKeys = Object.keys(repliesClone.pages);
-        for (const key of pageKeys)
-            repliesClone.pages[key].comments = await Promise.all(replies.pages[key].comments.map((comment) => plebbit.createComment.bind(plebbit)(comment)));
+        const pagesWithCommentInstancesEntries = await Promise.all(remeda.entries.strict(replies.pages).map(async ([pageKey, pageJson]) => {
+            const comments = await Promise.all(pageJson.comments.map((commentJson) => plebbit.createComment.bind(plebbit)(commentJson)));
+            return remeda.entries.strict({ [pageKey]: { comments, nextCid: pageJson.nextCid } })[0];
+        }));
+        const pagesWithCommentInstances = remeda.fromEntries.strict(pagesWithCommentInstancesEntries);
         return {
-            pages: repliesClone.pages,
+            pages: pagesWithCommentInstances,
             pagesIpfs: undefined
         };
     }
@@ -237,7 +252,8 @@ export function firstResolve(promises) {
     return new Promise((resolve) => promises.forEach((promise) => promise.then(resolve)));
 }
 export function getErrorCodeFromMessage(message) {
-    for (const code of Object.keys(messages))
+    const codes = remeda.keys.strict(messages);
+    for (const code of codes)
         if (messages[code] === message)
             return code;
     throw Error(`No error code was found for message (${message})`);
@@ -249,7 +265,7 @@ export function doesDomainAddressHaveCapitalLetter(domainAddress) {
 }
 export function decodePubsubMsgFromRpc(pubsubMsg) {
     //@ts-expect-error
-    const parsedPubsubMsg = pubsubMsg;
+    let parsedPubsubMsg = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
     if (pubsubMsg.encrypted) {
         parsedPubsubMsg.encrypted.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
@@ -265,7 +281,8 @@ export function getPostUpdateTimestampRange(postUpdates, postTimestamp) {
         throw Error("subplebbit has no post updates");
     if (!postTimestamp)
         throw Error("post has no timestamp");
-    return (Object.keys(postUpdates)
+    return (remeda.keys
+        .strict(postUpdates)
         // sort from smallest to biggest
         .sort((a, b) => Number(a) - Number(b))
         // find the smallest timestamp range where comment.timestamp is newer
@@ -294,6 +311,7 @@ export function isLinkOfMedia(link) {
     }
     if (mime?.startsWith("image") || mime?.startsWith("video") || mime?.startsWith("audio"))
         return true;
+    return false;
 }
 export async function genToArray(gen) {
     const out = [];

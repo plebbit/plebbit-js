@@ -23,7 +23,6 @@ export declare class SqliteCache<TData = any> {
     private readonly db;
     private _config;
     private readonly checkInterval;
-    private: any;
     private isClosed;
     constructor(configuration: SqliteCacheConfiguration);
     /**

@@ -1,5 +1,5 @@
 import { IpfsClient, NativeFunctions } from "../../types.js";
-export declare const getDefaultDataPath: () => any;
+export declare const getDefaultDataPath: () => undefined;
 export declare const mkdir: () => never;
 export declare const listSubplebbits: () => never;
 export declare function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"];

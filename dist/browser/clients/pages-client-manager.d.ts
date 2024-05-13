@@ -35,9 +35,9 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]): void;
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]): void;
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string): void;
-    updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[]): void;
-    updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[]): void;
-    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[]): void;
+    updateIpfsState(newState: PagesIpfsClient["state"], sortTypes: string[] | undefined): void;
+    updateGatewayState(newState: PagesIpfsGatewayClient["state"], gateway: string, sortTypes: string[] | undefined): void;
+    updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[] | undefined): void;
     private _fetchPageWithRpc;
     private _fetchPageWithIpfsP2P;
     fetchPage(pageCid: string): Promise<PageIpfs>;
@@ -54,7 +54,7 @@ export declare class RepliesPagesClientsManager extends BasePagesClientsManager 
             [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
-    protected getSortTypes(): string[];
+    protected getSortTypes(): ReplySortName[];
 }
 export declare class PostsPagesClientsManager extends BasePagesClientsManager {
     clients: {
@@ -68,5 +68,5 @@ export declare class PostsPagesClientsManager extends BasePagesClientsManager {
             [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
-    protected getSortTypes(): string[];
+    protected getSortTypes(): PostSortName[];
 }

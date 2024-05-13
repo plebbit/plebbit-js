@@ -6,6 +6,8 @@ import { RateLimiter } from "limiter-es6-compat";
 const rateLimiters = new QuickLRU({ maxSize: 50000 });
 const getRateLimiterName = (exclude, publication, publicationType, challengeSuccess) => `${publication.author.address}-${exclude.rateLimit}-${publicationType}-${challengeSuccess}`;
 const getOrCreateRateLimiter = (exclude, publication, publicationType, challengeSuccess) => {
+    if (typeof exclude.rateLimit !== "number")
+        throw Error("Can't create a RateLimiter without exclude.rateLimit");
     const rateLimiterName = getRateLimiterName(exclude, publication, publicationType, challengeSuccess);
     let rateLimiter = rateLimiters.get(rateLimiterName);
     if (!rateLimiter) {
@@ -55,9 +57,8 @@ const testRateLimit = (exclude, publication) => {
     for (const rateLimiter of Object.values(rateLimiters)) {
         const tokensRemaining = rateLimiter.getTokensRemaining();
         // token per action is 1, so any value below 1 is invalid
-        if (tokensRemaining < 1) {
+        if (tokensRemaining < 1)
             return false;
-        }
     }
     return true;
 };

@@ -1,9 +1,9 @@
-import { Chain } from "./types.js";
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | Chain;
+import { ChainTicker } from "./types.js";
+type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
 export default class Stats {
     private _plebbit;
     constructor(plebbit: Stats["_plebbit"]);
-    toJSON(): any;
+    toJSON(): undefined;
     private _getSuccessCountKey;
     private _getSuccessAverageKey;
     recordGatewaySuccess(gatewayUrl: string, type: StatTypes, timeElapsedMs: number): Promise<void>;

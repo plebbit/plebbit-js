@@ -14,6 +14,7 @@ class IpfsHttpClient {
                 else
                     ioClient.emit(topic, message);
             },
+            //@ts-expect-error
             subscribe: async (topic, rawCallback) => {
                 const callback = (msg) => {
                     //@ts-expect-error
@@ -22,6 +23,7 @@ class IpfsHttpClient {
                 ioClient.on(topic, callback);
                 this.subscriptions.push({ topic, rawCallback, callback });
             },
+            //@ts-expect-error
             unsubscribe: async (topic, rawCallback) => {
                 if (!rawCallback) {
                     ioClient.off(topic);
@@ -43,8 +45,10 @@ class IpfsHttpClient {
     }
 }
 export const createMockIpfsClient = (dropRate) => {
+    //@ts-expect-error
     if (globalThis["window"] && !globalThis["window"]["io"])
         globalThis["window"]["io"] = io(`ws://localhost:${port}`);
+    //@ts-expect-error
     if (!ioClient)
         ioClient = globalThis["window"]?.["io"] || io(`ws://localhost:${port}`);
     return new IpfsHttpClient(dropRate);

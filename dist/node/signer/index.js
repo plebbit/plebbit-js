@@ -18,6 +18,12 @@ export class Signer {
                     : undefined;
     }
 }
+export class SignerWithPublicKeyAddress extends Signer {
+    constructor(props) {
+        super(props);
+        this.publicKey = props.publicKey;
+    }
+}
 export const createSigner = async (createSignerOptions = {}) => {
     let { privateKey, type: signerType } = createSignerOptions;
     if (privateKey) {
@@ -31,7 +37,7 @@ export const createSigner = async (createSignerOptions = {}) => {
     if (typeof signerType !== "string")
         throw Error("createSignerOptions does not include type");
     const [publicKey, address] = await Promise.all([getPublicKeyFromPrivateKey(privateKey), getPlebbitAddressFromPrivateKey(privateKey)]);
-    return new Signer({
+    return new SignerWithPublicKeyAddress({
         type: signerType,
         publicKey,
         address,

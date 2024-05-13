@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import cbor from "cbor";
 import debounce from "debounce";
+import * as remeda from "remeda";
 async function initSqliteCache(configuration) {
     const db = new Database(configuration.database, {});
     db.transaction(() => {
@@ -71,7 +72,7 @@ export class SqliteCache {
             key,
             now: now()
         });
-        if (!res) {
+        if (!remeda.isPlainObject(res) || !("value" in res)) {
             return undefined;
         }
         let value = res.value;

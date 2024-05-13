@@ -18,6 +18,8 @@ const optionInputs = [
 const type = "text/plain";
 const description = `Ask a question, like 'What is the password?'`;
 const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage, challengeIndex) => {
+    if (!subplebbitChallengeSettings?.options?.question)
+        throw Error("No option question");
     let answer = subplebbitChallengeSettings?.options?.answer;
     if (!answer) {
         throw Error("no option answer");

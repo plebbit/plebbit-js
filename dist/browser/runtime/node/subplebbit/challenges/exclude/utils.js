@@ -3,13 +3,11 @@ const getTimestampSecondsAgo = (secondsToGoBack) => Math.round(Date.now() / 1000
 const testScore = (excludeScore, authorScore) => excludeScore === undefined || excludeScore <= (authorScore || 0);
 // firstCommentTimestamp value first needs to be put through Date.now() - firstCommentTimestamp
 const testFirstCommentTimestamp = (excludeTime, authorFirstCommentTimestamp) => excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
-const isVote = (publication) => Boolean(publication["vote"] !== undefined && publication["commentCid"]);
-const isReply = (publication) => Boolean(publication["parentCid"] && !publication["commentCid"]);
-const isPost = (publication) => Boolean(!publication["parentCid"] && !publication["commentCid"]);
+const isVote = (publication) => Boolean("vote" in publication && typeof publication.vote === "number" && publication["commentCid"]);
+const isReply = (publication) => Boolean("parentCid" in publication && !("commentCid" in publication));
+const isPost = (publication) => Boolean(!("parentCid" in publication) && !("commentCid" in publication));
 // boilerplate function to test if an exclude of a specific publication type passes
 const testType = (excludePublicationType, publication, isType) => {
-    if (excludePublicationType === undefined)
-        return true;
     if (excludePublicationType === true) {
         if (isType(publication))
             return true;

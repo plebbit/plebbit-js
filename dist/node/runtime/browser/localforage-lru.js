@@ -1,10 +1,10 @@
 import localForage from "localforage";
+import * as remeda from "remeda";
 function createLocalForageInstance(localForageLruOptions) {
     if (typeof localForageLruOptions?.size !== "number") {
         throw Error(`LocalForageLru.createInstance localForageLruOptions.size '${localForageLruOptions?.size}' not a number`);
     }
-    const localForageOptions = { ...localForageLruOptions };
-    delete localForageOptions.size;
+    const localForageOptions = remeda.omit(localForageLruOptions, ["size"]);
     let database1, database2, databaseSize, initialized = false;
     const initializationPromize = new Promise(async (resolve) => {
         const localForage1 = localForage.createInstance({

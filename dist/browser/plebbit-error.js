@@ -1,4 +1,4 @@
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { messages } from "./errors.js";
 import { CustomError } from "ts-custom-error";
 export class PlebbitError extends CustomError {
@@ -9,7 +9,7 @@ export class PlebbitError extends CustomError {
         this.details = details;
     }
     toString() {
-        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(lodash.omit(this.details, "stack"))}`;
+        return `${this.constructor.name}: ${this.code}: ${this.message}: ${JSON.stringify(remeda.omit(this.details, ["stack"]))}`;
     }
     toJSON() {
         return {

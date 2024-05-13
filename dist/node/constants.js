@@ -47,10 +47,11 @@ export const getViemClient = async (plebbit, chainTicker, chainProviderUrl) => {
     }
     else {
         // TODO should use viem's extractChain here
-        const chainId = plebbit.chainProviders[chainTicker].chainId;
+        const chainId = plebbit.chainProviders[chainTicker]?.chainId;
         const chain = Object.values(chains).find((chain) => chain.id === chainId);
         if (!chain)
             throw Error(`Was not able to create viem client for ${chainTicker} due to not being able to find chain id`);
+        //@ts-expect-error
         _viemClients[cacheKey] = createPublicClient({
             chain,
             transport: http(chainProviderUrl)

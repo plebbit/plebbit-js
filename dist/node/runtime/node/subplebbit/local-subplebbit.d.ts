@@ -1,13 +1,13 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit.js";
-import { CreateSubplebbitOptions, InternalSubplebbitType, SubplebbitEditOptions } from "../../../subplebbit/types.js";
+import { CreateNewLocalSubplebbitParsedOptions, InternalSubplebbitRpcType, InternalSubplebbitType, LocalSubplebbitJsonType, SubplebbitEditOptions } from "../../../subplebbit/types.js";
 import { DbHandler } from "./db-handler.js";
 import type { CommentEditPubsubMessage } from "../../../types.js";
 import { ChallengeAnswerMessage } from "../../../challenge.js";
-import { Signer } from "../../../signer/index.js";
+import { SignerWithPublicKeyAddress } from "../../../signer/index.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 export declare class LocalSubplebbit extends RpcLocalSubplebbit {
-    signer: Signer;
+    signer: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets;
     private _defaultSubplebbitChallenges;
     private _challengeAnswerPromises;
@@ -17,14 +17,15 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     private _subplebbitUpdateTrigger;
     private _sortHandler;
     dbHandler: DbHandler;
-    protected _usingDefaultChallenge: boolean;
     private _isSubRunningLocally;
-    private _publishLoopPromise;
+    private _publishLoopPromise?;
     private _publishInterval?;
     constructor(plebbit: Plebbit);
     toJSONInternal(): InternalSubplebbitType;
+    toJSONInternalRpc(): InternalSubplebbitRpcType;
+    toJSON(): LocalSubplebbitJsonType;
     private _updateStartedValue;
-    initInternalSubplebbitWithMerge(newProps: Partial<InternalSubplebbitType | CreateSubplebbitOptions>): Promise<void>;
+    initNewLocalSubPropsNoMerge(newProps: CreateNewLocalSubplebbitParsedOptions): Promise<void>;
     initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType): Promise<void>;
     private initDbHandlerIfNeeded;
     _loadLocalSubDb(): Promise<void>;
@@ -66,7 +67,6 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     private _validateCommentUpdateSignature;
     private _listenToIncomingRequests;
     private _movePostUpdatesFolderToNewAddress;
-    private _isCurrentSubplebbitEqualToLatestPublishedRecord;
     private _switchDbWhileRunningIfNeeded;
     private _updateCommentsThatNeedToBeUpdated;
     private _repinCommentsIPFSIfNeeded;

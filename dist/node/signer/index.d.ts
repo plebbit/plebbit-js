@@ -11,4 +11,10 @@ export declare class Signer implements SignerType {
     ipnsKeyName?: string;
     constructor(props: SignerType);
 }
-export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<Signer>;
+export declare class SignerWithPublicKeyAddress extends Signer {
+    publicKey: string;
+    constructor(props: SignerType & {
+        publicKey: string;
+    });
+}
+export declare const createSigner: (createSignerOptions?: CreateSignerOptions) => Promise<SignerWithPublicKeyAddress>;

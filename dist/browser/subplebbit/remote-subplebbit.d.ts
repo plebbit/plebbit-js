@@ -1,13 +1,14 @@
 /// <reference types="node" />
 import { PostsPages } from "../pages.js";
 import { Plebbit } from "../plebbit.js";
-import { ProtocolVersion, SubplebbitEvents } from "../types.js";
+import { PostsPagesTypeIpfs, ProtocolVersion, SubplebbitEvents } from "../types.js";
 import { JsonSignature } from "../signer/constants.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
-import { CreateSubplebbitOptions, Flair, FlairOwner, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitRole, SubplebbitStats, SubplebbitSuggested, SubplebbitType } from "./types.js";
-export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitType, "posts"> {
+import type { CreateRemoteSubplebbitOptions, Flair, FlairOwner, RemoteSubplebbitJsonType, SubplebbitEditOptions, SubplebbitEncryption, SubplebbitFeatures, SubplebbitIpfsType, SubplebbitRole, SubplebbitStats, SubplebbitSuggested } from "./types.js";
+import { LocalSubplebbit } from "../runtime/browser/subplebbit/local-subplebbit.js";
+export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     title?: string;
     description?: string;
     roles?: {
@@ -23,36 +24,35 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     flairs?: Record<FlairOwner, Flair[]>;
     address: string;
     shortAddress: string;
-    statsCid?: string;
+    statsCid: string;
     createdAt: number;
     updatedAt: number;
     encryption: SubplebbitEncryption;
     protocolVersion: ProtocolVersion;
     signature: JsonSignature;
     rules?: string[];
-    challenges: SubplebbitType["challenges"];
+    challenges: SubplebbitIpfsType["challenges"];
     postUpdates?: {
         [timestampRange: string]: string;
     };
     state: "stopped" | "updating" | "started";
-    startedState: "stopped" | "publishing-ipns" | "failed" | "succeeded";
-    updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded";
+    updatingState: "stopped" | "resolving-address" | "fetching-ipns" | "fetching-ipfs" | "failed" | "succeeded" | LocalSubplebbit["startedState"];
     plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
-    _ipnsLoadingOperation: RetryOperation;
+    _ipnsLoadingOperation?: RetryOperation;
     protected _updateTimeout?: NodeJS.Timeout;
     constructor(plebbit: Plebbit);
-    initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType): Promise<void>;
-    initRemoteSubplebbitPropsWithMerge(newProps: Partial<SubplebbitIpfsType | CreateSubplebbitOptions>): Promise<void>;
+    _updateLocalPostsInstance(newPosts: SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"] | Pick<PostsPagesTypeIpfs, "pageCids">): Promise<void>;
+    initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions): Promise<void>;
     setAddress(newAddress: string): void;
-    toJSON(): SubplebbitType;
+    toJSON(): RemoteSubplebbitJsonType;
     protected _toJSONBase(): {
-        title: string;
-        description: string;
-        lastPostCid: string;
-        lastCommentCid: string;
-        pubsubTopic: string;
+        title: string | undefined;
+        description: string | undefined;
+        lastPostCid: string | undefined;
+        lastCommentCid: string | undefined;
+        pubsubTopic: string | undefined;
         address: string;
         challenges: import("./types.js").SubplebbitChallenge[];
         statsCid: string;
@@ -61,21 +61,20 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
         encryption: SubplebbitEncryption;
         roles: {
             [authorAddress: string]: SubplebbitRole;
-        };
+        } | undefined;
         protocolVersion: "1.0.0";
         signature: JsonSignature;
-        features: SubplebbitFeatures;
-        suggested: SubplebbitSuggested;
-        rules: string[];
-        flairs: Record<FlairOwner, Flair[]>;
+        features: SubplebbitFeatures | undefined;
+        suggested: SubplebbitSuggested | undefined;
+        rules: string[] | undefined;
+        flairs: Record<FlairOwner, Flair[]> | undefined;
         postUpdates: {
             [timestampRange: string]: string;
-        };
+        } | undefined;
     };
     toJSONIpfs(): SubplebbitIpfsType;
     protected _setState(newState: RemoteSubplebbit["state"]): void;
     _setUpdatingState(newState: RemoteSubplebbit["updatingState"]): void;
-    protected _setStartedState(newState: RemoteSubplebbit["startedState"]): void;
     private _isCriticalErrorWhenLoading;
     private _retryLoadingSubplebbitIpns;
     private updateOnce;

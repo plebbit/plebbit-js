@@ -5,12 +5,12 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error.js";
 import retry from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
+import * as remeda from "remeda";
 export class RemoteSubplebbit extends TypedEmitter {
     constructor(plebbit) {
         super();
         this.plebbit = plebbit;
         this._setState("stopped");
-        this._setStartedState("stopped");
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         this.start = this.start.bind(this);
@@ -21,88 +21,65 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.clientsManager = new SubplebbitClientsManager(this);
         this.clients = this.clientsManager.clients;
         this.posts = new PostsPages({
-            pageCids: undefined,
-            pages: undefined,
+            pageCids: {},
+            pages: {},
             plebbit: this.plebbit,
-            subplebbitAddress: undefined,
+            subplebbitAddress: this.address,
             pagesIpfs: undefined
         });
     }
+    async _updateLocalPostsInstance(newPosts) {
+        const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
+        if (!newPosts)
+            // The sub has changed its address, need to reset the posts
+            this.posts.resetPages();
+        else if (!("pages" in newPosts)) {
+            // only pageCids is provided
+            this.posts.pageCids = newPosts.pageCids;
+        }
+        else {
+            const shouldUpdatePosts = !remeda.isDeepEqual(this.posts.pageCids, newPosts.pageCids);
+            if (shouldUpdatePosts) {
+                log.trace(`Updating the props of subplebbit (${this.address}) posts`);
+                const parsedPages = (await parseRawPages(newPosts, this.plebbit));
+                this.posts.updateProps({
+                    ...parsedPages,
+                    plebbit: this.plebbit,
+                    subplebbitAddress: this.address,
+                    pageCids: newPosts?.pageCids || {}
+                });
+            }
+        }
+    }
     async initRemoteSubplebbitPropsNoMerge(newProps) {
-        // for now it's copy pasted, TODO remove duplicate code
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        this.challenges = newProps.challenges;
-        this.statsCid = newProps.statsCid;
-        this.createdAt = newProps.createdAt;
-        this.updatedAt = newProps.updatedAt;
-        this.encryption = newProps.encryption;
         this.roles = newProps.roles;
         this.features = newProps.features;
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
-        this.signature = newProps.signature;
         this.postUpdates = newProps.postUpdates;
-        if (newProps.posts) {
-            const parsedPages = await parseRawPages(newProps.posts, this.plebbit);
-            this.posts.updateProps({
-                ...parsedPages,
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: newProps.posts.pageCids
-            });
-        }
-        else
-            this.posts.updateProps({
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: undefined,
-                pages: undefined,
-                pagesIpfs: undefined
-            });
-    }
-    async initRemoteSubplebbitPropsWithMerge(newProps) {
-        const mergedProps = { ...this.toJSONIpfs(), ...newProps };
-        this.title = mergedProps.title;
-        this.description = mergedProps.description;
-        this.lastPostCid = mergedProps.lastPostCid;
-        this.lastCommentCid = mergedProps.lastCommentCid;
-        this.setAddress(mergedProps.address);
-        this.pubsubTopic = mergedProps.pubsubTopic;
-        this.challenges = mergedProps.challenges;
-        this.statsCid = mergedProps.statsCid;
-        this.createdAt = mergedProps.createdAt;
-        this.updatedAt = mergedProps.updatedAt;
-        this.encryption = mergedProps.encryption;
-        this.roles = mergedProps.roles;
-        this.features = mergedProps.features;
-        this.suggested = mergedProps.suggested;
-        this.rules = mergedProps.rules;
-        this.flairs = mergedProps.flairs;
-        this.signature = mergedProps.signature;
-        this.postUpdates = mergedProps.postUpdates;
-        if (mergedProps.posts) {
-            const parsedPages = await parseRawPages(mergedProps.posts, this.plebbit);
-            this.posts.updateProps({
-                ...parsedPages,
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: mergedProps.posts.pageCids
-            });
-        }
-        else
-            this.posts.updateProps({
-                plebbit: this.plebbit,
-                subplebbitAddress: this.address,
-                pageCids: undefined,
-                pages: undefined,
-                pagesIpfs: undefined
-            });
+        // A potential issue here is that if SubplebbitIpfsType or RemoteSubplebbitJsonType had a required prop as undefined or null
+        // The subplebbit instance will not update its prop accordingly because it checks if it's defined
+        // The way to fix this is with zod I believe
+        if (Array.isArray(newProps.challenges))
+            this.challenges = newProps.challenges;
+        if (newProps.statsCid)
+            this.statsCid = newProps.statsCid;
+        if (typeof newProps.createdAt === "number")
+            this.createdAt = newProps.createdAt;
+        if (typeof newProps.updatedAt === "number")
+            this.updatedAt = newProps.updatedAt;
+        if (newProps.encryption)
+            this.encryption = newProps.encryption;
+        if (newProps.signature)
+            this.signature = newProps.signature;
+        await this._updateLocalPostsInstance(newProps.posts);
     }
     setAddress(newAddress) {
         // check if domain or ipns
@@ -114,11 +91,12 @@ export class RemoteSubplebbit extends TypedEmitter {
             throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns: false });
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
+        this.posts._subplebbitAddress = this.address;
     }
     toJSON() {
         return {
             ...this._toJSONBase(),
-            posts: this.posts?.toJSON(),
+            posts: this.posts.toJSON(),
             shortAddress: this.shortAddress
         };
     }
@@ -146,9 +124,10 @@ export class RemoteSubplebbit extends TypedEmitter {
         };
     }
     toJSONIpfs() {
+        // TODO should verify all props of SubplebbitIpfsType is there
         return {
             ...this._toJSONBase(),
-            posts: this.posts?.toJSONIpfs()
+            posts: this.posts.toJSONIpfs()
         };
     }
     _setState(newState) {
@@ -163,12 +142,6 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.updatingState = newState;
         this.emit("updatingstatechange", this.updatingState);
     }
-    _setStartedState(newState) {
-        if (newState === this.startedState)
-            return;
-        this.startedState = newState;
-        this.emit("startedstatechange", this.startedState);
-    }
     _isCriticalErrorWhenLoading(err) {
         return err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID";
     }
@@ -182,9 +155,9 @@ export class RemoteSubplebbit extends TypedEmitter {
                 }
                 catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e.toString());
-                    if (this._isCriticalErrorWhenLoading(e))
-                        return e;
+                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
+                    if (e instanceof PlebbitError && this._isCriticalErrorWhenLoading(e))
+                        resolve(e);
                     else
                         this._ipnsLoadingOperation.retry(e);
                 }
@@ -224,6 +197,8 @@ export class RemoteSubplebbit extends TypedEmitter {
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this.plebbit.updateInterval)));
     }
     async stop() {
+        if (this.state !== "updating")
+            throw Error("User call remoteSubplebbit.stop() without updating first");
         this._ipnsLoadingOperation?.stop();
         clearTimeout(this._updateTimeout);
         this._setUpdatingState("stopped");

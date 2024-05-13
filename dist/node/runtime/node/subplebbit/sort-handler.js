@@ -1,7 +1,7 @@
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";
-import lodash from "lodash";
+import * as remeda from "remeda";
 export class SortHandler {
     constructor(subplebbit) {
         this.subplebbit = subplebbit;
@@ -27,7 +27,9 @@ export class SortHandler {
     async sortComments(comments, sortName, options) {
         if (comments.length === 0)
             return undefined;
-        const sortProps = POSTS_SORT_TYPES[sortName] || REPLIES_SORT_TYPES[sortName];
+        const sortProps = options.parentCid
+            ? REPLIES_SORT_TYPES[sortName]
+            : POSTS_SORT_TYPES[sortName];
         if (typeof sortProps.score !== "function")
             throw Error(`SortProps[${sortName}] is not defined`);
         let activeScores;
@@ -54,7 +56,7 @@ export class SortHandler {
         const commentsSorted = pinnedComments.concat(unpinnedComments);
         if (commentsSorted.length === 0)
             return undefined;
-        const commentsChunks = lodash.chunk(commentsSorted, options.pageSize);
+        const commentsChunks = remeda.chunk(commentsSorted, options.pageSize);
         const res = await this.commentChunksToPages(commentsChunks, sortName);
         const listOfPage = Object.values(res)[0].pages;
         const expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
@@ -62,10 +64,10 @@ export class SortHandler {
         return res;
     }
     _generationResToPages(res) {
-        res = res.filter((res) => Boolean(res)); // Take out undefined values
-        if (res.length === 0)
+        const filteredGeneratedPages = res.filter(Boolean); // Take out undefined values
+        if (filteredGeneratedPages.length === 0)
             return undefined;
-        const mergedObject = Object.assign({}, ...res);
+        const mergedObject = Object.assign({}, ...filteredGeneratedPages);
         return {
             pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.pages[0] }))),
             pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.cids[0] })))
@@ -73,11 +75,10 @@ export class SortHandler {
     }
     async _generateSubplebbitPosts(pageOptions) {
         // Sorting posts on a subplebbit level
-        const log = Logger("plebbit-js:sort-handler:generateSubplebbitPosts");
         const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
         if (rawPosts.length === 0)
             return undefined;
-        const sortResults = await Promise.all(Object.keys(POSTS_SORT_TYPES).map((sortName) => this.sortComments(rawPosts, sortName, pageOptions)));
+        const sortResults = await Promise.all(remeda.keys.strict(POSTS_SORT_TYPES).map((sortName) => this.sortComments(rawPosts, sortName, pageOptions)));
         return this._generationResToPages(sortResults);
     }
     async _generateCommentReplies(comment) {
@@ -89,7 +90,7 @@ export class SortHandler {
             pageSize: 50
         };
         const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
-        const sortResults = await Promise.all(Object.keys(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, sortName, pageOptions)));
+        const sortResults = await Promise.all(remeda.keys.strict(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, sortName, pageOptions)));
         return this._generationResToPages(sortResults);
     }
     async generateRepliesPages(comment) {

@@ -45,18 +45,18 @@ export declare class Subplebbit extends EventEmitter {
     updatingState: string;
     constructor(createSubplebbitOptions?: any);
     toJSONInternalRpc(): {
-        title: string;
-        description: string;
-        address: string;
-        statsCid: string;
+        title: string | undefined;
+        description: string | undefined;
+        address: string | undefined;
+        statsCid: string | undefined;
         roles: {};
         posts: Pages;
     };
     toJSONIpfs(): {
-        title: string;
-        description: string;
-        address: string;
-        statsCid: string;
+        title: string | undefined;
+        description: string | undefined;
+        address: string | undefined;
+        statsCid: string | undefined;
         roles: {};
         posts: Pages;
     };

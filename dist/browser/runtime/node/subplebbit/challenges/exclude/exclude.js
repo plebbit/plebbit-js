@@ -1,3 +1,4 @@
+//@ts-expect-error
 import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
 import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
@@ -33,22 +34,22 @@ const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) 
         // if match all of the exclude item properties, should exclude
         // keep separated for easier debugging
         let shouldExclude = true;
-        if (!testScore(exclude.postScore, author.subplebbit?.postScore)) {
+        if (author.subplebbit && !testScore(exclude.postScore, author.subplebbit?.postScore)) {
             shouldExclude = false;
         }
-        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
+        if (author.subplebbit && !testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
             shouldExclude = false;
         }
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
             shouldExclude = false;
         }
-        if (!testPost(exclude.post, publication)) {
+        if (typeof exclude.post === "boolean" && !testPost(exclude.post, publication)) {
             shouldExclude = false;
         }
-        if (!testReply(exclude.reply, publication)) {
+        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, publication)) {
             shouldExclude = false;
         }
-        if (!testVote(exclude.vote, publication)) {
+        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, publication)) {
             shouldExclude = false;
         }
         if (!testRateLimit(exclude, publication)) {
@@ -57,7 +58,7 @@ const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) 
         if (exclude.address && !exclude.address.includes(author.address)) {
             shouldExclude = false;
         }
-        if (!testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
+        if (Array.isArray(exclude.role) && !testRole(exclude.role, publication.author.address, subplebbit?.roles)) {
             shouldExclude = false;
         }
         // if one of the exclude item is successful, should exclude author
@@ -87,7 +88,8 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) =>
         // if any of exclude.challenges failed, don't exclude
         let shouldExclude = true;
         for (const challengeIndex of excludeItem.challenges) {
-            if (challengeResults[challengeIndex]?.["success"] !== true) {
+            const challengeRes = challengeResults[challengeIndex];
+            if (!("success" in challengeRes) || ("success" in challengeRes && challengeRes.success !== true)) {
                 // found a false, should not exclude based on this exclude item,
                 // but try again in the next exclude item
                 shouldExclude = false;
@@ -101,14 +103,13 @@ const shouldExcludeChallengeSuccess = (subplebbitChallenge, challengeResults) =>
     }
     return false;
 };
-// cache for fetching comment cids, never expire
 const commentCache = new QuickLRU({
     maxSize: 10000
 });
 // cache for fetching comment updates, expire after 1 day
 const commentUpdateCache = new TinyCache();
 const commentUpdateCacheTime = 1000 * 60 * 60;
-const getCommentPending = {};
+const getCommentPending = {}; // cid -> boolean if it's loading or not
 const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeRequestMessage, plebbit) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludeChallengeCommentCids invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
@@ -135,8 +136,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
         if (!cachedComment) {
             comment = await plebbit.getComment(commentCid);
             // only cache useful values
-            const author = { address: comment?.author?.address };
-            cachedComment = { subplebbitAddress: comment.subplebbitAddress, author };
+            cachedComment = { subplebbitAddress: comment.subplebbitAddress, author: { address: comment.author.address } };
             commentCache.set(commentCid, cachedComment);
         }
         // subplebbit address doesn't match filter
@@ -150,29 +150,25 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
         // comment hasn't been updated yet
         let cachedCommentUpdate = commentUpdateCache.get(commentCid);
         if (!cachedCommentUpdate) {
-            let commentUpdate = comment;
-            if (!commentUpdate) {
-                // @ts-ignore
-                commentUpdate = await plebbit.createComment({ cid: commentCid });
-            }
-            const commentUpdatePromise = new Promise((resolve) => commentUpdate.once("update", resolve));
+            const commentUpdate = comment || (await plebbit.createComment({ cid: commentCid }));
+            const commentUpdatePromise = new Promise((resolve) => commentUpdate.on("update", () => typeof commentUpdate.updatedAt === "number" && resolve(1)));
             await commentUpdate.update();
             await commentUpdatePromise;
             await commentUpdate.stop();
+            commentUpdate.removeAllListeners("update");
             // only cache useful values
-            cachedCommentUpdate = {};
             if (commentUpdate?.author?.subplebbit) {
-                cachedCommentUpdate.author = { subplebbit: commentUpdate?.author?.subplebbit };
+                cachedCommentUpdate = { author: { subplebbit: commentUpdate?.author?.subplebbit } };
+                commentUpdateCache.put(commentCid, cachedCommentUpdate, commentUpdateCacheTime);
             }
-            commentUpdateCache.put(commentCid, cachedCommentUpdate, commentUpdateCacheTime);
             commentUpdateCache._timeouts[commentCid].unref?.();
         }
-        return { ...cachedComment, ...cachedCommentUpdate };
+        return { ...cachedComment, author: { ...cachedComment.author, ...cachedCommentUpdate?.author } };
     };
     const getComment = async (commentCid, addressesSet) => {
         // don't fetch the same comment twice
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-        const pendingKey = commentCid + plebbit.plebbitOptions?.ipfsGatewayUrl + plebbit.plebbitOptions?.ipfsHttpClientOptions?.url;
+        const pendingKey = commentCid + plebbit.parsedPlebbitOptions?.ipfsGatewayUrls?.[0] + plebbit.parsedPlebbitOptions?.ipfsHttpClientsOptions?.[0].url;
         while (getCommentPending[pendingKey] === true) {
             await sleep(20);
         }
@@ -191,7 +187,8 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     const validateComment = async (commentCid, addressesSet, exclude) => {
         const comment = await getComment(commentCid, addressesSet);
         const { postScore, replyScore, firstCommentTimestamp } = exclude?.subplebbit || {};
-        if (testScore(postScore, comment.author?.subplebbit?.postScore) &&
+        if (comment.author.subplebbit &&
+            testScore(postScore, comment.author?.subplebbit?.postScore) &&
             testScore(replyScore, comment.author?.subplebbit?.replyScore) &&
             testFirstCommentTimestamp(firstCommentTimestamp, comment.author?.subplebbit?.firstCommentTimestamp)) {
             // do nothing, comment is valid
@@ -229,8 +226,9 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
         }
         catch (e) {
             // console.log(validateCommentPromises) // debug all validate comments
-            e.message = `should not exclude: ${e.message}`;
-            throw Error(e);
+            if (e instanceof Error)
+                e.message = `should not exclude: ${e.message}`;
+            throw e;
         }
         // if at least 1 comment was valid, do nothing, exclude is valid
     };

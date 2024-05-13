@@ -1,7 +1,7 @@
 import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types.js";
-import Publication from "../publication.js";
-import { Comment } from "../comment.js";
+import Publication from "../publications/publication.js";
+import { Comment } from "../publications/comment/comment.js";
 import { BasePages } from "../pages.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 type PublicationRpcState = Publication["clients"]["chainProviders"]["eth"][0]["state"] | Publication["clients"]["ipfsClients"][0]["state"] | Publication["clients"]["pubsubClients"][0]["state"] | Publication["clients"]["ipfsGateways"][0]["state"];

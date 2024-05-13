@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { Chain, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
@@ -8,7 +8,7 @@ export declare class BaseClientsManager {
     _defaultIpfsProviderUrl: string | undefined;
     providerSubscriptions: Record<string, string[]>;
     constructor(plebbit: Plebbit);
-    toJSON(): any;
+    toJSON(): undefined;
     getDefaultPubsub(): import("../types.js").PubsubClient;
     getDefaultIpfs(): import("../types.js").IpfsClient;
     _initializeLibp2pClientIfNeeded(): Promise<void>;
@@ -47,13 +47,13 @@ export declare class BaseClientsManager {
     private _getKeyOfCachedDomainTextRecord;
     private _getCachedTextRecord;
     private _resolveTextRecordWithCache;
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string): void;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: Chain, chainProviderUrl: string): void;
-    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: Chain, chainProviderUrl: string, error: Error): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string | null, chain: ChainTicker, chainProviderUrl: string): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, error: Error): void;
     private _resolveTextRecordSingleChainProvider;
     private _resolveTextRecordConcurrently;
-    resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | undefined>;
+    resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | null>;
     clearDomainCache(domainAddress: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): Promise<void>;
-    resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string>;
+    resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null>;
     emitError(e: PlebbitError): void;
 }

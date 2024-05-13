@@ -1,6 +1,6 @@
 import { Knex } from "knex";
 import Transaction = Knex.Transaction;
-import { AuthorCommentEdit, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, SubplebbitAuthor, VotesTableRow, VotesTableRowInsert } from "../../../types.js";
+import { CommentEditsTableRow, CommentEditsTableRowInsert, CommentsTableRow, CommentsTableRowInsert, CommentUpdate, CommentUpdatesRow, CommentUpdatesTableRowInsert, SubplebbitAuthor, VotesTableRow, VotesTableRowInsert } from "../../../types.js";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
 export declare class DbHandler {
@@ -12,7 +12,7 @@ export declare class DbHandler {
     private _createdTables;
     constructor(subplebbit: DbHandler["_subplebbit"]);
     initDbConfigIfNeeded(): Promise<void>;
-    toJSON(): any;
+    toJSON(): undefined;
     initDbIfNeeded(): Promise<void>;
     getDbConfig(): Knex.Config;
     keyvGet(key: string, options?: {
@@ -53,9 +53,9 @@ export declare class DbHandler {
     queryCommentUpdatesOfPostsForBucketAdjustment(trx?: Transaction): Promise<(Pick<CommentsTableRow, "timestamp" | "cid"> & Pick<CommentUpdatesRow, "ipfsPath">)[]>;
     deleteAllCommentUpdateRows(trx?: Transaction): Promise<number>;
     queryCommentsUpdatesWithPostCid(postCid: string, trx?: Transaction): Promise<CommentUpdatesRow[]>;
-    queryCommentsOfAuthor(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
+    queryCommentsOfAuthors(authorSignerAddresses: string | string[], trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsByCids(cids: string[], trx?: Transaction): Promise<CommentsTableRow[]>;
-    queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction): Promise<CommentsTableRow>;
+    queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction): Promise<CommentsTableRow | undefined>;
     queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]>;
     queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]>;
     private _calcActiveUserCount;
@@ -69,7 +69,7 @@ export declare class DbHandler {
     private _queryAuthorEdit;
     private _queryLatestModeratorReason;
     queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed">>;
-    queryAuthorEditDeleted(cid: string, trx?: Transaction): Promise<AuthorCommentEdit["deleted"] | undefined>;
+    queryAuthorEditDeleted(cid: string, trx?: Transaction): Promise<Pick<CommentEditsTableRow, "deleted"> | undefined>;
     private _queryModCommentFlair;
     private _queryLastChildCidAndLastReplyTimestamp;
     queryCalculatedCommentUpdate(comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">, trx?: Transaction): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">>;

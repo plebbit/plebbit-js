@@ -1,5 +1,5 @@
 import assert from "assert";
-import lodash from "lodash";
+import * as remeda from "remeda";
 export default class Stats {
     constructor(plebbit) {
         this._plebbit = plebbit;
@@ -47,17 +47,17 @@ export default class Stats {
                 : type === "eth" || type === "avax" || type === "matic"
                     ? "chainProviders"
                     : undefined;
-        assert(gatewayType);
+        assert(gatewayType, "Can't find the gateway type to sort");
         const gateways = gatewayType === "chainProviders"
             ? this._plebbit.clients.chainProviders[type].urls
-            : Object.keys(this._plebbit.clients[gatewayType]);
+            : remeda.keys.strict(this._plebbit.clients[gatewayType]);
         const score = async (gatewayUrl) => {
             const failureCounts = (await this._plebbit._storage.getItem(this._getFailuresCountKey(gatewayUrl, type))) || 0;
             const successCounts = (await this._plebbit._storage.getItem(this._getSuccessCountKey(gatewayUrl, type))) || 0;
             const successAverageMs = (await this._plebbit._storage.getItem(this._getSuccessAverageKey(gatewayUrl, type))) || 0;
             return this._gatewayScore(failureCounts, successCounts, successAverageMs);
         };
-        const gatewaysSorted = lodash.sortBy(gateways, score);
+        const gatewaysSorted = remeda.sortBy.strict(gateways, score);
         return gatewaysSorted;
     }
 }

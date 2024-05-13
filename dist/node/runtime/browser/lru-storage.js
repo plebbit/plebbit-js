@@ -3,8 +3,6 @@ import { createInstance as CreateLocalForageLRU } from "./localforage-lru.js";
 export default class LRUStorage {
     constructor(opts) {
         this._opts = opts;
-        if (typeof this._opts.maxItems !== "number")
-            throw Error("Invalid paramters for LRU storage");
     }
     toJSON() {
         return undefined;

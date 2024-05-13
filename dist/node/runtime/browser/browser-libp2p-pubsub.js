@@ -13,6 +13,7 @@ import { createEd25519PeerId } from "@libp2p/peer-id-factory";
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2";
 import { autoNAT } from "@libp2p/autonat";
 import { EventEmitter } from "events";
+// TODO remove the ts-expect-error when this file matures
 const log = Logger("plebbit-js:browser-libp2p-pubsub");
 // From https://github.com/ipfs/helia/blob/main/packages/helia/src/utils/bootstrappers.ts
 const bootstrapConfig = {
@@ -25,25 +26,6 @@ const bootstrapConfig = {
     ]
 };
 let libp2pPubsubClient;
-const logEvents = (node) => {
-    const events = [
-        "connection:close",
-        "connection:open",
-        "connection:prune",
-        "peer:connect",
-        "peer:disconnect",
-        "peer:discovery",
-        "peer:identify",
-        "peer:update",
-        "self:peer:update",
-        "start",
-        "stop",
-        "transport:close",
-        "transport:listening"
-    ];
-    const logEvent = (event) => log(event.type, event.detail);
-    events.forEach((event) => node.addEventListener(event, logEvent));
-};
 export async function createLibp2pNode() {
     if (libp2pPubsubClient)
         return libp2pPubsubClient;
@@ -77,10 +59,30 @@ export async function createLibp2pNode() {
             nat: autoNAT()
         }
     });
+    // Log events here
+    const events = [
+        "connection:close",
+        "connection:open",
+        "connection:prune",
+        "peer:connect",
+        "peer:disconnect",
+        "peer:discovery",
+        "peer:identify",
+        "peer:update",
+        "self:peer:update",
+        "start",
+        "stop",
+        "transport:close",
+        "transport:listening"
+    ];
+    events.forEach((eventName) => libP2pNode.addEventListener(eventName, (event) => {
+        log(event.type, event.detail);
+    }));
+    //
     log("Initialized address of Libp2p in browser", libP2pNode.getMultiaddrs());
-    logEvents(libP2pNode);
     const pubsubEventHandler = new EventEmitter();
     libP2pNode.services.pubsub.addEventListener("message", (evt) => {
+        //@ts-expect-error
         log(`Event from libp2p pubsub in browser:`, `${evt.detail["from"]}: on topic ${evt.detail.topic}`);
         //@ts-expect-error
         const msgFormatted = { data: evt.detail.data, topic: evt.detail.topic, type: evt.detail.type };
@@ -90,6 +92,7 @@ export async function createLibp2pNode() {
         _client: {
             pubsub: {
                 ls: async () => libP2pNode.services.pubsub.getTopics(),
+                //@ts-expect-error
                 peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic),
                 publish: async (topic, data, options) => {
                     const res = await libP2pNode.services.pubsub.publish(topic, data);
@@ -108,6 +111,7 @@ export async function createLibp2pNode() {
                 }
             }
         },
+        //@ts-expect-error
         _clientOptions: undefined, // TODO not sure if it should be undefined
         peers: async () => libP2pNode.services.pubsub.getPeers().map((peer) => peer.toString())
     };

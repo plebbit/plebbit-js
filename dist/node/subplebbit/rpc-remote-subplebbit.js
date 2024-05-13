@@ -1,22 +1,14 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import * as remeda from "remeda";
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     _setRpcClientState(newState) {
-        const currentRpcUrl = Object.keys(this.clients.plebbitRpcClients)[0];
+        const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
         const currentState = this.clients.plebbitRpcClients[currentRpcUrl].state;
         if (newState === currentState)
             return;
         this.clients.plebbitRpcClients[currentRpcUrl].state = newState;
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
-    }
-    _updateRpcClientStateFromStartedState(startedState) {
-        const mapper = {
-            failed: ["stopped"],
-            "publishing-ipns": ["publishing-ipns"],
-            stopped: ["stopped"],
-            succeeded: ["stopped"]
-        };
-        mapper[startedState].forEach(this._setRpcClientState.bind(this));
     }
     _updateRpcClientStateFromUpdatingState(updatingState) {
         // We're deriving the the rpc state from updating state
@@ -24,6 +16,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
+            "publishing-ipns": ["publishing-ipns"],
             "resolving-address": ["resolving-subplebbit-address"],
             stopped: ["stopped"],
             succeeded: ["stopped"]
@@ -47,8 +40,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             this._setUpdatingState("failed");
             throw e;
         }
-        this.plebbit.plebbitRpcClient
-            .getSubscription(this._updateRpcSubscriptionId)
+        this.plebbit
+            .plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
             log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions[0]})`);
             const rpcSubProps = updateProps.params.result;
@@ -65,6 +58,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     }
     async stop() {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:stop");
+        if (this.state !== "updating")
+            throw Error("User call rpcRemoteSubplebbit.stop() without updating first");
+        if (!this._updateRpcSubscriptionId)
+            throw Error("rpcRemoteSub.state is updating but no subscription id");
         await this.plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;

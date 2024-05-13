@@ -68,12 +68,15 @@ export default class PlebbitRpcClient {
                 }
                 catch (e) {
                     //e is an error json representation of PlebbitError
-                    if (Object.keys(e).length === 0)
-                        throw Error("RPC server sent an empty error for call " + args[0]);
-                    if (e?.code)
-                        throw new PlebbitError(e?.code, e?.details);
-                    else
+                    if ("code" in e) {
+                        const actualPlebError = e;
+                        throw new PlebbitError(actualPlebError.code, actualPlebError.details);
+                    }
+                    else if ("message" in e)
                         throw new Error(e.message);
+                    else {
+                        throw Error("plebbit rpc client call throwed a non Error" + e);
+                    }
                 }
             };
         }
@@ -105,10 +108,11 @@ export default class PlebbitRpcClient {
             this._webSocketClient.close();
         }
         catch { }
+        //@ts-expect-error
         this._webSocketClient =
             this._listSubsSubscriptionId =
-                this._lastListedSubs =
-                    this._subscriptionEvents =
+                this._lastListedSubs = //@ts-expect-error
+                    this._subscriptionEvents = //@ts-expect-error
                         this._pendingSubscriptionMsgs =
                             undefined;
     }
@@ -215,7 +219,7 @@ export default class PlebbitRpcClient {
             });
             this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
         }
-        if (!this._lastListedSubs)
+        if (!Array.isArray(this._lastListedSubs))
             throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
         return this._lastListedSubs;
     }

@@ -4,9 +4,10 @@ import { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { EventEmitter } from "events";
 import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
 import { Plebbit } from "../../plebbit.js";
-import { PlebbitWsServerSettingsSerialized } from "../../types.js";
+import { CommentIpfsWithCid, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import WebSocket from "ws";
-import Publication from "../../publication.js";
+import Publication from "../../publications/publication.js";
+import { LocalSubplebbit } from "../../runtime/browser/subplebbit/local-subplebbit.js";
 declare class PlebbitWsServer extends EventEmitter {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
@@ -29,33 +30,11 @@ declare class PlebbitWsServer extends EventEmitter {
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
-    getComment(params: any): Promise<{
-        author: import("../../types.js").AuthorIpfsType;
-        challengeAnswers?: string[];
-        challengeCommentCids?: string[];
-        parentCid?: string;
-        content?: string;
-        title?: string;
-        link?: string;
-        linkWidth?: number;
-        linkHeight?: number;
-        spoiler?: boolean;
-        flair?: import("../../subplebbit/types.js").Flair;
-        subplebbitAddress: string;
-        signature: import("../../signer/constants.js").JsonSignature;
-        protocolVersion: "1.0.0";
-        timestamp: number;
-        postCid?: string;
-        previousCid?: string;
-        thumbnailUrl?: string;
-        thumbnailUrlWidth?: number;
-        thumbnailUrlHeight?: number;
-        depth: number;
-        cid: string;
-    }>;
+    getComment(params: any): Promise<CommentIpfsWithCid>;
     getSubplebbitPage(params: any): Promise<import("../../types.js").PageIpfs>;
     getCommentPage(params: any): Promise<import("../../types.js").PageIpfs>;
     createSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
+    _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number): void;
     startSubplebbit(params: any, connectionId: string): Promise<number>;
     stopSubplebbit(params: any): Promise<boolean>;
     editSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
@@ -70,7 +49,7 @@ declare class PlebbitWsServer extends EventEmitter {
     publishVote(params: any, connectionId: string): Promise<number>;
     publishCommentEdit(params: any, connectionId: string): Promise<number>;
     publishChallengeAnswers(params: any): Promise<boolean>;
-    resolveAuthorAddress(params: any): Promise<string>;
+    resolveAuthorAddress(params: any): Promise<string | null>;
     unsubscribe(params: any, connectionId: string): Promise<boolean>;
     destroy(): Promise<void>;
 }

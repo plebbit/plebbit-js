@@ -3,7 +3,7 @@ export default class LRUStorage implements LRUStorageInterface {
     private _opts;
     private _cache;
     constructor(opts: LRUStorageConstructor);
-    toJSON(): any;
+    toJSON(): undefined;
     init(): Promise<void>;
     getItem(key: string): Promise<any | undefined>;
     setItem(key: string, value: any): Promise<void>;

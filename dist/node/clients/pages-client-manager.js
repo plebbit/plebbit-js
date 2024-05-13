@@ -2,7 +2,7 @@ import assert from "assert";
 import { BaseClientsManager } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import lodash from "lodash";
+import * as remeda from "remeda";
 import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -27,7 +27,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.clients.ipfsGateways = {};
         for (const sortType of this.getSortTypes()) {
             this.clients.ipfsGateways[sortType] = {};
-            for (const gatewayUrl of Object.keys(this._plebbit.clients.ipfsGateways))
+            for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
                 this.clients.ipfsGateways[sortType][gatewayUrl] = new PagesIpfsGatewayClient("stopped");
         }
     }
@@ -36,7 +36,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.clients.ipfsClients = {};
             for (const sortType of this.getSortTypes()) {
                 this.clients.ipfsClients[sortType] = {};
-                for (const ipfsUrl of Object.keys(this._plebbit.clients.ipfsClients))
+                for (const ipfsUrl of remeda.keys.strict(this._plebbit.clients.ipfsClients))
                     this.clients.ipfsClients[sortType][ipfsUrl] = new PagesIpfsClient("stopped");
             }
         }
@@ -46,7 +46,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             this.clients.plebbitRpcClients = {};
             for (const sortType of this.getSortTypes()) {
                 this.clients.plebbitRpcClients[sortType] = {};
-                for (const rpcUrl of Object.keys(this._plebbit.clients.plebbitRpcClients))
+                for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
                     this.clients.plebbitRpcClients[sortType][rpcUrl] = new PagesPlebbitRpcStateClient("stopped");
             }
         }
@@ -74,7 +74,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
             pageCidToSortTypesCache.set(pageCid, sortTypes);
         }
         else {
-            const newSortTypes = lodash.uniq([...curSortTypes, ...sortTypes]);
+            const newSortTypes = remeda.unique([...curSortTypes, ...sortTypes]);
             pageCidToSortTypesCache.set(pageCid, newSortTypes);
         }
     }
@@ -91,7 +91,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     updateIpfsState(newState, sortTypes) {
         if (!Array.isArray(sortTypes))
             return;
-        assert(typeof this._defaultIpfsProviderUrl === "string");
+        assert(typeof this._defaultIpfsProviderUrl === "string", "Can't update ipfs state without ipfs client");
         for (const sortType of sortTypes) {
             if (this.clients.ipfsClients[sortType][this._defaultIpfsProviderUrl].state === newState)
                 continue;
@@ -168,12 +168,12 @@ export class BasePagesClientsManager extends BaseClientsManager {
 }
 export class RepliesPagesClientsManager extends BasePagesClientsManager {
     getSortTypes() {
-        return Object.keys(REPLIES_SORT_TYPES);
+        return remeda.keys.strict(REPLIES_SORT_TYPES);
     }
 }
 export class PostsPagesClientsManager extends BasePagesClientsManager {
     getSortTypes() {
-        return Object.keys(POSTS_SORT_TYPES);
+        return remeda.keys.strict(POSTS_SORT_TYPES);
     }
 }
 //# sourceMappingURL=pages-client-manager.js.map

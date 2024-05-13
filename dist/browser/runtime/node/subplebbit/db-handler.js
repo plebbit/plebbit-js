@@ -8,11 +8,12 @@ import Keyv from "keyv";
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
-import lodash from "lodash";
+//@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
 import { v4 as uuidV4 } from "uuid";
 import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
+import * as remeda from "remeda";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -97,10 +98,10 @@ export class DbHandler {
             await this._currentTrxs[transactionId].rollback();
             delete this._currentTrxs[transactionId];
         }
-        log.trace(`Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${Object.keys(this._currentTrxs).length}`);
+        log.trace(`Rolledback transaction (${transactionId}), this._currentTrxs[transactionId].length = ${remeda.keys.strict(this._currentTrxs).length}`);
     }
     async rollbackAllTransactions() {
-        return Promise.all(Object.keys(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
+        return Promise.all(remeda.keys.strict(this._currentTrxs).map((trxId) => this.rollbackTransaction(trxId)));
     }
     _baseTransaction(trx) {
         return trx ? trx : this._knex;
@@ -128,6 +129,7 @@ export class DbHandler {
             table.text("title").nullable();
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.text("challengeRequestPublicationSha256").notNullable().unique();
+            table.text("linkHtmlTagName").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler");
             table.text("protocolVersion").notNullable();
@@ -211,6 +213,7 @@ export class DbHandler {
         const needToMigrate = currentDbVersion < env.DB_VERSION;
         if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = OFF");
+            // Remove unneeded tables
             await Promise.all(["challengeRequests", "challenges", "challengeAnswers", "challengeVerifications", "signers"].map((tableName) => this._knex.schema.dropTableIfExists(tableName)));
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
         }
@@ -249,15 +252,15 @@ export class DbHandler {
     }
     async _copyTable(srcTable, dstTable, currentDbVersion) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
-        const dstTableColumns = Object.keys(await this._knex(dstTable).columnInfo());
+        const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords = await this._knex(srcTable).select("*");
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            const srcRecordFiltered = srcRecords.map((record) => lodash.pick(record, dstTableColumns));
+            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
-                for (const srcRecordKey of Object.keys(srcRecord))
+                for (const srcRecordKey of remeda.keys.strict(srcRecord))
                     if (Array.isArray(srcRecord[srcRecordKey])) {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
@@ -270,6 +273,8 @@ export class DbHandler {
                     // Need to compute isAuthorEdit column
                     const editWithType = srcRecord;
                     const commentToBeEdited = await this.queryComment(editWithType.commentCid);
+                    if (!commentToBeEdited)
+                        throw Error("Failed to compute isAuthorEdit column");
                     const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
                     srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
                 }
@@ -314,7 +319,7 @@ export class DbHandler {
         let query = this._baseTransaction(trx)(TABLES.COMMENTS)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .jsonExtract(`${TABLES.COMMENT_UPDATES}.edit`, "$.deleted", "deleted", true)
-            .where({ parentCid: options.parentCid });
+            .where("parentCid", options.parentCid);
         if (options.excludeCommentsWithDifferentSubAddress)
             query = query.where({ subplebbitAddress: this._subplebbit.address });
         if (options.excludeRemovedComments)
@@ -331,7 +336,7 @@ export class DbHandler {
             parentCid: commentCid
         };
         const children = await this.queryCommentsForPages(options, trx);
-        return children.length + lodash.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
+        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
     }
     async queryActiveScore(comment, trx) {
         let maxTimestamp = comment.timestamp;
@@ -357,8 +362,8 @@ export class DbHandler {
         const commentsRaw = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
         //@ts-expect-error
         const comments = commentsRaw.map((commentRaw) => ({
-            comment: lodash.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
-            update: lodash.mapKeys(lodash.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")), (value, key) => key.replace("commentUpdate_", ""))
+            comment: remeda.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+            update: remeda.mapKeys(remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")), (key, value) => key.replace("commentUpdate_", ""))
         }));
         return comments;
     }
@@ -383,7 +388,7 @@ export class DbHandler {
             .where(`${TABLES.COMMENTS}.postCid`, postCid)
             .select(`${TABLES.COMMENT_UPDATES}.*`);
     }
-    async queryCommentsOfAuthor(authorSignerAddresses, trx) {
+    async queryCommentsOfAuthors(authorSignerAddresses, trx) {
         if (!Array.isArray(authorSignerAddresses))
             authorSignerAddresses = [authorSignerAddresses];
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("authorSignerAddress", authorSignerAddresses);
@@ -417,6 +422,7 @@ export class DbHandler {
             .leftJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .whereNull(`${TABLES.COMMENT_UPDATES}.updatedAt`);
         const lastUpdatedAtWithBuffer = this._knex.raw("`lastUpdatedAt` - 1");
+        // @ts-expect-error
         const criteriaTwoThree = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
@@ -433,35 +439,41 @@ export class DbHandler {
             .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
-        const comments = lodash.uniqBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
-        const parents = lodash.flattenDeep(await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx))));
-        const authorComments = await this.queryCommentsOfAuthor(lodash.uniq(comments.map((comment) => comment.authorSignerAddress)), trx);
-        const uniqComments = lodash.uniqBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
+        const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
+        const parents = remeda.flattenDeep(await Promise.all(comments.filter((comment) => comment.parentCid).map((comment) => this.queryParents(comment, trx))));
+        const authorComments = await this.queryCommentsOfAuthors(remeda.unique(comments.map((comment) => comment.authorSignerAddress)), trx);
+        const uniqComments = remeda.uniqueBy([...comments, ...parents, ...authorComments], (comment) => comment.cid);
         return uniqComments;
     }
     _calcActiveUserCount(commentsRaw, votesRaw) {
+        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
         const res = {};
-        for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+        for (const timeframe of timeframes) {
             const propertyName = `${timeframe.toLowerCase()}ActiveUserCount`;
             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
-            const authors = lodash.uniq([
+            const authors = remeda.unique([
                 ...commentsRaw
                     .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
                     .map((comment) => comment.authorSignerAddress),
                 ...votesRaw.filter((vote) => vote.timestamp >= from && vote.timestamp <= to).map((vote) => vote.authorSignerAddress)
             ]);
+            // Too lazy to type this function up, not high priority
+            //@ts-expect-error
             res[propertyName] = authors.length;
         }
         return res;
     }
     _calcPostCount(commentsRaw) {
+        const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
         const res = {};
-        for (const timeframe of Object.keys(TIMEFRAMES_TO_SECONDS)) {
+        for (const timeframe of timeframes) {
             const propertyName = `${timeframe.toLowerCase()}PostCount`;
             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
             const posts = commentsRaw
                 .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
                 .filter((comment) => comment.depth === 0);
+            // Too lazy to type this function up, not high priority
+            //@ts-expect-error
             res[propertyName] = posts.length;
         }
         return res;
@@ -474,13 +486,13 @@ export class DbHandler {
         return res;
     }
     async queryCommentsUnderComment(parentCid, trx) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where({ parentCid: parentCid });
+        return this._baseTransaction(trx)(TABLES.COMMENTS).where("parentCid", parentCid);
     }
     async queryComment(cid, trx) {
         return this._baseTransaction(trx)(TABLES.COMMENTS).where("cid", cid).first();
     }
     async _queryCommentUpvote(cid, trx) {
-        const upvotes = ((await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: 1 }).count())[0]["count(*)"]);
+        const upvotes = (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: 1 }).count())[0]["count(*)"];
         return upvotes;
     }
     async _queryCommentDownvote(cid, trx) {
@@ -504,14 +516,13 @@ export class DbHandler {
         return authorEdit;
     }
     async _queryLatestModeratorReason(comment, trx) {
-        const moderatorReason = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("reason")
             .where("commentCid", comment.cid)
             .where({ isAuthorEdit: false })
             .whereNotNull("reason")
             .orderBy("id", "desc")
             .first();
-        return moderatorReason;
     }
     async queryCommentFlags(cid, trx) {
         const res = Object.assign({}, ...(await Promise.all(["spoiler", "pinned", "locked", "removed"].map((field) => this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
@@ -524,23 +535,21 @@ export class DbHandler {
         return res;
     }
     async queryAuthorEditDeleted(cid, trx) {
-        const deleted = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("deleted")
             .where("commentCid", cid)
             .whereNotNull("deleted")
             .orderBy("id", "desc")
             .first();
-        return deleted;
     }
     async _queryModCommentFlair(comment, trx) {
-        const latestFlair = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("flair")
             .where("commentCid", comment.cid)
             .whereNotNull("flair")
             .where({ isAuthorEdit: false })
             .orderBy("id", "desc")
             .first();
-        return latestFlair;
     }
     async _queryLastChildCidAndLastReplyTimestamp(comment, trx) {
         const lastChildCidRaw = await this._baseTransaction(trx)(TABLES.COMMENTS)
@@ -563,6 +572,8 @@ export class DbHandler {
             this._queryModCommentFlair(comment, trx),
             this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
         ]);
+        if (!authorSubplebbit)
+            throw Error("Failed to query author.subplebbit in queryCalculatedCommentUpdate");
         return {
             cid: comment.cid,
             edit: authorEdit,
@@ -599,25 +610,27 @@ export class DbHandler {
         return { ...banAuthor, ...authorFlairByMod };
     }
     async querySubplebbitAuthor(authorSignerAddress, trx) {
-        const authorCommentCids = await this._baseTransaction(trx)(TABLES.COMMENTS)
-            .select("cid")
-            .where("authorSignerAddress", authorSignerAddress);
+        const authorCommentCids = (await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorSignerAddress", authorSignerAddress));
         if (authorCommentCids.length === 0)
             return undefined;
-        const authorComments = [];
-        for (const cidObj of authorCommentCids) {
-            authorComments.push({
-                ...(await this.queryComment(cidObj["cid"], trx)),
-                upvoteCount: await this._queryCommentUpvote(cidObj["cid"], trx),
-                downvoteCount: await this._queryCommentDownvote(cidObj["cid"], trx)
-            });
-        }
+        const authorComments = await Promise.all(authorCommentCids.map(async (authorCommentCid) => {
+            const authorFullComment = await this.queryComment(authorCommentCid.cid, trx);
+            return {
+                ...authorFullComment,
+                upvoteCount: await this._queryCommentUpvote(authorCommentCid.cid, trx),
+                downvoteCount: await this._queryCommentDownvote(authorCommentCid.cid, trx)
+            };
+        }));
         const authorPosts = authorComments.filter((comment) => comment.depth === 0);
         const authorReplies = authorComments.filter((comment) => comment.depth > 0);
-        const postScore = lodash.sumBy(authorPosts, (post) => post.upvoteCount) - lodash.sumBy(authorPosts, (post) => post.downvoteCount);
-        const replyScore = lodash.sumBy(authorReplies, (reply) => reply.upvoteCount) - lodash.sumBy(authorReplies, (reply) => reply.downvoteCount);
-        const lastCommentCid = lodash.maxBy(authorComments, (comment) => comment.id).cid;
-        const firstCommentTimestamp = lodash.minBy(authorComments, (comment) => comment.id).timestamp;
+        const postScore = remeda.sumBy(authorPosts, (post) => post.upvoteCount) - remeda.sumBy(authorPosts, (post) => post.downvoteCount);
+        const replyScore = remeda.sumBy(authorReplies, (reply) => reply.upvoteCount) - remeda.sumBy(authorReplies, (reply) => reply.downvoteCount);
+        const lastCommentCid = remeda.maxBy(authorComments, (comment) => comment.id)?.cid;
+        if (!lastCommentCid)
+            throw Error("Failed to query subplebbitAuthor.lastCommentCid");
+        const firstCommentTimestamp = remeda.minBy(authorComments, (comment) => comment.id)?.timestamp;
+        if (typeof firstCommentTimestamp !== "number")
+            throw Error("Failed to query subplebbitAuthor.firstCommentTimestamp");
         const modAuthorEdits = await this.queryAuthorModEdits(authorSignerAddress, trx);
         return {
             postScore,
@@ -633,7 +646,9 @@ export class DbHandler {
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
+        //@ts-expect-error
         delete this["_knex"];
+        //@ts-expect-error
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
         if (os.type() === "Windows_NT")
@@ -663,7 +678,7 @@ export class DbHandler {
             log(`Locked the start of subplebbit (${subAddress}) successfully`);
         }
         catch (e) {
-            if (e.message === "Lock file is already being held")
+            if (e instanceof Error && e.message === "Lock file is already being held")
                 throwWithErrorCode("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: subAddress });
             else {
                 log(`Error while trying to lock start of sub (${subAddress}): ${e}`);
@@ -706,8 +721,9 @@ export class DbHandler {
             });
         }
         catch (e) {
-            if (e.message === "Lock file is already being held")
+            if (e instanceof Error && e.message === "Lock file is already being held")
                 throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
+            // Not sure, do we need to throw error here
         }
     }
     async unlockSubState(subAddress = this._subplebbit.address) {
@@ -720,7 +736,7 @@ export class DbHandler {
             await lockfile.unlock(subDbPath, { lockfilePath });
         }
         catch (e) {
-            if (e.code !== "ENOTACQUIRED")
+            if (e instanceof Error && "code" in e && e.code !== "ENOTACQUIRED")
                 throw e;
         }
     }

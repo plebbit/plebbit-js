@@ -1,52 +1,59 @@
-import { CommentIpfsType, PagesType, PagesTypeIpfs, PagesTypeJson, PageType, PostSortName, PostsPagesTypeJson, RepliesPagesTypeJson, ReplySortName } from "./types.js";
+import { PageInstanceType, PostSortName, PostsPagesTypeIpfs, PostsPagesTypeJson, RepliesPagesTypeIpfs, RepliesPagesTypeJson, ReplySortName } from "./types.js";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "./clients/pages-client-manager.js";
 import { Plebbit } from "./plebbit.js";
-type ConstructorProps = PagesType & {
+type BaseProps = {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];
-    parentCid?: CommentIpfsType["parentCid"];
-    pagesIpfs?: BasePages["_pagesIpfs"];
 };
-export declare class BasePages implements PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+type PostsProps = Pick<PostsPages, "pages" | "pageCids"> & BaseProps & {
+    pagesIpfs?: PostsPagesTypeIpfs;
+};
+type RepliesProps = Pick<RepliesPages, "pages" | "pageCids"> & BaseProps & {
+    parentCid: RepliesPages["_parentCid"];
+    pagesIpfs?: RepliesPagesTypeIpfs;
+};
+export declare class BasePages {
+    pages: PostsPages["pages"] | RepliesPages["pages"];
+    pageCids: PostsPages["pageCids"] | RepliesPages["pageCids"];
     clients: BasePagesClientsManager["clients"];
     _clientsManager: BasePagesClientsManager;
     _plebbit: Plebbit;
     _subplebbitAddress: string;
-    _parentCid: CommentIpfsType["parentCid"];
-    private _pagesIpfs?;
-    constructor(props: ConstructorProps);
-    updateProps(props: ConstructorProps): void;
+    _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"];
+    protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined;
+    constructor(props: PostsProps | RepliesProps);
+    updateProps(props: PostsProps | RepliesProps): void;
     protected _initClientsManager(): void;
+    resetPages(): void;
     _fetchAndVerifyPage(pageCid: string): Promise<import("./types.js").PageIpfs>;
-    getPage(pageCid: string): Promise<PageType>;
-    toJSON(): PagesTypeJson | undefined;
-    toJSONIpfs(): PagesTypeIpfs | undefined;
+    getPage(pageCid: string): Promise<PageInstanceType>;
+    toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined;
+    toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined;
 }
 export declare class RepliesPages extends BasePages {
-    pages: Partial<Record<ReplySortName, PageType>>;
-    pageCids: Partial<Record<ReplySortName, string>>;
+    pages: Partial<Record<ReplySortName, PageInstanceType>>;
+    pageCids: Record<ReplySortName, string> | {};
     clients: RepliesPagesClientsManager["clients"];
-    _parentCid: string;
     _clientsManager: RepliesPagesClientsManager;
-    constructor(props: ConstructorProps & {
-        parentCid: string;
-    });
-    updateProps(props: ConstructorProps & {
-        parentCid: string;
-    }): void;
+    _parentCid: string | undefined;
+    protected _pagesIpfs: RepliesPagesTypeIpfs | undefined;
+    constructor(props: RepliesProps);
+    updateProps(props: RepliesProps): void;
     protected _initClientsManager(): void;
     toJSON(): RepliesPagesTypeJson | undefined;
+    toJSONIpfs(): RepliesPagesTypeIpfs | undefined;
 }
 export declare class PostsPages extends BasePages {
-    pages: Partial<Record<PostSortName, PageType>>;
-    pageCids: Partial<Record<PostSortName, string>>;
+    pages: Partial<Record<PostSortName, PageInstanceType>>;
+    pageCids: Record<PostSortName, string> | {};
     clients: PostsPagesClientsManager["clients"];
     _clientsManager: PostsPagesClientsManager;
-    constructor(props: Omit<ConstructorProps, "parentCid">);
-    updateProps(props: Omit<ConstructorProps, "parentCid">): void;
+    _parentCid: undefined;
+    protected _pagesIpfs: PostsPagesTypeIpfs | undefined;
+    constructor(props: PostsProps);
+    updateProps(props: PostsProps): void;
     protected _initClientsManager(): void;
     toJSON(): PostsPagesTypeJson | undefined;
+    toJSONIpfs(): PostsPagesTypeIpfs | undefined;
 }
 export {};

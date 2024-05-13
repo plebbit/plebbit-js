@@ -1,5 +1,5 @@
 import { LocalSubplebbit } from "./local-subplebbit.js";
-import { CommentsTableRow, CommentUpdatesRow, CommentWithCommentUpdate, PageIpfs, PagesTypeIpfs, PostSortName, ReplySortName } from "../../../types.js";
+import { CommentIpfsWithCid, CommentsTableRow, CommentUpdatesRow, PageIpfs, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "../../../types.js";
 export type PageOptions = {
     excludeRemovedComments: boolean;
     excludeDeletedComments: boolean;
@@ -22,8 +22,8 @@ export declare class SortHandler {
     private _generationResToPages;
     private _generateSubplebbitPosts;
     private _generateCommentReplies;
-    generateRepliesPages(comment: Pick<CommentWithCommentUpdate, "cid">): Promise<PagesTypeIpfs | undefined>;
-    generateSubplebbitPosts(): Promise<PagesTypeIpfs | undefined>;
-    toJSON(): any;
+    generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined>;
+    generateSubplebbitPosts(): Promise<PostsPagesTypeIpfs | undefined>;
+    toJSON(): undefined;
 }
 export {};

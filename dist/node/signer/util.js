@@ -1,4 +1,5 @@
 // NOTE: Ed25519PublicKey, Ed25519PrivateKey are not public apis, could break when upgrading libp2p-crypto
+//@ts-expect-error
 import { Ed25519PublicKey, Ed25519PrivateKey } from "libp2p-crypto/src/keys/ed25519-class.js";
 import PeerId from "peer-id";
 import * as ed from "@noble/ed25519";
@@ -40,7 +41,8 @@ export const getIpfsKeyFromPrivateKey = async (privateKeyBase64) => {
         privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
     }
     catch (e) {
-        e.message = `getIpfsKeyFromPrivateKey privateKeyBase64 invalid: ${e.message}`;
+        if (e instanceof Error)
+            e.message = `getIpfsKeyFromPrivateKey privateKeyBase64 invalid: ${e.message}`;
         throw e;
     }
     if (privateKeyBuffer.length !== 32)
@@ -62,7 +64,8 @@ export const getPublicKeyFromPrivateKey = async (privateKeyBase64) => {
         privateKeyBuffer = uint8ArrayFromString(privateKeyBase64, "base64");
     }
     catch (e) {
-        e.message = `getPublicKeyFromPrivateKey privateKeyBase64 invalid: ${e.message}`;
+        if (e instanceof Error)
+            e.message = `getPublicKeyFromPrivateKey privateKeyBase64 invalid: ${e.message}`;
         throw e;
     }
     if (privateKeyBuffer.length !== 32)
@@ -84,7 +87,8 @@ export const getPeerIdFromPublicKey = async (publicKeyBase64) => {
         publicKeyBuffer = uint8ArrayFromString(publicKeyBase64, "base64");
     }
     catch (e) {
-        e.message = `getPeerIdFromPublicKey publicKeyBase64 invalid: ${e.message}`;
+        if (e instanceof Error)
+            e.message = `getPeerIdFromPublicKey publicKeyBase64 invalid: ${e.message}`;
         throw e;
     }
     if (publicKeyBuffer.length !== 32)

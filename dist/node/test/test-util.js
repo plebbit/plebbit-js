@@ -1,18 +1,20 @@
 import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
-import { Comment } from "../comment.js";
+import { Comment } from "../publications/comment/comment.js";
 import PlebbitIndex from "../index.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import lodash from "lodash";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
+import { v4 as uuidV4 } from "uuid";
+import * as resolverClass from "../resolver.js";
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
     let randomTimestamp = -1;
     while (randomTimestamp === -1) {
-        const randomTimeframeIndex = (Object.keys(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
+        const randomTimeframeIndex = (remeda.keys.strict(TIMEFRAMES_TO_SECONDS).length * Math.random()) << 0;
         const tempTimestamp = lowerLimit + Object.values(TIMEFRAMES_TO_SECONDS)[randomTimeframeIndex];
         if (tempTimestamp >= lowerLimit && tempTimestamp <= upperLimit)
             randomTimestamp = tempTimestamp;
@@ -81,7 +83,7 @@ export async function loadAllPages(pageCid, pagesInstance) {
 }
 async function _mockSubplebbitPlebbit(signers, plebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
-    for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+    for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
         plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
     return plebbit;
 }
@@ -119,7 +121,7 @@ async function _publishVotesOnOneComment(comment, votesPerCommentToPublish, pleb
         .map(() => publishVote(comment.cid, comment.subplebbitAddress, Math.random() > 0.5 ? 1 : -1, plebbit, {})));
 }
 async function _publishVotes(comments, votesPerCommentToPublish, plebbit) {
-    const votes = lodash.flattenDeep(await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit))));
+    const votes = remeda.flattenDeep(await Promise.all(comments.map((comment) => _publishVotesOnOneComment(comment, votesPerCommentToPublish, plebbit))));
     assert.equal(votes.length, votesPerCommentToPublish * comments.length);
     console.log(`${votes.length} votes for ${comments.length} ${comments[0].depth === 0 ? "posts" : "replies"} have been published`);
     return votes;
@@ -153,7 +155,7 @@ export async function startOnlineSubplebbit() {
 }
 export async function startSubplebbits(props) {
     const plebbit = await _mockSubplebbitPlebbit(props.signers, {
-        ...lodash.pick(props, ["noData", "dataPath"]),
+        ...remeda.pick(props, ["noData", "dataPath"]),
         publishInterval: 3000,
         updateInterval: 3000
     });
@@ -190,36 +192,42 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
 }
 export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
+    const mockEthResolver = `mockEthRpc${uuidV4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
         publishInterval: 1000,
         updateInterval: 1000,
+        chainProviders: { eth: { urls: [mockEthResolver], chainId: 1 } },
         ...plebbitOptions
     });
-    if (mockResolve)
-        plebbit.resolver.resolveTxtRecord = async (address, textRecord, chain, chainProviderUrl) => {
-            log(`Attempting to mock resolve address (${address}) textRecord (${textRecord}) chain (${chain}) chainProviderUrl (${chainProviderUrl})`);
-            if (address === "plebbit.eth" && textRecord === "subplebbit-address")
-                return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
-            else if (address === "plebbit.eth" && textRecord === "plebbit-author-address")
-                return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
-            else if (address === "rpc-edit-test.eth" && textRecord === "subplebbit-address")
-                return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
-            else if (address === "different-signer.eth" && textRecord === "subplebbit-address")
-                return (await plebbit.createSigner()).address;
-            else if (address === "estebanabaroa.eth" && textRecord === "plebbit-author-address")
-                return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
-            else
-                return null;
+    if (mockResolve) {
+        //@ts-expect-error
+        resolverClass.viemClients["eth" + mockEthResolver] = {
+            getEnsText: async ({ name, key }) => {
+                log(`Attempting to mock resolve address (${name}) textRecord (${key}) chainProviderUrl (${mockEthResolver})`);
+                if (name === "plebbit.eth" && key === "subplebbit-address")
+                    return "12D3KooWNMYPSuNadceoKsJ6oUQcxGcfiAsHNpVTt1RQ1zSrKKpo"; // signers[3]
+                else if (name === "plebbit.eth" && key === "plebbit-author-address")
+                    return "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y"; // signers[6]
+                else if (name === "rpc-edit-test.eth" && key === "subplebbit-address")
+                    return "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o"; // signers[7]
+                else if (name === "different-signer.eth" && key === "subplebbit-address")
+                    return (await plebbit.createSigner()).address;
+                else if (name === "estebanabaroa.eth" && key === "plebbit-author-address")
+                    return "12D3KooWGC8BJJfNkRXSgBvnPJmUNVYwrvSdtHfcsY3ZXJyK3q1z";
+                else
+                    return null;
+            }
         };
+    }
     if (stubStorage) {
-        plebbit._storage.getItem = () => undefined;
-        plebbit._storage.setItem = () => undefined;
+        plebbit._storage.getItem = async () => undefined;
+        plebbit._storage.setItem = async () => undefined;
     }
     // TODO should have multiple pubsub providers here to emulate a real browser/mobile environment
     if (!plebbitOptions?.pubsubHttpClientsOptions || forceMockPubsub)
-        for (const pubsubUrl of Object.keys(plebbit.clients.pubsubClients))
+        for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
             plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
     plebbit.on("error", () => { });
     return plebbit;
@@ -255,14 +263,10 @@ export async function mockGatewayPlebbit(plebbitOptions) {
     const plebbit = await mockRemotePlebbit({
         ipfsGatewayUrls: ["http://localhost:18080"],
         plebbitRpcClientsOptions: undefined,
+        ipfsHttpClientsOptions: undefined,
+        pubsubHttpClientsOptions: undefined,
         ...plebbitOptions
     });
-    delete plebbit.clients.ipfsClients;
-    delete plebbit.ipfsHttpClientsOptions;
-    delete plebbit._clientsManager.clients.ipfsClients;
-    delete plebbit.plebbitRpcClient;
-    delete plebbit.plebbitRpcClientsOptions;
-    plebbit._clientsManager._defaultPubsubProviderUrl = plebbit._clientsManager._defaultIpfsProviderUrl = undefined;
     return plebbit;
 }
 export async function mockMultipleGatewaysPlebbit(plebbitOptions) {
@@ -275,18 +279,18 @@ export async function publishRandomReply(parentComment, plebbit, commentProps, v
     });
     await publishWithExpectedResult(reply, true);
     if (verifyCommentPropsInParentPages)
-        await waitTillCommentIsInParentPages(reply, plebbit);
+        await waitTillCommentIsInParentPages(reply.toJSONAfterChallengeVerification(), plebbit);
     return reply;
 }
 export async function publishRandomPost(subplebbitAddress, plebbit, postProps, verifyCommentPropsInParentPages = true) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
-        content: `Random post Content ${uuidv4()} ${lodash.uniqueId()}`,
-        title: `Random post Title ${uuidv4()} ${lodash.uniqueId()}`,
+        content: `Random post Content ${uuidv4()}`,
+        title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
     if (verifyCommentPropsInParentPages)
-        await waitTillCommentIsInParentPages(post, plebbit);
+        await waitTillCommentIsInParentPages(post.toJSONAfterChallengeVerification(), plebbit);
     return post;
 }
 export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, voteProps) {
@@ -308,11 +312,11 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
-                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason}): ${JSON.stringify(lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
+                const msg = `Expected challengeSuccess to be (${expectedChallengeSuccess}) and got (${verificationMsg.challengeSuccess}). Reason (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
                 reject(msg);
             }
             else if (expectedReason && expectedReason !== verificationMsg.reason) {
-                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(lodash.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
+                const msg = `Expected reason to be (${expectedReason}) and got (${verificationMsg.reason}): ${JSON.stringify(remeda.omit(verificationMsg, ["encrypted", "signature", "challengeRequestId"]))}`;
                 reject(msg);
             }
             else
@@ -321,7 +325,7 @@ export async function publishWithExpectedResult(publication, expectedChallengeSu
     });
 }
 export async function findCommentInPage(commentCid, pageCid, pages) {
-    let currentPageCid = lodash.clone(pageCid);
+    let currentPageCid = remeda.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
         const commentInPage = loadedPage.comments.find((c) => c.cid === commentCid);
@@ -332,6 +336,8 @@ export async function findCommentInPage(commentCid, pageCid, pages) {
     return undefined;
 }
 export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCheckFor = {}, checkInAllPages = false) {
+    if (comment.depth > 0 && !comment.parentCid)
+        throw Error("waitTillCommentIsInParentPages has to be called with a reply");
     const parent = comment.depth === 0
         ? await plebbit.getSubplebbit(comment.subplebbitAddress)
         : await plebbit.createComment({ cid: comment.parentCid });
@@ -339,26 +345,35 @@ export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCh
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
     let commentInPage;
     const isCommentInParentPages = async () => {
-        const repliesPageCid = pagesInstance()?.pageCids?.new;
+        const instance = pagesInstance();
+        const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
         if (repliesPageCid)
             commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
         return Boolean(commentInPage);
     };
     await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
     await parent.stop();
-    const pageCids = parent instanceof Comment ? parent.replies.pageCids : parent.posts.pageCids;
-    assert(lodash.isPlainObject(pageCids));
+    if (!commentInPage)
+        throw Error("Failed to find comment in page");
+    const pagesJson = parent instanceof Comment ? parent.replies.toJSON() : parent.posts.toJSON();
+    if (!pagesJson)
+        throw Error("Failed to retrieve pages");
+    const pageCids = pagesJson.pageCids;
+    const commentKeys = remeda.keys.strict(propsToCheckFor);
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
             const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
-            for (const [key, value] of Object.entries(propsToCheckFor))
-                if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
-                    throw Error(`commentInPage[${key}] is incorrect`);
+            if (!commentInPage)
+                throw Error("Failed to find comment in page");
+            for (const commentKey of commentKeys) {
+                if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
+                    throw Error(`commentInPage[${commentKey}] is incorrect`);
+            }
         }
     else
-        for (const [key, value] of Object.entries(propsToCheckFor))
-            if (deterministicStringify(commentInPage[key]) !== deterministicStringify(value))
-                throw Error(`commentInPage[${key}] is incorrect`);
+        for (const commentKey of commentKeys)
+            if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
+                throw Error(`commentInPage[${commentKey}] is incorrect`);
 }
 export async function createSubWithNoChallenge(props, plebbit) {
     const sub = await plebbit.createSubplebbit(props);
@@ -375,8 +390,8 @@ export async function generatePostToAnswerMathQuestion(props, plebbit) {
 }
 export function isRpcFlagOn() {
     const isPartOfProcessEnv = globalThis?.["process"]?.env?.["USE_RPC"] === "1";
-    const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
-    const isRpcFlagOn = isPartOfKarmaArgs || isPartOfProcessEnv;
+    // const isPartOfKarmaArgs = globalThis?.["__karma__"]?.config?.config?.["USE_RPC"] === "1";
+    const isRpcFlagOn = isPartOfProcessEnv;
     return isRpcFlagOn;
 }
 export async function resolveWhenConditionIsTrue(toUpdate, predicate) {
@@ -389,13 +404,5 @@ export async function resolveWhenConditionIsTrue(toUpdate, predicate) {
                     resolve(conditionStatus);
             });
         });
-}
-// Not used in actual plebbit-js code, just for testing
-export function differenceBetweenTwoObjects(object, base) {
-    return lodash.transform(object, (result, value, key) => {
-        if (!lodash.isEqual(value, base[key])) {
-            result[key] = lodash.isObject(value) && lodash.isObject(base[key]) ? differenceBetweenTwoObjects(value, base[key]) : value;
-        }
-    });
 }
 //# sourceMappingURL=test-util.js.map

@@ -91,15 +91,12 @@ export const CommentUpdateSignedPropertyNames = [
 ];
 // Export constants of CommentType fields
 // Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
-const PUBLICATION_FIELDS = [
+export const MOD_EDIT_FIELDS = [
     "author",
     "protocolVersion",
     "signature",
     "subplebbitAddress",
-    "timestamp"
-];
-export const MOD_EDIT_FIELDS = [
-    ...PUBLICATION_FIELDS,
+    "timestamp",
     "commentCid",
     "flair",
     "spoiler",
@@ -110,7 +107,11 @@ export const MOD_EDIT_FIELDS = [
     "commentAuthor"
 ];
 export const AUTHOR_EDIT_FIELDS = [
-    ...PUBLICATION_FIELDS,
+    "author",
+    "protocolVersion",
+    "signature",
+    "subplebbitAddress",
+    "timestamp",
     "commentCid",
     "content",
     "flair",

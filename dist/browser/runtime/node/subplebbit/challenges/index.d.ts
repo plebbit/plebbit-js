@@ -7,17 +7,12 @@ type PendingChallenge = Challenge & {
 export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<string[]>;
 declare const plebbitJsChallenges: Record<string, ChallengeFileFactory>;
 declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => Promise<{
-    challengeSuccess: any;
-    challengeErrors?: undefined;
-    pendingChallenges?: undefined;
+    challengeSuccess: true;
 } | {
-    challengeSuccess: any;
+    challengeSuccess: false;
     challengeErrors: string[];
-    pendingChallenges?: undefined;
 } | {
     pendingChallenges: PendingChallenge[];
-    challengeSuccess?: undefined;
-    challengeErrors?: undefined;
 }>;
 declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => Promise<{
     challengeSuccess: boolean;

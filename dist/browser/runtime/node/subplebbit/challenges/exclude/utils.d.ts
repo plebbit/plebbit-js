@@ -6,8 +6,8 @@ declare const testFirstCommentTimestamp: (excludeTime: number | undefined, autho
 declare const isVote: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
 declare const isReply: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
 declare const isPost: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
-declare const testVote: (excludeVote: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
-declare const testReply: (excludeReply: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
-declare const testPost: (excludePost: boolean, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testVote: (excludeVote: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testReply: (excludeReply: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
+declare const testPost: (excludePost: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
 declare const testRole: (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: RemoteSubplebbit["roles"]) => boolean;
 export { isVote, isReply, isPost, testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole };

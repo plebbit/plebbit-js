@@ -1,14 +1,15 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
-import { Comment } from "./comment.js";
+import { Comment } from "./publications/comment/comment.js";
 import { CommentEditSignedPropertyNamesUnion, CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType, VoteSignedPropertyNamesUnion } from "./signer/constants.js";
-import Publication from "./publication.js";
+import Publication from "./publications/publication.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { ChallengeFile, Flair } from "./subplebbit/types.js";
 import { Plebbit } from "./plebbit.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 export type ProtocolVersion = "1.0.0";
-export type Chain = "eth" | "matic" | "avax" | "sol";
+export type ChainTicker = "eth" | "matic" | "avax" | "sol";
 export type ChainProvider = {
     urls: string[];
     chainId: number;
@@ -19,57 +20,61 @@ export interface PlebbitOptions {
     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
     plebbitRpcClientsOptions?: string[];
     dataPath?: string;
-    chainProviders?: {
-        [chainTicker: string]: ChainProvider;
-    };
+    chainProviders?: Partial<Record<ChainTicker, ChainProvider>>;
     resolveAuthorAddresses?: boolean;
     publishInterval?: number;
     updateInterval?: number;
     noData?: boolean;
     browserLibp2pJsPublish?: boolean;
 }
-export interface ParsedPlebbitOptions extends Required<PlebbitOptions> {
+export interface ParsedPlebbitOptions extends Required<Omit<PlebbitOptions, "ipfsHttpClientsOptions" | "pubsubHttpClientsOptions" | "plebbitRpcClientsOptions" | "dataPath">> {
     ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
     plebbitRpcClientsOptions: string[] | undefined;
+    chainProviders: Partial<Record<ChainTicker, ChainProvider>>;
     dataPath: string | undefined;
 }
-export interface PageType {
+export interface PageInstanceType {
     comments: Comment[];
     nextCid?: string;
 }
 export interface PageTypeJson {
-    comments: CommentWithCommentUpdate[];
+    comments: CommentWithCommentUpdateJson[];
     nextCid?: string;
 }
-export interface PageIpfs extends Omit<PageType, "comments"> {
+export interface PageIpfs {
     comments: {
         comment: CommentIpfsWithCid;
         update: CommentUpdate;
     }[];
+    nextCid?: string;
 }
-export interface PagesType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageType>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+export interface PagesInstanceType {
+    pages: Partial<Record<PostSortName | ReplySortName, PageInstanceType>>;
+    pageCids: Record<PostSortName | ReplySortName, string> | {};
 }
 export interface PagesTypeJson {
-    pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+    pages: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"];
+    pageCids: RepliesPagesTypeJson["pageCids"] | PostsPagesTypeJson["pageCids"];
 }
-export interface RepliesPagesTypeJson extends PagesTypeJson {
+export interface RepliesPagesTypeJson {
     pages: Partial<Record<ReplySortName, PageTypeJson>>;
-    pageCids: Partial<Record<ReplySortName, string>>;
+    pageCids: Record<ReplySortName, string>;
 }
-export interface PostsPagesTypeJson extends PagesTypeJson {
+export interface PostsPagesTypeJson {
     pages: Partial<Record<PostSortName, PageTypeJson>>;
-    pageCids: Partial<Record<PostSortName, string>>;
+    pageCids: Record<PostSortName, string>;
 }
-export interface PagesTypeIpfs {
-    pages: Partial<Record<PostSortName | ReplySortName, PageIpfs>>;
-    pageCids: Partial<Record<PostSortName | ReplySortName, string>>;
+export interface RepliesPagesTypeIpfs {
+    pages: Partial<Record<ReplySortName, PageIpfs>>;
+    pageCids: Record<ReplySortName, string>;
 }
+export interface PostsPagesTypeIpfs {
+    pages: Partial<Record<PostSortName, PageIpfs>>;
+    pageCids: Record<PostSortName, string>;
+}
+export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 export interface CreateCommentOptions extends CreatePublicationOptions {
-    signer: Pick<SignerType, "privateKey" | "type">;
     parentCid?: string;
     content?: string;
     title?: string;
@@ -78,17 +83,35 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     linkHeight?: number;
     spoiler?: boolean;
     flair?: Flair;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio";
 }
+export interface CommentOptionsToSign extends CreateCommentOptions {
+    signer: SignerType;
+    timestamp: number;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
+}
+export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 export interface CreateVoteOptions extends CreatePublicationOptions {
     commentCid: string;
     vote: 1 | 0 | -1;
     signer: Pick<SignerType, "privateKey" | "type">;
 }
-export interface VoteType extends Omit<CreateVoteOptions, "signer">, PublicationType {
-    author: CommentIpfsType["author"];
+export interface VoteOptionsToSign extends CreateVoteOptions {
+    signer: SignerType;
     timestamp: number;
-    signer?: SignerType;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
 }
+export type LocalCommentOptions = CommentOptionsToSign & {
+    signature: JsonSignature;
+} & Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">;
+export type LocalVoteOptions = VoteOptionsToSign & {
+    signature: JsonSignature;
+} & Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">;
+export type LocalCommentEditOptions = CommentEditOptionsToSign & {
+    signature: JsonSignature;
+} & Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">;
 export interface SubplebbitAuthor {
     postScore: number;
     replyScore: number;
@@ -118,14 +141,12 @@ export type Wallet = {
         type: "eip191";
     };
 };
-export interface PublicationType extends Required<Omit<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids">>, Pick<CreatePublicationOptions, "challengeAnswers" | "challengeCommentCids"> {
-    author: AuthorIpfsType;
-    signature: JsonSignature;
-    protocolVersion: ProtocolVersion;
-}
+export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 export interface CreatePublicationOptions {
+    signer: Pick<SignerType, "privateKey" | "type">;
     author?: Partial<AuthorIpfsType>;
     subplebbitAddress: string;
+    protocolVersion?: ProtocolVersion;
     timestamp?: number;
     challengeAnswers?: string[];
     challengeCommentCids?: string[];
@@ -148,13 +169,28 @@ export interface AuthorCommentEditOptions {
     spoiler?: boolean;
     reason?: string;
 }
-export interface AuthorCommentEdit extends AuthorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {
+export interface CreateCommentEditOptions extends AuthorCommentEditOptions, ModeratorCommentEditOptions, CreatePublicationOptions {
 }
-export interface ModeratorCommentEdit extends ModeratorCommentEditOptions, Omit<PublicationType, "challengeAnswers" | "challengeCommentCids"> {
+export interface AuthorCommentEdit extends AuthorCommentEditOptions {
+    signature: JsonSignature;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
+    subplebbitAddress: string;
+    timestamp: number;
+}
+export interface ModeratorCommentEdit extends ModeratorCommentEditOptions {
+    signature: JsonSignature;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
+    subplebbitAddress: string;
+    timestamp: number;
 }
 export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
-export interface CreateCommentEditOptions extends AuthorCommentEdit, ModeratorCommentEdit {
-    signer: SignerType | Pick<SignerType, "privateKey" | "type">;
+export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
+    signer: SignerType;
+    timestamp: number;
+    author: AuthorIpfsType;
+    protocolVersion: ProtocolVersion;
 }
 export type Nft = {
     chainTicker: string;
@@ -185,9 +221,18 @@ export interface ChallengeRequestMessageType extends PubsubMessage {
     acceptedChallengeTypes?: string[];
 }
 export interface DecryptedChallengeRequest {
-    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage | PostPubsubMessage;
+    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage;
     challengeAnswers: string[] | undefined;
     challengeCommentCids: string[] | undefined;
+}
+export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequest {
+    publication: CommentPubsubMessage;
+}
+export interface DecryptedChallengeRequestCommentEdit extends DecryptedChallengeRequest {
+    publication: CommentEditPubsubMessage;
+}
+export interface DecryptedChallengeRequestVote extends DecryptedChallengeRequest {
+    publication: VotePubsubMessage;
 }
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {
 }
@@ -206,13 +251,8 @@ export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage &
         subplebbit: SubplebbitAuthor | undefined;
     };
 };
-export type ChallengeRequestPostWithSubplebbitAuthor = PostPubsubMessage & {
-    author: AuthorIpfsType & {
-        subplebbit: SubplebbitAuthor | undefined;
-    };
-};
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
-    publication: ChallengeRequestVoteWithSubplebbitAuthor | ChallengeRequestCommentEditWithSubplebbitAuthor | ChallengeRequestCommentWithSubplebbitAuthor | ChallengeRequestPostWithSubplebbitAuthor;
+    publication: ChallengeRequestVoteWithSubplebbitAuthor | ChallengeRequestCommentEditWithSubplebbitAuthor | ChallengeRequestCommentWithSubplebbitAuthor;
 }
 export interface EncodedDecryptedChallengeRequestMessageType extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encrypted" | "signature">, BaseEncodedPubsubMessage {
     encrypted: EncryptedEncoded;
@@ -292,7 +332,7 @@ export interface CommentUpdate {
     downvoteCount: number;
     replyCount: number;
     edit?: AuthorCommentEdit;
-    replies?: PagesTypeIpfs;
+    replies?: RepliesPagesTypeIpfs;
     flair?: Flair;
     spoiler?: boolean;
     pinned?: boolean;
@@ -308,51 +348,43 @@ export interface CommentUpdate {
     lastReplyTimestamp?: number;
     signature: JsonSignature;
 }
-export interface CommentType extends Partial<Omit<CommentUpdate, "author" | "replies">>, Omit<CreateCommentOptions, "signer"> {
-    author: AuthorTypeWithCommentUpdate;
-    timestamp: number;
-    protocolVersion: ProtocolVersion;
-    signature: JsonSignature;
-    replies?: PagesTypeJson;
+export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<CommentUpdate, "author" | "replies">, CommentTypeJsonBase {
+    replies?: RepliesPagesTypeJson;
+    original: Pick<CommentPubsubMessage, "author" | "content" | "flair" | "protocolVersion">;
+    shortCid: string;
+    author: AuthorTypeWithCommentUpdate & {
+        shortAddress: string;
+    };
+    deleted?: boolean;
+}
+export interface CommentIpfsType extends CommentPubsubMessage {
+    depth: number;
     postCid?: string;
-    previousCid?: string;
-    depth?: number;
-    signer?: SignerType;
-    original?: Pick<Partial<CommentPubsubMessage>, "author" | "content" | "flair" | "protocolVersion">;
-    deleted?: CommentType["edit"]["deleted"];
     thumbnailUrl?: string;
     thumbnailUrlWidth?: number;
     thumbnailUrlHeight?: number;
-    cid?: string;
-    shortCid?: string;
+    previousCid?: string;
+}
+export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid"> {
+    cid: CommentUpdate["cid"];
+    postCid: CommentUpdate["cid"];
+}
+export interface CommentEditTypeJson extends CommentEditPubsubMessage {
     shortSubplebbitAddress: string;
+    author: AuthorTypeJson;
 }
-export interface CommentWithCommentUpdate extends Omit<CommentType, "replyCount" | "downvoteCount" | "upvoteCount" | "replies" | "updatedAt" | "original" | "cid" | "shortCid" | "postCid" | "depth" | "signer">, Required<Pick<CommentType, "original" | "cid" | "postCid" | "depth" | "shortCid">>, Omit<CommentUpdate, "author" | "replies"> {
-    replies?: PagesTypeJson;
-}
-export interface CommentIpfsType extends Omit<CreateCommentOptions, "signer" | "timestamp" | "author">, PublicationType, Pick<CommentType, "previousCid" | "postCid" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">, Pick<Required<CommentType>, "depth"> {
-    author: AuthorIpfsType;
-}
-export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid">, Pick<CommentWithCommentUpdate, "cid" | "postCid"> {
-}
-export interface PostType extends Omit<CommentType, "parentCid" | "depth"> {
-    depth: 0;
-    parentCid: undefined;
-}
-export interface PostIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid" | "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight">, Pick<CommentWithCommentUpdate, "cid" | "postCid">, Pick<PostType, "depth" | "parentCid" | "title" | "link" | "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> {
-}
-export interface CommentEditType extends PublicationType, Omit<CreateCommentEditOptions, "signer"> {
-    author: CommentIpfsType["author"];
-    signer?: SignerType;
+export type AuthorTypeJson = (AuthorIpfsType | AuthorTypeWithCommentUpdate) & {
+    shortAddress: string;
+};
+export interface VoteTypeJson extends VotePubsubMessage {
+    shortSubplebbitAddress: string;
+    author: AuthorTypeJson;
 }
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
-export interface CommentPubsubMessage extends Pick<CommentIpfsType, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
+export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
+export interface VotePubsubMessage extends Pick<LocalVoteOptions, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
 }
-export interface PostPubsubMessage extends Pick<PostIpfsWithCid, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion" | "flair" | "spoiler"> {
-}
-export interface VotePubsubMessage extends Pick<VoteType, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
-}
-export interface CommentEditPubsubMessage extends Pick<CommentEditType, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
+export interface CommentEditPubsubMessage extends Pick<LocalCommentEditOptions, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {
 }
 export type NativeFunctions = {
     fetch: typeof fetch;
@@ -360,7 +392,22 @@ export type NativeFunctions = {
 export type OnlyDefinedProperties<T> = Pick<T, {
     [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
 }[keyof T]>;
-export interface CommentsTableRow extends Omit<CommentIpfsWithCid, "challengeAnswers" | "challengeCommentCids"> {
+type CommentTypeJsonBase = {
+    shortSubplebbitAddress: string;
+};
+interface CommentTypeJsonBeforeChallengeVerification extends CommentPubsubMessage, CommentTypeJsonBase {
+    author: CommentPubsubMessage["author"] & {
+        shortAddress: string;
+    };
+}
+interface CommentTypeJsonAfterChallengeVerificationNoCommentUpdate extends CommentIpfsWithCid, CommentTypeJsonBase {
+    shortCid: string;
+    author: CommentIpfsWithCid["author"] & {
+        shortAddress: string;
+    };
+}
+export type CommentTypeJson = CommentWithCommentUpdateJson | CommentTypeJsonAfterChallengeVerificationNoCommentUpdate | CommentTypeJsonBeforeChallengeVerification;
+export interface CommentsTableRow extends CommentIpfsWithCid {
     authorAddress: AuthorIpfsType["address"];
     challengeRequestPublicationSha256: string;
     ipnsName?: string;
@@ -376,14 +423,14 @@ export interface CommentUpdatesRow extends CommentUpdate {
 }
 export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "insertedAt"> {
 }
-export interface VotesTableRow extends Omit<VoteType, "challengeAnswers" | "challengeCommentCids"> {
+export interface VotesTableRow extends VotePubsubMessage {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     authorSignerAddress: string;
 }
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 }
-export interface CommentEditsTableRow extends Omit<CommentEditType, "challengeAnswers" | "challengeCommentCids"> {
+export interface CommentEditsTableRow extends CommentEditPubsubMessage {
     authorAddress: AuthorIpfsType["address"];
     insertedAt: number;
     isAuthorEdit: boolean;
@@ -393,10 +440,10 @@ export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "
 }
 declare module "knex/types/tables" {
     interface Tables {
-        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert, null, null>;
+        comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;
         commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Omit<CommentUpdatesTableRowInsert, "cid">, Omit<CommentUpdatesTableRowInsert, "cid">>;
-        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert, null>;
-        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert, null, null>;
+        votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
+        commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
     }
 }
 export interface SubplebbitEvents {
@@ -407,7 +454,7 @@ export interface SubplebbitEvents {
     error: (error: PlebbitError) => void;
     statechange: (newState: RemoteSubplebbit["state"]) => void;
     updatingstatechange: (newState: RemoteSubplebbit["updatingState"]) => void;
-    startedstatechange: (newState: RemoteSubplebbit["startedState"]) => void;
+    startedstatechange: (newState: RpcLocalSubplebbit["startedState"]) => void;
     update: (updatedSubplebbit: RemoteSubplebbit) => void;
 }
 export interface PublicationEvents {
@@ -469,7 +516,7 @@ export interface IpfsClient {
     sessionStats?: undefined;
     subplebbitStats?: undefined;
     _client: ReturnType<typeof CreateIpfsClient>;
-    _clientOptions: Parameters<typeof CreateIpfsClient>[0];
+    _clientOptions: IpfsHttpClientOptions;
 }
 export type PubsubSubscriptionHandler = Extract<Parameters<IpfsClient["_client"]["pubsub"]["subscribe"]>[1], Function>;
 export type IpfsHttpClientPubsubMessage = Parameters<PubsubSubscriptionHandler>["0"];
@@ -479,7 +526,7 @@ export interface PubsubClient {
     sessionStats?: undefined;
     subplebbitStats?: undefined;
     _client: Pick<IpfsClient["_client"], "pubsub">;
-    _clientOptions: IpfsHttpClientOptions;
+    _clientOptions: IpfsClient["_clientOptions"];
 }
 export interface GatewayClient {
     stats?: IpfsStats;
@@ -499,7 +546,7 @@ export interface StorageInterface {
 }
 type LRUStorageCacheNames = "plebbitjs_lrustorage_postTimestamp" | "plebbitjs_lrustorage_commentPostUpdatesParentsPath";
 export interface LRUStorageConstructor {
-    maxItems?: number;
+    maxItems: number;
     cacheName: LRUStorageCacheNames | string;
     plebbit: Pick<Plebbit, "dataPath" | "noData">;
 }

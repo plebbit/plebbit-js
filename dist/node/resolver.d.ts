@@ -1,12 +1,8 @@
-import { Chain } from "./types.js";
-export declare class Resolver {
-    private plebbit;
-    constructor(plebbit: Resolver["plebbit"]);
-    toJSON(): any;
-    toString(): any;
-    _resolveViaViem(chainTicker: Chain, address: string, txtRecordName: string, chainProviderUrl: string): Promise<string | null>;
-    _resolveViaSolana(address: string, txtRecordName: string, chainProviderUrl: string): Promise<string>;
-    _resolveViaEthers(chainTicker: Chain, address: string, txtRecordName: string): Promise<string>;
-    resolveTxtRecord(address: string, txtRecordName: string, chain: Chain, chainProviderUrl: string): Promise<string | null>;
-    isDomain(address: string): boolean;
-}
+import { ChainTicker } from "./types.js";
+import { createPublicClient as createViemClient } from "viem";
+import { ethers } from "ethers";
+import { Connection as SolanaConnection } from "@solana/web3.js";
+export declare const viemClients: Record<string, ReturnType<typeof createViemClient>>;
+export declare const solanaConnections: Record<string, SolanaConnection>;
+export declare const ethersClients: Record<string, ReturnType<typeof ethers.getDefaultProvider>>;
+export declare function resolveTxtRecord(address: string, txtRecordName: string, chain: ChainTicker, chainProviderUrl: string, chainId: number | undefined): Promise<string | null>;
