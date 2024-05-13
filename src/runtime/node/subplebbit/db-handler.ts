@@ -182,6 +182,8 @@ export class DbHandler {
             table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
             table.text("challengeRequestPublicationSha256").notNullable().unique();
 
+            table.text("linkHtmlTagName").nullable();
+
             table.json("flair").nullable();
 
             table.boolean("spoiler");

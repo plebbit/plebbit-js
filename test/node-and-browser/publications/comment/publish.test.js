@@ -134,6 +134,20 @@ describe("publishing comments", async () => {
         await post.stop();
     });
 
+    it(`Can publish a comment with linkHtmlTagName defined`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { linkHtmlTagName: "img", link: "https://google.com" });
+        expect(post.linkHtmlTagName).to.equal("img");
+        expect(post.link).to.equal("https://google.com");
+
+        await publishWithExpectedResult(post, true);
+        expect(post.linkHtmlTagName).to.equal("img");
+        expect(post.link).to.equal("https://google.com");
+
+        const remotePost = await plebbit.getComment(post.cid);
+        expect(remotePost.linkHtmlTagName).to.equal("img");
+        expect(remotePost.link).to.equal("https://google.com");
+    });
+
     it(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.displayName = null;

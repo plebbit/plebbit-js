@@ -28,7 +28,6 @@ import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
-import Author from "../author.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -51,6 +50,7 @@ export class Comment extends Publication {
     previousCid?: string;
     depth?: number;
     postCid?: string;
+    linkHtmlTagName?: "a" | "img" | "video" | "audio";
 
     // CommentEdit and CommentUpdate props
     original?: CommentWithCommentUpdateJson["original"];
@@ -134,6 +134,7 @@ export class Comment extends Publication {
         this.spoiler = props.spoiler;
         this.timestamp = props.timestamp;
         this.title = props.title;
+        this.linkHtmlTagName = props.linkHtmlTagName;
     }
 
     _initPubsubMessageProps(props: CommentPubsubMessage) {
@@ -146,6 +147,7 @@ export class Comment extends Publication {
         this.parentCid = props.parentCid;
         this.spoiler = props.spoiler;
         this.title = props.title;
+        this.linkHtmlTagName = props.linkHtmlTagName;
     }
 
     _initIpfsProps(props: CommentIpfsType) {
@@ -321,7 +323,8 @@ export class Comment extends Publication {
             link: this.link,
             linkWidth: this.linkWidth,
             linkHeight: this.linkHeight,
-            title: this.title
+            title: this.title,
+            linkHtmlTagName: this.linkHtmlTagName
         };
     }
 

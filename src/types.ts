@@ -106,6 +106,7 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     linkHeight?: number;
     spoiler?: boolean; // Hide the comment thumbnail behind spoiler warning
     flair?: Flair; // Author or mod chosen colored label for the comment
+    linkHtmlTagName?: "a" | "img" | "video" | "audio";
 }
 
 export interface CommentOptionsToSign extends CreateCommentOptions {
