@@ -130,28 +130,28 @@ describe(`Start lock`, async () => {
         await subplebbit.stop();
     });
 
-    it(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
-        const subplebbit = await plebbit.createSubplebbit();
-        await subplebbit.start();
-        expect(subplebbit.state).to.equal("started");
-        const sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
-        expect(sameSubplebbit.state).to.equal("stopped");
-        await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
-        await subplebbit.stop();
-        await sameSubplebbit.stop();
-    });
+    if (!isRpcFlagOn())
+        it(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
+            const subplebbit = await plebbit.createSubplebbit();
+            await subplebbit.start();
+            expect(subplebbit.state).to.equal("started");
+            const sameSubplebbit = await plebbit.createSubplebbit({ address: subplebbit.address });
+            expect(sameSubplebbit.state).to.equal("stopped");
+            await assert.isRejected(sameSubplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
+            await subplebbit.stop();
+        });
 
-    it(`Fail to start subplebbit if start lock is present`, async () => {
-        const subSigner = await plebbit.createSigner();
-        const lockPath = path.join(dataPath, "subplebbits", `${subSigner.address}.start.lock`);
-        const sub = await plebbit.createSubplebbit({ signer: subSigner });
-        const sameSub = await plebbit.createSubplebbit({ address: sub.address });
-        sub.start();
-        await resolveWhenConditionIsTrue(sub, () => fs.existsSync(lockPath));
-        await assert.isRejected(sameSub.start(), messages.ERR_SUB_ALREADY_STARTED);
-        await sub.stop();
-        await sameSub.stop();
-    });
+    if (!isRpcFlagOn())
+        it(`Fail to start subplebbit if start lock is present`, async () => {
+            const subSigner = await plebbit.createSigner();
+            const lockPath = path.join(dataPath, "subplebbits", `${subSigner.address}.start.lock`);
+            const sub = await plebbit.createSubplebbit({ signer: subSigner });
+            const sameSub = await plebbit.createSubplebbit({ address: sub.address });
+            sub.start();
+            await resolveWhenConditionIsTrue(sub, () => fs.existsSync(lockPath));
+            await assert.isRejected(sameSub.start(), messages.ERR_SUB_ALREADY_STARTED);
+            await sub.stop();
+        });
 
     it(`Can start subplebbit as soon as start lock is unlocked`, async () => {
         const subSigner = await plebbit.createSigner();
@@ -168,14 +168,15 @@ describe(`Start lock`, async () => {
         await sub.stop();
     });
 
-    it(`subplebbit.start will throw if user attempted to start the same sub concurrently through different instances`, async () => {
-        const sub = await plebbit.createSubplebbit();
-        const sameSub = await plebbit.createSubplebbit({ address: sub.address });
+    if (!isRpcFlagOn())
+        it(`subplebbit.start will throw if user attempted to start the same sub concurrently through different instances`, async () => {
+            const sub = await plebbit.createSubplebbit();
+            const sameSub = await plebbit.createSubplebbit({ address: sub.address });
 
-        await assert.isRejected(Promise.all([sub.start(), sameSub.start()]), messages.ERR_SUB_ALREADY_STARTED);
-        await sub.stop();
-        await sameSub.stop();
-    });
+            await assert.isRejected(Promise.all([sub.start(), sameSub.start()]), messages.ERR_SUB_ALREADY_STARTED);
+            if (sub.state === "started") await sub.stop();
+            if (sameSub.state === "started") await sameSub.stop();
+        });
 
     it(`Can start subplebbit if start lock is stale (10s)`, async () => {
         // Lock is considered stale if lock has not been updated in 10000 ms (10s)
@@ -189,6 +190,79 @@ describe(`Start lock`, async () => {
         await assert.isFulfilled(sub.start());
         await sub.stop();
     });
+
+    if (isRpcFlagOn())
+        it(`rpcLocalSub.start() will receive started updates if there is another instance that's started`, async () => {
+            const sub1 = await createSubWithNoChallenge({}, plebbit);
+
+            await sub1.start();
+            await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+
+            const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
+            await sub2.start(); // should not fail
+
+            let receivedChallengeRequest = false;
+            sub2.on("challengerequest", () => {
+                receivedChallengeRequest = true;
+            });
+
+            let receivedChallengeVerification = false;
+
+            sub2.on("challengeverification", () => {
+                receivedChallengeVerification = true;
+            });
+
+            await publishRandomPost(sub1.address, plebbit, {});
+            publishRandomPost(sub1.address, plebbit, {});
+
+            await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
+
+            await sub1.stop();
+            await sub2.stop();
+
+            expect(receivedChallengeRequest).to.be.true;
+            expect(receivedChallengeVerification).to.be.true;
+            expect(sub1.updatedAt).to.equal(sub2.updatedAt);
+        });
+
+    if (isRpcFlagOn())
+        it(`rpcLocalSub.stop() will stop all the sub instances from running, even if rpcLocalSub wasn't the first instance to call start()`, async () => {
+            const sub1 = await createSubWithNoChallenge({}, plebbit);
+
+            await sub1.start();
+            await new Promise((resolve) => sub1.once("update", resolve));
+            expect(sub1.started).to.be.true;
+
+            const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
+            expect(sub2.started).to.be.true;
+            await sub2.start();
+            await sub2.stop(); // This should stop sub1 and sub2
+
+            await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
+            expect(sub2.started).to.be.false;
+
+            expect(sub1.started).to.be.false;
+        });
+
+    if (isRpcFlagOn())
+        it(`rpcLocalSub.delete() will delete the sub, even if rpcLocalSub wasn't the first instance to call start()`, async () => {
+            const sub1 = await createSubWithNoChallenge({}, plebbit);
+            await sub1.start();
+
+            await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
+
+            const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
+
+            await sub2.delete();
+
+            await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
+
+            const localSubs = await plebbit.listSubplebbits();
+            expect(localSubs).to.not.include(sub1.address);
+
+            // expect(sub1.started).to.be.false;
+            // expect(sub2.started).to.be.false;
+        });
 });
 
 describe(`Publish loop resiliency`, async () => {

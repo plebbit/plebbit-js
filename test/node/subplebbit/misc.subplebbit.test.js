@@ -41,7 +41,6 @@ describe("plebbit.listSubplebbits", async () => {
 
         expect(createdSubplebbit.address).to.equal(subSigner.address);
         expect(createdSubplebbit.title).to.equal(title);
-        await createdSubplebbit.stop();
     });
 });
 
