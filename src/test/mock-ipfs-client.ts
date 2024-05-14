@@ -19,7 +19,6 @@ class IpfsHttpClient {
                     if (Math.random() > dropRate) ioClient.emit(topic, message);
                 } else ioClient.emit(topic, message);
             },
-            //@ts-expect-error
             subscribe: async (topic: string, rawCallback: PubsubSubscriptionHandler) => {
                 const callback = (msg: Buffer) => {
                     //@ts-expect-error
@@ -28,7 +27,6 @@ class IpfsHttpClient {
                 ioClient.on(topic, callback);
                 this.subscriptions.push({ topic, rawCallback, callback });
             },
-            //@ts-expect-error
             unsubscribe: async (topic: string, rawCallback?: PubsubSubscriptionHandler) => {
                 if (!rawCallback) {
                     ioClient.off(topic);

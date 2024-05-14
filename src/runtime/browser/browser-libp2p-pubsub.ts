@@ -111,7 +111,6 @@ export async function createLibp2pNode(): Promise<PubsubClient> {
         _client: {
             pubsub: {
                 ls: async () => libP2pNode.services.pubsub.getTopics(),
-                //@ts-expect-error
                 peers: async (topic, options) => libP2pNode.services.pubsub.getSubscribers(topic),
                 publish: async (topic, data, options) => {
                     const res = await libP2pNode.services.pubsub.publish(topic, data);
