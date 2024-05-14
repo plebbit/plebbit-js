@@ -218,7 +218,7 @@ describe(`Start lock`, async () => {
             await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
 
             await sub1.stop();
-            await sub2.stop();
+            // No need to stop sub2, since it will receive the stop update and unsubscribe by itself
 
             expect(receivedChallengeRequest).to.be.true;
             expect(receivedChallengeVerification).to.be.true;
@@ -239,19 +239,23 @@ describe(`Start lock`, async () => {
             await sub2.stop(); // This should stop sub1 and sub2
 
             await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
-            expect(sub2.started).to.be.false;
-
-            // expect(sub1.started).to.be.false;
+            for (const sub of [sub1, sub2]) {
+                expect(sub.started).to.be.false;
+                expect(sub.startedState).to.equal("stopped");
+                expect(sub.state).to.equal("stopped");
+            }
         });
 
     if (isRpcFlagOn())
         it(`rpcLocalSub.delete() will delete the sub, even if rpcLocalSub wasn't the first instance to call start()`, async () => {
             const sub1 = await createSubWithNoChallenge({}, plebbit);
             await sub1.start();
+            expect(sub1.started).to.be.true;
 
             await resolveWhenConditionIsTrue(sub1, () => typeof sub1.updatedAt === "number");
 
             const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
+            expect(sub2.started).to.be.true;
 
             await sub2.delete();
 
@@ -260,8 +264,11 @@ describe(`Start lock`, async () => {
             const localSubs = await plebbit.listSubplebbits();
             expect(localSubs).to.not.include(sub1.address);
 
-            // expect(sub1.started).to.be.false;
-            // expect(sub2.started).to.be.false;
+            for (const sub of [sub1, sub2]) {
+                expect(sub.started).to.be.false;
+                expect(sub.startedState).to.equal("stopped");
+                expect(sub.state).to.equal("stopped");
+            }
         });
 });
 
