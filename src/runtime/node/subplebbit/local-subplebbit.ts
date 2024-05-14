@@ -1553,6 +1553,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     override async delete() {
+        const log = Logger("plebbit-js:local-subplebbit:delete");
+        log.trace(`Attempting to stop the subplebbit (${this.address}) before deleting, if needed`);
         if (this.state === "updating" || this.state === "started") await this.stop();
 
         const ipfsClient = this.clientsManager.getDefaultIpfs();
@@ -1564,5 +1566,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             try {
                 await ipfsClient._client.key.rm(this.signer.ipnsKeyName);
             } catch {}
+        log(`Deleted subplebbit (${this.address}) successfully`);
     }
 }

@@ -308,6 +308,9 @@ class PlebbitWsServer extends EventEmitter {
         if (!isSubStarted) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
         const startedSubplebbit = await getStartedSubplebbit(address);
         await startedSubplebbit.stop();
+        // emit last updates so subscribed instances can set their state to stopped
+        startedSubplebbit.emit("update", startedSubplebbit);
+        startedSubplebbit.emit("startedstatechange", startedSubplebbit.startedState);
         delete startedSubplebbits[address];
 
         return true;
@@ -342,6 +345,10 @@ class PlebbitWsServer extends EventEmitter {
             ? await getStartedSubplebbit(address)
             : <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
+        // emit last updates so subscribed instances can set their state to stopped
+        subplebbit.emit("update", subplebbit);
+        subplebbit.emit("startedstatechange", subplebbit.startedState);
+
         delete startedSubplebbits[address];
 
         return true;
