@@ -10,7 +10,7 @@ if (Number(process.versions.node.split(".")[0]) >= 18) {
     // Should be removed at some point once kubo-rpc-client fixes their problem with node 18+
     const log = Logger("plebbit-js:polyfill");
     log("Patching up the global body timeout");
-    setGlobalDispatcher(new Agent({ bodyTimeout: Infinity, connectTimeout: Infinity, headersTimeout: Infinity }));
+    setGlobalDispatcher(new Agent({ bodyTimeout: Number.MAX_SAFE_INTEGER }));
 }
 // must export a function and call it or this file isn't read
 export default () => {};
