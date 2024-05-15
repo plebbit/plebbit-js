@@ -309,11 +309,27 @@ class PlebbitWsServer extends EventEmitter {
         const startedSubplebbit = await getStartedSubplebbit(address);
         await startedSubplebbit.stop();
         // emit last updates so subscribed instances can set their state to stopped
-        startedSubplebbit.emit("update", startedSubplebbit);
-        startedSubplebbit.emit("startedstatechange", startedSubplebbit.startedState);
+        await this._postStoppingOrDeleting(startedSubplebbit);
         delete startedSubplebbits[address];
 
         return true;
+    }
+
+    private async _postStoppingOrDeleting(subplebbit: LocalSubplebbit) {
+        // emit the last updates
+        // remove all listeners
+        subplebbit.emit("update", subplebbit);
+        subplebbit.emit("startedstatechange", subplebbit.startedState);
+
+        subplebbit.removeAllListeners("challengerequest");
+        subplebbit.removeAllListeners("challenge");
+        subplebbit.removeAllListeners("challengeanswer");
+        subplebbit.removeAllListeners("challengeverification");
+        subplebbit.removeAllListeners("update");
+        subplebbit.removeAllListeners("startedstatechange");
+        subplebbit.removeAllListeners("statechange");
+        subplebbit.removeAllListeners("updatingstatechange");
+        subplebbit.removeAllListeners("error");
     }
 
     async editSubplebbit(params: any) {
@@ -345,10 +361,7 @@ class PlebbitWsServer extends EventEmitter {
             ? await getStartedSubplebbit(address)
             : <LocalSubplebbit>await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
-        // emit last updates so subscribed instances can set their state to stopped
-        subplebbit.emit("update", subplebbit);
-        subplebbit.emit("startedstatechange", subplebbit.startedState);
-
+        await this._postStoppingOrDeleting(subplebbit);
         delete startedSubplebbits[address];
 
         return true;
