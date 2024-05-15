@@ -14,7 +14,6 @@ class IpfsHttpClient {
                 else
                     ioClient.emit(topic, message);
             },
-            //@ts-expect-error
             subscribe: async (topic, rawCallback) => {
                 const callback = (msg) => {
                     //@ts-expect-error
@@ -23,7 +22,6 @@ class IpfsHttpClient {
                 ioClient.on(topic, callback);
                 this.subscriptions.push({ topic, rawCallback, callback });
             },
-            //@ts-expect-error
             unsubscribe: async (topic, rawCallback) => {
                 if (!rawCallback) {
                     ioClient.off(topic);

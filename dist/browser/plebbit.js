@@ -332,6 +332,7 @@ export class Plebbit extends TypedEmitter {
             }
             else {
                 // Remote subplebbit
+                log.trace("Creating a remote RPC subplebbit instance with address", options.address);
                 const remoteSub = new RpcRemoteSubplebbit(this);
                 const parsedOptions = options instanceof RpcRemoteSubplebbit ? options.toJSONIpfs() : options;
                 await remoteSub.initRemoteSubplebbitPropsNoMerge(parsedOptions);

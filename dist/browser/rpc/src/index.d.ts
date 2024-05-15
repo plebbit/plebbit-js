@@ -37,6 +37,7 @@ declare class PlebbitWsServer extends EventEmitter {
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number): void;
     startSubplebbit(params: any, connectionId: string): Promise<number>;
     stopSubplebbit(params: any): Promise<boolean>;
+    private _postStoppingOrDeleting;
     editSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
     deleteSubplebbit(params: any): Promise<boolean>;
     listSubplebbits(params: any, connectionId: string): Promise<number>;

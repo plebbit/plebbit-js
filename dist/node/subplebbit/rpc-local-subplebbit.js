@@ -75,6 +75,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             const newRpcRecord = updateProps.params.result;
             await this._handleRpcUpdateProps(newRpcRecord);
             this.emit("update", this);
+            if (!newRpcRecord.started) {
+                // This is the rpc server telling us that this sub has been stopped by another instance
+                await this._cleanUpRpcConnection(log);
+            }
         })
             .on("startedstatechange", (args) => {
             const newStartedState = args.params.result;
@@ -105,6 +109,16 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("error", (args) => this.emit("error", args.params.result));
         this.plebbit.plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
+    async _cleanUpRpcConnection(log) {
+        if (this._startRpcSubscriptionId)
+            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+        this._setStartedState("stopped");
+        this._setRpcClientState("stopped");
+        this.started = false;
+        this._startRpcSubscriptionId = undefined;
+        log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
+        this._setState("stopped");
+    }
     async stop() {
         if (this.state === "updating") {
             return super.stop();
@@ -119,15 +133,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                 if (e instanceof Error && e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING)
                     throw e;
             }
-            if (!this._startRpcSubscriptionId)
-                throw Error("rpcLocalSub.state is started but has no subscription ID");
-            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
-            this._setStartedState("stopped");
-            this._setRpcClientState("stopped");
-            this.started = false;
-            this._startRpcSubscriptionId = undefined;
-            log(`Stopped the running of local subplebbit (${this.address}) via RPC`);
-            this._setState("stopped");
+            await this._cleanUpRpcConnection(log);
         }
         else
             throw Error("User called rpcLocalSub.stop() without updating or starting");
@@ -153,15 +159,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
     async delete() {
         // Make sure to stop updating or starting first
-        if (this.state === "started") {
-            if (!this._startRpcSubscriptionId)
-                throw Error("rpcLocalSub.state has started state but without subscription id");
-            await this.plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
-            this._startRpcSubscriptionId = undefined;
-            this._setStartedState("stopped");
-        }
-        else if (this.state === "updating")
-            await super.stop(); // will take care of unsubscribing to subplebbitUpdate
+        if (this.state === "started" || this.state === "updating")
+            await this.stop();
         await this.plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
         this.started = false;
         this._setRpcClientState("stopped");

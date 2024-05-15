@@ -16,6 +16,7 @@ export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]): void;
     protected _updateRpcClientStateFromStartedState(startedState: RpcLocalSubplebbit["startedState"]): void;
     start(): Promise<void>;
+    private _cleanUpRpcConnection;
     stop(): Promise<void>;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this>;
     update(): Promise<void>;

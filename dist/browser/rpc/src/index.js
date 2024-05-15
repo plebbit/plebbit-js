@@ -250,8 +250,25 @@ class PlebbitWsServer extends EventEmitter {
             throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
         const startedSubplebbit = await getStartedSubplebbit(address);
         await startedSubplebbit.stop();
+        // emit last updates so subscribed instances can set their state to stopped
+        await this._postStoppingOrDeleting(startedSubplebbit);
         delete startedSubplebbits[address];
         return true;
+    }
+    async _postStoppingOrDeleting(subplebbit) {
+        // emit the last updates
+        // remove all listeners
+        subplebbit.emit("update", subplebbit);
+        subplebbit.emit("startedstatechange", subplebbit.startedState);
+        subplebbit.removeAllListeners("challengerequest");
+        subplebbit.removeAllListeners("challenge");
+        subplebbit.removeAllListeners("challengeanswer");
+        subplebbit.removeAllListeners("challengeverification");
+        subplebbit.removeAllListeners("update");
+        subplebbit.removeAllListeners("startedstatechange");
+        subplebbit.removeAllListeners("statechange");
+        subplebbit.removeAllListeners("updatingstatechange");
+        subplebbit.removeAllListeners("error");
     }
     async editSubplebbit(params) {
         const address = params[0];
@@ -281,6 +298,7 @@ class PlebbitWsServer extends EventEmitter {
             ? await getStartedSubplebbit(address)
             : await this.plebbit.createSubplebbit({ address });
         await subplebbit.delete();
+        await this._postStoppingOrDeleting(subplebbit);
         delete startedSubplebbits[address];
         return true;
     }
