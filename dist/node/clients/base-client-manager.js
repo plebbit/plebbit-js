@@ -52,7 +52,11 @@ export class BaseClientsManager {
             await this._initializeLibp2pClientIfNeeded();
         const timeBefore = Date.now();
         try {
-            await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler);
+            await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
+                onError(err) {
+                    log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err);
+                }
+            });
             await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
             this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
             return;
