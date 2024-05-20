@@ -12,10 +12,11 @@ import { ProtocolVersion } from "../types";
 // });
 
 // TODO add validation for private key here
-export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() }).strict();
+export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
 
-const SignerWithAddressSchema = CreateSignerSchema.extend({
-    address: z.string() // TODO add validation for signer address here
+const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
+    address: z.string(), // TODO add validation for signer address here
+    publicKey: z.string() // TODO add validation for public key here
 });
 
 const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
@@ -78,6 +79,8 @@ export const JsonSignatureSchema = z.object({
     signedPropertyNames: z.string().array() // TODO add validation
 });
 
+const AuthorPubsubJsonSchema = AuthorPubsubSchema.extend({ shortAddress: z.string() });
+
 // Challenge requests and pubsub here
 
 // Should be extended to add publication, which should be defined with every type (vote, comment, edit)
@@ -91,7 +94,7 @@ export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.ex
 }).strict();
 
 export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.extend({
-    signer: SignerWithAddressSchema,
+    signer: SignerWithAddressPublicKeySchema,
     timestamp: PlebbitTimestampSchema,
     author: AuthorPubsubSchema,
     protocolVersion: ProtocolVersionSchema
@@ -107,8 +110,16 @@ const pickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protoc
 
 export const VotePubsubMessageSchema = LocalVoteOptionsSchema.pick(pickOptions).strict();
 
-export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({ publication: VotePubsubMessageSchema }).strict();
+export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({
+    publication: VotePubsubMessageSchema
+}).strict();
 
-export const CreateVoteFunctionArgumentSchema =
-    CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema).or(DecryptedChallengeRequestVoteSchema);
+export const VoteJsonSchema = VotePubsubMessageSchema.extend({
+    shortSubplebbitAddress: z.string(),
+    author: AuthorPubsubJsonSchema
+}).strict();
+
+export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema)
+    .or(DecryptedChallengeRequestVoteSchema)
+    .or(VoteJsonSchema);
 // Options as inputted by user to create a new comment and sign

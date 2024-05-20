@@ -24,6 +24,7 @@ import {
     CreateVoteUserOptionsSchema,
     DecryptedChallengeRequestVoteSchema,
     ProtocolVersionSchema,
+    VoteJsonSchema,
     VoteOptionsToSignSchema,
     VotePubsubMessageSchema
 } from "./schema/schema.js";
@@ -457,10 +458,7 @@ export interface CommentEditTypeJson extends CommentEditPubsubMessage {
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
-export interface VoteTypeJson extends VotePubsubMessage {
-    shortSubplebbitAddress: string;
-    author: AuthorTypeJson;
-}
+export type VoteTypeJson = z.infer<typeof VoteJsonSchema>;
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 

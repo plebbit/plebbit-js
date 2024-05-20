@@ -330,10 +330,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             delete finalOptions["author"]["shortAddress"];
         }
         const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
-        const filledSigner: SignerType = {
-            ...finalOptions.signer,
-            address: await getPlebbitAddressFromPrivateKey(finalOptions.signer.privateKey)
-        };
+        const filledSigner = await this.createSigner(finalOptions.signer);
         const filledAuthor = <AuthorPubsubType>{ ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
         const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
