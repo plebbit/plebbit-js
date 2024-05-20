@@ -71,7 +71,7 @@ import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
-import { CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
+import { CreateCommentEditFunctionArgumentSchema, CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -569,8 +569,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const parsedOptions = CreateVoteFunctionArgumentSchema.parse(options);
         const voteInstance = new Vote(this);
 
-        if ("signature" in parsedOptions && "signer" in parsedOptions) throw Error("You can't sign an already signed vote");
-
         if ("publication" in parsedOptions) voteInstance._initChallengeRequestProps(parsedOptions);
         else if ("signature" in parsedOptions) {
             voteInstance._initRemoteProps(parsedOptions);
@@ -587,19 +585,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return voteInstance;
     }
 
-    async createCommentEdit(
-        options: CreateCommentEditOptions | CommentEditPubsubMessage | DecryptedChallengeRequestCommentEdit
-    ): Promise<CommentEdit> {
+    async createCommentEdit(options: z.infer<typeof CreateCommentEditFunctionArgumentSchema>): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
+        const parsedOptions = CreateCommentEditFunctionArgumentSchema.parse(options);
         const editInstance = new CommentEdit(this);
 
-        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment edit");
-
-        if ("publication" in options) editInstance._initChallengeRequestProps(options);
-        else if ("signature" in options)
-            editInstance._initRemoteProps(options); // User just wants to instantiate a CommentEdit object, not publish
+        if ("publication" in parsedOptions) editInstance._initChallengeRequestProps(parsedOptions);
+        else if ("signature" in parsedOptions)
+            editInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
         else {
-            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
             editInstance._initLocalProps(signedEdit);

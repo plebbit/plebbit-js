@@ -20,9 +20,14 @@ import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
+    AuthorCommentEditOptionsSchema,
     AuthorPubsubSchema,
+    CommentEditJsonSchema,
+    CommentEditPubsubMessageSchema,
     CreateVoteUserOptionsSchema,
+    DecryptedChallengeRequestCommentEditSchema,
     DecryptedChallengeRequestVoteSchema,
+    ModeratorCommentEditOptionsSchema,
     ProtocolVersionSchema,
     VoteJsonSchema,
     VoteOptionsToSignSchema,
@@ -178,24 +183,9 @@ export interface CreatePublicationOptions {
 
 // CommentEdit section
 
-export interface ModeratorCommentEditOptions {
-    commentCid: string;
-    flair?: Flair;
-    spoiler?: boolean;
-    pinned?: boolean;
-    locked?: boolean;
-    removed?: boolean;
-    reason?: string;
-    commentAuthor?: CommentAuthorEditOptions;
-}
-export interface AuthorCommentEditOptions {
-    commentCid: string;
-    content?: string;
-    deleted?: boolean;
-    flair?: Flair;
-    spoiler?: boolean;
-    reason?: string;
-}
+export type ModeratorCommentEditOptions = z.infer<typeof ModeratorCommentEditOptionsSchema>;
+
+export type AuthorCommentEditOptions = z.infer<typeof AuthorCommentEditOptionsSchema>;
 export interface CreateCommentEditOptions extends AuthorCommentEditOptions, ModeratorCommentEditOptions, CreatePublicationOptions {}
 
 export interface AuthorCommentEdit extends AuthorCommentEditOptions {
@@ -260,9 +250,7 @@ export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequ
     publication: CommentPubsubMessage;
 }
 
-export interface DecryptedChallengeRequestCommentEdit extends DecryptedChallengeRequest {
-    publication: CommentEditPubsubMessage;
-}
+export type DecryptedChallengeRequestCommentEdit = z.infer<typeof DecryptedChallengeRequestCommentEditSchema>;
 
 export type DecryptedChallengeRequestVote = z.infer<typeof DecryptedChallengeRequestVoteSchema>;
 
@@ -451,10 +439,7 @@ export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postC
     postCid: CommentUpdate["cid"];
 }
 
-export interface CommentEditTypeJson extends CommentEditPubsubMessage {
-    shortSubplebbitAddress: string;
-    author: AuthorTypeJson;
-}
+export type CommentEditTypeJson = z.infer<typeof CommentEditJsonSchema>;
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
@@ -465,9 +450,7 @@ export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebb
 export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
 
 export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
-export interface CommentEditPubsubMessage
-    extends Pick<LocalCommentEditOptions, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
-
+export type CommentEditPubsubMessage = z.infer<typeof CommentEditPubsubMessageSchema>;
 export type NativeFunctions = {
     fetch: typeof fetch;
 };
