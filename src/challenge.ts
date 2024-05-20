@@ -105,16 +105,16 @@ export class ChallengeAnswerMessage implements ChallengeAnswerMessageType {
 }
 
 export class ChallengeVerificationMessage implements ChallengeVerificationMessageType {
-    type: "CHALLENGEVERIFICATION";
+    type: ChallengeVerificationMessageType["type"];
     challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    challengeSuccess: boolean;
-    challengeErrors?: (string | undefined)[];
-    reason?: string;
-    encrypted?: Encrypted;
-    signature: PubsubSignature;
-    protocolVersion: "1.0.0";
-    userAgent: string;
-    timestamp: number;
+    challengeSuccess: ChallengeVerificationMessageType["challengeSuccess"];
+    challengeErrors?: ChallengeVerificationMessageType["challengeErrors"];
+    reason?: ChallengeVerificationMessageType["reason"];
+    encrypted?: ChallengeVerificationMessageType["encrypted"];
+    signature: ChallengeVerificationMessageType["signature"];
+    protocolVersion: ChallengeVerificationMessageType["protocolVersion"];
+    userAgent: ChallengeVerificationMessageType["userAgent"];
+    timestamp: ChallengeVerificationMessageType["timestamp"];
 
     constructor(props: Omit<ChallengeVerificationMessageType, "type">) {
         this.type = "CHALLENGEVERIFICATION";

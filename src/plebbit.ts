@@ -26,7 +26,8 @@ import {
     CommentTypeJson,
     DecryptedChallengeRequestComment,
     DecryptedChallengeRequestVote,
-    DecryptedChallengeRequestCommentEdit
+    DecryptedChallengeRequestCommentEdit,
+    AuthorPubsubType
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -69,6 +70,8 @@ import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
+import { z } from "zod";
+import { CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -331,7 +334,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             ...finalOptions.signer,
             address: await getPlebbitAddressFromPrivateKey(finalOptions.signer.privateKey)
         };
-        const filledAuthor = { ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
+        const filledAuthor = <AuthorPubsubType>{ ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
         const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
         return {
@@ -564,17 +567,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { options });
     }
 
-    async createVote(options: CreateVoteOptions | VotePubsubMessage | DecryptedChallengeRequestVote): Promise<Vote> {
+    async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema>): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
+        const parsedOptions = CreateVoteFunctionArgumentSchema.parse(options);
         const voteInstance = new Vote(this);
 
-        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed vote");
+        if ("signature" in parsedOptions && "signer" in parsedOptions) throw Error("You can't sign an already signed vote");
 
-        if ("publication" in options) voteInstance._initChallengeRequestProps(options);
-        else if ("signature" in options) {
-            voteInstance._initRemoteProps(options);
+        if ("publication" in parsedOptions) voteInstance._initChallengeRequestProps(parsedOptions);
+        else if ("signature" in parsedOptions) {
+            voteInstance._initRemoteProps(parsedOptions);
         } else {
-            const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedVote: LocalVoteOptions = {
                 ...cleanedFinalOptions,

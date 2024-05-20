@@ -4,6 +4,7 @@ import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPr
 import { shortifyAddress } from "../util.js";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
 export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
+import { CreateSignerSchema } from "../schema/schema.js";
 
 export class Signer implements SignerType {
     type: "ed25519";
@@ -39,20 +40,22 @@ export class SignerWithPublicKeyAddress extends Signer {
     }
 }
 
-export const createSigner = async (createSignerOptions: CreateSignerOptions = {}): Promise<SignerWithPublicKeyAddress> => {
-    let { privateKey, type: signerType } = createSignerOptions;
-    if (privateKey) {
-        if (signerType !== "ed25519") throw Error("invalid signer createSignerOptions.type, not 'ed25519'");
-    } else {
+export const createSigner = async (createSignerOptions?: CreateSignerOptions): Promise<SignerWithPublicKeyAddress> => {
+    let privateKey: CreateSignerOptions["privateKey"];
+    let type: CreateSignerOptions["type"];
+    if (!createSignerOptions) {
+        type = "ed25519";
         privateKey = await generatePrivateKey();
-        signerType = "ed25519";
+    } else {
+        const parsed = CreateSignerSchema.parse(createSignerOptions);
+        privateKey = parsed.privateKey;
+        type = parsed.type;
     }
-    if (typeof signerType !== "string") throw Error("createSignerOptions does not include type");
 
     const [publicKey, address] = await Promise.all([getPublicKeyFromPrivateKey(privateKey), getPlebbitAddressFromPrivateKey(privateKey)]);
 
     return new SignerWithPublicKeyAddress({
-        type: signerType,
+        type,
         publicKey,
         address,
         privateKey

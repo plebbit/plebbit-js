@@ -579,7 +579,7 @@ class PlebbitWsServer extends EventEmitter {
             comment.removeAllListeners("challengeverification");
             comment.removeAllListeners("publishingstatechange");
             delete this.publishing[subscriptionId];
-            comment.stop().catch((error: any) => log.error("publishComment stop error", { error, params }));
+            comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
         };
 
         // if fail, cleanup
@@ -649,7 +649,7 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
         );
         commentEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", commentEdit.publishingState));
-        commentEdit.on("error", (error: any) => sendEvent("error", error));
+        commentEdit.on("error", (error) => sendEvent("error", error));
 
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {

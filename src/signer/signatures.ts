@@ -108,7 +108,7 @@ async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign[
 }
 
 async function _signJson(
-    signedPropertyNames: readonly string[],
+    signedPropertyNames: JsonSignature["signedPropertyNames"],
     publication: PublicationsToSign,
     signer: SignerType,
     log: Logger
@@ -129,7 +129,7 @@ async function _signJson(
 }
 
 async function _signPubsubMsg(
-    signedPropertyNames: readonly string[],
+    signedPropertyNames: PubsubSignature["signedPropertyNames"],
     msg: PubsubMsgsToSign,
     signer: SignerType,
     log: Logger

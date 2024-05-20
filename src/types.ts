@@ -18,8 +18,18 @@ import { ChallengeFile, Flair } from "./subplebbit/types.js";
 import { Plebbit } from "./plebbit.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
+import {
+    AuthorAvatarNftSchema,
+    AuthorPubsubSchema,
+    CreateVoteUserOptionsSchema,
+    DecryptedChallengeRequestVoteSchema,
+    ProtocolVersionSchema,
+    VoteOptionsToSignSchema,
+    VotePubsubMessageSchema
+} from "./schema/schema.js";
+import { z } from "zod";
 
-export type ProtocolVersion = "1.0.0";
+export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
 export type ChainProvider = { urls: string[]; chainId: number };
 export interface PlebbitOptions {
@@ -51,7 +61,7 @@ export interface ParsedPlebbitOptions
     dataPath: string | undefined;
 }
 export interface PageInstanceType {
-    comments: Comment[];
+    comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
     nextCid?: string;
 }
 
@@ -112,24 +122,15 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
 export interface CommentOptionsToSign extends CreateCommentOptions {
     signer: SignerType;
     timestamp: number;
-    author: AuthorIpfsType;
+    author: AuthorPubsubType;
     protocolVersion: ProtocolVersion;
 }
 
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
-export interface CreateVoteOptions extends CreatePublicationOptions {
-    commentCid: string;
-    vote: 1 | 0 | -1;
-    signer: Pick<SignerType, "privateKey" | "type">;
-}
+export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
 
-export interface VoteOptionsToSign extends CreateVoteOptions {
-    signer: SignerType;
-    timestamp: number;
-    author: AuthorIpfsType;
-    protocolVersion: ProtocolVersion;
-}
+export type VoteOptionsToSign = z.infer<typeof VoteOptionsToSignSchema>;
 
 // Below is what's used to initialize a local publication to be published
 
@@ -155,33 +156,18 @@ export interface SubplebbitAuthor {
     lastCommentCid: string; // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
 }
 
-// TODO should be renamed to AuthorPubsubType
-export interface AuthorIpfsType {
-    address: string;
-    previousCommentCid?: string; // linked list of the author's comments
-    displayName?: string;
-    wallets?: { [chainTicker: string]: Wallet };
-    avatar?: Nft;
-    flair?: Flair; // (added by author originally, can be overriden by commentUpdate.subplebbit.author.flair)
-}
+export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
-export interface AuthorTypeWithCommentUpdate extends AuthorIpfsType {
+export interface AuthorTypeWithCommentUpdate extends AuthorPubsubType {
     subplebbit?: SubplebbitAuthor; // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
 }
-
-export type Wallet = {
-    address: string;
-    timestamp: number; // in seconds, allows partial blocking multiple authors using the same wallet
-    signature: { signature: "0x${string}"; type: "eip191" };
-    // ...will add more stuff later, like signer or send/sign or balance
-};
 
 export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 
 // creating a new local publication
 export interface CreatePublicationOptions {
     signer: Pick<SignerType, "privateKey" | "type">;
-    author?: Partial<AuthorIpfsType>;
+    author?: Partial<AuthorPubsubType>;
     subplebbitAddress: string; // all publications are directed to a subplebbit owner
     protocolVersion?: ProtocolVersion;
     timestamp?: number; // // Time of publishing in seconds, Defaults to Math.round(Date.now() / 1000) if undefined
@@ -213,7 +199,7 @@ export interface CreateCommentEditOptions extends AuthorCommentEditOptions, Mode
 
 export interface AuthorCommentEdit extends AuthorCommentEditOptions {
     signature: JsonSignature;
-    author: AuthorIpfsType;
+    author: AuthorPubsubType;
     protocolVersion: ProtocolVersion;
     subplebbitAddress: string;
     timestamp: number;
@@ -221,7 +207,7 @@ export interface AuthorCommentEdit extends AuthorCommentEditOptions {
 
 export interface ModeratorCommentEdit extends ModeratorCommentEditOptions {
     signature: JsonSignature;
-    author: AuthorIpfsType;
+    author: AuthorPubsubType;
     protocolVersion: ProtocolVersion;
     subplebbitAddress: string;
     timestamp: number;
@@ -231,7 +217,7 @@ export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "
 export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
     signer: SignerType;
     timestamp: number;
-    author: AuthorIpfsType;
+    author: AuthorPubsubType;
     protocolVersion: ProtocolVersion;
 }
 
@@ -239,14 +225,7 @@ export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
 //* "Edit" publications
 //*********************
 
-export type Nft = {
-    chainTicker: string; // ticker of the chain, like eth, avax, sol, etc in lowercase
-    address: string; // address of the NFT contract
-    id: string; // tokenId or index of the specific NFT used, must be string type, not number
-    timestamp: number; // in seconds, needed to mitigate multiple users using the same signature
-    signature: { signature: "0x${string}"; type: "eip191" }; // proof that author.address owns the nft
-    // how to resolve and verify NFT signatures https://github.com/plebbit/plebbit-js/blob/master/docs/nft.md
-};
+export type Nft = z.infer<typeof AuthorAvatarNftSchema>;
 
 export interface PubsubMessage {
     type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
@@ -284,20 +263,18 @@ export interface DecryptedChallengeRequestCommentEdit extends DecryptedChallenge
     publication: CommentEditPubsubMessage;
 }
 
-export interface DecryptedChallengeRequestVote extends DecryptedChallengeRequest {
-    publication: VotePubsubMessage;
-}
+export type DecryptedChallengeRequestVote = z.infer<typeof DecryptedChallengeRequestVoteSchema>;
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
 export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
-    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
 };
 export type ChallengeRequestCommentEditWithSubplebbitAuthor = CommentEditPubsubMessage & {
-    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
 };
 export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
-    author: AuthorIpfsType & { subplebbit: SubplebbitAuthor | undefined };
+    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
 };
 
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
@@ -478,7 +455,7 @@ export interface CommentEditTypeJson extends CommentEditPubsubMessage {
     author: AuthorTypeJson;
 }
 
-export type AuthorTypeJson = (AuthorIpfsType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
+export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
 export interface VoteTypeJson extends VotePubsubMessage {
     shortSubplebbitAddress: string;
@@ -489,7 +466,7 @@ export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebb
 
 export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
 
-export interface VotePubsubMessage extends Pick<LocalVoteOptions, VoteSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
+export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
 export interface CommentEditPubsubMessage
     extends Pick<LocalCommentEditOptions, CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion"> {}
 
@@ -525,7 +502,7 @@ export type CommentTypeJson =
 // Define database tables and fields here
 
 export interface CommentsTableRow extends CommentIpfsWithCid {
-    authorAddress: AuthorIpfsType["address"];
+    authorAddress: AuthorPubsubType["address"];
     challengeRequestPublicationSha256: string;
     ipnsName?: string;
     id: number;
@@ -547,9 +524,9 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 // Votes table
 
 export interface VotesTableRow extends VotePubsubMessage {
-    authorAddress: AuthorIpfsType["address"];
+    authorAddress: AuthorPubsubType["address"];
     insertedAt: number;
-    authorSignerAddress: string;
+    authorSignerAddress: SignerType["address"];
 }
 
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
@@ -557,7 +534,7 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 // Comment edits table
 
 export interface CommentEditsTableRow extends CommentEditPubsubMessage {
-    authorAddress: AuthorIpfsType["address"];
+    authorAddress: AuthorPubsubType["address"];
     insertedAt: number;
     isAuthorEdit: boolean; // If false, then mod edit
     authorSignerAddress: string;

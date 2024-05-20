@@ -1,7 +1,10 @@
 // Signer section
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
+import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { z } from "zod";
+
 import {
     AuthorCommentEdit,
     ChallengeAnswerMessageType,
@@ -19,10 +22,7 @@ import {
     VotePubsubMessage
 } from "../types.js";
 
-export type CreateSignerOptions = {
-    privateKey?: string; // If undefined, generate a random private key
-    type?: "ed25519";
-};
+export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
 export interface SignerType {
     type: "ed25519";
@@ -64,10 +64,7 @@ export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature
     publicKey: string; // base64
 }
 
-export interface JsonSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
-    signature: string; // (base64)
-    publicKey: string; // (base64) 32 bytes
-}
+export type JsonSignature = z.infer<typeof JsonSignatureSchema>;
 
 export type SignatureTypes =
     | PublicationTypeName
@@ -79,12 +76,17 @@ export type SignatureTypes =
 // ---------------------------
 // SignedPropertyNames
 
-export const CommentSignedPropertyNames: readonly (keyof Omit<
-    CreateCommentOptions,
-    "signer" | "challengeCommentCids" | "challengeAnswers"
->)[] = ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"] as const;
+export const CommentSignedPropertyNames: (keyof Omit<CreateCommentOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[] = [
+    "subplebbitAddress",
+    "author",
+    "timestamp",
+    "content",
+    "title",
+    "link",
+    "parentCid"
+] as const;
 
-export const CommentEditSignedPropertyNames: readonly (keyof Omit<
+export const CommentEditSignedPropertyNames: (keyof Omit<
     CreateCommentEditOptions,
     "signer" | "challengeCommentCids" | "challengeAnswers"
 >)[] = [
@@ -103,7 +105,7 @@ export const CommentEditSignedPropertyNames: readonly (keyof Omit<
     "commentAuthor"
 ] as const;
 
-export const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[] = [
+export const VoteSignedPropertyNames: (keyof Omit<CreateVoteOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[] = [
     "subplebbitAddress",
     "author",
     "timestamp",
@@ -111,7 +113,7 @@ export const VoteSignedPropertyNames: readonly (keyof Omit<CreateVoteOptions, "s
     "commentCid"
 ] as const;
 
-export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[] = [
+export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
     "title",
     "description",
     "roles",
@@ -131,26 +133,26 @@ export const SubplebbitSignedPropertyNames: readonly (keyof SubplebbitIpfsType)[
     "postUpdates"
 ] as const;
 
-export const ChallengeRequestMessageSignedPropertyNames: readonly (keyof ChallengeRequestMessage)[] = [
+export const ChallengeRequestMessageSignedPropertyNames: (keyof ChallengeRequestMessage)[] = [
     "type",
     "challengeRequestId",
     "encrypted",
     "acceptedChallengeTypes",
     "timestamp"
 ] as const;
-export const ChallengeMessageSignedPropertyNames: readonly (keyof ChallengeMessageType)[] = [
+export const ChallengeMessageSignedPropertyNames: (keyof ChallengeMessageType)[] = [
     "type",
     "challengeRequestId",
     "encrypted",
     "timestamp"
 ] as const;
-export const ChallengeAnswerMessageSignedPropertyNames: readonly (keyof ChallengeAnswerMessage)[] = [
+export const ChallengeAnswerMessageSignedPropertyNames: (keyof ChallengeAnswerMessage)[] = [
     "type",
     "challengeRequestId",
     "encrypted",
     "timestamp"
 ] as const;
-export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof ChallengeVerificationMessageType)[] = [
+export const ChallengeVerificationMessageSignedPropertyNames: (keyof ChallengeVerificationMessageType)[] = [
     "reason",
     "type",
     "challengeRequestId",
@@ -160,7 +162,7 @@ export const ChallengeVerificationMessageSignedPropertyNames: readonly (keyof Ch
     "timestamp"
 ] as const;
 
-export const CommentUpdateSignedPropertyNames: readonly (keyof CommentUpdate)[] = [
+export const CommentUpdateSignedPropertyNames: (keyof CommentUpdate)[] = [
     "author",
     "spoiler",
     "pinned",

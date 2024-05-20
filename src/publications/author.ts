@@ -1,18 +1,17 @@
-import { AuthorIpfsType, AuthorTypeJson, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
+import { AuthorPubsubType, AuthorTypeJson, AuthorTypeWithCommentUpdate, SubplebbitAuthor } from "../types.js";
 import { shortifyAddress } from "../util.js";
-import { Flair } from "../subplebbit/types.js";
 
 class Author implements AuthorTypeWithCommentUpdate {
-    address: string;
-    previousCommentCid?: string; // linked list of the author's comments
-    displayName?: string;
-    wallets?: { [chainTicker: string]: Wallet };
-    avatar?: Nft;
-    flair?: Flair;
+    address: AuthorPubsubType["address"];
+    previousCommentCid?: AuthorPubsubType["previousCommentCid"]; // linked list of the author's comments
+    displayName?: AuthorPubsubType["displayName"];
+    wallets?: AuthorPubsubType["wallets"];
+    avatar?: AuthorPubsubType["avatar"];
+    flair?: AuthorPubsubType["flair"];
     subplebbit?: SubplebbitAuthor;
     shortAddress: string; // not part of ipfs
 
-    constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate) {
+    constructor(props: AuthorPubsubType | AuthorTypeWithCommentUpdate) {
         this.address = props.address;
         this.previousCommentCid = props.previousCommentCid;
         this.displayName = props.displayName;
@@ -30,7 +29,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         };
     }
 
-    toJSONIpfs(): AuthorIpfsType {
+    toJSONIpfs(): AuthorPubsubType {
         return {
             address: this.address,
             previousCommentCid: this.previousCommentCid,

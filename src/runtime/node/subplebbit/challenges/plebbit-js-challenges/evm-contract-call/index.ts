@@ -107,7 +107,7 @@ const verifyAuthorWalletAddress = async (props: {
     const valid = await viemClient.verifyMessage({
         address: <"0x${string}">authorWallet.address,
         message: JSON.stringify(messageToBeSigned),
-        signature: authorWallet.signature.signature
+        signature: <"0x${string">authorWallet.signature.signature
     });
     if (!valid) {
         const failedMsg = `The signature of the wallet is invalid`;
@@ -199,7 +199,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
     const valid = await viemClient.verifyMessage({
         address: currentOwner,
         message: JSON.stringify(messageToBeSigned),
-        signature: nftAvatar.signature.signature
+        signature: <"0x${string">nftAvatar.signature.signature
     });
     if (!valid) {
         log.error(`The signature of the nft avatar is invalid`);

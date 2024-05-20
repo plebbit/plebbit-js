@@ -222,12 +222,13 @@ export class ClientsManager extends BaseClientsManager {
             this.preResolveSubplebbitIpnsP2P(ipnsName);
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
-            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
+            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid)); // zod here
             this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
         }
         // States of gateways should be updated by fetchFromMultipleGateways
         else subJson = await this._fetchSubplebbitFromGateways(ipnsName);
 
+        // zod here
         const subError = await this._findErrorInSubplebbitRecord(subJson, ipnsName);
         if (subError) {
             this.postFetchSubplebbitInvalidRecord(subJson, subError); // should throw here
@@ -578,7 +579,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
         const commentProps = this._comment.toJSONAfterChallengeVerification();
-        const pathCache: string = await parentsPathCache.getItem(commentProps.cid);
+        const pathCache: string | undefined = await parentsPathCache.getItem(commentProps.cid);
         if (pathCache) return pathCache.split("/").reverse().join("/");
 
         const postTimestampCache = await this._plebbit._createStorageLRU(postTimestampConfig);
@@ -629,21 +630,21 @@ export class CommentClientsManager extends PublicationClientsManager {
             if (this._defaultIpfsProviderUrl) {
                 this.updateIpfsState("fetching-update-ipfs");
                 try {
-                    const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path));
+                    const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path)); // zod here
                     this.updateIpfsState("stopped");
                     return commentUpdate;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.trace(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             } else {
                 // States of gateways should be updated by fetchFromMultipleGateways
                 try {
-                    const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"));
+                    const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update")); // zod here
                     return update;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
-                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
+                    log.trace(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
                 }
             }
         }
@@ -658,7 +659,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
-            const commentContent: CommentIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment"));
+            const commentContent: CommentIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment")); // zod here
             return commentContent;
         }
     }

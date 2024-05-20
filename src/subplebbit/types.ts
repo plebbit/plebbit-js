@@ -1,4 +1,6 @@
+import { z } from "zod";
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import { AuthorFlairSchema } from "../schema/schema.js";
 import type { JsonSignature, SignerType } from "../signer/constants.js";
 import { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type {
@@ -12,6 +14,7 @@ import type {
     ProtocolVersion
 } from "../types.js";
 import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
+import * as remeda from "remeda";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -67,12 +70,7 @@ export type SubplebbitSuggested = {
     // TODO: menu links, wiki pages, sidebar widgets
 };
 
-export type Flair = {
-    text: string;
-    backgroundColor?: string;
-    textColor?: string;
-    expiresAt?: number; // timestamp in second, a flair assigned to an author by a mod will follow the author in future comments, unless it expires
-};
+export type Flair = z.infer<typeof AuthorFlairSchema>;
 
 export type SubplebbitEncryption = {
     type: "ed25519-aes-gcm"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
