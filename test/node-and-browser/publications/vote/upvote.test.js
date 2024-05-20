@@ -10,6 +10,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { timestamp } from "../../../../dist/node/util.js";
 import * as remeda from "remeda";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const subplebbitAddress = signers[0].address;
 
@@ -36,7 +37,7 @@ describe("Test upvote", async () => {
     it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {
         const vote = await generateMockVote(postToVote, 1, plebbit, remeda.sample(signers, 1)[0]);
         const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
-        expect(JSON.stringify(vote)).to.equal(JSON.stringify(voteFromStringifiedVote));
+        expect(deterministicStringify(vote)).to.equal(deterministicStringify(voteFromStringifiedVote));
     });
 
     it("Can upvote a post", async () => {
@@ -70,8 +71,7 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
-            signer: previousVotes[0].signer,
+            ...remeda.pick(previousVotes[0], ["commentCid", "author", "signer", "subplebbitAddress"]),
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
@@ -88,8 +88,7 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.omit(previousVotes[1].toJSON(), ["signature"]),
-            signer: previousVotes[1].signer,
+            ...remeda.pick(previousVotes[1], ["commentCid", "author", "signer", "subplebbitAddress"]),
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
@@ -104,8 +103,8 @@ describe("Test upvote", async () => {
 
     it("Does not throw an error when vote is duplicated", async () => {
         const vote = await plebbit.createVote({
-            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
-            signer: previousVotes[0].signer,
+            ...remeda.pick(previousVotes[0], ["commentCid", "author", "signer", "subplebbitAddress", "vote"]),
+
             timestamp: timestamp()
         });
         await publishWithExpectedResult(vote, true);
