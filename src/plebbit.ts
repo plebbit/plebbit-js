@@ -38,9 +38,9 @@ import {
     throwWithErrorCode,
     timestamp
 } from "./util.js";
-import Vote from "./publications/vote.js";
+import Vote from "./publications/vote/vote.js";
 import { createSigner, Signer } from "./signer/index.js";
-import { CommentEdit } from "./publications/comment-edit.js";
+import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
 import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";

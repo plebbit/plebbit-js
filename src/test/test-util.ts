@@ -2,7 +2,7 @@ import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
-import Vote from "../publications/vote.js";
+import Vote from "../publications/vote/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { CommentIpfsWithCid, CreateCommentOptions, CreateVoteOptions, PlebbitOptions } from "../types.js";
 import assert from "assert";

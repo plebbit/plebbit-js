@@ -1,4 +1,4 @@
-import Publication from "./publication.js";
+import Publication from "../publication.js";
 import {
     DecryptedChallengeRequestVote,
     LocalVoteOptions,
@@ -6,10 +6,10 @@ import {
     VotePubsubMessage,
     VoteTypeJson,
     VotesTableRowInsert
-} from "../types.js";
-import { Plebbit } from "../plebbit.js";
-import { verifyVote } from "../signer/index.js";
-import { isIpfsCid, throwWithErrorCode } from "../util.js";
+} from "../../types.js";
+import { Plebbit } from "../../plebbit.js";
+import { verifyVote } from "../../signer/index.js";
+import { isIpfsCid, throwWithErrorCode } from "../../util.js";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication {

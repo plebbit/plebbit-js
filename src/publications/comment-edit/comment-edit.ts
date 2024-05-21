@@ -1,7 +1,7 @@
-import { Plebbit } from "../plebbit.js";
-import Publication from "./publication.js";
-import { verifyCommentEdit } from "../signer/signatures.js";
-import { Flair } from "../subplebbit/types.js";
+import { Plebbit } from "../../plebbit.js";
+import Publication from "../publication.js";
+import { verifyCommentEdit } from "../../signer/signatures.js";
+import { Flair } from "../../subplebbit/types.js";
 import {
     CommentAuthorEditOptions,
     CommentEditPubsubMessage,
@@ -10,8 +10,8 @@ import {
     DecryptedChallengeRequestCommentEdit,
     LocalCommentEditOptions,
     PublicationTypeName
-} from "../types.js";
-import { isIpfsCid, throwWithErrorCode } from "../util.js";
+} from "../../types.js";
+import { isIpfsCid, throwWithErrorCode } from "../../util.js";
 
 export class CommentEdit extends Publication {
     commentCid!: string;
@@ -48,7 +48,7 @@ export class CommentEdit extends Publication {
     _initLocalProps(props: LocalCommentEditOptions) {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
-    }       
+    }
 
     _initRemoteProps(props: CommentEditPubsubMessage): void {
         super._initBaseRemoteProps(props);
