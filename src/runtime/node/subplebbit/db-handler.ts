@@ -28,7 +28,7 @@ import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
+import { AUTHOR_EDIT_PUBSUB_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
@@ -651,7 +651,7 @@ export class DbHandler {
 
     private async _queryAuthorEdit(cid: string, authorSignerAddress: string, trx?: Transaction): Promise<AuthorCommentEdit | undefined> {
         const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-            .select(AUTHOR_EDIT_FIELDS)
+            .select(AUTHOR_EDIT_PUBSUB_FIELDS)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();

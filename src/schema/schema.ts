@@ -104,7 +104,7 @@ export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.ex
 
 export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning);
 
-const LocalVoteOptionsSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
+export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
     DecryptedChallengeRequestBaseSchema
 );
 
@@ -112,7 +112,7 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "pr
     remeda.mapToObj([...VoteSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
 );
 
-export const VotePubsubMessageSchema = LocalVoteOptionsSchema.pick(votePickOptions).strict();
+export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
 
 export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({
     publication: VotePubsubMessageSchema
@@ -127,7 +127,7 @@ export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(V
     .or(DecryptedChallengeRequestVoteSchema)
     .or(VoteJsonSchema);
 
-// Comment Types here
+// Comment schemas here
 const SubplebbitAuthorSchema = z
     .object({
         postScore: z.number().positive(),
@@ -152,6 +152,7 @@ export const AuthorCommentEditOptionsSchema = z
     })
     .strict();
 
+export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
 export const ModeratorCommentEditOptionsSchema = z
     .object({
         commentCid: CommentCidSchema,
@@ -161,19 +162,30 @@ export const ModeratorCommentEditOptionsSchema = z
         locked: z.boolean().optional(),
         removed: z.boolean().optional(),
         reason: z.string().optional(),
-        commentAuthor: SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true }).optional()
+        commentAuthor: CommentAuthorSchema.optional()
     })
     .strict();
+
+// I have to explicitly include the cast here, it may be fixed in the future
+const uniqueModFields = <["pinned", "locked", "removed", "commentAuthor"]>(
+    remeda.difference(remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape), remeda.keys.strict(AuthorCommentEditOptionsSchema.shape))
+);
+
+const uniqueAuthorFields = <["content", "deleted"]>(
+    remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape))
+);
 
 const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema);
 const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema);
 
-// Before signig, and after filling the missing props of CreateCommentEditUserOptions
-const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
-const CommentEditAuthorOptionsToSignSchema = CreateCommentEditAuthorPublicationSchema.merge(PublicationBaseBeforeSigning);
+// Before signing, and after filling the missing props of CreateCommentEditUserOptions
+export const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
+export const CommentEditAuthorOptionsToSignSchema = CreateCommentEditAuthorPublicationSchema.merge(PublicationBaseBeforeSigning);
 
 // after signing, and before initializing the local comment edit props
-const LocalCommentEditAfterSigningSchema = CommentEditModeratorOptionsToSignSchema.merge(CommentEditAuthorOptionsToSignSchema).extend({
+export const LocalCommentEditAfterSigningSchema = CommentEditModeratorOptionsToSignSchema.merge(
+    CommentEditAuthorOptionsToSignSchema
+).extend({
     signature: JsonSignatureSchema
 });
 
@@ -181,7 +193,11 @@ const LocalCommentEditAfterSigningSchema = CommentEditModeratorOptionsToSignSche
 const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
     remeda.mapToObj([...CommentEditSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
 );
-export const CommentEditPubsubMessageSchema = LocalCommentEditAfterSigningSchema.pick(editPubsubPickOptions);
+export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueModFields));
+export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(
+    remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
+);
+export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema);
 
 export const DecryptedChallengeRequestCommentEditSchema = DecryptedChallengeRequestBaseSchema.extend({
     publication: CommentEditPubsubMessageSchema

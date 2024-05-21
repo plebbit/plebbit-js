@@ -27,7 +27,8 @@ import {
     DecryptedChallengeRequestComment,
     DecryptedChallengeRequestVote,
     DecryptedChallengeRequestCommentEdit,
-    AuthorPubsubType
+    AuthorPubsubType,
+    LocalCommentEditOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -596,7 +597,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         else {
             const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signedEdit = { ...cleanedFinalOptions, signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this) };
+            const signedEdit = <LocalCommentEditOptions>{
+                ...cleanedFinalOptions,
+                signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this)
+            };
             editInstance._initLocalProps(signedEdit);
         }
         return editInstance;

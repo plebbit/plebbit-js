@@ -1,12 +1,19 @@
 // Signer section
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
-import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema.js";
+import {
+    AuthorCommentEditPubsubSchema,
+    CommentEditAuthorOptionsToSignSchema,
+    CommentEditModeratorOptionsToSignSchema,
+    CreateSignerSchema,
+    JsonSignatureSchema,
+    ModeratorCommentEditPubsubSchema
+} from "../schema/schema.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import { z } from "zod";
+import * as remeda from "remeda";
 
 import {
-    AuthorCommentEdit,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
@@ -17,7 +24,6 @@ import {
     CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
-    ModeratorCommentEdit,
     PublicationTypeName,
     VotePubsubMessage
 } from "../types.js";
@@ -212,32 +218,6 @@ export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage |
 
 // Storing fields here to check before publishing if CommentEdit has proper field for either author or mod.
 
-export const MOD_EDIT_FIELDS: (keyof ModeratorCommentEdit)[] = [
-    "author",
-    "protocolVersion",
-    "signature",
-    "subplebbitAddress",
-    "timestamp",
-    "commentCid",
-    "flair",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "commentAuthor"
-];
+export const MOD_EDIT_PUBSUB_FIELDS = remeda.keys.strict(ModeratorCommentEditPubsubSchema.shape);
 
-export const AUTHOR_EDIT_FIELDS: (keyof AuthorCommentEdit)[] = [
-    "author",
-    "protocolVersion",
-    "signature",
-    "subplebbitAddress",
-    "timestamp",
-    "commentCid",
-    "content",
-    "flair",
-    "spoiler",
-    "reason",
-    "deleted"
-];
+export const AUTHOR_EDIT_PUBSUB_FIELDS = remeda.keys.strict(AuthorCommentEditPubsubSchema.shape);

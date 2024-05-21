@@ -83,7 +83,6 @@ import {
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
 import Author from "../../../publications/author.js";
-import { AUTHOR_EDIT_FIELDS, MOD_EDIT_FIELDS } from "../../../signer/constants.js";
 import {
     GetChallengeAnswers,
     getChallengeVerification,
@@ -101,6 +100,7 @@ import {
 } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
+import { AUTHOR_EDIT_PUBSUB_FIELDS, MOD_EDIT_PUBSUB_FIELDS } from "../../../signer/constants.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -868,7 +868,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
             const allowedEditFields =
-                isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_FIELDS : isEditorMod ? MOD_EDIT_FIELDS : undefined;
+                isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_PUBSUB_FIELDS : isEditorMod ? MOD_EDIT_PUBSUB_FIELDS : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             const publicationEditFields = remeda.keys.strict(publication);
             for (const editField of publicationEditFields)
@@ -883,8 +883,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
                 }
 
-            if (isEditorMod && typeof publication.locked === "boolean" && commentToBeEdited.depth !== 0)
-                return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
+            if (isEditorMod && publication.locked && commentToBeEdited.depth !== 0) return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
         }
 
         return undefined;

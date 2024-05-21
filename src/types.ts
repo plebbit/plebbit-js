@@ -21,12 +21,18 @@ import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
     AuthorCommentEditOptionsSchema,
+    AuthorCommentEditPubsubSchema,
     AuthorPubsubSchema,
+    CommentAuthorSchema,
+    CommentEditAuthorOptionsToSignSchema,
     CommentEditJsonSchema,
+    CommentEditModeratorOptionsToSignSchema,
     CommentEditPubsubMessageSchema,
     CreateVoteUserOptionsSchema,
     DecryptedChallengeRequestCommentEditSchema,
     DecryptedChallengeRequestVoteSchema,
+    LocalCommentEditAfterSigningSchema,
+    LocalVoteOptionsAfterSigningSchema,
     ModeratorCommentEditOptionsSchema,
     ProtocolVersionSchema,
     VoteJsonSchema,
@@ -144,14 +150,15 @@ export type LocalCommentOptions = CommentOptionsToSign & { signature: JsonSignat
         CreatePublicationOptions,
         "challengeAnswers" | "challengeCommentCids"
     >;
-export type LocalVoteOptions = VoteOptionsToSign & { signature: JsonSignature } & Pick<
-        CreatePublicationOptions,
-        "challengeAnswers" | "challengeCommentCids"
-    >;
-export type LocalCommentEditOptions = CommentEditOptionsToSign & { signature: JsonSignature } & Pick<
-        CreatePublicationOptions,
-        "challengeAnswers" | "challengeCommentCids"
-    >;
+export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
+
+export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
+
+export type CommentEditOptionsToSign =
+    | z.infer<typeof CommentEditModeratorOptionsToSignSchema>
+    | z.infer<typeof CommentEditAuthorOptionsToSignSchema>;
+
+export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
 
 export interface SubplebbitAuthor {
     postScore: number; // total post karma in the subplebbit
@@ -188,29 +195,7 @@ export type ModeratorCommentEditOptions = z.infer<typeof ModeratorCommentEditOpt
 export type AuthorCommentEditOptions = z.infer<typeof AuthorCommentEditOptionsSchema>;
 export interface CreateCommentEditOptions extends AuthorCommentEditOptions, ModeratorCommentEditOptions, CreatePublicationOptions {}
 
-export interface AuthorCommentEdit extends AuthorCommentEditOptions {
-    signature: JsonSignature;
-    author: AuthorPubsubType;
-    protocolVersion: ProtocolVersion;
-    subplebbitAddress: string;
-    timestamp: number;
-}
-
-export interface ModeratorCommentEdit extends ModeratorCommentEditOptions {
-    signature: JsonSignature;
-    author: AuthorPubsubType;
-    protocolVersion: ProtocolVersion;
-    subplebbitAddress: string;
-    timestamp: number;
-}
-export type CommentAuthorEditOptions = Pick<SubplebbitAuthor, "banExpiresAt" | "flair">;
-
-export interface CommentEditOptionsToSign extends CreateCommentEditOptions {
-    signer: SignerType;
-    timestamp: number;
-    author: AuthorPubsubType;
-    protocolVersion: ProtocolVersion;
-}
+export type AuthorCommentEdit = z.infer<typeof AuthorCommentEditPubsubSchema>;
 
 //*********************
 //* "Edit" publications
