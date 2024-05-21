@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { JsonSignatureSchema } from "../schema/schema";
+import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema";
 import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -15,7 +15,14 @@ import type {
     VotePubsubMessage
 } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
-import { CommentSignedPropertyNames, VoteSignedPropertyNames, CommentEditSignedPropertyNames, CommentUpdateSignedPropertyNames } from "./constants";
+import {
+    CommentSignedPropertyNames,
+    VoteSignedPropertyNames,
+    CommentEditSignedPropertyNames,
+    CommentUpdateSignedPropertyNames
+} from "./constants";
+
+export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
 export type JsonSignature = z.infer<typeof JsonSignatureSchema>;
 
@@ -40,7 +47,8 @@ export type Encrypted = {
 
 export type EncryptedEncoded = {
     ciphertext: string; // base64
-    iv: string; // base64
+    iv: string; // base64export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
+
     tag: string; // base64
     type: "ed25519-aes-gcm";
 };

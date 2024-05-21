@@ -5,7 +5,7 @@ import { shortifyAddress } from "../util.js";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
 export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
 import { CreateSignerSchema } from "../schema/schema.js";
-import { CreateSignerOptions } from "../types.js";
+import { CreateSignerOptions } from "./types.js";
 
 export class Signer implements SignerType {
     type: "ed25519";

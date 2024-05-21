@@ -64,7 +64,6 @@ export interface ParsedPlebbitOptions
     dataPath: string | undefined;
 }
 
-export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
 export interface PageInstanceType {
     comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props

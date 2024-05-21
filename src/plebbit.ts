@@ -28,8 +28,7 @@ import {
     DecryptedChallengeRequestVote,
     DecryptedChallengeRequestCommentEdit,
     AuthorPubsubType,
-    LocalCommentEditOptions,
-    CreateSignerOptions
+    LocalCommentEditOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -73,6 +72,7 @@ import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
 import { CreateCommentEditFunctionArgumentSchema, CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
+import { CreateSignerOptions } from "./signer/types.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
