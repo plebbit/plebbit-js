@@ -9,24 +9,11 @@ import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
-    AuthorCommentEditOptionsSchema,
-    AuthorCommentEditPubsubSchema,
     AuthorPubsubSchema,
-    CommentAuthorSchema,
-    CommentEditAuthorOptionsToSignSchema,
-    CommentEditJsonSchema,
-    CommentEditModeratorOptionsToSignSchema,
-    CommentEditPubsubMessageSchema,
-    CreateCommentEditAuthorPublicationSchema,
-    CreateCommentEditModeratorPublicationSchema,
     CreatePublicationUserOptionsSchema,
-    CreateSignerSchema,
     CreateVoteUserOptionsSchema,
-    DecryptedChallengeRequestCommentEditSchema,
     DecryptedChallengeRequestVoteSchema,
-    LocalCommentEditAfterSigningSchema,
     LocalVoteOptionsAfterSigningSchema,
-    ModeratorCommentEditOptionsSchema,
     ProtocolVersionSchema,
     SubplebbitAuthorSchema,
     VoteJsonSchema,
@@ -43,6 +30,12 @@ import type {
     PubsubSignature,
     SignerType
 } from "./signer/types.js";
+import {
+    AuthorCommentEdit,
+    ChallengeRequestCommentEditWithSubplebbitAuthor,
+    CommentEditPubsubMessage,
+    LocalCommentEditOptions
+} from "./publications/comment-edit/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -142,6 +135,8 @@ export interface CommentOptionsToSign extends CreateCommentOptions {
     protocolVersion: ProtocolVersion;
 }
 
+export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
+
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
 export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
@@ -154,15 +149,6 @@ export type LocalCommentOptions = CommentOptionsToSign & { signature: JsonSignat
         CreatePublicationOptions,
         "challengeAnswers" | "challengeCommentCids"
     >;
-export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
-
-export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
-
-export type CommentEditOptionsToSign =
-    | z.infer<typeof CommentEditModeratorOptionsToSignSchema>
-    | z.infer<typeof CommentEditAuthorOptionsToSignSchema>;
-
-export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
@@ -176,17 +162,6 @@ export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage 
 
 // creating a new local publication
 export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;
-
-// CommentEdit section
-
-export type ModeratorCommentEditOptions = z.infer<typeof ModeratorCommentEditOptionsSchema>;
-
-export type AuthorCommentEditOptions = z.infer<typeof AuthorCommentEditOptionsSchema>;
-
-export type CreateCommentEditOptions = z.infer<typeof CreateCommentEditAuthorPublicationSchema> &
-    z.infer<typeof CreateCommentEditModeratorPublicationSchema>;
-
-export type AuthorCommentEdit = z.infer<typeof AuthorCommentEditPubsubSchema>;
 
 //*********************
 //* "Edit" publications
@@ -226,16 +201,11 @@ export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequ
     publication: CommentPubsubMessage;
 }
 
-export type DecryptedChallengeRequestCommentEdit = z.infer<typeof DecryptedChallengeRequestCommentEditSchema>;
-
 export type DecryptedChallengeRequestVote = z.infer<typeof DecryptedChallengeRequestVoteSchema>;
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
 export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
-    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
-};
-export type ChallengeRequestCommentEditWithSubplebbitAuthor = CommentEditPubsubMessage & {
     author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
 };
 export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
@@ -415,8 +385,6 @@ export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postC
     postCid: CommentUpdate["cid"];
 }
 
-export type CommentEditTypeJson = z.infer<typeof CommentEditJsonSchema>;
-
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
 export type VoteTypeJson = z.infer<typeof VoteJsonSchema>;
@@ -426,7 +394,6 @@ export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebb
 export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
 
 export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
-export type CommentEditPubsubMessage = z.infer<typeof CommentEditPubsubMessageSchema>;
 export type NativeFunctions = {
     fetch: typeof fetch;
 };
@@ -498,6 +465,8 @@ export interface CommentEditsTableRow extends CommentEditPubsubMessage {
 }
 
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
+
+// Setting up the types of tables here so we can utilize auto completion in queries
 declare module "knex/types/tables" {
     interface Tables {
         comments: Knex.CompositeTableType<CommentsTableRow, CommentsTableRowInsert>;

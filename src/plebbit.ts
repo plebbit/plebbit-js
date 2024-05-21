@@ -4,7 +4,6 @@ import {
     ChainProvider,
     CommentIpfsType,
     CommentPubsubMessage,
-    CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
     GatewayClient,
@@ -19,16 +18,11 @@ import {
     PubsubSubscriptionHandler,
     CommentOptionsToSign,
     VoteOptionsToSign,
-    CommentEditOptionsToSign,
     LocalVoteOptions,
-    CommentEditPubsubMessage,
     CommentIpfsWithCid,
     CommentTypeJson,
     DecryptedChallengeRequestComment,
-    DecryptedChallengeRequestVote,
-    DecryptedChallengeRequestCommentEdit,
-    AuthorPubsubType,
-    LocalCommentEditOptions
+    AuthorPubsubType
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -71,8 +65,10 @@ import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
-import { CreateCommentEditFunctionArgumentSchema, CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
+import { CreateVoteFunctionArgumentSchema } from "./schema/schema.js";
 import { CreateSignerOptions } from "./signer/types.js";
+import { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
+import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;

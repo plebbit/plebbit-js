@@ -2,12 +2,11 @@ import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js
 import Author from "./author.js";
 import assert from "assert";
 import { Signer, decryptEd25519AesGcm, encryptEd25519AesGcm } from "../signer/index.js";
-import {
+import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentEditPubsubMessage,
     CommentIpfsType,
     CommentPubsubMessage,
     DecryptedChallenge,
@@ -16,7 +15,6 @@ import {
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
     DecryptedChallengeRequestComment,
-    DecryptedChallengeRequestCommentEdit,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestVote,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
@@ -49,6 +47,7 @@ import type { JsonSignature } from "../signer/types.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props

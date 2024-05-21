@@ -31,15 +31,12 @@ import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
 import type {
-    AuthorCommentEditOptions,
     ChallengeAnswerMessageType,
     ChallengeMessageType,
-    ChallengeRequestCommentEditWithSubplebbitAuthor,
     ChallengeRequestCommentWithSubplebbitAuthor,
     ChallengeRequestMessageType,
     ChallengeRequestVoteWithSubplebbitAuthor,
     ChallengeVerificationMessageType,
-    CommentEditPubsubMessage,
     CommentIpfsWithCid,
     CommentUpdate,
     CommentUpdatesRow,
@@ -51,7 +48,6 @@ import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
-    ModeratorCommentEditOptions,
     VotePubsubMessage,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     CommentPubsubMessage,
@@ -100,12 +96,9 @@ import {
 } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
-import {
-    AuthorCommentEditPubsubSchema,
-    ModeratorCommentEditPubsubSchema,
-    uniqueAuthorFields,
-    uniqueModFields
-} from "../../../schema/schema.js";
+
+import { ChallengeRequestCommentEditWithSubplebbitAuthor, CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
+import { AuthorCommentEditPubsubSchema, ModeratorCommentEditPubsubSchema, uniqueAuthorFields, uniqueModFields } from "../../../publications/comment-edit/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {

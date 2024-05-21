@@ -3,7 +3,6 @@ import { parseRawPages, removeUndefinedValuesRecursively, shortifyCid, throwWith
 import Publication from "../publication.js";
 import { RepliesPages } from "../../pages.js";
 import {
-    AuthorCommentEdit,
     CommentIpfsType,
     CommentIpfsWithCid,
     CommentPubsubMessage,
@@ -59,7 +58,7 @@ export class Comment extends Publication {
     replyCount?: number;
     updatedAt?: number;
     replies!: RepliesPages;
-    edit?: AuthorCommentEdit;
+    edit?: CommentUpdate["edit"];
     flair?: Flair;
     deleted?: boolean;
     spoiler?: boolean;

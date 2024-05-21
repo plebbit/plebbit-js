@@ -6,12 +6,11 @@ import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
 import { Plebbit } from "../../plebbit.js";
-import {
+import type {
     CommentIpfsWithCid,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestComment,
-    DecryptedChallengeRequestCommentEdit,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeRequestVote,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
@@ -29,6 +28,7 @@ import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
+import { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time

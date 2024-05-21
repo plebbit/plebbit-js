@@ -2,7 +2,6 @@ import Logger from "@plebbit/plebbit-logger";
 import {
     CommentIpfsWithCid,
     DecryptedChallengeRequestComment,
-    DecryptedChallengeRequestCommentEdit,
     DecryptedChallengeRequestVote,
     PageIpfs,
     PlebbitWsServerSettings,
@@ -18,6 +17,7 @@ import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../util.js";
 import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 

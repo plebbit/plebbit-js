@@ -5,10 +5,8 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentEditPubsubMessage,
     CommentPubsubMessage,
     CommentUpdate,
-    CreateCommentEditOptions,
     CreateCommentOptions,
     CreateVoteOptions,
     PublicationTypeName,
@@ -21,6 +19,7 @@ import {
     CommentEditSignedPropertyNames,
     CommentUpdateSignedPropertyNames
 } from "./constants";
+import { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 

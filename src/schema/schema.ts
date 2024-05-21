@@ -15,8 +15,10 @@ const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
     publicKey: z.string() // TODO add validation for public key here
 });
 
-const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
-const ShortSubplebbitAddressSchema = z.string();
+export const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
+export const ShortSubplebbitAddressSchema = z.string();
+
+export const ShortAuthorAddressSchema = z.string();
 
 const PlebbitTimestampSchema = z.number().positive(); // Math.round(Date.now() / 1000)  - Unix timestamp
 
@@ -28,7 +30,7 @@ const WalletSchema = z.object({
     signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
 });
 
-const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID);
+export const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID);
 
 const ChainTickerSchema = z.string(); // chain ticker can be anything for now
 
@@ -76,10 +78,10 @@ export const JsonSignatureSchema = z.object({
     signedPropertyNames: z.string().array() // TODO add validation
 });
 
-const AuthorPubsubJsonSchema = AuthorPubsubSchema.extend({ shortAddress: z.string() });
+export const AuthorPubsubJsonSchema = AuthorPubsubSchema.extend({ shortAddress: ShortAuthorAddressSchema });
 
 // Common stuff here
-const PublicationBaseBeforeSigning = z.object({
+export const PublicationBaseBeforeSigning = z.object({
     signer: SignerWithAddressPublicKeySchema,
     timestamp: PlebbitTimestampSchema,
     author: AuthorPubsubSchema,
@@ -89,7 +91,10 @@ const PublicationBaseBeforeSigning = z.object({
 // Challenge requests and pubsub here
 
 // Should be extended to add publication, which should be defined with every type (vote, comment, edit)
-const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsSchema.pick({ challengeAnswers: true, challengeCommentCids: true });
+export const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsSchema.pick({
+    challengeAnswers: true,
+    challengeCommentCids: true
+});
 
 // Create Vote section here
 
@@ -134,79 +139,4 @@ export const SubplebbitAuthorSchema = z
         lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
     })
     .strict();
-
-// Comment edit schemas here
-
-export const AuthorCommentEditOptionsSchema = z
-    .object({
-        commentCid: CommentCidSchema,
-        content: z.string().optional(), // TODO Should use CommentIpfsSchema.content later on
-        deleted: z.boolean().optional(),
-        flair: AuthorFlairSchema.optional(),
-        spoiler: z.boolean().optional(),
-        reason: z.string().optional()
-    })
-    .strict();
-
 export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
-export const ModeratorCommentEditOptionsSchema = z
-    .object({
-        commentCid: CommentCidSchema,
-        flair: AuthorFlairSchema.optional(),
-        spoiler: z.boolean().optional(),
-        pinned: z.boolean().optional(),
-        locked: z.boolean().optional(),
-        removed: z.boolean().optional(),
-        reason: z.string().optional(),
-        commentAuthor: CommentAuthorSchema.optional()
-    })
-    .strict();
-
-// I have to explicitly include the cast here, it may be fixed in the future
-export const uniqueModFields = <["pinned", "locked", "removed", "commentAuthor"]>(
-    remeda.difference(remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape), remeda.keys.strict(AuthorCommentEditOptionsSchema.shape))
-);
-
-export const uniqueAuthorFields = <["content", "deleted"]>(
-    remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape))
-);
-
-export const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema);
-export const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema);
-
-// Before signing, and after filling the missing props of CreateCommentEditUserOptions
-export const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
-export const CommentEditAuthorOptionsToSignSchema = CreateCommentEditAuthorPublicationSchema.merge(PublicationBaseBeforeSigning);
-
-// after signing, and before initializing the local comment edit props
-export const LocalCommentEditAfterSigningSchema = CommentEditModeratorOptionsToSignSchema.merge(
-    CommentEditAuthorOptionsToSignSchema
-).extend({
-    signature: JsonSignatureSchema
-});
-
-// ChallengeRequest.publication
-const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
-    remeda.mapToObj([...CommentEditSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
-);
-export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueModFields));
-export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(
-    remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
-);
-export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema);
-
-export const DecryptedChallengeRequestCommentEditSchema = DecryptedChallengeRequestBaseSchema.extend({
-    publication: CommentEditPubsubMessageSchema
-}).strict();
-
-export const CommentEditJsonSchema = CommentEditPubsubMessageSchema.extend({
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
-export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditAuthorPublicationSchema.or(
-    CreateCommentEditModeratorPublicationSchema
-)
-    .or(CommentEditPubsubMessageSchema)
-    .or(DecryptedChallengeRequestCommentEditSchema)
-    .or(CommentEditJsonSchema);

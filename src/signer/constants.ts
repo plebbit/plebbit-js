@@ -1,6 +1,7 @@
 // Signer section
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
+import { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 
@@ -8,9 +9,8 @@ import {
     ChallengeMessageType,
     ChallengeVerificationMessageType,
     CommentUpdate,
-    CreateCommentEditOptions,
     CreateCommentOptions,
-    CreateVoteOptions,
+    CreateVoteOptions
 } from "../types.js";
 
 // ---------------------------
@@ -120,4 +120,3 @@ export const CommentUpdateSignedPropertyNames: (keyof CommentUpdate)[] = [
     "lastChildCid",
     "lastReplyTimestamp"
 ] as const;
-

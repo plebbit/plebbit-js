@@ -7,7 +7,6 @@ import os from "os";
 import Keyv from "keyv";
 import Transaction = Knex.Transaction;
 import {
-    AuthorCommentEdit,
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
     CommentsTableRow,
@@ -32,7 +31,8 @@ import { CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
-import { AuthorCommentEditPubsubSchema } from "../../../schema/schema.js";
+import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
+import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",

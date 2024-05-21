@@ -19,8 +19,6 @@ import {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentEditOptionsToSign,
-    CommentEditPubsubMessage,
     CommentIpfsType,
     CommentIpfsWithCid,
     CommentOptionsToSign,
@@ -51,6 +49,7 @@ import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerifi
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
+import type { CommentEditOptionsToSign, CommentEditPubsubMessage } from "../publications/comment-edit/types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
