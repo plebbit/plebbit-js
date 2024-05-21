@@ -1,8 +1,18 @@
-import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util.js";
+import {
+    mockRemotePlebbit,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util.js";
+import chai from "chai";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import chaiAsPromised from "chai-as-promised";
+
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 const commentToEditCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";
@@ -39,7 +49,7 @@ describe("CommentEdit", async () => {
 
         expect(edit.timestamp).to.equal(editFromStringifiedEdit.timestamp);
 
-        expect(JSON.stringify(edit)).to.equal(JSON.stringify(editFromStringifiedEdit));
+        expect(deterministicStringify(edit)).to.equal(deterministicStringify(editFromStringifiedEdit));
     });
 
     it(`(edit: CommentEdit) === await plebbit.createCommentEdit(edit)`, async () => {
@@ -61,7 +71,7 @@ describe("CommentEdit", async () => {
         });
         expect(edit.timestamp).to.equal(editFromEdit.timestamp);
 
-        expect(JSON.stringify(edit)).to.equal(JSON.stringify(editFromEdit));
+        expect(deterministicStringify(edit)).to.equal(deterministicStringify(editFromEdit));
     });
 });
 
@@ -84,14 +94,14 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
             content: "Test change multiple fields" + Date.now()
         };
 
-        const edit = await plebbit.createCommentEdit({
-            ...fieldsToChange,
-            commentCid: modPost.cid,
-            signer: roles[2].signer,
-            subplebbitAddress
-        });
-
-        await publishWithExpectedResult(edit, false, messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS);
+        await assert.isRejected(
+            plebbit.createCommentEdit({
+                ...fieldsToChange,
+                commentCid: modPost.cid,
+                signer: roles[2].signer,
+                subplebbitAddress
+            })
+        );
     });
 
     it(`A mod publishing multiple mod edit fields`, async () => {
@@ -111,13 +121,9 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
             subplebbitAddress
         });
         await publishWithExpectedResult(edit, true);
-        modPost.update();
+        await modPost.update();
 
-        await new Promise((resolve) =>
-            modPost.on("update", () => {
-                if (modPost.removed === true) resolve();
-            })
-        );
+        await resolveWhenConditionIsTrue(modPost, () => modPost.removed);
         await modPost.stop();
         expect(modPost.locked).to.be.true;
         expect(modPost._rawCommentUpdate.locked).to.be.true;
@@ -152,13 +158,8 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
             subplebbitAddress
         });
         await publishWithExpectedResult(edit, true);
-        authorPost.update();
-
-        await new Promise((resolve) =>
-            authorPost.on("update", () => {
-                if (authorPost.deleted === true) resolve();
-            })
-        );
+        await authorPost.update();
+        await resolveWhenConditionIsTrue(authorPost, () => authorPost.deleted);
         await authorPost.stop();
         expect(authorPost.deleted).to.be.true;
         expect(authorPost._rawCommentUpdate.edit.deleted).to.be.true;
@@ -211,13 +212,9 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
 
         await publishWithExpectedResult(edit2, true);
 
-        modPost.update();
+        await modPost.update();
+        await resolveWhenConditionIsTrue(modPost, () => modPost.removed === fieldsToChange.removed);
 
-        await new Promise((resolve) =>
-            modPost.on("update", () => {
-                if (modPost.removed === fieldsToChange.removed) resolve();
-            })
-        );
         await modPost.stop();
         expect(modPost.locked).to.be.false;
 
@@ -267,13 +264,9 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
 
         await publishWithExpectedResult(edit2, true);
 
-        authorPost.update();
+        await authorPost.update();
+        await resolveWhenConditionIsTrue(authorPost, () => authorPost.deleted === fieldsToChange.deleted);
 
-        await new Promise((resolve) =>
-            authorPost.on("update", () => {
-                if (authorPost.deleted === fieldsToChange.deleted) resolve();
-            })
-        );
         await authorPost.stop();
         expect(authorPost.deleted).to.be.false;
         expect(authorPost._rawCommentUpdate.edit.deleted).to.be.false;
@@ -323,13 +316,10 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
 
         await publishWithExpectedResult(modEdit, true);
 
-        authorPost.update();
+        await authorPost.update();
 
-        await new Promise((resolve) =>
-            authorPost.on("update", () => {
-                if (authorPost.removed === modFieldsToChange.removed) resolve();
-            })
-        );
+        await resolveWhenConditionIsTrue(authorPost, () => authorPost.removed === modFieldsToChange.removed);
+
         await authorPost.stop();
 
         // check mod changes here
