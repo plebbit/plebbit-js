@@ -45,10 +45,10 @@ import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
 import { PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
-import { JsonSignature } from "../signer/constants.js";
+import type { JsonSignature } from "../signer/types.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
-import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props

@@ -28,7 +28,8 @@ import {
     DecryptedChallengeRequestVote,
     DecryptedChallengeRequestCommentEdit,
     AuthorPubsubType,
-    LocalCommentEditOptions
+    LocalCommentEditOptions,
+    CreateSignerOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
 import {
@@ -47,7 +48,6 @@ import env from "./version.js";
 import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
 import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { CreateSignerOptions, SignerType } from "./signer/constants.js";
 import Stats from "./stats.js";
 import Storage from "./runtime/node/storage.js";
 import { ClientsManager } from "./clients/client-manager.js";

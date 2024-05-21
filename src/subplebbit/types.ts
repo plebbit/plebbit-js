@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { AuthorFlairSchema } from "../schema/schema.js";
-import type { JsonSignature, SignerType } from "../signer/constants.js";
-import { SignerWithPublicKeyAddress } from "../signer/index.js";
+import type { JsonSignature, SignerType } from "../signer/types.js";
+import type { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type {
     ChallengeType,
     DecryptedChallengeRequestMessageType,

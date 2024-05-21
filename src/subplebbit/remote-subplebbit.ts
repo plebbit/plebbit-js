@@ -5,7 +5,7 @@ import { Plebbit } from "../plebbit.js";
 import { PostsPagesTypeIpfs, ProtocolVersion, SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
-import { JsonSignature } from "../signer/constants.js";
+import { JsonSignature } from "../signer/types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";

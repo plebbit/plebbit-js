@@ -7,7 +7,6 @@ import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import { CommentIpfsWithCid, CreateCommentOptions, CreateVoteOptions, PlebbitOptions } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { SignerType } from "../signer/constants.js";
 import Publication from "../publications/publication.js";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
@@ -20,6 +19,7 @@ import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
 import { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
+import { SignerType } from "../signer/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];

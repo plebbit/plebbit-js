@@ -1,23 +1,12 @@
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
-import {
-    CommentEditSignedPropertyNamesUnion,
-    CommentSignedPropertyNamesUnion,
-    EncodedPubsubSignature,
-    Encrypted,
-    EncryptedEncoded,
-    JsonSignature,
-    PubsubSignature,
-    SignerType,
-    VoteSignedPropertyNamesUnion
-} from "./signer/constants.js";
-import Publication from "./publications/publication.js";
-import { PlebbitError } from "./plebbit-error.js";
-import { ChallengeFile, Flair } from "./subplebbit/types.js";
-import { Plebbit } from "./plebbit.js";
-import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
-import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
+import type Publication from "./publications/publication.js";
+import type { PlebbitError } from "./plebbit-error.js";
+import type { ChallengeFile, Flair } from "./subplebbit/types.js";
+import type { Plebbit } from "./plebbit.js";
+import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
+import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
     AuthorCommentEditOptionsSchema,
@@ -28,6 +17,7 @@ import {
     CommentEditJsonSchema,
     CommentEditModeratorOptionsToSignSchema,
     CommentEditPubsubMessageSchema,
+    CreateSignerSchema,
     CreateVoteUserOptionsSchema,
     DecryptedChallengeRequestCommentEditSchema,
     DecryptedChallengeRequestVoteSchema,
@@ -40,6 +30,7 @@ import {
     VotePubsubMessageSchema
 } from "./schema/schema.js";
 import { z } from "zod";
+import type { CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType } from "./signer/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -72,6 +63,9 @@ export interface ParsedPlebbitOptions
     chainProviders: Partial<Record<ChainTicker, ChainProvider>>; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
+
+export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
+
 export interface PageInstanceType {
     comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
     nextCid?: string;

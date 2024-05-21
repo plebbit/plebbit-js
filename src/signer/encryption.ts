@@ -2,7 +2,7 @@ import forge from "node-forge";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import * as ed from "@noble/ed25519";
-import { Encrypted } from "./constants.js";
+import type { Encrypted } from "./types.js";
 
 const isProbablyBuffer = (arg: any) => arg && typeof arg !== "string" && typeof arg !== "number";
 

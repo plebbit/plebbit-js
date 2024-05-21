@@ -42,12 +42,6 @@ import {
     CommentEditSignedPropertyNames,
     CommentSignedPropertyNames,
     CommentUpdateSignedPropertyNames,
-    JsonSignature,
-    PublicationsToSign,
-    PublicationToVerify,
-    PubsubMsgsToSign,
-    PubsubSignature,
-    SignerType,
     SubplebbitSignedPropertyNames,
     VoteSignedPropertyNames
 } from "./constants.js";
@@ -56,6 +50,7 @@ import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
+import { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 

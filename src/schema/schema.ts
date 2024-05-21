@@ -1,15 +1,11 @@
 import { z } from "zod";
 import { isIpfsCid } from "../util";
 import { messages } from "../errors";
-import {
-    CommentEditSignedPropertyNames,
-    CommentEditSignedPropertyNamesUnion,
-    JsonSignature,
-    VoteSignedPropertyNames,
-    VoteSignedPropertyNamesUnion
-} from "../signer/constants";
+
 import * as remeda from "remeda";
 import { ProtocolVersion } from "../types";
+import { CommentEditSignedPropertyNamesUnion, VoteSignedPropertyNamesUnion } from "../signer/types";
+import { CommentEditSignedPropertyNames, VoteSignedPropertyNames } from "../signer/constants";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
@@ -167,11 +163,11 @@ export const ModeratorCommentEditOptionsSchema = z
     .strict();
 
 // I have to explicitly include the cast here, it may be fixed in the future
-const uniqueModFields = <["pinned", "locked", "removed", "commentAuthor"]>(
+export const uniqueModFields = <["pinned", "locked", "removed", "commentAuthor"]>(
     remeda.difference(remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape), remeda.keys.strict(AuthorCommentEditOptionsSchema.shape))
 );
 
-const uniqueAuthorFields = <["content", "deleted"]>(
+export const uniqueAuthorFields = <["content", "deleted"]>(
     remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape))
 );
 

@@ -100,7 +100,12 @@ import {
 } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
-import { AUTHOR_EDIT_PUBSUB_FIELDS, MOD_EDIT_PUBSUB_FIELDS } from "../../../signer/constants.js";
+import {
+    AuthorCommentEditPubsubSchema,
+    ModeratorCommentEditPubsubSchema,
+    uniqueAuthorFields,
+    uniqueModFields
+} from "../../../schema/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -731,13 +736,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessage) {
-        const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
-        return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
+        return remeda.intersection(uniqueModFields, remeda.keys.strict(request)).length > 0;
     }
 
     private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessage) {
-        const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
-        return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
+        return remeda.intersection(uniqueAuthorFields, remeda.keys.strict(request)).length > 0;
     }
 
     _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
@@ -867,8 +870,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
 
+            const authorEditPubsubFields = remeda.keys.strict(AuthorCommentEditPubsubSchema.shape);
+            const modEditPubsubFields = remeda.keys.strict(ModeratorCommentEditPubsubSchema.shape);
+
             const allowedEditFields =
-                isAuthorEdit && editSignedByOriginalAuthor ? AUTHOR_EDIT_PUBSUB_FIELDS : isEditorMod ? MOD_EDIT_PUBSUB_FIELDS : undefined;
+                isAuthorEdit && editSignedByOriginalAuthor ? authorEditPubsubFields : isEditorMod ? modEditPubsubFields : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
             const publicationEditFields = remeda.keys.strict(publication);
             for (const editField of publicationEditFields)
