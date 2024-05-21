@@ -17,6 +17,9 @@ import {
     CommentEditJsonSchema,
     CommentEditModeratorOptionsToSignSchema,
     CommentEditPubsubMessageSchema,
+    CreateCommentEditAuthorPublicationSchema,
+    CreateCommentEditModeratorPublicationSchema,
+    CreatePublicationUserOptionsSchema,
     CreateSignerSchema,
     CreateVoteUserOptionsSchema,
     DecryptedChallengeRequestCommentEditSchema,
@@ -25,12 +28,21 @@ import {
     LocalVoteOptionsAfterSigningSchema,
     ModeratorCommentEditOptionsSchema,
     ProtocolVersionSchema,
+    SubplebbitAuthorSchema,
     VoteJsonSchema,
     VoteOptionsToSignSchema,
     VotePubsubMessageSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentSignedPropertyNamesUnion, EncodedPubsubSignature, Encrypted, EncryptedEncoded, JsonSignature, PubsubSignature, SignerType } from "./signer/types.js";
+import type {
+    CommentSignedPropertyNamesUnion,
+    EncodedPubsubSignature,
+    Encrypted,
+    EncryptedEncoded,
+    JsonSignature,
+    PubsubSignature,
+    SignerType
+} from "./signer/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -63,7 +75,6 @@ export interface ParsedPlebbitOptions
     chainProviders: Partial<Record<ChainTicker, ChainProvider>>; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
-
 
 export interface PageInstanceType {
     comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
@@ -153,14 +164,7 @@ export type CommentEditOptionsToSign =
 
 export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
 
-export interface SubplebbitAuthor {
-    postScore: number; // total post karma in the subplebbit
-    replyScore: number; // total reply karma in the subplebbit
-    banExpiresAt?: number; // timestamp in second, if defined the author was banned for this comment
-    flair?: Flair; // not part of the signature, mod can edit it after comment is published
-    firstCommentTimestamp: number; // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
-    lastCommentCid: string; // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
-}
+export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
@@ -171,22 +175,16 @@ export interface AuthorTypeWithCommentUpdate extends AuthorPubsubType {
 export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 
 // creating a new local publication
-export interface CreatePublicationOptions {
-    signer: Pick<SignerType, "privateKey" | "type">;
-    author?: Partial<AuthorPubsubType>;
-    subplebbitAddress: string; // all publications are directed to a subplebbit owner
-    protocolVersion?: ProtocolVersion;
-    timestamp?: number; // // Time of publishing in seconds, Defaults to Math.round(Date.now() / 1000) if undefined
-    challengeAnswers?: string[]; // Optional pre-answers to subplebbit.challenges
-    challengeCommentCids?: string[]; // Optional comment cids for subplebbit.challenges related to author karma/age in other subs
-}
+export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;
 
 // CommentEdit section
 
 export type ModeratorCommentEditOptions = z.infer<typeof ModeratorCommentEditOptionsSchema>;
 
 export type AuthorCommentEditOptions = z.infer<typeof AuthorCommentEditOptionsSchema>;
-export interface CreateCommentEditOptions extends AuthorCommentEditOptions, ModeratorCommentEditOptions, CreatePublicationOptions {}
+
+export type CreateCommentEditOptions = z.infer<typeof CreateCommentEditAuthorPublicationSchema> &
+    z.infer<typeof CreateCommentEditModeratorPublicationSchema>;
 
 export type AuthorCommentEdit = z.infer<typeof AuthorCommentEditPubsubSchema>;
 

@@ -59,7 +59,7 @@ export const AuthorPubsubSchema = z.object({
     flair: AuthorFlairSchema.optional()
 });
 
-const CreatePublicationUserOptionsSchema = z.object({
+export const CreatePublicationUserOptionsSchema = z.object({
     signer: CreateSignerSchema,
     author: AuthorPubsubSchema.partial().optional(),
     subplebbitAddress: SubplebbitAddressSchema,
@@ -124,14 +124,14 @@ export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(V
     .or(VoteJsonSchema);
 
 // Comment schemas here
-const SubplebbitAuthorSchema = z
+export const SubplebbitAuthorSchema = z
     .object({
-        postScore: z.number().positive(),
-        replyScore: z.number().positive(),
-        banExpiresAt: PlebbitTimestampSchema.optional(),
-        flair: AuthorFlairSchema.optional(),
-        firstCommentTimeStamp: PlebbitTimestampSchema,
-        lastCommentCid: CommentCidSchema
+        postScore: z.number().positive(), // total post karma in the subplebbit
+        replyScore: z.number().positive(), // total reply karma in the subplebbit
+        banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
+        flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
+        firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
+        lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
     })
     .strict();
 
@@ -171,8 +171,8 @@ export const uniqueAuthorFields = <["content", "deleted"]>(
     remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape))
 );
 
-const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema);
-const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema);
+export const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema);
+export const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema);
 
 // Before signing, and after filling the missing props of CreateCommentEditUserOptions
 export const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
