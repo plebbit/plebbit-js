@@ -35,7 +35,6 @@ import type {
     ChallengeMessageType,
     ChallengeRequestCommentWithSubplebbitAuthor,
     ChallengeRequestMessageType,
-    ChallengeRequestVoteWithSubplebbitAuthor,
     ChallengeVerificationMessageType,
     CommentIpfsWithCid,
     CommentUpdate,
@@ -45,13 +44,12 @@ import type {
     DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeRequest,
-    DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
-    VotePubsubMessage,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     CommentPubsubMessage,
-    CommentWithCommentUpdateJson
+    CommentWithCommentUpdateJson,
+    DecryptedChallengeRequestMessageType
 } from "../../../types.js";
 import {
     ValidationResult,
@@ -99,6 +97,7 @@ import * as remeda from "remeda";
 
 import { ChallengeRequestCommentEditWithSubplebbitAuthor, CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
 import { AuthorCommentEditPubsubSchema, ModeratorCommentEditPubsubSchema, uniqueAuthorFields, uniqueModFields } from "../../../publications/comment-edit/schema.js";
+import { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {

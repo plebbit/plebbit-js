@@ -4,7 +4,7 @@ import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
 import Vote from "../publications/vote/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { CommentIpfsWithCid, CreateCommentOptions, CreateVoteOptions, PlebbitOptions } from "../types.js";
+import { CommentIpfsWithCid, CreateCommentOptions, PlebbitOptions } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Publication from "../publications/publication.js";
@@ -20,6 +20,7 @@ import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
 import { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 import { SignerType } from "../signer/types.js";
+import { CreateVoteOptions } from "../publications/vote/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];

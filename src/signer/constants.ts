@@ -2,16 +2,11 @@
 
 import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
 import { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
+import { CreateVoteOptions } from "../publications/vote/types.js";
 
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
 
-import {
-    ChallengeMessageType,
-    ChallengeVerificationMessageType,
-    CommentUpdate,
-    CreateCommentOptions,
-    CreateVoteOptions
-} from "../types.js";
+import { ChallengeMessageType, ChallengeVerificationMessageType, CommentUpdate, CreateCommentOptions } from "../types.js";
 
 // ---------------------------
 // SignedPropertyNames

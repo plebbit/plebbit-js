@@ -1,0 +1,45 @@
+// Create Vote section here
+
+import { z } from "zod";
+import {
+    AuthorPubsubJsonSchema,
+    CommentCidSchema,
+    CreatePublicationUserOptionsSchema,
+    DecryptedChallengeRequestBaseSchema,
+    JsonSignatureSchema,
+    PublicationBaseBeforeSigning,
+    ShortSubplebbitAddressSchema
+} from "../../schema/schema";
+import * as remeda from "remeda";
+import { VoteSignedPropertyNamesUnion } from "../../signer/types";
+import { VoteSignedPropertyNames } from "../../signer/constants";
+
+export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
+    commentCid: CommentCidSchema,
+    vote: z.union([z.literal(1), z.literal(0), z.literal(-1)])
+}).strict();
+
+export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning);
+
+export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
+    DecryptedChallengeRequestBaseSchema
+);
+
+const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
+    remeda.mapToObj([...VoteSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
+);
+
+export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
+
+export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({
+    publication: VotePubsubMessageSchema
+}).strict();
+
+export const VoteJsonSchema = VotePubsubMessageSchema.extend({
+    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
+    author: AuthorPubsubJsonSchema
+}).strict();
+
+export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema)
+    .or(DecryptedChallengeRequestVoteSchema)
+    .or(VoteJsonSchema);

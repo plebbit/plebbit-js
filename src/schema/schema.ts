@@ -2,10 +2,6 @@ import { z } from "zod";
 import { isIpfsCid } from "../util";
 import { messages } from "../errors";
 
-import * as remeda from "remeda";
-import { ProtocolVersion } from "../types";
-import { CommentEditSignedPropertyNamesUnion, VoteSignedPropertyNamesUnion } from "../signer/types";
-import { CommentEditSignedPropertyNames, VoteSignedPropertyNames } from "../signer/constants";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
@@ -96,37 +92,6 @@ export const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsS
     challengeCommentCids: true
 });
 
-// Create Vote section here
-
-export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
-    commentCid: CommentCidSchema,
-    vote: z.union([z.literal(1), z.literal(0), z.literal(-1)])
-}).strict();
-
-export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning);
-
-export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
-    DecryptedChallengeRequestBaseSchema
-);
-
-const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
-    remeda.mapToObj([...VoteSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
-);
-
-export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
-
-export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({
-    publication: VotePubsubMessageSchema
-}).strict();
-
-export const VoteJsonSchema = VotePubsubMessageSchema.extend({
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
-export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema)
-    .or(DecryptedChallengeRequestVoteSchema)
-    .or(VoteJsonSchema);
 
 // Comment schemas here
 export const SubplebbitAuthorSchema = z

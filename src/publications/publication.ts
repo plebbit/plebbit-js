@@ -16,15 +16,13 @@ import type {
     DecryptedChallengeRequest,
     DecryptedChallengeRequestComment,
     DecryptedChallengeRequestMessageType,
-    DecryptedChallengeRequestVote,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
     ProtocolVersion,
     PublicationEvents,
     PublicationPubsubMessage,
-    PublicationTypeName,
-    VotePubsubMessage
+    PublicationTypeName
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
@@ -48,6 +46,7 @@ import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
+import { DecryptedChallengeRequestVote, VotePubsubMessage } from "./vote/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props

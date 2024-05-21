@@ -12,7 +12,6 @@ import type {
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestComment,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeRequestVote,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
@@ -29,6 +28,7 @@ import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
+import { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time

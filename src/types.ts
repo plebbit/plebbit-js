@@ -11,14 +11,8 @@ import {
     AuthorAvatarNftSchema,
     AuthorPubsubSchema,
     CreatePublicationUserOptionsSchema,
-    CreateVoteUserOptionsSchema,
-    DecryptedChallengeRequestVoteSchema,
-    LocalVoteOptionsAfterSigningSchema,
     ProtocolVersionSchema,
-    SubplebbitAuthorSchema,
-    VoteJsonSchema,
-    VoteOptionsToSignSchema,
-    VotePubsubMessageSchema
+    SubplebbitAuthorSchema
 } from "./schema/schema.js";
 import { z } from "zod";
 import type {
@@ -36,6 +30,8 @@ import {
     CommentEditPubsubMessage,
     LocalCommentEditOptions
 } from "./publications/comment-edit/types.js";
+import { LocalVoteOptionsAfterSigningSchema } from "./publications/vote/schema.js";
+import { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -127,6 +123,7 @@ export interface CreateCommentOptions extends CreatePublicationOptions {
     flair?: Flair; // Author or mod chosen colored label for the comment
     linkHtmlTagName?: "a" | "img" | "video" | "audio";
 }
+export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
 export interface CommentOptionsToSign extends CreateCommentOptions {
     signer: SignerType;
@@ -134,14 +131,6 @@ export interface CommentOptionsToSign extends CreateCommentOptions {
     author: AuthorPubsubType;
     protocolVersion: ProtocolVersion;
 }
-
-export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
-
-export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
-
-export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
-
-export type VoteOptionsToSign = z.infer<typeof VoteOptionsToSignSchema>;
 
 // Below is what's used to initialize a local publication to be published
 
@@ -201,13 +190,8 @@ export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequ
     publication: CommentPubsubMessage;
 }
 
-export type DecryptedChallengeRequestVote = z.infer<typeof DecryptedChallengeRequestVoteSchema>;
-
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
-export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
-    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
-};
 export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
     author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
 };
@@ -387,13 +371,10 @@ export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postC
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
-export type VoteTypeJson = z.infer<typeof VoteJsonSchema>;
-
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
 export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
 
-export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
 export type NativeFunctions = {
     fetch: typeof fetch;
 };

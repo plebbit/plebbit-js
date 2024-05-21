@@ -8,9 +8,7 @@ import type {
     CommentPubsubMessage,
     CommentUpdate,
     CreateCommentOptions,
-    CreateVoteOptions,
-    PublicationTypeName,
-    VotePubsubMessage
+    PublicationTypeName
 } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
 import {
@@ -19,7 +17,8 @@ import {
     CommentEditSignedPropertyNames,
     CommentUpdateSignedPropertyNames
 } from "./constants";
-import { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
+import type { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
+import { CreateVoteOptions, VotePubsubMessage } from "../publications/vote/types";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
