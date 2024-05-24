@@ -3,9 +3,9 @@
 import { z } from "zod";
 import {
     AuthorPubsubJsonSchema,
+    ChallengeRequestToEncryptBaseSchema,
     CommentCidSchema,
     CreatePublicationUserOptionsSchema,
-    DecryptedChallengeRequestBaseSchema,
     JsonSignatureSchema,
     PublicationBaseBeforeSigning,
     ShortSubplebbitAddressSchema
@@ -22,7 +22,7 @@ export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.ex
 export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning);
 
 export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
-    DecryptedChallengeRequestBaseSchema
+    ChallengeRequestToEncryptBaseSchema
 );
 
 const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
@@ -31,7 +31,7 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "pr
 
 export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
 
-export const DecryptedChallengeRequestVoteSchema = DecryptedChallengeRequestBaseSchema.extend({
+export const DecryptedChallengeRequestVoteSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: VotePubsubMessageSchema
 }).strict();
 

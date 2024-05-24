@@ -3,18 +3,16 @@ import {
     AuthorFlairSchema,
     AuthorJsonBaseSchema,
     AuthorPubsubJsonSchema,
-    ChallengeRequestToEncryptSchema,
+    ChallengeRequestToEncryptBaseSchema,
     CommentCidSchema,
     CreatePublicationUserOptionsSchema,
-    DecryptedChallengeRequestBaseSchema,
     JsonSignatureSchema,
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
     PublicationBaseBeforeSigning,
-    RepliesPagesIpfsSchema,
-    RepliesPagesJsonSchema,
     ShortCidSchema,
-    ShortSubplebbitAddressSchema
+    ShortSubplebbitAddressSchema,
+    SubplebbitAuthorSchema
 } from "../../schema/schema";
 import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema";
 import { CommentSignedPropertyNamesUnion } from "../../signer/types";
@@ -26,17 +24,6 @@ import { CommentIpfsType, CommentPubsubMessage, CommentTypeJson, CreateCommentOp
 import { messages } from "../../errors";
 
 // Comment schemas here
-export const SubplebbitAuthorSchema = z
-    .object({
-        postScore: z.number().positive(), // total post karma in the subplebbit
-        replyScore: z.number().positive(), // total reply karma in the subplebbit
-        banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
-        flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
-        firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
-        lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
-    })
-    .strict();
-export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
 
 const CommentContentSchema = z.string();
 
@@ -66,7 +53,7 @@ export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(Publi
 // Below is what's used to initialize a local publication to be published
 
 export const LocalCommentSchema = CommentOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
-    DecryptedChallengeRequestBaseSchema
+    ChallengeRequestToEncryptBaseSchema
 );
 
 const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
@@ -75,7 +62,7 @@ const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" 
 
 export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys);
 
-export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptSchema.extend({
+export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentPubsubMessageSchema
 });
 
@@ -194,3 +181,28 @@ export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.refine(
     .or(z.instanceof(Comment))
     .or(CommentIpfsWithCidSchema.pick({ cid: true }))
     .or(CommentIpfsWithCidSchema.pick({ cid: true, subplebbitAddress: true }));
+
+// Comment pages here
+
+export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
+
+export const PageIpfsSchema = z.object({
+    comments: z.object({ comment: CommentIpfsWithCidSchema, update: CommentUpdateSchema }).array(),
+    nextCid: CommentCidSchema.optional()
+});
+
+const PageJsonSchema = z.object({
+    comments: CommentWithCommentUpdateJsonSchema.array(),
+    nextCid: CommentCidSchema.optional()
+});
+
+// need to prevent infinite recursion here
+export const RepliesPagesIpfsSchema = z.object({
+    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
+    pageCids: z.record(ReplySortNameSchema, CommentCidSchema)
+});
+
+export const RepliesPagesJsonSchema = z.object({
+    pages: z.record(ReplySortNameSchema, PageJsonSchema),
+    pageCids: RepliesPagesIpfsSchema.shape.pageCids
+});

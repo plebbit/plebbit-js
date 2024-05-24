@@ -4,17 +4,17 @@ import { z } from "zod";
 import {
     AuthorFlairSchema,
     AuthorPubsubJsonSchema,
+    ChallengeRequestToEncryptBaseSchema,
+    CommentAuthorSchema,
     CommentCidSchema,
     CreatePublicationUserOptionsSchema,
-    DecryptedChallengeRequestBaseSchema,
     JsonSignatureSchema,
     PublicationBaseBeforeSigning,
     ShortSubplebbitAddressSchema
-} from "../../schema/schema";
+} from "../../schema/schema.js";
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
-import { CommentEditSignedPropertyNames } from "../../signer/constants";
-import { CommentAuthorSchema } from "../comment/schema";
+import { CommentEditSignedPropertyNames } from "../../signer/constants.js";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({
@@ -73,7 +73,7 @@ export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSche
 );
 export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema);
 
-export const DecryptedChallengeRequestCommentEditSchema = DecryptedChallengeRequestBaseSchema.extend({
+export const DecryptedChallengeRequestCommentEditSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentEditPubsubMessageSchema
 }).strict();
 

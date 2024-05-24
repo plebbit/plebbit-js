@@ -13,8 +13,8 @@ import {
     ModeratorCommentEditOptionsSchema
 } from "./schema";
 import type { AuthorPubsubType } from "../../types";
-import { CommentAuthorSchema } from "../comment/schema";
 import { SubplebbitAuthor } from "../comment/types";
+import { CommentAuthorSchema } from "../../schema/schema";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
 

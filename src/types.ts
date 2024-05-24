@@ -7,16 +7,7 @@ import type { ChallengeFile, Flair } from "./subplebbit/types.js";
 import type { Plebbit } from "./plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
-import {
-    AuthorAvatarNftSchema,
-    AuthorPubsubSchema,
-    CreatePublicationUserOptionsSchema,
-    PageIpfsSchema,
-    ProtocolVersionSchema,
-    RepliesPagesIpfsSchema,
-    RepliesPagesJsonSchema,
-    ReplySortNameSchema
-} from "./schema/schema.js";
+import { AuthorAvatarNftSchema, AuthorPubsubSchema, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
 import { z } from "zod";
 import type {
     CommentSignedPropertyNamesUnion,
@@ -42,6 +33,7 @@ import {
     LocalCommentOptions,
     SubplebbitAuthor
 } from "./publications/comment/types.js";
+import { PageIpfsSchema, RepliesPagesIpfsSchema, RepliesPagesJsonSchema, ReplySortNameSchema } from "./publications/comment/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";

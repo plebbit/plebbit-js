@@ -1,14 +1,6 @@
 import { z } from "zod";
 import { isIpfsCid } from "../util";
 import { messages } from "../errors";
-import {
-    CommentIpfsWithCidSchema,
-    CommentPubsubMessageSchema,
-    CommentUpdateSchema,
-    CommentWithCommentUpdateJsonSchema
-} from "../publications/comment/schema";
-import { VotePubsubMessageSchema } from "../publications/vote/schema";
-import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
@@ -94,41 +86,23 @@ export const PublicationBaseBeforeSigning = z.object({
     protocolVersion: ProtocolVersionSchema
 });
 
+export const SubplebbitAuthorSchema = z
+    .object({
+        postScore: z.number().positive(), // total post karma in the subplebbit
+        replyScore: z.number().positive(), // total reply karma in the subplebbit
+        banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
+        flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
+        firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
+        lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
+    })
+    .strict();
+export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
+
 // Challenge requests and pubsub here
 
 // Should be extended to add publication, which should be defined with every type (vote, comment, edit)
 
-export const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsSchema.pick({
+export const ChallengeRequestToEncryptBaseSchema = CreatePublicationUserOptionsSchema.pick({
     challengeAnswers: true,
     challengeCommentCids: true
-});
-export const ChallengeRequestToEncryptSchema = z
-    .object({
-        publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageSchema)
-    })
-    .merge(DecryptedChallengeRequestBaseSchema);
-
-// Pages schema here
-
-export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
-
-export const PageIpfsSchema = z.object({
-    comments: z.object({ comment: CommentIpfsWithCidSchema, update: CommentUpdateSchema }).array(),
-    nextCid: CommentCidSchema.optional()
-});
-
-const PageJsonSchema = z.object({
-    comments: CommentWithCommentUpdateJsonSchema.array(),
-    nextCid: CommentCidSchema.optional()
-});
-
-// need to prevent infinite recursion here
-export const RepliesPagesIpfsSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
-    pageCids: z.record(ReplySortNameSchema, CommentCidSchema)
-});
-
-export const RepliesPagesJsonSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageJsonSchema),
-    pageCids: RepliesPagesIpfsSchema.shape.pageCids
 });

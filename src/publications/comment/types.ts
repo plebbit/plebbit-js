@@ -10,9 +10,9 @@ import {
     CommentUpdateSchema,
     CommentWithCommentUpdateJsonSchema,
     CreateCommentOptionsSchema,
-    LocalCommentSchema,
-    SubplebbitAuthorSchema
+    LocalCommentSchema
 } from "./schema";
+import { SubplebbitAuthorSchema } from "../../schema/schema";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
