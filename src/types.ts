@@ -160,9 +160,7 @@ export interface DecryptedChallengeRequest {
     challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 }
 
-export interface DecryptedChallengeRequestComment extends DecryptedChallengeRequest {
-    publication: CommentPubsubMessage;
-}
+
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
@@ -309,24 +307,6 @@ export type OnlyDefinedProperties<T> = Pick<
         [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
     }[keyof T]
 >;
-
-type CommentTypeJsonBase = {
-    shortSubplebbitAddress: string;
-};
-
-interface CommentTypeJsonBeforeChallengeVerification extends CommentPubsubMessage, CommentTypeJsonBase {
-    author: CommentPubsubMessage["author"] & { shortAddress: string };
-}
-
-interface CommentTypeJsonAfterChallengeVerificationNoCommentUpdate extends CommentIpfsWithCid, CommentTypeJsonBase {
-    shortCid: string;
-    author: CommentIpfsWithCid["author"] & { shortAddress: string };
-}
-
-export type CommentTypeJson =
-    | CommentWithCommentUpdateJson
-    | CommentTypeJsonAfterChallengeVerificationNoCommentUpdate
-    | CommentTypeJsonBeforeChallengeVerification;
 
 // Define database tables and fields here
 

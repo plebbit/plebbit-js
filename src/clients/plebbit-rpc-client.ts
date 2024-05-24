@@ -1,6 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
-    DecryptedChallengeRequestComment,
     PageIpfs,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
@@ -17,7 +16,7 @@ import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, Su
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
 import { DecryptedChallengeRequestVote } from "../publications/vote/types.js";
-import { CommentIpfsWithCid } from "../publications/comment/types.js";
+import { CommentChallengeRequestToEncryptType, CommentIpfsWithCid } from "../publications/comment/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -219,7 +218,7 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async publishComment(commentProps: DecryptedChallengeRequestComment) {
+    async publishComment(commentProps: CommentChallengeRequestToEncryptType) {
         const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
         return subscriptionId;
     }

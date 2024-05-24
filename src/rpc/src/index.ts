@@ -9,7 +9,6 @@ import { Plebbit } from "../../plebbit.js";
 import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
-    DecryptedChallengeRequestComment,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     PlebbitWsServerSettings,
@@ -26,9 +25,9 @@ import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
-import { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
-import { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
-import { CommentIpfsWithCid } from "../../publications/comment/types.js";
+import type { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
+import type { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
+import type { CommentIpfsWithCid, CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -554,7 +553,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishComment(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequestComment>params[0];
+        const publishOptions = <CommentChallengeRequestToEncryptType>params[0];
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>

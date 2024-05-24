@@ -11,8 +11,6 @@ import {
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
-    CommentTypeJson,
-    DecryptedChallengeRequestComment,
     AuthorPubsubType
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
@@ -61,7 +59,8 @@ import { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOpt
 import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 import { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
-import { CommentIpfsType, CommentIpfsWithCid, CommentOptionsToSign, CommentPubsubMessage, CreateCommentOptions } from "./publications/comment/types.js";
+import { CommentOptionsToSign, CreateCommentOptions } from "./publications/comment/types.js";
+import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -343,50 +342,39 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return commentInstance;
     }
 
-    async createComment(
-        options:
-            | CreateCommentOptions
-            | CommentTypeJson
-            | CommentIpfsType
-            | CommentPubsubMessage
-            | DecryptedChallengeRequestComment
-            | Comment
-            | Pick<CommentIpfsWithCid, "cid">
-            | Pick<CommentIpfsWithCid, "cid" | "subplebbitAddress">
-    ): Promise<Comment> {
+    async createComment(options: z.infer<typeof CreateCommentFunctionArguments>): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
-        if ("cid" in options && typeof options.cid === "string" && !isIpfsCid(options.cid))
-            throwWithErrorCode("ERR_CID_IS_INVALID", { cid: options.cid });
 
-        if ("signature" in options && "signer" in options) throw Error("You can't sign an already signed comment");
+        const parsedOptions = CreateCommentFunctionArguments.parse(options);
 
-        if (options instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(options);
+        if (parsedOptions instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(parsedOptions);
         const commentInstance = new Comment(this);
-        if ("cid" in options && typeof options.cid === "string") {
-            commentInstance.setCid(options.cid);
-            if (Object.keys(options).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
+        if ("cid" in parsedOptions && typeof parsedOptions.cid === "string") {
+            commentInstance.setCid(parsedOptions.cid);
+            if (Object.keys(parsedOptions).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
 
-        if ("publication" in options) commentInstance._initChallengeRequestProps(options);
-        else if ("depth" in options) {
+        if ("publication" in parsedOptions) commentInstance._initChallengeRequestProps(parsedOptions);
+        else if ("depth" in parsedOptions) {
             // Options is CommentIpfs
-            commentInstance._initIpfsProps(options);
-        } else if ("signature" in options) {
-            // Options is CommentPubsubMessage
-            commentInstance._initPubsubMessageProps(options);
-        } else if ("signer" in options) {
+            commentInstance._initIpfsProps(parsedOptions);
+        } else if ("signature" in parsedOptions) {
+            // parsedOptions is CommentPubsubMessage
+            commentInstance._initPubsubMessageProps(parsedOptions);
+        } else if ("signer" in parsedOptions) {
             // we're creating a new comment to sign and publish here
-            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
+            const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
             const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
             commentInstance._initLocalProps(signedComment);
-        } else if ("subplebbitAddress" in options && typeof options.subplebbitAddress === "string")
-            commentInstance.setSubplebbitAddress(options.subplebbitAddress);
+        } else if ("subplebbitAddress" in parsedOptions && typeof parsedOptions.subplebbitAddress === "string")
+            commentInstance.setSubplebbitAddress(parsedOptions.subplebbitAddress);
         else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
 
-        if ("updatedAt" in options && typeof options.updatedAt === "number") await commentInstance._initCommentUpdate(options);
+        if ("updatedAt" in parsedOptions && typeof parsedOptions.updatedAt === "number")
+            await commentInstance._initCommentUpdate(parsedOptions);
 
         return commentInstance;
     }

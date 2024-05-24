@@ -4,10 +4,7 @@ import Publication from "../publication.js";
 import { RepliesPages } from "../../pages.js";
 import {
     CommentsTableRowInsert,
-    CommentTypeJson,
-    DecryptedChallengeRequestComment,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    PagesTypeIpfs,
     PageTypeJson,
     PublicationTypeName,
     RepliesPagesTypeIpfs
@@ -23,9 +20,11 @@ import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
 import {
+    CommentChallengeRequestToEncryptType,
     CommentIpfsType,
     CommentIpfsWithCid,
     CommentPubsubMessage,
+    CommentTypeJson,
     CommentUpdate,
     CommentWithCommentUpdateJson,
     LocalCommentOptions
@@ -166,7 +165,7 @@ export class Comment extends Publication {
         this.thumbnailUrlWidth = props.thumbnailUrlWidth;
     }
 
-    _initChallengeRequestProps(props: DecryptedChallengeRequestComment) {
+    _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initPubsubMessageProps(props.publication);
     }

@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { isIpfsCid } from "../util";
 import { messages } from "../errors";
-import { CommentIpfsWithCidSchema, CommentUpdateSchema, CommentWithCommentUpdateJsonSchema } from "../publications/comment/schema";
+import {
+    CommentIpfsWithCidSchema,
+    CommentPubsubMessageSchema,
+    CommentUpdateSchema,
+    CommentWithCommentUpdateJsonSchema
+} from "../publications/comment/schema";
+import { VotePubsubMessageSchema } from "../publications/vote/schema";
+import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
@@ -90,10 +97,16 @@ export const PublicationBaseBeforeSigning = z.object({
 // Challenge requests and pubsub here
 
 // Should be extended to add publication, which should be defined with every type (vote, comment, edit)
+
 export const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsSchema.pick({
     challengeAnswers: true,
     challengeCommentCids: true
 });
+export const ChallengeRequestToEncryptSchema = z
+    .object({
+        publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageSchema)
+    })
+    .merge(DecryptedChallengeRequestBaseSchema);
 
 // Pages schema here
 

@@ -12,7 +12,6 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
-    DecryptedChallengeRequestComment,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
@@ -45,7 +44,7 @@ import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
 import type { DecryptedChallengeRequestVote, VotePubsubMessage } from "./vote/types.js";
-import type { CommentIpfsType, CommentPubsubMessage } from "./comment/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubsubMessage } from "./comment/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -498,7 +497,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         try {
             this._rpcPublishSubscriptionId =
                 this.getType() === "comment"
-                    ? await this._plebbit.plebbitRpcClient.publishComment(<DecryptedChallengeRequestComment>this.toJSONPubsubMessage())
+                    ? await this._plebbit.plebbitRpcClient.publishComment(<CommentChallengeRequestToEncryptType>this.toJSONPubsubMessage())
                     : this.getType() === "commentedit"
                       ? await this._plebbit.plebbitRpcClient.publishCommentEdit(
                             <DecryptedChallengeRequestCommentEdit>this.toJSONPubsubMessage()

@@ -3,6 +3,7 @@ import {
     AuthorFlairSchema,
     AuthorJsonBaseSchema,
     AuthorPubsubJsonSchema,
+    ChallengeRequestToEncryptSchema,
     CommentCidSchema,
     CreatePublicationUserOptionsSchema,
     DecryptedChallengeRequestBaseSchema,
@@ -20,6 +21,7 @@ import { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import { CommentSignedPropertyNames } from "../../signer/constants";
 import * as remeda from "remeda";
 import { PagesTypeIpfs, RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
+import { Comment } from "./comment";
 
 // Comment schemas here
 export const SubplebbitAuthorSchema = z
@@ -76,6 +78,10 @@ const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" 
 );
 
 export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys);
+
+export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptSchema.extend({
+    publication: CommentPubsubMessageSchema
+});
 
 // Remote comments
 
@@ -136,6 +142,8 @@ const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchem
     protocolVersion: true
 });
 
+// Comment JSON schemas here
+
 const AuthorWithCommentUpdateJsonSchema = AuthorWithCommentUpdateSchema.merge(AuthorJsonBaseSchema);
 
 export const CommentWithCommentUpdateNoRepliesJsonSchema = CommentIpfsWithCidSchema.merge(CommentUpdateNoRepliesSchema).extend({
@@ -154,3 +162,30 @@ export const CommentWithCommentUpdateJsonSchema: z.ZodType<CommentWithCommentUpd
     CommentWithCommentUpdateNoRepliesJsonSchema.extend({
         replies: z.lazy(() => RepliesPagesJsonSchema.optional())
     });
+
+export const CommentJsonAfterChallengeVerificationNoCommentUpdateSchema = CommentIpfsWithCidSchema.extend({
+    shortCid: ShortCidSchema,
+    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
+    author: AuthorPubsubJsonSchema
+});
+
+export const CommentJsonBeforeChallengeVerificationSchema = CommentPubsubMessageSchema.extend({
+    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
+    author: AuthorPubsubJsonSchema
+});
+
+const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfterChallengeVerificationNoCommentUpdateSchema).or(
+    CommentJsonBeforeChallengeVerificationSchema
+);
+
+// Comment pubsub message here
+
+// Plebbit.createComment here
+
+export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.or(CommentJsonSchema)
+    .or(CommentIpfsSchema)
+    .or(CommentPubsubMessageSchema)
+    .or(CommentChallengeRequestToEncryptSchema)
+    .or(z.instanceof(Comment))
+    .or(CommentIpfsWithCidSchema.pick({ cid: true }))
+    .or(CommentIpfsWithCidSchema.pick({ cid: true, subplebbitAddress: true }));

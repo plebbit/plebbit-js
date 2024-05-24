@@ -1,7 +1,10 @@
 import { z } from "zod";
 import {
+    CommentChallengeRequestToEncryptSchema,
     CommentIpfsSchema,
     CommentIpfsWithCidSchema,
+    CommentJsonAfterChallengeVerificationNoCommentUpdateSchema,
+    CommentJsonBeforeChallengeVerificationSchema,
     CommentOptionsToSignSchema,
     CommentPubsubMessageSchema,
     CommentUpdateSchema,
@@ -23,8 +26,6 @@ export type CommentPubsubMessage = z.infer<typeof CommentPubsubMessageSchema>;
 
 export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 
-
-
 export type CommentUpdate = z.infer<typeof CommentUpdateSchema>;
 
 export type CommentWithCommentUpdateJson = z.infer<typeof CommentWithCommentUpdateJsonSchema>;
@@ -32,3 +33,14 @@ export type CommentWithCommentUpdateJson = z.infer<typeof CommentWithCommentUpda
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
 export type CommentIpfsWithCid = z.infer<typeof CommentIpfsWithCidSchema>;
+
+type CommentTypeJsonAfterChallengeVerificationNoCommentUpdate = z.infer<typeof CommentJsonAfterChallengeVerificationNoCommentUpdateSchema>;
+
+type CommentTypeJsonBeforeChallengeVerification = z.infer<typeof CommentJsonBeforeChallengeVerificationSchema>;
+
+export type CommentTypeJson =
+    | CommentWithCommentUpdateJson
+    | CommentTypeJsonAfterChallengeVerificationNoCommentUpdate
+    | CommentTypeJsonBeforeChallengeVerification;
+
+export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;
