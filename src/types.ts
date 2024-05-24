@@ -33,7 +33,7 @@ import {
     LocalCommentOptions,
     SubplebbitAuthor
 } from "./publications/comment/types.js";
-import { PageIpfsSchema, RepliesPagesIpfsSchema, RepliesPagesJsonSchema, ReplySortNameSchema } from "./publications/comment/schema.js";
+import { CommentsTableRowSchema, PageIpfsSchema, RepliesPagesIpfsSchema, RepliesPagesJsonSchema, ReplySortNameSchema } from "./publications/comment/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -300,14 +300,7 @@ export type OnlyDefinedProperties<T> = Pick<
 
 // Define database tables and fields here
 
-export interface CommentsTableRow extends CommentIpfsWithCid {
-    authorAddress: AuthorPubsubType["address"];
-    challengeRequestPublicationSha256: string;
-    ipnsName?: string;
-    id: number;
-    insertedAt: number;
-    authorSignerAddress: string;
-}
+export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;
 
 export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "insertedAt"> {}
 

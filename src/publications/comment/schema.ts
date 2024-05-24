@@ -163,6 +163,17 @@ const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfter
 
 // Comment pubsub message here
 
+// Comment table here
+
+export const CommentsTableRowSchema = CommentIpfsWithCidSchema.extend({
+    authorAddress: AuthorPubsubSchema.shape.address,
+    challengeRequestPublicationSha256: z.string(),
+    ipnsName: z.string().optional(),
+    id: z.number().nonnegative().int(),
+    insertedAt: PlebbitTimestampSchema,
+    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address
+}).strict();
+
 // Plebbit.createComment here
 
 // TODO move the refine function to createComment args
