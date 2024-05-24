@@ -73,7 +73,7 @@ export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptB
 
 // These are the props added by the subplebbit before adding the comment to ipfs
 export const CommentIpfsSchema = CommentPubsubMessageSchema.extend({
-    depth: z.number().nonnegative(),
+    depth: z.number().nonnegative().int(),
     postCid: CommentCidSchema.optional(),
     thumbnailUrl: z.string().url().optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
@@ -96,9 +96,9 @@ const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.author
 
 const CommentUpdateNoRepliesSchema = z.object({
     cid: CommentCidSchema, // cid of the comment, need it in signature to prevent attack
-    upvoteCount: z.number().nonnegative(),
-    downvoteCount: z.number().nonnegative(),
-    replyCount: z.number().nonnegative(),
+    upvoteCount: z.number().nonnegative().int(),
+    downvoteCount: z.number().nonnegative().int(),
+    replyCount: z.number().nonnegative().int(),
     edit: AuthorCommentEditPubsubSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
     flair: AuthorFlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
