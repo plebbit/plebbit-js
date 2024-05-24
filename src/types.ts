@@ -160,8 +160,6 @@ export interface DecryptedChallengeRequest {
     challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 }
 
-
-
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
 export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {

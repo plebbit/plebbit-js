@@ -22,6 +22,8 @@ import { CommentSignedPropertyNames } from "../../signer/constants";
 import * as remeda from "remeda";
 import { PagesTypeIpfs, RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
 import { Comment } from "./comment";
+import { CommentIpfsType, CommentPubsubMessage, CommentTypeJson, CreateCommentOptions } from "./types";
+import { messages } from "../../errors";
 
 // Comment schemas here
 export const SubplebbitAuthorSchema = z
@@ -51,19 +53,13 @@ export const CreateCommentOptionsSchema = z
         spoiler: z.boolean().optional(), // Hide the comment thumbnail behind spoiler warning
         content: CommentContentSchema.optional(),
         title: z.string().optional(),
-        link: z.string().url().max(2000).optional(),
+        link: z.string().url(messages.ERR_POST_HAS_INVALID_LINK_FIELD).max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).optional(),
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
         linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
         parentCid: CommentCidSchema.optional() // The parent comment CID
     })
     .merge(CreatePublicationUserOptionsSchema);
-
-// TODO move the refine function to createComment args
-// .refine(
-// (options) => options.link || options.title || options.content,
-// "The comment needs to have at least link, or title, or content defined"
-// );
 
 export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning);
 
@@ -182,9 +178,18 @@ const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfter
 
 // Plebbit.createComment here
 
-export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.or(CommentJsonSchema)
+// TODO move the refine function to createComment args
+const validateCommentPropsRefine = (options: CreateCommentOptions | CommentPubsubMessage | CommentIpfsType | CommentTypeJson) => (
+    options.link || options.title || options.content, "The comment needs to have at least link, or title, or content defined"
+);
+
+export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.refine(validateCommentPropsRefine)
+    .or(CommentJsonSchema)
+    .refine(validateCommentPropsRefine)
     .or(CommentIpfsSchema)
+    .refine(validateCommentPropsRefine)
     .or(CommentPubsubMessageSchema)
+    .refine(validateCommentPropsRefine)
     .or(CommentChallengeRequestToEncryptSchema)
     .or(z.instanceof(Comment))
     .or(CommentIpfsWithCidSchema.pick({ cid: true }))
