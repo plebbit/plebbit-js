@@ -5,7 +5,7 @@ import { messages } from "../errors";
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
 
-const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
+export const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
     address: z.string(), // TODO add validation for signer address here
     publicKey: z.string() // TODO add validation for public key here
 });

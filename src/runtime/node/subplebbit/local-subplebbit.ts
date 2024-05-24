@@ -99,12 +99,7 @@ import {
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
 import { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
-import {
-    CommentIpfsWithCid,
-    CommentPubsubMessage,
-    CommentUpdate,
-    CommentWithCommentUpdateJson
-} from "../../../publications/comment/types.js";
+import { CommentIpfsWithCid, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
