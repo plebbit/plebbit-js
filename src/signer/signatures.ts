@@ -464,7 +464,7 @@ export async function verifyCommentUpdate(
             const pageCid = update.replies.pageCids[replyKey];
             if (!pageCid) throw Error("Failed to find page cid of the page");
             const page = update.replies.pages[replyKey];
-            if (!page) throw Error("Faield to find page to verify within comment update");
+            if (!page) throw Error("Failed to find page to verify within comment update");
             const validity = await verifyPage(
                 pageCid,
                 page,
