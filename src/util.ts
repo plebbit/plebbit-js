@@ -1,4 +1,4 @@
-import {
+import type {
     CommentsTableRow,
     CommentUpdatesRow,
     DecryptedChallengeAnswerMessageType,
@@ -258,11 +258,11 @@ export async function parseRawPages(
     const isIpfs = typeof Object.values(replies.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
 
     if (isIpfs) {
-        replies = replies as PagesTypeIpfs;
-        const parsedPages = await parsePagesIpfs(replies, plebbit);
+        // replies is a PagesTypeIpfs
+        const parsedPages = await parsePagesIpfs(<PagesTypeIpfs>replies, plebbit);
         return {
             pages: parsedPages.pages,
-            pagesIpfs: replies
+            pagesIpfs: <PagesTypeIpfs>replies
         };
     } else if (replies instanceof BasePages)
         return { pages: replies.pages, pagesIpfs: replies.toJSONIpfs() }; // already parsed

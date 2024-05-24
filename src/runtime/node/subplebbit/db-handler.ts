@@ -11,10 +11,8 @@ import {
     CommentEditsTableRowInsert,
     CommentsTableRow,
     CommentsTableRowInsert,
-    CommentUpdate,
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
-    SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
 } from "../../../types.js";
@@ -33,6 +31,7 @@ import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
 import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
+import { CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",

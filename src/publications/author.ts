@@ -1,5 +1,6 @@
-import { AuthorPubsubType, AuthorTypeJson, AuthorTypeWithCommentUpdate, SubplebbitAuthor } from "../types.js";
+import { AuthorPubsubType, AuthorTypeJson, AuthorTypeWithCommentUpdate } from "../types.js";
 import { shortifyAddress } from "../util.js";
+import { SubplebbitAuthor } from "./comment/types.js";
 
 class Author implements AuthorTypeWithCommentUpdate {
     address: AuthorPubsubType["address"];

@@ -19,11 +19,6 @@ import {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentIpfsType,
-    CommentIpfsWithCid,
-    CommentOptionsToSign,
-    CommentPubsubMessage,
-    CommentUpdate,
     PageIpfs,
     PubsubMessage
 } from "../types.js";
@@ -49,6 +44,7 @@ import * as remeda from "remeda"; // tree-shaking supported!
 import { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
 import type { CommentEditOptionsToSign, CommentEditPubsubMessage } from "../publications/comment-edit/types.js";
 import { VoteOptionsToSign, VotePubsubMessage } from "../publications/vote/types.js";
+import { CommentIpfsType, CommentIpfsWithCid, CommentOptionsToSign, CommentPubsubMessage, CommentUpdate } from "../publications/comment/types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 

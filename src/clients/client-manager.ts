@@ -3,7 +3,7 @@ import { Plebbit } from "../plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
-import { ChainTicker, CommentIpfsType, CommentIpfsWithCid, CommentUpdate, PageIpfs } from "../types.js";
+import { ChainTicker, PageIpfs } from "../types.js";
 import { verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
@@ -29,6 +29,7 @@ import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { CommentIpfsType, CommentIpfsWithCid, CommentUpdate } from "../publications/comment/types.js";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {

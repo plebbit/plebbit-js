@@ -7,7 +7,8 @@ import {
     VoteOptionsToSignSchema,
     VotePubsubMessageSchema
 } from "./schema";
-import { AuthorPubsubType, SubplebbitAuthor } from "../../types";
+import { AuthorPubsubType } from "../../types";
+import { SubplebbitAuthor } from "../comment/types";
 
 export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
 

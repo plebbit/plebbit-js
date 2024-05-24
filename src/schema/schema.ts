@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { isIpfsCid } from "../util";
 import { messages } from "../errors";
-
+import { CommentIpfsWithCidSchema, CommentUpdateSchema, CommentWithCommentUpdateJsonSchema } from "../publications/comment/schema";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
@@ -16,7 +16,7 @@ export const ShortSubplebbitAddressSchema = z.string();
 
 export const ShortAuthorAddressSchema = z.string();
 
-const PlebbitTimestampSchema = z.number().positive(); // Math.round(Date.now() / 1000)  - Unix timestamp
+export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)  - Unix timestamp
 
 export const ProtocolVersionSchema = z.string();
 
@@ -26,7 +26,8 @@ const WalletSchema = z.object({
     signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
 });
 
-export const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID);
+export const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
+export const ShortCidSchema = z.string().length(12);
 
 const ChainTickerSchema = z.string(); // chain ticker can be anything for now
 
@@ -74,7 +75,9 @@ export const JsonSignatureSchema = z.object({
     signedPropertyNames: z.string().array() // TODO add validation
 });
 
-export const AuthorPubsubJsonSchema = AuthorPubsubSchema.extend({ shortAddress: ShortAuthorAddressSchema });
+export const AuthorJsonBaseSchema = z.object({ shortAddress: ShortAuthorAddressSchema });
+
+export const AuthorPubsubJsonSchema = AuthorPubsubSchema.merge(AuthorJsonBaseSchema);
 
 // Common stuff here
 export const PublicationBaseBeforeSigning = z.object({
@@ -92,16 +95,27 @@ export const DecryptedChallengeRequestBaseSchema = CreatePublicationUserOptionsS
     challengeCommentCids: true
 });
 
+// Pages schema here
 
-// Comment schemas here
-export const SubplebbitAuthorSchema = z
-    .object({
-        postScore: z.number().positive(), // total post karma in the subplebbit
-        replyScore: z.number().positive(), // total reply karma in the subplebbit
-        banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
-        flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
-        firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
-        lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
-    })
-    .strict();
-export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
+export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
+
+export const PageIpfsSchema = z.object({
+    comments: z.object({ comment: CommentIpfsWithCidSchema, update: CommentUpdateSchema }).array(),
+    nextCid: CommentCidSchema.optional()
+});
+
+const PageJsonSchema = z.object({
+    comments: CommentWithCommentUpdateJsonSchema.array(),
+    nextCid: CommentCidSchema.optional()
+});
+
+// need to prevent infinite recursion here
+export const RepliesPagesIpfsSchema = z.object({
+    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
+    pageCids: z.record(ReplySortNameSchema, CommentCidSchema)
+});
+
+export const RepliesPagesJsonSchema = z.object({
+    pages: z.record(ReplySortNameSchema, PageJsonSchema),
+    pageCids: RepliesPagesIpfsSchema.shape.pageCids
+});

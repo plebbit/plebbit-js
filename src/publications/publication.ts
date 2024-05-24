@@ -7,8 +7,6 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentIpfsType,
-    CommentPubsubMessage,
     DecryptedChallenge,
     DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
@@ -45,8 +43,9 @@ import type { JsonSignature } from "../signer/types.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
-import { DecryptedChallengeRequestVote, VotePubsubMessage } from "./vote/types.js";
+import type { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
+import type { DecryptedChallengeRequestVote, VotePubsubMessage } from "./vote/types.js";
+import type { CommentIpfsType, CommentPubsubMessage } from "./comment/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props

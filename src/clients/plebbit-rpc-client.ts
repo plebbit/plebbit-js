@@ -1,6 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
 import {
-    CommentIpfsWithCid,
     DecryptedChallengeRequestComment,
     PageIpfs,
     PlebbitWsServerSettings,
@@ -18,6 +17,7 @@ import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, Su
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
 import { DecryptedChallengeRequestVote } from "../publications/vote/types.js";
+import { CommentIpfsWithCid } from "../publications/comment/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 

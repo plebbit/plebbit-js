@@ -2,9 +2,6 @@ import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunct
 import {
     StorageInterface,
     ChainProvider,
-    CommentIpfsType,
-    CommentPubsubMessage,
-    CreateCommentOptions,
     GatewayClient,
     IpfsClient,
     PlebbitEvents,
@@ -14,8 +11,6 @@ import {
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
-    CommentOptionsToSign,
-    CommentIpfsWithCid,
     CommentTypeJson,
     DecryptedChallengeRequestComment,
     AuthorPubsubType
@@ -66,6 +61,7 @@ import { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOpt
 import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 import { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
+import { CommentIpfsType, CommentIpfsWithCid, CommentOptionsToSign, CommentPubsubMessage, CreateCommentOptions } from "./publications/comment/types.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;

@@ -5,9 +5,6 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentPubsubMessage,
-    CommentUpdate,
-    CreateCommentOptions,
     PublicationTypeName
 } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
@@ -19,6 +16,7 @@ import {
 } from "./constants";
 import type { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
 import { CreateVoteOptions, VotePubsubMessage } from "../publications/vote/types";
+import { CommentPubsubMessage, CommentUpdate, CreateCommentOptions } from "../publications/comment/types";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 

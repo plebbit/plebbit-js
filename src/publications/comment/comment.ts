@@ -3,16 +3,11 @@ import { parseRawPages, removeUndefinedValuesRecursively, shortifyCid, throwWith
 import Publication from "../publication.js";
 import { RepliesPages } from "../../pages.js";
 import {
-    CommentIpfsType,
-    CommentIpfsWithCid,
-    CommentPubsubMessage,
     CommentsTableRowInsert,
     CommentTypeJson,
-    CommentUpdate,
-    CommentWithCommentUpdateJson,
     DecryptedChallengeRequestComment,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    LocalCommentOptions,
+    PagesTypeIpfs,
     PageTypeJson,
     PublicationTypeName,
     RepliesPagesTypeIpfs
@@ -27,6 +22,14 @@ import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
+import {
+    CommentIpfsType,
+    CommentIpfsWithCid,
+    CommentPubsubMessage,
+    CommentUpdate,
+    CommentWithCommentUpdateJson,
+    LocalCommentOptions
+} from "./types.js";
 
 export class Comment extends Publication {
     // Only Comment props

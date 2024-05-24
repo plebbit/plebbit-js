@@ -1,10 +1,20 @@
 // Comment edit schemas here
 
 import { z } from "zod";
-import { AuthorFlairSchema, AuthorPubsubJsonSchema, CommentAuthorSchema, CommentCidSchema, CreatePublicationUserOptionsSchema, DecryptedChallengeRequestBaseSchema, JsonSignatureSchema, PublicationBaseBeforeSigning, ShortSubplebbitAddressSchema, SubplebbitAuthorSchema } from "../../schema/schema";
+import {
+    AuthorFlairSchema,
+    AuthorPubsubJsonSchema,
+    CommentCidSchema,
+    CreatePublicationUserOptionsSchema,
+    DecryptedChallengeRequestBaseSchema,
+    JsonSignatureSchema,
+    PublicationBaseBeforeSigning,
+    ShortSubplebbitAddressSchema
+} from "../../schema/schema";
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
 import { CommentEditSignedPropertyNames } from "../../signer/constants";
+import { CommentAuthorSchema } from "../comment/schema";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({

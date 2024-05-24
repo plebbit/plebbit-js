@@ -11,8 +11,11 @@ import {
     AuthorAvatarNftSchema,
     AuthorPubsubSchema,
     CreatePublicationUserOptionsSchema,
+    PageIpfsSchema,
     ProtocolVersionSchema,
-    SubplebbitAuthorSchema
+    RepliesPagesIpfsSchema,
+    RepliesPagesJsonSchema,
+    ReplySortNameSchema
 } from "./schema/schema.js";
 import { z } from "zod";
 import type {
@@ -30,8 +33,15 @@ import {
     CommentEditPubsubMessage,
     LocalCommentEditOptions
 } from "./publications/comment-edit/types.js";
-import { LocalVoteOptionsAfterSigningSchema } from "./publications/vote/schema.js";
 import { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
+import {
+    CommentIpfsWithCid,
+    CommentPubsubMessage,
+    CommentUpdate,
+    CommentWithCommentUpdateJson,
+    LocalCommentOptions,
+    SubplebbitAuthor
+} from "./publications/comment/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -75,10 +85,7 @@ export interface PageTypeJson {
     nextCid?: string;
 }
 
-export interface PageIpfs {
-    comments: { comment: CommentIpfsWithCid; update: CommentUpdate }[];
-    nextCid?: string;
-}
+export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 
 export interface PagesInstanceType {
     pages: Partial<Record<PostSortName | ReplySortName, PageInstanceType>>;
@@ -90,20 +97,14 @@ export interface PagesTypeJson {
     pageCids: RepliesPagesTypeJson["pageCids"] | PostsPagesTypeJson["pageCids"];
 }
 
-export interface RepliesPagesTypeJson {
-    pages: Partial<Record<ReplySortName, PageTypeJson>>;
-    pageCids: Record<ReplySortName, string>;
-}
-
 export interface PostsPagesTypeJson {
     pages: Partial<Record<PostSortName, PageTypeJson>>;
     pageCids: Record<PostSortName, string>;
 }
 
-export interface RepliesPagesTypeIpfs {
-    pages: Partial<Record<ReplySortName, PageIpfs>>;
-    pageCids: Record<ReplySortName, string>;
-}
+export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
+
+export type RepliesPagesTypeJson = z.infer<typeof RepliesPagesJsonSchema>;
 
 export interface PostsPagesTypeIpfs {
     pages: Partial<Record<PostSortName, PageIpfs>>;
@@ -112,34 +113,7 @@ export interface PostsPagesTypeIpfs {
 
 export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 
-export interface CreateCommentOptions extends CreatePublicationOptions {
-    parentCid?: string; // The parent comment CID, undefined if comment is a post, same as postCid if comment is top level
-    content?: string; // Content of the comment, link posts have no content
-    title?: string; // If comment is a post, it needs a title
-    link?: string; // If comment is a post, it might be a link post
-    linkWidth?: number; // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
-    linkHeight?: number;
-    spoiler?: boolean; // Hide the comment thumbnail behind spoiler warning
-    flair?: Flair; // Author or mod chosen colored label for the comment
-    linkHtmlTagName?: "a" | "img" | "video" | "audio";
-}
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
-
-export interface CommentOptionsToSign extends CreateCommentOptions {
-    signer: SignerType;
-    timestamp: number;
-    author: AuthorPubsubType;
-    protocolVersion: ProtocolVersion;
-}
-
-// Below is what's used to initialize a local publication to be published
-
-export type LocalCommentOptions = CommentOptionsToSign & { signature: JsonSignature } & Pick<
-        CreatePublicationOptions,
-        "challengeAnswers" | "challengeCommentCids"
-    >;
-
-export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
@@ -310,7 +284,7 @@ export type PostSortName =
     | "controversialYear"
     | "controversialAll"
     | "active";
-export type ReplySortName = "topAll" | "new" | "old" | "controversialAll";
+export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 
 export type SortProps = {
     score: (comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) => number;
@@ -321,59 +295,9 @@ export type PostSort = Record<PostSortName, SortProps>;
 
 export type ReplySort = Record<ReplySortName, SortProps>;
 
-export interface CommentUpdate {
-    cid: string; // cid of the comment, need it in signature to prevent attack
-    upvoteCount: number;
-    downvoteCount: number;
-    replyCount: number;
-    edit?: AuthorCommentEdit; // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-    replies?: RepliesPagesTypeIpfs; // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
-    flair?: Flair; // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
-    spoiler?: boolean;
-    pinned?: boolean;
-    locked?: boolean;
-    removed?: boolean; // mod deleted a comment
-    reason?: string; // reason the mod took a mod action
-    updatedAt: number; // timestamp in seconds the CommentUpdate was updated
-    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    author?: {
-        // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
-        subplebbit: SubplebbitAuthor;
-    };
-    lastChildCid?: string; // The cid of the most recent direct child of the comment
-    lastReplyTimestamp?: number; // The timestamp of the most recent direct or indirect child of the comment
-    signature: JsonSignature; // signature of the CommentUpdate by the sub owner to protect against malicious gateway
-}
-
-export interface CommentWithCommentUpdateJson extends CommentIpfsWithCid, Omit<CommentUpdate, "author" | "replies">, CommentTypeJsonBase {
-    replies?: RepliesPagesTypeJson;
-    original: Pick<CommentPubsubMessage, "author" | "content" | "flair" | "protocolVersion">;
-    shortCid: string;
-    author: AuthorTypeWithCommentUpdate & { shortAddress: string };
-    deleted?: boolean;
-}
-
-// These are the props added by the subplebbit before adding the comment to ipfs
-export interface CommentIpfsType extends CommentPubsubMessage {
-    depth: number;
-    postCid?: string;
-    thumbnailUrl?: string;
-    thumbnailUrlWidth?: number;
-    thumbnailUrlHeight?: number;
-    previousCid?: string;
-}
-
-export interface CommentIpfsWithCid extends Omit<CommentIpfsType, "cid" | "postCid"> {
-    // We're using CommentUpdate["cid"] here because we want cid strings to be defined in a global place, instead of cid:string everywhere
-    cid: CommentUpdate["cid"];
-    postCid: CommentUpdate["cid"];
-}
-
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
-
-export type CommentPubsubMessage = Pick<LocalCommentOptions, CommentSignedPropertyNamesUnion | "signature" | "protocolVersion">;
 
 export type NativeFunctions = {
     fetch: typeof fetch;

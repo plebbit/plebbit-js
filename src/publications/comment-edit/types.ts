@@ -12,8 +12,9 @@ import {
     LocalCommentEditAfterSigningSchema,
     ModeratorCommentEditOptionsSchema
 } from "./schema";
-import { AuthorPubsubType, SubplebbitAuthor } from "../../types";
-import { CommentAuthorSchema } from "../../schema/schema";
+import type { AuthorPubsubType } from "../../types";
+import { CommentAuthorSchema } from "../comment/schema";
+import { SubplebbitAuthor } from "../comment/types";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
 

@@ -2,7 +2,6 @@ import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp 
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
 import {
-    CommentIpfsWithCid,
     CommentsTableRow,
     CommentUpdatesRow,
     PageIpfs,
@@ -15,6 +14,7 @@ import {
 } from "../../../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { CommentIpfsWithCid } from "../../../publications/comment/types.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
