@@ -88,8 +88,8 @@ export const PublicationBaseBeforeSigning = z.object({
 
 export const SubplebbitAuthorSchema = z
     .object({
-        postScore: z.number().positive(), // total post karma in the subplebbit
-        replyScore: z.number().positive(), // total reply karma in the subplebbit
+        postScore: z.number().nonnegative(), // total post karma in the subplebbit
+        replyScore: z.number().nonnegative(), // total reply karma in the subplebbit
         banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
         flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
         firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
