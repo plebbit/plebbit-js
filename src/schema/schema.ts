@@ -32,13 +32,15 @@ const ChainTickerSchema = z.string(); // chain ticker can be anything for now
 
 const AuthorWalletsSchema = z.record(ChainTickerSchema, WalletSchema);
 
-export const AuthorAvatarNftSchema = z.object({
-    chainTicker: ChainTickerSchema,
-    address: z.string(),
-    id: z.string(),
-    timestamp: PlebbitTimestampSchema,
-    signature: WalletSchema.shape.signature
-});
+export const AuthorAvatarNftSchema = z
+    .object({
+        chainTicker: ChainTickerSchema,
+        address: z.string(),
+        id: z.string(),
+        timestamp: PlebbitTimestampSchema,
+        signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
+    })
+    .strict();
 
 export const AuthorFlairSchema = z.object({
     text: z.string(),
