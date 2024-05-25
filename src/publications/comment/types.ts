@@ -2,9 +2,9 @@ import { z } from "zod";
 import {
     CommentChallengeRequestToEncryptSchema,
     CommentIpfsSchema,
-    CommentIpfsWithCidSchema,
-    CommentJsonAfterChallengeVerificationNoCommentUpdateSchema,
-    CommentJsonBeforeChallengeVerificationSchema,
+    CommentIpfsWithCidDefinedSchema,
+    CommentIpfsWithCidPostCidDefinedSchema,
+    CommentJsonSchema,
     CommentOptionsToSignSchema,
     CommentPubsubMessageSchema,
     CommentUpdateSchema,
@@ -22,8 +22,6 @@ export type CommentOptionsToSign = z.infer<typeof CommentOptionsToSignSchema>;
 
 export type CommentPubsubMessage = z.infer<typeof CommentPubsubMessageSchema>;
 
-// Below is what's used to initialize a local publication to be published
-
 export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 
 export type CommentUpdate = z.infer<typeof CommentUpdateSchema>;
@@ -32,15 +30,10 @@ export type CommentWithCommentUpdateJson = z.infer<typeof CommentWithCommentUpda
 
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
-export type CommentIpfsWithCid = z.infer<typeof CommentIpfsWithCidSchema>;
+export type CommentIpfsWithCidDefined = z.infer<typeof CommentIpfsWithCidDefinedSchema>;
 
-type CommentTypeJsonAfterChallengeVerificationNoCommentUpdate = z.infer<typeof CommentJsonAfterChallengeVerificationNoCommentUpdateSchema>;
+export type CommentIpfsWithCidPostCidDefined = z.infer<typeof CommentIpfsWithCidPostCidDefinedSchema>;
 
-type CommentTypeJsonBeforeChallengeVerification = z.infer<typeof CommentJsonBeforeChallengeVerificationSchema>;
-
-export type CommentTypeJson =
-    | CommentWithCommentUpdateJson
-    | CommentTypeJsonAfterChallengeVerificationNoCommentUpdate
-    | CommentTypeJsonBeforeChallengeVerification;
+export type CommentTypeJson = z.infer<typeof CommentJsonSchema>;
 
 export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;

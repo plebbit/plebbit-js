@@ -27,7 +27,7 @@ import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
 import type { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
-import type { CommentIpfsWithCid, CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -190,10 +190,12 @@ class PlebbitWsServer extends EventEmitter {
         this.connections[connectionId]?.send?.(JSON.stringify(message));
     }
 
-    async getComment(params: any): Promise<CommentIpfsWithCid> {
+    async getComment(params: any): Promise<CommentIpfsType> {
         const cid = <string>params[0];
         const comment = await this.plebbit.getComment(cid);
-        return comment.toJSONAfterChallengeVerification();
+        const commentIpfs = comment._rawCommentIpfs;
+        if (!commentIpfs) throw Error("Failed to get comment._rawCommentIpfs");
+        return commentIpfs;
     }
 
     async getSubplebbitPage(params: any) {

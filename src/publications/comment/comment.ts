@@ -19,10 +19,10 @@ import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
-import {
+import type {
     CommentChallengeRequestToEncryptType,
     CommentIpfsType,
-    CommentIpfsWithCid,
+    CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
     CommentTypeJson,
     CommentUpdate,
@@ -32,7 +32,7 @@ import {
 
 export class Comment extends Publication {
     // Only Comment props
-    shortCid?: string;
+    shortCid?: CommentWithCommentUpdateJson["shortCid"];
 
     override clients!: CommentClientsManager["clients"];
 
@@ -86,8 +86,8 @@ export class Comment extends Publication {
     // private
     private _updateInterval?: any;
     private _isUpdating: boolean;
-    private _rawCommentUpdate?: CommentUpdate;
-    private _rawCommentIpfs?: CommentIpfsType;
+    _rawCommentUpdate?: CommentUpdate;
+    _rawCommentIpfs?: CommentIpfsType;
     private _loadingOperation?: RetryOperation;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number;
@@ -284,7 +284,7 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; update: CommentUpdate } {
+    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate } {
         assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONPagesIpfs");
         return {
             comment: {
@@ -329,7 +329,7 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONAfterChallengeVerification(): CommentIpfsWithCid {
+    toJSONAfterChallengeVerification(): CommentIpfsWithCidPostCidDefined {
         assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
     }
@@ -560,10 +560,10 @@ export class Comment extends Publication {
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
-                    const newUpdate = <CommentIpfsWithCid | CommentUpdate>updateProps.params.result;
+                    const newUpdate = <CommentIpfsType | CommentUpdate>updateProps.params.result;
                     if ("subplebbitAddress" in newUpdate) {
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
-                        this._rawCommentIpfs = remeda.omit(newUpdate, ["cid"]);
+                        this._rawCommentIpfs = newUpdate;
                         this._initIpfsProps(this._rawCommentIpfs);
                     } else {
                         log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);

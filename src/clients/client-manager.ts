@@ -29,7 +29,7 @@ import { SubplebbitIpfsType } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import { CommentIpfsType, CommentIpfsWithCid, CommentUpdate } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -565,11 +565,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
-            const commentContent: CommentIpfsWithCid = { cid: parentCid, ...JSON.parse(await this._fetchCidP2P(parentCid)) };
+            const commentContent: CommentIpfsWithCidDefined = { cid: parentCid, ...JSON.parse(await this._fetchCidP2P(parentCid)) };
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
-            const commentContent: CommentIpfsWithCid = {
+            const commentContent: CommentIpfsWithCidDefined = {
                 cid: parentCid,
                 ...JSON.parse(await this.fetchFromMultipleGateways({ cid: parentCid }, "comment"))
             };

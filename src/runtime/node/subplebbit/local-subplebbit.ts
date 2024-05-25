@@ -1,6 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../../plebbit.js";
-import {
+import type {
     Challenge,
     CreateNewLocalSubplebbitParsedOptions,
     InternalSubplebbitRpcType,
@@ -20,7 +20,6 @@ import {
     doesDomainAddressHaveCapitalLetter,
     genToArray,
     isLinkOfMedia,
-    isLinkValid,
     isStringDomain,
     removeNullUndefinedEmptyObjectsValuesRecursively,
     removeUndefinedValuesRecursively,
@@ -72,7 +71,6 @@ import {
 } from "../../../signer/index.js";
 import { encryptEd25519AesGcmPublicKeyBuffer } from "../../../signer/encryption.js";
 import { messages } from "../../../errors.js";
-import Author from "../../../publications/author.js";
 import {
     GetChallengeAnswers,
     getChallengeVerification,
@@ -82,12 +80,7 @@ import * as cborg from "cborg";
 import assert from "assert";
 import env from "../../../version.js";
 import { sha256 } from "js-sha256";
-import {
-    getIpfsKeyFromPrivateKey,
-    getPlebbitAddressFromPrivateKey,
-    getPlebbitAddressFromPublicKey,
-    getPublicKeyFromPrivateKey
-} from "../../../signer/util.js";
+import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
@@ -99,7 +92,7 @@ import {
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
 import { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
-import { CommentIpfsWithCid, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
+import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -450,7 +443,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async storePublication(
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-    ): Promise<CommentIpfsWithCid | undefined> {
+    ): Promise<CommentIpfsWithCidPostCidDefined | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storePublicationIfValid");
 
         const publication = request.publication;

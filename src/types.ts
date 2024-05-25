@@ -3,37 +3,40 @@ import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
-import type { ChallengeFile, Flair } from "./subplebbit/types.js";
+import type { ChallengeFile } from "./subplebbit/types.js";
 import type { Plebbit } from "./plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { AuthorAvatarNftSchema, AuthorPubsubSchema, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
 import { z } from "zod";
 import type {
-    CommentSignedPropertyNamesUnion,
     EncodedPubsubSignature,
     Encrypted,
     EncryptedEncoded,
-    JsonSignature,
     PubsubSignature,
     SignerType
 } from "./signer/types.js";
-import {
-    AuthorCommentEdit,
+import type {
     ChallengeRequestCommentEditWithSubplebbitAuthor,
     CommentEditPubsubMessage,
     LocalCommentEditOptions
 } from "./publications/comment-edit/types.js";
-import { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
-import {
-    CommentIpfsWithCid,
+import type { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
+import type {
+    CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
     CommentUpdate,
     CommentWithCommentUpdateJson,
     LocalCommentOptions,
     SubplebbitAuthor
 } from "./publications/comment/types.js";
-import { CommentsTableRowSchema, PageIpfsSchema, RepliesPagesIpfsSchema, RepliesPagesJsonSchema, ReplySortNameSchema } from "./publications/comment/schema.js";
+import {
+    CommentsTableRowSchema,
+    PageIpfsSchema,
+    RepliesPagesIpfsSchema,
+    RepliesPagesJsonSchema,
+    ReplySortNameSchema
+} from "./publications/comment/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -228,7 +231,7 @@ export interface ChallengeVerificationMessageType extends PubsubMessage {
 }
 
 export interface DecryptedChallengeVerification {
-    publication: CommentIpfsWithCid | undefined; // Only comments receive new props after verification for now
+    publication: CommentIpfsWithCidPostCidDefined | undefined; // Only comments receive new props after verification for now
     // signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
 }
 
@@ -238,8 +241,8 @@ export interface DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor e
     // This interface will query author.subplebbit and embed it within publication.author
     // We may add author
     publication:
-        | (CommentIpfsWithCid & {
-              author: CommentIpfsWithCid["author"] & { subplebbit: SubplebbitAuthor };
+        | (CommentIpfsWithCidPostCidDefined & {
+              author: CommentIpfsWithCidPostCidDefined["author"] & { subplebbit: SubplebbitAuthor };
           })
         | undefined;
 }

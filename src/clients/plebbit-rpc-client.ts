@@ -1,9 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
-import {
-    PageIpfs,
-    PlebbitWsServerSettings,
-    PlebbitWsServerSettingsSerialized
-} from "../types.js";
+import { PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
@@ -16,7 +12,7 @@ import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, Su
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
 import { DecryptedChallengeRequestVote } from "../publications/vote/types.js";
-import { CommentChallengeRequestToEncryptType, CommentIpfsWithCid } from "../publications/comment/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../publications/comment/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -164,8 +160,8 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
-        const commentProps = <CommentIpfsWithCid>await this._webSocketClient.call("getComment", [commentCid]);
-        return this._plebbit.createComment(commentProps);
+        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [commentCid]);
+        return this._plebbit.createComment({ cid: commentCid, ...commentProps });
     }
 
     async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {

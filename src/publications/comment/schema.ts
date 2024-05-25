@@ -88,8 +88,11 @@ export const CommentIpfsSchema = CommentPubsubMessageSchema.extend({
     previousCid: CommentCidSchema.optional()
 }).strict();
 
-export const CommentIpfsWithCidSchema = CommentIpfsSchema.extend({
-    cid: CommentCidSchema,
+export const CommentIpfsWithCidDefinedSchema = CommentIpfsSchema.extend({
+    cid: CommentCidSchema
+}).strict();
+
+export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedSchema.extend({
     postCid: CommentCidSchema
 }).strict();
 
@@ -141,7 +144,7 @@ const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchem
 
 const AuthorWithCommentUpdateJsonSchema = AuthorWithCommentUpdateSchema.merge(AuthorJsonBaseSchema).strict();
 
-export const CommentWithCommentUpdateNoRepliesJsonSchema = CommentIpfsWithCidSchema.merge(CommentUpdateNoRepliesSchema)
+export const CommentWithCommentUpdateNoRepliesJsonSchema = CommentIpfsWithCidPostCidDefinedSchema.merge(CommentUpdateNoRepliesSchema)
     .extend({
         original: OriginalCommentFieldsBeforeCommentUpdateSchema,
         shortCid: ShortCidSchema,
@@ -160,7 +163,7 @@ export const CommentWithCommentUpdateJsonSchema: z.ZodType<CommentWithCommentUpd
         replies: z.lazy(() => RepliesPagesJsonSchema.optional())
     }).strict();
 
-export const CommentJsonAfterChallengeVerificationNoCommentUpdateSchema = CommentIpfsWithCidSchema.extend({
+export const CommentJsonAfterChallengeVerificationNoCommentUpdateSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
     shortCid: ShortCidSchema,
     shortSubplebbitAddress: ShortSubplebbitAddressSchema,
     author: AuthorPubsubJsonSchema
@@ -171,7 +174,7 @@ export const CommentJsonBeforeChallengeVerificationSchema = CommentPubsubMessage
     author: AuthorPubsubJsonSchema
 }).strict();
 
-const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfterChallengeVerificationNoCommentUpdateSchema).or(
+export const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfterChallengeVerificationNoCommentUpdateSchema).or(
     CommentJsonBeforeChallengeVerificationSchema
 );
 
@@ -179,7 +182,7 @@ const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfter
 
 // Comment table here
 
-export const CommentsTableRowSchema = CommentIpfsWithCidSchema.extend({
+export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
     authorAddress: AuthorPubsubSchema.shape.address,
     challengeRequestPublicationSha256: z.string(),
     ipnsName: z.string().optional(),
@@ -200,22 +203,22 @@ export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.refine(
     .refine(validateCommentPropsRefine)
     .or(CommentIpfsSchema)
     .refine(validateCommentPropsRefine)
-    .or(CommentIpfsWithCidSchema)
+    .or(CommentIpfsWithCidDefinedSchema)
     .refine(validateCommentPropsRefine)
     .or(CommentPubsubMessageSchema)
     .refine(validateCommentPropsRefine)
     .or(CommentChallengeRequestToEncryptSchema)
     .or(CommentsTableRowSchema)
-    .or(z.instanceof(Comment))
-    .or(CommentIpfsWithCidSchema.pick({ cid: true }))
-    .or(CommentIpfsWithCidSchema.pick({ cid: true, subplebbitAddress: true }));
+    .or(z.custom<Comment>((data) => data instanceof Comment))
+    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
+    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));
 
 // Comment pages here
 
 export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
 
 export const PageIpfsSchema = z.object({
-    comments: z.object({ comment: CommentIpfsWithCidSchema, update: CommentUpdateSchema }).array(),
+    comments: z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema, update: CommentUpdateSchema }).array(),
     nextCid: CommentCidSchema.optional()
 });
 
