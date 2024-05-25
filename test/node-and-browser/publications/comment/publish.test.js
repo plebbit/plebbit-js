@@ -84,11 +84,11 @@ describe("publishing comments", async () => {
                 avatar: {
                     address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
                     chainTicker: "matic",
+                    timestamp: 123456,
                     id: "8",
                     signature: {
                         signature:
                             "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
-                        signedPropertyNames: ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
                         type: "eip191"
                     }
                 }
@@ -117,7 +117,13 @@ describe("publishing comments", async () => {
     });
 
     it(`publish a post with author.wallets`, async () => {
-        const wallets = { btc: { address: "0xdeadbeef" }, eth: { address: "rinse12.eth" } };
+        const wallets = {
+            eth: {
+                address: "rinse12.eth",
+                timestamp: Math.round(Date.now() / 1000),
+                signature: { type: "eip191", signature: "0xnotactualsignaturejusttosatisfyschema" }
+            }
+        };
         const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
         expect(post.author.wallets).to.deep.equal(wallets);
         await publishWithExpectedResult(post, true);
