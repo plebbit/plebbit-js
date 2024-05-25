@@ -63,7 +63,7 @@ describe("createComment", async () => {
     it(`Can recreate a stringifed Comment instance with plebbit.createComment`, async () => {
         const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(subplebbit.posts.pages.hot.comments[0])));
-        expect(JSON.stringify(subplebbit.posts.pages.hot.comments[0])).to.equal(JSON.stringify(commentClone));
+        expect(deterministicStringify(subplebbit.posts.pages.hot.comments[0])).to.equal(deterministicStringify(commentClone));
     });
 
     it(`Can recreate a Comment instance with plebbit.createComment`, async () => {
@@ -89,13 +89,13 @@ describe("createComment", async () => {
         expect(commentToClone.replies).to.be.a("object");
         const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(commentToClone)));
         expect(commentClone.replies).to.be.a("object");
-        expect(JSON.stringify(commentToClone.toJSON())).to.equal(JSON.stringify(commentClone.toJSON()));
+        expect(deterministicStringify(commentToClone.toJSON())).to.equal(deterministicStringify(commentClone.toJSON()));
     });
 
     it(`Can recreate a stringified Post instance with plebbit.createComment`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
-        expect(JSON.stringify(post)).to.equal(JSON.stringify(postFromStringifiedPost));
+        expect(deterministicStringify(post)).to.equal(deterministicStringify(postFromStringifiedPost));
     });
 
     it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
