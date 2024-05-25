@@ -988,9 +988,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 log(`Received a pubsub message that is not meant to by processed by the sub - ${msgParsed?.type}`);
             else throw Error("Wasn't able to detect the type of challenge message");
         } catch (e) {
-            (<Error>e).message =
-                `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${(<Error>e).message}`;
-            log.error(`(${msgParsed?.challengeRequestId}): `, String(e));
+            const errorMessage = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${(<Error>e).message}`;
+            log.error(`(${msgParsed?.challengeRequestId}): `, errorMessage);
             if (msgParsed?.challengeRequestId?.toString())
                 await this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString());
         }
