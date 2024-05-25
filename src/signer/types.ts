@@ -8,15 +8,14 @@ import type {
     PublicationTypeName
 } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
-import {
-    CommentSignedPropertyNames,
-    VoteSignedPropertyNames,
-    CommentEditSignedPropertyNames,
-    CommentUpdateSignedPropertyNames
-} from "./constants";
+
 import type { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
-import { CreateVoteOptions, VotePubsubMessage } from "../publications/vote/types";
-import { CommentPubsubMessage, CommentUpdate, CreateCommentOptions } from "../publications/comment/types";
+import type { CreateVoteOptions, VotePubsubMessage } from "../publications/vote/types";
+import type { CommentPubsubMessage, CommentUpdate, CreateCommentOptions } from "../publications/comment/types";
+import { CommentSignedPropertyNames } from "../publications/comment/schema";
+import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
+import { VoteSignedPropertyNames } from "../publications/vote/schema";
+import { CommentUpdateSignedPropertyNames } from "./constants";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 

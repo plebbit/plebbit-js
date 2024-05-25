@@ -30,11 +30,8 @@ import {
     ChallengeMessageSignedPropertyNames,
     ChallengeRequestMessageSignedPropertyNames,
     ChallengeVerificationMessageSignedPropertyNames,
-    CommentEditSignedPropertyNames,
-    CommentSignedPropertyNames,
     CommentUpdateSignedPropertyNames,
-    SubplebbitSignedPropertyNames,
-    VoteSignedPropertyNames
+    SubplebbitSignedPropertyNames
 } from "./constants.js";
 import { BaseClientsManager } from "../clients/base-client-manager.js";
 import { SubplebbitIpfsType } from "../subplebbit/types.js";
@@ -44,7 +41,16 @@ import * as remeda from "remeda"; // tree-shaking supported!
 import { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
 import type { CommentEditOptionsToSign, CommentEditPubsubMessage } from "../publications/comment-edit/types.js";
 import { VoteOptionsToSign, VotePubsubMessage } from "../publications/vote/types.js";
-import { CommentIpfsType, CommentIpfsWithCid, CommentOptionsToSign, CommentPubsubMessage, CommentUpdate } from "../publications/comment/types.js";
+import {
+    CommentIpfsType,
+    CommentIpfsWithCid,
+    CommentOptionsToSign,
+    CommentPubsubMessage,
+    CommentUpdate
+} from "../publications/comment/types.js";
+import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
+import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
+import { CommentSignedPropertyNames } from "../publications/comment/schema.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 

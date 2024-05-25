@@ -18,12 +18,12 @@ import {
 } from "../../schema/schema";
 import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema";
 import { CommentSignedPropertyNamesUnion } from "../../signer/types";
-import { CommentSignedPropertyNames } from "../../signer/constants";
 import * as remeda from "remeda";
-import { PagesTypeIpfs, RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
+import { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
 import { Comment } from "./comment";
 import { CommentIpfsType, CommentPubsubMessage, CommentTypeJson, CreateCommentOptions } from "./types";
 import { messages } from "../../errors";
+import { keysToOmitFromSignature } from "../../signer/constants";
 
 // Comment schemas here
 
@@ -58,6 +58,8 @@ export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(Publi
 export const LocalCommentSchema = CommentOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
     ChallengeRequestToEncryptBaseSchema
 );
+
+export const CommentSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignature));
 
 const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
     remeda.mapToObj([...CommentSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])

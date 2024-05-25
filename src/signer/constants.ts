@@ -1,54 +1,19 @@
 // Signer section
 
-import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
-import { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
-import { CommentUpdate, CreateCommentOptions } from "../publications/comment/types.js";
-import { CreateVoteOptions } from "../publications/vote/types.js";
+import type { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
+import type { CommentUpdate } from "../publications/comment/types.js";
 
-import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 
-import { ChallengeMessageType, ChallengeVerificationMessageType } from "../types.js";
+import type { ChallengeMessageType, ChallengeVerificationMessageType } from "../types.js";
 
-// ---------------------------
-// SignedPropertyNames
+export const keysToOmitFromSignature = <["signer", "challengeCommentCids", "challengeAnswers"]>[
+    "signer",
+    "challengeCommentCids",
+    "challengeAnswers"
+];
 
-export const CommentSignedPropertyNames: (keyof Omit<CreateCommentOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[] = [
-    "subplebbitAddress",
-    "author",
-    "timestamp",
-    "content",
-    "title",
-    "link",
-    "parentCid"
-] as const;
-
-export const CommentEditSignedPropertyNames: (keyof Omit<
-    CreateCommentEditOptions,
-    "signer" | "challengeCommentCids" | "challengeAnswers"
->)[] = [
-    "author",
-    "timestamp",
-    "subplebbitAddress",
-    "content",
-    "commentCid",
-    "deleted",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "flair",
-    "reason",
-    "commentAuthor"
-] as const;
-
-export const VoteSignedPropertyNames: (keyof Omit<CreateVoteOptions, "signer" | "challengeCommentCids" | "challengeAnswers">)[] = [
-    "subplebbitAddress",
-    "author",
-    "timestamp",
-    "vote",
-    "commentCid"
-] as const;
-
+// TODO move the signed property names below to their respective files
 export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
     "title",
     "description",
