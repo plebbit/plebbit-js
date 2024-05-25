@@ -24,6 +24,7 @@ import { Comment } from "./comment";
 import { CommentIpfsType, CommentPubsubMessage, CommentTypeJson, CreateCommentOptions } from "./types";
 import { messages } from "../../errors";
 import { keysToOmitFromSignature } from "../../signer/constants";
+import { isLinkValid } from "../../util";
 
 // Comment schemas here
 
@@ -42,7 +43,11 @@ export const CreateCommentOptionsSchema = z
         spoiler: z.boolean().optional(), // Hide the comment thumbnail behind spoiler warning
         content: CommentContentSchema.optional(),
         title: z.string().optional(),
-        link: z.string().url(messages.ERR_POST_HAS_INVALID_LINK_FIELD).max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).optional(),
+        link: z
+            .string()
+            .max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT)
+            .refine((arg) => (isLinkValid(arg), messages.ERR_COMMENT_HAS_INVALID_LINK_FIELD))
+            .optional(),
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
         linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
