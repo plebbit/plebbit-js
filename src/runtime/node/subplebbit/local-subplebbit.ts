@@ -1466,27 +1466,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
 
-        await this._initBeforeStarting();
-        // update started value twice because it could be started prior lockSubStart
-        await this._updateStartedValue();
-        await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
-        await this._updateStartedValue();
-        this._setState("started");
-        this._setStartedState("publishing-ipns");
-        this._isSubRunningLocally = true;
-        await this.dbHandler.initDbIfNeeded();
-        await this.dbHandler.initDestroyedConnection();
+        try {
+            await this._initBeforeStarting();
+            // update started value twice because it could be started prior lockSubStart
+            await this._updateStartedValue();
+            await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
+            await this._updateStartedValue();
+            this._setState("started");
+            this._setStartedState("publishing-ipns");
+            this._isSubRunningLocally = true;
+            await this.dbHandler.initDbIfNeeded();
+            await this.dbHandler.initDestroyedConnection();
 
-        await this._setChallengesToDefaultIfNotDefined(log);
-        // Import subplebbit keys onto ipfs node
-        await this._importSubplebbitSignerIntoIpfsIfNeeded();
+            await this._setChallengesToDefaultIfNotDefined(log);
+            // Import subplebbit keys onto ipfs node
+            await this._importSubplebbitSignerIntoIpfsIfNeeded();
 
-        this._subplebbitUpdateTrigger = true;
-        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+            this._subplebbitUpdateTrigger = true;
+            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
-        await this._repinCommentsIPFSIfNeeded();
-        await this._repinCommentUpdateIfNeeded();
-        await this._listenToIncomingRequests();
+            await this._repinCommentsIPFSIfNeeded();
+            await this._repinCommentUpdateIfNeeded();
+            await this._listenToIncomingRequests();
+        } catch (e) {
+            await this.stop(); // Make sure to reset the sub state
+            throw e;
+        }
 
         this.syncIpnsWithDb()
             .then(() => this._publishLoop(this.plebbit.publishInterval))
