@@ -50,12 +50,14 @@ describe("createComment", async () => {
         };
         const comment = await plebbit.createComment(props);
 
-        const nestedComment = await plebbit.createComment(remeda.omit(comment, ["signer"]));
+        const nestedComment = await plebbit.createComment(comment);
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
         expect(deterministicStringify(comment.author)).to.equal(deterministicStringify(props.author));
         expect(comment.timestamp).to.equal(props.timestamp);
+        // TODO should we test for this?
+        // expect(nestedComment.signer).to.deep.equal(comment.signer);
 
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
     });

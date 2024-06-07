@@ -5,6 +5,7 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbit,
     publishRandomPost,
+    overrideCommentInstancePropsAndSign,
     isRpcFlagOn
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
@@ -51,7 +52,7 @@ if (!isRpcFlagOn())
         let plebbit, post;
         before(async () => {
             plebbit = await mockRemotePlebbit();
-            post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            // post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         });
 
         it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);
@@ -60,7 +61,7 @@ if (!isRpcFlagOn())
 
         it("Subplebbit reject a comment under a non existent parent", async () => {
             const comment = await plebbit.createComment({
-                parentCid: "gibberish", // invalid parentCid,
+                parentCid: "QmV8Q8tWqbLTPYdrvSXHjXgrgWUR1fZ9Ctj56ETPi58FDY", // random cid that's not related to this sub,
                 signer: remeda.sample(signers, 1)[0],
                 subplebbitAddress
             });
@@ -89,11 +90,26 @@ if (!isRpcFlagOn())
         });
 
         it(`Throws an error when a comment has no title, link or content`, async () => {
-            const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, {
+            // should fail both locally in plebbit.createComment, and when we publish to the sub
+            try {
+                await generateMockPost(subplebbitAddress, plebbit, false, {
+                    link: undefined,
+                    content: undefined,
+                    title: undefined
+                });
+                expect.fail("Should fail if link, content and title are defined");
+            } catch (e) {
+                expect(e.name).to.equal("ZodError");
+                expect(e.issues[0].message).to.equal(messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+            }
+
+            const mockPost = await generateMockPost(subplebbitAddress, plebbit); // regular post with everything defined
+            await overrideCommentInstancePropsAndSign(mockPost, {
                 link: undefined,
                 content: undefined,
                 title: undefined
             });
+
             await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
         });
 

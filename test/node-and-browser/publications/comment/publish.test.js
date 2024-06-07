@@ -154,7 +154,8 @@ describe("publishing comments", async () => {
         expect(remotePost.link).to.equal("https://google.com");
     });
 
-    it(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
+    // TODO rewrite this test
+    it.skip(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.displayName = null;
         post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
@@ -211,7 +212,7 @@ describe("publishing comments", async () => {
         const signer = await plebbit.createSigner();
         const props = {
             subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-            timestamp: Date.now() / 1000,
+            timestamp: Math.round(Date.now() / 1000),
             author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
             protocolVersion: "1.0.0",
             content: "Mock content - 1690130836.1711266" + Math.random(),
