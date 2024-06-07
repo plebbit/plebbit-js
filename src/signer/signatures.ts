@@ -153,10 +153,10 @@ export function cleanUpBeforePublishing<T extends PublicationsToSign | PubsubMsg
     return removeNullUndefinedEmptyObjectsValuesRecursively(msg);
 }
 
-export async function signComment(comment: CommentOptionsToSign, signer: SignerType, plebbit: Plebbit) {
+export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signComment");
-    await _validateAuthorAddressBeforeSigning(comment.author, signer, plebbit);
-    return _signJson(CommentSignedPropertyNames, comment, signer, log);
+    await _validateAuthorAddressBeforeSigning(comment.author, comment.signer, plebbit);
+    return _signJson(CommentSignedPropertyNames, comment, comment.signer, log);
 }
 
 export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
@@ -165,16 +165,16 @@ export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">
     return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
 }
 
-export async function signVote(vote: VoteOptionsToSign, signer: SignerType, plebbit: Plebbit) {
+export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signVote");
-    await _validateAuthorAddressBeforeSigning(vote.author, signer, plebbit);
-    return _signJson(VoteSignedPropertyNames, vote, signer, log);
+    await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
+    return _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
 }
 
-export async function signCommentEdit(edit: CommentEditOptionsToSign, signer: SignerType, plebbit: Plebbit) {
+export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit) {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
-    await _validateAuthorAddressBeforeSigning(edit.author, signer, plebbit);
-    return _signJson(CommentEditSignedPropertyNames, edit, signer, log);
+    await _validateAuthorAddressBeforeSigning(edit.author, edit.signer, plebbit);
+    return _signJson(CommentEditSignedPropertyNames, edit, edit.signer, log);
 }
 
 export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {

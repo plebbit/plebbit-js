@@ -1,4 +1,4 @@
-import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
+import { TIMEFRAMES_TO_SECONDS, removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
@@ -22,6 +22,7 @@ import { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
+import { signComment } from "../signer/signatures.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -210,7 +211,11 @@ async function _populateSubplebbit(
     const postVotes = await _publishVotes(<CommentIpfsWithCidPostCidDefined[]>posts, props.votesPerCommentToPublish, subplebbit.plebbit);
     console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
 
-    const repliesVotes = await _publishVotes(<CommentIpfsWithCidPostCidDefined[]>replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const repliesVotes = await _publishVotes(
+        <CommentIpfsWithCidPostCidDefined[]>replies,
+        props.votesPerCommentToPublish,
+        subplebbit.plebbit
+    );
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
@@ -546,4 +551,15 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
                 if (conditionStatus) resolve(conditionStatus);
             });
         });
+}
+
+export async function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions) {
+    if (!comment.signer) throw Error("Need comment.signer to overwrite the signature");
+    //@ts-expect-error
+    for (const optionKey of Object.keys(props)) comment[optionKey] = props[optionKey];
+
+    comment.signature = await signComment(
+        removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
+        comment._plebbit
+    );
 }

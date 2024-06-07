@@ -59,7 +59,7 @@ import { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOpt
 import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 import { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
-import { CommentOptionsToSign, CreateCommentOptions } from "./publications/comment/types.js";
+import { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
@@ -365,7 +365,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             // we're creating a new comment to sign and publish here
             const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
-            const signedComment = { ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, fieldsFilled.signer, this) };
+            const signedComment = <LocalCommentOptions>{ ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, this) };
             commentInstance._initLocalProps(signedComment);
         } else if ("subplebbitAddress" in parsedOptions && typeof parsedOptions.subplebbitAddress === "string")
             commentInstance.setSubplebbitAddress(parsedOptions.subplebbitAddress);
@@ -555,7 +555,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedVote: LocalVoteOptions = {
                 ...cleanedFinalOptions,
-                signature: await signVote(cleanedFinalOptions, finalOptions.signer, this)
+                signature: await signVote(cleanedFinalOptions, this)
             };
 
             voteInstance._initLocalProps(signedVote);
@@ -576,7 +576,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedEdit = <LocalCommentEditOptions>{
                 ...cleanedFinalOptions,
-                signature: await signCommentEdit(cleanedFinalOptions, finalOptions.signer, this)
+                signature: await signCommentEdit(cleanedFinalOptions, this)
             };
             editInstance._initLocalProps(signedEdit);
         }

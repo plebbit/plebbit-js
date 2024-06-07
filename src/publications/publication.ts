@@ -54,7 +54,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     shortSubplebbitAddress!: string;
     timestamp!: number;
     signature!: JsonSignature;
-    signer?: Signer;
+    signer?: LocalPublicationProps["signer"];
     author!: Author;
     protocolVersion!: ProtocolVersion;
 
@@ -128,7 +128,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     _initBaseLocalProps(props: LocalPublicationProps) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
-        this.signer = new Signer(props.signer);
+        this.signer = props.signer;
         this.signature = props.signature;
         this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;

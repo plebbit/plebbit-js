@@ -56,6 +56,12 @@ export const CreateCommentOptionsSchema = z
     .merge(CreatePublicationUserOptionsSchema)
     .strict();
 
+// This one is used for parsing user's input
+export const CreateCommentOptionsWithRefinementSchema = CreateCommentOptionsSchema.refine(
+    (arg) => arg.link || arg.content || arg.title,
+    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
+);
+
 export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning);
 
 // Below is what's used to initialize a local publication to be published
@@ -72,6 +78,11 @@ const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" 
 
 export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
 
+export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSchema.refine(
+    (arg) => arg.link || arg.content || arg.title,
+    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
+);
+
 export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentPubsubMessageSchema
 }).strict();
@@ -87,6 +98,12 @@ export const CommentIpfsSchema = CommentPubsubMessageSchema.extend({
     thumbnailUrlHeight: z.number().positive().optional(),
     previousCid: CommentCidSchema.optional()
 }).strict();
+
+// This one should be used for parsing user's input or from gateway/p2p etc
+export const CommentIpfsWithRefinmentSchema = CommentIpfsSchema.refine(
+    (arg) => arg.link || arg.content || arg.title,
+    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
+);
 
 export const CommentIpfsWithCidDefinedSchema = CommentIpfsSchema.extend({
     cid: CommentCidSchema
@@ -194,19 +211,15 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
 // Plebbit.createComment here
 
 // TODO move the refine function to createComment args
-const validateCommentPropsRefine = (options: CreateCommentOptions | CommentPubsubMessage | CommentIpfsType | CommentTypeJson) => (
-    options.link || options.title || options.content, "The comment needs to have at least link, or title, or content defined"
-);
+const validateCommentPropsRefine: Parameters<typeof CreateCommentOptionsSchema.refine> = [
+    (options) => Boolean(options.link || options.title || options.content),
+    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
+];
 
-export const CreateCommentFunctionArguments = CreateCommentOptionsSchema.refine(validateCommentPropsRefine)
-    .or(CommentJsonSchema)
-    .refine(validateCommentPropsRefine)
-    .or(CommentIpfsSchema)
-    .refine(validateCommentPropsRefine)
+export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentJsonSchema)
+    .or(CommentIpfsWithRefinmentSchema)
     .or(CommentIpfsWithCidDefinedSchema)
-    .refine(validateCommentPropsRefine)
-    .or(CommentPubsubMessageSchema)
-    .refine(validateCommentPropsRefine)
+    .or(CommentPubsubMessageWithRefinementSchema)
     .or(CommentChallengeRequestToEncryptSchema)
     .or(CommentsTableRowSchema)
     .or(z.custom<Comment>((data) => data instanceof Comment))
