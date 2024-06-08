@@ -65,7 +65,7 @@ export class SortHandler {
         sortName: PostSortName | ReplySortName,
         options: PageOptions
     ): Promise<PageGenerationRes | undefined> {
-        if (comments.length === 0) return undefined;
+        if (comments.length === 0) throw Error("Should not provide empty array of comments to sort");
         const sortProps: SortProps = options.parentCid
             ? REPLIES_SORT_TYPES[<ReplySortName>sortName]
             : POSTS_SORT_TYPES[<PostSortName>sortName];
@@ -130,46 +130,6 @@ export class SortHandler {
         };
     }
 
-    private async _generateSubplebbitPosts(pageOptions: PageOptions): Promise<PostsPagesTypeIpfs | undefined> {
-        // Sorting posts on a subplebbit level
-        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
-
-        if (rawPosts.length === 0) return undefined;
-
-        const sortResults = await Promise.all(
-            remeda.keys.strict(POSTS_SORT_TYPES).map((sortName) => this.sortComments(rawPosts, sortName, pageOptions))
-        );
-
-        return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
-    }
-
-    private async _generateCommentReplies(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
-        const pageOptions: PageOptions = {
-            excludeCommentsWithDifferentSubAddress: true,
-            excludeDeletedComments: false,
-            excludeRemovedComments: false,
-            parentCid: comment.cid,
-            pageSize: 50
-        };
-
-        const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
-
-        const sortResults = await Promise.all(
-            remeda.keys.strict(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, sortName, pageOptions))
-        );
-
-        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
-    }
-
-    async generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
-        const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
-
-        const pages = await this._generateCommentReplies(comment);
-        // TODO assert here
-
-        return pages;
-    }
-
     async generateSubplebbitPosts(): Promise<PostsPagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
@@ -178,8 +138,37 @@ export class SortHandler {
             parentCid: null,
             pageSize: 50
         };
+        // Sorting posts on a subplebbit level
+        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
 
-        return this._generateSubplebbitPosts(pageOptions);
+        if (rawPosts.length === 0) return undefined;
+
+        const sortResults: (PageGenerationRes | undefined)[] = [];
+
+        for (const sortName of remeda.keys.strict(POSTS_SORT_TYPES))
+            sortResults.push(await this.sortComments(rawPosts, sortName, pageOptions));
+
+        return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
+    }
+
+    async generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
+        const pageOptions: PageOptions = {
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: false,
+            excludeRemovedComments: false,
+            parentCid: comment.cid,
+            pageSize: 50
+        };
+
+        const rawReplies = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        if (rawReplies.length === 0) return undefined;
+
+        const sortResults: (PageGenerationRes | undefined)[] = [];
+
+        for (const sortName of remeda.keys.strict(REPLIES_SORT_TYPES))
+            sortResults.push(await this.sortComments(rawReplies, sortName, pageOptions));
+
+        return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
     toJSON() {

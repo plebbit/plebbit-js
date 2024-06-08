@@ -1062,10 +1062,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
-        const log = Logger("plebbit-js:local-subplebbit:sync:syncComment");
+        const log = Logger("plebbit-js:local-subplebbit:_updateComment");
 
         // If we're here that means we're gonna calculate the new update and publish it
-        log(`Attempting to update Comment (${comment.cid})`);
+        log(`Attempting to publish new CommentUpdate for comment (${comment.cid})`);
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
@@ -1563,7 +1563,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.state === "updating" || this.state === "started") await this.stop();
 
         const ipfsClient = this.clientsManager.getDefaultIpfs();
-        if (!ipfsClient) throw Error("Ipfs client is not defined");
 
         await moveSubplebbitDbToDeletedDirectory(this.address, this.plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
