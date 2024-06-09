@@ -127,7 +127,6 @@ describe(`Start lock`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
         await assert.isRejected(subplebbit.start(), messages.ERR_SUB_ALREADY_STARTED);
-        await subplebbit.stop();
     });
 
     if (!isRpcFlagOn())
@@ -180,7 +179,7 @@ describe(`Start lock`, async () => {
 
     it(`Can start subplebbit if start lock is stale (10s)`, async () => {
         // Lock is considered stale if lock has not been updated in 10000 ms (10s)
-        const sub = await plebbit.createSubplebbit();
+        const sub = await createSubWithNoChallenge({}, plebbit);
 
         const lockPath = path.join(dataPath, "subplebbits", `${sub.address}.start.lock`);
         await fs.promises.mkdir(lockPath); // Artifically create a start lock
@@ -188,8 +187,25 @@ describe(`Start lock`, async () => {
         await assert.isRejected(sub.start(), messages.ERR_SUB_ALREADY_STARTED);
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(sub.start());
-        await sub.stop();
+        await new Promise((resolve) => sub.once("update", resolve));
+        await publishRandomPost(sub.address, plebbit, {}, true);
+        await sub.delete();
     });
+
+    if (!isRpcFlagOn())
+        it(`Subplebbit states are reset if subplebbit.start() throws`, async () => {
+            const sub = await createSubWithNoChallenge({}, plebbit);
+
+            sub._repinCommentsIPFSIfNeeded = () => {
+                throw Error("Failing ipfs for some reason");
+            };
+
+            await assert.isRejected(sub.start());
+
+            expect(sub.state).to.equal("stopped");
+            expect(sub.started).to.be.false;
+            expect(sub.startedState).to.equal("stopped");
+        });
 
     if (isRpcFlagOn())
         it(`rpcLocalSub.start() will receive started updates if there is another instance that's started`, async () => {
