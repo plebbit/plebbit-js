@@ -12,7 +12,8 @@ import {
     publishVote,
     generatePostToAnswerMathQuestion,
     isRpcFlagOn,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockPlebbit
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
@@ -441,7 +442,13 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         await anotherPost.stop();
     });
 
-    it(`Can call plebbit.createComment(publishedComment) without error`);
+    it(`Can call plebbit.createComment(publishedComment) without error`, async () => {
+        const comment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+
+        const anotherInstance = await plebbit.createComment(comment);
+
+        expect(comment.toJSON()).to.deep.equal(anotherInstance.toJSON());
+    });
 
     it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
         const reply = await publishRandomReply(post, plebbit, { signer: post._signer }, false);
@@ -1195,5 +1202,125 @@ describe(`comment.clients`, async () => {
                     expect(actualStates).to.deep.equal(expectedStates);
                 });
             });
+    });
+});
+
+describe(`comment.toJSON()`, async () => {
+    let plebbit;
+
+    const generateRandomCommentProps = () => {
+        // TODO should eventually use zod to generate these random tests
+        return {
+            content: `test comment = ${Date.now()}`,
+            subplebbitAddress,
+            author: {
+                address: signers[4].address,
+                shortAddress: signers[4].address.slice(8).slice(0, 12),
+                displayName: `Mock Author - comment = await createComment(await createComment)`
+            },
+            signer: signers[4],
+            timestamp: 2345324,
+            title: `Random Title ${Date.now()}`,
+            link: "https://google.com",
+            linkWidth: 1234,
+            linkHeight: 21345,
+            linkHtmlTagName: "a",
+            spoiler: true
+        };
+    };
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
+    it(`comment.toJSON() has the expected props (CommentPubsubMessage)`, async () => {
+        const props = generateRandomCommentProps();
+
+        const propsWithoutSigner = JSON.parse(JSON.stringify({ ...props, signer: undefined }));
+
+        const comment = await plebbit.createComment(props);
+
+        const commentJson = JSON.parse(JSON.stringify(comment.toJSON()));
+
+        const propsWithAddedKeys = {
+            ...propsWithoutSigner,
+            signature: comment.signature,
+            shortSubplebbitAddress: comment.shortSubplebbitAddress,
+            protocolVersion: comment.protocolVersion
+        };
+        expect(Object.keys(commentJson).sort()).to.deep.equal(Object.keys(propsWithAddedKeys).sort());
+
+        for (const jsonKey of Object.keys(commentJson))
+            expect(deterministicStringify(commentJson[jsonKey])).to.equal(deterministicStringify(propsWithAddedKeys[jsonKey]));
+    });
+
+    it(`comment.toJSON() has the expected props (CommentIpfs and CommentAfterChallengeVerification)`, async () => {
+        const props = generateRandomCommentProps();
+
+        const publishedComment = await publishRandomPost(props.subplebbitAddress, plebbit, props, false);
+        const propsWithoutSigner = JSON.parse(JSON.stringify({ ...props, signer: undefined }));
+
+        propsWithoutSigner.author.subplebbit = publishedComment.author.subplebbit; // Need to define manually because CommentIpfs doesn't include it
+
+        const remoteComment = await plebbit.getComment(publishedComment.cid);
+
+        for (const comment of [publishedComment, remoteComment]) {
+            const commentJson = JSON.parse(JSON.stringify(comment.toJSON())); // to remove undefined
+            if (!commentJson.author.subplebbit) commentJson.author.subplebbit = propsWithoutSigner.author.subplebbit; // Need to define this because CommentIpfs doesn't include author.subplebbit
+
+            const propsWithAddedKeys = {
+                ...propsWithoutSigner,
+                signature: comment.signature,
+                cid: comment.cid,
+                depth: comment.depth,
+                postCid: comment.postCid,
+                previousCid: comment.previousCid,
+                shortCid: comment.shortCid,
+                shortSubplebbitAddress: comment.shortSubplebbitAddress,
+                protocolVersion: comment.protocolVersion
+            };
+            expect(Object.keys(commentJson).sort()).to.deep.equal(Object.keys(propsWithAddedKeys).sort());
+
+            for (const jsonKey of Object.keys(commentJson))
+                expect(deterministicStringify(commentJson[jsonKey])).to.equal(deterministicStringify(propsWithAddedKeys[jsonKey]));
+        }
+    });
+
+    it(`comment.toJSON() has the same props as Comment instance (CommentWithCommentUpdate)`, async () => {
+        const props = generateRandomCommentProps();
+        const propsWithoutSigner = JSON.parse(JSON.stringify({ ...props, signer: undefined }));
+
+        const publishedComment = await publishRandomPost(props.subplebbitAddress, plebbit, props, true);
+
+        const comment = await plebbit.getComment(publishedComment.cid);
+
+        await comment.update();
+        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+
+        const commentJson = JSON.parse(JSON.stringify(comment.toJSON())); // to remove undefined
+
+        const propsWithAddedKeys = {
+            ...propsWithoutSigner,
+            signature: comment.signature,
+            cid: comment.cid,
+            depth: comment.depth,
+            postCid: comment.postCid,
+            previousCid: comment.previousCid,
+            shortCid: comment.shortCid,
+            shortSubplebbitAddress: comment.shortSubplebbitAddress,
+            protocolVersion: comment.protocolVersion,
+            downvoteCount: comment.downvoteCount,
+            original: comment.original,
+            replyCount: comment.replyCount,
+            updatedAt: comment.updatedAt,
+            upvoteCount: comment.upvoteCount,
+            author: {
+                ...propsWithoutSigner.author,
+                subplebbit: comment.author.subplebbit
+            }
+        };
+        expect(Object.keys(commentJson).sort()).to.deep.equal(Object.keys(propsWithAddedKeys).sort());
+
+        for (const jsonKey of Object.keys(commentJson))
+            expect(deterministicStringify(commentJson[jsonKey])).to.equal(deterministicStringify(propsWithAddedKeys[jsonKey]));
     });
 });
