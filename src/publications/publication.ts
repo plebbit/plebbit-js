@@ -58,7 +58,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
     shortSubplebbitAddress!: string;
     timestamp!: number;
     signature!: JsonSignature;
-    signer?: Signer;
     author!: Author;
     protocolVersion!: ProtocolVersion;
 
@@ -92,6 +91,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
     private _rpcPublishSubscriptionId?: number;
+    private _signer?: Signer;
+
     _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
@@ -132,7 +133,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     _initBaseLocalProps(props: LocalPublicationProps) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
-        this.signer = new Signer(props.signer);
+        this._signer = new Signer(props.signer);
         this.signature = props.signature;
         this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;

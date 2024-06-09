@@ -318,8 +318,8 @@ export class Comment extends Publication {
             protocolVersion: this.protocolVersion,
             content: this.content,
             parentCid: this.parentCid,
-            flair: this.flair,
-            spoiler: this.spoiler,
+            flair: this.flair, // TODO should make sure it's initialized by author, not by mod
+            spoiler: this.spoiler, // TODO should make sure it's initalized by author, not by mod
             link: this.link,
             linkWidth: this.linkWidth,
             linkHeight: this.linkHeight,

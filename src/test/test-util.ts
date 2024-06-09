@@ -492,7 +492,8 @@ export async function waitTillCommentIsInParentPages(
 
     const pageCids = pagesJson.pageCids;
 
-    const commentKeys = remeda.keys.strict(propsToCheckFor);
+    const commentKeys = remeda.keys.strict(remeda.omit(propsToCheckFor, ["signer"]));
+    
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
