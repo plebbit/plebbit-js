@@ -1,7 +1,17 @@
-import { AuthorIpfsType, AuthorTypeJson, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
+import {
+    AuthorIpfsType,
+    AuthorTypeJson,
+    AuthorTypeWithCommentUpdate,
+    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    Nft,
+    SubplebbitAuthor,
+    Wallet
+} from "../types.js";
 import { shortifyAddress } from "../util.js";
 import { Flair } from "../subplebbit/types.js";
+import Logger from "@plebbit/plebbit-logger";
 
+const authorLog = Logger("plebbit-js:publication:author");
 class Author implements AuthorTypeWithCommentUpdate {
     address: string;
     previousCommentCid?: string; // linked list of the author's comments
@@ -37,11 +47,19 @@ class Author implements AuthorTypeWithCommentUpdate {
             displayName: this.displayName,
             wallets: this.wallets,
             avatar: this.avatar,
-            flair: this.flair
+            flair: this.flair // TODO need to make sure it's from the author, not mod
         };
     }
+
+    toJSONAfterChallengeVerification(): NonNullable<
+        DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
+    >["author"] {
+        if (!this.subplebbit) throw Error("Calling author.toJSONAfterChallengeVerification() without defining author.subplebbit");
+
+        return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
+    }
     toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate {
-        if (!this.subplebbit) throw Error("Calling author.toJSONIpfsWithCommentUpdate() without defining author.subplebbit");
+        if (!this.subplebbit) authorLog("Warning: calling author.toJSONIpfsWithCommentUpdate without author.subplebbit defined");
         return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
 }

@@ -577,7 +577,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const commentProps = this._comment.toJSONAfterChallengeVerification();
+        const commentProps = this._comment.toJSONCommentIpfsWithCid();
         const pathCache: string = await parentsPathCache.getItem(commentProps.cid);
         if (pathCache) return pathCache.split("/").reverse().join("/");
 
@@ -616,7 +616,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
         const postTimestamp = await (
             await this._plebbit._createStorageLRU(postTimestampConfig)
-        ).getItem(this._comment.toJSONAfterChallengeVerification().postCid);
+        ).getItem(this._comment.toJSONCommentIpfsWithCid().postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
         if (!subIpns.postUpdates) throw Error("Subplebbit IPNS record has no postUpdates field");
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);

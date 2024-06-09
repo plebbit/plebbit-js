@@ -194,7 +194,7 @@ class PlebbitWsServer extends EventEmitter {
     async getComment(params: any): Promise<CommentIpfsWithCid> {
         const cid = <string>params[0];
         const comment = await this.plebbit.getComment(cid);
-        return comment.toJSONAfterChallengeVerification();
+        return comment.toJSONCommentIpfsWithCid();
     }
 
     async getSubplebbitPage(params: any) {

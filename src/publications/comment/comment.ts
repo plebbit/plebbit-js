@@ -238,8 +238,8 @@ export class Comment extends Publication {
         }
     }
 
-    protected override _updateLocalCommentPropsWithVerification(
-        props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
+    override _updateLocalCommentPropsWithVerification(
+        props: NonNullable<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]>
     ) {
         if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
@@ -251,9 +251,12 @@ export class Comment extends Publication {
     }
 
     override toJSON(): CommentTypeJson {
-        const base = this.cid
-            ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
-            : this.toJSONPubsubMessagePublication();
+        const base =
+            this.cid && this.author.subplebbit
+                ? this.toJSONAfterChallengeVerification()
+                : this.cid
+                  ? this.toJSONCommentIpfsWithCid()
+                  : this.toJSONPubsubMessagePublication();
         return {
             ...base,
             ...(typeof this.updatedAt === "number"
@@ -279,19 +282,25 @@ export class Comment extends Publication {
                   }
                 : {}),
             shortSubplebbitAddress: this.shortSubplebbitAddress,
+            shortCid: this.shortCid,
             author: this.author.toJSON()
         };
     }
 
-    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; update: CommentUpdate } {
-        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONPagesIpfs");
+    toJSONCommentIpfsWithCid(): CommentIpfsWithCid {
+        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONCommentIpfsWithCid");
+
         return {
-            comment: {
-                ...this.toJSONIpfs(),
-                author: this.author.toJSONIpfs(),
-                cid: this.cid,
-                postCid: this.postCid
-            },
+            ...this.toJSONIpfs(),
+            author: this.author.toJSONIpfs(),
+            cid: this.cid,
+            postCid: this.postCid
+        };
+    }
+
+    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCid; update: CommentUpdate } {
+        return {
+            comment: this.toJSONCommentIpfsWithCid(),
             update: commentUpdate
         };
     }
@@ -328,9 +337,9 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONAfterChallengeVerification(): CommentIpfsWithCid {
+    toJSONAfterChallengeVerification(): NonNullable<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]> {
         assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
-        return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
+        return { ...this.toJSONCommentIpfsWithCid(), author: this.author.toJSONAfterChallengeVerification() };
     }
 
     toJSONCommentsTableRowInsert(
@@ -359,7 +368,7 @@ export class Comment extends Publication {
             "updatedAt, original, shortCid, upvoteCount, downvoteCount, replyCount should be defined before calling toJSONMerged"
         );
         return {
-            ...this.toJSONAfterChallengeVerification(),
+            ...this.toJSONCommentIpfsWithCid(),
             author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,
@@ -486,7 +495,7 @@ export class Comment extends Publication {
 
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
-            const commentInstance = remeda.pick(this.toJSONAfterChallengeVerification(), ["cid", "signature"]);
+            const commentInstance = remeda.pick(this.toJSONCommentIpfsWithCid(), ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(
                 commentUpdate,

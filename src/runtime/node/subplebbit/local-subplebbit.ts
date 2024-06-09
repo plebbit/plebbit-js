@@ -530,7 +530,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             log(`New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
 
-            return commentToInsert.toJSONAfterChallengeVerification();
+            return commentToInsert.toJSONCommentIpfsWithCid();
         }
     }
 
