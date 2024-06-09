@@ -1469,11 +1469,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         try {
             await this._initBeforeStarting();
             // update started value twice because it could be started prior lockSubStart
+            this._setState("started");
             await this._updateStartedValue();
             await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
             await this._updateStartedValue();
-            this._setState("started");
-            this._setStartedState("publishing-ipns");
             this._isSubRunningLocally = true;
             await this.dbHandler.initDbIfNeeded();
             await this.dbHandler.initDestroyedConnection();
@@ -1485,6 +1484,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._subplebbitUpdateTrigger = true;
             await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
 
+            this._setStartedState("publishing-ipns");
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
@@ -1534,13 +1534,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:stop");
 
         if (this.state === "started") {
+            if (this._isSubRunningLocally) await this.dbHandler.unlockSubStart();
             this._isSubRunningLocally = false;
             if (this._publishLoopPromise) await this._publishLoopPromise; // should be in try/catch
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this.dbHandler.rollbackAllTransactions();
-            await this.dbHandler.unlockSubState();
-            await this.dbHandler.unlockSubStart();
             await this._updateStartedValue();
 
             clearInterval(this._publishInterval);
