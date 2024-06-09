@@ -148,7 +148,7 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
         const edit = await plebbit.createCommentEdit({
             ...fieldsToChange,
             commentCid: authorPost.cid,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             subplebbitAddress
         });
         await publishWithExpectedResult(edit, true);
@@ -194,7 +194,7 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         const edit1 = await plebbit.createCommentEdit({
             ...fieldsToChange,
             commentCid: modPost.cid,
-            signer: modPost.signer,
+            signer: modPost._signer,
             subplebbitAddress
         });
         await publishWithExpectedResult(edit1, true);
@@ -205,7 +205,7 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         const edit2 = await plebbit.createCommentEdit({
             ...fieldsToChange,
             commentCid: modPost.cid,
-            signer: modPost.signer,
+            signer: modPost._signer,
             subplebbitAddress
         });
 
@@ -250,7 +250,7 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         const edit1 = await plebbit.createCommentEdit({
             ...fieldsToChange,
             commentCid: authorPost.cid,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             subplebbitAddress
         });
         await publishWithExpectedResult(edit1, true);
@@ -261,7 +261,7 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         const edit2 = await plebbit.createCommentEdit({
             ...fieldsToChange,
             commentCid: authorPost.cid,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             subplebbitAddress
         });
 
@@ -303,7 +303,7 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         const authorEdit = await plebbit.createCommentEdit({
             ...authorFieldsToChange,
             commentCid: authorPost.cid,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             subplebbitAddress
         });
         await publishWithExpectedResult(authorEdit, true);

@@ -44,7 +44,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
             subplebbitAddress: authorPost.subplebbitAddress,
             commentCid: authorPost.cid,
             spoiler: true,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             reason: "Author marking their own comment as spoiler"
         });
         await publishWithExpectedResult(spoilerEdit, true);
@@ -90,7 +90,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
             subplebbitAddress: authorPost.subplebbitAddress,
             commentCid: authorPost.cid,
             spoiler: false,
-            signer: authorPost.signer,
+            signer: authorPost._signer,
             reason: "An author unspoilering their own comment"
         });
         await publishWithExpectedResult(unspoilerEdit, true);

@@ -52,7 +52,7 @@ describe("Editing comment.content", async () => {
             commentCid: commentToBeEdited.cid,
             reason: editReason,
             content: editedText,
-            signer: commentToBeEdited.signer
+            signer: commentToBeEdited._signer
         });
         await publishWithExpectedResult(commentEdit, true);
         await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);
@@ -133,7 +133,7 @@ describe("Editing comment.content", async () => {
             commentCid: commentToBeEdited.cid,
             reason: editReason,
             content: editedText,
-            signer: commentToBeEdited.signer
+            signer: commentToBeEdited._signer
         });
         await publishWithExpectedResult(commentEdit, true);
         await resolveWhenConditionIsTrue(commentToBeEdited, () => commentToBeEdited.content === editedText);

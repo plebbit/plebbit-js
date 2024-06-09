@@ -390,7 +390,7 @@ describe(`Publish loop resiliency`, async () => {
                 const remotePlebbit = await mockRemotePlebbitIpfsOnly({ resolveAuthorAddresses });
                 const loadedSub = await remotePlebbit.getSubplebbit(subplebbit.address);
                 const mockPostInPage = loadedSub.posts.pages.hot.comments.find((comment) => comment.cid === mockPost.cid);
-                if (resolveAuthorAddresses) expect(mockPostInPage.author.address).to.equal(mockPost.signer.address);
+                if (resolveAuthorAddresses) expect(mockPostInPage.author.address).to.equal(mockPost._signer.address);
                 else expect(mockPostInPage.author.address).to.equal("plebbit.eth");
             }
         });

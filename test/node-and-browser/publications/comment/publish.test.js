@@ -18,6 +18,8 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { signComment } from "../../../../dist/node/signer/signatures.js";
 import { removeUndefinedValuesRecursively } from "../../../../dist/node/util.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -47,12 +49,22 @@ describe("publishing comments", async () => {
     it("Can publish posts and comments with emoji for title and content", async () => {
         const emojiContents = [
             "Hey 👋 Mate.\nCongratulations 🎉, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n🌟 CG Watchlist $8 / 1000\n🌟 CG Thumb 👍 Votes \n\n⭐️ CoinGecko Trendings\n    🔘 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    🔘 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
-            "Hey \ud83d\udc4b Mate.\nCongratulations \ud83c\udf89, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n\ud83c\udf1f CG Watchlist $8 / 1000\n\ud83c\udf1f CG Thumb \ud83d\udc4d Votes \n\n⭐️ CoinGecko Trendings\n    \ud83d\udd18 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    \ud83d\udd18 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1"
+            "Hey \ud83d\udc4b Mate.\nCongratulations \ud83c\udf89, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n\ud83c\udf1f CG Watchlist $8 / 1000\n\ud83c\udf1f CG Thumb \ud83d\udc4d Votes \n\n⭐️ CoinGecko Trendings\n    \ud83d\udd18 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    \ud83d\udd18 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
+            "Lorem ipsum dolor...\n...there's a mouse on the floor\\s\\s\nand it's running for the door\\s\\s\nin front of the the zombie Moor.\n...thank you, I'll let myself out.\n💂\n",
+            " 😜 😀 you will never be fixed"
         ];
 
         for (const content of emojiContents) {
             const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content }, true);
             expect(publishedPostContent.content).to.equal(content);
+            // TODO add a test for expected cid here, very important
+
+            const publishedPostIpfs = deterministicStringify(publishedPostContent.toJSONIpfs());
+            expect(await calculateIpfsHash(publishedPostIpfs)).to.equal(publishedPostContent.cid);
+
+            const remotePost = await plebbit.getComment(publishedPostContent.cid);
+            const remotePostIpfs = deterministicStringify(remotePost.toJSONIpfs());
+            expect(await calculateIpfsHash(remotePostIpfs)).to.equal(publishedPostContent.cid);
         }
     });
 
@@ -151,7 +163,7 @@ describe("publishing comments", async () => {
     it(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.displayName = null;
-        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
+        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post._signer, plebbit);
         await publishWithExpectedResult(post, true);
         expect(post.author.displayName).to.be.null;
         await waitTillCommentIsInParentPages(post, plebbit);
@@ -165,7 +177,7 @@ describe("publishing comments", async () => {
     it(`A comment with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.wallets = {};
-        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
+        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post._signer, plebbit);
         await publishWithExpectedResult(post, true);
         expect(post.author.wallets).to.deep.equal({});
         await waitTillCommentIsInParentPages(post, plebbit);
@@ -402,7 +414,7 @@ describe(`Publishing replies`, async () => {
         it(`Can publish comment with depth = ${depth}`, async () => {
             const parentComment = parents[depth - 1];
 
-            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
+            const reply = await publishRandomReply(parentComment, plebbit, { signer: post._signer }, false);
             expect(reply.depth).to.be.equal(depth);
 
             await waitTillCommentIsInParentPages(

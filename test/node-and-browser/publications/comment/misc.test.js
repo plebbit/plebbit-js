@@ -425,7 +425,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`post.author.subplebbit.postScore increases with upvote to another post`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post._signer }, false);
         await anotherPost.update();
         await publishVote(anotherPost.cid, anotherPost.subplebbitAddress, 1, plebbit);
         await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.postScore === 2);
@@ -441,8 +441,10 @@ describe(`commentUpdate.author.subplebbit`, async () => {
         await anotherPost.stop();
     });
 
+    it(`Can call plebbit.createComment(publishedComment) without error`);
+
     it(`post.author.subplebbit.replyScore increases with upvote to author replies`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        const reply = await publishRandomReply(post, plebbit, { signer: post._signer }, false);
         await reply.update();
         await publishVote(reply.cid, reply.subplebbitAddress, 1, plebbit);
         await resolveWhenConditionIsTrue(reply, () => reply.upvoteCount === 1);
@@ -461,7 +463,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new post of author`, async () => {
-        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post.signer }, false);
+        const anotherPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: post._signer }, false);
         await anotherPost.update();
 
         await resolveWhenConditionIsTrue(post, () => post.author.subplebbit.lastCommentCid === anotherPost.cid);
@@ -474,7 +476,7 @@ describe(`commentUpdate.author.subplebbit`, async () => {
     });
 
     it(`author.subplebbit.lastCommentCid is updated with every new reply of author`, async () => {
-        const reply = await publishRandomReply(post, plebbit, { signer: post.signer }, false);
+        const reply = await publishRandomReply(post, plebbit, { signer: post._signer }, false);
         await reply.update();
         await resolveWhenConditionIsTrue(post, () => post.replyCount === 2);
         await resolveWhenConditionIsTrue(reply, () => typeof reply.updatedAt === "number");

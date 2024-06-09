@@ -74,7 +74,7 @@ describe(`Pinning posts`, async () => {
             commentCid: postToPin.cid,
             reason: "To pin a post",
             pinned: true,
-            signer: postToPin.signer
+            signer: postToPin._signer
         });
         await publishWithExpectedResult(pinEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });

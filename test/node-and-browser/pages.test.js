@@ -60,6 +60,7 @@ const testCommentFields = (comment) => {
     expect(comment.ipnsKeyName).to.be.undefined;
     expect(comment.challengeRequestId).to.be.undefined;
     expect(comment.signer).to.be.undefined;
+    expect(comment._signer).to.be.undefined;
 };
 
 const activeScore = async (comment) => {

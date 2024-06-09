@@ -178,7 +178,7 @@ if (!isRpcFlagOn())
                     author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
                 });
 
-                pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post.signer, plebbit);
+                pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post._signer, plebbit);
                 post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
                 post._validateSignature = async () => {}; // Disable signature validation before publishing
                 await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
