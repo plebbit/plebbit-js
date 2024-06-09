@@ -2,15 +2,15 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util";
-import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures";
+import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util.js";
+import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 
 import PlebbitWsServer from "../../rpc";
-import signers from "../fixtures/signers";
+import signers from "../fixtures/signers.js";
 import http from "http";
 import path from "path";
 import fs from "fs";
-import { removeUndefinedValuesRecursively } from "../../dist/node/util";
+import { removeUndefinedValuesRecursively } from "../../dist/node/util.js";
 
 const ipfsPath = getIpfsPath();
 
