@@ -187,7 +187,7 @@ describe(`Start lock`, async () => {
         await assert.isRejected(sub.start(), messages.ERR_SUB_ALREADY_STARTED);
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(sub.start());
-        await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         await publishRandomPost(sub.address, plebbit, {}, true);
         await sub.delete();
     });
