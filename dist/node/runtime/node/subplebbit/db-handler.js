@@ -640,6 +640,24 @@ export class DbHandler {
             firstCommentTimestamp
         };
     }
+    // Not meant to be used within plebbit-js
+    // Only in edge cases where a comment is invalid or it's causing a problem
+    async _deleteComment(cid) {
+        // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
+        await this.initDestroyedConnection();
+        const commentToBeDeleted = await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).first();
+        if (!commentToBeDeleted)
+            throw Error("Comment to be deleted does not exist");
+        await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
+        await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid: cid }).del();
+        const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: commentToBeDeleted.cid });
+        for (const child of children)
+            await this._deleteComment(child.cid);
+        await this._knex.raw("PRAGMA foreign_keys = 0");
+        await this._baseTransaction()(TABLES.COMMENTS).where({ cid: commentToBeDeleted.cid }).del(); // Will throw if we do not disable foreign_keys constraint
+        await this._knex.raw("PRAGMA foreign_keys = 1");
+    }
     async changeDbFilename(oldDbName, newDbName) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
         const oldPathString = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", oldDbName);
@@ -667,7 +685,7 @@ export class DbHandler {
     }
     // Start lock
     async lockSubStart(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:lock:start");
+        const log = Logger("plebbit-js:local-subplebbit:lock:start");
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
         try {
@@ -687,7 +705,7 @@ export class DbHandler {
         }
     }
     async unlockSubStart(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:lock:start");
+        const log = Logger("plebbit-js:local-subplebbit:unlock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
         const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);

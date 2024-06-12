@@ -1,4 +1,6 @@
 import { shortifyAddress } from "../util.js";
+import Logger from "@plebbit/plebbit-logger";
+const authorLog = Logger("plebbit-js:publication:author");
 class Author {
     constructor(props) {
         this.address = props.address;
@@ -23,12 +25,17 @@ class Author {
             displayName: this.displayName,
             wallets: this.wallets,
             avatar: this.avatar,
-            flair: this.flair
+            flair: this.flair // TODO need to make sure it's from the author, not mod
         };
+    }
+    toJSONAfterChallengeVerification() {
+        if (!this.subplebbit)
+            throw Error("Calling author.toJSONAfterChallengeVerification() without defining author.subplebbit");
+        return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
     toJSONIpfsWithCommentUpdate() {
         if (!this.subplebbit)
-            throw Error("Calling author.toJSONIpfsWithCommentUpdate() without defining author.subplebbit");
+            authorLog("Warning: calling author.toJSONIpfsWithCommentUpdate without author.subplebbit defined");
         return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };
     }
 }

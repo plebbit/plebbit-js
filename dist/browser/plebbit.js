@@ -253,7 +253,9 @@ export class Plebbit extends TypedEmitter {
         const commentInstance = new Comment(this);
         if (typeof options.cid === "string")
             commentInstance.setCid(options.cid);
-        if (typeof options.depth === "number")
+        if (options.author.subplebbit && typeof options.updatedAt !== "number")
+            commentInstance._updateLocalCommentPropsWithVerification(options.toJSONAfterChallengeVerification());
+        else if (typeof options.depth === "number")
             commentInstance._initIpfsProps(options.toJSONIpfs());
         else if (typeof options.author.address === "string")
             commentInstance._initPubsubMessageProps(options.toJSONPubsubMessagePublication());

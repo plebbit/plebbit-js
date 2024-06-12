@@ -1,4 +1,4 @@
-import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, OnlyDefinedProperties, PageIpfs, PagesInstanceType, PagesTypeIpfs, PagesTypeJson, PageInstanceType, PostSort, ReplySort, Timeframe, RepliesPagesTypeIpfs, PostsPagesTypeIpfs } from "./types.js";
+import { CommentsTableRow, CommentUpdatesRow, DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType, EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, PageIpfs, PagesInstanceType, PagesTypeIpfs, PagesTypeJson, PageInstanceType, PostSort, ReplySort, Timeframe, RepliesPagesTypeIpfs, PostsPagesTypeIpfs } from "./types.js";
 import { messages } from "./errors.js";
 import { BasePages } from "./pages.js";
 import { Plebbit } from "./plebbit.js";
@@ -31,7 +31,6 @@ export declare function oldScore(comment: {
 export declare function removeNullUndefinedValues<T extends Object>(obj: T): T extends Record<keyof T, T[keyof T]> ? T : Partial<T>;
 export declare function removeUndefinedValuesRecursively<T>(obj: T): T;
 export declare function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T;
-export declare function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T>;
 export declare function throwWithErrorCode(code: keyof typeof messages, details?: {}): void;
 export declare const parseDbResponses: (obj: any) => any;
 export declare function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageInstanceType>;
@@ -45,7 +44,7 @@ export declare function delay(ms: number): Promise<void>;
 export declare function firstResolve<T>(promises: Promise<T>[]): Promise<T>;
 export declare function getErrorCodeFromMessage(message: string): keyof typeof messages;
 export declare function doesDomainAddressHaveCapitalLetter(domainAddress: string): boolean;
-export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeMessageType | DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeVerificationMessageType | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor;
+export declare function decodePubsubMsgFromRpc(pubsubMsg: EncodedDecryptedChallengeMessageType | EncodedDecryptedChallengeAnswerMessageType | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | EncodedDecryptedChallengeVerificationMessageType): DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor | DecryptedChallengeVerificationMessageType | DecryptedChallengeMessageType | DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor;
 export declare function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number): string[];
 export declare function isLinkValid(link: string): boolean;
 export declare function isLinkOfMedia(link: string): boolean;

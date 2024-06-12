@@ -20,10 +20,8 @@ export declare class SortHandler {
         update: CommentUpdatesRow;
     }[], sortName: PostSortName | ReplySortName, options: PageOptions): Promise<PageGenerationRes | undefined>;
     private _generationResToPages;
-    private _generateSubplebbitPosts;
-    private _generateCommentReplies;
-    generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined>;
     generateSubplebbitPosts(): Promise<PostsPagesTypeIpfs | undefined>;
+    generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined>;
     toJSON(): undefined;
 }
 export {};

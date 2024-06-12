@@ -372,7 +372,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
             await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
             log(`New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
-            return commentToInsert.toJSONAfterChallengeVerification();
+            return commentToInsert.toJSONCommentIpfsWithCid();
         }
     }
     async _decryptOrRespondWithFailure(request) {
@@ -778,9 +778,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
     }
     async _updateComment(comment) {
-        const log = Logger("plebbit-js:local-subplebbit:sync:syncComment");
+        const log = Logger("plebbit-js:local-subplebbit:_updateComment");
         // If we're here that means we're gonna calculate the new update and publish it
-        log(`Attempting to update Comment (${comment.cid})`);
+        log(`Attempting to publish new CommentUpdate for comment (${comment.cid})`);
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
@@ -1129,24 +1129,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
-        await this._initBeforeStarting();
-        // update started value twice because it could be started prior lockSubStart
-        await this._updateStartedValue();
-        await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
-        await this._updateStartedValue();
-        this._setState("started");
-        this._setStartedState("publishing-ipns");
-        this._isSubRunningLocally = true;
-        await this.dbHandler.initDbIfNeeded();
-        await this.dbHandler.initDestroyedConnection();
-        await this._setChallengesToDefaultIfNotDefined(log);
-        // Import subplebbit keys onto ipfs node
-        await this._importSubplebbitSignerIntoIpfsIfNeeded();
-        this._subplebbitUpdateTrigger = true;
-        await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
-        await this._repinCommentsIPFSIfNeeded();
-        await this._repinCommentUpdateIfNeeded();
-        await this._listenToIncomingRequests();
+        try {
+            await this._initBeforeStarting();
+            // update started value twice because it could be started prior lockSubStart
+            this._setState("started");
+            await this._updateStartedValue();
+            await this.dbHandler.lockSubStart(); // Will throw if sub is locked already
+            await this._updateStartedValue();
+            this._isSubRunningLocally = true;
+            await this.dbHandler.initDbIfNeeded();
+            await this.dbHandler.initDestroyedConnection();
+            await this._setChallengesToDefaultIfNotDefined(log);
+            // Import subplebbit keys onto ipfs node
+            await this._importSubplebbitSignerIntoIpfsIfNeeded();
+            this._subplebbitUpdateTrigger = true;
+            await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
+            this._setStartedState("publishing-ipns");
+            await this._repinCommentsIPFSIfNeeded();
+            await this._repinCommentUpdateIfNeeded();
+            await this._listenToIncomingRequests();
+        }
+        catch (e) {
+            await this.stop(); // Make sure to reset the sub state
+            throw e;
+        }
         this.syncIpnsWithDb()
             .then(() => this._publishLoop(this.plebbit.publishInterval))
             .catch((reason) => {
@@ -1183,14 +1189,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async stop() {
         const log = Logger("plebbit-js:local-subplebbit:stop");
         if (this.state === "started") {
+            if (this._isSubRunningLocally)
+                await this.dbHandler.unlockSubStart();
             this._isSubRunningLocally = false;
             if (this._publishLoopPromise)
                 await this._publishLoopPromise; // should be in try/catch
             await this.clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this.dbHandler.rollbackAllTransactions();
-            await this.dbHandler.unlockSubState();
-            await this.dbHandler.unlockSubStart();
             await this._updateStartedValue();
             clearInterval(this._publishInterval);
             this.clientsManager.updateIpfsState("stopped");
@@ -1214,8 +1220,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.state === "updating" || this.state === "started")
             await this.stop();
         const ipfsClient = this.clientsManager.getDefaultIpfs();
-        if (!ipfsClient)
-            throw Error("Ipfs client is not defined");
         await moveSubplebbitDbToDeletedDirectory(this.address, this.plebbit);
         if (typeof this.signer?.ipnsKeyName === "string")
             // Key may not exist on ipfs node

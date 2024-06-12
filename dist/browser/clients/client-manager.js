@@ -432,7 +432,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
     async _getParentsPath(subIpns) {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const commentProps = this._comment.toJSONAfterChallengeVerification();
+        const commentProps = this._comment.toJSONCommentIpfsWithCid();
         const pathCache = await parentsPathCache.getItem(commentProps.cid);
         if (pathCache)
             return pathCache.split("/").reverse().join("/");
@@ -465,7 +465,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = await this.fetchSubplebbit(this._comment.subplebbitAddress);
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
-        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(this._comment.toJSONAfterChallengeVerification().postCid);
+        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(this._comment.toJSONCommentIpfsWithCid().postCid);
         if (typeof postTimestamp !== "number")
             throw Error("Failed to fetch cached post timestamp");
         if (!subIpns.postUpdates)

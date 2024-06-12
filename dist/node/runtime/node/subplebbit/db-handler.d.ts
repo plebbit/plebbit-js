@@ -78,6 +78,7 @@ export declare class DbHandler {
     queryAllCommentsOrderedByIdAsc(trx?: Transaction): Promise<CommentsTableRow[]>;
     queryAuthorModEdits(authorSignerAddress: string, trx?: Knex.Transaction): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>;
     querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined>;
+    _deleteComment(cid: string): Promise<void>;
     changeDbFilename(oldDbName: string, newDbName: string): Promise<void>;
     lockSubStart(subAddress?: string): Promise<void>;
     unlockSubStart(subAddress?: string): Promise<void>;

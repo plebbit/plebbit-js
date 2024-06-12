@@ -1,5 +1,4 @@
 import Author from "./author.js";
-import { Signer } from "../signer/index.js";
 import { CommentEditPubsubMessage, CommentIpfsType, CommentPubsubMessage, DecryptedChallengeRequest, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, LocalPublicationProps, ProtocolVersion, PublicationEvents, PublicationPubsubMessage, PublicationTypeName, VotePubsubMessage } from "../types.js";
 import { Plebbit } from "../plebbit.js";
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -12,7 +11,6 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     shortSubplebbitAddress: string;
     timestamp: number;
     signature: JsonSignature;
-    signer?: Signer;
     author: Author;
     protocolVersion: ProtocolVersion;
     state: "stopped" | "updating" | "publishing";
@@ -32,6 +30,7 @@ declare class Publication extends TypedEmitter<PublicationEvents> {
     private _publishToDifferentProviderThresholdSeconds;
     private _setProviderFailureThresholdSeconds;
     private _rpcPublishSubscriptionId?;
+    private _signer?;
     _clientsManager: PublicationClientsManager;
     _plebbit: Plebbit;
     constructor(plebbit: Plebbit);

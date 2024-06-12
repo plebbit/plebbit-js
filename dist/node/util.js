@@ -134,14 +134,6 @@ export function removeNullUndefinedEmptyObjectsValuesRecursively(obj) {
             cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
     return cleanedObj;
 }
-// TODO rename
-export function removeKeysWithUndefinedValues(object) {
-    const newObj = remeda.clone(object);
-    for (const prop in newObj)
-        if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}")
-            delete newObj[prop];
-    return newObj;
-}
 export function throwWithErrorCode(code, details) {
     throw new PlebbitError(code, details);
 }

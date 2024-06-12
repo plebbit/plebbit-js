@@ -150,9 +150,11 @@ export class Comment extends Publication {
         return "comment";
     }
     toJSON() {
-        const base = this.cid
-            ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
-            : this.toJSONPubsubMessagePublication();
+        const base = this.cid && this.author.subplebbit
+            ? this.toJSONAfterChallengeVerification()
+            : this.cid
+                ? this.toJSONCommentIpfsWithCid()
+                : this.toJSONPubsubMessagePublication();
         return {
             ...base,
             ...(typeof this.updatedAt === "number"
@@ -178,18 +180,22 @@ export class Comment extends Publication {
                 }
                 : {}),
             shortSubplebbitAddress: this.shortSubplebbitAddress,
+            shortCid: this.shortCid,
             author: this.author.toJSON()
         };
     }
-    toJSONPagesIpfs(commentUpdate) {
-        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONPagesIpfs");
+    toJSONCommentIpfsWithCid() {
+        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONCommentIpfsWithCid");
         return {
-            comment: {
-                ...this.toJSONIpfs(),
-                author: this.author.toJSONIpfs(),
-                cid: this.cid,
-                postCid: this.postCid
-            },
+            ...this.toJSONIpfs(),
+            author: this.author.toJSONIpfs(),
+            cid: this.cid,
+            postCid: this.postCid
+        };
+    }
+    toJSONPagesIpfs(commentUpdate) {
+        return {
+            comment: this.toJSONCommentIpfsWithCid(),
             update: commentUpdate
         };
     }
@@ -215,8 +221,8 @@ export class Comment extends Publication {
             protocolVersion: this.protocolVersion,
             content: this.content,
             parentCid: this.parentCid,
-            flair: this.flair,
-            spoiler: this.spoiler,
+            flair: this.flair, // TODO should make sure it's initialized by author, not by mod
+            spoiler: this.spoiler, // TODO should make sure it's initalized by author, not by mod
             link: this.link,
             linkWidth: this.linkWidth,
             linkHeight: this.linkHeight,
@@ -226,7 +232,7 @@ export class Comment extends Publication {
     }
     toJSONAfterChallengeVerification() {
         assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
-        return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
+        return { ...this.toJSONCommentIpfsWithCid(), author: this.author.toJSONAfterChallengeVerification() };
     }
     toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress) {
         assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONCommentsTableRowInsert");
@@ -247,7 +253,7 @@ export class Comment extends Publication {
             typeof this.downvoteCount === "number" &&
             typeof this.replyCount === "number", "updatedAt, original, shortCid, upvoteCount, downvoteCount, replyCount should be defined before calling toJSONMerged");
         return {
-            ...this.toJSONAfterChallengeVerification(),
+            ...this.toJSONCommentIpfsWithCid(),
             author: this.author.toJSON(),
             original: this.original,
             upvoteCount: this.upvoteCount,
@@ -359,7 +365,7 @@ export class Comment extends Publication {
         const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
         if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
-            const commentInstance = remeda.pick(this.toJSONAfterChallengeVerification(), ["cid", "signature"]);
+            const commentInstance = remeda.pick(this.toJSONCommentIpfsWithCid(), ["cid", "signature"]);
             // Can potentially throw if resolver if not working
             const signatureValidity = await verifyCommentUpdate(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true);
             if (!signatureValidity.valid) {

@@ -359,7 +359,7 @@ export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCh
     if (!pagesJson)
         throw Error("Failed to retrieve pages");
     const pageCids = pagesJson.pageCids;
-    const commentKeys = remeda.keys.strict(propsToCheckFor);
+    const commentKeys = remeda.keys.strict(remeda.omit(propsToCheckFor, ["signer"]));
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
             const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());

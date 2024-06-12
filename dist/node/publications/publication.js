@@ -47,7 +47,7 @@ class Publication extends TypedEmitter {
     _initBaseLocalProps(props) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
-        this.signer = new Signer(props.signer);
+        this._signer = new Signer(props.signer);
         this.signature = props.signature;
         this.author = new Author(props.author);
         this.protocolVersion = props.protocolVersion;

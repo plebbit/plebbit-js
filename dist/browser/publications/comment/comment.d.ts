@@ -54,16 +54,17 @@ export declare class Comment extends Publication {
     _initChallengeRequestProps(props: DecryptedChallengeRequestComment): void;
     _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson): Promise<void>;
     _updateRepliesPostsInstance(newReplies: CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">): Promise<void>;
-    protected _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]): void;
+    _updateLocalCommentPropsWithVerification(props: NonNullable<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]>): void;
     getType(): PublicationTypeName;
     toJSON(): CommentTypeJson;
+    toJSONCommentIpfsWithCid(): CommentIpfsWithCid;
     toJSONPagesIpfs(commentUpdate: CommentUpdate): {
         comment: CommentIpfsWithCid;
         update: CommentUpdate;
     };
     toJSONIpfs(): CommentIpfsType;
     toJSONPubsubMessagePublication(): CommentPubsubMessage;
-    toJSONAfterChallengeVerification(): CommentIpfsWithCid;
+    toJSONAfterChallengeVerification(): NonNullable<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]>;
     toJSONCommentsTableRowInsert(publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"], authorSignerAddress: string): CommentsTableRowInsert;
     toJSONCommentWithinPage(): PageTypeJson["comments"][0];
     setPostCid(newPostCid: string): void;

@@ -1,4 +1,4 @@
-import { AuthorIpfsType, AuthorTypeJson, AuthorTypeWithCommentUpdate, Nft, SubplebbitAuthor, Wallet } from "../types.js";
+import { AuthorIpfsType, AuthorTypeJson, AuthorTypeWithCommentUpdate, DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, Nft, SubplebbitAuthor, Wallet } from "../types.js";
 import { Flair } from "../subplebbit/types.js";
 declare class Author implements AuthorTypeWithCommentUpdate {
     address: string;
@@ -14,6 +14,7 @@ declare class Author implements AuthorTypeWithCommentUpdate {
     constructor(props: AuthorIpfsType | AuthorTypeWithCommentUpdate);
     toJSON(): AuthorTypeJson;
     toJSONIpfs(): AuthorIpfsType;
+    toJSONAfterChallengeVerification(): NonNullable<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]>["author"];
     toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate;
 }
 export default Author;
