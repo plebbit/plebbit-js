@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import {
-    AuthorFlairSchema,
+    FlairSchema,
     AuthorPubsubJsonSchema,
     ChallengeRequestToEncryptBaseSchema,
     CommentAuthorSchema,
@@ -21,7 +21,7 @@ export const AuthorCommentEditOptionsSchema = z
         commentCid: CommentCidSchema,
         content: z.string().optional(), // TODO Should use CommentIpfsSchema.content later on
         deleted: z.boolean().optional(),
-        flair: AuthorFlairSchema.optional(),
+        flair: FlairSchema.optional(),
         spoiler: z.boolean().optional(),
         reason: z.string().optional()
     })
@@ -30,7 +30,7 @@ export const AuthorCommentEditOptionsSchema = z
 export const ModeratorCommentEditOptionsSchema = z
     .object({
         commentCid: CommentCidSchema,
-        flair: AuthorFlairSchema.optional(),
+        flair: FlairSchema.optional(),
         spoiler: z.boolean().optional(),
         pinned: z.boolean().optional(),
         locked: z.boolean().optional(),

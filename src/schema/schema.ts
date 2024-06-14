@@ -43,7 +43,7 @@ export const AuthorAvatarNftSchema = z
     })
     .strict();
 
-export const AuthorFlairSchema = z.object({
+export const FlairSchema = z.object({
     text: z.string(),
     backgroundColor: z.string().optional(),
     textColor: z.string().optional(),
@@ -57,7 +57,7 @@ export const AuthorPubsubSchema = z.object({
     displayName: z.string().optional(),
     wallets: AuthorWalletsSchema.optional(),
     avatar: AuthorAvatarNftSchema.optional(),
-    flair: AuthorFlairSchema.optional()
+    flair: FlairSchema.optional()
 });
 
 export const CreatePublicationUserOptionsSchema = z.object({
@@ -94,7 +94,7 @@ export const SubplebbitAuthorSchema = z
         postScore: z.number(), // total post karma in the subplebbit
         replyScore: z.number(), // total reply karma in the subplebbit
         banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
-        flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
+        flair: FlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
         firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
         lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
     })

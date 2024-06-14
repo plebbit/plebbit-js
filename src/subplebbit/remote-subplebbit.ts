@@ -2,54 +2,47 @@ import { doesDomainAddressHaveCapitalLetter, isIpns, parseRawPages, shortifyAddr
 import { PostsPages } from "../pages.js";
 import { Plebbit } from "../plebbit.js";
 
-import { PostsPagesTypeIpfs, ProtocolVersion, SubplebbitEvents } from "../types.js";
+import { PostsPagesTypeIpfs, SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
-import { JsonSignature } from "../signer/types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
-    Flair,
-    FlairOwner,
     RemoteSubplebbitJsonType,
     SubplebbitEditOptions,
-    SubplebbitEncryption,
-    SubplebbitFeatures,
     SubplebbitIpfsType,
-    SubplebbitRole,
-    SubplebbitStats,
-    SubplebbitSuggested
+    SubplebbitStats
 } from "./types.js";
 import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole };
-    lastPostCid?: string;
-    lastCommentCid?: string;
+    title?: SubplebbitIpfsType["title"];
+    description?: SubplebbitIpfsType["description"];
+    roles?: SubplebbitIpfsType["roles"];
+    lastPostCid?: SubplebbitIpfsType["lastPostCid"];
+    lastCommentCid?: SubplebbitIpfsType["lastCommentCid"];
     posts: PostsPages;
-    pubsubTopic?: string;
+    pubsubTopic?: SubplebbitIpfsType["pubsubTopic"];
     stats?: SubplebbitStats;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>;
-    address!: string;
+    features?: SubplebbitIpfsType["features"];
+    suggested?: SubplebbitIpfsType["suggested"];
+    flairs?: SubplebbitIpfsType["flairs"];
+    address!: SubplebbitIpfsType["address"];
     shortAddress!: string;
-    statsCid!: string;
-    createdAt!: number;
-    updatedAt!: number;
-    encryption!: SubplebbitEncryption;
-    protocolVersion!: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    signature!: JsonSignature; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
-    rules?: string[];
+    statsCid!: SubplebbitIpfsType["statsCid"];
+    createdAt!: SubplebbitIpfsType["createdAt"];
+    updatedAt!: SubplebbitIpfsType["updatedAt"];
+    encryption!: SubplebbitIpfsType["encryption"];
+    protocolVersion!: SubplebbitIpfsType["protocolVersion"]; // semantic version of the protocol https://semver.org/
+    signature!: SubplebbitIpfsType["signature"]; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    rules?: SubplebbitIpfsType["rules"];
     challenges!: SubplebbitIpfsType["challenges"];
-    postUpdates?: { [timestampRange: string]: string };
+    postUpdates?: SubplebbitIpfsType["postUpdates"];
 
     // Only for Subplebbit instance
     state!: "stopped" | "updating" | "started";

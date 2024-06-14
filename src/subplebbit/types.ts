@@ -1,20 +1,19 @@
 import { z } from "zod";
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
-import { AuthorFlairSchema } from "../schema/schema.js";
-import type { JsonSignature, SignerType } from "../signer/types.js";
+import { FlairSchema } from "../schema/schema.js";
+import type { SignerType } from "../signer/types.js";
 import type { SignerWithPublicKeyAddress } from "../signer/index.js";
-import type {
-    ChallengeType,
-    DecryptedChallengeRequestMessageType,
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    PagesTypeIpfs,
-    PagesTypeJson,
-    PostsPagesTypeIpfs,
-    PostsPagesTypeJson,
-    ProtocolVersion
-} from "../types.js";
+import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, PostsPagesTypeJson } from "../types.js";
 import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
-import * as remeda from "remeda";
+import {
+    ChallengeExcludeSchema,
+    SubplebbitChallengeSchema,
+    SubplebbitEncryptionSchema,
+    SubplebbitFeaturesSchema,
+    SubplebbitIpfsSchema,
+    SubplebbitRoleSchema,
+    SubplebbitSuggestedSchema
+} from "./schema.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -31,55 +30,15 @@ export type SubplebbitStats = {
     allPostCount: number;
 };
 
-export type SubplebbitFeatures = {
-    // any boolean that changes the functionality of the sub, add "no" in front if doesn't default to false
-    noVideos?: boolean; // Not implemented
-    noSpoilers?: boolean; // Not implemented. Author can't comment.spoiler = true their own comments
-    noImages?: boolean; // Not implemented
-    noVideoReplies?: boolean; // Not implemented
-    noSpoilerReplies?: boolean; // Not implemented
-    noImageReplies?: boolean; // Not implemented
-    noPolls?: boolean; // Not impllemented
-    noCrossposts?: boolean; // Not implemented
-    noUpvotes?: boolean; // Not implemented
-    noDownvotes?: boolean; // Not implemented
-    noAuthors?: boolean; // Not implemented. No authors at all, like 4chan
-    anonymousAuthors?: boolean; // Not implemented. Authors are given anonymous ids inside threads, like 4chan
-    noNestedReplies?: boolean; // Not implemented. No nested replies, like old school forums and 4chan
-    safeForWork?: boolean; // Not implemented
-    authorFlairs?: boolean; // Not implemented. Authors can choose their own author flairs (otherwise only mods can)
-    requireAuthorFlairs?: boolean; // Not implemented. Force authors to choose an author flair before posting
-    postFlairs?: boolean; // Not implemented. Authors can choose their own post flairs (otherwise only mods can)
-    requirePostFlairs?: boolean; // Not implemented. Force authors to choose a post flair before posting
-    noMarkdownImages?: boolean; // Not implemented. Don't embed images in text posts markdown
-    noMarkdownVideos?: boolean; // Not implemented. Don't embed videos in text posts markdown
-    markdownImageReplies?: boolean; // Not implemented
-    markdownVideoReplies?: boolean; // Not implemented
-    requirePostLink?: boolean; // post.link must be defined and a valid https url
-    requirePostLinkIsMedia?: boolean; // post.link must be of media (audio, video, image)
-};
+export type SubplebbitFeatures = z.infer<typeof SubplebbitFeaturesSchema>;
 
-export type SubplebbitSuggested = {
-    // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
-    primaryColor?: string;
-    secondaryColor?: string;
-    avatarUrl?: string;
-    bannerUrl?: string;
-    backgroundUrl?: string;
-    language?: string;
-    // TODO: menu links, wiki pages, sidebar widgets
-};
+export type SubplebbitSuggested = z.infer<typeof SubplebbitSuggestedSchema>;
 
-export type Flair = z.infer<typeof AuthorFlairSchema>;
+export type Flair = z.infer<typeof FlairSchema>;
 
-export type SubplebbitEncryption = {
-    type: "ed25519-aes-gcm"; // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    publicKey: string; // 32 bytes base64 string (same as subplebbit.signer.publicKey)
-};
+export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 
-export type SubplebbitRole = { role: "owner" | "admin" | "moderator" };
-
-export type FlairOwner = "post" | "author";
+export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 
 export interface RemoteSubplebbitJsonType extends Omit<SubplebbitIpfsType, "posts"> {
     shortAddress: string;
@@ -97,28 +56,7 @@ export type LocalSubplebbitRpcJsonType = Omit<InternalSubplebbitRpcType, "posts"
     posts?: PostsPagesTypeJson;
 };
 
-export interface SubplebbitIpfsType {
-    posts?: PostsPagesTypeIpfs;
-    challenges: SubplebbitChallenge[];
-    signature: JsonSignature;
-    encryption: SubplebbitEncryption;
-    address: string;
-    createdAt: number;
-    updatedAt: number;
-    pubsubTopic?: string;
-    statsCid: string;
-    protocolVersion: ProtocolVersion; // semantic version of the protocol https://semver.org/
-    postUpdates?: { [timestampRange: string]: string }; // Timestamp range to cid of folder
-    title?: string;
-    description?: string;
-    roles?: { [authorAddress: string]: SubplebbitRole };
-    rules?: string[];
-    lastPostCid?: string;
-    lastCommentCid?: string;
-    features?: SubplebbitFeatures;
-    suggested?: SubplebbitSuggested;
-    flairs?: Record<FlairOwner, Flair[]>; // list of post/author flairs authors and mods can choose from
-}
+export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
 // This type will be stored in the db as the current state
 export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<SubplebbitEditOptions, "settings"> {
@@ -175,39 +113,8 @@ export interface SubplebbitEditOptions
     settings?: SubplebbitSettings;
 }
 
-interface ExcludeSubplebbit {
-    // singular because it only has to match 1 subplebbit
-    addresses: string[]; // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
-    maxCommentCids: number; // maximum amount of comment cids that will be fetched to check
-    postScore?: number;
-    postReply?: number;
-    firstCommentTimestamp?: number; // exclude if author account age is greater or equal than now - firstCommentTimestamp
-}
+export type Exclude = z.infer<typeof ChallengeExcludeSchema>;
 
-export interface Exclude {
-    // all conditions in Exclude are AND, for OR, use another Exclude item in the Exclude array
-    subplebbit?: ExcludeSubplebbit; // exclude if author karma (from challengeRequestMessage.challengeCommentCids) in another subplebbit is greater or equal
-    postScore?: number; // exclude if author post score is greater or equal
-    replyScore?: number; // exclude if author reply score is greater or equal
-    firstCommentTimestamp?: number; // exclude if author account age is greater or equal than now - firstCommentTimestamp
-    challenges?: number[]; // exclude if all challenges with indexes passed, e.g. challenges: [0, 1] excludes if challenges at index 0 AND 1 passed, plural because has to match all
-    post?: boolean; // exclude challenge if publication is a post
-    reply?: boolean; // exclude challenge if publication is a reply
-    vote?: boolean; // exclude challenge if publication is a vote
-    role?: SubplebbitRole["role"][]; // exclude challenge if author.role.role = one of the string, singular because it only has to match 1 role
-    address?: string[]; // exclude challenge if author.address = one of the string, singular because it only has to match 1 address
-    rateLimit?: number; // exclude if publication per hour is lower than ratelimit
-    rateLimitChallengeSuccess?: boolean; // only rate limit if the challengeVerification.challengeSuccess === rateLimitChallengeSuccess
-}
-
-interface ExcludeSubplebbit {
-    // singular because it only has to match 1 subplebbit
-    addresses: string[]; // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
-    maxCommentCids: number; // maximum amount of comment cids that will be fetched to check
-    postScore?: number;
-    replyScore?: number;
-    firstCommentTimestamp?: number; // exclude if author account age is greater or equal than now - firstCommentTimestamp
-}
 interface OptionInput {
     option: string; // option property name, e.g. characterCount
     label: string; // option title, e.g. Character Count
@@ -217,14 +124,7 @@ interface OptionInput {
     required?: boolean; // the option is required, the challenge will throw without it
 }
 
-// public challenges types
-export interface SubplebbitChallenge {
-    // copy values from private subplebbit.settings and publish to subplebbit.challenges
-    exclude?: Exclude[]; // copied from subplebbit.settings.challenges.exclude
-    description?: string; // copied from subplebbit.settings.challenges.description
-    challenge?: string; // copied from ChallengeFile.challenge
-    type?: string; // copied from ChallengeFile.type
-}
+export type SubplebbitChallenge = z.infer<typeof SubplebbitChallengeSchema>;
 
 export interface SubplebbitChallengeSettings {
     // the private settings of the challenge (subplebbit.settings.challenges)

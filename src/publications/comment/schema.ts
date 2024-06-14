@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-    AuthorFlairSchema,
+    FlairSchema,
     AuthorJsonBaseSchema,
     AuthorPubsubJsonSchema,
     AuthorPubsubSchema,
@@ -21,7 +21,6 @@ import { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
 import { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
 import { Comment } from "./comment";
-import { CommentIpfsType, CommentPubsubMessage, CommentTypeJson, CreateCommentOptions } from "./types";
 import { messages } from "../../errors";
 import { keysToOmitFromSignature } from "../../signer/constants";
 import { isLinkValid } from "../../util";
@@ -39,7 +38,7 @@ const CommentContentSchema = z.string();
 
 export const CreateCommentOptionsSchema = z
     .object({
-        flair: AuthorFlairSchema.optional(), // Author chosen colored label for the comment
+        flair: FlairSchema.optional(), // Author chosen colored label for the comment
         spoiler: z.boolean().optional(), // Hide the comment thumbnail behind spoiler warning
         content: CommentContentSchema.optional(),
         title: z.string().optional(),
@@ -127,7 +126,7 @@ const CommentUpdateNoRepliesSchema = z.object({
     downvoteCount: z.number().nonnegative().int(),
     replyCount: z.number().nonnegative().int(),
     edit: AuthorCommentEditPubsubSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
-    flair: AuthorFlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
+    flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
     pinned: z.boolean().optional(),
     locked: z.boolean().optional(), // mod locked a post
