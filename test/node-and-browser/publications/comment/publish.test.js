@@ -172,7 +172,10 @@ describe("publishing comments", async () => {
     it(`A comment with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.wallets = {};
-        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
+        post.signature = await signComment(
+            { ...removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), signer: post.signer },
+            plebbit
+        );
         await publishWithExpectedResult(post, true);
         expect(post.author.wallets).to.deep.equal({});
         await waitTillCommentIsInParentPages(post, plebbit);
@@ -219,7 +222,7 @@ describe("publishing comments", async () => {
             title: "Mock Post - 1690130836.1711266" + Math.random()
         };
 
-        props.signature = await signComment(props, signer, plebbit);
+        props.signature = await signComment({ ...props, signer }, plebbit);
         const post = await plebbit.createComment(props);
         expect(post.signature).to.deep.equal(props.signature);
         await publishWithExpectedResult(post, true);
