@@ -318,13 +318,24 @@ export class ClientsManager extends BaseClientsManager {
             suitableSubplebbit = await new Promise<SubplebbitIpfsType>((resolve, reject) =>
                 promisesToIterate.map((gatewayPromise, i) =>
                     gatewayPromise.then(async (res) => {
-                        if (typeof res === "string")
-                            Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
-                        else {
+                        let error: { error: PlebbitError } | undefined =
+                            remeda.isPlainObject(res) && res.error instanceof PlebbitError ? res : undefined;
+                        if (typeof res === "string") {
+                            try {
+                                Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
+                            } catch (e) {
+                                log.error(`Failed to parse the subplebbit json from gateway`, Object.keys(gatewayFetches)[i], e);
+                                error = {
+                                    error: new PlebbitError("ERR_IPFS_GATEWAY_RESPONDED_WITH_INVALID_JSON", { error: e, response: res })
+                                };
+                            }
+                        }
+
+                        if (error || res === undefined) {
                             // The fetching failed, if res === undefined then it's because it was aborted
                             // else then there's plebbitError
                             Object.values(gatewayFetches)[i].error = res
-                                ? res.error
+                                ? error!.error
                                 : new Error("Fetching from gateway has been aborted/timed out");
                             const gatewaysWithError = remeda.keys
                                 .strict(gatewayFetches)
