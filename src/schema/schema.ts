@@ -13,6 +13,7 @@ export const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
 export const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
 export const ShortSubplebbitAddressSchema = z.string();
 
+export const AuthorAddressSchema = z.string();
 export const ShortAuthorAddressSchema = z.string();
 
 export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)  - Unix timestamp
@@ -51,8 +52,8 @@ export const AuthorFlairSchema = z.object({
 
 // When author creates their publication, this is publication.author
 export const AuthorPubsubSchema = z.object({
-    address: z.string(), // TODO add a regex for checking if it's domain or 12D... address
-    previousCommentCid: z.string().optional(),
+    address: AuthorAddressSchema, // TODO add a regex for checking if it's domain or 12D... address
+    previousCommentCid: CommentCidSchema.optional(),
     displayName: z.string().optional(),
     wallets: AuthorWalletsSchema.optional(),
     avatar: AuthorAvatarNftSchema.optional(),
@@ -66,7 +67,7 @@ export const CreatePublicationUserOptionsSchema = z.object({
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
     challengeAnswers: z.string().array().optional(),
-    challengeCommentCids: z.string().array().optional()
+    challengeCommentCids: CommentCidSchema.array().optional()
 });
 
 export const JsonSignatureSchema = z.object({
@@ -90,8 +91,8 @@ export const PublicationBaseBeforeSigning = z.object({
 
 export const SubplebbitAuthorSchema = z
     .object({
-        postScore: z.number().nonnegative(), // total post karma in the subplebbit
-        replyScore: z.number().nonnegative(), // total reply karma in the subplebbit
+        postScore: z.number(), // total post karma in the subplebbit
+        replyScore: z.number(), // total reply karma in the subplebbit
         banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
         flair: AuthorFlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
         firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
@@ -99,6 +100,10 @@ export const SubplebbitAuthorSchema = z
     })
     .strict();
 export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
+
+export const AuthorWithOptionalCommentUpdate = AuthorPubsubSchema.extend({
+    subplebbit: SubplebbitAuthorSchema.optional() // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
+});
 
 // Challenge requests and pubsub here
 

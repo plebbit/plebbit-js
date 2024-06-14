@@ -7,15 +7,9 @@ import type { ChallengeFile } from "./subplebbit/types.js";
 import type { Plebbit } from "./plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
-import { AuthorAvatarNftSchema, AuthorPubsubSchema, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
+import { AuthorAvatarNftSchema, AuthorPubsubSchema, AuthorWithOptionalCommentUpdate, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
 import { z } from "zod";
-import type {
-    EncodedPubsubSignature,
-    Encrypted,
-    EncryptedEncoded,
-    PubsubSignature,
-    SignerType
-} from "./signer/types.js";
+import type { EncodedPubsubSignature, Encrypted, EncryptedEncoded, PubsubSignature, SignerType } from "./signer/types.js";
 import type {
     ChallengeRequestCommentEditWithSubplebbitAuthor,
     CommentEditPubsubMessage,
@@ -112,9 +106,7 @@ export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | Loc
 
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
-export interface AuthorTypeWithCommentUpdate extends AuthorPubsubType {
-    subplebbit?: SubplebbitAuthor; // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
-}
+export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdate>;
 
 export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 
