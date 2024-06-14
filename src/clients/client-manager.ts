@@ -30,6 +30,7 @@ import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
+import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -321,6 +322,7 @@ export class ClientsManager extends BaseClientsManager {
                 promisesToIterate.map((gatewayPromise, i) =>
                     gatewayPromise.then(async (res) => {
                         if (typeof res === "string")
+                            // Zod here
                             Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
                         else {
                             // The fetching failed, if res === undefined then it's because it was aborted
@@ -565,13 +567,16 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
-            const commentContent: CommentIpfsWithCidDefined = { cid: parentCid, ...JSON.parse(await this._fetchCidP2P(parentCid)) };
+            const commentContent: CommentIpfsWithCidDefined = {
+                cid: parentCid,
+                ...CommentIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(parentCid)))
+            };
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
             const commentContent: CommentIpfsWithCidDefined = {
                 cid: parentCid,
-                ...JSON.parse(await this.fetchFromMultipleGateways({ cid: parentCid }, "comment"))
+                ...CommentIpfsSchema.parse(JSON.parse(await this.fetchFromMultipleGateways({ cid: parentCid }, "comment")))
             };
             return commentContent;
         }
@@ -631,7 +636,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             if (this._defaultIpfsProviderUrl) {
                 this.updateIpfsState("fetching-update-ipfs");
                 try {
-                    const commentUpdate: CommentUpdate = JSON.parse(await this._fetchCidP2P(path)); // zod here
+                    const commentUpdate: CommentUpdate = CommentUpdateSchema.parse(JSON.parse(await this._fetchCidP2P(path)));
                     this.updateIpfsState("stopped");
                     return commentUpdate;
                 } catch (e) {
@@ -641,7 +646,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             } else {
                 // States of gateways should be updated by fetchFromMultipleGateways
                 try {
-                    const update: CommentUpdate = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update")); // zod here
+                    const update: CommentUpdate = CommentUpdateSchema.parse(
+                        JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"))
+                    );
                     return update;
                 } catch (e) {
                     // if does not exist, try the next timestamp range
@@ -656,11 +663,13 @@ export class CommentClientsManager extends PublicationClientsManager {
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs");
-            const commentContent: CommentIpfsType = JSON.parse(await this._fetchCidP2P(cid));
+            const commentContent: CommentIpfsType = CommentIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(cid)));
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
-            const commentContent: CommentIpfsType = JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment")); // zod here
+            const commentContent: CommentIpfsType = CommentIpfsSchema.parse(
+                JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment"))
+            );
             return commentContent;
         }
     }
