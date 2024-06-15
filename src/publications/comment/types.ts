@@ -11,8 +11,8 @@ import {
     CommentWithCommentUpdateJsonSchema,
     CreateCommentOptionsSchema,
     LocalCommentSchema
-} from "./schema";
-import { SubplebbitAuthorSchema } from "../../schema/schema";
+} from "./schema.js";
+import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 

@@ -3,7 +3,7 @@ import { Plebbit } from "../plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
-import { ChainTicker, PageIpfs } from "../types.js";
+import type { ChainTicker } from "../types.js";
 import { verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
 import { PlebbitError } from "../plebbit-error.js";
@@ -31,6 +31,8 @@ import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
+import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
+import type { PageIpfs } from "../pages/types.js";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -224,13 +226,12 @@ export class ClientsManager extends BaseClientsManager {
             this.preResolveSubplebbitIpnsP2P(ipnsName);
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
-            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid)); // zod here
+            subJson = SubplebbitIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(subplebbitCid)));
             this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
         }
         // States of gateways should be updated by fetchFromMultipleGateways
         else subJson = await this._fetchSubplebbitFromGateways(ipnsName);
 
-        // zod here
         const subError = await this._findErrorInSubplebbitRecord(subJson, ipnsName);
         if (subError) {
             this.postFetchSubplebbitInvalidRecord(subJson, subError); // should throw here
@@ -323,7 +324,7 @@ export class ClientsManager extends BaseClientsManager {
                     gatewayPromise.then(async (res) => {
                         if (typeof res === "string")
                             // Zod here
-                            Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
+                            Object.values(gatewayFetches)[i].subplebbitRecord = SubplebbitIpfsSchema.parse(JSON.parse(res)); // did not throw or abort
                         else {
                             // The fetching failed, if res === undefined then it's because it was aborted
                             // else then there's plebbitError

@@ -1,3 +1,4 @@
+console.log("In general types");
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
@@ -7,7 +8,13 @@ import type { ChallengeFile } from "./subplebbit/types.js";
 import type { Plebbit } from "./plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
-import { AuthorAvatarNftSchema, AuthorPubsubSchema, AuthorWithOptionalCommentUpdate, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
+import {
+    AuthorAvatarNftSchema,
+    AuthorPubsubSchema,
+    AuthorWithOptionalCommentUpdate,
+    CreatePublicationUserOptionsSchema,
+    ProtocolVersionSchema
+} from "./schema/schema.js";
 import { z } from "zod";
 import type { EncodedPubsubSignature, Encrypted, EncryptedEncoded, PubsubSignature, SignerType } from "./signer/types.js";
 import type {
@@ -20,17 +27,10 @@ import type {
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
     CommentUpdate,
-    CommentWithCommentUpdateJson,
     LocalCommentOptions,
     SubplebbitAuthor
 } from "./publications/comment/types.js";
-import {
-    CommentsTableRowSchema,
-    PageIpfsSchema,
-    RepliesPagesIpfsSchema,
-    RepliesPagesJsonSchema,
-    ReplySortNameSchema
-} from "./publications/comment/schema.js";
+import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -63,44 +63,6 @@ export interface ParsedPlebbitOptions
     chainProviders: Partial<Record<ChainTicker, ChainProvider>>; // chain providers could be empty if we're using rpc
     dataPath: string | undefined;
 }
-
-export interface PageInstanceType {
-    comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
-    nextCid?: string;
-}
-
-export interface PageTypeJson {
-    comments: CommentWithCommentUpdateJson[];
-    nextCid?: string;
-}
-
-export type PageIpfs = z.infer<typeof PageIpfsSchema>;
-
-export interface PagesInstanceType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageInstanceType>>;
-    pageCids: Record<PostSortName | ReplySortName, string> | {}; // defaults to empty if page instance is not initialized yet
-}
-
-export interface PagesTypeJson {
-    pages: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"];
-    pageCids: RepliesPagesTypeJson["pageCids"] | PostsPagesTypeJson["pageCids"];
-}
-
-export interface PostsPagesTypeJson {
-    pages: Partial<Record<PostSortName, PageTypeJson>>;
-    pageCids: Record<PostSortName, string>;
-}
-
-export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
-
-export type RepliesPagesTypeJson = z.infer<typeof RepliesPagesJsonSchema>;
-
-export interface PostsPagesTypeIpfs {
-    pages: Partial<Record<PostSortName, PageIpfs>>;
-    pageCids: Record<PostSortName, string>;
-}
-
-export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
@@ -248,35 +210,6 @@ export interface EncodedDecryptedChallengeVerificationMessageType
 export interface EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
     extends Omit<EncodedDecryptedChallengeVerificationMessageType, "publication">,
         Pick<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, "publication"> {}
-
-export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
-
-export type PostSortName =
-    | "hot"
-    | "new"
-    | "topHour"
-    | "topDay"
-    | "topWeek"
-    | "topMonth"
-    | "topYear"
-    | "topAll"
-    | "controversialHour"
-    | "controversialDay"
-    | "controversialWeek"
-    | "controversialMonth"
-    | "controversialYear"
-    | "controversialAll"
-    | "active";
-export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
-
-export type SortProps = {
-    score: (comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) => number;
-    timeframe?: Timeframe;
-};
-
-export type PostSort = Record<PostSortName, SortProps>;
-
-export type ReplySort = Record<ReplySortName, SortProps>;
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 

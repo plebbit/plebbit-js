@@ -1,15 +1,13 @@
 import retry, { RetryOperation } from "retry";
-import { parseRawPages, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
-import { RepliesPages } from "../../pages.js";
-import {
+import type {
     CommentsTableRowInsert,
     DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    PageTypeJson,
-    PublicationTypeName,
-    RepliesPagesTypeIpfs
+    PublicationTypeName
 } from "../../types.js";
 
+import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
 import { verifyComment, verifyCommentUpdate } from "../../signer/signatures.js";
@@ -17,7 +15,6 @@ import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
-import { Flair } from "../../subplebbit/types.js";
 import * as remeda from "remeda";
 import type {
     CommentChallengeRequestToEncryptType,
@@ -29,6 +26,8 @@ import type {
     CommentWithCommentUpdateJson,
     LocalCommentOptions
 } from "./types.js";
+import { RepliesPages } from "../../pages/pages.js";
+import { parseRawPages } from "../../pages/util.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -37,39 +36,39 @@ export class Comment extends Publication {
     override clients!: CommentClientsManager["clients"];
 
     // public (CommentType)
-    title?: string;
-    link?: string;
-    linkWidth?: number;
-    linkHeight?: number;
-    thumbnailUrl?: string;
-    thumbnailUrlWidth?: number;
-    thumbnailUrlHeight?: number;
-    cid?: string;
-    parentCid?: string;
-    content?: string;
+    title?: CommentPubsubMessage["title"];
+    link?: CommentPubsubMessage["link"];
+    linkWidth?: CommentPubsubMessage["linkWidth"];
+    linkHeight?: CommentPubsubMessage["linkHeight"];
+    thumbnailUrl?: CommentIpfsType["thumbnailUrl"];
+    thumbnailUrlWidth?: CommentIpfsType["thumbnailUrlWidth"];
+    thumbnailUrlHeight?: CommentIpfsType["thumbnailUrlHeight"];
+    cid?: CommentIpfsWithCidPostCidDefined["cid"];
+    parentCid?: CommentIpfsType["parentCid"];
+    content?: CommentPubsubMessage["content"];
     // Props that get defined after challengeverification
-    previousCid?: string;
-    depth?: number;
-    postCid?: string;
-    linkHtmlTagName?: "a" | "img" | "video" | "audio";
+    previousCid?: CommentIpfsType["previousCid"];
+    depth?: CommentIpfsType["depth"];
+    postCid?: CommentIpfsType["postCid"];
+    linkHtmlTagName?: CommentPubsubMessage["linkHtmlTagName"];
 
     // CommentEdit and CommentUpdate props
     original?: CommentWithCommentUpdateJson["original"];
-    upvoteCount?: number;
-    downvoteCount?: number;
-    replyCount?: number;
-    updatedAt?: number;
+    upvoteCount?: CommentUpdate["upvoteCount"];
+    downvoteCount?: CommentUpdate["downvoteCount"];
+    replyCount?: CommentUpdate["replyCount"];
+    updatedAt?: CommentUpdate["updatedAt"];
     replies!: RepliesPages;
     edit?: CommentUpdate["edit"];
-    flair?: Flair;
-    deleted?: boolean;
-    spoiler?: boolean;
-    pinned?: boolean;
-    locked?: boolean;
-    removed?: boolean;
-    reason?: string;
-    lastChildCid?: string;
-    lastReplyTimestamp?: number;
+    flair?: CommentPubsubMessage["flair"];
+    deleted?: CommentWithCommentUpdateJson["deleted"];
+    spoiler?: CommentIpfsType["spoiler"];
+    pinned?: CommentUpdate["pinned"];
+    locked?: CommentUpdate["locked"];
+    removed?: CommentUpdate["removed"];
+    reason?: CommentUpdate["reason"];
+    lastChildCid?: CommentUpdate["lastChildCid"];
+    lastReplyTimestamp?: CommentUpdate["lastReplyTimestamp"];
 
     // updating states
     updatingState!:

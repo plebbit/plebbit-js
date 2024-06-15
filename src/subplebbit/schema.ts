@@ -1,3 +1,4 @@
+console.log("In subplebbit schema");
 import { z } from "zod";
 import {
     AuthorAddressSchema,
@@ -8,8 +9,8 @@ import {
     ProtocolVersionSchema,
     SignerWithAddressPublicKeySchema,
     SubplebbitAddressSchema
-} from "../schema/schema";
-import { PageIpfsSchema } from "../publications/comment/schema";
+} from "../schema/schema.js";
+import { PostsPagesIpfsSchema } from "../pages/schema.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -63,15 +64,15 @@ export const SubplebbitFeaturesSchema = z.object({
 export const ChallengeExcludeSubplebbitSchema = z.object({
     addresses: SubplebbitAddressSchema.array(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
     maxCommentCids: z.number().nonnegative(), // maximum amount of comment cids that will be fetched to check
-    postScore: z.number().optional(),
-    replyScore: z.number().optional(),
-    firstCommentTimestamp: z.number().optional() // exclude if author account age is greater or equal than now - firstCommentTimestamp
+    postScore: z.number().int().optional(),
+    replyScore: z.number().int().optional(),
+    firstCommentTimestamp: PlebbitTimestampSchema.optional() // exclude if author account age is greater or equal than now - firstCommentTimestamp
 });
 
 export const ChallengeExcludeSchema = z.object({
     subplebbit: ChallengeExcludeSubplebbitSchema.optional(),
-    postScore: z.number().optional(),
-    replyScore: z.number().optional(),
+    postScore: z.number().int().optional(),
+    replyScore: z.number().int().optional(),
     firstCommentTimestamp: PlebbitTimestampSchema.optional(),
     challenges: z.number().nonnegative().array().optional(),
     post: z.boolean().optional(),
@@ -79,7 +80,7 @@ export const ChallengeExcludeSchema = z.object({
     vote: z.boolean().optional(),
     role: SubplebbitRoleSchema.shape.role.array().optional(),
     address: AuthorAddressSchema.array().optional(),
-    rateLimit: z.number().nonnegative().optional(),
+    rateLimit: z.number().nonnegative().int().optional(),
     rateLimitChallengeSuccess: z.boolean().optional()
 });
 
@@ -88,31 +89,6 @@ export const SubplebbitChallengeSchema = z.object({
     description: z.string().optional(), // TODO eventually use ChallengeFile.description
     challenge: z.string().optional(), // TODO eventually use ChallengeFile.challenge
     type: z.string().optional() // TODO eventually use ChallengeFile.type
-});
-
-// Posts schema here
-
-export const PostSortNameSchema = z.enum([
-    "hot",
-    "new",
-    "topHour",
-    "topDay",
-    "topWeek",
-    "topMonth",
-    "topYear",
-    "topAll",
-    "controversialHour",
-    "controversialDay",
-    "controversialWeek",
-    "controversialMonth",
-    "controversialYear",
-    "controversialAll",
-    "active"
-]);
-
-export const PostsPagesIpfsSchema = z.object({
-    pages: z.record(PostSortNameSchema, PageIpfsSchema), // should be partial
-    pageCids: z.record(PostSortNameSchema, CommentCidSchema)
 });
 
 // Subplebbit actual schemas here

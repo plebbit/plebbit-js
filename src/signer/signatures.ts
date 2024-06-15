@@ -14,12 +14,11 @@ import PeerId from "peer-id";
 import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
 import { Plebbit } from "../plebbit.js";
 
-import {
+import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    PageIpfs,
     PubsubMessage
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -34,14 +33,14 @@ import {
     SubplebbitSignedPropertyNames
 } from "./constants.js";
 import { BaseClientsManager } from "../clients/base-client-manager.js";
-import { SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
-import { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
+import type { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
 import type { CommentEditOptionsToSign, CommentEditPubsubMessage } from "../publications/comment-edit/types.js";
-import { VoteOptionsToSign, VotePubsubMessage } from "../publications/vote/types.js";
-import {
+import type { VoteOptionsToSign, VotePubsubMessage } from "../publications/vote/types.js";
+import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
     CommentOptionsToSign,
@@ -51,6 +50,7 @@ import {
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
 import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
 import { CommentSignedPropertyNames } from "../publications/comment/schema.js";
+import type { PageIpfs } from "../pages/types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 

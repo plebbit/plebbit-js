@@ -1,14 +1,17 @@
+console.log("In pages client manager");
 import assert from "assert";
-import { BasePages } from "../pages.js";
 import { BaseClientsManager, LoadType } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { PageIpfs, PostSortName, ReplySortName } from "../types.js";
+import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
 import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid, throwWithErrorCode } from "../util.js";
+import { isIpfsCid, throwWithErrorCode } from "../util.js";
+import { BasePages } from "../pages/pages.js";
+import { PageIpfsSchema } from "../pages/schema.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -162,7 +165,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
-            const page = <PageIpfs>JSON.parse(await this._fetchCidP2P(pageCid));
+            const page = PageIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(pageCid)));
             this.updateIpfsState("stopped", sortTypes);
             return page;
         } catch (e) {
@@ -172,6 +175,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
+        // Zod here
         if (!isIpfsCid(pageCid)) throw Error(`fetchPage: pageCid (${pageCid}) is not a valid CID`);
 
         const log = Logger("plebbit-js:pages:getPage");
@@ -179,7 +183,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         let page: PageIpfs;
         if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs"));
+        else page = PageIpfsSchema.parse(JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs")));
 
         if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
         return page;

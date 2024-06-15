@@ -1,4 +1,4 @@
-import { TIMEFRAMES_TO_SECONDS, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import PlebbitIndex from "../index.js";
@@ -10,7 +10,6 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Publication from "../publications/publication.js";
 import { v4 as uuidv4 } from "uuid";
 import { createMockIpfsClient } from "./mock-ipfs-client.js";
-import { BasePages } from "../pages.js";
 import { EventEmitter } from "events";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
@@ -18,11 +17,13 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
-import { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
 import { signComment } from "../signer/signatures.js";
+import { BasePages } from "../pages/pages.js";
+import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];

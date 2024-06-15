@@ -1,4 +1,4 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
+import { throwWithErrorCode, timestamp } from "../../../util.js";
 import knex, { Knex } from "knex";
 import path from "path";
 import assert from "assert";
@@ -32,6 +32,7 @@ import * as remeda from "remeda";
 import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
 import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
 import { CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",

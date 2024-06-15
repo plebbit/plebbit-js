@@ -1,8 +1,8 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types.js";
+import type { GenericClientEvents } from "../types.js";
 import Publication from "../publications/publication.js";
 import { Comment } from "../publications/comment/comment.js";
-import { BasePages } from "../pages.js";
+import { BasePages } from "../pages/pages.js";
 import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 
 // Types

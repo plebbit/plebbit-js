@@ -1,5 +1,5 @@
 import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, nativeFunctions, createIpfsClient } from "./runtime/node/util.js";
-import {
+import type {
     StorageInterface,
     ChainProvider,
     GatewayClient,
@@ -36,7 +36,7 @@ import { ClientsManager } from "./clients/client-manager.js";
 import PlebbitRpcClient from "./clients/plebbit-rpc-client.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { GenericPlebbitRpcStateClient } from "./clients/plebbit-rpc-state-client.js";
-import {
+import type {
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
     CreateNewLocalSubplebbitUserOptions,
@@ -54,12 +54,12 @@ import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
-import { CreateSignerOptions } from "./signer/types.js";
-import { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
+import type { CreateSignerOptions } from "./signer/types.js";
+import type { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
 import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
-import { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./publications/vote/types.js";
+import type { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
-import { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
@@ -499,6 +499,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             | LocalSubplebbit = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        // Zod here
         if ("address" in options && typeof options.address !== "string")
             throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { options });
         log.trace("Received options: ", options);

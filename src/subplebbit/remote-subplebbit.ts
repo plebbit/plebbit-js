@@ -1,8 +1,7 @@
-import { doesDomainAddressHaveCapitalLetter, isIpns, parseRawPages, shortifyAddress } from "../util.js";
-import { PostsPages } from "../pages.js";
+import { doesDomainAddressHaveCapitalLetter, isIpns, shortifyAddress } from "../util.js";
 import { Plebbit } from "../plebbit.js";
 
-import { PostsPagesTypeIpfs, SubplebbitEvents } from "../types.js";
+import type { SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
 import { TypedEmitter } from "tiny-typed-emitter";
@@ -18,6 +17,9 @@ import type {
 } from "./types.js";
 import * as remeda from "remeda";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import { PostsPages } from "../pages/pages.js";
+import type { PostsPagesTypeIpfs } from "../pages/types.js";
+import { parseRawPages } from "../pages/util.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -91,7 +93,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async _updateLocalPostsInstance(
-        newPosts: SubplebbitIpfsType["posts"] | RemoteSubplebbitJsonType["posts"] | Pick<PostsPagesTypeIpfs, "pageCids">
+        newPosts:
+            | SubplebbitIpfsType["posts"]
+            | RemoteSubplebbitJsonType["posts"]
+            | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">
     ) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
         if (!newPosts)

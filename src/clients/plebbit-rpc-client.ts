@@ -1,5 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
-import { PageIpfs, PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types.js";
+import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
@@ -13,6 +13,7 @@ import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
 import { DecryptedChallengeRequestVote } from "../publications/vote/types.js";
 import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../publications/comment/types.js";
+import type { PageIpfs } from "../pages/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 

@@ -1,3 +1,5 @@
+console.log("In comment schema");
+
 import { z } from "zod";
 import {
     FlairSchema,
@@ -15,15 +17,16 @@ import {
     ShortSubplebbitAddressSchema,
     SignerWithAddressPublicKeySchema,
     SubplebbitAuthorSchema
-} from "../../schema/schema";
-import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema";
-import { CommentSignedPropertyNamesUnion } from "../../signer/types";
+} from "../../schema/schema.js";
+import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema.js";
+import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
-import { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../types";
-import { Comment } from "./comment";
-import { messages } from "../../errors";
-import { keysToOmitFromSignature } from "../../signer/constants";
-import { isLinkValid } from "../../util";
+import type { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../pages/types";
+import { Comment } from "./comment.js";
+import { messages } from "../../errors.js";
+import { keysToOmitFromSignature } from "../../signer/constants.js";
+import { isLinkValid } from "../../util.js";
+import { RepliesPagesIpfsSchema, RepliesPagesJsonSchema } from "../../pages/schema.js";
 
 // Comment schemas here
 
@@ -224,28 +227,3 @@ export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinement
     .or(z.custom<Comment>((data) => data instanceof Comment))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));
-
-// Comment pages here
-
-export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
-
-export const PageIpfsSchema = z.object({
-    comments: z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema, update: CommentUpdateSchema }).array(),
-    nextCid: CommentCidSchema.optional()
-});
-
-const PageJsonSchema = z.object({
-    comments: CommentWithCommentUpdateJsonSchema.array(),
-    nextCid: CommentCidSchema.optional()
-});
-
-// need to prevent infinite recursion here
-export const RepliesPagesIpfsSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
-    pageCids: z.record(ReplySortNameSchema, CommentCidSchema)
-});
-
-export const RepliesPagesJsonSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageJsonSchema),
-    pageCids: RepliesPagesIpfsSchema.shape.pageCids
-});

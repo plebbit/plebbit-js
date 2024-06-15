@@ -1,3 +1,7 @@
+// Make sure to import schema in the correct order
+import * as _ from "./schema/schema.js";
+import * as _ignore2 from "./publications/comment/schema.js";
+
 import polyfill from "./runtime/node/polyfill.js";
 polyfill();
 import * as PlebbitClass from "./plebbit.js";

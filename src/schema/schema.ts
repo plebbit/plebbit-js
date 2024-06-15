@@ -1,6 +1,8 @@
+console.log("In general schema");
+
 import { z } from "zod";
-import { isIpfsCid } from "../util";
-import { messages } from "../errors";
+import { isIpfsCid } from "../util.js";
+import { messages } from "../errors.js";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });
