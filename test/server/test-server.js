@@ -157,6 +157,16 @@ const setUpMockGateways = async () => {
             throw err;
         });
 
+    // Create an HTTP server that responds with html string instead of json
+    http.createServer(async (req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.end("<html><body><div class='myClass'><div id='myId'>Hello World!!</div></div></body></html>");
+    })
+        .listen(13418)
+        .on("error", (err) => {
+            throw err;
+        });
+
     // Set up mock gateways for subplebbit gateway fetching tests
     const plebbit = await mockGatewayPlebbit();
     const fetchLatestSubplebbitJson = async () => {

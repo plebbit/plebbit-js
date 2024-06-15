@@ -348,6 +348,9 @@ if (!isRpcFlagOn())
         const hourLateGateway = `http://localhost:14005`; // This gateway will respond immedietly with subplebbitRecordHourOld;
         const twoHoursLateGateway = `http://localhost:14006`; // This gateway will respond immedietly with subplebbitRecordHourOld;
 
+        // This gateway will respond with HTML string instead of json
+        const htmlGateway = `http://localhost:13418`;
+
         const subAddress = signers[0].address;
         let plebbit;
 
@@ -388,8 +391,15 @@ if (!isRpcFlagOn())
             const customPlebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [errorGateway, errorGateway2, stallingGateway] });
             customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5 * 1000; // change timeout from 5min to 5s
 
-            // should faill
-            await assert.isRejected(customPlebbit.getSubplebbit(subAddress), messages["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS"]);
+            try {
+                await customPlebbit.getSubplebbit(subAddress);
+                expect.fail("Should throw");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(e.details.gatewayToError[errorGateway].details.statusText).to.equal("Too Many Requests");
+                expect(e.details.gatewayToError[errorGateway2].details.status).to.equal(430);
+                expect(e.details.gatewayToError[stallingGateway].message).to.equal("Fetching from gateway has been aborted/timed out");
+            }
         });
 
         it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
@@ -435,6 +445,33 @@ if (!isRpcFlagOn())
             const diff = latestSub.updatedAt - gatewaySub.updatedAt;
             const buffer = 5;
             expect(diff).to.be.lessThan(buffer);
+        });
+
+        it(`Fetching from a gateway that responds with html string throws proper error`, async () => {
+            const customPlebbit = await mockGatewayPlebbit({
+                ipfsGatewayUrls: [htmlGateway]
+            });
+
+            customPlebbit._clientsManager.getGatewayTimeoutMs = () => 5000;
+
+            try {
+                await customPlebbit.getSubplebbit(subplebbitAddress);
+                expect.fail("Should not succeed");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(e.details.gatewayToError[htmlGateway].code).to.equal("ERR_IPFS_GATEWAY_RESPONDED_WITH_INVALID_JSON");
+            }
+        });
+        it(`Fetching from a gateway that takes long time and html gateway will eventually use the long time gateway`, async () => {
+            // Html gateway will respond right away with html, but plebbit-js is gonna fail in parsing it
+            // So it will opt to use the stalling gateway
+            const customPlebbit = await mockGatewayPlebbit({
+                ipfsGatewayUrls: [htmlGateway, stallingGateway]
+            });
+
+            const sub = await customPlebbit.getSubplebbit(subplebbitAddress);
+
+            expect(sub.updatedAt).to.be.a("number"); // should load successfully
         });
     });
 
