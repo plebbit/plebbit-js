@@ -230,7 +230,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
                     resolve(update);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
+                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt, will reattempt`, e);
                     if (e instanceof PlebbitError && this._isCriticalErrorWhenLoading(e)) resolve(e);
                     else this._ipnsLoadingOperation!.retry(<Error>e);
                 }
