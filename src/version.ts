@@ -1,7 +1,8 @@
-import { ProtocolVersion } from "./types.js";
+import { ProtocolVersionSchema } from "./schema/schema.js";
 
-const protocolVersion: ProtocolVersion = "1.0.0";
-const plebbitJsVersion = "0.0.1";
+const protocolVersion = ProtocolVersionSchema.parse("1.0.0");
+
+const plebbitJsVersion = "0.0.1"; // TODO should be imported from package.json
 export default {
     PLEBBIT_JS_VERSION: plebbitJsVersion,
     DB_VERSION: 14,

@@ -11,14 +11,17 @@ export const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
 });
 
 export const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
-export const ShortSubplebbitAddressSchema = z.string();
+export const ShortSubplebbitAddressSchema = z.string(); // TODO should have validation here
 
-export const AuthorAddressSchema = z.string();
-export const ShortAuthorAddressSchema = z.string();
+export const AuthorAddressSchema = z.string(); // TODO should have validation here
+export const ShortAuthorAddressSchema = z.string(); // TODO should have validation here
 
 export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)  - Unix timestamp
 
-export const ProtocolVersionSchema = z.string();
+const regexSemverNumberedGroups =
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+
+export const ProtocolVersionSchema = z.string().regex(regexSemverNumberedGroups);
 
 const WalletSchema = z.object({
     address: z.string(),
