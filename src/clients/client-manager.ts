@@ -33,6 +33,7 @@ import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { PageIpfs } from "../pages/types.js";
+import { ZodError } from "zod";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -208,7 +209,7 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    async fetchSubplebbit(subAddress: string) {
+    async fetchSubplebbit(subAddress: string): Promise<SubplebbitIpfsType> {
         const ipnsName = await this.resolveSubplebbitAddressIfNeeded(subAddress);
         // if ipnsAddress is undefined then it will be handled in postResolveTextRecordSuccess
 
@@ -217,7 +218,7 @@ export class ClientsManager extends BaseClientsManager {
         return this._fetchSubplebbitIpns(ipnsName);
     }
 
-    private async _fetchSubplebbitIpns(ipnsName: string) {
+    private async _fetchSubplebbitIpns(ipnsName: string): Promise<SubplebbitIpfsType> {
         // This function should fetch SubplebbitIpfs, parse it and verify its signature
         // Then return SubplebbitIpfs
         this.preResolveSubplebbitIpns(ipnsName);
@@ -226,7 +227,8 @@ export class ClientsManager extends BaseClientsManager {
             this.preResolveSubplebbitIpnsP2P(ipnsName);
             const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
             this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
-            subJson = SubplebbitIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(subplebbitCid)));
+            const rawSubJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
+            subJson = SubplebbitIpfsSchema.parse(rawSubJson);
             this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
         }
         // States of gateways should be updated by fetchFromMultipleGateways
@@ -322,15 +324,26 @@ export class ClientsManager extends BaseClientsManager {
             suitableSubplebbit = await new Promise<SubplebbitIpfsType>((resolve, reject) =>
                 promisesToIterate.map((gatewayPromise, i) =>
                     gatewayPromise.then(async (res) => {
-                        if (typeof res === "string")
-                            // Zod here
-                            Object.values(gatewayFetches)[i].subplebbitRecord = SubplebbitIpfsSchema.parse(JSON.parse(res)); // did not throw or abort
-                        else {
-                            // The fetching failed, if res === undefined then it's because it was aborted
-                            // else then there's plebbitError
-                            Object.values(gatewayFetches)[i].error = res
+                        let error: PlebbitError | ZodError | Error | undefined =
+                            remeda.isPlainObject(res) && res.error
                                 ? res.error
-                                : new Error("Fetching from gateway has been aborted/timed out");
+                                : res === undefined // The request timed out for whatever reason
+                                  ? new Error("Fetching from gateway has been aborted/timed out")
+                                  : undefined;
+                        if (typeof res === "string") {
+                            // Gateway responded, let's try to parse the json and make sure the schema is correct
+                            try {
+                                Object.values(gatewayFetches)[i].subplebbitRecord = SubplebbitIpfsSchema.parse(JSON.parse(res)); // Could throw because of zod parsing or json parsing
+                            } catch (e) {
+                                error = <Error | ZodError>e;
+                            }
+                        }
+
+                        if (error) {
+                            // The fetching failed, if res === undefined then it's because it was aborted
+                            // else it failed because of zod or json parsing, or because the gateway refused the request for some reason
+                            Object.values(gatewayFetches)[i].error = error;
+                            delete Object.values(gatewayFetches)[i].error!["stack"];
                             const gatewaysWithError = remeda.keys
                                 .strict(gatewayFetches)
                                 .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
@@ -664,13 +677,11 @@ export class CommentClientsManager extends PublicationClientsManager {
     async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-ipfs");
-            const commentContent: CommentIpfsType = CommentIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(cid)));
+            const commentContent = CommentIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(cid)));
             this.updateIpfsState("stopped");
             return commentContent;
         } else {
-            const commentContent: CommentIpfsType = CommentIpfsSchema.parse(
-                JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment"))
-            );
+            const commentContent = CommentIpfsSchema.parse(JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment")));
             return commentContent;
         }
     }

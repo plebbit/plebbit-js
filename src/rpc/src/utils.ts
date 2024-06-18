@@ -30,6 +30,7 @@ export const encodePubsubMsg = (
         | EncodedDecryptedChallengeRequestMessageType
         | EncodedDecryptedChallengeVerificationMessageType = clone(pubsubMsg);
 
+    // zod here
     encodedMsg.challengeRequestId = uint8ArrayToString(pubsubMsg.challengeRequestId, "base58btc");
     if (pubsubMsg.encrypted)
         encodedMsg.encrypted = {

@@ -161,7 +161,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
+    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
             const page = PageIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(pageCid)));

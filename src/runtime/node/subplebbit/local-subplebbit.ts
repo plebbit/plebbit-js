@@ -534,6 +534,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:_decryptOrRespondWithFailure");
         let decrypted: DecryptedChallengeAnswer | DecryptedChallengeRequest;
         try {
+            // zod here
             decrypted = JSON.parse(
                 await decryptEd25519AesGcmPublicKeyBuffer(request.encrypted, this.signer.privateKey, request.signature.publicKey)
             );

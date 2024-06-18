@@ -130,6 +130,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
+        if (newProps.protocolVersion) this.protocolVersion = newProps.protocolVersion;
 
         this.roles = newProps.roles;
         this.features = newProps.features;

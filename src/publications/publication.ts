@@ -217,6 +217,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             log(
                 `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
             );
+            // ZOD here
             const decryptedChallenge: DecryptedChallenge = JSON.parse(
                 await decryptEd25519AesGcm(
                     msgParsed.encrypted,
@@ -254,6 +255,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 this._updatePublishingState("succeeded");
                 log(`Challenge (${msgParsed.challengeRequestId}) has passed`);
                 if (msgParsed.encrypted) {
+                    // zod here
                     const decryptedProps: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = JSON.parse(
                         await decryptEd25519AesGcm(
                             msgParsed.encrypted,
