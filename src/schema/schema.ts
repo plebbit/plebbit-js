@@ -1,5 +1,3 @@
-console.log("In general schema");
-
 import { z } from "zod";
 import { isIpfsCid } from "../util.js";
 import { messages } from "../errors.js";

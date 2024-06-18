@@ -1,5 +1,3 @@
-console.log("In comment schema");
-
 import { z } from "zod";
 import {
     FlairSchema,

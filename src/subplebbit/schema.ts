@@ -1,4 +1,3 @@
-console.log("In subplebbit schema");
 import { z } from "zod";
 import {
     AuthorAddressSchema,

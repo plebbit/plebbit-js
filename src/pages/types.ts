@@ -1,4 +1,3 @@
-console.log("In pages types");
 import { z } from "zod";
 import {
     PageIpfsSchema,

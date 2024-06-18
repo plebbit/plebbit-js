@@ -1,4 +1,3 @@
-console.log("In pages client manager");
 import assert from "assert";
 import { BaseClientsManager, LoadType } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";

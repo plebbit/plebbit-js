@@ -1,4 +1,3 @@
-console.log("In general types");
 import { create as CreateIpfsClient, Options as IpfsHttpClientOptions } from "kubo-rpc-client";
 import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
