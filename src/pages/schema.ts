@@ -1,4 +1,3 @@
-console.log("In pages schema");
 import { z } from "zod";
 import { CommentCidSchema } from "../schema/schema.js";
 import {
@@ -10,12 +9,12 @@ import {
 // Pages schemas here
 
 export const PageIpfsSchema = z.object({
-    comments: z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema, update: CommentUpdateSchema }).array(),
+    comments: z.lazy(() => z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema, update: CommentUpdateSchema }).array()),
     nextCid: CommentCidSchema.optional()
 });
 
 export const PageJsonSchema = z.object({
-    comments: CommentWithCommentUpdateJsonSchema.array(),
+    comments: z.lazy(() => CommentWithCommentUpdateJsonSchema.array()),
     nextCid: CommentCidSchema.optional()
 });
 
