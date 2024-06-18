@@ -61,6 +61,7 @@ import type { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./p
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
 import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
+import { SubplebbitAddressSchema } from "./schema/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -256,8 +257,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         this._clientsManager = new ClientsManager(this);
     }
 
-    async getSubplebbit(subplebbitAddress: string) {
-        const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
+    async getSubplebbit(subplebbitAddress: z.infer<typeof SubplebbitAddressSchema>) {
+        const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const subplebbit = await this.createSubplebbit({ address: parsedAddress });
 
         if (typeof subplebbit.createdAt === "number") return <RpcLocalSubplebbit | LocalSubplebbit>subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
@@ -268,7 +270,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             await subplebbit.update();
             await pTimeout(updatePromise, {
                 milliseconds: timeoutMs,
-                message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbitAddress}) timed out after ${timeoutMs}ms`)
+                message: updateError || new TimeoutError(`plebbit.getSubplebbit(${subplebbit.address}) timed out after ${timeoutMs}ms`)
             });
         } catch (e) {
             subplebbit.removeAllListeners("error");
