@@ -15,7 +15,6 @@ import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-
 import {
     doesDomainAddressHaveCapitalLetter,
     genToArray,
@@ -91,8 +90,9 @@ import {
     uniqueAuthorFields,
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
-import { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
+import type { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
+import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -255,6 +255,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         if (!this.pubsubTopic) this.pubsubTopic = remeda.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
+        if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
 
         await this._updateDbInternalState(this.toJSONInternal());
 
@@ -333,6 +334,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
+        SubplebbitIpfsSchema.parse(newSubplebbitRecord); // Just to see if it's a valid record
         await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
         this._subplebbitUpdateTrigger = false;
 
@@ -1325,6 +1327,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _initBeforeStarting() {
+        this.protocolVersion = env.PROTOCOL_VERSION;
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this._challengeAnswerPromises)
             this._challengeAnswerPromises = new LRUCache<string, Promise<string[]>>({
