@@ -2,7 +2,12 @@ import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { mockRemotePlebbit, publishRandomPost, publishWithExpectedResult } from "../../../dist/node/test/test-util.js";
+import {
+    mockRemotePlebbit,
+    publishRandomPost,
+    publishWithExpectedResult,
+    resolveWhenConditionIsTrue
+} from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 const commentToEditCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";
@@ -72,6 +77,37 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
         plebbit = await mockRemotePlebbit();
     });
 
+    it(`A mod can edit spoiler and locked for their own comment or another author's`, async () => {
+        const authorSigners = [await plebbit.createSigner(), roles[2].signer];
+
+        for (const authorSigner of authorSigners) {
+            const authorPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: authorSigner }, false);
+            expect(authorPost._signer.address).to.equal(authorSigner.address);
+
+            expect(authorPost.locked).to.undefined;
+            expect(authorPost.spoiler).to.be.undefined;
+            const fieldsToChange = {
+                locked: true,
+                spoiler: true
+            };
+
+            const modEdit = await plebbit.createCommentEdit({
+                ...fieldsToChange,
+                commentCid: authorPost.cid,
+                signer: roles[2].signer,
+                subplebbitAddress
+            });
+
+            await publishWithExpectedResult(modEdit, true);
+
+            const authorPostRemote = await plebbit.getComment(authorPost.cid);
+            await authorPostRemote.update();
+
+            await resolveWhenConditionIsTrue(authorPostRemote, () => authorPostRemote.locked === true && authorPostRemote.spoiler === true);
+
+            await authorPostRemote.stop();
+        }
+    });
     it(`A mod can't mix author and mod edit fields`, async () => {
         // The signer is both an author and a mod
         const modPost = await publishRandomPost(subplebbitAddress, plebbit, { signer: roles[2].signer }, false);
