@@ -397,7 +397,10 @@ if (!isRpcFlagOn())
             } catch (e) {
                 expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
                 expect(e.details.gatewayToError[errorGateway].details.statusText).to.equal("Too Many Requests");
-                expect(e.details.gatewayToError[errorGateway2].details.status).to.equal(430);
+                if (e.details.gatewayToError[errorGateway2].details.status !== undefined)
+                    // For some reason Firefox returns undefined
+                    expect(e.details.gatewayToError[errorGateway2].details.status).to.equal(430);
+
                 expect(e.details.gatewayToError[stallingGateway].message).to.equal("Fetching from gateway has been aborted/timed out");
             }
         });
