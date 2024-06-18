@@ -731,12 +731,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessage) {
-        const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"];
+        const modOnlyFields: (keyof ModeratorCommentEditOptions)[] = ["pinned", "locked", "removed", "commentAuthor"]; // zod here
         return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
     }
 
     private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessage) {
-        const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"];
+        const modOnlyFields: (keyof AuthorCommentEditOptions)[] = ["content", "deleted"]; // zod here
         return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
     }
 
@@ -808,6 +808,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
+            // Can probably zod this
             const forbiddenCommentFields: (keyof CommentWithCommentUpdateJson | "deleted" | "signer")[] = [
                 "cid",
                 "signer",
@@ -859,7 +860,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToBeEdited = await this.dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const modRoles: SubplebbitRole["role"][] = ["moderator", "owner", "admin"];
+            const modRoles: SubplebbitRole["role"][] = ["moderator", "owner", "admin"]; // Zod here
             const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
 
             const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);
