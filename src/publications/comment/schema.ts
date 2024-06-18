@@ -212,12 +212,6 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
 
 // Plebbit.createComment here
 
-// TODO move the refine function to createComment args
-const validateCommentPropsRefine: Parameters<typeof CreateCommentOptionsSchema.refine> = [
-    (options) => Boolean(options.link || options.title || options.content),
-    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
-];
-
 export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentJsonSchema)
     .or(CommentIpfsWithRefinmentSchema)
     .or(CommentIpfsWithCidDefinedSchema)
