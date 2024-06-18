@@ -61,7 +61,7 @@ import type { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./p
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
 import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
-import { SubplebbitAddressSchema } from "./schema/schema.js";
+import { CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -285,9 +285,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         return subplebbit;
     }
 
-    async getComment(cid: string): Promise<Comment> {
+    async getComment(cid: z.infer<typeof CommentCidSchema>): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:getComment");
-        const comment = await this.createComment({ cid });
+        const parsedCid = CommentCidSchema.parse(cid);
+        const comment = await this.createComment({ cid: parsedCid });
 
         // The reason why we override this function is because we don't want update() to load the IPNS
         //@ts-expect-error
@@ -304,7 +305,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         comment._retryLoadingCommentUpdate = originalLoadMethod;
 
         if (error) {
-            log.error(`Failed to load comment (${cid}) due to error: ${error}`);
+            log.error(`Failed to load comment (${parsedCid}) due to error: ${error}`);
             throw error;
         }
         return comment;
