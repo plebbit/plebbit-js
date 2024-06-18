@@ -1,12 +1,6 @@
 import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
-import {
-    InternalSubplebbitRpcType,
-    LocalSubplebbitJsonType,
-    LocalSubplebbitRpcJsonType,
-    SubplebbitEditOptions,
-    SubplebbitSettings
-} from "./types.js";
+import type { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import {
     DecryptedChallengeAnswerMessageType,
@@ -27,10 +21,10 @@ import { PlebbitError } from "../plebbit-error.js";
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
-    protected _usingDefaultChallenge!: boolean;
+    protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded";
     signer!: InternalSubplebbitRpcType["signer"];
-    settings?: SubplebbitSettings;
+    settings?: InternalSubplebbitRpcType["settings"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -38,7 +32,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._setStartedState("stopped");
     }
 
-    override toJSON(): LocalSubplebbitRpcJsonType | LocalSubplebbitJsonType {
+    override toJSON(): LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType {
         return {
             ...this.toJSONInternalRpc(),
             posts: this.posts.toJSON(),

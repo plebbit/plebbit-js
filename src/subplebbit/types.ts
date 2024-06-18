@@ -4,17 +4,25 @@ import { FlairSchema } from "../schema/schema.js";
 import type { SignerType } from "../signer/types.js";
 import type { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../types.js";
-import type { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import {
     ChallengeExcludeSchema,
+    CreateNewLocalSubplebbitUserOptionsSchema,
+    CreateRemoteSubplebbitOptionsSchema,
+    InternalSubplebbitRecordSchema,
+    LocalSubplebbitJsonSchema,
+    RemoteSubplebbitJsonSchema,
+    RpcInternalSubplebbitRecordSchema,
+    RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
+    SubplebbitChallengeSettingSchema,
     SubplebbitEncryptionSchema,
     SubplebbitFeaturesSchema,
     SubplebbitIpfsSchema,
     SubplebbitRoleSchema,
+    SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema
 } from "./schema.js";
-import { PostsPagesTypeJson } from "../pages/types.js";
+import type { PostsPagesTypeJson } from "../pages/types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -41,47 +49,21 @@ export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 
-export interface RemoteSubplebbitJsonType extends Omit<SubplebbitIpfsType, "posts"> {
-    shortAddress: string;
-    posts?: PostsPagesTypeJson;
-}
+export type RemoteSubplebbitJsonType = z.infer<typeof RemoteSubplebbitJsonSchema>;
 
-export interface LocalSubplebbitJsonType extends Omit<InternalSubplebbitType, "posts" | "signer"> {
-    shortAddress: string;
-    posts?: PostsPagesTypeJson;
-    signer: InternalSubplebbitRpcType["signer"];
-}
+export type LocalSubplebbitJsonType = z.infer<typeof LocalSubplebbitJsonSchema>;
 
-export type LocalSubplebbitRpcJsonType = Omit<InternalSubplebbitRpcType, "posts"> & {
-    shortAddress: string;
-    posts?: PostsPagesTypeJson;
-};
+export type LocalSubplebbitRpcJsonType = z.infer<typeof RpcLocalSubplebbitJsonSchema>;
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
-// This type will be stored in the db as the current state
-export interface InternalSubplebbitType extends SubplebbitIpfsType, Pick<SubplebbitEditOptions, "settings"> {
-    signer: Pick<SignerWithPublicKeyAddress, "address" | "privateKey" | "type" | "shortAddress" | "publicKey">;
-    _subplebbitUpdateTrigger: boolean;
-    _usingDefaultChallenge: boolean;
-}
+export type InternalSubplebbitType = z.infer<typeof InternalSubplebbitRecordSchema>;
 
-// This will be transmitted over RPC connection for local subs
-export interface InternalSubplebbitRpcType extends Omit<InternalSubplebbitType, "signer" | "_subplebbitUpdateTrigger"> {
-    started: RpcLocalSubplebbit["started"];
-    signer: Pick<InternalSubplebbitType["signer"], "address" | "type" | "shortAddress" | "publicKey">;
-}
+export type InternalSubplebbitRpcType = z.infer<typeof RpcInternalSubplebbitRecordSchema>;
 
-// If you're trying to create a subplebbit instance with any props, all props are optional except address
-export interface CreateRemoteSubplebbitOptions extends Partial<SubplebbitIpfsType> {
-    address: SubplebbitIpfsType["address"];
-}
+export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 
-// These are the options to create a new local sub, provided by user (not modified like CreateNewLocalSubplebbitOptions)
-
-export interface CreateNewLocalSubplebbitUserOptions extends Omit<SubplebbitEditOptions, "address"> {
-    signer?: Pick<SignerType, "privateKey" | "type">;
-}
+export type CreateNewLocalSubplebbitUserOptions = z.infer<typeof CreateNewLocalSubplebbitUserOptionsSchema>;
 
 // These are the options that go straight into _createLocalSub, create a new brand local sub. This is after parsing of plebbit-js
 
@@ -127,14 +109,7 @@ interface OptionInput {
 
 export type SubplebbitChallenge = z.infer<typeof SubplebbitChallengeSchema>;
 
-export interface SubplebbitChallengeSettings {
-    // the private settings of the challenge (subplebbit.settings.challenges)
-    path?: string; // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
-    name?: string; // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
-    options?: { [optionPropertyName: string]: string }; // the options to be used to the getChallenge function, all values must be strings for UI ease of use
-    exclude?: Exclude[]; // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
-    description?: string; // describe in the frontend what kind of challenge the user will receive when publishing
-}
+export type SubplebbitChallengeSettings = z.infer<typeof SubplebbitChallengeSettingSchema>;
 
 export interface Challenge {
     // if the result of a challenge can't be optained by getChallenge(), return a challenge
@@ -167,8 +142,4 @@ export interface ChallengeFile {
 
 export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChallengeSettings) => ChallengeFile;
 
-export type SubplebbitSettings = {
-    fetchThumbnailUrls?: boolean;
-    fetchThumbnailUrlsProxyUrl?: string;
-    challenges?: SubplebbitChallengeSettings[] | null | undefined;
-};
+export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;

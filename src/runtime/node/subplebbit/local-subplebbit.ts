@@ -151,7 +151,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...internalJson,
             posts: this.posts.toJSON(),
             shortAddress: this.shortAddress,
-            signer: remeda.omit(internalJson.signer, ["privateKey"])
+            signer: remeda.omit(internalJson.signer, ["privateKey"]),
+            started: this.started
         };
     }
 
@@ -1355,6 +1356,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const log = Logger("plebbit-js:local-subplebbit:edit");
 
+        // zod here
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
         // settings.challenges = [] means sub has no challenges
         if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)

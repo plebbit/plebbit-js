@@ -54,3 +54,8 @@ export const RepliesPagesJsonSchema = z.object({
     pages: z.record(ReplySortNameSchema, PageJsonSchema),
     pageCids: RepliesPagesIpfsSchema.shape.pageCids
 });
+
+export const PostsPagesJsonSchema = z.object({
+    pages: z.record(PostSortNameSchema, PageJsonSchema),
+    pageCids: PostsPagesIpfsSchema.shape.pageCids
+});

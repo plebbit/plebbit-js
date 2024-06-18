@@ -10,6 +10,11 @@ export const SignerWithAddressPublicKeySchema = CreateSignerSchema.extend({
     publicKey: z.string() // TODO add validation for public key here
 });
 
+export const SignerWithAddressPublicKeyShortAddressSchema = SignerWithAddressPublicKeySchema.extend({
+    shortAddress: z.string().length(12)
+});
+
+// TODO should also check if there's a capital letter in address for domains
 export const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
 export const ShortSubplebbitAddressSchema = z.string(); // TODO should have validation here
 

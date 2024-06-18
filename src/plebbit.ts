@@ -62,6 +62,7 @@ import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js"
 import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
 import { CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
+import { CreateSubplebbitFunctionArgumentsSchema } from "./subplebbit/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -490,60 +491,49 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async createSubplebbit(
-        options:
-            | CreateNewLocalSubplebbitUserOptions
-            | CreateRemoteSubplebbitOptions
-            | RemoteSubplebbitJsonType
-            | SubplebbitIpfsType
-            | InternalSubplebbitType
-            | RemoteSubplebbit
-            | RpcLocalSubplebbit
-            | RpcRemoteSubplebbit
-            | LocalSubplebbit = {}
+        options: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema> = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
-        // Zod here
-        if ("address" in options && typeof options.address !== "string")
-            throw new PlebbitError("ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED", { options });
-        log.trace("Received options: ", options);
+        const parsedOptions = CreateSubplebbitFunctionArgumentsSchema.parse(options);
+        log.trace("Received options: ", parsedOptions);
 
-        if ("address" in options && options?.address && doesDomainAddressHaveCapitalLetter(options.address))
-            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...options });
+        if ("address" in parsedOptions && parsedOptions?.address && doesDomainAddressHaveCapitalLetter(parsedOptions.address))
+            throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...parsedOptions });
 
-        if (this.plebbitRpcClient) return this._createSubplebbitRpc(options);
+        if (this.plebbitRpcClient) return this._createSubplebbitRpc(parsedOptions);
 
         const canCreateLocalSub = this._canCreateNewLocalSub();
 
-        if ("signer" in options && !canCreateLocalSub)
+        if ("signer" in parsedOptions && !canCreateLocalSub)
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
         if (!canCreateLocalSub)
             return this._createRemoteSubplebbitInstance(
-                <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
+                <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>parsedOptions
             );
 
-        if ("address" in options && !("signer" in options)) {
+        if ("address" in parsedOptions && !("signer" in parsedOptions)) {
             // sub is already created, need to check if it's local or remote
             const localSubs = await this.listSubplebbits();
-            const isSubLocal = localSubs.includes(options.address);
-            if (isSubLocal) return this._createLocalSub({ address: options.address });
+            const isSubLocal = localSubs.includes(parsedOptions.address);
+            if (isSubLocal) return this._createLocalSub({ address: parsedOptions.address });
             else
                 return this._createRemoteSubplebbitInstance(
-                    <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>options
+                    <CreateRemoteSubplebbitOptions | RemoteSubplebbitJsonType | SubplebbitIpfsType | RemoteSubplebbit>parsedOptions
                 );
-        } else if (!("address" in options) && !("signer" in options)) {
+        } else if (!("address" in parsedOptions) && !("signer" in parsedOptions)) {
             // no address, no signer, create signer and assign address to signer.address
             const signer = await this.createSigner();
-            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, signer, address: signer.address };
+            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...parsedOptions, signer, address: signer.address };
             log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
             return this._createLocalSub(localOptions);
-        } else if (!("address" in options) && "signer" in options) {
-            const signer = await this.createSigner(options.signer);
-            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...options, address: signer.address, signer };
+        } else if (!("address" in parsedOptions) && "signer" in parsedOptions) {
+            const signer = await this.createSigner(parsedOptions.signer);
+            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...parsedOptions, address: signer.address, signer };
             return this._createLocalSub(localOptions);
-        } else if ("address" in options && "signer" in options) return this._createLocalSub(options);
-        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { options });
+        } else if ("address" in parsedOptions && "signer" in parsedOptions) return this._createLocalSub(parsedOptions);
+        else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { parsedOptions });
     }
 
     async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema>): Promise<Vote> {

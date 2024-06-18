@@ -2,14 +2,21 @@ import { z } from "zod";
 import {
     AuthorAddressSchema,
     CommentCidSchema,
+    CreateSignerSchema,
     FlairSchema,
     JsonSignatureSchema,
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
+    ShortSubplebbitAddressSchema,
     SignerWithAddressPublicKeySchema,
+    SignerWithAddressPublicKeyShortAddressSchema,
     SubplebbitAddressSchema
 } from "../schema/schema.js";
-import { PostsPagesIpfsSchema } from "../pages/schema.js";
+import { PostsPagesIpfsSchema, PostsPagesJsonSchema } from "../pages/schema.js";
+import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
+import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -114,3 +121,112 @@ export const SubplebbitIpfsSchema = z.object({
     suggested: SubplebbitSuggestedSchema.optional(),
     flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
 });
+
+// If you're trying to create a subplebbit instance with any props, all props are optional except address
+
+export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial().extend({
+    address: SubplebbitIpfsSchema.shape.address
+});
+
+export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: true }).extend({
+    shortAddress: ShortSubplebbitAddressSchema,
+    posts: PostsPagesJsonSchema.optional()
+});
+
+// Local Subplebbit schemas
+
+export const SubplebbitChallengeSettingSchema = z
+    .object({
+        // the private settings of the challenge (subplebbit.settings.challenges)
+        path: z.string().optional(), // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
+        name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
+        options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
+        exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
+        description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
+    })
+    .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
+
+export const SubplebbitSettingsSchema = z.object({
+    fetchThumbnailUrls: z.boolean().optional(),
+    fetchThumbnailUrlsProxyUrl: z.string().optional(), // TODO should we validate this url?
+    challenges: z.null().or(z.undefined()).or(SubplebbitChallengeSettingSchema.array()) // If set to null or undefined it will remove all challenges
+});
+
+export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
+    flairs: true,
+    address: true,
+    title: true,
+    description: true,
+    roles: true,
+    rules: true,
+    lastPostCid: true,
+    lastCommentCid: true,
+    pubsubTopic: true,
+    features: true,
+    suggested: true
+})
+    .extend({
+        settings: SubplebbitSettingsSchema.optional()
+    })
+    .partial();
+
+// These are the options to create a new local sub, provided by user (not modified like CreateNewLocalSubplebbitOptions)
+
+export const CreateNewLocalSubplebbitUserOptionsSchema = SubplebbitEditOptionsSchema.omit({ address: true }).extend({
+    signer: CreateSignerSchema.optional()
+});
+
+// This type will be stored in the db as the current state
+
+export const InternalSubplebbitRecordSchema = SubplebbitIpfsSchema.extend({
+    settings: SubplebbitEditOptionsSchema.shape.settings,
+    signer: SignerWithAddressPublicKeySchema,
+    _subplebbitUpdateTrigger: z.boolean(),
+    _usingDefaultChallenge: z.boolean()
+});
+
+// This will be transmitted over RPC connection for local subs to RPC clients
+export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.omit({
+    signer: true,
+    _subplebbitUpdateTrigger: true
+}).extend({
+    started: z.boolean(),
+    signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
+});
+
+export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true }).extend({
+    shortAddress: ShortSubplebbitAddressSchema,
+    posts: PostsPagesJsonSchema.optional()
+});
+
+// export interface LocalSubplebbitJsonType extends Omit<InternalSubplebbitType, "posts" | "signer"> {
+//     shortAddress: string;
+//     posts?: PostsPagesTypeJson;
+//     signer: InternalSubplebbitRpcType["signer"];
+// }
+
+export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not sure if we need to modify it for now
+
+// | CreateNewLocalSubplebbitUserOptions
+// | CreateRemoteSubplebbitOptions
+// | RemoteSubplebbitJsonType
+// | SubplebbitIpfsType
+// | InternalSubplebbitType
+// | RemoteSubplebbit
+// | RpcLocalSubplebbit
+// | RpcRemoteSubplebbit
+// | LocalSubplebbit = {}
+
+export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(CreateRemoteSubplebbitOptionsSchema)
+    .or(RemoteSubplebbitJsonSchema)
+    .or(SubplebbitIpfsSchema)
+    .or(InternalSubplebbitRecordSchema)
+    .or(
+        z.custom<RemoteSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | LocalSubplebbit>(
+            (arg) =>
+                arg instanceof RemoteSubplebbit ||
+                arg instanceof RpcLocalSubplebbit ||
+                arg instanceof RpcRemoteSubplebbit ||
+                arg instanceof LocalSubplebbit // I think this is gonna throw in browsers
+        )
+    );
