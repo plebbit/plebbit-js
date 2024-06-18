@@ -233,15 +233,26 @@ export class ClientsManager extends BaseClientsManager {
         const promisesToIterate = (Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise));
         let suitableSubplebbit;
         try {
-            suitableSubplebbit = await new Promise((resolve, reject) => promisesToIterate.map((gatewayPromise, i) => gatewayPromise.then(async (res) => {
-                if (typeof res === "string")
-                    Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
-                else {
+            suitableSubplebbit = await new Promise((resolve, reject) => promisesToIterate.map((gatewayPromise, i) => gatewayPromise
+                .then(async (res) => {
+                let error = remeda.isPlainObject(res) && res.error instanceof PlebbitError ? res.error : undefined;
+                const gatewayUrl = Object.keys(gatewayFetches)[i];
+                if (typeof res === "string") {
+                    try {
+                        Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
+                    }
+                    catch (e) {
+                        log.error(`Failed to parse the subplebbit json from gateway`, gatewayUrl, e);
+                        error = new PlebbitError("ERR_IPFS_GATEWAY_RESPONDED_WITH_INVALID_JSON", { error: e, response: res });
+                    }
+                }
+                if (error || res === undefined) {
                     // The fetching failed, if res === undefined then it's because it was aborted
                     // else then there's plebbitError
-                    Object.values(gatewayFetches)[i].error = res
-                        ? res.error
-                        : new Error("Fetching from gateway has been aborted/timed out");
+                    Object.values(gatewayFetches)[i].error =
+                        error || new Error("Fetching from gateway has been aborted/timed out");
+                    delete Object.values(gatewayFetches)[i].error?.stack;
+                    log.trace(`Gateway`, gatewayUrl, "threw an error", Object.values(gatewayFetches)[i].error);
                     const gatewaysWithError = remeda.keys
                         .strict(gatewayFetches)
                         .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
@@ -254,7 +265,8 @@ export class ClientsManager extends BaseClientsManager {
                     cleanUp();
                     resolve(recentSubplebbit);
                 }
-            })));
+            })
+                .catch((err) => log.error("Gateway", Object.keys(gatewayFetches)[i], "Has thrown an uncaught error, should not happen", err))));
         }
         catch {
             cleanUp();

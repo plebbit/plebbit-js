@@ -506,11 +506,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
     _commentEditIncludesUniqueModFields(request) {
-        const modOnlyFields = ["pinned", "locked", "removed", "commentAuthor"];
+        const modOnlyFields = ["pinned", "locked", "removed", "commentAuthor"]; // zod here
         return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
     }
     _commentEditIncludesUniqueAuthorFields(request) {
-        const modOnlyFields = ["content", "deleted"];
+        const modOnlyFields = ["content", "deleted"]; // zod here
         return remeda.intersection(modOnlyFields, remeda.keys.strict(request)).length > 0;
     }
     _isAuthorEdit(request, editHasBeenSignedByOriginalAuthor) {
@@ -569,6 +569,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40)
             return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
         if (this.isPublicationComment(publication)) {
+            // Can probably zod this
             const forbiddenCommentFields = [
                 "cid",
                 "signer",
@@ -618,7 +619,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (!commentToBeEdited)
                 throw Error("Wasn't able to find the comment to edit");
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const modRoles = ["moderator", "owner", "admin"];
+            const modRoles = ["moderator", "owner", "admin"]; // Zod here
             const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
             const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);
             const isAuthorEdit = this._isAuthorEdit(publication, editSignedByOriginalAuthor);

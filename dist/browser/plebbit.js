@@ -177,7 +177,7 @@ export class Plebbit extends TypedEmitter {
         this._clientsManager = new ClientsManager(this);
     }
     async getSubplebbit(subplebbitAddress) {
-        const subplebbit = await this.createSubplebbit({ address: subplebbitAddress }); // I think it should call plebbit.createSubplebbit here
+        const subplebbit = await this.createSubplebbit({ address: subplebbitAddress });
         if (typeof subplebbit.createdAt === "number")
             return subplebbit; // It's a local sub, and alreadh has been loaded, no need to wait
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");

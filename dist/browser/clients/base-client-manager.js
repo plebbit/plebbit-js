@@ -240,7 +240,8 @@ export class BaseClientsManager {
                 this.postFetchGatewayFailure(gateway, path, loadType, e);
                 if (!isUsingCache)
                     await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                return { error: remeda.omit(e, ["stack"]) };
+                delete e["stack"];
+                return { error: e };
             }
         }
     }
