@@ -57,22 +57,22 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
     it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
         const subJson = remeda.clone(validSubplebbitFixture);
         const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitFixture));
-        expect(subJson.lastPostCid).to.equal(subObj.lastPostCid);
-        expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic);
-        expect(subJson.address).to.equal(subObj.address);
-        expect(subJson.statsCid).to.equal(subObj.statsCid);
-        expect(subJson.createdAt).to.equal(subObj.createdAt);
-        expect(subJson.updatedAt).to.equal(subObj.updatedAt);
-        expect(subJson.encryption).to.deep.equal(subObj.encryption);
-        expect(subJson.roles).to.deep.equal(subObj.roles);
-        expect(subJson.signature).to.deep.equal(subObj.signature);
+        expect(subJson.lastPostCid).to.equal(subObj.lastPostCid).and.to.be.a("string");
+        expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic).and.to.be.a("string");
+        expect(subJson.address).to.equal(subObj.address).and.to.be.a("string");
+        expect(subJson.statsCid).to.equal(subObj.statsCid).and.to.be.a("string");
+        expect(subJson.createdAt).to.equal(subObj.createdAt).and.to.be.a("number");
+        expect(subJson.updatedAt).to.equal(subObj.updatedAt).and.to.be.a("number");
+        expect(subJson.encryption).to.deep.equal(subObj.encryption).and.to.be.a("object");
+        expect(subJson.roles).to.deep.equal(subObj.roles).and.to.be.a("object");
+        expect(subJson.signature).to.deep.equal(subObj.signature).and.to.be.a("object");
+        expect(subJson.protocolVersion).to.equal(subObj.protocolVersion).and.to.be.a("string");
 
-        expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids);
+        expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids).and.to.be.a("object");
 
-        const subLoaded = await plebbit.getSubplebbit(subJson.address);
         for (const pageKey of Object.keys(subJson.posts.pages)) {
             const subJsonComments = await Promise.all(
-                subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment({ ...comment.comment, subplebbit: subLoaded }))
+                subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment(comment.comment)) // Load CommentIpfs
             );
 
             for (let i = 0; i < subJsonComments.length; i++)
@@ -139,7 +139,7 @@ describe("subplebbit.update (remote)", async () => {
             const remotePlebbit = await mockRemotePlebbit();
             const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
             const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-            rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
+            rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
             tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
             tempSubplebbit.update();
             await new Promise((resolve) => {
@@ -156,7 +156,7 @@ describe("subplebbit.update (remote)", async () => {
             const remoteGatewayPlebbit = await mockGatewayPlebbit();
             const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
             const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-            rawSubplebbitJson.lastPostCid = "Corrupt the signature"; // This will corrupt the signature
+            rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
             tempSubplebbit.clientsManager._fetchWithGateway = async () => JSON.stringify(rawSubplebbitJson);
             tempSubplebbit.update();
             await new Promise((resolve) => {
