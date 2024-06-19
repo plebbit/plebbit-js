@@ -99,39 +99,43 @@ export const SubplebbitChallengeSchema = z.object({
 
 // Subplebbit actual schemas here
 
-export const SubplebbitIpfsSchema = z.object({
-    posts: PostsPagesIpfsSchema.optional(),
-    challenges: SubplebbitChallengeSchema.array(),
-    signature: JsonSignatureSchema,
-    encryption: SubplebbitEncryptionSchema,
-    address: SubplebbitAddressSchema,
-    createdAt: PlebbitTimestampSchema,
-    updatedAt: PlebbitTimestampSchema,
-    pubsubTopic: z.string().optional(),
-    statsCid: CommentCidSchema,
-    protocolVersion: ProtocolVersionSchema,
-    postUpdates: z.record(z.string(), CommentCidSchema).optional(),
-    title: z.string().optional(),
-    description: z.string().optional(),
-    roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),
-    rules: z.string().array().optional(),
-    lastPostCid: CommentCidSchema.optional(),
-    lastCommentCid: CommentCidSchema.optional(),
-    features: SubplebbitFeaturesSchema.optional(),
-    suggested: SubplebbitSuggestedSchema.optional(),
-    flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
-});
+export const SubplebbitIpfsSchema = z
+    .object({
+        posts: PostsPagesIpfsSchema.optional(),
+        challenges: SubplebbitChallengeSchema.array(),
+        signature: JsonSignatureSchema,
+        encryption: SubplebbitEncryptionSchema,
+        address: SubplebbitAddressSchema,
+        createdAt: PlebbitTimestampSchema,
+        updatedAt: PlebbitTimestampSchema,
+        pubsubTopic: z.string().optional(),
+        statsCid: CommentCidSchema,
+        protocolVersion: ProtocolVersionSchema,
+        postUpdates: z.record(z.string(), CommentCidSchema).optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),
+        rules: z.string().array().optional(),
+        lastPostCid: CommentCidSchema.optional(),
+        lastCommentCid: CommentCidSchema.optional(),
+        features: SubplebbitFeaturesSchema.optional(),
+        suggested: SubplebbitSuggestedSchema.optional(),
+        flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
+    })
+    .strict();
 
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
 
-export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial().extend({
-    address: SubplebbitIpfsSchema.shape.address
-});
+export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial()
+    .merge(SubplebbitIpfsSchema.pick({ address: true }))
+    .strict();
 
-export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: true }).extend({
-    shortAddress: ShortSubplebbitAddressSchema,
-    posts: PostsPagesJsonSchema.optional()
-});
+export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: true })
+    .extend({
+        shortAddress: ShortSubplebbitAddressSchema,
+        posts: PostsPagesJsonSchema.optional()
+    })
+    .strict();
 
 // Local Subplebbit schemas
 
@@ -170,11 +174,13 @@ export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
     })
     .partial();
 
-// These are the options to create a new local sub, provided by user (not modified like CreateNewLocalSubplebbitOptions)
+// These are the options to create a new local sub, provided by user
 
-export const CreateNewLocalSubplebbitUserOptionsSchema = SubplebbitEditOptionsSchema.omit({ address: true }).extend({
-    signer: CreateSignerSchema.optional()
-});
+export const CreateNewLocalSubplebbitUserOptionsSchema = SubplebbitEditOptionsSchema.omit({ address: true })
+    .extend({
+        signer: CreateSignerSchema.optional()
+    })
+    .strict();
 
 // This type will be stored in the db as the current state
 
@@ -183,27 +189,25 @@ export const InternalSubplebbitRecordSchema = SubplebbitIpfsSchema.extend({
     signer: SignerWithAddressPublicKeySchema,
     _subplebbitUpdateTrigger: z.boolean(),
     _usingDefaultChallenge: z.boolean()
-});
+}).strict();
 
 // This will be transmitted over RPC connection for local subs to RPC clients
 export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.omit({
     signer: true,
     _subplebbitUpdateTrigger: true
-}).extend({
-    started: z.boolean(),
-    signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
-});
+})
+    .extend({
+        started: z.boolean(),
+        signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
+    })
+    .strict();
 
-export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true }).extend({
-    shortAddress: ShortSubplebbitAddressSchema,
-    posts: PostsPagesJsonSchema.optional()
-});
-
-// export interface LocalSubplebbitJsonType extends Omit<InternalSubplebbitType, "posts" | "signer"> {
-//     shortAddress: string;
-//     posts?: PostsPagesTypeJson;
-//     signer: InternalSubplebbitRpcType["signer"];
-// }
+export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true })
+    .extend({
+        shortAddress: ShortSubplebbitAddressSchema,
+        posts: PostsPagesJsonSchema.optional()
+    })
+    .strict();
 
 export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not sure if we need to modify it for now
 
