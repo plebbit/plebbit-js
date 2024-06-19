@@ -49,8 +49,9 @@ export const uniqueAuthorFields = <["content", "deleted"]>(
     remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape))
 );
 
-export const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema);
-export const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema);
+export const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema).strict();
+export const CreateCommentEditModeratorPublicationSchema =
+    CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema).strict();
 
 // Before signing, and after filling the missing props of CreateCommentEditUserOptions
 export const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
@@ -75,7 +76,7 @@ export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.
 export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(
     remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
 );
-export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema);
+export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
 
 export const DecryptedChallengeRequestCommentEditSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentEditPubsubMessageSchema
