@@ -339,8 +339,10 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
 }
 
 export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
+    // Mock browser environment
     const plebbit = await mockPlebbit(plebbitOptions);
     plebbit._canCreateNewLocalSub = () => false;
+    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 
@@ -360,6 +362,7 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions)
         ...plebbitOptions
     });
     plebbit._canCreateNewLocalSub = () => false;
+    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 
