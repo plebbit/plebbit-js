@@ -323,40 +323,42 @@ export class ClientsManager extends BaseClientsManager {
         try {
             suitableSubplebbit = await new Promise<SubplebbitIpfsType>((resolve, reject) =>
                 promisesToIterate.map((gatewayPromise, i) =>
-                    gatewayPromise.then(async (res) => {
-                        let error: PlebbitError | ZodError | Error | undefined =
-                            remeda.isPlainObject(res) && res.error
-                                ? res.error
-                                : res === undefined // The request timed out for whatever reason
-                                  ? new Error("Fetching from gateway has been aborted/timed out")
-                                  : undefined;
-                        if (typeof res === "string") {
-                            // Gateway responded, let's try to parse the json and make sure the schema is correct
-                            try {
-                                Object.values(gatewayFetches)[i].subplebbitRecord = SubplebbitIpfsSchema.parse(JSON.parse(res)); // Could throw because of zod parsing or json parsing
-                            } catch (e) {
-                                error = <Error | ZodError>e;
+                    gatewayPromise
+                        .then(async (res) => {
+                            let error: PlebbitError | ZodError | Error | undefined =
+                                remeda.isPlainObject(res) && res.error
+                                    ? res.error
+                                    : res === undefined // The request timed out for whatever reason
+                                      ? new Error("Fetching from gateway has been aborted/timed out")
+                                      : undefined;
+                            if (typeof res === "string") {
+                                // Gateway responded, let's try to parse the json and make sure the schema is correct
+                                try {
+                                    Object.values(gatewayFetches)[i].subplebbitRecord = SubplebbitIpfsSchema.parse(JSON.parse(res)); // Could throw because of zod parsing or json parsing
+                                } catch (e) {
+                                    error = <Error | ZodError>e;
+                                }
                             }
-                        }
 
-                        if (error) {
-                            // The fetching failed, if res === undefined then it's because it was aborted
-                            // else it failed because of zod or json parsing, or because the gateway refused the request for some reason
-                            Object.values(gatewayFetches)[i].error = error;
-                            delete Object.values(gatewayFetches)[i].error!["stack"];
-                            const gatewaysWithError = remeda.keys
-                                .strict(gatewayFetches)
-                                .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
-                            if (gatewaysWithError.length === gatewaysSorted.length)
-                                // All gateways failed
-                                reject("All gateways failed to fetch subplebbit record " + ipnsName);
-                        }
-                        const recentSubplebbit = _findRecentSubplebbit();
-                        if (recentSubplebbit) {
-                            cleanUp();
-                            resolve(recentSubplebbit);
-                        }
-                    })
+                            if (error) {
+                                // The fetching failed, if res === undefined then it's because it was aborted
+                                // else it failed because of zod or json parsing, or because the gateway refused the request for some reason
+                                Object.values(gatewayFetches)[i].error = error;
+                                delete Object.values(gatewayFetches)[i].error!["stack"];
+                                const gatewaysWithError = remeda.keys
+                                    .strict(gatewayFetches)
+                                    .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+                                if (gatewaysWithError.length === gatewaysSorted.length)
+                                    // All gateways failed
+                                    reject("All gateways failed to fetch subplebbit record " + ipnsName);
+                            }
+                            const recentSubplebbit = _findRecentSubplebbit();
+                            if (recentSubplebbit) {
+                                cleanUp();
+                                resolve(recentSubplebbit);
+                            }
+                        })
+                        .catch((err) => reject("One of the gateway promise requests thrown an error, should not happens:" + err))
                 )
             );
         } catch {
