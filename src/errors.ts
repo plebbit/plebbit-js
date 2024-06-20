@@ -21,12 +21,24 @@ export enum messages {
     ERR_FAILED_TO_FETCH_IPFS_VIA_IPFS = "Failed to fetch an IPFS via IPFS P2P",
     ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY = "Failed to fetch IPNS through gateway",
     ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS = "Failed to fetch Subplebbit IPNS record from gateway(s)",
+    ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS = "Failed to fetch comment IPFS file from gateway(s)",
+    ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS = "Failed to fetch comment update IPFS file from gateway(s)",
+    ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS = "Failed to fetch Page IPFS file from gateway(s)",
+    ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS = "Failed to fetch IPFS file from gateways(s)",
     ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS = "Failed to resolve IPNS through IPFS P2P",
     ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
     ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
+    ERR_GATEWAY_TIMED_OUT_OR_ABORTED = "Fetching from gateway has been aborted/timed out",
+
+    // Schema errors
+    ERR_INVALID_JSON = "The loaded file is not the expected json",
+    ERR_INVALID_COMMENT_IPFS_SCHEMA = "The schema of Comment ipfs file is invalid",
+    ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA = "The loaded Subplebbit record has an invalid schema",
+    ERR_INVALID_COMMENT_UPDATE_SCHEMA = "The schema of Comment Update is invalid",
+    ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

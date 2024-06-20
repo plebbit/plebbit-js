@@ -11,6 +11,7 @@ import { isIpfsCid, throwWithErrorCode } from "../util.js";
 import { BasePages } from "../pages/pages.js";
 import { PageIpfsSchema } from "../pages/schema.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
+import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -164,7 +165,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
-            const page = PageIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(pageCid)));
+            const page = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
             this.updateIpfsState("stopped", sortTypes);
             return page;
         } catch (e) {
@@ -172,6 +173,15 @@ export class BasePagesClientsManager extends BaseClientsManager {
             log.error(`Failed to fetch the page (${pageCid}) due to error:`, e);
             throw e;
         }
+    }
+
+    async _fetchPageFromGateways(pageCid: string): Promise<PageIpfs> {
+        // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
+        // we just need to validate the end result's schema
+        const res = await this.fetchFromMultipleGateways({ cid: pageCid }, "page-ipfs", async (_) => {});
+        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
+
+        return pageIpfs;
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
         // Zod here
@@ -182,7 +192,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         let page: PageIpfs;
         if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = PageIpfsSchema.parse(JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs")));
+        else page = await this._fetchPageFromGateways(pageCid);
 
         if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
         return page;

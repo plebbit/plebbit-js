@@ -488,6 +488,7 @@ export class Comment extends Publication {
             log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
             const commentInstance = remeda.pick(this.toJSONAfterChallengeVerification(), ["cid", "signature"]);
             // Can potentially throw if resolver if not working
+            // TODO this should move to client-manager
             const signatureValidity = await verifyCommentUpdate(
                 commentUpdate,
                 this._plebbit.resolveAuthorAddresses,
@@ -510,7 +511,6 @@ export class Comment extends Publication {
         } else if (commentUpdate) {
             log.trace(`Comment (${this.cid}) has no new update`);
             this._setUpdatingState("succeeded");
-            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
         }
     }
 

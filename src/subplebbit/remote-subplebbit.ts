@@ -5,7 +5,7 @@ import type { SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 
 import { TypedEmitter } from "tiny-typed-emitter";
-import { PlebbitError } from "../plebbit-error.js";
+import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import retry, { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
@@ -35,13 +35,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     suggested?: SubplebbitIpfsType["suggested"];
     flairs?: SubplebbitIpfsType["flairs"];
     address!: SubplebbitIpfsType["address"];
-    shortAddress!: string;
+    shortAddress!: RemoteSubplebbitJsonType["shortAddress"];
     statsCid!: SubplebbitIpfsType["statsCid"];
     createdAt!: SubplebbitIpfsType["createdAt"];
     updatedAt!: SubplebbitIpfsType["updatedAt"];
     encryption!: SubplebbitIpfsType["encryption"];
-    protocolVersion!: SubplebbitIpfsType["protocolVersion"]; // semantic version of the protocol https://semver.org/
-    signature!: SubplebbitIpfsType["signature"]; // signature of the Subplebbit update by the sub owner to protect against malicious gateway
+    protocolVersion!: SubplebbitIpfsType["protocolVersion"];
+    signature!: SubplebbitIpfsType["signature"];
     rules?: SubplebbitIpfsType["rules"];
     challenges!: SubplebbitIpfsType["challenges"];
     postUpdates?: SubplebbitIpfsType["postUpdates"];
@@ -216,8 +216,18 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.emit("updatingstatechange", this.updatingState);
     }
 
-    private _isCriticalErrorWhenLoading(err: PlebbitError) {
-        return err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID";
+    // Errors that retrying to load the ipns record will not help
+    // Instead we should abort the retries, and emit an error to notify the user to do something about it
+    private _isRetriableErrorWhenLoading(err: PlebbitError): boolean {
+        if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA") return false;
+
+        if (err instanceof FailedToFetchSubplebbitFromGatewaysError) {
+            // If all gateway errors are non retriable, then the error is non retriable
+            for (const gatewayError of Object.values(err.details.gatewayToError))
+                if (this._isRetriableErrorWhenLoading(gatewayError)) return true;
+            return false; // if all gateways are non retriable, then we should not retry
+        }
+        return true;
     }
 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
@@ -230,7 +240,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
-                    if (e instanceof PlebbitError && this._isCriticalErrorWhenLoading(e)) resolve(e);
+                    if (e instanceof PlebbitError && !this._isRetriableErrorWhenLoading(e)) resolve(e);
                     else this._ipnsLoadingOperation!.retry(<Error>e);
                 }
             });
@@ -244,6 +254,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
         const loadedSubIpfs = await this._retryLoadingSubplebbitIpns(log, this.address);
         if (loadedSubIpfs instanceof Error) {
+            log.error(`Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event`);
             this.emit("error", <PlebbitError>loadedSubIpfs);
             return;
         }
