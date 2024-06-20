@@ -52,7 +52,7 @@ if (!isRpcFlagOn())
         let plebbit, post;
         before(async () => {
             plebbit = await mockRemotePlebbit();
-            // post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         });
 
         it(`Subplebbit reject a comment with subplebbitAddress that is not equal subplebbit.address`);
@@ -63,6 +63,7 @@ if (!isRpcFlagOn())
             const comment = await plebbit.createComment({
                 parentCid: "QmV8Q8tWqbLTPYdrvSXHjXgrgWUR1fZ9Ctj56ETPi58FDY", // random cid that's not related to this sub,
                 signer: remeda.sample(signers, 1)[0],
+                content: `Random Content` + Date.now(),
                 subplebbitAddress
             });
             await publishWithExpectedResult(comment, false, messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST);
