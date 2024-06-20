@@ -12,7 +12,7 @@ import {
     PlebbitError
 } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import type { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
@@ -24,7 +24,7 @@ import all from "it-all";
 import * as remeda from "remeda";
 import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { CommentCidSchema } from "../schema/schema.js";
+import { CidPathSchema } from "../schema/schema.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -406,7 +406,7 @@ export class BaseClientsManager {
             let cid: string;
             if (p2pIpnsPromiseCache.has(ipnsName)) cid = <string>await p2pIpnsPromiseCache.get(ipnsName);
             else {
-                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName)).then(CommentCidSchema.parse); // make sure we're getting a CID
+                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName)).then(CidPathSchema.parse); // make sure we're getting a CID
                 p2pIpnsPromiseCache.set(ipnsName, cidPromise);
                 cid = await cidPromise;
                 p2pIpnsPromiseCache.delete(ipnsName);

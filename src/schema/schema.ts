@@ -37,6 +37,12 @@ const WalletSchema = z.object({
 export const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
 export const ShortCidSchema = z.string().length(12);
 
+// '/ipfs/QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1' => 'QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1'
+export const CidPathSchema = z
+    .string()
+    .transform((arg) => arg.split("/")[2])
+    .refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID);
+
 const ChainTickerSchema = z.string(); // chain ticker can be anything for now
 
 const AuthorWalletsSchema = z.record(ChainTickerSchema, WalletSchema);
