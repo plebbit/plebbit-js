@@ -856,8 +856,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     protected override postFetchSubplebbitStringJsonP2PSuccess() {
-        // if (this._isPublishing()) this.updateIpfsState("stopped");
-        this.updateIpfsState("stopped");
+        // If we're updating, then no it shouldn't be stopped cause we're gonna load comment-update after
+        if (this._isPublishing()) this.updateIpfsState("stopped");
     }
 
     protected override postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void {
