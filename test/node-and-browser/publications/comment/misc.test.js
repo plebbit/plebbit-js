@@ -149,8 +149,11 @@ describe(`comment.update`, async () => {
 
         const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
 
+        const ipfsStates = [];
         const updatingStates = [];
         createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
+        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
         let updateHasBeenEmitted = false;
         createdComment.once("update", () => (updateHasBeenEmitted = true));
         await createdComment.update();
@@ -166,7 +169,8 @@ describe(`comment.update`, async () => {
 
         expect(createdComment.state).to.equal("stopped");
         expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "succeeded", "failed"]);
+        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+        expect(ipfsStates).to.deep.equal(["fetching-ipfs", "stopped"]);
         expect(updateHasBeenEmitted).to.be.false;
     });
 
@@ -178,7 +182,7 @@ describe(`comment.update`, async () => {
 
             const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
 
-            invalidCommentUpdateJson.cid += 1234; // Invalidate CommentUpdate
+            invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
 
             expect(
                 await verifyCommentUpdate(
@@ -201,9 +205,12 @@ describe(`comment.update`, async () => {
 
             let loadingRetries = 0;
             let errorsEmittedCount = 0;
-            createdComment._retryLoadingCommentUpdate = () => {
-                loadingRetries++;
-                return invalidCommentUpdateJson;
+            const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
+            createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+                if (cidOrPath.endsWith("/update")) {
+                    loadingRetries++;
+                    return JSON.stringify(invalidCommentUpdateJson);
+                } else return originalFetch(cidOrPath);
             };
 
             let updateHasBeenEmitted = false;
