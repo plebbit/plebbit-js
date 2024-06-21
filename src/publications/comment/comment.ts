@@ -10,9 +10,9 @@ import type {
 import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
-import { verifyComment, verifyCommentUpdate } from "../../signer/signatures.js";
+import { verifyComment } from "../../signer/signatures.js";
 import assert from "assert";
-import { PlebbitError } from "../../plebbit-error.js";
+import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import * as remeda from "remeda";
@@ -410,37 +410,57 @@ export class Comment extends Publication {
         this.updatedAt = newUpdatedAt;
     }
 
-    private async _retryLoadingCommentIpfs(cid: string, log: Logger): Promise<CommentIpfsType> {
+    private _isCommentIpfsErrorRetriable(err: PlebbitError) {
+        if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
+        if (err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA") return false; // These errors means there's a problem with the record itself, not the loading
+
+        if (err instanceof FailedToFetchCommentIpfsFromGatewaysError) {
+            // If all gateway errors are due to the ipfs record itself, then it's a non-retriable error
+            for (const gatewayError of Object.values(err.details.gatewayToError))
+                if (this._isCommentIpfsErrorRetriable(gatewayError)) return true; // if there's at least one gateway whose error is not due to the record
+            return false; // if all gateways have issues with the record validity itself, then we stop fetching
+        }
+
+        return true;
+    }
+
+    private async _retryLoadingCommentIpfs(cid: string, log: Logger): Promise<CommentIpfsType | PlebbitError> {
         return new Promise((resolve) => {
             this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     this._setUpdatingState("fetching-ipfs");
-                    const res = await this._clientsManager.fetchCommentCid(cid);
+                    const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
                     this._setUpdatingState("succeeded");
                     resolve(res);
                 } catch (e) {
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
-                    this._loadingOperation!.retry(<Error>e);
+                    if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._loadingOperation!.retry(<Error>e);
+                    else return <PlebbitError>e;
                 }
             });
         });
     }
 
-    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate> {
+    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate | PlebbitError> {
         return new Promise((resolve) => {
             this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate();
+                    this._setUpdatingState("succeeded");
                     resolve(update);
                 } catch (e) {
+                    // fetchCommentUpdate could throw a non-retriable error
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
                     log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
-                    this._loadingOperation!.retry(<Error>e);
+                    if (this._clientsManager._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e))
+                        // Should we emit an error event or keep retrying?
+                        this._loadingOperation!.retry(<Error>e);
+                    else resolve(<PlebbitError>e);
                 }
             });
         });
@@ -451,67 +471,39 @@ export class Comment extends Publication {
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
         if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            const newCommentIpfs = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
-            // Can potentially throw if resolver if not working
-            const commentIpfsValidation = await verifyComment(
-                newCommentIpfs,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                true
-            );
-            if (!commentIpfsValidation.valid) {
-                // This is a crticial error, it should stop the comment from updating
-                log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
-                this._updateState("stopped");
-                await this._stopUpdateLoop();
-                this._setUpdatingState("failed");
-                this._rawCommentIpfs = undefined;
-                this.emit(
-                    "error",
-                    new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
-                        invalidCommentIpfs: newCommentIpfs,
-                        commentIpfsValidation,
-                        cid: this.cid
-                    })
+            const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
+
+            if (newCommentIpfsOrError instanceof PlebbitError) {
+                // This is a non-retriable error, it should stop the comment from updating
+                log.error(
+                    `Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`,
+                    newCommentIpfsOrError
                 );
+                await this.stop(); // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
+                this.emit("error", newCommentIpfsOrError);
                 return;
+            } else {
+                log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
+                this._rawCommentIpfs = newCommentIpfsOrError;
+                this._initIpfsProps(newCommentIpfsOrError);
+                this.emit("update", this);
             }
-            log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-            this._rawCommentIpfs = newCommentIpfs;
-            this._initIpfsProps(this._rawCommentIpfs);
-            this.emit("update", this);
         }
 
-        const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+        const commentUpdateOrError = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
-        if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
-            log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
-            const commentInstance = remeda.pick(this.toJSONAfterChallengeVerification(), ["cid", "signature"]);
-            // Can potentially throw if resolver if not working
-            // TODO this should move to client-manager
-            const signatureValidity = await verifyCommentUpdate(
-                commentUpdate,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                this.subplebbitAddress,
-                commentInstance,
-                true
-            );
-            if (!signatureValidity.valid) {
-                this._setUpdatingState("failed");
-                const err = new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
-                log.error(err.toString());
-                this.emit("error", err);
-                return;
-            }
-            this._setUpdatingState("succeeded");
-            this._rawCommentUpdate = commentUpdate;
-            await this._initCommentUpdate(commentUpdate);
+        if (commentUpdateOrError instanceof PlebbitError) {
+            // An error, either a signature or a schema problem
+            // We should emit an error, and keep retrying to load a different record
+            log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());
+            this.emit("error", commentUpdateOrError);
+            return;
+        } else if ((this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
+            log(`Comment (${this.cid}) received a new CommentUpdate`);
+            this._rawCommentUpdate = commentUpdateOrError;
+            await this._initCommentUpdate(commentUpdateOrError);
             this.emit("update", this);
-        } else if (commentUpdate) {
-            log.trace(`Comment (${this.cid}) has no new update`);
-            this._setUpdatingState("succeeded");
-        }
+        } else log.trace(`Comment (${this.cid}) has no new update`);
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {

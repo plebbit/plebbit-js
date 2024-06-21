@@ -30,7 +30,6 @@ import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
-import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import {
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
@@ -38,7 +37,7 @@ import {
     parseJsonWithPlebbitErrorIfFails,
     parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
-import { verifyCommentUpdate } from "../signer/signatures.js";
+import { verifyComment, verifyCommentUpdate } from "../signer/signatures.js";
 
 export class ClientsManager extends BaseClientsManager {
     clients: {
@@ -622,14 +621,6 @@ export class CommentClientsManager extends PublicationClientsManager {
         return undefined;
     }
 
-    private async _fetchCommentIpfsFromGateways(parentCid: string): Promise<CommentIpfsType> {
-        // We only need to validate once, because with Comment Ipfs the fetchFromMultipleGateways already validates if the response is the same as its cid
-
-        const res = await this.fetchFromMultipleGateways({ cid: parentCid }, "comment", async (_) => {});
-        const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
-        return commentIpfs;
-    }
-
     async _fetchParentCommentForCommentUpdate(parentCid: string): Promise<CommentIpfsWithCidDefined> {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
@@ -643,7 +634,7 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this.updateIpfsState("stopped");
             }
         } else {
-            return { cid: parentCid, ...(await this._fetchCommentIpfsFromGateways(parentCid)) };
+            return { cid: parentCid, ...(await this.fetchAndVerifyCommentCid(parentCid)) };
         }
     }
 
@@ -688,9 +679,11 @@ export class CommentClientsManager extends PublicationClientsManager {
         parentsPostUpdatePath: string,
         log: Logger
     ): Promise<CommentUpdate> {
+        const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+            attemptedPaths.push(path);
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
             try {
@@ -705,10 +698,15 @@ export class CommentClientsManager extends PublicationClientsManager {
             await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
             return commentUpdate;
         }
-        throw Error(`CommentUpdate of comment (${this._comment.cid}) does not exist on all timestamp ranges: ${timestampRanges}`);
+        throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
+            timestampRanges,
+            attemptedPaths,
+            commentCid: this._comment.cid
+        });
     }
 
-    private _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError): boolean {
+    _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError): boolean {
+        // Is there a problem with the record itself, or is this an issue with fetching?
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_COMMENT_UPDATE_SCHEMA") return false; // These errors means there's a problem with the record itself, not the loading
 
@@ -744,11 +742,13 @@ export class CommentClientsManager extends PublicationClientsManager {
         parentsPostUpdatePath: string,
         log: Logger
     ): Promise<CommentUpdate> {
+        const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
 
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+            attemptedPaths.push(path);
             let commentUpdate: CommentUpdate | undefined;
             try {
                 // Validate the Comment Update within the gateway fetching algo
@@ -771,7 +771,11 @@ export class CommentClientsManager extends PublicationClientsManager {
                 } else throw e;
             }
         }
-        throw Error(`CommentUpdate of comment (${this._comment.cid}) does not exist on all timestamp ranges: ${timestampRanges}`);
+        throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
+            timestampRanges,
+            attemptedPaths,
+            commentCid: this._comment.cid
+        });
     }
 
     async fetchCommentUpdate(): Promise<CommentUpdate> {
@@ -791,13 +795,43 @@ export class CommentClientsManager extends PublicationClientsManager {
         else return this._fetchCommentUpdateFromGateways(subIpns, timestampRanges, parentsPostUpdatePath, log);
     }
 
-    async fetchCommentCid(cid: string): Promise<CommentIpfsType> {
-        if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-ipfs");
-            const commentContent = CommentIpfsSchema.parse(JSON.parse(await this._fetchCidP2P(cid)));
+    private async _fetchRawCommentCidIpfsP2P(cid: string): Promise<string> {
+        this.updateIpfsState("fetching-ipfs");
+        let commentRawString: string;
+        try {
+            commentRawString = await this._fetchCidP2P(cid);
+        } catch (e) {
+            throw e;
+        } finally {
             this.updateIpfsState("stopped");
-            return commentContent;
-        } else return this._fetchCommentIpfsFromGateways(cid);
+        }
+
+        return commentRawString;
+    }
+
+    private async _fetchCommentIpfsFromGateways(parentCid: string): Promise<string> {
+        // We only need to validate once, because with Comment Ipfs the fetchFromMultipleGateways already validates if the response is the same as its cid
+
+        return this.fetchFromMultipleGateways({ cid: parentCid }, "comment", async (_) => {});
+    }
+
+    private async _throwIfCommentIpfsIsInvalid(commentIpfs: CommentIpfsType) {
+        // Can potentially throw if resolver if not working
+        const commentIpfsValidation = await verifyComment(commentIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        if (!commentIpfsValidation.valid)
+            throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfs, commentIpfsValidation });
+    }
+
+    // We're gonna fetch Comment Ipfs, and verify its signature and schema
+    async fetchAndVerifyCommentCid(cid: string): Promise<CommentIpfsType> {
+        let commentRawString: string;
+        if (this._defaultIpfsProviderUrl) {
+            commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
+        } else commentRawString = await this._fetchCommentIpfsFromGateways(cid);
+
+        const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
+        await this._throwIfCommentIpfsIsInvalid(commentIpfs);
+        return commentIpfs;
     }
 
     override updateIpfsState(newState: CommentIpfsClient["state"]) {

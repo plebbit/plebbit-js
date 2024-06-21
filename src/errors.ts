@@ -26,6 +26,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS = "Failed to fetch Page IPFS file from gateway(s)",
     ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS = "Failed to fetch IPFS file from gateways(s)",
     ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS = "Failed to resolve IPNS through IPFS P2P",
+    ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES = "Failed to fetch CommentUpdate from all post update timestamp ranges",
     ERR_FAILED_TO_FETCH_GENERIC = "Failed to fetch",
     ERR_OVER_DOWNLOAD_LIMIT = "The file size is larger than download limit",
     ERR_CALCULATED_CID_DOES_NOT_MATCH = "The CID calculated from loaded content does not match the provided CID",
