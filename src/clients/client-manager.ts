@@ -691,7 +691,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
             const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
-            this.updateIpfsState("fetching-ipfs");
+            this.updateIpfsState("fetching-update-ipfs");
             let res: string;
             try {
                 res = await this._fetchCidP2P(path);
