@@ -219,6 +219,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // Errors that retrying to load the ipns record will not help
     // Instead we should abort the retries, and emit an error to notify the user to do something about it
     private _isRetriableErrorWhenLoading(err: PlebbitError): boolean {
+        if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA") return false;
 
         if (err instanceof FailedToFetchSubplebbitFromGatewaysError) {

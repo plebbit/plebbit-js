@@ -709,6 +709,7 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     private _shouldWeFetchCommentUpdateFromNextTimestamp(err: PlebbitError): boolean {
+        if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_COMMENT_UPDATE_SCHEMA") return false; // These errors means there's a problem with the record itself, not the loading
 
         if (err instanceof FailedToFetchCommentUpdateFromGatewaysError) {
