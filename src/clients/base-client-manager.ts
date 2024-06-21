@@ -248,11 +248,17 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
 
-    private async _fetchFromGatewayAndVerifyIfNeeded(url: string, abortController: AbortController, isCid: boolean, log: Logger) {
+    private async _fetchFromGatewayAndVerifyIfNeeded(
+        url: string,
+        abortController: AbortController,
+        isIpfsFile: boolean,
+        verifyCidWithContent: boolean,
+        log: Logger
+    ) {
         log.trace(`Fetching url (${url})`);
 
-        const resText = await this._fetchWithLimit(url, isCid ? "force-cache" : "no-store", abortController.signal);
-        if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
+        const resText = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
+        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
         return resText;
     }
     protected async _fetchWithGateway(
@@ -260,13 +266,14 @@ export class BaseClientsManager {
         path: string,
         loadType: LoadType,
         abortController: AbortController,
-        validateGatewayResponse: (res: string) => void
+        validateGatewayResponse: (res: string) => Promise<void>
     ): Promise<string | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
         const timeBefore = Date.now();
-        const isCid = path.startsWith("/ipfs/"); // If false, then IPNS
+        const isIpfsFile = path.startsWith("/ipfs/"); // If false, then IPNS
+        const shouldVerifyContentWithCid = isIpfsFile && loadType !== "comment-update"; // can't verify comment update because it's a long path, and not just a cid
 
         this.preFetchGateway(gateway, path, loadType);
         const cacheKey = url;
@@ -276,19 +283,21 @@ export class BaseClientsManager {
             if (gatewayFetchPromiseCache.has(cacheKey)) resText = <string>await gatewayFetchPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(url, abortController, isCid, log);
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(
+                    url,
+                    abortController,
+                    isIpfsFile,
+                    shouldVerifyContentWithCid,
+                    log
+                );
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
                 resText = await fetchPromise;
                 if (loadType === "subplebbit") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
-                validateGatewayResponse(resText); // should throw if there's an issue
             }
+            await validateGatewayResponse(resText); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, path, loadType);
             if (!isUsingCache)
-                await this._plebbit.stats.recordGatewaySuccess(
-                    gateway,
-                    isCid || loadType === "comment-update" ? "cid" : "ipns",
-                    Date.now() - timeBefore
-                );
+                await this._plebbit.stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
             return resText;
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
@@ -298,7 +307,7 @@ export class BaseClientsManager {
                 return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e }) };
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
-                if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
+                if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
                 delete (<PlebbitError>e)!["stack"];
                 return { error: <PlebbitError>e };
             }

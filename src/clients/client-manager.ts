@@ -701,7 +701,6 @@ export class CommentClientsManager extends PublicationClientsManager {
             } finally {
                 this.updateIpfsState("stopped");
             }
-            // TODO should validate signature here I think
             const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
             await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
             return commentUpdate;
