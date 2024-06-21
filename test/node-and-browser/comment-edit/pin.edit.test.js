@@ -11,7 +11,7 @@ import {
 import { expect } from "chai";
 import { messages } from "../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/util.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [
