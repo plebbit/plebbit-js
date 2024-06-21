@@ -436,9 +436,9 @@ export class Comment extends Publication {
                 } catch (e) {
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                     if (this._isCommentIpfsErrorRetriable(<PlebbitError>e)) this._loadingOperation!.retry(<Error>e);
-                    else return <PlebbitError>e;
+                    else return resolve(<PlebbitError>e);
                 }
             });
         });
@@ -456,7 +456,7 @@ export class Comment extends Publication {
                     // fetchCommentUpdate could throw a non-retriable error
                     if (e instanceof PlebbitError && e.details) e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
+                    log.trace(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`);
                     if (this._clientsManager._shouldWeFetchCommentUpdateFromNextTimestamp(<PlebbitError>e))
                         // Should we emit an error event or keep retrying?
                         this._loadingOperation!.retry(<Error>e);
@@ -477,9 +477,12 @@ export class Comment extends Publication {
                 // This is a non-retriable error, it should stop the comment from updating
                 log.error(
                     `Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`,
-                    newCommentIpfsOrError
+                    newCommentIpfsOrError.toString()
                 );
-                await this.stop(); // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
+                // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
+                await this._stopUpdateLoop();
+                this._setUpdatingState("failed");
+                this._updateState("stopped");
                 this.emit("error", newCommentIpfsOrError);
                 return;
             } else {
@@ -608,6 +611,7 @@ export class Comment extends Publication {
     override async stop() {
         if (this.state === "publishing") await super.stop();
         this._setUpdatingState("stopped");
+        this._updateState("stopped");
         await this._stopUpdateLoop();
     }
 
