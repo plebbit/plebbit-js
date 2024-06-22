@@ -412,7 +412,12 @@ export class Comment extends Publication {
 
     private _isCommentIpfsErrorRetriable(err: PlebbitError) {
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
-        if (err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA") return false; // These errors means there's a problem with the record itself, not the loading
+        if (
+            err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" ||
+            err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA" ||
+            err.code === "ERR_CALCULATED_CID_DOES_NOT_MATCH"
+        )
+            return false; // These errors means there's a problem with the record itself, not the loading
 
         if (err instanceof FailedToFetchCommentIpfsFromGatewaysError) {
             // If all gateway errors are due to the ipfs record itself, then it's a non-retriable error
