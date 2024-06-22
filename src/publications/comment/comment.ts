@@ -501,12 +501,12 @@ export class Comment extends Publication {
             log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());
             this.emit("error", commentUpdateOrError);
             return;
-        } else if ((this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
+        } else if (commentUpdateOrError && (this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate`);
             this._rawCommentUpdate = commentUpdateOrError;
             await this._initCommentUpdate(commentUpdateOrError);
             this.emit("update", this);
-        } else log.trace(`Comment (${this.cid}) has no new update`);
+        } else log.trace(`Comment (${this.cid}) has no new CommentUpdate`);
     }
 
     _setUpdatingState(newState: Comment["updatingState"]) {
