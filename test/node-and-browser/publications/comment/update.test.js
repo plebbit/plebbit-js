@@ -132,12 +132,39 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
     return postWithInvalidSignatureCid;
 };
 
+const createACommentUpdateWithInvalidSignature = async () => {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+
+    const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+    const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
+
+    invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
+
+    expect(
+        await verifyCommentUpdate(
+            invalidCommentUpdateJson,
+            true,
+            plebbit._clientsManager,
+            subplebbit.address,
+            { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
+            false
+        )
+    ).to.deep.equal({
+        valid: false,
+        reason: messages.ERR_SIGNATURE_IS_INVALID
+    });
+    return invalidCommentUpdateJson;
+};
+
 describe(`comment.update() emits errors if needed`, async () => {
     let invalidCommentIpfsCid;
+    let commentUpdateWithInvalidSignatureJson;
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
         invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
+        commentUpdateWithInvalidSignatureJson = await createACommentUpdateWithInvalidSignature();
     });
 
     it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid - IPFS P2P`, async () => {
@@ -163,6 +190,7 @@ describe(`comment.update() emits errors if needed`, async () => {
 
         // should stop updating by itself because of the critical error
 
+        expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
         expect(createdComment.state).to.equal("stopped");
         expect(createdComment.updatingState).to.equal("failed");
         expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
@@ -206,29 +234,8 @@ describe(`comment.update() emits errors if needed`, async () => {
         it(`comment.update() emit an error if CommentUpdate signature is invalid - IPFS P2P`, async () => {
             // Should emit an error as well as continue the update loop
 
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-            const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
-
-            invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
-
-            expect(
-                await verifyCommentUpdate(
-                    invalidCommentUpdateJson,
-                    true,
-                    plebbit._clientsManager,
-                    subplebbit.address,
-                    { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
-                    false
-                )
-            ).to.deep.equal({
-                valid: false,
-                reason: messages.ERR_SIGNATURE_IS_INVALID
-            });
-
             const createdComment = await plebbit.createComment({
-                cid: subplebbit.posts.pages.hot.comments[0].cid,
-                ...subplebbit.posts.pages.hot.comments[0].toJSONIpfs()
+                cid: commentUpdateWithInvalidSignatureJson.cid
             });
 
             let loadingRetries = 0;
@@ -239,12 +246,16 @@ describe(`comment.update() emits errors if needed`, async () => {
                 if (cidOrPath.endsWith("/update")) {
                     loadingRetries++;
                     if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                    return JSON.stringify(invalidCommentUpdateJson);
+                    return JSON.stringify(commentUpdateWithInvalidSignatureJson);
                 } else return originalFetch(cidOrPath);
             };
 
-            let updateHasBeenEmitted = false;
-            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            const ipfsStates = [];
+            const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
+            createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+
+            let updateHasBeenEmittedWithCommentUpdate = false;
+            createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
             await createdComment.update();
 
             await new Promise((resolve) =>
@@ -261,12 +272,26 @@ describe(`comment.update() emits errors if needed`, async () => {
             expect(createdComment.state).to.equal("updating");
             expect(createdComment.updatingState).to.equal("failed");
             expect(didItRetryAfterEmittingError).to.be.true;
-            expect(updateHasBeenEmitted).to.be.false;
+            expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
             expect(loadingRetries).to.be.above(2);
             expect(errorsEmittedCount).to.greaterThanOrEqual(2);
 
             await createdComment.stop();
+
+            const expectedIpfsStates = [
+                "fetching-ipfs", // when loading CommentIpfs at the beginning
+                "stopped",
+                ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                    .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "stopped"])
+                    .flat()
+            ];
+
+            expect(ipfsStates).to.deep.equal(expectedIpfsStates);
         });
+
+    it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID`);
+
+    it(`comment.update() emit an error if CommentUpdate signature is invalid - IPFS Gateways`);
 
     it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json - IPFS P2P`);
     it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json - IPFS Gateways`);
