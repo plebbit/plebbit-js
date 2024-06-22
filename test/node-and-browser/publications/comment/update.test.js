@@ -233,10 +233,12 @@ describe(`comment.update() emits errors if needed`, async () => {
 
             let loadingRetries = 0;
             let errorsEmittedCount = 0;
+            let didItRetryAfterEmittingError = false;
             const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
             createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
                 if (cidOrPath.endsWith("/update")) {
                     loadingRetries++;
+                    if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
                     return JSON.stringify(invalidCommentUpdateJson);
                 } else return originalFetch(cidOrPath);
             };
@@ -255,10 +257,10 @@ describe(`comment.update() emits errors if needed`, async () => {
 
             await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
 
-            // TODO add a test for making sure the update loop tries later
             expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
             expect(createdComment.state).to.equal("updating");
-            expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+            expect(createdComment.updatingState).to.equal("failed");
+            expect(didItRetryAfterEmittingError).to.be.true;
             expect(updateHasBeenEmitted).to.be.false;
             expect(loadingRetries).to.be.above(2);
             expect(errorsEmittedCount).to.greaterThanOrEqual(2);
@@ -272,5 +274,5 @@ describe(`comment.update() emits errors if needed`, async () => {
     it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema - IPFS P2P`);
     it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema - IPFS Gateways`);
 
-    it(`comment.update() emits error if CommentUpdate is an invalid json - Gateway`);
+    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS Gateway`);
 });
