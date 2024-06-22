@@ -61,7 +61,7 @@ describe("CommentEdit", async () => {
             signer: signers[7] // Create a new signer, different than the signer of the original comment
         };
         const edit = await plebbit.createCommentEdit(props);
-        const editFromEdit = await plebbit.createCommentEdit(remeda.omit(edit, ["signer"]));
+        const editFromEdit = await plebbit.createCommentEdit(edit.toJSON());
         [edit, editFromEdit].forEach((curEdit) => {
             expect(curEdit.subplebbitAddress).to.equal(props.subplebbitAddress);
             expect(curEdit.commentCid).to.equal(props.commentCid);
