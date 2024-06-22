@@ -1,0 +1,220 @@
+import Plebbit from "../../../../dist/node/index.js";
+import signers from "../../../fixtures/signers.js";
+import {
+    mockRemotePlebbit,
+    publishRandomPost,
+    publishRandomReply,
+    mockRemotePlebbitIpfsOnly,
+    isRpcFlagOn
+} from "../../../../dist/node/test/test-util.js";
+import { messages } from "../../../../dist/node/errors.js";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
+
+import { cleanUpBeforePublishing, verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+
+chai.use(chaiAsPromised);
+const { expect, assert } = chai;
+
+const subplebbitAddress = signers[0].address;
+
+describe(`comment.update`, async () => {
+    let plebbit;
+    before(async () => {
+        plebbit = await mockRemotePlebbit();
+    });
+
+    it(`plebbit.createComment({cid}).update() emits error if signature of CommentIpfs is invalid`, async () => {
+        // A critical error, so it shouldn't keep on updating
+
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const postJson = cleanUpBeforePublishing(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+
+        postJson.title += "1234"; // Invalidate signature
+
+        expect(await verifyComment(postJson, true, plebbit._clientsManager, false)).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SIGNATURE_IS_INVALID
+        });
+
+        const postWithInvalidSignatureCid = (
+            await (await mockRemotePlebbitIpfsOnly())._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))
+        ).path;
+
+        const createdComment = await plebbit.createComment({ cid: postWithInvalidSignatureCid });
+
+        const ipfsStates = [];
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
+        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+        let updateHasBeenEmitted = false;
+        createdComment.once("update", () => (updateHasBeenEmitted = true));
+        await createdComment.update();
+
+        await new Promise((resolve) =>
+            createdComment.once("error", (err) => {
+                expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
+                resolve();
+            })
+        );
+
+        // should stop updating by itself because of the critical error
+
+        expect(createdComment.state).to.equal("stopped");
+        expect(createdComment.updatingState).to.equal("failed");
+        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+        expect(ipfsStates).to.deep.equal(["fetching-ipfs", "stopped"]);
+        expect(updateHasBeenEmitted).to.be.false;
+    });
+
+    if (!isRpcFlagOn())
+        it(`comment.update() emit an error if CommentUpdate signature is invalid`, async () => {
+            // Should emit an error as well as continue the update loop
+
+            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+            const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
+
+            invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
+
+            expect(
+                await verifyCommentUpdate(
+                    invalidCommentUpdateJson,
+                    true,
+                    plebbit._clientsManager,
+                    subplebbit.address,
+                    { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
+                    false
+                )
+            ).to.deep.equal({
+                valid: false,
+                reason: messages.ERR_SIGNATURE_IS_INVALID
+            });
+
+            const createdComment = await plebbit.createComment({
+                cid: subplebbit.posts.pages.hot.comments[0].cid,
+                ...subplebbit.posts.pages.hot.comments[0].toJSONIpfs()
+            });
+
+            let loadingRetries = 0;
+            let errorsEmittedCount = 0;
+            const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
+            createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+                if (cidOrPath.endsWith("/update")) {
+                    loadingRetries++;
+                    return JSON.stringify(invalidCommentUpdateJson);
+                } else return originalFetch(cidOrPath);
+            };
+
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            await createdComment.update();
+
+            await new Promise((resolve) =>
+                createdComment.on("error", (err) => {
+                    expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
+                    errorsEmittedCount++;
+                    resolve();
+                })
+            );
+
+            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+
+            expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+            expect(createdComment.state).to.equal("updating");
+            expect(createdComment.updatingState).to.equal("failed"); // Not sure if should be stopped or failed
+            expect(updateHasBeenEmitted).to.be.false;
+            expect(loadingRetries).to.be.above(2);
+            expect(errorsEmittedCount).to.greaterThanOrEqual(2);
+
+            await createdComment.stop();
+        });
+
+    it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
+        const originalPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+
+        const recreatedPost = await plebbit.createComment({ cid: originalPost.cid });
+
+        recreatedPost.update();
+
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        // Comment ipfs props should be defined now, but not CommentUpdate
+        expect(recreatedPost.updatedAt).to.be.undefined;
+
+        expect(recreatedPost.toJSONIpfs()).to.deep.equal(originalPost.toJSONIpfs());
+
+        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        await recreatedPost.stop();
+        expect(recreatedPost.updatedAt).to.be.a("number");
+    });
+
+    it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a reply`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const reply = await publishRandomReply(
+            subplebbit.posts.pages.hot.comments.find((post) => post.replyCount > 0),
+            plebbit,
+            {},
+            true
+        );
+
+        const recreatedReply = await plebbit.createComment({ cid: reply.cid });
+
+        recreatedReply.update();
+
+        await new Promise((resolve) => recreatedReply.once("update", resolve));
+        // Comment ipfs props should be defined now, but not CommentUpdate
+        expect(recreatedReply.updatedAt).to.be.undefined;
+
+        expect(recreatedReply.toJSONIpfs()).to.deep.equal(reply.toJSONIpfs());
+
+        await new Promise((resolve) => recreatedReply.once("update", resolve));
+        await recreatedReply.stop();
+
+        expect(recreatedReply.updatedAt).to.be.a("number");
+    });
+
+    it(`comment.stop() stops comment updates`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+        await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        let updatedHasBeenCalled = false;
+        comment.updateOnce = comment._setUpdatingState = async () => {
+            updatedHasBeenCalled = true;
+        };
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval + 1));
+        expect(updatedHasBeenCalled).to.be.false;
+    });
+
+    it(`comment.update() is working as expected after calling comment.stop()`, async () => {
+        const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+        const comment = await plebbit.createComment({ cid: subplebbit.posts.pages.hot.comments[0].cid });
+
+        await comment.update();
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentIpfs Update
+        await new Promise((resolve) => comment.once("update", resolve)); // CommentUpdate update
+
+        await comment.stop();
+
+        await comment.update();
+
+        await publishRandomReply(comment, plebbit, {}, false);
+        await new Promise((resolve) => comment.once("update", resolve));
+        await comment.stop();
+    });
+
+    it(`comment.update() is working as expected after comment.publish()`, async () => {
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+        await post.update();
+        await new Promise((resolve) => post.once("update", resolve));
+        if (!post.updatedAt) await new Promise((resolve) => post.once("update", resolve));
+        expect(post.updatedAt).to.be.a("number");
+        await post.stop();
+    });
+});
