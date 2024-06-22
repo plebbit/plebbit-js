@@ -1,6 +1,12 @@
 import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
-import { generateMockPost, publishWithExpectedResult, isRpcFlagOn, mockGatewayPlebbit } from "../../../../dist/node/test/test-util.js";
+import {
+    generateMockPost,
+    publishWithExpectedResult,
+    isRpcFlagOn,
+    mockGatewayPlebbit,
+    mockRemotePlebbit
+} from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
