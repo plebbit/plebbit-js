@@ -475,8 +475,149 @@ describe(`comment.update() emits errors if needed`, async () => {
         expect(updateHasBeenEmitted).to.be.false;
     });
 
-    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS P2P`);
-    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS Gateway`);
+    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS P2P`, async () => {
+        // Should emit an error and keep on updating
+        const createdComment = await plebbit.createComment({
+            cid: commentUpdateWithInvalidSignatureJson.cid
+        });
+
+        const invalidCommentUpdateJson = "<html>something</html>";
+        let loadingRetries = 0;
+        let errorsEmittedCount = 0;
+        let didItRetryAfterEmittingError = false;
+        const originalFetch = createdComment._clientsManager._fetchCidP2P.bind(createdComment._clientsManager);
+        createdComment._clientsManager._fetchCidP2P = (cidOrPath) => {
+            if (cidOrPath.endsWith("/update")) {
+                loadingRetries++;
+                if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
+                return invalidCommentUpdateJson;
+            } else return originalFetch(cidOrPath);
+        };
+
+        const ipfsStates = [];
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+        const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
+        createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
+
+        let updateHasBeenEmittedWithCommentUpdate = false;
+        createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
+        await createdComment.update();
+
+        await new Promise((resolve) =>
+            createdComment.on("error", (err) => {
+                expect(err.code).to.equal("ERR_INVALID_JSON");
+                errorsEmittedCount++;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+
+        expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+        expect(createdComment.state).to.equal("updating");
+        expect(createdComment.updatingState).to.equal("failed");
+        expect(didItRetryAfterEmittingError).to.be.true;
+        expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
+        expect(loadingRetries).to.be.above(2);
+        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
+
+        await createdComment.stop();
+
+        const expectedIpfsStates = [
+            "fetching-ipfs", // when loading CommentIpfs at the beginning
+            "stopped",
+            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "stopped"])
+                .flat()
+        ];
+
+        expect(ipfsStates).to.deep.equal(expectedIpfsStates);
+
+        const expectedUpdateStates = [
+            "fetching-ipfs",
+            "succeeded",
+            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "failed"])
+                .flat(),
+            "stopped"
+        ];
+        expect(updatingStates).to.deep.equal(expectedUpdateStates);
+    });
+    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS Gateway`, async () => {
+        // Should emit an error and keep on updating
+        const plebbit = await mockGatewayPlebbit();
+        const createdComment = await plebbit.createComment({
+            cid: commentUpdateWithInvalidSignatureJson.cid
+        });
+
+        const invalidJson = "<html>something</html>";
+        let loadingRetries = 0;
+        let errorsEmittedCount = 0;
+        let didItRetryAfterEmittingError = false;
+        const originalFetch = createdComment._clientsManager._fetchWithLimit.bind(createdComment._clientsManager);
+        createdComment._clientsManager._fetchWithLimit = (...args) => {
+            const url = args[0];
+            if (url.includes("/update")) {
+                loadingRetries++;
+                if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
+                return invalidJson;
+            } else return originalFetch(...args);
+        };
+
+        const ipfsGatewayStates = [];
+        const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
+        createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
+
+        const updatingStates = [];
+        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+
+        let updateHasBeenEmittedWithCommentUpdate = false;
+        createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
+        await createdComment.update();
+
+        await new Promise((resolve) =>
+            createdComment.on("error", (err) => {
+                expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS");
+                expect(err.details.gatewayToError[ipfsGatewayUrl].code).to.equal("ERR_INVALID_JSON");
+                errorsEmittedCount++;
+                resolve();
+            })
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
+
+        expect(createdComment.updatedAt).to.be.undefined; // Make sure it didn't use the props from the invalid CommentUpdate
+        expect(createdComment.state).to.equal("updating");
+        expect(createdComment.updatingState).to.equal("failed");
+        expect(didItRetryAfterEmittingError).to.be.true;
+        expect(updateHasBeenEmittedWithCommentUpdate).to.be.false;
+        expect(loadingRetries).to.be.above(2);
+        expect(errorsEmittedCount).to.greaterThanOrEqual(2);
+
+        await createdComment.stop();
+
+        const expectedUpdateStates = [
+            "fetching-ipfs", // When fetching comment-ipfs at the beginning
+            "succeeded",
+            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                .fill(["fetching-subplebbit-ipns", "fetching-update-ipfs", "failed"])
+                .flat(),
+            "stopped"
+        ];
+
+        expect(updatingStates).to.deep.equal(expectedUpdateStates);
+
+        const expectedIpfsGatewayStates = [
+            "fetching-ipfs", // when loading CommentIpfs at the beginning
+            "stopped",
+            ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                .fill(["fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"])
+                .flat()
+        ];
+
+        expect(ipfsGatewayStates).to.deep.equal(expectedIpfsGatewayStates);
+    });
 
     it(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS P2P`);
     it(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS Gateways`);
