@@ -917,6 +917,12 @@ export class CommentClientsManager extends PublicationClientsManager {
         this._comment.emit("error", subError);
         throw subError;
     }
+
+    override postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
+        // if we're fetching CommentUpdate, it shouldn't be "stopped" after fetching subplebbit-ipfs
+        if (loadType === "subplebbit" && !this._isPublishing()) return;
+        else return super.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    }
 }
 
 type SubplebbitGatewayFetch = {
