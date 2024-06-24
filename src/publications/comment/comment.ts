@@ -415,7 +415,8 @@ export class Comment extends Publication {
         if (
             err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" ||
             err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA" ||
-            err.code === "ERR_CALCULATED_CID_DOES_NOT_MATCH"
+            err.code === "ERR_CALCULATED_CID_DOES_NOT_MATCH" ||
+            err.code === "ERR_INVALID_JSON"
         )
             return false; // These errors means there's a problem with the record itself, not the loading
 
