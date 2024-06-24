@@ -1,6 +1,7 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type {
     PageInstanceType,
+    PageIpfs,
     PostSortName,
     PostsPagesTypeIpfs,
     PostsPagesTypeJson,
@@ -15,6 +16,7 @@ import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { CommentCidSchema } from "../schema/schema.js";
 
 type BaseProps = {
     plebbit: BasePages["_plebbit"];
@@ -62,8 +64,7 @@ export class BasePages {
         this._pagesIpfs = undefined;
     }
 
-    async _fetchAndVerifyPage(pageCid: string) {
-        assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
+    async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
         if (!this._plebbit.plebbitRpcClient) {
             const signatureValidity = await verifyPage(
@@ -90,7 +91,8 @@ export class BasePages {
 
     async getPage(pageCid: string): Promise<PageInstanceType> {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
-        return await parsePageIpfs(await this._fetchAndVerifyPage(pageCid), this._plebbit);
+        const parsedCid = CommentCidSchema.parse(pageCid);
+        return await parsePageIpfs(await this._fetchAndVerifyPage(parsedCid), this._plebbit);
     }
 
     toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined {
