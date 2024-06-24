@@ -567,3 +567,10 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
         comment._plebbit
     );
 }
+
+export async function addStringToIpfs(content: string): Promise<string> {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const cid = (await ipfsClient._client.add(content)).path;
+    return cid;
+}

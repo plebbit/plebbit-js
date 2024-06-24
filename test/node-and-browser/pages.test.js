@@ -1,7 +1,15 @@
-import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/util.js";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
-import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util.js";
+import {
+    loadAllPages,
+    publishRandomPost,
+    findCommentInPage,
+    mockRemotePlebbit,
+    mockGatewayPlebbit,
+    mockPlebbit,
+    addStringToIpfs
+} from "../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 
 let subplebbit;
@@ -199,5 +207,43 @@ describe("Test pages sorting", async () => {
         Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
             it(`${sortName} pages under a comment are sorted correctly`, async () => await testRepliesSort(posts, sortName))
         );
+    });
+});
+
+describe(`getPage`, async () => {
+    it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
+        const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
+        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
+        try {
+            await sub.posts.getPage(invalidPageCid);
+            expect.fail("Should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+            expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+        }
+    });
+    it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
+        const plebbit = await mockPlebbit();
+
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const pageIpfs = sub.posts.toJSONIpfs().pages.hot;
+        expect(pageIpfs).to.exist;
+
+        const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
+        invalidPageIpfs.comments[0].comment.content += "invalidate signature";
+
+        const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPageIpfs));
+
+        try {
+            await sub.posts.getPage(invalidPageCid);
+            expect.fail("should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_PAGE_SIGNATURE_IS_INVALID");
+        }
     });
 });
