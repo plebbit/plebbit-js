@@ -1,7 +1,6 @@
-import { describeSkipIfRpc } from "../../../dist/node/test/test-util";
-import signers from "../fixtures/signers.js";
+import signers from "../../fixtures/signers.js";
 
-import { mockRemotePlebbit } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";

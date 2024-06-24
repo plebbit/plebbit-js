@@ -1,4 +1,4 @@
-import signers from "../fixtures/signers.js";
+import signers from "../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);

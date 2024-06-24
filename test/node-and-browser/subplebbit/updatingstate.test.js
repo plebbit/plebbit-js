@@ -1,13 +1,12 @@
-import signers from "../fixtures/signers.js";
+import signers from "../../fixtures/signers.js";
 
 import {
     publishRandomPost,
     mockRemotePlebbit,
     mockGatewayPlebbit,
-    isRpcFlagOn,
     itSkipIfRpc,
     mockRemotePlebbitIpfsOnly
-} from "../../dist/node/test/test-util.js";
+} from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";

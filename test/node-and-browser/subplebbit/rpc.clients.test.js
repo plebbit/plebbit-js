@@ -1,4 +1,4 @@
-import signers from "../fixtures/signers.js";
+import signers from "../../fixtures/signers.js";
 
 import { describeIfRpc } from "../../../dist/node/test/test-util.js";
 

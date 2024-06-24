@@ -1,5 +1,5 @@
-import signers from "../fixtures/signers.js";
-import { messages } from "../../dist/node/errors.js";
+import signers from "../../fixtures/signers.js";
+import { messages } from "../../../dist/node/errors.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
