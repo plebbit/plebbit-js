@@ -277,6 +277,9 @@ describe(`comment.update() emits errors if needed`, async () => {
             const ipfsUrl = Object.keys(createdComment.clients.ipfsClients)[0];
             createdComment.clients.ipfsClients[ipfsUrl].on("statechange", (state) => ipfsStates.push(state));
 
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+
             let updateHasBeenEmittedWithCommentUpdate = false;
             createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
             await createdComment.update();
@@ -310,6 +313,16 @@ describe(`comment.update() emits errors if needed`, async () => {
             ];
 
             expect(ipfsStates).to.deep.equal(expectedIpfsStates);
+
+            const expectedUpdateStates = [
+                "fetching-ipfs",
+                "succeeded",
+                ...new Array(loadingRetries) // when loading CommentUpdate for ${loadingRetries} amounts
+                    .fill(["fetching-subplebbit-ipns", "fetching-subplebbit-ipfs", "fetching-update-ipfs", "failed"])
+                    .flat(),
+                "stopped"
+            ];
+            expect(updatingStates).to.deep.equal(expectedUpdateStates);
         });
 
     it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID`, async () => {
