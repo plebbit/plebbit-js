@@ -121,13 +121,17 @@ const setUpMockGateways = async () => {
     // Will return valid content for one cid and invalid content for another
     // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
 
-    http.createServer((req, res) => {
+    http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr")
             res.end("Hello plebs"); // Valid content
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
-        else res.end("Unknown CID");
+        else if (req.url.includes("/ipns")) {
+            const subAddress = req.url.split("/")[2];
+            const sub = await plebbit.getSubplebbit(subAddress);
+            res.end(JSON.stringify(sub.toJSONIpfs()));
+        } else res.end(await plebbit.fetchCid(req.url));
     })
         .listen(13415, hostName)
         .on("error", (err) => {
