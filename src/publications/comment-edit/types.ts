@@ -11,8 +11,7 @@ import {
     LocalCommentEditAfterSigningSchema,
     ModeratorCommentEditOptionsSchema
 } from "./schema";
-import type { AuthorPubsubType } from "../../types";
-import { SubplebbitAuthor } from "../comment/types";
+import type { AuthorTypeWithCommentUpdate } from "../../types";
 import { CommentAuthorSchema } from "../../schema/schema";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
@@ -37,9 +36,8 @@ export type CommentEditPubsubMessage = z.infer<typeof CommentEditPubsubMessageSc
 
 export type DecryptedChallengeRequestCommentEdit = z.infer<typeof DecryptedChallengeRequestCommentEditSchema>;
 
-// TODO below type should be replaced with a generic
-export type ChallengeRequestCommentEditWithSubplebbitAuthor = CommentEditPubsubMessage & {
-    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
-};
+export interface CommentEditPubsubMessageWithSubplebbitAuthor extends CommentEditPubsubMessage {
+    author: AuthorTypeWithCommentUpdate;
+}
 
 export type CommentEditTypeJson = z.infer<typeof CommentEditJsonSchema>;

@@ -17,11 +17,11 @@ import {
 import { z } from "zod";
 import type { EncodedPubsubSignature, Encrypted, EncryptedEncoded, PubsubSignature, SignerType } from "./signer/types.js";
 import type {
-    ChallengeRequestCommentEditWithSubplebbitAuthor,
+    CommentEditPubsubMessageWithSubplebbitAuthor,
     CommentEditPubsubMessage,
     LocalCommentEditOptions
 } from "./publications/comment-edit/types.js";
-import type { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
+import type { VotePubsubMessageWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
 import type { CommentPubsubMessage, CommentUpdate, LocalCommentOptions, SubplebbitAuthor } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 import {
@@ -99,17 +99,17 @@ export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequest
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
-export type ChallengeRequestCommentWithSubplebbitAuthor = CommentPubsubMessage & {
-    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
-};
+export interface CommentPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessage {
+    author: AuthorTypeWithCommentUpdate;
+}
 
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
     // This interface will query author.subplebbit and embed it within publication.author
     // We may add author
     publication:
-        | ChallengeRequestVoteWithSubplebbitAuthor
-        | ChallengeRequestCommentEditWithSubplebbitAuthor
-        | ChallengeRequestCommentWithSubplebbitAuthor;
+        | VotePubsubMessageWithSubplebbitAuthor
+        | CommentEditPubsubMessageWithSubplebbitAuthor
+        | CommentPubsubMessageWithSubplebbitAuthor;
 }
 
 export interface EncodedDecryptedChallengeRequestMessageType

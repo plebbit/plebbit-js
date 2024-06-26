@@ -31,7 +31,7 @@ import { PlebbitError } from "../../../plebbit-error.js";
 import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
-    ChallengeRequestCommentWithSubplebbitAuthor,
+    CommentPubsubMessageWithSubplebbitAuthor,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     CommentUpdatesRow,
@@ -83,14 +83,14 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
-import { ChallengeRequestCommentEditWithSubplebbitAuthor, CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
+import { CommentEditPubsubMessageWithSubplebbitAuthor, CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
 import {
     AuthorCommentEditPubsubSchema,
     ModeratorCommentEditPubsubSchema,
     uniqueAuthorFields,
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
-import type { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
+import type { VotePubsubMessageWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 import { IncomingPubsubMessageSchema } from "../../../pubsub-messages/schema.js";
@@ -419,19 +419,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private isPublicationVote(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestVoteWithSubplebbitAuthor {
+    ): publication is VotePubsubMessageWithSubplebbitAuthor {
         return "vote" in publication && typeof publication.vote === "number";
     }
 
     private isPublicationComment(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestCommentWithSubplebbitAuthor {
+    ): publication is CommentPubsubMessageWithSubplebbitAuthor {
         return !this.isPublicationVote(publication) && !this.isPublicationCommentEdit(publication);
     }
 
     private isPublicationReply(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestCommentWithSubplebbitAuthor {
+    ): publication is CommentPubsubMessageWithSubplebbitAuthor {
         return this.isPublicationComment(publication) && "parentCid" in publication && typeof publication.parentCid === "string";
     }
 
@@ -441,7 +441,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private isPublicationCommentEdit(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is ChallengeRequestCommentEditWithSubplebbitAuthor {
+    ): publication is CommentEditPubsubMessageWithSubplebbitAuthor {
         return !this.isPublicationVote(publication) && "commentCid" in publication && typeof publication.commentCid === "string";
     }
 
@@ -866,31 +866,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
 
         const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
-        if (typeof decryptedRequest?.publication?.author?.address !== "string")
-            return this._publishFailedChallengeVerification(
-                { reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED },
-                decryptedRequest.challengeRequestId
-            );
-        if ("subplebbit" in decryptedRequest?.publication?.author)
-            return this._publishFailedChallengeVerification(
-                { reason: messages.ERR_FORBIDDEN_AUTHOR_FIELD },
-                decryptedRequest.challengeRequestId
-            );
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
-        //@ts-expect-error
-        const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = decryptedRequest;
+
+        const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
+        const publicationWithSubplebbitAuthor = <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]>{
+            ...decryptedRequest.publication,
+            author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor }
+        };
+        const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = {
+            ...decryptedRequest,
+            publication: publicationWithSubplebbitAuthor
+        };
 
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest); // This function will throw an error if signature is invalid
         } catch (e) {
-            decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
-                await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
         }
-        decryptedRequestWithSubplebbitAuthor.publication.author.subplebbit =
-            await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
 
         this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
 

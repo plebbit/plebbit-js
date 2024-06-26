@@ -7,17 +7,15 @@ import {
     VoteOptionsToSignSchema,
     VotePubsubMessageSchema
 } from "./schema";
-import { AuthorPubsubType } from "../../types";
-import { SubplebbitAuthor } from "../comment/types";
+import type { AuthorTypeWithCommentUpdate } from "../../types";
 
 export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
 
 export type DecryptedChallengeRequestVote = z.infer<typeof DecryptedChallengeRequestVoteSchema>;
 
-// TODO move this to generic
-export type ChallengeRequestVoteWithSubplebbitAuthor = VotePubsubMessage & {
-    author: AuthorPubsubType & { subplebbit: SubplebbitAuthor | undefined };
-};
+export interface VotePubsubMessageWithSubplebbitAuthor extends VotePubsubMessage {
+    author: AuthorTypeWithCommentUpdate;
+}
 
 export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
 export type VoteTypeJson = z.infer<typeof VoteJsonSchema>;
