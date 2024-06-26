@@ -220,7 +220,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // Instead we should abort the retries, and emit an error to notify the user to do something about it
     private _isRetriableErrorWhenLoading(err: PlebbitError): boolean {
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
-        if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" || err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA") return false;
+        if (
+            err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" ||
+            err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA" ||
+            err.code === "ERR_INVALID_JSON"
+        )
+            return false;
 
         if (err instanceof FailedToFetchSubplebbitFromGatewaysError) {
             // If all gateway errors are non retriable, then the error is non retriable
@@ -253,16 +258,19 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
         this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
 
-        const loadedSubIpfs = await this._retryLoadingSubplebbitIpns(log, this.address);
-        if (loadedSubIpfs instanceof Error) {
-            log.error(`Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event`);
-            this.emit("error", <PlebbitError>loadedSubIpfs);
+        const loadedSubIpfsOrError = await this._retryLoadingSubplebbitIpns(log, this.address);
+        if (loadedSubIpfsOrError instanceof Error) {
+            log.error(
+                `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`,
+                `Will retry after ${this.plebbit.updateInterval}ms`
+            );
+            this.emit("error", <PlebbitError>loadedSubIpfsOrError);
             return;
         }
         // Signature already has been validated
 
-        if ((this.updatedAt || 0) < loadedSubIpfs.updatedAt) {
-            await this.initRemoteSubplebbitPropsNoMerge(loadedSubIpfs);
+        if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
+            await this.initRemoteSubplebbitPropsNoMerge(loadedSubIpfsOrError);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
         } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
