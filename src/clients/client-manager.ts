@@ -1059,6 +1059,8 @@ export class SubplebbitClientsManager extends ClientsManager {
         this._subplebbit._setUpdatingState("succeeded");
     }
 
+    // if we're loading a SubplebbitIpfs through RemoteSubplebbit, and the record itself has a problem
+    // Could be invalid json or schema or signature
     protected override postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void {
         this._subplebbit._setUpdatingState("failed");
         this._subplebbit.emit("error", subError);
