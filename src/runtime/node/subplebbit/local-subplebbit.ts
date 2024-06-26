@@ -893,13 +893,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
 
         const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
-        const publicationWithSubplebbitAuthor = <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]>{
-            ...decryptedRequest.publication,
-            author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor }
-        };
         const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = {
             ...request,
-            publication: publicationWithSubplebbitAuthor
+            publication: {
+                ...decryptedRequest.publication,
+                author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor }
+            }
         };
 
         try {
@@ -971,7 +970,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         try {
-            return DecryptedChallengeAnswerSchema.parse(decryptedRawString);
+            return DecryptedChallengeAnswerSchema.parse(parsedJson);
         } catch (e) {
             await this._publishFailedChallengeVerification(
                 { reason: messages.ERR_CHALLENGE_ANSWER_IS_INVALID_SCHEMA },
