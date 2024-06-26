@@ -85,14 +85,6 @@ export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptio
 
 export type Nft = z.infer<typeof AuthorAvatarNftSchema>;
 
-export interface PubsubMessage {
-    type: "CHALLENGEREQUEST" | "CHALLENGE" | "CHALLENGEANSWER" | "CHALLENGEVERIFICATION";
-    signature: PubsubSignature;
-    protocolVersion: ProtocolVersion;
-    userAgent: string;
-    timestamp: number;
-}
-
 export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessageSchema>;
 
 export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
@@ -170,6 +162,14 @@ export interface EncodedDecryptedChallengeVerificationMessageType
 export interface EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
     extends Omit<EncodedDecryptedChallengeVerificationMessageType, "publication">,
         Pick<DecryptedChallengeVerificationMessageType, "publication"> {}
+
+// Misc challenge pubsub message
+
+export type PubsubMessage =
+    | ChallengeRequestMessageType
+    | ChallengeMessageType
+    | ChallengeAnswerMessageType
+    | ChallengeVerificationMessageType;
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
