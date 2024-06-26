@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
+import { publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn, itSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
 import chai from "chai";
@@ -38,43 +38,44 @@ describe("subplebbit.update (remote)", async () => {
         await loadedSubplebbit.stop();
     });
 
-    if (!isRpcFlagOn())
-        it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs P2P)`, async () => {
-            const remotePlebbit = await mockRemotePlebbit();
-            const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
-            const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-            rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
-            tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
-            tempSubplebbit.update();
-            await new Promise((resolve) => {
-                tempSubplebbit.once("error", (err) => {
-                    expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
-                    resolve();
-                });
+    itSkipIfRpc(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs P2P)`, async () => {
+        const remotePlebbit = await mockRemotePlebbit();
+        const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
+        tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.update();
+        await new Promise((resolve) => {
+            tempSubplebbit.once("error", (err) => {
+                expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                resolve();
             });
-            await tempSubplebbit.stop();
         });
+        await tempSubplebbit.stop();
+        // TODO add tests for updating states
+    });
 
-    if (!isRpcFlagOn())
-        it(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs gateway)`, async () => {
-            const remoteGatewayPlebbit = await mockGatewayPlebbit();
-            const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
-            const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-            rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
-            tempSubplebbit.clientsManager._fetchWithGateway = async () => JSON.stringify(rawSubplebbitJson);
-            tempSubplebbit.update();
-            await new Promise((resolve) => {
-                tempSubplebbit.once("error", (err) => {
-                    expect(err.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
-                    resolve();
-                });
+    itSkipIfRpc(`subplebbit.update emits error if signature of subplebbit is invalid (ipfs gateway)`, async () => {
+        const remoteGatewayPlebbit = await mockGatewayPlebbit();
+        const gatewayUrl = Object.keys(remoteGatewayPlebbit.clients.ipfsGateways)[0];
+        const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
+        const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
+        tempSubplebbit.clientsManager._fetchWithLimit = async () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.update();
+        await new Promise((resolve) => {
+            tempSubplebbit.once("error", (err) => {
+                expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS")
+                expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
+                resolve();
             });
-            // TODO add tests for updating states
-            // TODO add tests for ipfs gateway states
-            // TODO add tests for how many time it retries
-
-            await tempSubplebbit.stop();
         });
+        // TODO add tests for updating states
+        // TODO add tests for ipfs gateway states
+        // TODO add tests for how many time it retries
+
+        await tempSubplebbit.stop();
+    });
 
     it(`subplebbit.update emits error if address of ENS and has no subplebbit-address`, async () => {
         const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
