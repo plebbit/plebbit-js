@@ -574,3 +574,9 @@ export async function addStringToIpfs(content: string): Promise<string> {
     const cid = (await ipfsClient._client.add(content)).path;
     return cid;
 }
+
+export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"].skip : globalThis["describe"];
+
+export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : globalThis["describe"].skip;
+
+export const itSkipIfRpc = isRpcFlagOn() ? globalThis["it"].skip : globalThis["it"];
