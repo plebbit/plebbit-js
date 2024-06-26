@@ -76,7 +76,6 @@ describe("subplebbit.update (remote)", async () => {
 
     itSkipIfRpc(`subplebbit.update emits error and retries if signature of subplebbit is invalid (ipfs gateway)`, async () => {
         // should emit an error and keep retrying
-        // TODO test retrying
 
         const remoteGatewayPlebbit = await mockGatewayPlebbit();
         const gatewayUrl = Object.keys(remoteGatewayPlebbit.clients.ipfsGateways)[0];
@@ -111,13 +110,144 @@ describe("subplebbit.update (remote)", async () => {
         expect(updatingStates).to.deep.equal(expectedUpdatingStates);
     });
 
-    itSkipIfRpc(`subplebbit.update emits error and retries if schema of subplebbit is invalid (ipfs p2p)`);
+    itSkipIfRpc(`subplebbit.update emits error and retries if schema of subplebbit is invalid (ipfs p2p)`, async () => {
+        const remotePlebbit = await mockRemotePlebbit();
+        const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
 
-    itSkipIfRpc(`subplebbit.update emits error and retries if schema of subplebbit is invalid (ipfs gateway)`);
+        const ipfsClientUrl = Object.keys(tempSubplebbit.clients.ipfsClients)[0];
 
-    itSkipIfRpc(`subplebbit.update emits error and retries if subplebbit record is invalid json (ipfs p2p)`);
+        const updatingStates = [];
+        tempSubplebbit.on("updatingstatechange", () => updatingStates.push(tempSubplebbit.updatingState));
 
-    itSkipIfRpc(`subplebbit.update emits error and retries if subplebbit record is invalid json (ipfs gateway)`);
+        const ipfsClientStates = [];
+        tempSubplebbit.clients.ipfsClients[ipfsClientUrl].on("statechange", (state) => ipfsClientStates.push(state));
+
+        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        rawSubplebbitJson.lastPostCid = 1234; // This will make schema invalid
+        tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
+
+        let retries = 0;
+
+        tempSubplebbit.update();
+        await new Promise((resolve) => {
+            tempSubplebbit.on("error", (err) => {
+                expect(err.code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+                retries++;
+                if (retries === 3) resolve();
+            });
+        });
+
+        await tempSubplebbit.stop();
+
+        const expectedUpdatingStates = ["fetching-ipns", "fetching-ipfs", "failed", "fetching-ipns", "fetching-ipfs", "failed", "stopped"];
+        expect(updatingStates).to.deep.equal(expectedUpdatingStates);
+
+        const expectedIpfsClientStates = ["fetching-ipns", "fetching-ipfs", "stopped", "fetching-ipns", "fetching-ipfs", "stopped"];
+        expect(ipfsClientStates).to.deep.equal(expectedIpfsClientStates);
+    });
+
+    itSkipIfRpc(`subplebbit.update emits error and retries if schema of subplebbit is invalid (ipfs gateway)`, async () => {
+        const remoteGatewayPlebbit = await mockGatewayPlebbit();
+        const gatewayUrl = Object.keys(remoteGatewayPlebbit.clients.ipfsGateways)[0];
+        const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
+
+        const updatingStates = [];
+        tempSubplebbit.on("updatingstatechange", () => updatingStates.push(tempSubplebbit.updatingState));
+
+        const ipfsGatewayStates = [];
+        tempSubplebbit.clients.ipfsGateways[gatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
+
+        let retries = 0;
+        const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        rawSubplebbitJson.lastPostCid = 12345; // This will make schema invalid
+        tempSubplebbit.clientsManager._fetchWithLimit = async () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.update();
+        await new Promise((resolve) => {
+            tempSubplebbit.on("error", (err) => {
+                expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA");
+                retries++;
+                if (retries === 3) resolve();
+            });
+        });
+
+        await tempSubplebbit.stop();
+
+        const expectedIpfsGatewayStates = new Array(retries).fill(["fetching-ipns", "stopped"]).flat();
+        expect(ipfsGatewayStates).to.deep.equal(expectedIpfsGatewayStates);
+
+        const expectedUpdatingStates = [...new Array(retries).fill(["fetching-ipns", "failed"]).flat(), "stopped"];
+        expect(updatingStates).to.deep.equal(expectedUpdatingStates);
+    });
+
+    itSkipIfRpc(`subplebbit.update emits error and retries if subplebbit record is invalid json (ipfs p2p)`, async () => {
+        const remotePlebbit = await mockRemotePlebbit({ updateInterval: 3000 });
+        const tempSubplebbit = await remotePlebbit.createSubplebbit({ address: signers[0].address });
+
+        const ipfsClientUrl = Object.keys(tempSubplebbit.clients.ipfsClients)[0];
+
+        const updatingStates = [];
+        tempSubplebbit.on("updatingstatechange", () => updatingStates.push(tempSubplebbit.updatingState));
+
+        const ipfsClientStates = [];
+        tempSubplebbit.clients.ipfsClients[ipfsClientUrl].on("statechange", (state) => ipfsClientStates.push(state));
+
+        const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        tempSubplebbit.clientsManager._fetchCidP2P = () => "." + JSON.stringify(rawSubplebbitJson); // invalid json
+
+        let retries = 0;
+
+        const errorPromise = new Promise((resolve) => {
+            tempSubplebbit.on("error", (err) => {
+                expect(err.code).to.equal("ERR_INVALID_JSON");
+                retries++;
+                if (retries === 3) resolve();
+            });
+        });
+
+        await Promise.all([tempSubplebbit.update(), errorPromise]);
+
+        await tempSubplebbit.stop();
+
+        const expectedUpdatingStates = [...new Array(retries - 1).fill(["fetching-ipns", "fetching-ipfs", "failed"]).flat(), "stopped"];
+        expect(updatingStates).to.deep.equal(expectedUpdatingStates);
+
+        const expectedIpfsClientStates = new Array(retries - 1).fill(["fetching-ipns", "fetching-ipfs", "stopped"]).flat();
+        expect(ipfsClientStates).to.deep.equal(expectedIpfsClientStates);
+    });
+
+    itSkipIfRpc(`subplebbit.update emits error and retries if subplebbit record is invalid json (ipfs gateway)`, async () => {
+        const remoteGatewayPlebbit = await mockGatewayPlebbit();
+        const gatewayUrl = Object.keys(remoteGatewayPlebbit.clients.ipfsGateways)[0];
+        const tempSubplebbit = await remoteGatewayPlebbit.createSubplebbit({ address: signers[0].address });
+
+        const updatingStates = [];
+        tempSubplebbit.on("updatingstatechange", () => updatingStates.push(tempSubplebbit.updatingState));
+
+        const ipfsGatewayStates = [];
+        tempSubplebbit.clients.ipfsGateways[gatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
+
+        let retries = 0;
+        const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
+        tempSubplebbit.clientsManager._fetchWithLimit = async () => "." + JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.update();
+        await new Promise((resolve) => {
+            tempSubplebbit.on("error", (err) => {
+                expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_INVALID_JSON");
+                retries++;
+                if (retries === 3) resolve();
+            });
+        });
+
+        await tempSubplebbit.stop();
+
+        const expectedIpfsGatewayStates = new Array(retries).fill(["fetching-ipns", "stopped"]).flat();
+        expect(ipfsGatewayStates).to.deep.equal(expectedIpfsGatewayStates);
+
+        const expectedUpdatingStates = [...new Array(retries).fill(["fetching-ipns", "failed"]).flat(), "stopped"];
+        expect(updatingStates).to.deep.equal(expectedUpdatingStates);
+    });
 
     it(`subplebbit.update emits error if address of ENS and has no subplebbit-address`, async () => {
         const sub = await plebbit.createSubplebbit({ address: "this-sub-does-not-exist.eth" });
@@ -168,5 +298,19 @@ describe("subplebbit.update (remote)", async () => {
         await subplebbit.stop();
     });
 
-    it(`subplebbit.update() is working as expected after calling subplebbit.stop() - IPFS Gateway`);
+    it(`subplebbit.update() is working as expected after calling subplebbit.stop() - IPFS Gateway`, async () => {
+        const gatewayPlebbit = await mockGatewayPlebbit();
+        const subplebbit = await gatewayPlebbit.createSubplebbit({ address: signers[0].address });
+
+        await subplebbit.update();
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await subplebbit.stop();
+
+        await subplebbit.update();
+
+        await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await subplebbit.stop();
+    });
 });
