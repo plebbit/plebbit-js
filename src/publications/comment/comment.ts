@@ -1,11 +1,7 @@
 import retry, { RetryOperation } from "retry";
 import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
-import type {
-    CommentsTableRowInsert,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    PublicationTypeName
-} from "../../types.js";
+import type { CommentsTableRowInsert, DecryptedChallengeVerificationMessageType, PublicationTypeName } from "../../types.js";
 
 import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -238,9 +234,7 @@ export class Comment extends Publication {
         }
     }
 
-    protected override _updateLocalCommentPropsWithVerification(
-        props: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"]
-    ) {
+    protected override _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
         if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
         this._initIpfsProps(props);

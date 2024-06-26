@@ -115,7 +115,7 @@ export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedS
 
 // Comment update schemas
 
-const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.author
+export const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.author
     .extend({
         subplebbit: SubplebbitAuthorSchema.optional()
     })

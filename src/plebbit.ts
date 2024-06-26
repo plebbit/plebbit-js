@@ -16,7 +16,6 @@ import type {
 import { Comment } from "./publications/comment/comment.js";
 import {
     doesDomainAddressHaveCapitalLetter,
-    isIpfsCid,
     removeNullUndefinedEmptyObjectsValuesRecursively,
     throwWithErrorCode,
     timestamp
@@ -24,7 +23,6 @@ import {
 import Vote from "./publications/vote/vote.js";
 import { createSigner, Signer } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
-import { getPlebbitAddressFromPrivateKey } from "./signer/util.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
@@ -445,11 +443,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
-        if (!options.address)
-            throw new PlebbitError("ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS", {
-                options
-            });
         const subplebbit = new RemoteSubplebbit(this);
+        //@ts-expect-error
+        subplebbit[Symbol.iterator] = () => subplebbit.toJSON();
         const subProps = options instanceof RemoteSubplebbit ? options.toJSONIpfs() : options;
         await subplebbit.initRemoteSubplebbitPropsNoMerge(subProps);
 

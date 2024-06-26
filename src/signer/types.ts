@@ -16,6 +16,7 @@ import { CommentSignedPropertyNames } from "../publications/comment/schema";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
 import { VoteSignedPropertyNames } from "../publications/vote/schema";
 import { CommentUpdateSignedPropertyNames } from "./constants";
+import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
@@ -31,14 +32,8 @@ export interface SignerType {
 }
 
 // ---------------------------
-// Encryption
-export type Encrypted = {
-    // examples available at https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    ciphertext: Uint8Array;
-    iv: Uint8Array;
-    tag: Uint8Array;
-    type: "ed25519-aes-gcm";
-};
+
+export type Encrypted = z.infer<typeof EncryptedSchema>;
 
 export type EncryptedEncoded = {
     ciphertext: string; // base64
@@ -50,12 +45,7 @@ export type EncryptedEncoded = {
 // ---------------------------
 // Signature
 
-export interface PubsubSignature {
-    signature: Uint8Array; // (byte string in cbor)
-    publicKey: Uint8Array; // (byte string in cbor) 32 bytes
-    type: "ed25519";
-    signedPropertyNames: readonly string[];
-}
+export type PubsubSignature = z.infer<typeof PubsubMessageSignatureSchema>;
 
 export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
     signature: string; // base64

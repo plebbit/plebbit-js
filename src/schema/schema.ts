@@ -28,6 +28,8 @@ const regexSemverNumberedGroups =
 
 export const ProtocolVersionSchema = z.string().regex(regexSemverNumberedGroups);
 
+export const UserAgentSchema = z.string(); // TODO should use regex to validate
+
 const WalletSchema = z.object({
     address: z.string(),
     timestamp: PlebbitTimestampSchema,

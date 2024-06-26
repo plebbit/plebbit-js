@@ -61,6 +61,7 @@ export default class PlebbitRpcClient {
 
                     // We need to parse error props into PlebbitErrors
                     if (message?.params?.event === "error") {
+                        // zod here
                         message.params.result = new PlebbitError(message.params.result.code, message.params.result.details);
                         delete message.params.result.stack; // Need to delete locally generated PlebbitError stack
                     }
@@ -92,6 +93,7 @@ export default class PlebbitRpcClient {
                     //e is an error json representation of PlebbitError
                     if ("code" in <PlebbitError>e) {
                         const actualPlebError = e as PlebbitError;
+                        // zod here
                         throw new PlebbitError(actualPlebError.code, actualPlebError.details);
                     } else if ("message" in <Error>e) throw new Error((<Error>e).message);
                     else {
@@ -161,22 +163,26 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
+        // zod here
         const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [commentCid]);
         return this._plebbit.createComment({ cid: commentCid, ...commentProps });
     }
 
     async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
+        // zod here
         const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentPage", [pageCid, commentCid, subplebbitAddress]);
         return pageIpfs;
     }
 
     async getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
+        // zod here
         const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPage", [pageCid, subplebbitAddress]);
         return pageIpfs;
     }
 
     async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
+        // zod here
         const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
         await subplebbit.initRpcInternalSubplebbitNoMerge(subProps);
@@ -189,16 +195,19 @@ export default class PlebbitRpcClient {
     }
 
     async startSubplebbit(subplebbitAddress: string) {
+        // zod here
         const subscriptionId = <number>await this._webSocketClient.call("startSubplebbit", [subplebbitAddress]);
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
     async stopSubplebbit(subplebbitAddress: string): Promise<void> {
+        // zod here
         await this._webSocketClient.call("stopSubplebbit", [subplebbitAddress]);
     }
 
     async editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions) {
+        // zod here
         const editedSub = <InternalSubplebbitRpcType>(
             await this._webSocketClient.call("editSubplebbit", [subplebbitAddress, subplebbitEditOptions])
         );
@@ -206,31 +215,37 @@ export default class PlebbitRpcClient {
     }
 
     async deleteSubplebbit(subplebbitAddress: string) {
+        // zod here
         await this._webSocketClient.call("deleteSubplebbit", [subplebbitAddress]);
     }
 
     async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
+        // zod here
         const subscriptionId = <number>await this._webSocketClient.call("subplebbitUpdate", [subplebbitAddress]);
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
     async publishComment(commentProps: CommentChallengeRequestToEncryptType) {
+        // zod here
         const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
         return subscriptionId;
     }
 
     async publishCommentEdit(commentEditProps: DecryptedChallengeRequestCommentEdit) {
+        // zod here
         const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
         return subscriptionId;
     }
 
     async publishVote(voteProps: DecryptedChallengeRequestVote) {
+        // zod here
         const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
         return subscriptionId;
     }
 
     async commentUpdate(commentCid: string) {
+        // zod here
         assert(commentCid, "Need to have comment cid in order to call RPC commentUpdate");
         const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid]);
         this._initSubscriptionEvent(subscriptionId);
@@ -238,11 +253,13 @@ export default class PlebbitRpcClient {
     }
 
     async publishChallengeAnswers(subscriptionId: number, challengeAnswers: string[]) {
+        // zod here
         const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
         return res;
     }
 
     async resolveAuthorAddress(authorAddress: string) {
+        // zod here
         const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
         return res;
     }
@@ -250,6 +267,7 @@ export default class PlebbitRpcClient {
     async listSubplebbits(): Promise<string[]> {
         if (!this._listSubsSubscriptionId) {
             this._lastListedSubs = undefined;
+            // zod here
             this._listSubsSubscriptionId = <number>await this._webSocketClient.call("listSubplebbits", []);
             this._initSubscriptionEvent(this._listSubsSubscriptionId);
             this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {
@@ -263,16 +281,19 @@ export default class PlebbitRpcClient {
     }
 
     async fetchCid(cid: string): Promise<string> {
+        // zod here
         const res = <string>await this._webSocketClient.call("fetchCid", [cid]);
         return res;
     }
 
     async setSettings(settings: PlebbitWsServerSettings) {
+        // zod here
         const res = <boolean>await this._webSocketClient.call("setSettings", [settings]);
         return res;
     }
 
     async getSettings() {
+        // zod here
         const res = <PlebbitWsServerSettingsSerialized>await this._webSocketClient.call("getSettings", []);
         return res;
     }

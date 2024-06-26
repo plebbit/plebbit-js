@@ -304,6 +304,36 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this._setState("stopped");
     }
 
+    // *[Symbol.iterator]() {
+    //     yield 1;
+    //     yield 2;
+    //     yield 3;
+    // }
+    // Control what properties are included when spreading
+    // *[Symbol.iterator]() {
+    //     // Yield the properties you want to be included when spreading
+    //     const json = this.toJSON();
+    //     for (const key in this.toJSON()) {
+    //         if (Object.prototype.hasOwnProperty.call(json, key)) {
+    //             yield [key, json[key]];
+    //         }
+    //     }
+    // }
+
+    // [Symbol.iterator]() {
+    //     return this.toJSON();
+    // }
+
+    // // Control what properties are included when spreading
+    // *[Symboliterator]() {
+    //     // Yield the properties you want to be included when spreading
+    //     for (const key in this._data) {
+    //         if (Object.prototype.hasOwnProperty.call(this._data, key)) {
+    //             yield [key, this._data[key]];
+    //         }
+    //     }
+    // }
+
     async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this> {
         throw Error("Can't edit a remote subplebbit");
     }

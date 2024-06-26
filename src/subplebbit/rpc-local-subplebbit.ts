@@ -6,7 +6,7 @@ import {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -100,6 +100,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .on("update", async (updateProps) => {
                 log(`Received update event from startSubplebbit (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
                 const newRpcRecord = <InternalSubplebbitRpcType>updateProps.params.result;
+                // zod here
                 await this._handleRpcUpdateProps(newRpcRecord);
                 this.emit("update", this);
                 if (!newRpcRecord.started) {
@@ -109,30 +110,35 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             })
             .on("startedstatechange", (args) => {
                 const newStartedState = <RpcLocalSubplebbit["startedState"]>args.params.result;
+                // zod here
                 this._setStartedState(newStartedState);
                 this._updateRpcClientStateFromStartedState(newStartedState);
             })
             .on("challengerequest", (args) => {
                 const request = <EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>args.params.result;
+                // zod here
                 this._setRpcClientState("waiting-challenge-requests");
                 this.emit("challengerequest", <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(request));
             })
             .on("challenge", (args) => {
                 this._setRpcClientState("publishing-challenge");
                 const challenge = <EncodedDecryptedChallengeMessageType>args.params.result;
+                // zod here
                 this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(challenge));
                 this._setRpcClientState("waiting-challenge-answers");
             })
             .on("challengeanswer", (args) => {
+                // zod here
                 const challengeAnswer = <EncodedDecryptedChallengeAnswerMessageType>args.params.result;
                 this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(challengeAnswer));
             })
             .on("challengeverification", (args) => {
                 const challengeVerification = <EncodedDecryptedChallengeVerificationMessageType>args.params.result;
+                // zod here
                 this._setRpcClientState("publishing-challenge-verification");
                 this.emit(
                     "challengeverification",
-                    <DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(challengeVerification)
+                    <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(challengeVerification)
                 );
                 this._setRpcClientState("waiting-challenge-requests");
             })
@@ -168,6 +174,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+        // zod here
         // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
         // settings.challenges = [] means sub has no challenges
         if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)

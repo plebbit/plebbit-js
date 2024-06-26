@@ -22,14 +22,19 @@ import type {
     LocalCommentEditOptions
 } from "./publications/comment-edit/types.js";
 import type { ChallengeRequestVoteWithSubplebbitAuthor, LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
-import type {
-    CommentIpfsWithCidPostCidDefined,
-    CommentPubsubMessage,
-    CommentUpdate,
-    LocalCommentOptions,
-    SubplebbitAuthor
-} from "./publications/comment/types.js";
+import type { CommentPubsubMessage, CommentUpdate, LocalCommentOptions, SubplebbitAuthor } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
+import {
+    ChallengeAnswerMessageSchema,
+    ChallengeInChallengePubsubMessageSchema,
+    ChallengeMessageSchema,
+    ChallengeRequestMessageSchema,
+    ChallengeVerificationMessageSchema,
+    DecryptedChallengeAnswerSchema,
+    DecryptedChallengeRequestSchema,
+    DecryptedChallengeSchema,
+    DecryptedChallengeVerificationSchema
+} from "./pubsub-messages/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = "eth" | "matic" | "avax" | "sol";
@@ -88,25 +93,9 @@ export interface PubsubMessage {
     timestamp: number;
 }
 
-export interface ChallengeType {
-    challenge: string;
-    type: "image/png" | "text/plain" | "chain/<chainTicker>";
-    caseInsensitive?: boolean; // challenge answer capitalization is ignored, informational only option added by the challenge file
-}
+export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessageSchema>;
 
-export interface ChallengeRequestMessageType extends PubsubMessage {
-    challengeRequestId: Uint8Array; // (byte string in cbor) // multihash of challengeRequestMessage.signature.publicKey, each challengeRequestMessage must use a new public key
-    type: "CHALLENGEREQUEST";
-    encrypted: Encrypted;
-    acceptedChallengeTypes?: string[];
-}
-
-export interface DecryptedChallengeRequest {
-    // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
-    publication: VotePubsubMessage | CommentEditPubsubMessage | CommentPubsubMessage;
-    challengeAnswers: string[] | undefined; // some challenges might be included in subplebbit.challenges and can be pre-answered
-    challengeCommentCids: string[] | undefined; // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
-}
+export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
 
 export interface DecryptedChallengeRequestMessageType extends ChallengeRequestMessageType, DecryptedChallengeRequest {}
 
@@ -133,15 +122,13 @@ export interface EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     extends Omit<EncodedDecryptedChallengeRequestMessageType, "publication">,
         Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, "publication"> {}
 
-export interface ChallengeMessageType extends PubsubMessage {
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    type: "CHALLENGE";
-    encrypted: Encrypted; // Will decrypt to {challenges: ChallengeType[]}
-}
+// Challenge message here
 
-export interface DecryptedChallenge {
-    challenges: ChallengeType[];
-}
+export type ChallengeType = z.infer<typeof ChallengeInChallengePubsubMessageSchema>;
+
+export type ChallengeMessageType = z.infer<typeof ChallengeMessageSchema>;
+
+export type DecryptedChallenge = z.infer<typeof DecryptedChallengeSchema>;
 
 export interface DecryptedChallengeMessageType extends ChallengeMessageType, DecryptedChallenge {}
 
@@ -151,15 +138,9 @@ export interface EncodedDecryptedChallengeMessageType
     encrypted: EncryptedEncoded; // all base64 strings
 }
 
-export interface ChallengeAnswerMessageType extends PubsubMessage {
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    type: "CHALLENGEANSWER";
-    encrypted: Encrypted; // Will decrypt to {challengeAnswers: string[]}
-}
+export type ChallengeAnswerMessageType = z.infer<typeof ChallengeAnswerMessageSchema>;
 
-export interface DecryptedChallengeAnswer {
-    challengeAnswers: string[]; // for example ['2+2=4', '1+7=8']
-}
+export type DecryptedChallengeAnswer = z.infer<typeof DecryptedChallengeAnswerSchema>;
 
 export interface DecryptedChallengeAnswerMessageType extends ChallengeAnswerMessageType, DecryptedChallengeAnswer {}
 
@@ -174,31 +155,11 @@ export interface EncodedDecryptedChallengeAnswerMessageType
     encrypted: EncryptedEncoded; // all base64 strings
 }
 
-export interface ChallengeVerificationMessageType extends PubsubMessage {
-    challengeRequestId: ChallengeRequestMessageType["challengeRequestId"];
-    type: "CHALLENGEVERIFICATION";
-    challengeSuccess: boolean;
-    challengeErrors?: (string | undefined)[];
-    reason?: string;
-    encrypted?: Encrypted; // Can be undefined if challengeSuccess is false or publication is of a vote/commentedit
-}
+export type ChallengeVerificationMessageType = z.infer<typeof ChallengeVerificationMessageSchema>;
 
-export interface DecryptedChallengeVerification {
-    publication: CommentIpfsWithCidPostCidDefined | undefined; // Only comments receive new props after verification for now
-    // signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
-}
+export type DecryptedChallengeVerification = z.infer<typeof DecryptedChallengeVerificationSchema>;
 
 export interface DecryptedChallengeVerificationMessageType extends ChallengeVerificationMessageType, DecryptedChallengeVerification {}
-
-export interface DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor extends DecryptedChallengeVerificationMessageType {
-    // This interface will query author.subplebbit and embed it within publication.author
-    // We may add author
-    publication:
-        | (CommentIpfsWithCidPostCidDefined & {
-              author: CommentIpfsWithCidPostCidDefined["author"] & { subplebbit: SubplebbitAuthor };
-          })
-        | undefined;
-}
 
 export interface EncodedDecryptedChallengeVerificationMessageType
     extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">,
@@ -208,7 +169,7 @@ export interface EncodedDecryptedChallengeVerificationMessageType
 
 export interface EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
     extends Omit<EncodedDecryptedChallengeVerificationMessageType, "publication">,
-        Pick<DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor, "publication"> {}
+        Pick<DecryptedChallengeVerificationMessageType, "publication"> {}
 
 export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
 
@@ -281,7 +242,7 @@ export interface SubplebbitEvents {
     challengerequest: (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => void;
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
-    challengeverification: (verification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) => void;
+    challengeverification: (verification: DecryptedChallengeVerificationMessageType) => void;
 
     error: (error: PlebbitError) => void;
 

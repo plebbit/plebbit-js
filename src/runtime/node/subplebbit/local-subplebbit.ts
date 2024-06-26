@@ -42,8 +42,8 @@ import type {
     DecryptedChallengeRequest,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     IpfsHttpClientPubsubMessage,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeRequestMessageType
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeVerificationMessageType
 } from "../../../types.js";
 import {
     ValidationResult,
@@ -93,6 +93,7 @@ import {
 import type { ChallengeRequestVoteWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
+import { IncomingPubsubMessageSchema } from "../../../pubsub-messages/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -530,7 +531,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _decryptOrRespondWithFailure(
-        request: ChallengeRequestMessage | ChallengeAnswerMessage
+        request: ChallengeRequestMessageType | ChallengeAnswerMessageType
     ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:_decryptOrRespondWithFailure");
         let decrypted: DecryptedChallengeAnswer | DecryptedChallengeRequest;
@@ -673,14 +674,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 `(${request.challengeRequestId.toString()}): `,
                 `Will attempt to publish challengeVerification with challengeSuccess=true`
             );
-            //@ts-expect-error
-            const publication: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor["publication"] | undefined =
-                await this.storePublication(request);
+            const publicationNoSubplebbitAuthor = await this.storePublication(request);
 
-            if (remeda.isPlainObject(publication)) {
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+            let publication: DecryptedChallengeVerificationMessageType["publication"];
+            if (remeda.isPlainObject(publicationNoSubplebbitAuthor)) {
+                const authorSignerAddress = await getPlebbitAddressFromPublicKey(publicationNoSubplebbitAuthor.signature.publicKey);
                 const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
-                if (subplebbitAuthor) publication.author.subplebbit = subplebbitAuthor;
+                publication = subplebbitAuthor
+                    ? {
+                          ...publicationNoSubplebbitAuthor,
+                          author: { ...publicationNoSubplebbitAuthor.author, subplebbit: subplebbitAuthor }
+                      }
+                    : publicationNoSubplebbitAuthor;
             }
             // could contain "publication" or "reason"
             const encrypted = remeda.isPlainObject(publication)
@@ -849,7 +854,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return undefined;
     }
 
-    private async handleChallengeRequest(request: ChallengeRequestMessage) {
+    private async handleChallengeRequest(request: ChallengeRequestMessageType) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest");
 
         if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) return; // This is a duplicate challenge request
@@ -935,9 +940,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
     }
 
-    async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessage) {
+    async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessageType) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeAnswer");
 
+        if (!this._ongoingChallengeExchanges.has(challengeAnswer.challengeRequestId.toString()))
+            // Respond with error to answers without challenge request
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
+                challengeAnswer.challengeRequestId
+            );
         const answerSignatureValidation = await verifyChallengeAnswer(challengeAnswer, true);
 
         if (!answerSignatureValidation.valid) {
@@ -961,34 +972,47 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange");
 
-        let msgParsed:
+        const timeReceived = timestamp();
+
+        let decodedMsg: any;
+
+        try {
+            decodedMsg = cborg.decode(pubsubMsg.data);
+        } catch (e) {
+            log.error(`Failed to decode pubsub message received at (${timeReceived})`, (<Error>e).toString());
+            return;
+        }
+
+        let parsedPubsubMsg:
             | ChallengeRequestMessageType
             | ChallengeAnswerMessageType
             | ChallengeMessageType
-            | ChallengeVerificationMessage
-            | undefined;
+            | ChallengeVerificationMessageType;
+
         try {
-            msgParsed = cborg.decode(pubsubMsg.data);
-            if (msgParsed?.type === "CHALLENGEREQUEST") {
-                await this.handleChallengeRequest(new ChallengeRequestMessage(msgParsed));
-            } else if (
-                msgParsed?.type === "CHALLENGEANSWER" &&
-                !this._ongoingChallengeExchanges.has(msgParsed.challengeRequestId.toString())
-            )
-                // Respond with error to answers without challenge request
-                await this._publishFailedChallengeVerification(
-                    { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
-                    msgParsed.challengeRequestId
-                );
-            else if (msgParsed?.type === "CHALLENGEANSWER") await this.handleChallengeAnswer(new ChallengeAnswerMessage(msgParsed));
-            else if (msgParsed?.type === "CHALLENGE" || msgParsed?.type === "CHALLENGEVERIFICATION")
-                log(`Received a pubsub message that is not meant to by processed by the sub - ${msgParsed?.type}`);
-            else throw Error("Wasn't able to detect the type of challenge message");
+            parsedPubsubMsg = IncomingPubsubMessageSchema.parse(decodedMsg);
         } catch (e) {
-            const errorMessage = `failed process captcha for challenge request id (${msgParsed?.challengeRequestId}): ${(<Error>e).message}`;
-            log.error(`(${msgParsed?.challengeRequestId}): `, errorMessage);
-            if (msgParsed?.challengeRequestId?.toString())
-                await this.dbHandler.rollbackTransaction(msgParsed.challengeRequestId.toString());
+            log.error(`Failed to parse the schema of pubsub message received at (${timeReceived})`, (<Error>e).toString());
+            return;
+        }
+
+        if (parsedPubsubMsg.type === "CHALLENGE" || parsedPubsubMsg.type === "CHALLENGEVERIFICATION") {
+            log(`Received a pubsub message that is not meant to by processed by the sub - ${parsedPubsubMsg.type}`);
+            return;
+        } else if (parsedPubsubMsg.type === "CHALLENGEREQUEST") {
+            try {
+                await this.handleChallengeRequest(parsedPubsubMsg);
+            } catch (e) {
+                log.error(`Failed to process challenge request message received at (${timeReceived})`, (<Error>e).toString());
+                await this.dbHandler.rollbackTransaction(parsedPubsubMsg.challengeRequestId.toString());
+            }
+        } else if (parsedPubsubMsg.type === "CHALLENGEANSWER") {
+            try {
+                await this.handleChallengeAnswer(parsedPubsubMsg);
+            } catch (e) {
+                log.error(`Failed to process challenge answer message received at (${timeReceived})`, (<Error>e).toString());
+                await this.dbHandler.rollbackTransaction(parsedPubsubMsg.challengeRequestId.toString());
+            }
         }
     }
 

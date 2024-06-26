@@ -10,7 +10,7 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeVerificationMessageType,
     PlebbitWsServerSettings,
     PlebbitWsServerSettingsSerialized
 } from "../../types.js";
@@ -250,7 +250,7 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeanswer", encodePubsubMsg(answer));
         subplebbit.on("challengeanswer", challengeAnswerListener);
 
-        const challengeVerificationListener = (challengeVerification: DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor) =>
+        const challengeVerificationListener = (challengeVerification: DecryptedChallengeVerificationMessageType) =>
             sendEvent("challengeverification", encodePubsubMsg(challengeVerification));
         subplebbit.on("challengeverification", challengeVerificationListener);
 

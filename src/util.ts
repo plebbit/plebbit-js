@@ -4,7 +4,6 @@ import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType,
-    DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -179,8 +178,7 @@ export function decodePubsubMsgFromRpc(
         | DecryptedChallengeAnswerMessageType
         | DecryptedChallengeRequestMessageType
         | DecryptedChallengeVerificationMessageType
-        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-        | DecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = pubsubMsg;
+        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = pubsubMsg;
     parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
     if (pubsubMsg.encrypted) {
         parsedPubsubMsg.encrypted!.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
