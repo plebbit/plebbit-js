@@ -179,13 +179,6 @@ export type NativeFunctions = {
     fetch: typeof fetch;
 };
 
-export type OnlyDefinedProperties<T> = Pick<
-    T,
-    {
-        [Prop in keyof T]: T[Prop] extends undefined ? never : Prop;
-    }[keyof T]
->;
-
 // Define database tables and fields here
 
 export type CommentsTableRow = z.infer<typeof CommentsTableRowSchema>;

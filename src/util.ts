@@ -8,8 +8,7 @@ import type {
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor,
-    OnlyDefinedProperties
+    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
 } from "./types.js";
 
 import { messages } from "./errors.js";
@@ -75,15 +74,6 @@ export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
         if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
 
     return cleanedObj;
-}
-
-// TODO rename
-export function removeKeysWithUndefinedValues<T extends Object>(object: T): OnlyDefinedProperties<T> {
-    const newObj = remeda.clone(object);
-    for (const prop in newObj)
-        if (newObj[prop]?.constructor?.name === "Object" && JSON.stringify(newObj[prop]) === "{}") delete newObj[prop];
-
-    return newObj;
 }
 
 export function throwWithErrorCode(code: keyof typeof messages, details?: {}) {
