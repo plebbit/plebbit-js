@@ -93,7 +93,12 @@ import {
 import type { VotePubsubMessageWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
-import { IncomingPubsubMessageSchema } from "../../../pubsub-messages/schema.js";
+import {
+    DecryptedChallengeAnswerSchema,
+    DecryptedChallengeRequestSchema,
+    IncomingPubsubMessageSchema
+} from "../../../pubsub-messages/schema.js";
+import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -530,26 +535,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private async _decryptOrRespondWithFailure(
-        request: ChallengeRequestMessageType | ChallengeAnswerMessageType
-    ): Promise<DecryptedChallengeRequestMessageType | DecryptedChallengeAnswerMessageType | undefined> {
+    private async _decryptOrRespondWithFailure(request: ChallengeRequestMessageType | ChallengeAnswerMessageType): Promise<string> {
         const log = Logger("plebbit-js:local-subplebbit:_decryptOrRespondWithFailure");
-        let decrypted: DecryptedChallengeAnswer | DecryptedChallengeRequest;
         try {
-            // zod here
-            decrypted = JSON.parse(
-                await decryptEd25519AesGcmPublicKeyBuffer(request.encrypted, this.signer.privateKey, request.signature.publicKey)
-            );
-            if (request?.type === "CHALLENGEREQUEST") return { ...request, ...(<DecryptedChallengeRequest>decrypted) };
-            else if (request?.type === "CHALLENGEANSWER") return { ...request, ...(<DecryptedChallengeAnswerMessageType>decrypted) };
-            else throw Error("Decrypted message is not a challenge request or challenge answer");
+            return await decryptEd25519AesGcmPublicKeyBuffer(request.encrypted, this.signer.privateKey, request.signature.publicKey);
         } catch (e) {
-            log.error(`Failed to decrypt request (${request?.challengeRequestId?.toString()}) due to error`, e);
-            if (request?.challengeRequestId?.toString())
-                await this._publishFailedChallengeVerification(
-                    { reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG },
-                    request.challengeRequestId
-                );
+            log.error(`Failed to decrypt request (${request.challengeRequestId.toString()}) due to error`, e);
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG },
+                request.challengeRequestId
+            );
 
             throw e;
         }
@@ -854,6 +849,32 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return undefined;
     }
 
+    private async _parseChallengeRequestPublicationOrRespondWithFailure(
+        request: ChallengeRequestMessageType,
+        decryptedRawString: string
+    ): Promise<DecryptedChallengeRequest> {
+        let decryptedJson: any;
+        try {
+            decryptedJson = parseJsonWithPlebbitErrorIfFails(decryptedRawString);
+        } catch (e) {
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_REQUEST_PUBLICATION_IS_INVALID_JSON },
+                request.challengeRequestId
+            );
+            throw e;
+        }
+
+        try {
+            return DecryptedChallengeRequestSchema.parse(decryptedJson);
+        } catch (e) {
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA },
+                request.challengeRequestId
+            );
+            throw e;
+        }
+    }
+
     private async handleChallengeRequest(request: ChallengeRequestMessageType) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest");
 
@@ -865,7 +886,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 challengeRequest: remeda.omit(request, ["encrypted"])
             });
 
-        const decryptedRequest = <DecryptedChallengeRequestMessageType>await this._decryptOrRespondWithFailure(request);
+        const decryptedRawString = await this._decryptOrRespondWithFailure(request);
+
+        const decryptedRequest = await this._parseChallengeRequestPublicationOrRespondWithFailure(request, decryptedRawString);
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
 
@@ -875,12 +898,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor }
         };
         const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = {
-            ...decryptedRequest,
+            ...request,
             publication: publicationWithSubplebbitAuthor
         };
 
         try {
-            await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequest); // This function will throw an error if signature is invalid
+            await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequestWithSubplebbitAuthor); // This function will throw an error if signature is invalid
         } catch (e) {
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
@@ -934,6 +957,30 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._challengeAnswerResolveReject.delete(challengeRequestIdString);
     }
 
+    private async _parseChallengeAnswerOrRespondWithFailure(challengeAnswer: ChallengeAnswerMessageType, decryptedRawString: string) {
+        let parsedJson: any;
+
+        try {
+            parsedJson = parseJsonWithPlebbitErrorIfFails(decryptedRawString);
+        } catch (e) {
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_CHALLENGE_ANSWER_IS_INVALID_JSON },
+                challengeAnswer.challengeRequestId
+            );
+            throw e;
+        }
+
+        try {
+            return DecryptedChallengeAnswerSchema.parse(decryptedRawString);
+        } catch (e) {
+            await this._publishFailedChallengeVerification(
+                { reason: messages.ERR_CHALLENGE_ANSWER_IS_INVALID_SCHEMA },
+                challengeAnswer.challengeRequestId
+            );
+            throw e;
+        }
+    }
+
     async handleChallengeAnswer(challengeAnswer: ChallengeAnswerMessageType) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeAnswer");
 
@@ -951,16 +998,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             throwWithErrorCode(getErrorCodeFromMessage(answerSignatureValidation.reason), { challengeAnswer });
         }
 
-        const decryptedChallengeAnswer = <DecryptedChallengeAnswerMessageType>await this._decryptOrRespondWithFailure(challengeAnswer);
+        const decryptedRawString = await this._decryptOrRespondWithFailure(challengeAnswer);
 
-        this.emit("challengeanswer", decryptedChallengeAnswer);
+        const decryptedAnswers = await this._parseChallengeAnswerOrRespondWithFailure(challengeAnswer, decryptedRawString);
+
+        const decryptedChallengeAnswerPubsubMessage = <DecryptedChallengeAnswerMessageType>{ ...challengeAnswer, ...decryptedAnswers };
+
+        this.emit("challengeanswer", decryptedChallengeAnswerPubsubMessage);
 
         const challengeAnswerPromise = this._challengeAnswerResolveReject.get(challengeAnswer.challengeRequestId.toString());
 
         if (!challengeAnswerPromise)
             throw Error("The challenge answer promise is undefined, there is an issue with challenge. This is a critical error");
 
-        challengeAnswerPromise.resolve(decryptedChallengeAnswer.challengeAnswers);
+        challengeAnswerPromise.resolve(decryptedChallengeAnswerPubsubMessage.challengeAnswers);
     }
 
     private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {

@@ -106,6 +106,10 @@ export enum messages {
     ERR_COMMENT_HAS_INVALID_LINK_FIELD = "The comment arguments you provided contain an invalid .link",
     ERR_POST_LINK_IS_NOT_OF_MEDIA = "Publishing to the subplebbit requires a post with a link pointing to media (audio, video, image)",
     ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE = "Comment has no content, link or title",
+    ERR_REQUEST_PUBLICATION_IS_INVALID_JSON = "request.publication is an invalid json after decrypting",
+    ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA = "request.publication has an invalid schema",
+    ERR_CHALLENGE_ANSWER_IS_INVALID_JSON = "challenganswer.challengeAnswers is an invalid json",
+    ERR_CHALLENGE_ANSWER_IS_INVALID_SCHEMA = "challengeanswer.challengeAnswers is an invalid schema",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
