@@ -902,7 +902,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
 
         try {
-            await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequestWithSubplebbitAuthor); // This function will throw an error if signature is invalid
+            await this._respondWithErrorIfSignatureOfPublicationIsInvalid({ ...request, ...decryptedRequest }); // This function will throw an error if signature is invalid
         } catch (e) {
             log.error(
                 "Signature of challengerequest.publication is invalid, emitting an error event and aborting the challenge exchange",
