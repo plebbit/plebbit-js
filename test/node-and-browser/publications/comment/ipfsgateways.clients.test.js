@@ -3,7 +3,7 @@ import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
     publishWithExpectedResult,
-    isRpcFlagOn,
+    describeSkipIfRpc,
     mockGatewayPlebbit,
     mockRemotePlebbit
 } from "../../../../dist/node/test/test-util.js";
@@ -14,8 +14,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-
-const describeSkipIfRpc = isRpcFlagOn() ? describe.skip : describe;
 
 describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
     let plebbit, gatewayPlebbit;

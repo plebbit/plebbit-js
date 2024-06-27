@@ -4,7 +4,6 @@ import {
     publishRandomReply,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
-    isRpcFlagOn,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { timestamp } from "../../../dist/node/util";

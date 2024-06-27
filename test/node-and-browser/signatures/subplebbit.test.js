@@ -5,15 +5,14 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing } from "../../../dist/node/signer/signatures.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
 import validSubplebbitWithEnsCommentsFixture from "../../fixtures/valid_subplebbit_with_ens_comments.json" assert { type: "json" };
 import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("Sign subplebbit", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("Sign subplebbit", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -28,7 +27,7 @@ describe("Sign subplebbit", async () => {
     it(`Can sign and validate live subplebbit correctly`, async () => {
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
         const subjsonIpfs = subplebbit.toJSONIpfs();
-        const subplebbitToSign = {...cleanUpBeforePublishing(subjsonIpfs), posts: removeUndefinedValuesRecursively(subjsonIpfs.posts)};
+        const subplebbitToSign = { ...cleanUpBeforePublishing(subjsonIpfs), posts: removeUndefinedValuesRecursively(subjsonIpfs.posts) };
         delete subplebbitToSign["signature"];
         subplebbitToSign.signature = await signSubplebbit(subplebbitToSign, signers[0], plebbit);
         expect(subplebbitToSign.signature).to.deep.equal(subplebbit.signature);
@@ -38,9 +37,8 @@ describe("Sign subplebbit", async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("Verify subplebbit", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("Verify subplebbit", async () => {
     let plebbit;
 
     before(async () => {

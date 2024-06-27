@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn, itSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import { publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, itSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
 import chai from "chai";

@@ -7,13 +7,7 @@ import {
     signChallengeRequest,
     verifyComment
 } from "../../../dist/node/signer/signatures.js";
-import {
-    generateMockPost,
-    mockPlebbit,
-    publishRandomPost,
-    publishWithExpectedResult,
-    isRpcFlagOn
-} from "../../../dist/node/test/test-util.js";
+import { generateMockPost, mockPlebbit, publishWithExpectedResult, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { expect, assert } from "chai";
 import { messages } from "../../../dist/node/errors.js";
@@ -43,9 +37,8 @@ const parseMsgJson = (json) => {
     return parsed;
 };
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("challengerequest", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("challengerequest", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -85,7 +78,7 @@ describe("challengerequest", async () => {
     });
 
     it(`Sub responds with error to a challenge request whose publication can't be decrypted`, async () => {
-        const comment = await generateMockPost(signers[0].address, plebbit, false, {content: "Test content"});
+        const comment = await generateMockPost(signers[0].address, plebbit, false, { content: "Test content" });
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
         comment._clientsManager.pubsubPublishOnProvider = () => undefined;
 
@@ -98,7 +91,6 @@ describe("challengerequest", async () => {
             pubsubSigner.privateKey,
             signers[5].publicKey // Use a public key that cannot be decrypted for the sub
         );
-
 
         challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, pubsubSigner);
 
@@ -115,7 +107,6 @@ describe("challengerequest", async () => {
         expect(verificationMsg.challengeSuccess).to.be.false;
         expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
         expect(verificationMsg.publication).to.be.undefined;
-
     });
 
     it(`Sub responds with error to a challenge request with invalid pubsubMessage.encrypted.publication.signature`, async () => {
@@ -133,7 +124,9 @@ describe("challengerequest", async () => {
 
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessage()));
 
-        expect(await verifyComment(commentObjToEncrypt.publication, plebbit.resolveAuthorAddresses, comment._clientsManager, true)).to.deep.equal({
+        expect(
+            await verifyComment(commentObjToEncrypt.publication, plebbit.resolveAuthorAddresses, comment._clientsManager, true)
+        ).to.deep.equal({
             valid: true
         });
         commentObjToEncrypt.publication.timestamp += 1; // Should invalidate signature
@@ -200,8 +193,8 @@ describe("challengerequest", async () => {
 });
 
 // prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe(`challengemessage`, async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc(`challengemessage`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -240,9 +233,8 @@ describe(`challengemessage`, async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("challengeanswer", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("challengeanswer", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
@@ -282,7 +274,7 @@ describe("challengeanswer", async () => {
         comment.removeAllListeners();
         await comment.publish();
 
-        await new Promise((resolve) => comment.once("challenge",resolve));
+        await new Promise((resolve) => comment.once("challenge", resolve));
 
         await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
         const toSignAnswer = {
@@ -321,7 +313,6 @@ describe("challengeanswer", async () => {
 
         await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
-
     });
 
     it(`Sub responds with error to a challenge answer with answers that can't be decrypted`, async () => {
@@ -330,7 +321,6 @@ describe("challengeanswer", async () => {
         comment.removeAllListeners("challenge");
 
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
-
 
         comment.once("challenge", async (challengeMsg) => {
             const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
@@ -380,8 +370,8 @@ describe("challengeanswer", async () => {
                     const msgParsed = cborgDecode(pubsubMsg["data"]);
                     if (
                         msgParsed.type === "CHALLENGEVERIFICATION" &&
-                        msgParsed.challengeRequestId.toString() === toSignAnswer.challengeRequestId.toString())
-                     {
+                        msgParsed.challengeRequestId.toString() === toSignAnswer.challengeRequestId.toString()
+                    ) {
                         expect(msgParsed.challengeSuccess).to.be.false;
                         expect(msgParsed.reason).to.equal(messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST);
                         expect(msgParsed.publication).to.be.undefined;
@@ -400,8 +390,8 @@ describe("challengeanswer", async () => {
 });
 
 // prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("challengeverification", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("challengeverification", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();

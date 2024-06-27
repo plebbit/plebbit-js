@@ -7,7 +7,7 @@ const { expect, assert } = chai;
 import * as remeda from "remeda";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
@@ -48,9 +48,8 @@ describe("Sign commentedit", async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("Verify CommentEdit", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("Verify CommentEdit", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

@@ -1,6 +1,6 @@
 import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
-import { mockRemotePlebbit, mockGatewayPlebbit, isRpcFlagOn } from "../../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, mockGatewayPlebbit } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
@@ -8,9 +8,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-
-const describeSkipIfRpc = isRpcFlagOn() ? describe.skip : describe;
-const describeOnlyIfRpc = isRpcFlagOn() ? describe : describe.skip;
 
 describe(`comment.replies.clients`, async () => {
     let plebbit, gatewayPlebbit;

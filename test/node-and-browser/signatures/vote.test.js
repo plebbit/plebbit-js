@@ -5,7 +5,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { messages } from "../../../dist/node/errors.js";
 import { verifyVote, signVote } from "../../../dist/node/signer/signatures.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { timestamp } from "../../../dist/node/util.js";
 import validVoteFixture from "../../fixtures/valid_vote.json" assert { type: "json" };
@@ -48,9 +48,8 @@ describe("Sign Vote", async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("Verify vote", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("Verify vote", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

@@ -6,7 +6,7 @@ import {
     publishWithExpectedResult,
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
-    isRpcFlagOn
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -19,8 +19,6 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
-
-const describeSkipIfRpc = isRpcFlagOn() ? describe.skip : describe;
 
 describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
     let plebbit, gatewayPlebbit;

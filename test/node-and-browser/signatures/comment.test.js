@@ -12,7 +12,7 @@ import {
 import { messages } from "../../../dist/node/errors.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
 import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
@@ -112,9 +112,8 @@ describe("sign comment", async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("verify Comment", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("verify Comment", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -135,7 +134,6 @@ describe("verify Comment", async () => {
     });
 
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
-
         const comment = remeda.clone(validCommentFixture);
 
         const verification = await verifyComment(comment, plebbit);
@@ -167,9 +165,8 @@ describe("verify Comment", async () => {
     it(`can verify a comment whose flair have been changed by mod`);
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe(`Comment with author.address as domain`, async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc(`Comment with author.address as domain`, async () => {
     it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
@@ -201,9 +198,8 @@ describe(`Comment with author.address as domain`, async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe(`commentupdate`, async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

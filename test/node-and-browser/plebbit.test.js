@@ -3,7 +3,7 @@ import signers from "../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../dist/node/errors.js";
-import { mockRemotePlebbit, loadAllPages, isRpcFlagOn, mockPlebbit } from "../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, loadAllPages, mockPlebbit, itIfRpc } from "../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -60,27 +60,25 @@ describe("Plebbit options", async () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
-    if (isRpcFlagOn())
-        it(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
-            const rpcUrl = "ws://localhost:39652";
-            const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] });
-            expect(plebbit.plebbitRpcClient).to.be.a("object");
-            expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
-            expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
-            expect(plebbit.chainProviders).to.deep.equal({});
-            expect(plebbit.clients.chainProviders).to.deep.equal({});
-            expect(plebbit.clients.ipfsClients).to.deep.equal({});
-            expect(plebbit.clients.pubsubClients).to.deep.equal({});
-            expect(plebbit.clients.ipfsGateways).to.deep.equal({});
-            JSON.stringify(plebbit); // Will throw an error if circular json
-        });
+    itIfRpc(`Plebbit({plebbitRpcClientsOptions}) sets up correctly`, async () => {
+        const rpcUrl = "ws://localhost:39652";
+        const plebbit = await Plebbit({ plebbitRpcClientsOptions: [rpcUrl] });
+        expect(plebbit.plebbitRpcClient).to.be.a("object");
+        expect(plebbit.plebbitRpcClientsOptions).to.deep.equal([rpcUrl]);
+        expect(plebbit.pubsubHttpClientsOptions).to.be.undefined;
+        expect(plebbit.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.chainProviders).to.deep.equal({});
+        expect(plebbit.clients.ipfsClients).to.deep.equal({});
+        expect(plebbit.clients.pubsubClients).to.deep.equal({});
+        expect(plebbit.clients.ipfsGateways).to.deep.equal({});
+        JSON.stringify(plebbit); // Will throw an error if circular json
+    });
 
-    if (isRpcFlagOn())
-        it("Error is thrown if RPC is down", async () => {
-            const plebbit = await mockRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
-            // plebbit.listSubplebbits will take 20s to timeout and throw this error
-            await assert.isRejected(plebbit.listSubplebbits(), messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]); // Use the rpc so it would detect it's not loading
-        });
+    itIfRpc("Error is thrown if RPC is down", async () => {
+        const plebbit = await mockRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+        // plebbit.listSubplebbits will take 20s to timeout and throw this error
+        await assert.isRejected(plebbit.listSubplebbits(), messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]); // Use the rpc so it would detect it's not loading
+    });
 });
 
 describe("plebbit.createSigner", async () => {
@@ -244,14 +242,13 @@ describe("plebbit.fetchCid", async () => {
     });
 });
 
-if (isRpcFlagOn())
-    describe(`plebbit.rpcCall`, async () => {
-        it(`Can use plebbit.rpcCall to get settings`, async () => {
-            const plebbit = await mockPlebbit();
-            const plebbitRpcSettings = await plebbit.rpcCall("getSettings", []);
-            expect(plebbitRpcSettings.challenges).to.be.a("object");
-        });
+describeIfRpc(`plebbit.rpcCall`, async () => {
+    it(`Can use plebbit.rpcCall to get settings`, async () => {
+        const plebbit = await mockPlebbit();
+        const plebbitRpcSettings = await plebbit.rpcCall("getSettings", []);
+        expect(plebbitRpcSettings.challenges).to.be.a("object");
     });
+});
 
 // Skip for firefox since we can't disable CORS on Firefox
 if (!globalThis["navigator"]?.userAgent?.includes("Firefox"))
