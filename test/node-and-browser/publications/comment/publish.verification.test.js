@@ -111,7 +111,7 @@ if (!isRpcFlagOn())
                 title: undefined
             });
 
-            await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+            await publishWithExpectedResult(mockPost, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
         });
 
         it.skip(`Throws an error if author.avatar.signature.signature is of a json string instead of a 0x string`, async () => {
@@ -130,20 +130,28 @@ if (!isRpcFlagOn())
         });
     });
 
-// TODO include tests for replies later. Not needed as of now
-
 if (!isRpcFlagOn())
     describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
         let plebbit;
         before(async () => {
             plebbit = await mockRemotePlebbit();
         });
+
+        it(`Can't publish a post to sub with signer being part of CommentPubsubMessage`, async () => {
+            const forbiddenPubsubType = { signer: signers[1] };
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, forbiddenPubsubType);
+            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
+            post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenPubsubType });
+            post._validateSignature = async () => {}; // Disable signature validation before publishing
+
+            await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
+        });
+
         const forbiddenFieldsWithValue = [
-            { cid: "Qm12345" },
-            { signer: signers[1] },
-            { previousCid: "Qm12345" },
+            { cid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
+            { previousCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
             { depth: 0 },
-            { postCid: "Qm12345" },
+            { postCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
             { upvoteCount: 1 },
             { downvoteCount: 1 },
             { replyCount: 1 },
@@ -155,19 +163,25 @@ if (!isRpcFlagOn())
             { locked: true },
             { removed: true },
             { reason: "Test forbidden" },
-            { shortCid: "Qm1234" }
+            { shortCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" }
         ];
         forbiddenFieldsWithValue.map((forbiddenType) =>
             it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
+                const propName = Object.keys(forbiddenType)[0];
+                try {
+                    await generateMockPost(subplebbitAddress, plebbit, false, forbiddenType);
+                    expect.fail("Should fail because these fields should not part be of CreateComment");
+                } catch (e) {
+                    expect(e.name).to.equal("ZodError");
+                    expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
+                }
+
                 const post = await generateMockPost(subplebbitAddress, plebbit, false);
                 const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
                 post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
                 post._validateSignature = async () => {}; // Disable signature validation before publishing
-                await publishWithExpectedResult(
-                    post,
-                    false,
-                    Object.keys(forbiddenType)[0] === "signer" ? messages.ERR_FORBIDDEN_SIGNER_FIELD : messages.ERR_FORBIDDEN_COMMENT_FIELD
-                );
+
+                await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
             })
         );
     });
@@ -184,10 +198,22 @@ if (!isRpcFlagOn())
         };
         Object.keys(forbiddenFieldsWithValue).map((forbiddenFieldName) =>
             it(`publication.author.${forbiddenFieldName} is rejected by sub`, async () => {
+
+                try {
+                    await generateMockPost(subplebbitAddress, plebbit, false, {
+                        author: { [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
+                    });
+                    expect.fail("Should fail because these fields should not part be of CreateComment");
+                } catch (e) {
+                    expect(e.name).to.equal("ZodError");
+                    expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${forbiddenFieldName}'`);
+                }
+
+                const signer = await plebbit.createSigner();
                 const post = await plebbit.createComment({
                     subplebbitAddress,
                     title: "Nonsense" + Date.now(),
-                    signer: await plebbit.createSigner()
+                    signer: signer
                 });
                 const pubsubJsonPrior = post.toJSONPubsubMessagePublication();
                 const pubsubJsonAfterChange = cleanUpBeforePublishing({
@@ -195,10 +221,10 @@ if (!isRpcFlagOn())
                     author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
                 });
 
-                pubsubJsonAfterChange.signature = await signComment(pubsubJsonAfterChange, post.signer, plebbit);
+                pubsubJsonAfterChange.signature = await signComment({ ...pubsubJsonAfterChange, signer }, plebbit);
                 post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
                 post._validateSignature = async () => {}; // Disable signature validation before publishing
-                await publishWithExpectedResult(post, false, messages.ERR_FORBIDDEN_AUTHOR_FIELD);
+                await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
             })
         );
     });

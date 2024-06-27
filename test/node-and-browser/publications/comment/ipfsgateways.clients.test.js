@@ -35,7 +35,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
 
         const mockPost = await gatewayPlebbit.createComment({ cid: sub.posts.pages.hot.comments[0].cid });
 
-        const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "stopped", "fetching-update-ipfs", "stopped"];
+        const expectedStates = ["fetching-ipfs", "stopped", "fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
 
         const actualStates = [];
 
@@ -55,7 +55,7 @@ describeSkipIfRpc(`comment.clients.ipfsGateways`, async () => {
 
         const mockPost = await gatewayPlebbit.getComment(sub.posts.pages.hot.comments[0].cid);
 
-        const expectedStates = ["fetching-subplebbit-ipns", "stopped", "fetching-update-ipfs", "stopped"];
+        const expectedStates = ["fetching-subplebbit-ipns", "fetching-update-ipfs", "stopped"];
 
         const actualStates = [];
 
