@@ -575,8 +575,8 @@ export async function addStringToIpfs(content: string): Promise<string> {
     return cid;
 }
 
-export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"].skip : globalThis["describe"];
+export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];
 
-export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : globalThis["describe"].skip;
+export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : globalThis["describe"]?.skip;
 
-export const itSkipIfRpc = isRpcFlagOn() ? globalThis["it"].skip : globalThis["it"];
+export const itSkipIfRpc = isRpcFlagOn() ? globalThis["it"]?.skip : globalThis["it"];
