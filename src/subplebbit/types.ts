@@ -22,6 +22,7 @@ import {
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema
 } from "./schema.js";
+import type { PostsPagesTypeIpfs } from "../pages/types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -142,3 +143,7 @@ export interface ChallengeFile {
 export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChallengeSettings) => ChallengeFile;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
+
+export type SubplebbitOnlyAddressAndPageCidsType = Pick<SubplebbitIpfsType, "address"> & {
+    posts: Pick<PostsPagesTypeIpfs, "pageCids">;
+};
