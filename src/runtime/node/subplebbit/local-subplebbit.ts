@@ -897,13 +897,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...request,
             publication: {
                 ...decryptedRequest.publication,
-                author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor }
+                ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
             }
         };
 
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequestWithSubplebbitAuthor); // This function will throw an error if signature is invalid
         } catch (e) {
+            log.error(
+                "Signature of challengerequest.publication is invalid, emitting an error event and aborting the challenge exchange",
+                String(e)
+            );
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
         }
