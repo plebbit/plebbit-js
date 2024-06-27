@@ -1,6 +1,12 @@
 import signers from "../../fixtures/signers.js";
 
-import { publishRandomPost, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import {
+    publishRandomPost,
+    describeSkipIfRpc,
+    mockGatewayPlebbit,
+    mockPlebbit,
+    mockRemotePlebbit
+} from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -10,6 +16,13 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
+    let gatewayPlebbit, plebbit, remotePlebbit;
+
+    before(async () => {
+        gatewayPlebbit = await mockGatewayPlebbit();
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbit();
+    });
     it(`subplebbit.clients.ipfsClients is undefined for gateway plebbit`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         expect(mockSub.clients.ipfsClients).to.be.undefined;

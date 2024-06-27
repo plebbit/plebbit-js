@@ -3,12 +3,19 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { describeSkipIfRpc, publishRandomPost } from "../../../dist/node/test/test-util.js";
+import { describeSkipIfRpc, publishRandomPost, mockGatewayPlebbit, mockPlebbit } from "../../../dist/node/test/test-util.js";
 
 const subplebbitAddress = signers[0].address;
 
 describeSkipIfRpc(`subplebbit.clients.ipfsGateways`, async () => {
     // All tests below use Plebbit instance that doesn't have ipfsClient
+    let gatewayPlebbit, plebbit;
+
+    before(async () => {
+        gatewayPlebbit = await mockGatewayPlebbit();
+        plebbit = await mockPlebbit();
+    });
+
     it(`subplebbit.clients.ipfsGateways[url] is stopped by default`, async () => {
         const mockSub = await gatewayPlebbit.getSubplebbit(subplebbitAddress);
         expect(Object.keys(mockSub.clients.ipfsGateways).length).to.equal(1);
