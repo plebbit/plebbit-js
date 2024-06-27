@@ -5,7 +5,7 @@ import {
     mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
-    describeSkipIfRpc
+    describeIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -16,7 +16,7 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
-describeOnlyIfRpc(`comment.clients.plebbitRpcClients`, async () => {
+describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

@@ -7,6 +7,7 @@ import {
     publishWithExpectedResult,
     mockGatewayPlebbit,
     itSkipIfRpc,
+    itIfRpc,
     generatePostToAnswerMathQuestion
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";

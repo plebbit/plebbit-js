@@ -1,6 +1,6 @@
 import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
-import { mockRemotePlebbit, mockGatewayPlebbit } from "../../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, mockGatewayPlebbit, describeSkipIfRpc, describeIfRpc } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
@@ -121,7 +121,7 @@ describe(`comment.replies.clients`, async () => {
         });
     });
 
-    describeOnlyIfRpc(`comment.replies.clients.plebbitRpcClients`, async () => {
+    describeIfRpc(`comment.replies.clients.plebbitRpcClients`, async () => {
         it(`comment.replies.clients.plebbitRpcClients[sortType][url] is stopped by default`, async () => {
             const comment = await plebbit.getComment(commentCid);
             const rpcUrl = Object.keys(comment.clients.plebbitRpcClients)[0];

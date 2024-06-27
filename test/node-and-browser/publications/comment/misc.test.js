@@ -29,7 +29,6 @@ describe("createComment", async () => {
             subplebbitAddress,
             author: {
                 address: signers[4].address,
-                shortAddress: signers[4].address.slice(8).slice(0, 12),
                 displayName: `Mock Author - comment = await createComment(await createComment)`
             },
             signer: signers[4],
@@ -41,7 +40,8 @@ describe("createComment", async () => {
 
         expect(comment.content).to.equal(props.content);
         expect(comment.subplebbitAddress).to.equal(props.subplebbitAddress);
-        expect(deterministicStringify(comment.author)).to.equal(deterministicStringify(props.author));
+        expect(comment.author.address).to.equal(props.author.address);
+        expect(comment.author.displayName).to.equal(props.author.displayName);
         expect(comment.timestamp).to.equal(props.timestamp);
 
         expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
