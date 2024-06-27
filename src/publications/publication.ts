@@ -342,25 +342,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
 
-        let decodedString: string;
+        let decodedJson: string;
         try {
-            decodedString = cborg.decode(pubsubMsg.data);
+            decodedJson = cborg.decode(pubsubMsg.data);
         } catch (e) {
             log.error("Failed to decode pubsub message", e);
             return;
         }
 
-        let decodedJson: any;
-
-        try {
-            decodedJson = parseJsonWithPlebbitErrorIfFails(decodedString);
-        } catch (e) {
-            log.error("Failed to parse the decoded pubsub message to JSON", e);
-            return;
-        }
-
         let pubsubMsgParsed: z.infer<typeof IncomingPubsubMessageSchema>;
-
         try {
             pubsubMsgParsed = IncomingPubsubMessageSchema.parse(decodedJson);
         } catch (e) {
