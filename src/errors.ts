@@ -40,11 +40,14 @@ export enum messages {
     ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA = "The loaded Subplebbit record has an invalid schema",
     ERR_INVALID_COMMENT_UPDATE_SCHEMA = "The schema of Comment Update is invalid",
     ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",
+    ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA = "The schema of decrypted challenge.encrypted is invalid",
+    ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA = "The schema of challengeverification.encryption is invalid",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
     ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 = "author.address is not a domain or B58",
     ERR_SIGNATURE_PUBLIC_KEY_IS_NOT_B58 = "The public key of the signature is not B58",
+    ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE = "The publication received a challenge and failed to decrypt",
 
     // Verify Signature errors
     ERR_SIGNATURE_IS_INVALID = "Signature of publication is invalid",

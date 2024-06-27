@@ -3,8 +3,10 @@ import { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { CommentIpfsType, CommentUpdate } from "../publications/comment/types.js";
+import { DecryptedChallengeSchema, DecryptedChallengeVerificationSchema } from "../pubsub-messages/schema.js";
 import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { DecryptedChallenge, DecryptedChallengeVerification } from "../types.js";
 import { throwWithErrorCode } from "../util.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
@@ -44,5 +46,24 @@ export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: any):
         return PageIpfsSchema.parse(pageIpfsJson);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_PAGE_IPFS_SCHEMA", { zodError: e, pageIpfsJson });
+    }
+}
+
+export function parseDecryptedChallengeWithPlebbitErrorIfItFails(decryptedChallengeJson: any): DecryptedChallenge {
+    try {
+        return DecryptedChallengeSchema.parse(decryptedChallengeJson);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: e, decryptedChallengeJson });
+    }
+}
+
+export function parseDecryptedChallengeVerification(decryptedChallengeVerificationJson: any): DecryptedChallengeVerification {
+    try {
+        return DecryptedChallengeVerificationSchema.parse(decryptedChallengeVerificationJson);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
+            zodError: e,
+            decryptedChallengeVerificationJson
+        });
     }
 }
