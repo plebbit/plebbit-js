@@ -314,7 +314,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 try {
                     decryptedChallengeVerification = parseDecryptedChallengeVerification(decryptedJson);
                 } catch (e) {
-                    log.error("could not parse z challengeverification.encrypted as a json", String(e));
+                    log.error("could not parse challengeverification.encrypted due to invalid schema", String(e));
                     this.emit("error", <PlebbitError>e);
                     return;
                 }
