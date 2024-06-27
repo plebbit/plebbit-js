@@ -52,9 +52,8 @@ import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } 
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
 import { CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
-    CreateRemoteSubplebbitOptionsSchema,
-    CreateRemoteSubplebbitSchema,
-    CreateRpcSubplebbitSchema,
+    CreateRemoteSubplebbitFunctionArgumentSchema,
+    CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema
 } from "./subplebbit/schema.js";
 
@@ -383,7 +382,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     private async _createSubplebbitRpc(
-        options: z.infer<typeof CreateRpcSubplebbitSchema>
+        options: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
@@ -434,7 +433,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
 
-    private async _createRemoteSubplebbitInstance(options: RemoteSubplebbit | z.infer<typeof CreateRemoteSubplebbitSchema>) {
+    private async _createRemoteSubplebbitInstance(options: z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema>) {
         const log = Logger("plebbit-js:plebbit:createRemoteSubplebbit");
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
@@ -496,7 +495,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...parsedOptions });
 
         if (this.plebbitRpcClient) {
-            const parsedRpcOptions = CreateRpcSubplebbitSchema.parse(options);
+            const parsedRpcOptions = CreateRpcSubplebbitFunctionArgumentSchema.parse(options);
             return this._createSubplebbitRpc(parsedRpcOptions);
         }
 
@@ -506,7 +505,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
         if (!canCreateLocalSub) {
-            const parsedRemoteOptions = CreateRemoteSubplebbitOptionsSchema.parse(options);
+            const parsedRemoteOptions = CreateRemoteSubplebbitFunctionArgumentSchema.parse(options);
             return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
         }
 
@@ -516,7 +515,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
             const isSubLocal = localSubs.includes(parsedOptions.address);
             if (isSubLocal) return this._createLocalSub({ address: parsedOptions.address });
             else {
-                const parsedRemoteOptions = CreateRemoteSubplebbitOptionsSchema.parse(options);
+                const parsedRemoteOptions = CreateRemoteSubplebbitFunctionArgumentSchema.parse(options);
                 return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
             }
         } else if (!("address" in parsedOptions) && !("signer" in parsedOptions)) {

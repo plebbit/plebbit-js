@@ -221,12 +221,14 @@ export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not su
 // | RpcRemoteSubplebbit
 // | LocalSubplebbit = {}
 
-export const SubplebbitOnlyAddressAndPageCidsSchema = z.object({
-    address: SubplebbitAddressSchema,
-    posts: z.object({
-        pageCids: PostsPagesIpfsSchema.shape.pageCids
+export const SubplebbitOnlyAddressAndPageCidsSchema = z
+    .object({
+        address: SubplebbitAddressSchema,
+        posts: z.object({
+            pageCids: PostsPagesIpfsSchema.shape.pageCids
+        })
     })
-});
+    .strict();
 
 const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | LocalSubplebbit>(
     (arg) =>
@@ -236,14 +238,19 @@ const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | R
         arg instanceof LocalSubplebbit // I think this is gonna throw in browsers
 );
 
-export const CreateRemoteSubplebbitSchema = CreateRemoteSubplebbitOptionsSchema.or(RemoteSubplebbitJsonSchema)
+export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(RemoteSubplebbitJsonSchema)
     .or(SubplebbitOnlyAddressAndPageCidsSchema)
-    .or(SubplebbitIpfsSchema);
+    .or(SubplebbitIpfsSchema)
+    .or(SubplebbitClassSchema);
 
-export const CreateRpcSubplebbitSchema = CreateRemoteSubplebbitSchema.or(CreateNewLocalSubplebbitUserOptionsSchema)
+export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
+    CreateNewLocalSubplebbitUserOptionsSchema
+)
     .or(InternalSubplebbitRecordSchema)
     .or(SubplebbitClassSchema);
 
-export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(CreateRemoteSubplebbitSchema)
+export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(
+    CreateRemoteSubplebbitFunctionArgumentSchema
+)
     .or(InternalSubplebbitRecordSchema)
     .or(SubplebbitClassSchema);
