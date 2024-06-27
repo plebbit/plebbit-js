@@ -67,14 +67,16 @@ export const FlairSchema = z.object({
 });
 
 // When author creates their publication, this is publication.author
-export const AuthorPubsubSchema = z.object({
-    address: AuthorAddressSchema, // TODO add a regex for checking if it's domain or 12D... address
-    previousCommentCid: CommentCidSchema.optional(),
-    displayName: z.string().optional(),
-    wallets: AuthorWalletsSchema.optional(),
-    avatar: AuthorAvatarNftSchema.optional(),
-    flair: FlairSchema.optional()
-});
+export const AuthorPubsubSchema = z
+    .object({
+        address: AuthorAddressSchema,
+        previousCommentCid: CommentCidSchema.optional(),
+        displayName: z.string().optional(),
+        wallets: AuthorWalletsSchema.optional(),
+        avatar: AuthorAvatarNftSchema.optional(),
+        flair: FlairSchema.optional()
+    })
+    .strict();
 
 export const CreatePublicationUserOptionsSchema = z.object({
     signer: CreateSignerSchema,
