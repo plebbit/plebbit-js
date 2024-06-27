@@ -3,7 +3,7 @@ import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbi
 import { FlairSchema } from "../schema/schema.js";
 import type { SignerType } from "../signer/types.js";
 import type { SignerWithPublicKeyAddress } from "../signer/index.js";
-import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../types.js";
+import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types";
 import {
     ChallengeExcludeSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
@@ -22,7 +22,6 @@ import {
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema
 } from "./schema.js";
-import type { PostsPagesTypeJson } from "../pages/types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;

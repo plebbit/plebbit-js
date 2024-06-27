@@ -6,7 +6,7 @@ import type { CommentIpfsType, CommentUpdate } from "../publications/comment/typ
 import { DecryptedChallengeSchema, DecryptedChallengeVerificationSchema } from "../pubsub-messages/schema.js";
 import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import { DecryptedChallenge, DecryptedChallengeVerification } from "../types.js";
+import { DecryptedChallenge, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {

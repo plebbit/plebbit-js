@@ -12,11 +12,11 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
-import {
+import type {
     ChallengeVerificationMessageType,
     DecryptedChallengeAnswer,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-} from "../../../../types.js";
+} from "../../../../pubsub-messages/types.js";
 import {
     Challenge,
     ChallengeFile,
@@ -25,7 +25,6 @@ import {
     SubplebbitChallenge,
     SubplebbitChallengeSettings
 } from "../../../../subplebbit/types.js";
-import { ChallengeVerificationMessage } from "../../../../challenge.js";
 import { LocalSubplebbit } from "../local-subplebbit.js";
 
 type PendingChallenge = Challenge & { index: number };
@@ -279,7 +278,7 @@ const getChallengeVerification = async (
 
     const res = await getPendingChallengesOrChallengeVerification(challengeRequestMessage, subplebbit);
 
-    let challengeVerification: Pick<ChallengeVerificationMessage, "challengeSuccess" | "challengeErrors">;
+    let challengeVerification: Pick<ChallengeVerificationMessageType, "challengeSuccess" | "challengeErrors">;
     // was able to verify without asking author for challenges
     if ("challengeSuccess" in res) {
         challengeVerification = { challengeSuccess: res.challengeSuccess };

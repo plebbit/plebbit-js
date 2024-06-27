@@ -28,23 +28,22 @@ import {
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
+
 import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     CommentPubsubMessageWithSubplebbitAuthor,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
-    CommentUpdatesRow,
-    CommentsTableRow,
     DecryptedChallenge,
-    DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeRequest,
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    IpfsHttpClientPubsubMessage,
     DecryptedChallengeRequestMessageType,
-    DecryptedChallengeVerificationMessageType
-} from "../../../types.js";
+    DecryptedChallengeVerificationMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+} from "../../../pubsub-messages/types.js";
+
+import type { CommentUpdatesRow, CommentsTableRow, IpfsHttpClientPubsubMessage } from "../../../types.js";
 import {
     ValidationResult,
     cleanUpBeforePublishing,
@@ -57,7 +56,6 @@ import {
     verifyCommentEdit,
     verifyCommentUpdate
 } from "../../../signer/signatures.js";
-import { ChallengeAnswerMessage, ChallengeMessage, ChallengeRequestMessage, ChallengeVerificationMessage } from "../../../challenge.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import {
@@ -94,6 +92,8 @@ import type { VotePubsubMessageWithSubplebbitAuthor, VotePubsubMessage } from ".
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
 import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 import {
+    ChallengeMessageSchema,
+    ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeRequestSchema,
     IncomingPubsubMessageSchema
@@ -398,7 +398,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async storeCommentEdit(
         commentEditRaw: CommentEditPubsubMessage,
-        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleCommentEdit");
         const commentEdit = await this.plebbit.createCommentEdit(commentEditRaw);
@@ -412,7 +412,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
     }
 
-    private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessage["challengeRequestId"]) {
+    private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
         const newVote = await this.plebbit.createVote(newVoteProps);
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVote.signature.publicKey);
@@ -600,7 +600,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             timestamp: timestamp()
         });
 
-        const challengeMessage = new ChallengeMessage({
+        const challengeMessage = ChallengeMessageSchema.parse({
             ...toSignChallenge,
             signature: await signChallengeMessage(toSignChallenge, this.signer)
         });
@@ -622,7 +622,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _publishFailedChallengeVerification(
         result: Pick<ChallengeVerificationMessageType, "challengeErrors" | "reason">,
-        challengeRequestId: ChallengeRequestMessage["challengeRequestId"]
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ) {
         // challengeSucess=false
         const log = Logger("plebbit-js:local-subplebbit:_publishFailedChallengeVerification");
@@ -638,7 +638,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             timestamp: timestamp()
         });
 
-        const challengeVerification = new ChallengeVerificationMessage({
+        const challengeVerification = ChallengeVerificationMessageSchema.parse({
             ...toSignVerification,
             signature: await signChallengeVerification(toSignVerification, this.signer)
         });
@@ -702,7 +702,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
             });
-            const challengeVerification = new ChallengeVerificationMessage({
+            const challengeVerification = ChallengeVerificationMessageSchema.parse({
                 ...toSignMsg,
                 signature: await signChallengeVerification(toSignMsg, this.signer)
             });

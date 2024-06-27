@@ -1,7 +1,7 @@
 // the purpose of this challenge is to always fail, can be used with SubplebbitChallenge.exclude to whitelist users
 
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
+import type { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import type { DecryptedChallengeRequestMessageType } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
     {

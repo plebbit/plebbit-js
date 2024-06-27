@@ -20,7 +20,7 @@ import type {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     PubsubMessage
-} from "../types.js";
+} from "../pubsub-messages/types";
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";

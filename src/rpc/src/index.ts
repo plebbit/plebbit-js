@@ -10,10 +10,9 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType,
-    PlebbitWsServerSettings,
-    PlebbitWsServerSettingsSerialized
-} from "../../types.js";
+    DecryptedChallengeVerificationMessageType
+} from "../../pubsub-messages/types";
+import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
 import { CreateNewLocalSubplebbitUserOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";

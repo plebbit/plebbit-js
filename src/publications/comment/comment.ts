@@ -1,7 +1,8 @@
 import retry, { RetryOperation } from "retry";
 import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
-import type { CommentsTableRowInsert, DecryptedChallengeVerificationMessageType, PublicationTypeName } from "../../types.js";
+import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
+import type { CommentsTableRowInsert, PublicationTypeName } from "../../types.js";
 
 import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";

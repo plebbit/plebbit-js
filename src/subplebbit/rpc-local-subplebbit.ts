@@ -2,7 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
 import type { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import {
+import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
@@ -11,7 +11,7 @@ import {
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType
-} from "../types.js";
+} from "../pubsub-messages/types.js";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
 import * as remeda from "remeda"; // tree-shaking supported!

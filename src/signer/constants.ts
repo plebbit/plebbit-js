@@ -1,17 +1,23 @@
 // Signer section
 
-import type { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
 import type { CommentUpdate } from "../publications/comment/types.js";
 
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 
-import type { ChallengeMessageType, ChallengeVerificationMessageType } from "../types.js";
+import type {
+    ChallengeAnswerMessageType,
+    ChallengeMessageType,
+    ChallengeRequestMessageType,
+    ChallengeVerificationMessageType
+} from "../pubsub-messages/types";
 
 export const keysToOmitFromSignature = <["signer", "challengeCommentCids", "challengeAnswers"]>[
     "signer",
     "challengeCommentCids",
     "challengeAnswers"
 ];
+
+// TODO this whole file should use props from zod
 
 // TODO move the signed property names below to their respective files
 export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
@@ -34,7 +40,7 @@ export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
     "postUpdates"
 ] as const;
 
-export const ChallengeRequestMessageSignedPropertyNames: (keyof ChallengeRequestMessage)[] = [
+export const ChallengeRequestMessageSignedPropertyNames: (keyof ChallengeRequestMessageType)[] = [
     "type",
     "challengeRequestId",
     "encrypted",
@@ -47,7 +53,7 @@ export const ChallengeMessageSignedPropertyNames: (keyof ChallengeMessageType)[]
     "encrypted",
     "timestamp"
 ] as const;
-export const ChallengeAnswerMessageSignedPropertyNames: (keyof ChallengeAnswerMessage)[] = [
+export const ChallengeAnswerMessageSignedPropertyNames: (keyof ChallengeAnswerMessageType)[] = [
     "type",
     "challengeRequestId",
     "encrypted",

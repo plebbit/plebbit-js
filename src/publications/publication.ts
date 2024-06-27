@@ -1,4 +1,3 @@
-import { ChallengeAnswerMessage, ChallengeRequestMessage } from "../challenge.js";
 import Author from "./author.js";
 import assert from "assert";
 import { Signer, decryptEd25519AesGcm, encryptEd25519AesGcm } from "../signer/index.js";
@@ -15,7 +14,9 @@ import type {
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerification,
     DecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeVerificationMessageType
+} from "../pubsub-messages/types.js";
+import type {
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
     ProtocolVersion,
@@ -52,7 +53,7 @@ import {
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
-import { IncomingPubsubMessageSchema } from "../pubsub-messages/schema.js";
+import { ChallengeAnswerMessageSchema, ChallengeRequestMessageSchema, IncomingPubsubMessageSchema } from "../pubsub-messages/schema.js";
 import { z } from "zod";
 
 class Publication extends TypedEmitter<PublicationEvents> {
@@ -85,8 +86,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     // private
     private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing
-    private _challengeAnswer?: ChallengeAnswerMessage;
-    private _publishedChallengeRequests?: ChallengeRequestMessage[];
+    private _challengeAnswer?: ChallengeAnswerMessageType;
+    private _publishedChallengeRequests?: ChallengeRequestMessageType[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
     private _pubsubProviders: string[];
     private _pubsubProvidersDoneWaiting?: Record<string, boolean>;
@@ -193,7 +194,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private async _handleRpcChallengeAnswer(answer: DecryptedChallengeAnswerMessageType) {
-        this._challengeAnswer = new ChallengeAnswerMessage(answer);
+        this._challengeAnswer = answer;
         this.emit("challengeanswer", answer);
     }
 
@@ -404,7 +405,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });
-        this._challengeAnswer = new ChallengeAnswerMessage({
+        this._challengeAnswer = ChallengeAnswerMessageSchema.parse({
             ...toSignAnswer,
             signature: await signChallengeAnswer(
                 toSignAnswer,
@@ -606,9 +607,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .getSubscription(this._rpcPublishSubscriptionId)
             .on("challengerequest", (args) => {
                 // zod here
-                const request = new ChallengeRequestMessage(
-                    <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result)
-                );
+                const request = <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result);
                 if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
                 else this._publishedChallengeRequests.push(request);
                 this.emit("challengerequest", {
@@ -691,7 +690,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             timestamp: timestamp()
         });
 
-        const challengeRequest = new ChallengeRequestMessage({
+        const challengeRequest = ChallengeRequestMessageSchema.parse({
             ...toSignMsg,
             signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
         });

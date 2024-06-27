@@ -12,7 +12,8 @@ import {
     PlebbitError
 } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import type { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import type { PubsubMessage } from "../pubsub-messages/types";
+import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";

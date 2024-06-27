@@ -1,6 +1,7 @@
 import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
-import type { ChainTicker, DecryptedChallengeRequestMessageType } from "../../../../../../types.js";
+import type { ChainTicker } from "../../../../../../types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
@@ -68,7 +69,7 @@ const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: ChainTicker)
 };
 
 const verifyAuthorWalletAddress = async (props: {
-    publication: DecryptedChallengeRequestMessageType["publication"];
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"];
     chainTicker: string;
     condition: string;
     abi: any;
@@ -313,7 +314,7 @@ const validateWalletAddressWithCondition = async (props: {
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
 ): Promise<ChallengeResult> => {

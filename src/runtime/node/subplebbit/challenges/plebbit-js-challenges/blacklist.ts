@@ -1,5 +1,5 @@
 import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
     {
@@ -24,7 +24,7 @@ const description = "Blacklist author addresses.";
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSettings,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<ChallengeResult> => {
     // add a custom error message to display to the author

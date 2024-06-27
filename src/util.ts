@@ -9,7 +9,7 @@ import type {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
-} from "./types.js";
+} from "./pubsub-messages/types";
 
 import { messages } from "./errors.js";
 import { PlebbitError } from "./plebbit-error.js";

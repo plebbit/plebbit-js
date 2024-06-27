@@ -1,5 +1,5 @@
 import { randomInt } from "crypto";
-import {
+import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
@@ -8,7 +8,7 @@ import {
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageType,
     EncodedDecryptedChallengeVerificationMessageType
-} from "../../types.js";
+} from "../../pubsub-messages/types.js";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 
 // don't pass stateful objects to JSON RPC

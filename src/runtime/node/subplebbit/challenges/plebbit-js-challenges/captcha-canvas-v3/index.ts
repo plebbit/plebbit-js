@@ -1,7 +1,7 @@
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants.js";
 
 import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
 
 const optionInputs = [

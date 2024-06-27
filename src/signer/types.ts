@@ -4,9 +4,9 @@ import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
-    ChallengeVerificationMessageType,
-    PublicationTypeName
-} from "../types";
+    ChallengeVerificationMessageType
+} from "../pubsub-messages/types";
+import type { PublicationTypeName } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
 
 import type { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
