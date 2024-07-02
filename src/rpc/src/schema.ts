@@ -79,11 +79,7 @@ export const EncodedDecryptedChallengeAnswerMessageSchema = DecryptedChallengeAn
 
 export const EncodedDecryptedChallengeVerificationMessageSchema = BaseEncodedPubsubMessageSchema.merge(
     DecryptedChallengeVerificationMessageSchema.omit({ challengeRequestId: true, encrypted: true, signature: true }).extend({
-        encrypted: EncryptedEncodedSchema.optional()
+        encrypted: EncryptedEncodedSchema.optional(),
+        publication: DecryptedChallengeVerificationMessageSchema.shape.publication.optional()
     })
 );
-
-export const EncodedDecryptedChallengeVerificationMessageWithSubplebbitAuthorSchema =
-    EncodedDecryptedChallengeVerificationMessageSchema.extend({
-        publication: DecryptedChallengeVerificationMessageSchema.shape.publication
-    });

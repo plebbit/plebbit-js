@@ -3,17 +3,12 @@ import { PublicationTypeName, VotesTableRowInsert } from "../../types.js";
 import { Plebbit } from "../../plebbit.js";
 import { verifyVote } from "../../signer/index.js";
 import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import {
-    LocalVoteOptions,
-    VoteChallengeRequestToEncryptType,
-    VotePubsubMessage,
-    VoteTypeJson
-} from "./types.js";
+import { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessage, VoteTypeJson } from "./types.js";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication {
-    commentCid!: string;
-    vote!: 1 | 0 | -1; // (upvote, cancel vote, downvote)
+    commentCid!: VotePubsubMessage["commentCid"];
+    vote!: VotePubsubMessage["vote"]; // (upvote, cancel vote, downvote)
 
     constructor(plebbit: Plebbit) {
         super(plebbit);

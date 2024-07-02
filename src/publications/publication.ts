@@ -33,7 +33,7 @@ import {
     verifyChallengeMessage,
     verifyChallengeVerification
 } from "../signer/signatures.js";
-import { decodePubsubMsgFromRpc, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
+import { shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -55,11 +55,25 @@ import {
 import {
     ChallengeAnswerMessageSchema,
     ChallengeRequestMessageSchema,
+    DecryptedChallengeAnswerMessageSchema,
+    DecryptedChallengeAnswerSchema,
     DecryptedChallengeMessageSchema,
     IncomingPubsubMessageSchema
 } from "../pubsub-messages/schema.js";
 import { z } from "zod";
-import { EncodedDecryptedChallengeVerificationMessageType } from "../rpc/src/types.js";
+import {
+    EncodedDecryptedChallengeAnswerMessageSchema,
+    EncodedDecryptedChallengeMessageSchema,
+    EncodedDecryptedChallengeRequestMessageSchema,
+    EncodedDecryptedChallengeVerificationMessageSchema
+} from "../rpc/src/schema.js";
+import {
+    decodeRpcChallengeAnswerPubsubMsg,
+    decodeRpcChallengePubsubMsg,
+    decodeRpcChallengeRequestPubsubMsg,
+    decodeRpcChallengeVerificationPubsubMsg
+} from "../clients/rpc-client/decode-rpc-response-util.js";
+import { PublicationPublishingState, PublicationState } from "./schema.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -73,25 +87,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
     author!: Author;
     protocolVersion!: ProtocolVersion;
 
-    state!: "stopped" | "updating" | "publishing";
-    publishingState!:
-        | "stopped"
-        | "resolving-subplebbit-address"
-        | "fetching-subplebbit-ipns"
-        | "fetching-subplebbit-ipfs"
-        | "publishing-challenge-request"
-        | "waiting-challenge"
-        | "waiting-challenge-answers"
-        | "publishing-challenge-answer"
-        | "waiting-challenge-verification"
-        | "failed"
-        | "succeeded";
+    state!: z.infer<typeof PublicationState>;
+    publishingState!: z.infer<typeof PublicationPublishingState>;
     challengeAnswers?: string[];
     challengeCommentCids?: string[];
 
     // private
     private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing
-    private _challengeAnswer?: ChallengeAnswerMessageType;
+    private _challengeAnswer?: DecryptedChallengeAnswerMessageType;
     private _publishedChallengeRequests?: ChallengeRequestMessageType[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
     private _pubsubProviders: string[];
@@ -385,21 +388,18 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     async publishChallengeAnswers(challengeAnswers: string[]) {
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
-        // Zod here
-
-        if (!Array.isArray(challengeAnswers)) challengeAnswers = [challengeAnswers];
-
-        if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
-            await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, challengeAnswers);
-            return;
-        }
-
         assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
+
         if (typeof this._currentPubsubProviderIndex !== "number")
             throw Error("currentPubsubProviderIndex should be defined prior to publishChallengeAnswers");
         if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
-        const toEncryptAnswers: DecryptedChallengeAnswer = { challengeAnswers };
+        const toEncryptAnswers = DecryptedChallengeAnswerSchema.parse({ challengeAnswers: challengeAnswers });
+
+        if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
+            await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, toEncryptAnswers.challengeAnswers);
+            return;
+        }
 
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),
@@ -415,8 +415,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });
-        this._challengeAnswer = ChallengeAnswerMessageSchema.parse({
+        this._challengeAnswer = DecryptedChallengeAnswerMessageSchema.parse({
             ...toSignAnswer,
+            ...toEncryptAnswers,
             signature: await signChallengeAnswer(
                 toSignAnswer,
                 this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()]
@@ -438,10 +439,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         providers.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-verification", provider));
 
         log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
-        this.emit("challengeanswer", {
-            ...this._challengeAnswer,
-            challengeAnswers
-        });
+        this.emit("challengeanswer", this._challengeAnswer);
     }
 
     private _validatePublicationFields() {
@@ -595,6 +593,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         if (!this._plebbit.plebbitRpcClient) throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
         this._updateState("publishing");
         try {
+            // PlebbitRpcClient will take care of zod parsing for us
             this._rpcPublishSubscriptionId =
                 this.getType() === "comment"
                     ? await this._plebbit.plebbitRpcClient.publishComment(<CommentChallengeRequestToEncryptType>this.toJSONPubsubMessage())
@@ -605,50 +604,48 @@ class Publication extends TypedEmitter<PublicationEvents> {
                       : this.getType() === "vote"
                         ? await this._plebbit.plebbitRpcClient.publishVote(<VoteChallengeRequestToEncryptType>this.toJSONPubsubMessage())
                         : undefined;
+            if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));
             this._updateState("stopped");
             this._updatePublishingState("failed");
             throw e;
         }
-        assert(typeof this._rpcPublishSubscriptionId === "number", "Failed to start publishing with RPC");
 
         this._plebbit.plebbitRpcClient
             .getSubscription(this._rpcPublishSubscriptionId)
             .on("challengerequest", (args) => {
-                // zod here
-                const request = <DecryptedChallengeRequestMessageType>decodePubsubMsgFromRpc(args.params.result);
+                const encodedRequest = EncodedDecryptedChallengeRequestMessageSchema.parse(args.params.result);
+                const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
                 if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
                 else this._publishedChallengeRequests.push(request);
-                this.emit("challengerequest", {
-                    ...request,
-                    ...this.toJSONPubsubMessage()
-                });
+                this.emit("challengerequest", request);
             })
-            .on(
-                "challenge",
-                // zod here
-                (args) => this._handleRpcChallenge(<DecryptedChallengeMessageType>decodePubsubMsgFromRpc(args.params.result))
-            )
-            .on("challengeanswer", (args) =>
-                // zod here
-                this._handleRpcChallengeAnswer(<DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(args.params.result))
-            )
+            .on("challenge", (args) => {
+                const encodedChallenge = EncodedDecryptedChallengeMessageSchema.parse(args.params.result);
+                const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
+
+                this._handleRpcChallenge(challenge);
+            })
+            .on("challengeanswer", (args) => {
+                const encodedChallengeAnswer = EncodedDecryptedChallengeAnswerMessageSchema.parse(args.params.result);
+                const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
+                this._handleRpcChallengeAnswer(challengeAnswerMsg);
+            })
             .on("challengeverification", (args) => {
-                // zod here
-                const encoded = <EncodedDecryptedChallengeVerificationMessageType>args.params.result;
-                const decoded = <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(encoded);
+                const encoded = EncodedDecryptedChallengeVerificationMessageSchema.parse(args.params.result);
+                const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
                 this._handleRpcChallengeVerification(decoded);
             })
             .on("publishingstatechange", (args) => {
-                // zod here
-                this._updatePublishingState(args.params.result);
-                this._updateRpcClientStateFromPublishingState(args.params.result);
+                const publishState = PublicationPublishingState.parse(args.params.result);
+                this._updatePublishingState(publishState);
+                this._updateRpcClientStateFromPublishingState(publishState);
             })
-            .on("statechange", (args) =>
-                // zod here
-                this._updateState(args.params.result)
-            )
+            .on("statechange", (args) => {
+                const state = PublicationState.parse(args.params.result);
+                this._updateState(state);
+            })
             .on("error", (args) => this.emit("error", args.params.result));
         this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;

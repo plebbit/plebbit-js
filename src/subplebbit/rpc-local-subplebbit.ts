@@ -1,25 +1,32 @@
 import Logger from "@plebbit/plebbit-logger";
-import { decodePubsubMsgFromRpc, replaceXWithY } from "../util.js";
+import { replaceXWithY } from "../util.js";
 import type { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import type {
-    DecryptedChallengeAnswerMessageType,
-    DecryptedChallengeMessageType,
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType
-} from "../pubsub-messages/types.js";
+import { z } from "zod";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { PlebbitError } from "../plebbit-error.js";
-import { EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType } from "../rpc/src/types.js";
+import { RpcInternalSubplebbitRecordSchema, StartedStateSchema } from "./schema.js";
+import {
+    EncodedDecryptedChallengeAnswerMessageSchema,
+    EncodedDecryptedChallengeMessageSchema,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
+    EncodedDecryptedChallengeVerificationMessageSchema
+} from "../rpc/src/schema.js";
+import {
+    decodeRpcChallengeAnswerPubsubMsg,
+    decodeRpcChallengePubsubMsg,
+    decodeRpcChallengeRequestPubsubMsg,
+    decodeRpcChallengeVerificationPubsubMsg
+} from "../clients/rpc-client/decode-rpc-response-util.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
     protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
-    startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded"; // zod here
+    startedState!: z.infer<typeof StartedStateSchema>;
     signer!: InternalSubplebbitRpcType["signer"];
     settings?: InternalSubplebbitRpcType["settings"];
 
@@ -96,8 +103,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             .plebbitRpcClient!.getSubscription(this._startRpcSubscriptionId)
             .on("update", async (updateProps) => {
                 log(`Received update event from startSubplebbit (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
-                const newRpcRecord = <InternalSubplebbitRpcType>updateProps.params.result;
-                // zod here
+
+                const newRpcRecord = RpcInternalSubplebbitRecordSchema.parse(updateProps.params.result);
                 await this._handleRpcUpdateProps(newRpcRecord);
                 this.emit("update", this);
                 if (!newRpcRecord.started) {
@@ -106,41 +113,39 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
                 }
             })
             .on("startedstatechange", (args) => {
-                const newStartedState = <RpcLocalSubplebbit["startedState"]>args.params.result;
-                // zod here
+                const newStartedState = StartedStateSchema.parse(args.params.result);
                 this._setStartedState(newStartedState);
                 this._updateRpcClientStateFromStartedState(newStartedState);
             })
             .on("challengerequest", (args) => {
-                const request = <EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>args.params.result;
-                // zod here
+                const encodedRequest = EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema.parse(args.params.result);
+                const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
                 this._setRpcClientState("waiting-challenge-requests");
-                this.emit("challengerequest", <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>decodePubsubMsgFromRpc(request));
+                this.emit("challengerequest", request);
             })
             .on("challenge", (args) => {
+                const encodedChallenge = EncodedDecryptedChallengeMessageSchema.parse(args.params.result);
+                const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
+
                 this._setRpcClientState("publishing-challenge");
-                const challenge = <EncodedDecryptedChallengeMessageType>args.params.result;
-                // zod here
-                this.emit("challenge", <DecryptedChallengeMessageType>decodePubsubMsgFromRpc(challenge));
+                this.emit("challenge", challenge);
                 this._setRpcClientState("waiting-challenge-answers");
             })
             .on("challengeanswer", (args) => {
-                // zod here
-                const challengeAnswer = <EncodedDecryptedChallengeAnswerMessageType>args.params.result;
-                this.emit("challengeanswer", <DecryptedChallengeAnswerMessageType>decodePubsubMsgFromRpc(challengeAnswer));
+                const encodedChallengeAnswer = EncodedDecryptedChallengeAnswerMessageSchema.parse(args.params.result);
+
+                const challengeAnswer = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
+                this.emit("challengeanswer", challengeAnswer);
             })
             .on("challengeverification", (args) => {
-                const challengeVerification = <EncodedDecryptedChallengeVerificationMessageType>args.params.result;
-                // zod here
+                const encodedChallengeVerification = EncodedDecryptedChallengeVerificationMessageSchema.parse(args.params.result);
+                const challengeVerification = decodeRpcChallengeVerificationPubsubMsg(encodedChallengeVerification);
                 this._setRpcClientState("publishing-challenge-verification");
-                this.emit(
-                    "challengeverification",
-                    <DecryptedChallengeVerificationMessageType>decodePubsubMsgFromRpc(challengeVerification)
-                );
+                this.emit("challengeverification", challengeVerification);
                 this._setRpcClientState("waiting-challenge-requests");
             })
 
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", (args) => this.emit("error", args.params.result)); // TODO need to figure out how to zod parse error
 
         this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._startRpcSubscriptionId);
     }

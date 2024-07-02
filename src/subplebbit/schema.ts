@@ -255,6 +255,10 @@ export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitU
     .or(InternalSubplebbitRecordSchema)
     .or(SubplebbitClassSchema);
 
-// plebbit class schemas here
+// plebbit.listSubplebbits()
 
 export const ListOfSubplebbitsSchema = SubplebbitAddressSchema.array();
+
+// Schema of states
+
+export const StartedStateSchema = z.enum(["stopped", "publishing-ipns", "failed", "succeeded"]);

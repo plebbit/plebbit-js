@@ -1,22 +1,26 @@
 import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
-import type { Flair } from "../../subplebbit/types.js";
 import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type { CommentAuthorEditOptions, CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, CommentEditTypeJson, LocalCommentEditOptions } from "./types.js";
+import type {
+    CommentEditChallengeRequestToEncryptType,
+    CommentEditPubsubMessage,
+    CommentEditTypeJson,
+    LocalCommentEditOptions
+} from "./types.js";
 import { CommentEditsTableRowInsert, PublicationTypeName } from "../../types.js";
 
 export class CommentEdit extends Publication {
-    commentCid!: string;
-    content?: string;
-    reason?: string;
-    deleted?: boolean;
-    flair?: Flair;
-    spoiler?: boolean;
-    pinned?: boolean;
-    locked?: boolean;
-    removed?: boolean;
-    commentAuthor?: CommentAuthorEditOptions;
+    commentCid!: CommentEditPubsubMessage["commentCid"];
+    content?: CommentEditPubsubMessage["content"];
+    reason?: CommentEditPubsubMessage["reason"];
+    deleted?: CommentEditPubsubMessage["deleted"];
+    flair?: CommentEditPubsubMessage["flair"];
+    spoiler?: CommentEditPubsubMessage["spoiler"];
+    pinned?: CommentEditPubsubMessage["pinned"];
+    locked?: CommentEditPubsubMessage["locked"];
+    removed?: CommentEditPubsubMessage["removed"];
+    commentAuthor?: CommentEditPubsubMessage["commentAuthor"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);

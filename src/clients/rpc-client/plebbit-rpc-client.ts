@@ -25,6 +25,8 @@ import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "
 import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
 import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
+import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
+import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -256,14 +258,14 @@ export default class PlebbitRpcClient {
     }
 
     async publishCommentEdit(commentEditProps: CommentEditChallengeRequestToEncryptType) {
-        // zod here
-        const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
+        const parsedProps = CommentEditChallengeRequestToEncryptSchema.parse(commentEditProps);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [parsedProps]));
         return subscriptionId;
     }
 
     async publishVote(voteProps: VoteChallengeRequestToEncryptType) {
-        // zod here
-        const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
+        const parsedProps = VoteChallengeRequestToEncryptSchema.parse(voteProps);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [parsedProps]));
         return subscriptionId;
     }
 

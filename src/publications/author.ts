@@ -40,6 +40,8 @@ class Author implements AuthorTypeWithCommentUpdate {
             flair: this.flair
         };
     }
+
+    // TODO change name of this to indicate mandatory subplebbit field
     toJSONIpfsWithCommentUpdate(): AuthorTypeWithCommentUpdate {
         if (!this.subplebbit) throw Error("Calling author.toJSONIpfsWithCommentUpdate() without defining author.subplebbit");
         return { ...this.toJSONIpfs(), subplebbit: this.subplebbit };

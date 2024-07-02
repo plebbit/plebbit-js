@@ -1,14 +1,5 @@
-import type {
-    DecryptedChallengeAnswerMessageType,
-    DecryptedChallengeMessageType,
-    DecryptedChallengeRequestMessageType,
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType
-} from "./pubsub-messages/types";
-
 import { messages } from "./errors.js";
 import { PlebbitError } from "./plebbit-error.js";
-import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 //@ts-expect-error
 import extName from "ext-name";
@@ -16,13 +7,6 @@ import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
-import type {
-    EncodedDecryptedChallengeAnswerMessageType,
-    EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    EncodedDecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
-} from "./rpc/src/types";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -154,33 +138,6 @@ export function getErrorCodeFromMessage(message: string): keyof typeof messages 
 export function doesDomainAddressHaveCapitalLetter(domainAddress: string) {
     if (!domainAddress.includes(".")) return false;
     return /[A-Z]/.test(domainAddress); // Regex test for capital letters in English only
-}
-
-export function decodePubsubMsgFromRpc(
-    pubsubMsg:
-        | EncodedDecryptedChallengeMessageType
-        | EncodedDecryptedChallengeAnswerMessageType
-        | EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-        | EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
-        | EncodedDecryptedChallengeVerificationMessageType
-) {
-    //@ts-expect-error
-    let parsedPubsubMsg:
-        | DecryptedChallengeMessageType
-        | DecryptedChallengeAnswerMessageType
-        | DecryptedChallengeRequestMessageType
-        | DecryptedChallengeVerificationMessageType
-        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = pubsubMsg;
-    parsedPubsubMsg.challengeRequestId = uint8ArrayFromString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg.encrypted) {
-        parsedPubsubMsg.encrypted!.tag = uint8ArrayFromString(pubsubMsg.encrypted.tag, "base64");
-        parsedPubsubMsg.encrypted!.iv = uint8ArrayFromString(pubsubMsg.encrypted.iv, "base64");
-        parsedPubsubMsg.encrypted!.ciphertext = uint8ArrayFromString(pubsubMsg.encrypted.ciphertext, "base64");
-    }
-    parsedPubsubMsg.signature.publicKey = uint8ArrayFromString(pubsubMsg.signature.publicKey, "base64");
-    parsedPubsubMsg.signature.signature = uint8ArrayFromString(pubsubMsg.signature.signature, "base64");
-
-    return parsedPubsubMsg;
 }
 
 export function getPostUpdateTimestampRange(postUpdates: SubplebbitIpfsType["postUpdates"], postTimestamp: number) {

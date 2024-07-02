@@ -1,5 +1,5 @@
 import { Plebbit } from "../../plebbit.js";
-import { PlebbitOptions } from "../../types.js";
+import type { PlebbitOptions } from "../../types.js";
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
@@ -7,7 +7,6 @@ import {
     EncodedDecryptedChallengeRequestMessageSchema,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
     EncodedDecryptedChallengeVerificationMessageSchema,
-    EncodedDecryptedChallengeVerificationMessageWithSubplebbitAuthorSchema,
     EncodedPubsubMessageSignatureSchema,
     EncryptedEncodedSchema
 } from "./schema.js";
@@ -34,7 +33,6 @@ export type JsonRpcSendNotificationOptions = {
 
 export type EncryptedEncoded = z.infer<typeof EncryptedEncodedSchema>;
 
-
 // challenge request here
 export type EncodedPubsubSignature = z.infer<typeof EncodedPubsubMessageSignatureSchema>;
 
@@ -48,13 +46,8 @@ export type EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = z.
 
 export type EncodedDecryptedChallengeMessageType = z.infer<typeof EncodedDecryptedChallengeMessageSchema>;
 
-
 // challenge answer
 export type EncodedDecryptedChallengeAnswerMessageType = z.infer<typeof EncodedDecryptedChallengeAnswerMessageSchema>;
 // challenge verification
 
 export type EncodedDecryptedChallengeVerificationMessageType = z.infer<typeof EncodedDecryptedChallengeVerificationMessageSchema>;
-
-export type EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor = z.infer<
-    typeof EncodedDecryptedChallengeVerificationMessageWithSubplebbitAuthorSchema
->;

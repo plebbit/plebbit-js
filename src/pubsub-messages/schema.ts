@@ -102,7 +102,7 @@ export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
 });
 
 export const DecryptedChallengeAnswerSchema = z.object({
-    challengeAnswers: z.string().array() // for example ['2+2=4', '1+7=8']
+    challengeAnswers: z.string().array().nonempty() // for example ['2+2=4', '1+7=8']
 });
 
 export const DecryptedChallengeAnswerMessageSchema = ChallengeAnswerMessageSchema.merge(DecryptedChallengeAnswerSchema);
