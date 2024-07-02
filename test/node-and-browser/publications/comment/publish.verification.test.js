@@ -127,6 +127,14 @@ describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async ()
         const mockPost = await generateMockPost(subplebbitAddress, plebbit, false, { author: { avatar: test } });
         await publishWithExpectedResult(mockPost, false, "zxc");
     });
+
+    it(`Subs respond with error if an author submits a publication with invalid json`, async () => {
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        post.toJSONPubsubMessage = () => "<html>dwad";
+        post._validateSignature = async () => {}; // Disable signature validation before publishing
+
+        await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
+    });
 });
 
 describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
