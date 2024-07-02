@@ -3,12 +3,7 @@ import type {
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeAnswerMessageType,
-    EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    EncodedDecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
+    DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types";
 
 import { messages } from "./errors.js";
@@ -21,6 +16,13 @@ import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
+import type {
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    EncodedDecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeVerificationMessageTypeWithSubplebbitAuthor
+} from "./rpc/src/types";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);

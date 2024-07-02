@@ -3,13 +3,10 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
-    DecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeAnswerMessageType,
-    EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageType,
-    EncodedDecryptedChallengeVerificationMessageType
+    DecryptedChallengeVerificationMessageType
 } from "../../pubsub-messages/types.js";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageType, EncodedDecryptedChallengeVerificationMessageType } from "./types.js";
 
 // don't pass stateful objects to JSON RPC
 export const clone = (obj: any) => JSON.parse(JSON.stringify(obj));

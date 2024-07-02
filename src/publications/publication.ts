@@ -13,8 +13,7 @@ import type {
     DecryptedChallengeRequest,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerification,
-    DecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeVerificationMessageType
+    DecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import type {
     IpfsHttpClientPubsubMessage,
@@ -55,6 +54,7 @@ import {
 } from "../schema/schema-util.js";
 import { ChallengeAnswerMessageSchema, ChallengeRequestMessageSchema, IncomingPubsubMessageSchema } from "../pubsub-messages/schema.js";
 import { z } from "zod";
+import { EncodedDecryptedChallengeVerificationMessageType } from "../rpc/src/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -671,6 +671,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const pubsubMessageSigner = await this._plebbit.createSigner();
 
+        // zod here
         const encrypted = await encryptEd25519AesGcm(
             JSON.stringify(this.toJSONPubsubMessage()),
             pubsubMessageSigner.privateKey,

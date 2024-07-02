@@ -35,22 +35,10 @@ export interface SignerType {
 
 export type Encrypted = z.infer<typeof EncryptedSchema>;
 
-export type EncryptedEncoded = {
-    ciphertext: string; // base64
-    iv: string; // base64export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
-
-    tag: string; // base64
-    type: "ed25519-aes-gcm";
-};
 // ---------------------------
 // Signature
 
 export type PubsubSignature = z.infer<typeof PubsubMessageSignatureSchema>;
-
-export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
-    signature: string; // base64
-    publicKey: string; // base64
-}
 
 export type SignatureTypes =
     | PublicationTypeName

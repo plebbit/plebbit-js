@@ -81,7 +81,7 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
-import { CommentEditPubsubMessageWithSubplebbitAuthor, CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
+import type { CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
 import {
     AuthorCommentEditPubsubSchema,
     ModeratorCommentEditPubsubSchema,
@@ -95,6 +95,8 @@ import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
+    DecryptedChallengeRequestMessageSchema,
+    DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema,
     DecryptedChallengeRequestSchema,
     IncomingPubsubMessageSchema
 } from "../../../pubsub-messages/schema.js";
@@ -884,14 +886,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
 
         const subplebbitAuthor = await this.dbHandler.querySubplebbitAuthor(authorSignerAddress);
-        const decryptedRequestMsg = <DecryptedChallengeRequestMessageType>{ ...request, ...decryptedRequest };
-        const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = {
-            ...request,
-            publication: {
-                ...decryptedRequest.publication,
-                ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
-            }
-        };
+        const decryptedRequestMsg = DecryptedChallengeRequestMessageSchema.parse({ ...request, ...decryptedRequest });
+        const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor =
+            DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema.parse({
+                ...request,
+                publication: {
+                    ...decryptedRequest.publication,
+                    ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
+                }
+            });
 
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequestMsg); // This function will throw an error if signature is invalid

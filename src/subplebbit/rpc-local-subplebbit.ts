@@ -6,16 +6,13 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType,
-    EncodedDecryptedChallengeAnswerMessageType,
-    EncodedDecryptedChallengeMessageType,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    EncodedDecryptedChallengeVerificationMessageType
+    DecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { PlebbitError } from "../plebbit-error.js";
+import { EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, EncodedDecryptedChallengeVerificationMessageType } from "../rpc/src/types.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {

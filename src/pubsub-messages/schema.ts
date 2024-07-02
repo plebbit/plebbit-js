@@ -5,7 +5,8 @@ import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/sch
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
     CommentPubsubMessageWithRefinementSchema,
-    AuthorWithCommentUpdateSchema
+    AuthorWithCommentUpdateSchema,
+    CommentPubsubMessageSchema
 } from "../publications/comment/schema";
 
 const AcceptedChallengeTypeSchema = z.string(); // TODO figure out the accepted challenge types
@@ -32,6 +33,24 @@ export const EncryptedSchema = z.object({
     type: z.enum(["ed25519-aes-gcm"])
 });
 
+// publication with subplebbit author that are added by subplebbit when they respond to publication, or emit an event
+
+const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
+    author: AuthorWithCommentUpdateSchema
+});
+
+const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
+    author: AuthorWithCommentUpdateSchema
+});
+
+const CommentEditPubsubMessageWithSubplebbitAuthorSchema = CommentEditPubsubMessageSchema.extend({
+    author: AuthorWithCommentUpdateSchema
+});
+
+export const CommentPubsubMessageWithSubplebbitAuthorSchema = CommentPubsubMessageSchema.extend({
+    author: AuthorWithCommentUpdateSchema
+});
+
 // Challenge Request message
 
 export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
@@ -46,6 +65,14 @@ export const DecryptedChallengeRequestSchema = z.object({
     publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageWithRefinementSchema),
     challengeAnswers: z.string().array().optional(), // some challenges might be included in subplebbit.challenges and can be pre-answered
     challengeCommentCids: CommentCidSchema.array().optional() // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+});
+
+export const DecryptedChallengeRequestMessageSchema = ChallengeRequestMessageSchema.merge(DecryptedChallengeRequestSchema);
+
+export const DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema = DecryptedChallengeRequestMessageSchema.extend({
+    publication: VotePubsubMessageWithSubplebbitAuthorSchema.or(CommentEditPubsubMessageWithSubplebbitAuthorSchema).or(
+        CommentPubsubMessageWithSubplebbitAuthorSchema
+    )
 });
 
 // Challenge message
@@ -65,6 +92,8 @@ export const DecryptedChallengeSchema = z.object({
     challenges: ChallengeInChallengePubsubMessageSchema.array()
 });
 
+export const DecryptedChallengeMessageSchema = ChallengeMessageSchema.merge(DecryptedChallengeSchema);
+
 // Challenge answer
 
 export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
@@ -76,6 +105,8 @@ export const DecryptedChallengeAnswerSchema = z.object({
     challengeAnswers: z.string().array() // for example ['2+2=4', '1+7=8']
 });
 
+export const DecryptedChallengeAnswerMessageSchema = ChallengeAnswerMessageSchema.merge(DecryptedChallengeAnswerSchema);
+
 // Challenge Verification
 
 export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend({
@@ -86,13 +117,11 @@ export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend
     encrypted: EncryptedSchema.optional() // Will decrypt to DecryptedChallengeVerificationSchema
 });
 
-const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-});
-
 export const DecryptedChallengeVerificationSchema = z.object({
     publication: CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema.optional()
 });
+
+export const DecryptedChallengeVerificationMessageSchema = ChallengeVerificationMessageSchema.merge(DecryptedChallengeVerificationSchema);
 
 // Handling challenges for subplebbit
 
