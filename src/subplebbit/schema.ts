@@ -254,3 +254,7 @@ export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitU
 )
     .or(InternalSubplebbitRecordSchema)
     .or(SubplebbitClassSchema);
+
+// plebbit class schemas here
+
+export const ListOfSubplebbitsSchema = SubplebbitAddressSchema.array();

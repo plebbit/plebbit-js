@@ -1,15 +1,9 @@
 import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
-import { Flair } from "../../subplebbit/types.js";
+import type { Flair } from "../../subplebbit/types.js";
 import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type {
-    CommentAuthorEditOptions,
-    CommentEditPubsubMessage,
-    CommentEditTypeJson,
-    DecryptedChallengeRequestCommentEdit,
-    LocalCommentEditOptions
-} from "./types.js";
+import type { CommentAuthorEditOptions, CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, CommentEditTypeJson, LocalCommentEditOptions } from "./types.js";
 import { CommentEditsTableRowInsert, PublicationTypeName } from "../../types.js";
 
 export class CommentEdit extends Publication {
@@ -54,7 +48,7 @@ export class CommentEdit extends Publication {
         this._initEditProps(props);
     }
 
-    _initChallengeRequestProps(props: DecryptedChallengeRequestCommentEdit) {
+    _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
     }

@@ -24,9 +24,9 @@ import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
-import type { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
-import type { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
 import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
+import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
+import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -190,6 +190,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getComment(params: any): Promise<CommentIpfsType> {
+        // zod here
         const cid = <string>params[0];
         const comment = await this.plebbit.getComment(cid);
         const commentIpfs = comment._rawCommentIpfs;
@@ -198,6 +199,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getSubplebbitPage(params: any) {
+        // zod here
         const pageCid = <string>params[0];
         const subplebbitAddress = <string>params[1];
 
@@ -211,6 +213,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getCommentPage(params: any) {
+        // zod here
         const [pageCid, commentCid, subplebbitAddress]: string[] = params;
         const comment = await this.plebbit.createComment({ cid: commentCid, subplebbitAddress });
         const page = await comment.replies._fetchAndVerifyPage(pageCid);
@@ -218,6 +221,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async createSubplebbit(params: any) {
+        // zod here
         const createSubplebbitOptions = <CreateNewLocalSubplebbitUserOptions>params[0];
         if ("address" in createSubplebbitOptions) {
             throw Error(
@@ -268,6 +272,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async startSubplebbit(params: any, connectionId: string) {
+        // zod here
         const address = <string>params[0];
 
         const localSubs = await this.plebbit.listSubplebbits();
@@ -300,6 +305,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async stopSubplebbit(params: any) {
+        // zod here
         const address = <string>params[0];
 
         const localSubs = await this.plebbit.listSubplebbits();
@@ -333,6 +339,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async editSubplebbit(params: any) {
+        // zod here
         const address = <string>params[0];
         const editSubplebbitOptions = <SubplebbitEditOptions>params[1];
 
@@ -351,6 +358,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async deleteSubplebbit(params: any) {
+        // zod here
         const address = <string>params[0];
 
         const addresses = await this.plebbit.listSubplebbits();
@@ -423,6 +431,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async fetchCid(params: any) {
+        // zod here
         const cid = <string>params[0];
         const res = await this.plebbit.fetchCid(cid);
         return res;
@@ -437,6 +446,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async setSettings(params: any) {
+        // zod here
         const settings = <PlebbitWsServerSettings>params[0];
         this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
         this.plebbit.on("error", (error: any) => {
@@ -465,6 +475,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async commentUpdate(params: any, connectionId: string) {
+        // zod here
         const cid = <string>params[0];
         const subscriptionId = generateSubscriptionId();
 
@@ -498,6 +509,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async subplebbitUpdate(params: any, connectionId: string) {
+        // zod here
         const address = <string>params[0];
         const subscriptionId = generateSubscriptionId();
 
@@ -554,7 +566,9 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishComment(params: any, connectionId: string) {
+        // zod here
         const publishOptions = <CommentChallengeRequestToEncryptType>params[0];
+
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -594,7 +608,9 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishVote(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequestVote>params[0];
+        // zod here
+        const publishOptions = <VoteChallengeRequestToEncryptType>params[0];
+
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -634,7 +650,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishCommentEdit(params: any, connectionId: string) {
-        const publishOptions = <DecryptedChallengeRequestCommentEdit>params[0];
+        // zod here
+        const publishOptions = <CommentEditChallengeRequestToEncryptType>params[0];
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -674,6 +691,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishChallengeAnswers(params: any) {
+        // zod here
         const subscriptionId = <number>params[0];
         const answers = <string[]>params[1];
 
@@ -688,12 +706,14 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async resolveAuthorAddress(params: any) {
+        // zod here
         const authorAddress = <string>params[0];
         const resolvedAuthorAddress = await this.plebbit.resolveAuthorAddress(authorAddress);
         return resolvedAuthorAddress;
     }
 
     async unsubscribe(params: any, connectionId: string) {
+        // zod here
         const subscriptionId = <number>params[0];
 
         if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {

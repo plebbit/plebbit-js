@@ -10,10 +10,21 @@ import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../../util.js";
 import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
-import { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
-import { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
+import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
+import type { CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
 import type { PageIpfs } from "../../pages/types.js";
+import { CommentChallengeRequestToEncryptSchema, CommentIpfsSchema } from "../../publications/comment/schema.js";
+import { PageIpfsSchema } from "../../pages/schema.js";
+import {
+    CreateNewLocalSubplebbitUserOptionsSchema,
+    ListOfSubplebbitsSchema,
+    RpcInternalSubplebbitRecordSchema
+} from "../../subplebbit/schema.js";
+import { SubscriptionIdSchema } from "./schema.js";
+import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
+import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
+import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -163,27 +174,36 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
-        // zod here
-        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [commentCid]);
-        return this._plebbit.createComment({ cid: commentCid, ...commentProps });
+        const parsedCommentCid = CommentCidSchema.parse(commentCid);
+        const commentProps = CommentIpfsSchema.parse(await this._webSocketClient.call("getComment", [parsedCommentCid]));
+        return this._plebbit.createComment({ cid: parsedCommentCid, ...commentProps });
     }
 
     async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        // zod here
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getCommentPage", [pageCid, commentCid, subplebbitAddress]);
+        const parsedPageCid = CommentCidSchema.parse(pageCid);
+        const parsedCommentCid = CommentCidSchema.parse(commentCid);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const pageIpfs = PageIpfsSchema.parse(
+            await this._webSocketClient.call("getCommentPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
+        );
         return pageIpfs;
     }
 
     async getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        // zod here
-        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPage", [pageCid, subplebbitAddress]);
+        const parsedPageCid = CommentCidSchema.parse(pageCid);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const pageIpfs = PageIpfsSchema.parse(
+            await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress])
+        );
         return pageIpfs;
     }
 
     async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
-        // zod here
-        const subProps = <InternalSubplebbitRpcType>await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions]);
+        const parsedCreateSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(createSubplebbitOptions);
+        const subProps = RpcInternalSubplebbitRecordSchema.parse(
+            await this._webSocketClient.call("createSubplebbit", [parsedCreateSubplebbitOptions])
+        );
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
         await subplebbit.initRpcInternalSubplebbitNoMerge(subProps);
         return subplebbit;
@@ -195,15 +215,17 @@ export default class PlebbitRpcClient {
     }
 
     async startSubplebbit(subplebbitAddress: string) {
-        // zod here
-        const subscriptionId = <number>await this._webSocketClient.call("startSubplebbit", [subplebbitAddress]);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("startSubplebbit", [parsedSubplebbitAddress]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
     async stopSubplebbit(subplebbitAddress: string): Promise<void> {
-        // zod here
-        await this._webSocketClient.call("stopSubplebbit", [subplebbitAddress]);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+
+        const res = await this._webSocketClient.call("stopSubplebbit", [parsedSubplebbitAddress]);
+        if (res !== true) throw Error("Calling RPC function should throw or return true");
     }
 
     async editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions) {
@@ -215,52 +237,56 @@ export default class PlebbitRpcClient {
     }
 
     async deleteSubplebbit(subplebbitAddress: string) {
-        // zod here
-        await this._webSocketClient.call("deleteSubplebbit", [subplebbitAddress]);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const res = await this._webSocketClient.call("deleteSubplebbit", [parsedSubplebbitAddress]);
+        if (res !== true) throw Error("Calling RPC function deleteSubplebbit should either return true or throw");
     }
 
     async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
-        // zod here
-        const subscriptionId = <number>await this._webSocketClient.call("subplebbitUpdate", [subplebbitAddress]);
+        const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("subplebbitUpdate", [parsedSubplebbitAddress]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
     async publishComment(commentProps: CommentChallengeRequestToEncryptType) {
-        // zod here
-        const subscriptionId = <number>await this._webSocketClient.call("publishComment", [commentProps]);
+        const parsedProps = CommentChallengeRequestToEncryptSchema.parse(commentProps);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [parsedProps]));
         return subscriptionId;
     }
 
-    async publishCommentEdit(commentEditProps: DecryptedChallengeRequestCommentEdit) {
+    async publishCommentEdit(commentEditProps: CommentEditChallengeRequestToEncryptType) {
         // zod here
         const subscriptionId = <number>await this._webSocketClient.call("publishCommentEdit", [commentEditProps]);
         return subscriptionId;
     }
 
-    async publishVote(voteProps: DecryptedChallengeRequestVote) {
+    async publishVote(voteProps: VoteChallengeRequestToEncryptType) {
         // zod here
         const subscriptionId = <number>await this._webSocketClient.call("publishVote", [voteProps]);
         return subscriptionId;
     }
 
     async commentUpdate(commentCid: string) {
-        // zod here
-        assert(commentCid, "Need to have comment cid in order to call RPC commentUpdate");
-        const subscriptionId = <number>await this._webSocketClient.call("commentUpdate", [commentCid]);
+        const parsedCid = CommentCidSchema.parse(commentCid);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdate", [parsedCid]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
-    async publishChallengeAnswers(subscriptionId: number, challengeAnswers: string[]) {
-        // zod here
-        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [subscriptionId, challengeAnswers]);
+    async publishChallengeAnswers(subscriptionId: number, challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"]) {
+        const parsedId = SubscriptionIdSchema.parse(subscriptionId);
+        const parsedChallengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(challengeAnswers);
+        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [parsedId, parsedChallengeAnswers]);
+        if (res !== true) throw Error("RPC function publishChallengeAnswers should either return true or throw");
         return res;
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        // zod here
-        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [authorAddress]);
+        const parsedAuthorAddress = AuthorAddressSchema.parse(authorAddress);
+        const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [parsedAuthorAddress]);
+        if (typeof res !== "string" && res !== null)
+            throw Error("RPC function resolveAuthorAddress should either respond with string or null");
         return res;
     }
 
@@ -268,10 +294,10 @@ export default class PlebbitRpcClient {
         if (!this._listSubsSubscriptionId) {
             this._lastListedSubs = undefined;
             // zod here
-            this._listSubsSubscriptionId = <number>await this._webSocketClient.call("listSubplebbits", []);
+            this._listSubsSubscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("listSubplebbits", []));
             this._initSubscriptionEvent(this._listSubsSubscriptionId);
             this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {
-                this._lastListedSubs = <string[]>newSubs.params.result;
+                this._lastListedSubs = ListOfSubplebbitsSchema.parse(newSubs.params.result);
             });
             this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
         }
@@ -281,8 +307,9 @@ export default class PlebbitRpcClient {
     }
 
     async fetchCid(cid: string): Promise<string> {
-        // zod here
-        const res = <string>await this._webSocketClient.call("fetchCid", [cid]);
+        const parsedCid = CommentCidSchema.parse(cid);
+        const res = <string>await this._webSocketClient.call("fetchCid", [parsedCid]);
+        if (typeof res !== "string") throw Error("RPC function fetchCid did not respond with string");
         return res;
     }
 

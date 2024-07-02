@@ -44,15 +44,20 @@ import type { JsonSignature } from "../signer/types.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import type { CommentEditPubsubMessage, DecryptedChallengeRequestCommentEdit } from "./comment-edit/types.js";
-import type { DecryptedChallengeRequestVote, VotePubsubMessage } from "./vote/types.js";
+import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage } from "./comment-edit/types.js";
+import type { VoteChallengeRequestToEncryptType, VotePubsubMessage } from "./vote/types.js";
 import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubsubMessage } from "./comment/types.js";
 import {
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
-import { ChallengeAnswerMessageSchema, ChallengeRequestMessageSchema, IncomingPubsubMessageSchema } from "../pubsub-messages/schema.js";
+import {
+    ChallengeAnswerMessageSchema,
+    ChallengeRequestMessageSchema,
+    DecryptedChallengeMessageSchema,
+    IncomingPubsubMessageSchema
+} from "../pubsub-messages/schema.js";
 import { z } from "zod";
 import { EncodedDecryptedChallengeVerificationMessageType } from "../rpc/src/types.js";
 
@@ -170,6 +175,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         throw Error("should be overridden");
     }
 
+    // TODO change this to toJSONPubsubMessageToEncrypt
     toJSONPubsubMessage(): DecryptedChallengeRequest {
         return {
             publication: this.toJSONPubsubMessagePublication(),
@@ -208,6 +214,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 reason: challengeMsgValidity.reason
             });
             log.error("received challenge message with invalid signature", error.toString());
+            this._updatePublishingState("failed");
             this.emit("error", error);
             return;
         }
@@ -228,6 +235,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         } catch (e) {
             const plebbitError = new PlebbitError("ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE", { decryptErr: e });
             log.error("could not decrypt challengemessage.encrypted", plebbitError.toString());
+            this._updatePublishingState("failed");
             this.emit("error", plebbitError);
             return;
         }
@@ -238,6 +246,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             decryptedJson = await parseJsonWithPlebbitErrorIfFails(decryptedRawString);
         } catch (e) {
             log.error("could not parse decrypted challengemessage.encrypted as a json", String(e));
+            this._updatePublishingState("failed");
             this.emit("error", <PlebbitError>e);
             return;
         }
@@ -248,13 +257,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
             decryptedChallenge = parseDecryptedChallengeWithPlebbitErrorIfItFails(decryptedJson);
         } catch (e) {
             log.error("could not parse z challengemessage.encrypted as a json", String(e));
+            this._updatePublishingState("failed");
             this.emit("error", <PlebbitError>e);
             return;
         }
-        this._challenge = {
+        this._challenge = DecryptedChallengeMessageSchema.parse({
             ...msg,
             ...decryptedChallenge
-        };
+        });
         this._updatePublishingState("waiting-challenge-answers");
         const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
@@ -590,10 +600,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     ? await this._plebbit.plebbitRpcClient.publishComment(<CommentChallengeRequestToEncryptType>this.toJSONPubsubMessage())
                     : this.getType() === "commentedit"
                       ? await this._plebbit.plebbitRpcClient.publishCommentEdit(
-                            <DecryptedChallengeRequestCommentEdit>this.toJSONPubsubMessage()
+                            <CommentEditChallengeRequestToEncryptType>this.toJSONPubsubMessage()
                         )
                       : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(<DecryptedChallengeRequestVote>this.toJSONPubsubMessage())
+                        ? await this._plebbit.plebbitRpcClient.publishVote(<VoteChallengeRequestToEncryptType>this.toJSONPubsubMessage())
                         : undefined;
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));

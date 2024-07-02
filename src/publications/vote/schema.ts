@@ -33,7 +33,7 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "pr
 
 export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
 
-export const DecryptedChallengeRequestVoteSchema = ChallengeRequestToEncryptBaseSchema.extend({
+export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: VotePubsubMessageSchema
 }).strict();
 
@@ -43,5 +43,5 @@ export const VoteJsonSchema = VotePubsubMessageSchema.extend({
 }).strict();
 
 export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema)
-    .or(DecryptedChallengeRequestVoteSchema)
+    .or(VoteChallengeRequestToEncryptSchema)
     .or(VoteJsonSchema);

@@ -35,15 +35,15 @@ export const EncryptedSchema = z.object({
 
 // publication with subplebbit author that are added by subplebbit when they respond to publication, or emit an event
 
-const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
+export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
     author: AuthorWithCommentUpdateSchema
 });
 
-const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
+export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
     author: AuthorWithCommentUpdateSchema
 });
 
-const CommentEditPubsubMessageWithSubplebbitAuthorSchema = CommentEditPubsubMessageSchema.extend({
+export const CommentEditPubsubMessageWithSubplebbitAuthorSchema = CommentEditPubsubMessageSchema.extend({
     author: AuthorWithCommentUpdateSchema
 });
 

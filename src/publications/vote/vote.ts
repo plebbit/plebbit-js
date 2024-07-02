@@ -3,7 +3,12 @@ import { PublicationTypeName, VotesTableRowInsert } from "../../types.js";
 import { Plebbit } from "../../plebbit.js";
 import { verifyVote } from "../../signer/index.js";
 import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import { DecryptedChallengeRequestVote, LocalVoteOptions, VotePubsubMessage, VoteTypeJson } from "./types.js";
+import {
+    LocalVoteOptions,
+    VoteChallengeRequestToEncryptType,
+    VotePubsubMessage,
+    VoteTypeJson
+} from "./types.js";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication {
@@ -29,7 +34,7 @@ class Vote extends Publication {
         this.vote = props.vote;
     }
 
-    _initChallengeRequestProps(props: DecryptedChallengeRequestVote) {
+    _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
     }
