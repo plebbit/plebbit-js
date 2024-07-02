@@ -5,11 +5,10 @@ import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
 import { pageCidToSortTypesCache } from "../constants.js";
-import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
+import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import { isIpfsCid, throwWithErrorCode } from "../util.js";
 import { BasePages } from "../pages/pages.js";
-import { PageIpfsSchema } from "../pages/schema.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 

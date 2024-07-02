@@ -40,7 +40,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         try {
-            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address);
+            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address); // zod here
             this._setState("updating");
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);

@@ -19,7 +19,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: number;
     protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
-    startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded";
+    startedState!: "stopped" | "publishing-ipns" | "failed" | "succeeded"; // zod here
     signer!: InternalSubplebbitRpcType["signer"];
     settings?: InternalSubplebbitRpcType["settings"];
 

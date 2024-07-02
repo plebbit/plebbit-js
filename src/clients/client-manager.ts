@@ -24,8 +24,8 @@ import {
     GenericPlebbitRpcStateClient,
     PublicationPlebbitRpcStateClient,
     SubplebbitPlebbitRpcStateClient
-} from "./plebbit-rpc-state-client.js";
-import { SubplebbitIpfsType } from "../subplebbit/types.js";
+} from "./rpc-client/plebbit-rpc-state-client.js";
+import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";

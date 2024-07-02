@@ -1,19 +1,19 @@
 import Logger from "@plebbit/plebbit-logger";
-import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../types.js";
+import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
-import { Comment } from "../publications/comment/comment.js";
-import { Plebbit } from "../plebbit.js";
+import { Comment } from "../../publications/comment/comment.js";
+import { Plebbit } from "../../plebbit.js";
 import assert from "assert";
-import { PlebbitError } from "../plebbit-error.js";
+import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
-import { throwWithErrorCode } from "../util.js";
-import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../subplebbit/types.js";
-import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
-import { DecryptedChallengeRequestCommentEdit } from "../publications/comment-edit/types.js";
-import { DecryptedChallengeRequestVote } from "../publications/vote/types.js";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../publications/comment/types.js";
-import type { PageIpfs } from "../pages/types.js";
+import { throwWithErrorCode } from "../../util.js";
+import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../../subplebbit/types.js";
+import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
+import { DecryptedChallengeRequestCommentEdit } from "../../publications/comment-edit/types.js";
+import { DecryptedChallengeRequestVote } from "../../publications/vote/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
+import type { PageIpfs } from "../../pages/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 

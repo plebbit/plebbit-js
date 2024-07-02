@@ -16,7 +16,7 @@ import type {
     SubplebbitStats
 } from "./types.js";
 import * as remeda from "remeda";
-import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";

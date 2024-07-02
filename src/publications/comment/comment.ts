@@ -544,7 +544,7 @@ export class Comment extends Publication {
             if (!rpcUrl) throw Error("Failed to get rpc url");
             if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
             try {
-                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid); // zod here
                 this._updateState("updating");
             } catch (e) {
                 log.error("Failed to receive commentUpdate from RPC due to error", e);
@@ -555,6 +555,7 @@ export class Comment extends Publication {
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
+                    // zod here
                     const newUpdate = <CommentIpfsType | CommentUpdate>updateProps.params.result;
                     if ("subplebbitAddress" in newUpdate) {
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
@@ -568,11 +569,12 @@ export class Comment extends Publication {
                     this.emit("update", this);
                 })
                 .on("updatingstatechange", (args) => {
+                    // zod here
                     const updateState = <Comment["updatingState"]>args.params.result;
                     this._setUpdatingState(updateState);
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })
-                .on("statechange", (args) => this._updateState(<Comment["state"]>args.params.result))
+                .on("statechange", (args) => this._updateState(<Comment["state"]>args.params.result)) // zod here
                 .on("error", async (args) => {
                     const err = <PlebbitError>args.params.result;
                     if (this._isCriticalRpcError(err)) {
