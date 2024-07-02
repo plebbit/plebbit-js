@@ -7,7 +7,6 @@ import type {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     DecryptedChallenge,
-    DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
@@ -53,11 +52,12 @@ import {
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
 import {
-    ChallengeAnswerMessageSchema,
     ChallengeRequestMessageSchema,
     DecryptedChallengeAnswerMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeMessageSchema,
+    DecryptedChallengeRequestMessageSchema,
+    DecryptedChallengeRequestSchema,
     IncomingPubsubMessageSchema
 } from "../pubsub-messages/schema.js";
 import { z } from "zod";
@@ -79,23 +79,23 @@ class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
     clients!: PublicationClientsManager["clients"];
 
-    subplebbitAddress!: string;
+    subplebbitAddress!: DecryptedChallengeRequestMessageType["publication"]["subplebbitAddress"];
     shortSubplebbitAddress!: string;
-    timestamp!: number;
-    signature!: JsonSignature;
+    timestamp!: DecryptedChallengeRequestMessageType["publication"]["timestamp"];
+    signature!: DecryptedChallengeRequestMessageType["publication"]["signature"];
     signer?: LocalPublicationProps["signer"];
     author!: Author;
-    protocolVersion!: ProtocolVersion;
+    protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
     state!: z.infer<typeof PublicationState>;
     publishingState!: z.infer<typeof PublicationPublishingState>;
-    challengeAnswers?: string[];
-    challengeCommentCids?: string[];
+    challengeAnswers?: DecryptedChallengeRequestMessageType["challengeAnswers"];
+    challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
     // private
     private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing
     private _challengeAnswer?: DecryptedChallengeAnswerMessageType;
-    private _publishedChallengeRequests?: ChallengeRequestMessageType[];
+    private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
     private _pubsubProviders: string[];
     private _pubsubProvidersDoneWaiting?: Record<string, boolean>;
@@ -678,9 +678,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const pubsubMessageSigner = await this._plebbit.createSigner();
 
-        // zod here
+        const pubsubMsgToEncrypt = DecryptedChallengeRequestSchema.parse(this.toJSONPubsubMessage());
         const encrypted = await encryptEd25519AesGcm(
-            JSON.stringify(this.toJSONPubsubMessage()),
+            JSON.stringify(pubsubMsgToEncrypt),
             pubsubMessageSigner.privateKey,
             this.subplebbit.encryption.publicKey
         );
@@ -747,7 +747,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 else continue;
             }
             this._pubsubProvidersDoneWaiting[this._pubsubProviders[this._currentPubsubProviderIndex]] = false;
-            this._publishedChallengeRequests.push(challengeRequest);
+            const decryptedRequest = DecryptedChallengeRequestMessageSchema.parse(<DecryptedChallengeRequestMessageType>{
+                ...challengeRequest,
+                ...pubsubMsgToEncrypt
+            });
+            this._publishedChallengeRequests.push(decryptedRequest);
             this._clientsManager.updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);
 
@@ -758,10 +762,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     this._pubsubProviders[this._currentPubsubProviderIndex]
                 })`
             );
-            this.emit("challengerequest", {
-                ...challengeRequest,
-                ...this.toJSONPubsubMessage()
-            });
+            this.emit("challengerequest", decryptedRequest);
             break;
         }
         // to handle cases where request is published but we didn't receive response within certain timeframe (20s for now)
