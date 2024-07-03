@@ -8,7 +8,6 @@ import {
     CommentEditModeratorOptionsToSignSchema,
     CommentEditPubsubMessageSchema,
     CreateCommentEditOptionsSchema,
-    DecryptedChallengeRequestCommentEditSchema,
     LocalCommentEditAfterSigningSchema,
     ModeratorCommentEditOptionsSchema
 } from "./schema";
@@ -38,7 +37,5 @@ export type CommentEditPubsubMessage = z.infer<typeof CommentEditPubsubMessageSc
 export type CommentEditChallengeRequestToEncryptType = z.infer<typeof CommentEditChallengeRequestToEncryptSchema>;
 
 export type CommentEditPubsubMessageWithSubplebbitAuthor = z.infer<typeof CommentEditPubsubMessageWithSubplebbitAuthorSchema>;
-
-export type DecryptedChallengeRequestCommentEditType = z.infer<typeof DecryptedChallengeRequestCommentEditSchema>;
 
 export type CommentEditTypeJson = z.infer<typeof CommentEditJsonSchema>;

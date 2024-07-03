@@ -15,7 +15,6 @@ import {
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
 import { keysToOmitFromSignature } from "../../signer/constants.js";
-import { DecryptedChallengeRequestMessageSchema } from "../../pubsub-messages/schema.js";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({
@@ -82,10 +81,6 @@ export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merg
 export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentEditPubsubMessageSchema
 }).strict();
-
-export const DecryptedChallengeRequestCommentEditSchema = DecryptedChallengeRequestMessageSchema.extend({
-    publication: CommentEditPubsubMessageSchema
-});
 
 export const CommentEditJsonSchema = CommentEditPubsubMessageSchema.extend({
     shortSubplebbitAddress: ShortSubplebbitAddressSchema,
