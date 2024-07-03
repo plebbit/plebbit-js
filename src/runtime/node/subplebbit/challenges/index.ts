@@ -205,7 +205,7 @@ const getChallengeVerificationFromChallengeAnswers = async (
     pendingChallenges: PendingChallenge[],
     challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"],
     subplebbit: LocalSubplebbit
-) => {
+): Promise<{ challengeSuccess: true } | { challengeSuccess: false; challengeErrors: string[] }> => {
     const verifyChallengePromises: Promise<ChallengeResult>[] = [];
     for (const i in pendingChallenges) {
         verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i]));

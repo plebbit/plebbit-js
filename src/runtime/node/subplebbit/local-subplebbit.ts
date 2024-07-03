@@ -98,6 +98,8 @@ import {
     DecryptedChallengeRequestMessageSchema,
     DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema,
     DecryptedChallengeRequestSchema,
+    DecryptedChallengeSchema,
+    DecryptedChallengeVerificationMessageSchema,
     IncomingPubsubMessageSchema
 } from "../../../pubsub-messages/schema.js";
 import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
@@ -580,7 +582,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
-        const toEncryptChallenge: DecryptedChallenge = { challenges: challenges };
+        // zod here 
+        const toEncryptChallenge = DecryptedChallengeSchema.parse(<DecryptedChallenge>{ challenges });
         const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGE",
             protocolVersion: env.PROTOCOL_VERSION,
@@ -675,6 +678,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                           author: { ...publicationNoSubplebbitAuthor.author, subplebbit: subplebbitAuthor }
                       }
                     : publicationNoSubplebbitAuthor;
+                publication = DecryptedChallengeVerificationMessageSchema.shape.publication.parse(publication); // Make sure it adheres to the correct schema
             }
             // could contain "publication" or "reason"
             const encrypted = remeda.isPlainObject(publication)
@@ -707,7 +711,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             this.clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
-            const objectToEmit = { ...challengeVerification, publication };
+            const objectToEmit = DecryptedChallengeVerificationMessageSchema.parse({ ...challengeVerification, publication });
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
@@ -798,7 +802,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (this.isPublicationVote(publication)) {
-            if (![1, 0, -1].includes(publication.vote)) return messages.INCORRECT_VOTE_VALUE;
             const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
             const lastVote = await this.dbHandler.getStoredVoteOfAuthor(publication.commentCid, authorSignerAddress);
             if (lastVote && publication.signature.publicKey !== lastVote.signature.publicKey)
@@ -809,7 +812,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToBeEdited = await this.dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const modRoles: SubplebbitRole["role"][] = ["moderator", "owner", "admin"];
+            const modRoles: SubplebbitRole["role"][] = ["moderator", "owner", "admin"]; // zod here
             const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
 
             const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);

@@ -8,6 +8,7 @@ import {
     AuthorWithCommentUpdateSchema,
     CommentPubsubMessageSchema
 } from "../publications/comment/schema";
+import { ResultOfGetChallengeSchema } from "../subplebbit/schema";
 
 const AcceptedChallengeTypeSchema = z.string(); // TODO figure out the accepted challenge types
 export const PubsubMessageSignatureSchema = z
@@ -86,7 +87,7 @@ export const DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema = Decryp
 export const ChallengeInChallengePubsubMessageSchema = z
     .object({
         challenge: z.string(),
-        type: z.enum(["image/png", "text/plain", "chain/<chainTicker>"]),
+        type: ResultOfGetChallengeSchema.shape.type,
         caseInsensitive: z.boolean().optional()
     })
     .strict();
@@ -111,9 +112,11 @@ export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
     encrypted: EncryptedSchema // Will decrypt to DecryptedChallengeAnswerSchema
 }).strict();
 
+export const ChallengeAnswerStringSchema = z.string(); // TODO add validation for challenge answer
+
 export const DecryptedChallengeAnswerSchema = z
     .object({
-        challengeAnswers: z.string().array().nonempty() // for example ['2+2=4', '1+7=8']
+        challengeAnswers: ChallengeAnswerStringSchema.array().nonempty() // for example ['2+2=4', '1+7=8']
     })
     .strict();
 

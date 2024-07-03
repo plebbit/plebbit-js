@@ -1,17 +1,18 @@
 import { z } from "zod";
 import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { FlairSchema } from "../schema/schema.js";
-import type { SignerType } from "../signer/types.js";
-import type { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types";
 import {
     ChallengeExcludeSchema,
+    ChallengeOptionInputSchema,
+    ChallengeResultSchema,
     CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
     CreateRemoteSubplebbitOptionsSchema,
     InternalSubplebbitRecordSchema,
     LocalSubplebbitJsonSchema,
     RemoteSubplebbitJsonSchema,
+    ResultOfGetChallengeSchema,
     RpcInternalSubplebbitRecordSchema,
     RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
@@ -25,7 +26,6 @@ import {
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema
 } from "./schema.js";
-import type { PostsPagesTypeIpfs } from "../pages/types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -80,32 +80,15 @@ export type SubplebbitEditOptions = z.infer<typeof SubplebbitEditOptionsSchema>;
 
 export type Exclude = z.infer<typeof ChallengeExcludeSchema>;
 
-interface OptionInput {
-    option: string; // option property name, e.g. characterCount
-    label: string; // option title, e.g. Character Count
-    default?: string; // option default value, e.g. 10
-    description?: string; // e.g. Amount of characters of the captcha
-    placeholder?: string; // the value to display if the input field is empty, e.g. 10
-    required?: boolean; // the option is required, the challenge will throw without it
-}
+type OptionInput = z.infer<typeof ChallengeOptionInputSchema>;
 
 export type SubplebbitChallenge = z.infer<typeof SubplebbitChallengeSchema>;
 
 export type SubplebbitChallengeSettings = z.infer<typeof SubplebbitChallengeSettingSchema>;
 
-export interface Challenge {
-    // if the result of a challenge can't be optained by getChallenge(), return a challenge
-    challenge: string; // e.g. '2 + 2'
-    verify: (answer: string) => Promise<ChallengeResult>;
-    type: ChallengeType["type"];
-}
+export type Challenge = z.infer<typeof ResultOfGetChallengeSchema>;
 
-export type ChallengeResult =
-    | { success: true }
-    | {
-          success: false;
-          error: string; // the reason why the challenge failed, add it to ChallengeVerificationMessage.errors
-      };
+export type ChallengeResult = z.infer<typeof ChallengeResultSchema>;
 
 export interface ChallengeFile {
     // the result of the function exported by the challenge file
