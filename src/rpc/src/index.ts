@@ -15,7 +15,6 @@ import type {
 import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
-import { CreateNewLocalSubplebbitUserOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
@@ -24,9 +23,14 @@ import { watch as fsWatch } from "node:fs";
 import { throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
-import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
-import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
+import type { CommentIpfsType } from "../../publications/comment/types.js";
+import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { CreateNewLocalSubplebbitUserOptionsSchema, SubplebbitEditOptionsSchema } from "../../subplebbit/schema.js";
+import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
+import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
+import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
+import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
+import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -191,7 +195,7 @@ class PlebbitWsServer extends EventEmitter {
 
     async getComment(params: any): Promise<CommentIpfsType> {
         // zod here
-        const cid = <string>params[0];
+        const cid = CommentCidSchema.parse(params[0]);
         const comment = await this.plebbit.getComment(cid);
         const commentIpfs = comment._rawCommentIpfs;
         if (!commentIpfs) throw Error("Failed to get comment._rawCommentIpfs");
@@ -199,9 +203,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getSubplebbitPage(params: any) {
-        // zod here
-        const pageCid = <string>params[0];
-        const subplebbitAddress = <string>params[1];
+        const pageCid = CommentCidSchema.parse(params[0]);
+        const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
         const sub =
@@ -213,21 +216,16 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getCommentPage(params: any) {
-        // zod here
-        const [pageCid, commentCid, subplebbitAddress]: string[] = params;
+        const pageCid = CommentCidSchema.parse(params[0]);
+        const commentCid = CommentCidSchema.parse(params[1]);
+        const subplebbitAddress = SubplebbitAddressSchema.parse(params[2]);
         const comment = await this.plebbit.createComment({ cid: commentCid, subplebbitAddress });
         const page = await comment.replies._fetchAndVerifyPage(pageCid);
         return page;
     }
 
     async createSubplebbit(params: any) {
-        // zod here
-        const createSubplebbitOptions = <CreateNewLocalSubplebbitUserOptions>params[0];
-        if ("address" in createSubplebbitOptions) {
-            throw Error(
-                `createSubplebbitOptions?.address '${createSubplebbitOptions?.address}' must be undefined to create a new subplebbit`
-            );
-        }
+        const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
         return subplebbit.toJSONInternalRpc();
     }
@@ -272,8 +270,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async startSubplebbit(params: any, connectionId: string) {
-        // zod here
-        const address = <string>params[0];
+        const address = SubplebbitAddressSchema.parse(params[0]);
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address))
@@ -305,8 +302,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async stopSubplebbit(params: any) {
-        // zod here
-        const address = <string>params[0];
+        const address = SubplebbitAddressSchema.parse(params[0]);
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
@@ -339,9 +335,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async editSubplebbit(params: any) {
-        // zod here
-        const address = <string>params[0];
-        const editSubplebbitOptions = <SubplebbitEditOptions>params[1];
+        const address = SubplebbitAddressSchema.parse(params[0]);
+        const editSubplebbitOptions = SubplebbitEditOptionsSchema.parse(params[1]);
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
@@ -358,8 +353,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async deleteSubplebbit(params: any) {
-        // zod here
-        const address = <string>params[0];
+        const address = SubplebbitAddressSchema.parse(params[0]);
 
         const addresses = await this.plebbit.listSubplebbits();
         if (!addresses.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
@@ -431,8 +425,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async fetchCid(params: any) {
-        // zod here
-        const cid = <string>params[0];
+        const cid = CommentCidSchema.parse(params[0]);
         const res = await this.plebbit.fetchCid(cid);
         return res;
     }
@@ -475,18 +468,25 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async commentUpdate(params: any, connectionId: string) {
-        // zod here
-        const cid = <string>params[0];
+        const cid = CommentCidSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "commentUpdate", subscription: subscriptionId, event, result, connectionId });
 
         const comment = await this.plebbit.createComment({ cid });
-        comment.on("update", () =>
-            //@ts-expect-error
-            sendEvent("update", comment.updatedAt ? comment._rawCommentUpdate : <CommentIpfsWithCid>{ cid, ...comment._rawCommentIpfs })
-        );
+        comment.on("update", () => {
+            if (typeof comment.updatedAt === "number") {
+                const commentUpdateRecord = comment._rawCommentUpdate;
+                if (!commentUpdateRecord) throw Error("comment._rawCommentUpdate should be available if updatedAt is defined");
+                sendEvent("update", commentUpdateRecord);
+            } else {
+                const commentIpfsRecord = comment._rawCommentIpfs;
+                if (!commentIpfsRecord)
+                    throw Error("comment._rawCommentIpfs should be available at the first update if updatedAt is not defined");
+                sendEvent("update", commentIpfsRecord);
+            }
+        });
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
         comment.on("error", (error) => sendEvent("error", error));
 
@@ -509,8 +509,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async subplebbitUpdate(params: any, connectionId: string) {
-        // zod here
-        const address = <string>params[0];
+        const address = SubplebbitAddressSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -566,8 +565,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishComment(params: any, connectionId: string) {
-        // zod here
-        const publishOptions = <CommentChallengeRequestToEncryptType>params[0];
+        const publishOptions = CommentChallengeRequestToEncryptSchema.parse(params[0]);
 
         const subscriptionId = generateSubscriptionId();
 
@@ -608,8 +606,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishVote(params: any, connectionId: string) {
-        // zod here
-        const publishOptions = <VoteChallengeRequestToEncryptType>params[0];
+        const publishOptions = VoteChallengeRequestToEncryptSchema.parse(params[0]);
 
         const subscriptionId = generateSubscriptionId();
 
@@ -650,8 +647,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishCommentEdit(params: any, connectionId: string) {
-        // zod here
-        const publishOptions = <CommentEditChallengeRequestToEncryptType>params[0];
+        const publishOptions = CommentEditChallengeRequestToEncryptSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
@@ -691,9 +687,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async publishChallengeAnswers(params: any) {
-        // zod here
-        const subscriptionId = <number>params[0];
-        const answers = <string[]>params[1];
+        const subscriptionId = SubscriptionIdSchema.parse(params[0]);
+        const answers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(params[1]);
 
         if (!this.publishing[subscriptionId]) {
             throw Error(`no subscription with id '${subscriptionId}'`);
@@ -706,15 +701,13 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async resolveAuthorAddress(params: any) {
-        // zod here
-        const authorAddress = <string>params[0];
+        const authorAddress = AuthorAddressSchema.parse(params[0]);
         const resolvedAuthorAddress = await this.plebbit.resolveAuthorAddress(authorAddress);
         return resolvedAuthorAddress;
     }
 
     async unsubscribe(params: any, connectionId: string) {
-        // zod here
-        const subscriptionId = <number>params[0];
+        const subscriptionId = SubscriptionIdSchema.parse(params[0]);
 
         if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
             const noClientSubscribingToListSubs = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 1;

@@ -25,6 +25,7 @@ import type {
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
+import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -555,8 +556,7 @@ export class Comment extends Publication {
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
                 .on("update", async (updateProps) => {
-                    // zod here
-                    const newUpdate = <CommentIpfsType | CommentUpdate>updateProps.params.result;
+                    const newUpdate = RpcCommentUpdateResultSchema.parse(updateProps.params.result);
                     if ("subplebbitAddress" in newUpdate) {
                         log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
                         this._rawCommentIpfs = newUpdate;
@@ -576,6 +576,7 @@ export class Comment extends Publication {
                 })
                 .on("statechange", (args) => this._updateState(<Comment["state"]>args.params.result)) // zod here
                 .on("error", async (args) => {
+                    // zod here
                     const err = <PlebbitError>args.params.result;
                     if (this._isCriticalRpcError(err)) {
                         this._setUpdatingState("failed");
