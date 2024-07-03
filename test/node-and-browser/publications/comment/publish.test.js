@@ -134,7 +134,13 @@ describe("publishing comments", async () => {
         await post.stop();
     });
 
-    it(`Can publish a comment that was created author.shortAddress manually defined`, async () => {
+    it(`Can publish a comment that was created from another comment instance`, async () => {
+        const comment1 = await generateMockPost(subplebbitAddress, plebbit);
+        const commentToPublish = await plebbit.createComment(comment1);
+        await publishWithExpectedResult(commentToPublish, true);
+        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(commentToPublish.toJSONPubsubMessagePublication());
+    });
+
         const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
         await publishWithExpectedResult(post, true);
         await post.stop();
