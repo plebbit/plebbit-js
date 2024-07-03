@@ -871,7 +871,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async handleChallengeRequest(request: ChallengeRequestMessageType) {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeRequest");
 
-        if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) return; // This is a duplicate challenge request
+        if (this._ongoingChallengeExchanges.has(request.challengeRequestId.toString())) {
+            log("Received a duplicate challenge request", request.challengeRequestId.toString());
+            return; // This is a duplicate challenge request
+        }
         this._ongoingChallengeExchanges.set(request.challengeRequestId.toString(), true);
         const requestSignatureValidation = await verifyChallengeRequest(request, true);
         if (!requestSignatureValidation.valid)
@@ -1040,7 +1043,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (parsedPubsubMsg.type === "CHALLENGE" || parsedPubsubMsg.type === "CHALLENGEVERIFICATION") {
-            log(`Received a pubsub message that is not meant to by processed by the sub - ${parsedPubsubMsg.type}`);
+            log.trace(`Received a pubsub message that is not meant to by processed by the sub - ${parsedPubsubMsg.type}. Will ignore it`);
             return;
         } else if (parsedPubsubMsg.type === "CHALLENGEREQUEST") {
             try {

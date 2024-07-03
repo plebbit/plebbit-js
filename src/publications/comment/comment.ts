@@ -221,7 +221,7 @@ export class Comment extends Publication {
             const shouldUpdateReplies = !remeda.isDeepEqual(this.replies.pageCids, newReplies.pageCids);
 
             if (shouldUpdateReplies) {
-                log.trace(`Updating the props of commennt instance (${this.cid}) replies`);
+                log.trace(`Updating the props of comment instance (${this.cid}) replies`);
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
                     await parseRawPages(newReplies, this._plebbit)
                 );
