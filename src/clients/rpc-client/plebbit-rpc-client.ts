@@ -295,7 +295,6 @@ export default class PlebbitRpcClient {
     async listSubplebbits(): Promise<string[]> {
         if (!this._listSubsSubscriptionId) {
             this._lastListedSubs = undefined;
-            // zod here
             this._listSubsSubscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("listSubplebbits", []));
             this._initSubscriptionEvent(this._listSubsSubscriptionId);
             this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {

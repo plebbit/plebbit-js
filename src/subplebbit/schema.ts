@@ -182,6 +182,12 @@ export const CreateNewLocalSubplebbitUserOptionsSchema = SubplebbitEditOptionsSc
     })
     .strict();
 
+// These are the options that go straight into _createLocalSub, create a new brand local sub. This is after parsing of plebbit-js
+export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubplebbitUserOptionsSchema.extend({
+    address: SignerWithAddressPublicKeySchema.shape.address,
+    signer: SignerWithAddressPublicKeySchema
+}).strict();
+
 // This type will be stored in the db as the current state
 
 export const InternalSubplebbitRecordSchema = SubplebbitIpfsSchema.extend({

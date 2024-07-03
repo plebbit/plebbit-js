@@ -21,7 +21,7 @@ import {
     timestamp
 } from "./util.js";
 import Vote from "./publications/vote/vote.js";
-import { createSigner, Signer } from "./signer/index.js";
+import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
@@ -54,7 +54,8 @@ import { CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
-    CreateSubplebbitFunctionArgumentsSchema
+    CreateSubplebbitFunctionArgumentsSchema,
+    CreateNewLocalSubplebbitParsedOptionsSchema
 } from "./subplebbit/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
@@ -474,7 +475,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else if ("signer" in options) {
             // This is a new sub
 
-            await subplebbit.initNewLocalSubPropsNoMerge(options); // We're initializing a new local sub props here
+            const parsedOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>options);
+            await subplebbit.initNewLocalSubPropsNoMerge(parsedOptions); // We're initializing a new local sub props here
             await subplebbit._createNewLocalSubDb();
             log.trace(
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
@@ -521,13 +523,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         } else if (!("address" in parsedOptions) && !("signer" in parsedOptions)) {
             // no address, no signer, create signer and assign address to signer.address
             const signer = await this.createSigner();
-            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...parsedOptions, signer, address: signer.address };
+            const localOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse({ ...parsedOptions, signer, address: signer.address });
             log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
             return this._createLocalSub(localOptions);
         } else if (!("address" in parsedOptions) && "signer" in parsedOptions) {
             const signer = await this.createSigner(parsedOptions.signer);
-            const localOptions: CreateNewLocalSubplebbitParsedOptions = { ...parsedOptions, address: signer.address, signer };
+            const localOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>{
+                ...parsedOptions,
+                address: signer.address,
+                signer
+            });
             return this._createLocalSub(localOptions);
         } else if ("address" in parsedOptions && "signer" in parsedOptions) return this._createLocalSub(parsedOptions);
         else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { parsedOptions });

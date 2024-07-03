@@ -20,11 +20,12 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
+import { SubscriptionIdSchema } from "../clients/rpc-client/schema.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
-    private _startRpcSubscriptionId?: number;
+    private _startRpcSubscriptionId?: z.infer<typeof SubscriptionIdSchema>;
     protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
     startedState!: z.infer<typeof StartedStateSchema>;
     signer!: InternalSubplebbitRpcType["signer"];

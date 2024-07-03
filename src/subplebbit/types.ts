@@ -6,6 +6,7 @@ import type { SignerWithPublicKeyAddress } from "../signer/index.js";
 import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types";
 import {
     ChallengeExcludeSchema,
+    CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
     CreateRemoteSubplebbitOptionsSchema,
     InternalSubplebbitRecordSchema,
@@ -67,10 +68,7 @@ export type CreateNewLocalSubplebbitUserOptions = z.infer<typeof CreateNewLocalS
 
 // These are the options that go straight into _createLocalSub, create a new brand local sub. This is after parsing of plebbit-js
 
-export type CreateNewLocalSubplebbitParsedOptions = CreateNewLocalSubplebbitUserOptions & {
-    address: SignerType["address"];
-    signer: SignerWithPublicKeyAddress;
-};
+export type CreateNewLocalSubplebbitParsedOptions = z.infer<typeof CreateNewLocalSubplebbitParsedOptionsSchema>;
 
 // or load an already existing sub through plebbit.createSubplebbit
 
