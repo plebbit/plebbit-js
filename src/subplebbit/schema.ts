@@ -28,6 +28,8 @@ export const SubplebbitRoleSchema = z.object({
     role: z.enum(["owner", "admin", "moderator"])
 });
 
+export const PubsubTopicSchema = z.string(); // TODO add validation
+
 export const SubplebbitSuggestedSchema = z.object({
     // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
     primaryColor: z.string().optional(),
@@ -108,7 +110,7 @@ export const SubplebbitIpfsSchema = z
         address: SubplebbitAddressSchema,
         createdAt: PlebbitTimestampSchema,
         updatedAt: PlebbitTimestampSchema,
-        pubsubTopic: z.string().optional(),
+        pubsubTopic: PubsubTopicSchema.optional(),
         statsCid: CommentCidSchema,
         protocolVersion: ProtocolVersionSchema,
         postUpdates: z.record(z.string(), CommentCidSchema).optional(),
@@ -148,13 +150,16 @@ export const SubplebbitChallengeSettingSchema = z
         exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
         description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
     })
+    .strict()
     .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
 
-export const SubplebbitSettingsSchema = z.object({
-    fetchThumbnailUrls: z.boolean().optional(),
-    fetchThumbnailUrlsProxyUrl: z.string().optional(), // TODO should we validate this url?
-    challenges: z.null().or(z.undefined()).or(SubplebbitChallengeSettingSchema.array()) // If set to null or undefined it will remove all challenges
-});
+export const SubplebbitSettingsSchema = z
+    .object({
+        fetchThumbnailUrls: z.boolean().optional(),
+        fetchThumbnailUrlsProxyUrl: z.string().optional(), // TODO should we validate this url?
+        challenges: SubplebbitChallengeSettingSchema.array().optional() // If empty array it will remove all challenges
+    })
+    .strict();
 
 export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
     flairs: true,
@@ -172,7 +177,8 @@ export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
     .extend({
         settings: SubplebbitSettingsSchema.optional()
     })
-    .partial();
+    .partial()
+    .strict();
 
 // These are the options to create a new local sub, provided by user
 
