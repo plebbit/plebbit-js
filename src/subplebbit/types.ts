@@ -1,9 +1,9 @@
 import { z } from "zod";
-import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { FlairSchema } from "../schema/schema.js";
-import type { ChallengeType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types";
 import {
     ChallengeExcludeSchema,
+    ChallengeFileFactorySchema,
+    ChallengeFileSchema,
     ChallengeOptionInputSchema,
     ChallengeResultSchema,
     CreateNewLocalSubplebbitParsedOptionsSchema,
@@ -80,32 +80,17 @@ export type SubplebbitEditOptions = z.infer<typeof SubplebbitEditOptionsSchema>;
 
 export type Exclude = z.infer<typeof ChallengeExcludeSchema>;
 
-type OptionInput = z.infer<typeof ChallengeOptionInputSchema>;
-
 export type SubplebbitChallenge = z.infer<typeof SubplebbitChallengeSchema>;
 
-export type SubplebbitChallengeSettings = z.infer<typeof SubplebbitChallengeSettingSchema>;
+export type SubplebbitChallengeSetting = z.infer<typeof SubplebbitChallengeSettingSchema>;
 
 export type Challenge = z.infer<typeof ResultOfGetChallengeSchema>;
 
 export type ChallengeResult = z.infer<typeof ChallengeResultSchema>;
 
-export interface ChallengeFile {
-    // the result of the function exported by the challenge file
-    optionInputs?: OptionInput[]; // the options inputs fields to display to the user
-    type: ChallengeType["type"];
-    challenge?: ChallengeType["challenge"]; // some challenges can be static and asked before the user publishes, like a password for example
-    caseInsensitive?: ChallengeType["caseInsensitive"]; // challenge answer capitalization is ignored, informational only option added by the challenge file
-    description?: string; // describe what the challenge does to display in the UI
-    getChallenge: (
-        challenge: SubplebbitChallengeSettings,
-        challengeRequest: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-        challengeIndex: number,
-        subplebbit: LocalSubplebbit
-    ) => Promise<Challenge | ChallengeResult>;
-}
+export type ChallengeFile = z.infer<typeof ChallengeFileSchema>;
 
-export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChallengeSettings) => ChallengeFile;
+export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 

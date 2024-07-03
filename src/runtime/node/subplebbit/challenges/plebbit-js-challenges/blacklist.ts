@@ -1,4 +1,4 @@
-import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
@@ -23,7 +23,7 @@ const type: Challenge["type"] = "text/plain";
 const description = "Blacklist author addresses.";
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<ChallengeResult> => {
@@ -44,7 +44,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     return { getChallenge, optionInputs, type, description };
 }
 

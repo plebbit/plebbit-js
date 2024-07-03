@@ -1,4 +1,4 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageType } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
@@ -36,7 +36,7 @@ const getChallengeString = (minNumber: number, maxNumber: number, operators: ("*
 };
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number
 ): Promise<Challenge> => {
@@ -66,7 +66,7 @@ const getChallenge = async (
     return { challenge, verify, type };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     return { getChallenge, optionInputs, type, description };
 }
 

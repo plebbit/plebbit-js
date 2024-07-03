@@ -1,6 +1,6 @@
 import { CreateCaptchaOptions } from "captcha-canvas/js-script/constants.js";
 
-import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
+import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
 
@@ -40,7 +40,7 @@ const type: Challenge["type"] = "image/png";
 const description = "make custom image captcha";
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<Challenge> => {
@@ -72,7 +72,7 @@ const getChallenge = async (
     return { challenge, verify, type };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     return { getChallenge, optionInputs, type, description, caseInsensitive: true };
 }
 

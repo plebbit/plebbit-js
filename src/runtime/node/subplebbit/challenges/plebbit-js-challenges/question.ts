@@ -1,4 +1,4 @@
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
+import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageType } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
@@ -24,7 +24,7 @@ const type: Challenge["type"] = "text/plain";
 const description = `Ask a question, like 'What is the password?'`;
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageType,
     challengeIndex: number
 ): Promise<Challenge | ChallengeResult> => {
@@ -69,7 +69,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     // some challenges can prepublish the challenge so that it can be preanswered
     // in the challengeRequestMessage
     const question = subplebbitChallengeSettings?.options?.question;

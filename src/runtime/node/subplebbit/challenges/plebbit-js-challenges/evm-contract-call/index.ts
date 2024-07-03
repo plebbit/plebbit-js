@@ -2,7 +2,7 @@ import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
 import type { ChainTicker } from "../../../../../../types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
+import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
@@ -313,7 +313,7 @@ const validateWalletAddressWithCondition = async (props: {
 };
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
@@ -373,7 +373,7 @@ const getChallenge = async (
     return { success: false, error: errorString };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     let { chainTicker } = subplebbitChallengeSettings?.options || {};
 
     const type = <Challenge["type"]>("chain/" + (chainTicker || "<chainTicker>"));

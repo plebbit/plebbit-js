@@ -16,7 +16,7 @@ import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
-import { ChallengeAnswerStringSchema } from "../pubsub-messages/schema.js";
+import { ChallengeAnswerStringSchema, DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -132,6 +132,40 @@ export const SubplebbitChallengeSchema = z
     })
     .strict();
 
+export const SubplebbitChallengeSettingSchema = z
+    .object({
+        // the private settings of the challenge (subplebbit.settings.challenges)
+        path: z.string().optional(), // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
+        name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
+        options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
+        exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
+        description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
+    })
+    .strict()
+    .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
+
+export const ChallengeFileSchema = z
+    .object({
+        // the result of the function exported by the challenge file
+        optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
+        type: ResultOfGetChallengeSchema.shape.type,
+        challenge: ResultOfGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
+        caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
+        description: z.string().optional(), // describe what the challenge does to display in the UI
+        getChallenge: z
+            .function()
+            .args(
+                SubplebbitChallengeSettingSchema, // challenge settings
+                DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema, // challenge request to process
+                z.number().int().nonnegative(), // challenge index
+                z.custom<LocalSubplebbit>((data) => data instanceof LocalSubplebbit) // the local subplebbit instance
+            )
+            .returns(z.promise(ResultOfGetChallengeSchema.or(ChallengeResultSchema)))
+    })
+    .strict();
+
+export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeSettingSchema).returns(ChallengeFileSchema);
+
 // Subplebbit actual schemas here
 
 export const SubplebbitIpfsSchema = z
@@ -173,18 +207,6 @@ export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: tru
     .strict();
 
 // Local Subplebbit schemas
-
-export const SubplebbitChallengeSettingSchema = z
-    .object({
-        // the private settings of the challenge (subplebbit.settings.challenges)
-        path: z.string().optional(), // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
-        name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
-        options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
-        exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
-        description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
-    })
-    .strict()
-    .refine((challengeData) => challengeData.path || challengeData.name, "Path or name of challenge has to be defined");
 
 export const SubplebbitSettingsSchema = z
     .object({

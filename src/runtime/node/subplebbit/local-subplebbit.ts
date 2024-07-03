@@ -6,7 +6,7 @@ import type {
     InternalSubplebbitRpcType,
     InternalSubplebbitType,
     LocalSubplebbitJsonType,
-    SubplebbitChallengeSettings,
+    SubplebbitChallengeSetting,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitRole
@@ -32,7 +32,6 @@ import { PlebbitError } from "../../../plebbit-error.js";
 import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
-    CommentPubsubMessageWithSubplebbitAuthor,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     DecryptedChallenge,
@@ -109,7 +108,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override signer!: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
-    private _defaultSubplebbitChallenges: SubplebbitChallengeSettings[] = [
+    private _defaultSubplebbitChallenges: SubplebbitChallengeSetting[] = [
         {
             name: "captcha-canvas-v3",
             exclude: [{ role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }]
@@ -582,7 +581,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
-        // zod here 
+        // zod here
         const toEncryptChallenge = DecryptedChallengeSchema.parse(<DecryptedChallenge>{ challenges });
         const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGE",

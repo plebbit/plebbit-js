@@ -17,16 +17,17 @@ import type {
     DecryptedChallengeAnswer,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
 } from "../../../../pubsub-messages/types.js";
-import {
+import type {
     Challenge,
     ChallengeFile,
     ChallengeFileFactory,
     ChallengeResult,
     SubplebbitChallenge,
-    SubplebbitChallengeSettings
+    SubplebbitChallengeSetting
 } from "../../../../subplebbit/types.js";
 import { LocalSubplebbit } from "../local-subplebbit.js";
 import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
+import { ChallengeFileFactorySchema } from "../../../../subplebbit/schema.js";
 
 type PendingChallenge = Challenge & { index: number };
 
@@ -101,7 +102,7 @@ const getPendingChallengesOrChallengeVerification = async (
         let challengeFile: ChallengeFile;
         if (subplebbitChallengeSettings.path) {
             try {
-                const ChallengeFileFactory = require(subplebbitChallengeSettings.path) as ChallengeFileFactory;
+                const ChallengeFileFactory = ChallengeFileFactorySchema.parse(require(subplebbitChallengeSettings.path));
                 validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
                 challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
                 validateChallengeFile(challengeFile, challengeIndex, subplebbit);
@@ -301,7 +302,7 @@ const getChallengeVerification = async (
 
 // get the data to be published publicly to subplebbit.challenges
 const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings
+    subplebbitChallengeSettings: SubplebbitChallengeSetting
 ): SubplebbitChallenge => {
     if (!subplebbitChallengeSettings) {
         throw Error(
