@@ -7,7 +7,7 @@ import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { PlebbitError } from "../plebbit-error.js";
-import { RpcInternalSubplebbitRecordSchema, StartedStateSchema } from "./schema.js";
+import { RpcInternalSubplebbitRecordSchema, StartedStateSchema, SubplebbitEditOptionsSchema } from "./schema.js";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
@@ -177,16 +177,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
-        // zod here
-        // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
-        // settings.challenges = [] means sub has no challenges
-        if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)
-            newSubplebbitOptions.settings.challenges =
-                newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
-                    ? []
-                    : newSubplebbitOptions.settings.challenges;
-
-        const optionsParsed = <SubplebbitEditOptions>replaceXWithY(newSubplebbitOptions, undefined, null);
+        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
+        const optionsParsed = <SubplebbitEditOptions>replaceXWithY(parsedEditOptions, undefined, null); // JSON-RPC removes undefined, so we have to replace it with null
         const newProps = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
         await this._handleRpcUpdateProps(newProps);
         return this;

@@ -525,7 +525,7 @@ export async function createSubWithNoChallenge(
     plebbit: Plebbit
 ): Promise<LocalSubplebbit | RpcLocalSubplebbit> {
     const sub = await plebbit.createSubplebbit(props);
-    await sub.edit({ settings: { challenges: undefined } }); // No challenge
+    await sub.edit({ settings: { challenges: [] } }); // No challenge
     return <LocalSubplebbit | RpcLocalSubplebbit>sub;
 }
 

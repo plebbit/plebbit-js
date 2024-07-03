@@ -16,9 +16,11 @@ import {
     RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
     SubplebbitChallengeSettingSchema,
+    SubplebbitEditOptionsSchema,
     SubplebbitEncryptionSchema,
     SubplebbitFeaturesSchema,
     SubplebbitIpfsSchema,
+    SubplebbitOnlyAddressAndPageCidsSchema,
     SubplebbitRoleSchema,
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema
@@ -74,25 +76,7 @@ export type CreateNewLocalSubplebbitParsedOptions = z.infer<typeof CreateNewLoca
 
 export type CreateInstanceOfLocalOrRemoteSubplebbitOptions = { address: SubplebbitIpfsType["address"] };
 
-export interface SubplebbitEditOptions
-    extends Partial<
-        Pick<
-            SubplebbitIpfsType,
-            | "flairs"
-            | "address"
-            | "title"
-            | "description"
-            | "roles"
-            | "rules"
-            | "lastPostCid"
-            | "lastCommentCid"
-            | "pubsubTopic"
-            | "features"
-            | "suggested"
-        >
-    > {
-    settings?: SubplebbitSettings;
-}
+export type SubplebbitEditOptions = z.infer<typeof SubplebbitEditOptionsSchema>;
 
 export type Exclude = z.infer<typeof ChallengeExcludeSchema>;
 
@@ -142,6 +126,4 @@ export type ChallengeFileFactory = (subplebbitChallengeSettings: SubplebbitChall
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 
-export type SubplebbitOnlyAddressAndPageCidsType = Pick<SubplebbitIpfsType, "address"> & {
-    posts: Pick<PostsPagesTypeIpfs, "pageCids">;
-};
+export type SubplebbitOnlyAddressAndPageCidsType = z.infer<typeof SubplebbitOnlyAddressAndPageCidsSchema>;

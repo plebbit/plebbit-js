@@ -88,9 +88,9 @@ import {
     uniqueAuthorFields,
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
-import type { VotePubsubMessageWithSubplebbitAuthor, VotePubsubMessage } from "../../../publications/vote/types.js";
+import type { VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
-import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
@@ -1423,29 +1423,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const log = Logger("plebbit-js:local-subplebbit:edit");
 
-        // zod here
-        // Right now if a sub owner passes settings.challenges = undefined or null, it will be explicitly changed to []
-        // settings.challenges = [] means sub has no challenges
-        if (remeda.isPlainObject(newSubplebbitOptions.settings) && "challenges" in newSubplebbitOptions.settings)
-            newSubplebbitOptions.settings.challenges =
-                newSubplebbitOptions.settings.challenges === undefined || newSubplebbitOptions.settings.challenges === null
-                    ? []
-                    : newSubplebbitOptions.settings.challenges;
-
-        if ("roles" in newSubplebbitOptions && remeda.isPlainObject(newSubplebbitOptions.roles)) {
-            // remove author addresses with undefined, null or empty object {}
-            const newRoles: SubplebbitIpfsType["roles"] = remeda.omitBy(
-                newSubplebbitOptions.roles,
-                (val, key) => val?.role === undefined || val?.role === null
-            );
-            newSubplebbitOptions.roles = remeda.isEmpty(newRoles) ? undefined : newRoles;
-            log("New roles after edit", newSubplebbitOptions.roles);
-        }
+        const parsedOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
 
         const newProps: Partial<
             SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges">
         > = {
-            ...newSubplebbitOptions,
+            ...parsedOptions,
             _subplebbitUpdateTrigger: true
         };
 
@@ -1456,22 +1439,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this.dbHandler.initDestroyedConnection();
 
-        if (newSubplebbitOptions.address && newSubplebbitOptions.address !== this.address) {
-            if (doesDomainAddressHaveCapitalLetter(newSubplebbitOptions.address))
-                throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newSubplebbitOptions.address });
-            this._assertDomainResolvesCorrectly(newSubplebbitOptions.address).catch((err: PlebbitError) => {
+        if (newProps.address && newProps.address !== this.address) {
+            // we're modify sub.address
+            if (doesDomainAddressHaveCapitalLetter(newProps.address))
+                throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newProps.address });
+            this._assertDomainResolvesCorrectly(newProps.address).catch((err: PlebbitError) => {
                 log.error(err.toString());
                 this.emit("error", err);
             });
-            log(`Attempting to edit subplebbit.address from ${this.address} to ${newSubplebbitOptions.address}`);
+            log(`Attempting to edit subplebbit.address from ${this.address} to ${newProps.address}`);
 
             await this._updateDbInternalState(newProps);
             if (!(await this.dbHandler.isSubStartLocked())) {
                 log("will rename the subplebbit db in edit() because the subplebbit is not being ran anywhere else");
-                await this._movePostUpdatesFolderToNewAddress(this.address, newSubplebbitOptions.address);
+                await this._movePostUpdatesFolderToNewAddress(this.address, newProps.address);
                 await this.dbHandler.destoryConnection();
-                await this.dbHandler.changeDbFilename(this.address, newSubplebbitOptions.address);
-                this.setAddress(newSubplebbitOptions.address);
+                await this.dbHandler.changeDbFilename(this.address, newProps.address);
+                this.setAddress(newProps.address);
             }
         } else {
             await this._updateDbInternalState(newProps);

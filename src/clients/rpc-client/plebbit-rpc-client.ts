@@ -18,7 +18,8 @@ import { PageIpfsSchema } from "../../pages/schema.js";
 import {
     CreateNewLocalSubplebbitUserOptionsSchema,
     ListOfSubplebbitsSchema,
-    RpcInternalSubplebbitRecordSchema
+    RpcInternalSubplebbitRecordSchema,
+    SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
@@ -231,9 +232,10 @@ export default class PlebbitRpcClient {
     }
 
     async editSubplebbit(subplebbitAddress: string, subplebbitEditOptions: SubplebbitEditOptions) {
-        // zod here
-        const editedSub = <InternalSubplebbitRpcType>(
-            await this._webSocketClient.call("editSubplebbit", [subplebbitAddress, subplebbitEditOptions])
+        const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
+        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
+        const editedSub = RpcInternalSubplebbitRecordSchema.parse(
+            await this._webSocketClient.call("editSubplebbit", [parsedAddress, parsedEditOptions])
         );
         return editedSub;
     }
