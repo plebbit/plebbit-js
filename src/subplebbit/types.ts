@@ -4,7 +4,7 @@ import {
     ChallengeExcludeSchema,
     ChallengeFileFactorySchema,
     ChallengeFileSchema,
-    ChallengeOptionInputSchema,
+    ChallengeFromGetChallengeSchema,
     ChallengeResultSchema,
     CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
@@ -12,7 +12,6 @@ import {
     InternalSubplebbitRecordSchema,
     LocalSubplebbitJsonSchema,
     RemoteSubplebbitJsonSchema,
-    ResultOfGetChallengeSchema,
     RpcInternalSubplebbitRecordSchema,
     RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
@@ -84,7 +83,7 @@ export type SubplebbitChallenge = z.infer<typeof SubplebbitChallengeSchema>;
 
 export type SubplebbitChallengeSetting = z.infer<typeof SubplebbitChallengeSettingSchema>;
 
-export type Challenge = z.infer<typeof ResultOfGetChallengeSchema>;
+export type Challenge = z.infer<typeof ChallengeFromGetChallengeSchema>;
 
 export type ChallengeResult = z.infer<typeof ChallengeResultSchema>;
 

@@ -8,7 +8,7 @@ import {
     AuthorWithCommentUpdateSchema,
     CommentPubsubMessageSchema
 } from "../publications/comment/schema";
-import { ChallengeFileSchema, ResultOfGetChallengeSchema } from "../subplebbit/schema";
+import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema";
 
 const AcceptedChallengeTypeSchema = z.string(); // TODO figure out the accepted challenge types
 export const PubsubMessageSignatureSchema = z
@@ -87,7 +87,7 @@ export const DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema = Decryp
 export const ChallengeInChallengePubsubMessageSchema = z
     .object({
         challenge: z.string(),
-        type: ResultOfGetChallengeSchema.shape.type,
+        type: ChallengeFromGetChallengeSchema.shape.type,
         caseInsensitive: ChallengeFileSchema.shape.caseInsensitive
     })
     .strict();

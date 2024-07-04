@@ -88,13 +88,15 @@ export const ChallengeOptionInputSchema = z
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
-export const ResultOfGetChallengeSchema = z
+export const ChallengeFromGetChallengeSchema = z
     .object({
         challenge: z.string(), // e.g. '2 + 2'
         verify: z.function().args(ChallengeAnswerStringSchema).returns(z.promise(ChallengeResultSchema)), // args is answer
         type: z.enum(["image/png", "text/plain", "chain/<chainTicker>"])
     })
     .strict();
+
+export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(ChallengeResultSchema);
 
 export const ChallengeExcludeSubplebbitSchema = z
     .object({
@@ -148,8 +150,8 @@ export const ChallengeFileSchema = z
     .object({
         // the result of the function exported by the challenge file
         optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
-        type: ResultOfGetChallengeSchema.shape.type,
-        challenge: ResultOfGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
+        type: ChallengeFromGetChallengeSchema.shape.type,
+        challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
         caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
         description: z.string().optional(), // describe what the challenge does to display in the UI
         getChallenge: z
@@ -160,7 +162,7 @@ export const ChallengeFileSchema = z
                 z.number().int().nonnegative(), // challenge index
                 z.custom<LocalSubplebbit>((data) => data instanceof LocalSubplebbit) // the local subplebbit instance
             )
-            .returns(z.promise(ResultOfGetChallengeSchema.or(ChallengeResultSchema)))
+            .returns(z.promise(ResultOfGetChallengeSchema))
     })
     .strict();
 
