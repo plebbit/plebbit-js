@@ -1,7 +1,7 @@
 import { RemoteSubplebbit } from "../../../../../subplebbit/remote-subplebbit.js";
 import { SubplebbitRole } from "../../../../../subplebbit/types.js";
 import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
-declare const testScore: (excludeScore: number | undefined, authorScore: number) => boolean;
+declare const testScore: (excludeScore: number | undefined, authorScore: number | undefined) => boolean;
 declare const testFirstCommentTimestamp: (excludeTime: number | undefined, authorFirstCommentTimestamp: number | undefined) => boolean;
 declare const isVote: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;
 declare const isReply: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean;

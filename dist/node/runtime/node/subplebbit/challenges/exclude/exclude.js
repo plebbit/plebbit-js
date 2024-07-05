@@ -34,10 +34,10 @@ const shouldExcludePublication = (subplebbitChallenge, publication, subplebbit) 
         // if match all of the exclude item properties, should exclude
         // keep separated for easier debugging
         let shouldExclude = true;
-        if (!testScore(exclude.postScore, author.subplebbit?.postScore || 0)) {
+        if (!testScore(exclude.postScore, author.subplebbit?.postScore)) {
             shouldExclude = false;
         }
-        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore || 0)) {
+        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
             shouldExclude = false;
         }
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
@@ -187,8 +187,7 @@ const shouldExcludeChallengeCommentCids = async (subplebbitChallenge, challengeR
     const validateComment = async (commentCid, addressesSet, exclude) => {
         const comment = await getComment(commentCid, addressesSet);
         const { postScore, replyScore, firstCommentTimestamp } = exclude?.subplebbit || {};
-        if (comment.author.subplebbit &&
-            testScore(postScore, comment.author?.subplebbit?.postScore) &&
+        if (testScore(postScore, comment.author?.subplebbit?.postScore) &&
             testScore(replyScore, comment.author?.subplebbit?.replyScore) &&
             testFirstCommentTimestamp(firstCommentTimestamp, comment.author?.subplebbit?.firstCommentTimestamp)) {
             // do nothing, comment is valid
