@@ -5,7 +5,7 @@ import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
 // e.g. secondsToGoBack = 60 would return the timestamp 1 minute ago
 const getTimestampSecondsAgo = (secondsToGoBack: number) => Math.round(Date.now() / 1000) - secondsToGoBack;
 
-const testScore = (excludeScore: number | undefined, authorScore: number) =>
+const testScore = (excludeScore: number | undefined, authorScore: number | undefined) =>
     excludeScore === undefined || excludeScore <= (authorScore || 0);
 // firstCommentTimestamp value first needs to be put through Date.now() - firstCommentTimestamp
 const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstCommentTimestamp: number | undefined) =>
