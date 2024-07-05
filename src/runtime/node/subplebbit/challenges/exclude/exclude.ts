@@ -51,10 +51,10 @@ const shouldExcludePublication = (
         // if match all of the exclude item properties, should exclude
         // keep separated for easier debugging
         let shouldExclude = true;
-        if (author.subplebbit && !testScore(exclude.postScore, author.subplebbit?.postScore)) {
+        if (!testScore(exclude.postScore, author.subplebbit?.postScore || 0)) {
             shouldExclude = false;
         }
-        if (author.subplebbit && !testScore(exclude.replyScore, author.subplebbit?.replyScore)) {
+        if (!testScore(exclude.replyScore, author.subplebbit?.replyScore || 0)) {
             shouldExclude = false;
         }
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
