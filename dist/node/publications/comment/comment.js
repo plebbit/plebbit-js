@@ -96,7 +96,7 @@ export class Comment extends Publication {
         this.pinned = props.pinned;
         this.locked = props.locked;
         this.removed = props.removed;
-        this.reason = props.reason || props.edit?.reason;
+        this.reason = props.reason;
         this.edit = props.edit;
         this.protocolVersion = props.protocolVersion;
         // Merge props from original comment and CommentUpdate
