@@ -1,6 +1,13 @@
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
-import { clone, encodePubsubMsg, generateSubscriptionId } from "./utils.js";
+import {
+    clone,
+    encodeChallengeAnswerMessage,
+    encodeChallengeMessage,
+    encodeChallengeRequest,
+    encodeChallengeVerificationMessage,
+    generateSubscriptionId
+} from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
@@ -240,18 +247,18 @@ class PlebbitWsServer extends EventEmitter {
         subplebbit.on("startedstatechange", startedStateListener);
 
         const requestListener = (request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) =>
-            sendEvent("challengerequest", encodePubsubMsg(request));
+            sendEvent("challengerequest", encodeChallengeRequest(request));
         subplebbit.on("challengerequest", requestListener);
 
-        const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodePubsubMsg(challenge));
+        const challengeListener = (challenge: DecryptedChallengeMessageType) => sendEvent("challenge", encodeChallengeMessage(challenge));
         subplebbit.on("challenge", challengeListener);
 
         const challengeAnswerListener = (answer: DecryptedChallengeAnswerMessageType) =>
-            sendEvent("challengeanswer", encodePubsubMsg(answer));
+            sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer));
         subplebbit.on("challengeanswer", challengeAnswerListener);
 
         const challengeVerificationListener = (challengeVerification: DecryptedChallengeVerificationMessageType) =>
-            sendEvent("challengeverification", encodePubsubMsg(challengeVerification));
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification));
         subplebbit.on("challengeverification", challengeVerificationListener);
 
         const errorListener = (error: PlebbitError) => sendEvent("error", error);
@@ -573,11 +580,11 @@ class PlebbitWsServer extends EventEmitter {
 
         const comment = await this.plebbit.createComment(publishOptions);
         this.publishing[subscriptionId] = comment;
-        comment.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
-        comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-        comment.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
+        comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        comment.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
         comment.on("challengeverification", (challengeVerification) =>
-            sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
         comment.on("error", (error) => sendEvent("error", error));
@@ -614,11 +621,11 @@ class PlebbitWsServer extends EventEmitter {
 
         const vote = await this.plebbit.createVote(publishOptions);
         this.publishing[subscriptionId] = vote;
-        vote.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
-        vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-        vote.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
+        vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        vote.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
         vote.on("challengeverification", (challengeVerification) =>
-            sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         vote.on("publishingstatechange", () => sendEvent("publishingstatechange", vote.publishingState));
         vote.on("error", (error: any) => sendEvent("error", error));
@@ -654,11 +661,11 @@ class PlebbitWsServer extends EventEmitter {
 
         const commentEdit = await this.plebbit.createCommentEdit(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
-        commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodePubsubMsg(challenge)));
-        commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodePubsubMsg(answer)));
-        commentEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodePubsubMsg(request)));
+        commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        commentEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
         commentEdit.on("challengeverification", (challengeVerification) =>
-            sendEvent("challengeverification", encodePubsubMsg(challengeVerification))
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         commentEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", commentEdit.publishingState));
         commentEdit.on("error", (error) => sendEvent("error", error));

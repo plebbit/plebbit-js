@@ -6,7 +6,12 @@ import type {
     DecryptedChallengeVerificationMessageType
 } from "../../pubsub-messages/types.js";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
-import { EncodedDecryptedChallengeAnswerMessageType, EncodedDecryptedChallengeMessageType, EncodedDecryptedChallengeRequestMessageType, EncodedDecryptedChallengeVerificationMessageType } from "./types.js";
+import type {
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeVerificationMessageType
+} from "./types.js";
 
 // don't pass stateful objects to JSON RPC
 export const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
@@ -14,31 +19,69 @@ export const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
 const maxRandomInt = 281474976710655;
 export const generateSubscriptionId = () => randomInt(1, maxRandomInt);
 
-export const encodePubsubMsg = (
-    pubsubMsg:
-        | DecryptedChallengeMessageType
-        | DecryptedChallengeAnswerMessageType
-        | DecryptedChallengeRequestMessageType
-        | DecryptedChallengeVerificationMessageType
-) => {
-    let encodedMsg:
-        | EncodedDecryptedChallengeMessageType
-        | EncodedDecryptedChallengeAnswerMessageType
-        | EncodedDecryptedChallengeRequestMessageType
-        | EncodedDecryptedChallengeVerificationMessageType = clone(pubsubMsg);
+function _encodeChallengeRequestId(
+    id: DecryptedChallengeRequestMessageType["challengeRequestId"]
+): EncodedDecryptedChallengeRequestMessageType["challengeRequestId"] {
+    return uint8ArrayToString(id, "base58btc");
+}
 
-    // zod here
-    encodedMsg.challengeRequestId = uint8ArrayToString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg.encrypted)
-        encodedMsg.encrypted = {
-            tag: uint8ArrayToString(pubsubMsg.encrypted?.tag, "base64"),
-            iv: uint8ArrayToString(pubsubMsg.encrypted?.iv, "base64"),
-            ciphertext: uint8ArrayToString(pubsubMsg.encrypted?.ciphertext, "base64"),
-            type: pubsubMsg.encrypted.type
-        };
+function _encodeEncrypted(
+    encrypted: DecryptedChallengeRequestMessageType["encrypted"]
+): EncodedDecryptedChallengeRequestMessageType["encrypted"] {
+    return {
+        tag: uint8ArrayToString(encrypted.tag, "base64"),
+        iv: uint8ArrayToString(encrypted.iv, "base64"),
+        ciphertext: uint8ArrayToString(encrypted.ciphertext, "base64"),
+        type: encrypted.type
+    };
+}
 
-    encodedMsg.signature.publicKey = uint8ArrayToString(pubsubMsg.signature.publicKey, "base64");
-    encodedMsg.signature.signature = uint8ArrayToString(pubsubMsg.signature.signature, "base64");
+function _encodeSignature(
+    signature: DecryptedChallengeRequestMessageType["signature"]
+): EncodedDecryptedChallengeRequestMessageType["signature"] {
+    return {
+        ...signature,
+        publicKey: uint8ArrayToString(signature.publicKey, "base64"),
+        signature: uint8ArrayToString(signature.signature, "base64")
+    };
+}
 
-    return encodedMsg;
-};
+export function encodeChallengeRequest(msg: DecryptedChallengeRequestMessageType): EncodedDecryptedChallengeRequestMessageType {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+
+export function encodeChallengeMessage(msg: DecryptedChallengeMessageType): EncodedDecryptedChallengeMessageType {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+
+export function encodeChallengeAnswerMessage(msg: DecryptedChallengeAnswerMessageType): EncodedDecryptedChallengeAnswerMessageType {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+
+export function encodeChallengeVerificationMessage(
+    msg: DecryptedChallengeVerificationMessageType
+): EncodedDecryptedChallengeVerificationMessageType {
+    const encrypted = msg.encrypted ? _encodeEncrypted(msg.encrypted) : undefined;
+
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted,
+        signature: _encodeSignature(msg.signature)
+    };
+}
