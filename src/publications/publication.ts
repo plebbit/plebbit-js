@@ -71,7 +71,7 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
-import { PublicationPublishingState, PublicationState } from "./schema.js";
+import { PublicationPublishingState, PublicationStateSchema } from "./schema.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -85,13 +85,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
     author!: Author;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
-    state!: z.infer<typeof PublicationState>;
+    state!: z.infer<typeof PublicationStateSchema> | Comment["state"];
     publishingState!: z.infer<typeof PublicationPublishingState>;
     challengeAnswers?: DecryptedChallengeRequestMessageType["challengeAnswers"];
     challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
     // private
-    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing
+    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing, TODO should change it to _subplebbit
     private _challengeAnswer?: DecryptedChallengeAnswerMessageType;
     private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[];
     private _challengeIdToPubsubSigner: Record<string, Signer>;
@@ -642,10 +642,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 this._updateRpcClientStateFromPublishingState(publishState);
             })
             .on("statechange", (args) => {
-                const state = PublicationState.parse(args.params.result);
+                const state = PublicationStateSchema.parse(args.params.result);
                 this._updateState(state);
             })
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", (args) => this.emit("error", args.params.result)); // zod here
         this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;
     }

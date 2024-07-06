@@ -89,7 +89,7 @@ import {
 } from "../../../publications/comment-edit/schema.js";
 import type { VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
-import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
@@ -581,7 +581,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
-        // zod here
         const toEncryptChallenge = DecryptedChallengeSchema.parse(<DecryptedChallenge>{ challenges });
         const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGE",
@@ -811,7 +810,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentToBeEdited = await this.dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const modRoles: SubplebbitRole["role"][] = ["moderator", "owner", "admin"]; // zod here
+            const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
             const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
 
             const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);

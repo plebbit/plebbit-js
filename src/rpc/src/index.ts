@@ -194,7 +194,6 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getComment(params: any): Promise<CommentIpfsType> {
-        // zod here
         const cid = CommentCidSchema.parse(params[0]);
         const comment = await this.plebbit.getComment(cid);
         const commentIpfs = comment._rawCommentIpfs;

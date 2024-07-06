@@ -3,7 +3,7 @@ import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } fro
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
 import type { CommentsTableRowInsert, PublicationTypeName } from "../../types.js";
-
+import { z } from "zod";
 import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
@@ -26,6 +26,7 @@ import type {
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
+import { CommentStateSchema, CommentUpdatingStateSchema } from "./schema.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -69,16 +70,8 @@ export class Comment extends Publication {
     lastReplyTimestamp?: CommentUpdate["lastReplyTimestamp"];
 
     // updating states
-    updatingState!:
-        | "stopped"
-        | "resolving-author-address"
-        | "fetching-ipfs"
-        | "fetching-update-ipfs"
-        | "resolving-subplebbit-address"
-        | "fetching-subplebbit-ipns"
-        | "fetching-subplebbit-ipfs"
-        | "failed"
-        | "succeeded";
+    override state!: z.infer<typeof CommentStateSchema>;
+    updatingState!: z.infer<typeof CommentUpdatingStateSchema>;
 
     // private
     private _updateInterval?: any;
@@ -569,8 +562,7 @@ export class Comment extends Publication {
                     this.emit("update", this);
                 })
                 .on("updatingstatechange", (args) => {
-                    // zod here
-                    const updateState = <Comment["updatingState"]>args.params.result;
+                    const updateState = CommentUpdatingStateSchema.parse(args.params.result);
                     this._setUpdatingState(updateState);
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })

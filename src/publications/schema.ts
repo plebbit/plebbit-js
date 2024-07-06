@@ -14,4 +14,4 @@ export const PublicationPublishingState = z.enum([
     "succeeded"
 ]);
 
-export const PublicationState = z.enum(["stopped", "updating", "publishing"]);
+export const PublicationStateSchema = z.enum(["stopped", "publishing"]);
