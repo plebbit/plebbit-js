@@ -86,7 +86,8 @@ describe("Editing comment.content", async () => {
             expect(commentJson.content.startsWith("edit test")).to.be.true;
             expect(commentJson.edit.content.startsWith("edit test")).to.be.true;
             expect(commentJson.original.content).to.equal(originalContent);
-            expect(commentJson.reason.startsWith("To test editing content")).to.be.true;
+            expect(commentJson.edit.reason.startsWith("To test editing content")).to.be.true;
+            expect(commentJson.reason).to.be.undefined; // comment.reason is only modified with mod
         }
     });
 
@@ -102,7 +103,10 @@ describe("Editing comment.content", async () => {
             expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.original.content).to.equal(originalContent);
-            expect(editedCommentInPage.reason.startsWith("To test editing content")).to.be.true;
+
+            // test reason
+            expect(editedCommentInPage.edit.reason.startsWith("To test editing content")).to.be.true;
+            expect(editedCommentInPage.reason).to.be.undefined; // comment.reason is only modified with mod
         }
     });
 
@@ -114,13 +118,15 @@ describe("Editing comment.content", async () => {
 
         for (const sub of [sub1, sub2, sub3, sub4]) {
             const subJson = sub.toJSON();
-            const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
-                comment.reason?.startsWith("To test editing content")
-            );
+            const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) => comment.content?.startsWith("edit test"));
             expect(editedCommentInPage).to.be.a("object");
             expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.original.content.startsWith("original content")).to.be.true;
+
+            // test reason
+            expect(editedCommentInPage.edit.reason.startsWith("To test editing content")).to.be.true;
+            expect(editedCommentInPage.reason).to.be.undefined; // comment.reason is only modified with mod
         }
     });
 
@@ -140,7 +146,14 @@ describe("Editing comment.content", async () => {
         expect(commentToBeEdited.edit.content).to.equal(editedText);
         expect(commentToBeEdited.content).to.equal(editedText);
         expect(commentToBeEdited.original?.content).to.equal(originalContent);
+
+        // test reason
+
         expect(commentToBeEdited.edit.reason).to.equal(editReason);
+        expect(commentToBeEdited.reason).to.be.undefined; // comment.reason is only modified with mod
+
+        // test author.subplebbit
+
         expect(commentToBeEdited.author.subplebbit.postScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.replyScore).to.equal(0);
         expect(commentToBeEdited.author.subplebbit.lastCommentCid).to.equal(commentToBeEdited.cid);
@@ -165,7 +178,12 @@ describe("Editing comment.content", async () => {
             expect(commentToEdit.edit.content).to.equal(editedText);
             expect(commentToEdit.content).to.equal(editedText);
             expect(commentToEdit.original?.content).to.equal(originalContent);
-            expect(commentToEdit.edit.reason).to.equal(editReason);
+
+            // test reason
+
+            expect(commentToEdit.reason).to.be.undefined;
+            expect(commentToEdit.edit?.reason).to.equal(editReason); // comment.reason is only modified with mod CommentEdit
+
             commentToEdit.stop();
         })
     );

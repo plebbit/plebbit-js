@@ -205,7 +205,9 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
         expect(authorPost.content).to.equal(fieldsToChange.content);
         expect(authorPost._rawCommentUpdate.edit.content).equal(fieldsToChange.content);
 
-        expect(authorPost.reason).to.equal(fieldsToChange.reason);
+        expect(authorPost.edit.reason).to.equal(fieldsToChange.reason);
+        expect(authorPost.reason).to.be.undefined;
+
         expect(authorPost._rawCommentUpdate.edit.reason).equal(fieldsToChange.reason);
     });
 });
@@ -315,7 +317,8 @@ describe(`Changing multiple edit fields in separate edits`, async () => {
         expect(authorPost._rawCommentUpdate.edit.deleted).to.be.false;
         expect(authorPost._rawCommentUpdate.deleted).to.be.undefined;
 
-        expect(authorPost.reason).to.equal(fieldsToChange.reason);
+        expect(authorPost.edit.reason).to.equal(fieldsToChange.reason);
+        expect(authorPost.reason).to.be.undefined;
         expect(authorPost._rawCommentUpdate.edit.reason).to.equal(fieldsToChange.reason);
         expect(authorPost._rawCommentUpdate.reason).to.be.undefined;
 

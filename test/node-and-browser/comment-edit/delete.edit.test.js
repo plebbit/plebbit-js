@@ -75,7 +75,7 @@ describe("Deleting a post", async () => {
         expect(postToDelete.deleted).to.be.true;
         expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.true;
-        expect(postToDelete.reason).to.equal("To test delete for author");
+        expect(postToDelete.reason).to.be.undefined; // .reason is only for mod
         expect(postToDelete.edit.reason).to.equal("To test delete for author");
         expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("To test delete for author");
         expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
@@ -135,7 +135,7 @@ describe("Deleting a post", async () => {
         expect(modPostToDelete.deleted).to.be.true;
         expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.true;
-        expect(modPostToDelete.reason).to.equal("For mod to test deleting their own post");
+        expect(modPostToDelete.reason).to.be.undefined; // .reason is for mod editing other authors posts
         expect(modPostToDelete.edit.reason).to.equal("For mod to test deleting their own post");
         expect(modPostToDelete._rawCommentUpdate.edit.reason).to.equal("For mod to test deleting their own post");
         expect(modPostToDelete._rawCommentUpdate.reason).to.be.undefined;
@@ -157,7 +157,7 @@ describe("Deleting a post", async () => {
         expect(postToDelete.deleted).to.be.false;
         expect(postToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(postToDelete._rawCommentUpdate.edit.deleted).to.be.false;
-        expect(postToDelete.reason).to.equal("For author to test undelete their own post");
+        expect(postToDelete.reason).to.be.undefined; // reason is for mod editing other authors posts
         expect(postToDelete.edit.reason).to.equal("For author to test undelete their own post");
         expect(postToDelete._rawCommentUpdate.edit.reason).to.equal("For author to test undelete their own post");
         expect(postToDelete._rawCommentUpdate.reason).to.be.undefined;
@@ -178,7 +178,7 @@ describe("Deleting a post", async () => {
         expect(modPostToDelete.deleted).to.be.false;
         expect(modPostToDelete._rawCommentUpdate.deleted).to.be.undefined;
         expect(modPostToDelete._rawCommentUpdate.edit.deleted).to.be.false;
-        expect(modPostToDelete.reason).to.equal("For mod to test undeleting their own post");
+        expect(modPostToDelete.reason).to.be.undefined; // reason is for mod editing other authors posts
         expect(modPostToDelete.edit.reason).to.equal("For mod to test undeleting their own post");
         expect(modPostToDelete._rawCommentUpdate.edit.reason).to.equal("For mod to test undeleting their own post");
         expect(modPostToDelete._rawCommentUpdate.reason).to.be.undefined;

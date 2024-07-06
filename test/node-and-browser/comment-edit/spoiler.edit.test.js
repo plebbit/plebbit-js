@@ -58,7 +58,9 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         expect(authorPost._rawCommentUpdate.edit.reason).to.equal("Author marking their own comment as spoiler");
         expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.true;
 
-        expect(authorPost.reason).to.equal("Author marking their own comment as spoiler");
+        expect(authorPost.reason).to.be.undefined; // reason is only for mods editing other authors' posts
+        expect(authorPost.edit.reason).to.equal("Author marking their own comment as spoiler");
+
         expect(authorPost.spoiler).to.be.true;
     });
 
@@ -104,7 +106,9 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         expect(authorPost._rawCommentUpdate.edit.reason).to.equal("An author unspoilering their own comment");
         expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.false;
 
-        expect(authorPost.reason).to.equal("An author unspoilering their own comment");
+        expect(authorPost.edit.reason).to.equal("An author unspoilering their own comment");
+        expect(authorPost.reason).to.be.undefined;
+
         expect(authorPost.spoiler).to.be.false;
     });
 });
@@ -198,11 +202,12 @@ describe(`Mods marking their own comment as spoiler`, async () => {
         expect(modPost._rawCommentUpdate.edit.reason).to.equal("Mod marking their own comment as spoiler");
         expect(modPost._rawCommentUpdate.edit.spoiler).to.be.true;
 
-        expect(modPost.reason).to.equal("Mod marking their own comment as spoiler");
+        expect(modPost.reason).to.be.undefined; // reason is defined only when it's a mod editing other authors' posts
+        expect(modPost.edit.reason).to.equal("Mod marking their own comment as spoiler");
         expect(modPost.spoiler).to.be.true;
     });
 
-    it(`Mod can mark unspoiler their own comment`, async () => {
+    it(`Mod can unspoiler their own comment`, async () => {
         const unspoilerEdit = await plebbit.createCommentEdit({
             subplebbitAddress: modPost.subplebbitAddress,
             commentCid: modPost.cid,
@@ -222,7 +227,8 @@ describe(`Mods marking their own comment as spoiler`, async () => {
         expect(modPost._rawCommentUpdate.edit.reason).to.equal("Mod unspoilering their own comment");
         expect(modPost._rawCommentUpdate.edit.spoiler).to.be.false;
 
-        expect(modPost.reason).to.equal("Mod unspoilering their own comment");
+        expect(modPost.reason).to.be.undefined;
+        expect(modPost.edit.reason).to.equal("Mod unspoilering their own comment");
         expect(modPost.spoiler).to.be.false;
     });
 });
