@@ -271,6 +271,8 @@ export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.
     })
     .strict();
 
+export const RpcUpdateResultSchema = SubplebbitIpfsSchema.or(RpcInternalSubplebbitRecordSchema);
+
 export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true })
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
@@ -331,3 +333,13 @@ export const ListOfSubplebbitsSchema = SubplebbitAddressSchema.array();
 // Schema of states
 
 export const StartedStateSchema = z.enum(["stopped", "publishing-ipns", "failed", "succeeded"]);
+
+export const UpdatingStateSchema = z.enum([
+    ...StartedStateSchema.options,
+    "stopped",
+    "resolving-address",
+    "fetching-ipns",
+    "fetching-ipfs",
+    "failed",
+    "succeeded"
+]);

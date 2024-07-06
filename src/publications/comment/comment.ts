@@ -538,7 +538,7 @@ export class Comment extends Publication {
             if (!rpcUrl) throw Error("Failed to get rpc url");
             if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
             try {
-                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid); // zod here
+                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
                 this._updateState("updating");
             } catch (e) {
                 log.error("Failed to receive commentUpdate from RPC due to error", e);

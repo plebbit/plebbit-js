@@ -1,7 +1,8 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { InternalSubplebbitRpcType, SubplebbitIpfsType } from "./types.js";
+import type { SubplebbitIpfsType } from "./types.js";
 import * as remeda from "remeda";
+import { RpcUpdateResultSchema, UpdatingStateSchema } from "./schema.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number;
@@ -40,7 +41,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         try {
-            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address); // zod here
+            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address);
             this._setState("updating");
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
@@ -52,18 +53,16 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", async (updateProps) => {
                 log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
-                // zod here
-                const rpcSubProps = <SubplebbitIpfsType | InternalSubplebbitRpcType>updateProps.params.result;
+                const rpcSubProps = RpcUpdateResultSchema.parse(updateProps.params.result);
                 await this._handleRpcUpdateProps(rpcSubProps);
                 this.emit("update", this);
             })
             .on("updatingstatechange", (args) => {
-                // zod here
-                const newUpdatingState = <RpcRemoteSubplebbit["updatingState"]>args.params.result;
+                const newUpdatingState = UpdatingStateSchema.parse(args.params.result);
                 this._setUpdatingState(newUpdatingState);
                 this._updateRpcClientStateFromUpdatingState(newUpdatingState);
             })
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("error", (args) => this.emit("error", args.params.result)); // zod here
 
         this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }

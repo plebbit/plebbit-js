@@ -16,10 +16,11 @@ import type {
     SubplebbitStats
 } from "./types.js";
 import * as remeda from "remeda";
-import type { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import { z } from "zod";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
+import { UpdatingStateSchema } from "./schema.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -48,14 +49,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
     // Only for Subplebbit instance
     state!: "stopped" | "updating" | "started";
-    updatingState!:
-        | "stopped"
-        | "resolving-address"
-        | "fetching-ipns"
-        | "fetching-ipfs"
-        | "failed"
-        | "succeeded"
-        | LocalSubplebbit["startedState"];
+    updatingState!: z.infer<typeof UpdatingStateSchema>;
     plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
