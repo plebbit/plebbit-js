@@ -454,25 +454,33 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     _setProviderToFailIfNoResponse(providerIndex: number) {
         setTimeout(async () => {
-            this._pubsubProvidersDoneWaiting![this._pubsubProviders[providerIndex]] = true;
+            const publishingToSameProviderTwice =
+                this._pubsubProviders?.length === 2 && this._pubsubProviders[0] === this._pubsubProviders[1];
+            const isSecondRequestByProvider = publishingToSameProviderTwice && providerIndex === 1;
+            // not set to be done with waiting if we published a request twice on the same provider
+            const doneWaiting = publishingToSameProviderTwice ? isSecondRequestByProvider : true;
+            this._pubsubProvidersDoneWaiting![this._pubsubProviders[providerIndex]] = doneWaiting;
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 const log = Logger("plebbit-js:publication:publish");
                 log.error(
                     `Provider (${this._pubsubProviders[providerIndex]}) did not receive a response after ${this._setProviderFailureThresholdSeconds}s, will unsubscribe and set state to stopped`
                 );
-                await this._clientsManager.pubsubUnsubscribeOnProvider(
-                    this._pubsubTopicWithfallback(),
-                    this._pubsubProviders[providerIndex],
-                    this.handleChallengeExchange
-                );
-                this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
+                if (doneWaiting) {
+                    await this._clientsManager.pubsubUnsubscribeOnProvider(
+                        this._pubsubTopicWithfallback(),
+                        this._pubsubProviders[providerIndex],
+                        this.handleChallengeExchange
+                    );
+                    this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
+                }
 
                 if (this._isAllAttemptsExhausted()) {
                     await this._postSucessOrFailurePublishing();
                     this._updatePublishingState("failed");
                     const allAttemptsFailedError = new PlebbitError("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER", {
-                        pubsubProviders: this._pubsubProviders,
+                        attemptedPubsubProviders: this._pubsubProviders,
                         pubsubTopic: this._pubsubTopicWithfallback()
+                        // TODO Should include errors
                     });
                     log.error(String(allAttemptsFailedError));
 
@@ -637,6 +645,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     const allAttemptsFailedError = new PlebbitError("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS", {
                         pubsubProviders: this._pubsubProviders,
                         pubsubTopic: this._pubsubTopicWithfallback()
+                        // TODO should include errors
                     });
                     log.error(String(allAttemptsFailedError));
                     this.emit("error", allAttemptsFailedError);
@@ -676,6 +685,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                         pubsubProviders: this._pubsubProviders,
                         publishedChallengeRequests: this._publishedChallengeRequests,
                         publishToDifferentProviderThresholdSeconds: this._publishToDifferentProviderThresholdSeconds
+                        // TODO should include errors
                     });
                     this.emit("error", error);
                 } else {
