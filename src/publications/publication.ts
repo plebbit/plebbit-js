@@ -17,7 +17,6 @@ import type {
 import type {
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
-    ProtocolVersion,
     PublicationEvents,
     PublicationPubsubMessage,
     PublicationTypeName
@@ -39,7 +38,6 @@ import { PlebbitError } from "../plebbit-error.js";
 import { getBufferedPlebbitAddressFromPublicKey } from "../signer/util.js";
 import { PublicationClientsManager } from "../clients/client-manager.js";
 import * as cborg from "cborg";
-import type { JsonSignature } from "../signer/types.js";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
@@ -221,7 +219,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this.emit("error", error);
             return;
         }
-        this._receivedChallengeFromSub = true;
 
         log(
             `Received encrypted challenges.  Will decrypt and emit them on "challenge" event. User shoud publish solution by calling publishChallengeAnswers`
@@ -242,6 +239,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this.emit("error", plebbitError);
             return;
         }
+
+        this._receivedChallengeFromSub = true;
 
         let decryptedJson: any;
 
@@ -376,7 +375,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             log.trace("Received unrelated pubsub message of type", pubsubMsgParsed.type);
         } else if (
             !this._publishedChallengeRequests!.some((requestMsg) =>
-                remeda.isDeepEqual(pubsubMsgParsed?.challengeRequestId, requestMsg.challengeRequestId)
+                remeda.isDeepEqual(pubsubMsgParsed.challengeRequestId, requestMsg.challengeRequestId)
             )
         ) {
             log.trace(`Received pubsub messages with different challenge request id, ignoring them`);

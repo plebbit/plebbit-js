@@ -4,9 +4,7 @@ import {
     DecryptedChallengeMessageSchema,
     DecryptedChallengeRequestMessageSchema,
     DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema,
-    DecryptedChallengeRequestSchema,
     DecryptedChallengeVerificationMessageSchema,
-    DecryptedChallengeVerificationSchema,
     EncryptedSchema,
     PubsubMessageSignatureSchema
 } from "../../pubsub-messages/schema";
