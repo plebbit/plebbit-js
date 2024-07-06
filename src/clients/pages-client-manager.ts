@@ -7,10 +7,10 @@ import * as remeda from "remeda";
 import { pageCidToSortTypesCache } from "../constants.js";
 import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { isIpfsCid, throwWithErrorCode } from "../util.js";
 import { BasePages } from "../pages/pages.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { CommentCidSchema } from "../schema/schema.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -183,17 +183,16 @@ export class BasePagesClientsManager extends BaseClientsManager {
         return pageIpfs;
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
-        // Zod here
-        if (!isIpfsCid(pageCid)) throw Error(`fetchPage: pageCid (${pageCid}) is not a valid CID`);
+        const parsedPageCid = CommentCidSchema.parse(pageCid);
 
         const log = Logger("plebbit-js:pages:getPage");
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(parsedPageCid);
         let page: PageIpfs;
-        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
-        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = await this._fetchPageFromGateways(pageCid);
+        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(parsedPageCid, log, sortTypes);
+        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(parsedPageCid, log, sortTypes);
+        else page = await this._fetchPageFromGateways(parsedPageCid);
 
-        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
+        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, parsedPageCid);
         return page;
     }
 }
