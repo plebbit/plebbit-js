@@ -566,7 +566,10 @@ export class Comment extends Publication {
                     this._setUpdatingState(updateState);
                     this._updateRpcClientStateFromUpdatingState(updateState);
                 })
-                .on("statechange", (args) => this._updateState(<Comment["state"]>args.params.result)) // zod here
+                .on("statechange", (args) => {
+                    const commentState = CommentStateSchema.parse(args.params.result);
+                    this._updateState(commentState);
+                })
                 .on("error", async (args) => {
                     // zod here
                     const err = <PlebbitError>args.params.result;
