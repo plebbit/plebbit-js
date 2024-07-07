@@ -2,14 +2,12 @@ import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    DecryptedChallengeVerificationMessageType
-} from "../../pubsub-messages/types";
-import type {
+    DecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType
-} from "../../rpc/src/types";
+} from "../../pubsub-messages/types";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 
 function _decodeChallengeRequestId(

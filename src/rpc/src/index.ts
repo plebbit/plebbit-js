@@ -11,7 +11,12 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
 const log = Logger("plebbit-js-rpc:plebbit-ws-server");
-import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
+import type {
+    PlebbitWsServerClassOptions,
+    JsonRpcSendNotificationOptions,
+    CreatePlebbitWsServerOptions,
+    PlebbitWsServerSettingsSerialized
+} from "./types.js";
 import { Plebbit } from "../../plebbit.js";
 import type {
     DecryptedChallengeAnswerMessageType,
@@ -19,7 +24,6 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
 } from "../../pubsub-messages/types";
-import type { PlebbitWsServerSettingsSerialized } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -38,8 +42,7 @@ import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/sch
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
 import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
-import { PlebbitWsServerSettingsSchema } from "../../schema.js";
-import { PlebbitWsServerOptionsSchema } from "./schema.js";
+import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "./schema.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -448,7 +451,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async setSettings(params: any) {
-        const settings = PlebbitWsServerSettingsSchema.parse(params[0]);
+        const settings = SetNewSettingsPlebbitWsServerSchema.parse(params[0]);
         this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
         this.plebbit.on("error", (error: any) => {
             this.emit("error", error);
@@ -749,8 +752,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 }
 
-const createPlebbitWsServer = async (options: PlebbitWsServerOptions) => {
-    const parsedOptions = PlebbitWsServerOptionsSchema.parse(options);
+const createPlebbitWsServer = async (options: CreatePlebbitWsServerOptions) => {
+    const parsedOptions = CreatePlebbitWsServerOptionsSchema.parse(options);
     const plebbit = await PlebbitJs.Plebbit(parsedOptions.plebbitOptions);
 
     const plebbitWss = new PlebbitWsServer({

@@ -1,21 +1,20 @@
 import { Plebbit } from "../../plebbit.js";
 import {
-    EncodedDecryptedChallengeAnswerMessageSchema,
-    EncodedDecryptedChallengeMessageSchema,
-    EncodedDecryptedChallengeRequestMessageSchema,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
-    EncodedDecryptedChallengeVerificationMessageSchema,
-    EncodedPubsubMessageSignatureSchema,
-    EncryptedEncodedSchema,
-    PlebbitWsServerOptionsSchema
+    CreatePlebbitWsServerOptionsSchema,
+    SetNewSettingsPlebbitWsServerSchema,
+    PlebbitWsServerSettingsSerializedSchema
 } from "./schema.js";
 import { z } from "zod";
 
-export type PlebbitWsServerOptions = z.infer<typeof PlebbitWsServerOptionsSchema>;
+export type CreatePlebbitWsServerOptions = z.infer<typeof CreatePlebbitWsServerOptionsSchema>;
 
-export interface PlebbitWsServerClassOptions extends PlebbitWsServerOptions {
+export interface PlebbitWsServerClassOptions extends CreatePlebbitWsServerOptions {
     plebbit: Plebbit;
 }
+
+export type SetNewSettingsPlebbitWsServer = z.infer<typeof SetNewSettingsPlebbitWsServerSchema>;
+
+export type PlebbitWsServerSettingsSerialized = z.infer<typeof PlebbitWsServerSettingsSerializedSchema>;
 
 export type JsonRpcSendNotificationOptions = {
     method: string;
@@ -24,26 +23,3 @@ export type JsonRpcSendNotificationOptions = {
     event: string;
     connectionId: string;
 };
-
-// Encoded encrypted here
-
-export type EncryptedEncoded = z.infer<typeof EncryptedEncodedSchema>;
-
-// challenge request here
-export type EncodedPubsubSignature = z.infer<typeof EncodedPubsubMessageSignatureSchema>;
-
-export type EncodedDecryptedChallengeRequestMessageType = z.infer<typeof EncodedDecryptedChallengeRequestMessageSchema>;
-
-export type EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = z.infer<
-    typeof EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema
->;
-
-// challenge here
-
-export type EncodedDecryptedChallengeMessageType = z.infer<typeof EncodedDecryptedChallengeMessageSchema>;
-
-// challenge answer
-export type EncodedDecryptedChallengeAnswerMessageType = z.infer<typeof EncodedDecryptedChallengeAnswerMessageSchema>;
-// challenge verification
-
-export type EncodedDecryptedChallengeVerificationMessageType = z.infer<typeof EncodedDecryptedChallengeVerificationMessageSchema>;

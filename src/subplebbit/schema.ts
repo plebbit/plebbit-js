@@ -91,7 +91,10 @@ export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z
 export const ChallengeFromGetChallengeSchema = z
     .object({
         challenge: z.string(), // e.g. '2 + 2'
-        verify: z.function().args(ChallengeAnswerStringSchema).returns(z.promise(ChallengeResultSchema)), // args is answer
+        verify: z
+            .function()
+            .args(z.lazy(() => ChallengeAnswerStringSchema))
+            .returns(z.promise(ChallengeResultSchema)), // args is answer
         type: z.enum(["image/png", "text/plain", "chain/<chainTicker>"])
     })
     .strict();
@@ -158,7 +161,7 @@ export const ChallengeFileSchema = z
             .function()
             .args(
                 SubplebbitChallengeSettingSchema, // challenge settings
-                DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema, // challenge request to process
+                z.lazy(() => DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema), // challenge request to process
                 z.number().int().nonnegative(), // challenge index
                 z.custom<LocalSubplebbit>((data) => data instanceof LocalSubplebbit) // the local subplebbit instance
             )

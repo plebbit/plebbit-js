@@ -56,15 +56,14 @@ import {
     DecryptedChallengeMessageSchema,
     DecryptedChallengeRequestMessageSchema,
     DecryptedChallengeRequestSchema,
-    IncomingPubsubMessageSchema
-} from "../pubsub-messages/schema.js";
-import { z } from "zod";
-import {
+    IncomingPubsubMessageSchema,
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
     EncodedDecryptedChallengeRequestMessageSchema,
     EncodedDecryptedChallengeVerificationMessageSchema
-} from "../rpc/src/schema.js";
+} from "../pubsub-messages/schema.js";
+import { z } from "zod";
+
 import {
     decodeRpcChallengeAnswerPubsubMsg,
     decodeRpcChallengePubsubMsg,

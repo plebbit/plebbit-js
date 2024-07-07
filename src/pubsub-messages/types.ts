@@ -13,7 +13,12 @@ import {
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationMessageSchema,
-    DecryptedChallengeVerificationSchema
+    DecryptedChallengeVerificationSchema,
+    EncodedDecryptedChallengeAnswerMessageSchema,
+    EncodedDecryptedChallengeMessageSchema,
+    EncodedDecryptedChallengeRequestMessageSchema,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
+    EncodedDecryptedChallengeVerificationMessageSchema
 } from "./schema";
 
 import { z } from "zod";
@@ -64,3 +69,23 @@ export type PubsubMessage =
     | ChallengeMessageType
     | ChallengeAnswerMessageType
     | ChallengeVerificationMessageType;
+
+// encoded for rpc here
+
+// challenge request here
+
+export type EncodedDecryptedChallengeRequestMessageType = z.infer<typeof EncodedDecryptedChallengeRequestMessageSchema>;
+
+export type EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = z.infer<
+    typeof EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema
+>;
+
+// challenge here
+
+export type EncodedDecryptedChallengeMessageType = z.infer<typeof EncodedDecryptedChallengeMessageSchema>;
+
+// challenge answer
+export type EncodedDecryptedChallengeAnswerMessageType = z.infer<typeof EncodedDecryptedChallengeAnswerMessageSchema>;
+// challenge verification
+
+export type EncodedDecryptedChallengeVerificationMessageType = z.infer<typeof EncodedDecryptedChallengeVerificationMessageSchema>;

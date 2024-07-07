@@ -27,14 +27,7 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types.js";
-import {
-    ChainProviderSchema,
-    ChainTickerSchema,
-    PlebbitParsedOptionsSchema,
-    PlebbitUserOptionsSchema,
-    PlebbitWsServerSettingsSchema,
-    PlebbitWsServerSettingsSerializedSchema
-} from "./schema.js";
+import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -256,8 +249,3 @@ export interface LRUStorageInterface {
     keys: () => Promise<string[]>;
     destroy: () => Promise<void>;
 }
-
-// RPC types
-export type PlebbitWsServerSettings = z.infer<typeof PlebbitWsServerSettingsSchema>;
-
-export type PlebbitWsServerSettingsSerialized = z.infer<typeof PlebbitWsServerSettingsSerializedSchema>;

@@ -5,7 +5,6 @@ import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
-import * as remeda from "remeda"; // tree-shaking supported!
 import { PlebbitError } from "../plebbit-error.js";
 import { RpcInternalSubplebbitRecordSchema, StartedStateSchema, SubplebbitEditOptionsSchema } from "./schema.js";
 import {
@@ -13,7 +12,7 @@ import {
     EncodedDecryptedChallengeMessageSchema,
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
     EncodedDecryptedChallengeVerificationMessageSchema
-} from "../rpc/src/schema.js";
+} from "../pubsub-messages/schema.js";
 import {
     decodeRpcChallengeAnswerPubsubMsg,
     decodeRpcChallengePubsubMsg,

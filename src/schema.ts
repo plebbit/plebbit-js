@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { parseIpfsRawOptionToIpfsOptions } from "./util";
-import { ChallengeFileSchema } from "./subplebbit/schema";
 
 // This file will have misc schemas, as well as Plebbit class schema
 
@@ -74,13 +73,3 @@ export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     pubsubHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional()
 });
 
-// rpc WS
-
-export const PlebbitWsServerSettingsSchema = z.object({
-    plebbitOptions: PlebbitUserOptionsSchema
-});
-
-export const PlebbitWsServerSettingsSerializedSchema = z.object({
-    plebbitOptions: PlebbitParsedOptionsSchema,
-    challenges: z.record(z.string(), ChallengeFileSchema.omit({ getChallenge: true }))
-});

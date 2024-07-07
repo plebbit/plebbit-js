@@ -1,5 +1,4 @@
 import Logger from "@plebbit/plebbit-logger";
-import type { PlebbitWsServerSettings, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../../publications/comment/comment.js";
 import { Plebbit } from "../../plebbit.js";
@@ -8,7 +7,7 @@ import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
 import { throwWithErrorCode } from "../../util.js";
-import type { CreateNewLocalSubplebbitUserOptions, InternalSubplebbitRpcType, SubplebbitEditOptions } from "../../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, SubplebbitEditOptions } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
 import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
 import type { CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
@@ -28,7 +27,8 @@ import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
 import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
-import { PlebbitWsServerSettingsSchema, PlebbitWsServerSettingsSerializedSchema } from "../../schema.js";
+import { PlebbitWsServerSettingsSerializedSchema, SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
+import { SetNewSettingsPlebbitWsServer } from "../../rpc/src/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -317,8 +317,8 @@ export default class PlebbitRpcClient {
         return res;
     }
 
-    async setSettings(settings: PlebbitWsServerSettings) {
-        const parsedSettings = PlebbitWsServerSettingsSchema.parse(settings);
+    async setSettings(settings: SetNewSettingsPlebbitWsServer) {
+        const parsedSettings = SetNewSettingsPlebbitWsServerSchema.parse(settings);
         const res = <boolean>await this._webSocketClient.call("setSettings", [parsedSettings]);
         if (res !== true) throw Error("result of setSettings should be true");
         return res;
