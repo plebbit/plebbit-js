@@ -224,7 +224,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (remeda.isEmpty(props)) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]); // zod here
         await this.dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
@@ -234,7 +234,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _getDbInternalState(lock = true) {
         if (lock) await this.dbHandler.lockSubState();
-        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]); // zod here
         if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }

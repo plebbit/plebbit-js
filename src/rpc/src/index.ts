@@ -433,6 +433,7 @@ class PlebbitWsServer extends EventEmitter {
     async fetchCid(params: any) {
         const cid = CommentCidSchema.parse(params[0]);
         const res = await this.plebbit.fetchCid(cid);
+        if (typeof res !== "string") throw Error("Result of fetchCid should be a string");
         return res;
     }
 

@@ -7,6 +7,8 @@ import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
+import type { IpfsClient } from "./types.js";
+import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
 
 export function timestamp() {
     return Math.round(Date.now() / 1000);
@@ -207,4 +209,18 @@ export function isIpfsCid(x: string) {
 
 export function isIpfsPath(x: string): boolean {
     return x.startsWith("/ipfs/");
+}
+
+export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof CreateKuboRpcClient>[0]): IpfsClient["_clientOptions"] {
+    if (!ipfsRawOption) throw Error("Need to define the ipfs options");
+    if (typeof ipfsRawOption === "string" || ipfsRawOption instanceof URL) {
+        const url = new URL(ipfsRawOption);
+        const authorization =
+            url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
+        return {
+            url: authorization ? url.origin + url.pathname : url,
+            ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
+        };
+    } else if ("bytes" in ipfsRawOption) return { url: ipfsRawOption };
+    else return ipfsRawOption;
 }

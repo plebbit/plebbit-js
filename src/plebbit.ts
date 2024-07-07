@@ -5,28 +5,21 @@ import type {
     GatewayClient,
     IpfsClient,
     PlebbitEvents,
-    PlebbitOptions,
     PubsubClient,
     ParsedPlebbitOptions,
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
-    AuthorPubsubType
+    InputPlebbitOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
-import {
-    doesDomainAddressHaveCapitalLetter,
-    removeNullUndefinedEmptyObjectsValuesRecursively,
-    throwWithErrorCode,
-    timestamp
-} from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, removeNullUndefinedEmptyObjectsValuesRecursively, timestamp } from "./util.js";
 import Vote from "./publications/vote/vote.js";
 import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
 import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
-import { Buffer } from "buffer";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "./stats.js";
 import Storage from "./runtime/node/storage.js";
@@ -50,16 +43,19 @@ import type { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./p
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
 import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
-import { CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
+import { AuthorAddressSchema, AuthorPubsubSchema, CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema,
-    CreateNewLocalSubplebbitParsedOptionsSchema
+    CreateNewLocalSubplebbitParsedOptionsSchema,
+    PubsubTopicSchema
 } from "./subplebbit/schema.js";
+import { PlebbitUserOptionsSchema } from "./schema.js";
 
-export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptions {
+export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
+    ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
     pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
     plebbitRpcClientsOptions?: ParsedPlebbitOptions["plebbitRpcClientsOptions"];
@@ -82,82 +78,63 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: GenericPlebbitRpcStateClient };
     };
-    private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler>;
+    private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
     _clientsManager!: ClientsManager;
-    private _userPlebbitOptions: PlebbitOptions; // this is the raw input from user
+    private _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
 
-    constructor(options: PlebbitOptions = {}) {
+    constructor(options: InputPlebbitOptions) {
         super();
-        const acceptedOptions: (keyof PlebbitOptions)[] = [
-            "chainProviders",
-            "dataPath",
-            "ipfsGatewayUrls",
-            "ipfsHttpClientsOptions",
-            "pubsubHttpClientsOptions",
-            "resolveAuthorAddresses",
-            "plebbitRpcClientsOptions",
-            "publishInterval",
-            "updateInterval",
-            "noData",
-            "browserLibp2pJsPublish"
-        ];
-        for (const option of remeda.keys.strict(options))
-            if (!acceptedOptions.includes(<keyof PlebbitOptions>option)) throwWithErrorCode("ERR_PLEBBIT_OPTION_NOT_ACCEPTED", { option });
-
         this._userPlebbitOptions = options;
-        //@ts-expect-error
-        this.parsedPlebbitOptions = remeda.clone(options);
-        this.parsedPlebbitOptions.plebbitRpcClientsOptions = this.plebbitRpcClientsOptions = options.plebbitRpcClientsOptions;
-        if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
+        this.parsedPlebbitOptions = PlebbitUserOptionsSchema.parse(options);
 
-        this._pubsubSubscriptions = {};
+        // initializing fields
+
+        this.plebbitRpcClientsOptions = this.parsedPlebbitOptions.plebbitRpcClientsOptions;
+
+        this.ipfsGatewayUrls = this.parsedPlebbitOptions.ipfsGatewayUrls = this.plebbitRpcClientsOptions
+            ? undefined
+            : this.parsedPlebbitOptions.ipfsGatewayUrls;
+        this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions = this.plebbitRpcClientsOptions
+            ? undefined
+            : this.parsedPlebbitOptions.ipfsHttpClientsOptions;
+
+        // We default for ipfsHttpClientsOptions first, but if it's not defined we use the default from schema
+        this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions = this.plebbitRpcClientsOptions
+            ? undefined
+            : this.parsedPlebbitOptions.ipfsHttpClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
+
+        this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
+            ? {}
+            : this.parsedPlebbitOptions.chainProviders;
+        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses;
+        this.publishInterval = this.parsedPlebbitOptions.publishInterval;
+        this.updateInterval = this.parsedPlebbitOptions.updateInterval;
+        this.noData = this.parsedPlebbitOptions.noData;
+        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
+
+        if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
         //@ts-expect-error
         this.clients = {};
-        this.ipfsHttpClientsOptions = this.parsedPlebbitOptions.ipfsHttpClientsOptions =
-            Array.isArray(options.ipfsHttpClientsOptions) && typeof options.ipfsHttpClientsOptions[0] === "string"
-                ? this._parseUrlToOption(<string[]>options.ipfsHttpClientsOptions)
-                : <IpfsClient["_clientOptions"][] | undefined>options.ipfsHttpClientsOptions;
 
-        const fallbackPubsubProviders = this.plebbitRpcClientsOptions ? undefined : [{ url: "https://pubsubprovider.xyz/api/v0" }];
-        this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions =
-            Array.isArray(options.pubsubHttpClientsOptions) && typeof options.pubsubHttpClientsOptions[0] === "string"
-                ? this._parseUrlToOption(<string[]>options.pubsubHttpClientsOptions)
-                : <IpfsClient["_clientOptions"][]>options.pubsubHttpClientsOptions ||
-                  this.ipfsHttpClientsOptions ||
-                  fallbackPubsubProviders;
+        this._initIpfsClientsIfNeeded();
+        this._initPubsubClientsIfNeeded();
+        this._initRpcClientsIfNeeded();
+        this._initIpfsGatewaysIfNeeded();
+        this._initChainProviders();
 
-        this.publishInterval = this.parsedPlebbitOptions.publishInterval =
-            typeof options.publishInterval === "number" ? options.publishInterval : 20000; // Default to 20s
-        this.updateInterval = this.parsedPlebbitOptions.updateInterval =
-            typeof options.updateInterval === "number" ? options.updateInterval : 60000; // Default to 1 minute
-        this.noData = this.parsedPlebbitOptions.noData = typeof options.noData === "boolean" ? options.noData : false;
-        this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish =
-            typeof options.browserLibp2pJsPublish === "boolean" ? options.browserLibp2pJsPublish : false;
-
-        this.resolveAuthorAddresses = this.parsedPlebbitOptions.resolveAuthorAddresses =
-            typeof options.resolveAuthorAddresses === "boolean" ? options.resolveAuthorAddresses : true;
-
-        this._initIpfsClients();
-        this._initPubsubClients();
-        this._initRpcClients();
-        this._initIpfsGateways();
-        this._initChainProviders(options);
-
-        if (!this.noData && !this.plebbitRpcClient)
-            this.dataPath = this.parsedPlebbitOptions.dataPath = options.dataPath || getDefaultDataPath();
+        if (!this.noData && !this.plebbitRpcClientsOptions)
+            this.dataPath = this.parsedPlebbitOptions.dataPath = this.parsedPlebbitOptions.dataPath || getDefaultDataPath();
     }
 
-    private _initIpfsClients() {
+    private _initIpfsClientsIfNeeded() {
         this.clients.ipfsClients = {};
         if (!this.ipfsHttpClientsOptions) return;
-        if (!nativeFunctions)
-            throw Error("Native function is defined at all. Can't create ipfs client: " + JSON.stringify(this._userPlebbitOptions));
         for (const clientOptions of this.ipfsHttpClientsOptions) {
             const ipfsClient = createIpfsClient(clientOptions);
-            this.clients.ipfsClients[<string>clientOptions.url] = {
+            this.clients.ipfsClients[clientOptions.url!.toString()] = {
                 _client: ipfsClient,
                 _clientOptions: clientOptions,
                 peers: ipfsClient.swarm.peers
@@ -165,83 +142,47 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         }
     }
 
-    private _initPubsubClients() {
+    private _initPubsubClientsIfNeeded() {
         this.clients.pubsubClients = {};
         if (this.browserLibp2pJsPublish)
             //@ts-expect-error
             this.clients.pubsubClients["browser-libp2p-pubsub"] = {}; // should be defined fully else where
-        else if (this.pubsubHttpClientsOptions)
-            for (const clientOptions of this.pubsubHttpClientsOptions) {
-                const ipfsClient = this.clients.ipfsClients?.[<string>clientOptions.url]?._client || createIpfsClient(clientOptions); // Only create a new ipfs client if pubsub options is different than ipfs
-                this.clients.pubsubClients[<string>clientOptions.url] = {
-                    _client: ipfsClient,
-                    _clientOptions: clientOptions,
-                    peers: async () => {
-                        const topics = await ipfsClient.pubsub.ls();
-                        const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
-                        const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
-                        return peers;
-                    }
-                };
-            }
+        if (!this.pubsubHttpClientsOptions) return;
+
+        for (const clientOptions of this.pubsubHttpClientsOptions) {
+            const ipfsClient = createIpfsClient(clientOptions);
+            this.clients.pubsubClients[clientOptions.url!.toString()] = {
+                _client: ipfsClient,
+                _clientOptions: clientOptions,
+                peers: async () => {
+                    const topics = await ipfsClient.pubsub.ls();
+                    const topicPeers = remeda.flattenDeep(await Promise.all(topics.map((topic) => ipfsClient.pubsub.peers(topic))));
+                    const peers = remeda.unique(topicPeers.map((topicPeer) => topicPeer.toString()));
+                    return peers;
+                }
+            };
+        }
     }
 
-    private _initRpcClients() {
+    private _initRpcClientsIfNeeded() {
         this.clients.plebbitRpcClients = {};
-        if (this.parsedPlebbitOptions.plebbitRpcClientsOptions)
-            for (const rpcUrl of <string[]>this.plebbitRpcClientsOptions)
-                this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
+        if (!this.plebbitRpcClientsOptions) return;
+        for (const rpcUrl of this.plebbitRpcClientsOptions)
+            this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
     }
 
-    private _initChainProviders(options: PlebbitOptions) {
-        this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClient
-            ? {}
-            : options.chainProviders || {
-                  eth: { urls: ["viem", "ethers.js"], chainId: 1 },
-                  avax: {
-                      urls: ["https://api.avax.network/ext/bc/C/rpc"],
-                      chainId: 43114
-                  },
-                  matic: {
-                      urls: ["https://polygon-rpc.com"],
-                      chainId: 137
-                  },
-                  sol: {
-                      urls: ["web3.js", "https://solana.api.onfinality.io/public"],
-                      chainId: -1 // no chain ID for solana
-                  }
-              };
-        if ("eth" in this.chainProviders && remeda.isPlainObject(this.chainProviders.eth) && this.chainProviders.eth.chainId !== 1)
-            this.chainProviders.eth.chainId = 1;
+    private _initChainProviders() {
         this.clients.chainProviders = this.chainProviders;
     }
 
-    private _initIpfsGateways() {
+    private _initIpfsGatewaysIfNeeded() {
         // If user did not provide ipfsGatewayUrls
-        const fallbackGateways = this.plebbitRpcClient ? undefined : remeda.shuffle(["https://cloudflare-ipfs.com", "https://ipfs.io"]);
         this.clients.ipfsGateways = {};
-        if (this.parsedPlebbitOptions.ipfsGatewayUrls)
-            for (const gatewayUrl of this.parsedPlebbitOptions.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
-        else if (fallbackGateways) for (const gatewayUrl of fallbackGateways) this.clients.ipfsGateways[gatewayUrl] = {};
+        if (!this.ipfsGatewayUrls) return;
+        for (const gatewayUrl of this.ipfsGatewayUrls) this.clients.ipfsGateways[gatewayUrl] = {};
     }
 
-    private _parseUrlToOption(urlStrings: string[]): IpfsClient["_clientOptions"][] {
-        const parsed: IpfsClient["_clientOptions"][] = [];
-        for (const urlString of urlStrings) {
-            const url = new URL(urlString);
-            const authorization =
-                url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
-            parsed.push({
-                url: authorization ? url.origin + url.pathname : urlString,
-                ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
-            });
-        }
-        return parsed;
-    }
-
-    async _init(options: PlebbitOptions) {
-        const log = Logger("plebbit-js:plebbit:_init");
-
+    async _init() {
         // Init storage
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
         await this._storage.init();
@@ -318,7 +259,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
         }
         const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
         const filledSigner = await this.createSigner(finalOptions.signer);
-        const filledAuthor = <AuthorPubsubType>{ ...finalOptions.author, address: finalOptions.author?.address || filledSigner.address };
+        const filledAuthor = AuthorPubsubSchema.parse({
+            ...finalOptions.author,
+            address: finalOptions.author?.address || filledSigner.address
+        });
         const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
         return {
@@ -592,26 +536,30 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements PlebbitOptio
     }
 
     async fetchCid(cid: string) {
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(cid);
-        else return this._clientsManager.fetchCid(cid);
+        const parsedCid = CommentCidSchema.parse(cid);
+        if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(parsedCid);
+        else return this._clientsManager.fetchCid(parsedCid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster
-    async pubsubSubscribe(subplebbitAddress: string) {
-        if (this._pubsubSubscriptions[subplebbitAddress]) return;
+    async pubsubSubscribe(pubsubTopic: string) {
+        const parsedTopic = PubsubTopicSchema.parse(pubsubTopic);
+        if (this._pubsubSubscriptions[parsedTopic]) return;
         const handler = () => {};
-        await this._clientsManager.pubsubSubscribe(subplebbitAddress, handler);
-        this._pubsubSubscriptions[subplebbitAddress] = handler;
+        await this._clientsManager.pubsubSubscribe(parsedTopic, handler);
+        this._pubsubSubscriptions[parsedTopic] = handler;
     }
 
-    async pubsubUnsubscribe(subplebbitAddress: string) {
-        if (!this._pubsubSubscriptions[subplebbitAddress]) return;
-        await this._clientsManager.pubsubUnsubscribe(subplebbitAddress, this._pubsubSubscriptions[subplebbitAddress]);
-        delete this._pubsubSubscriptions[subplebbitAddress];
+    async pubsubUnsubscribe(pubsubTopic: string) {
+        const parsedTopic = PubsubTopicSchema.parse(pubsubTopic);
+        if (!this._pubsubSubscriptions[parsedTopic]) return;
+        await this._clientsManager.pubsubUnsubscribe(parsedTopic, this._pubsubSubscriptions[parsedTopic]);
+        delete this._pubsubSubscriptions[parsedTopic];
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(authorAddress);
+        const parsedAddress = AuthorAddressSchema.parse(authorAddress);
+        const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedAddress);
         return resolved;
     }
 

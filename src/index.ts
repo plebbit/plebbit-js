@@ -1,20 +1,16 @@
-// Make sure to import schema in the correct order
-import * as _ from "./schema/schema.js";
-import * as _ignore2 from "./publications/comment/schema.js";
-
 import polyfill from "./runtime/node/polyfill.js";
 polyfill();
 import * as PlebbitClass from "./plebbit.js";
-import { PlebbitOptions } from "./types.js";
+import type { InputPlebbitOptions } from "./types.js";
 import { setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util.js";
 import nodeNativeFunctions from "./runtime/node/native-functions.js";
 import browserNativeFunctions from "./runtime/browser/native-functions.js";
 import { shortifyAddress, shortifyCid } from "./util.js";
 import { plebbitJsChallenges } from "./runtime/node/subplebbit/challenges/index.js";
 
-const Plebbit = async function Plebbit(plebbitOptions: PlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
+const Plebbit = async function Plebbit(plebbitOptions: InputPlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
     const plebbit = new PlebbitClass.Plebbit(plebbitOptions);
-    await plebbit._init(plebbitOptions);
+    await plebbit._init();
     return plebbit;
 };
 

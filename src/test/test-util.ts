@@ -4,7 +4,7 @@ import { Comment } from "../publications/comment/comment.js";
 import { Plebbit } from "../plebbit.js";
 import Vote from "../publications/vote/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import type { PlebbitOptions } from "../types.js";
+import type { InputPlebbitOptions } from "../types.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Publication from "../publications/publication.js";
@@ -119,7 +119,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages): P
     return sortedComments;
 }
 
-async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: PlebbitOptions) {
+async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: InputPlebbitOptions) {
     const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
 
     for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
@@ -293,7 +293,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
         };
 }
 
-export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
+export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
     const mockEthResolver = `mockEthRpc${uuidV4()}.com`;
     const plebbit = await PlebbitIndex({
@@ -338,7 +338,7 @@ export async function mockPlebbit(plebbitOptions?: PlebbitOptions, forceMockPubs
     return plebbit;
 }
 
-export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
+export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
     // Mock browser environment
     const plebbit = await mockPlebbit(plebbitOptions);
     plebbit._canCreateNewLocalSub = () => false;
@@ -346,7 +346,7 @@ export async function mockRemotePlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
-export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
+export async function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await PlebbitIndex({
         ipfsHttpClientsOptions: ["http://localhost:15003/api/v0"],
         pubsubHttpClientsOptions: ["http://localhost:15003/api/v0"],
@@ -355,7 +355,7 @@ export async function createOnlinePlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
-export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions) {
+export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockRemotePlebbit({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
@@ -366,12 +366,12 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: PlebbitOptions)
     return plebbit;
 }
 
-export async function mockRpcServerPlebbit(plebbitOptions?: PlebbitOptions) {
+export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions) {
     const plebbit = await mockPlebbit(plebbitOptions);
     return plebbit;
 }
 
-export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
+export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
     // Keep only pubsub and gateway
     const plebbit = await mockRemotePlebbit({
         ipfsGatewayUrls: ["http://localhost:18080"],
@@ -383,7 +383,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: PlebbitOptions) {
     return plebbit;
 }
 
-export async function mockMultipleGatewaysPlebbit(plebbitOptions?: PlebbitOptions) {
+export async function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitOptions) {
     return mockGatewayPlebbit({ ipfsGatewayUrls: [], ...plebbitOptions });
 }
 

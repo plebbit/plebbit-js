@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
-import { IpfsClient, NativeFunctions, PlebbitOptions } from "../../types.js";
+import { InputPlebbitOptions, IpfsClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
@@ -28,7 +28,7 @@ const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<RemoteSubplebbit, "address"> & { plebbit: Pick<PlebbitOptions, "dataPath" | "noData"> }
+    subplebbit: Pick<RemoteSubplebbit, "address"> & { plebbit: NonNullable<Pick<InputPlebbitOptions, "dataPath" | "noData">> }
 ): Promise<Knex.Config<any>> => {
     let filename: string;
     if (subplebbit.plebbit.noData) filename = ":memory:";

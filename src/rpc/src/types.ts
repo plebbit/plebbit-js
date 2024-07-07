@@ -1,5 +1,5 @@
 import { Plebbit } from "../../plebbit.js";
-import type { PlebbitOptions } from "../../types.js";
+import type { InputPlebbitOptions } from "../../types.js";
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
@@ -18,7 +18,7 @@ export type PlebbitWsServerClassOptions = Pick<ConstructorParameters<typeof RpcW
 };
 
 export interface PlebbitWsServerOptions extends Omit<PlebbitWsServerClassOptions, "plebbit"> {
-    plebbitOptions?: PlebbitOptions;
+    plebbitOptions?: InputPlebbitOptions;
 }
 
 export type JsonRpcSendNotificationOptions = {

@@ -28,38 +28,14 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types.js";
+import { ChainProviderSchema, ChainTickerSchema, PlebbitUserOptionsSchema } from "./schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
-export type ChainTicker = "eth" | "matic" | "avax" | "sol";
-export type ChainProvider = { urls: string[]; chainId: number };
-export interface PlebbitOptions {
-    // Options as inputted by user
-    ipfsGatewayUrls?: string[];
-    ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
-    pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
-    plebbitRpcClientsOptions?: string[]; // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
-    dataPath?: string;
-    chainProviders?: Partial<Record<ChainTicker, ChainProvider>>;
-    resolveAuthorAddresses?: boolean;
-    // Options for tests only. Should not be used in production
-    publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
-    updateInterval?: number; // in ms, the time to wait for comment/subplebbit instances to check for updates
-    noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
-    browserLibp2pJsPublish?: boolean; // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
-}
+export type ChainTicker = z.infer<typeof ChainTickerSchema>;
+export type ChainProvider = z.infer<typeof ChainProviderSchema>;
 
-export interface ParsedPlebbitOptions
-    extends Required<
-        Omit<PlebbitOptions, "ipfsHttpClientsOptions" | "pubsubHttpClientsOptions" | "plebbitRpcClientsOptions" | "dataPath">
-    > {
-    // These will be the final options after parsing/processing
-    ipfsHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
-    pubsubHttpClientsOptions: IpfsHttpClientOptions[] | undefined;
-    plebbitRpcClientsOptions: string[] | undefined;
-    // ChainTicker -> ChainProvider
-    chainProviders: Partial<Record<ChainTicker, ChainProvider>>; // chain providers could be empty if we're using rpc
-    dataPath: string | undefined;
-}
+export type InputPlebbitOptions = z.input<typeof PlebbitUserOptionsSchema>;
+export type ParsedPlebbitOptions = z.output<typeof PlebbitUserOptionsSchema>;
 
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
@@ -277,7 +253,7 @@ export interface LRUStorageInterface {
 
 // RPC types
 export interface PlebbitWsServerSettings {
-    plebbitOptions: PlebbitOptions;
+    plebbitOptions: InputPlebbitOptions;
 }
 
 export interface PlebbitWsServerSettingsSerialized {
