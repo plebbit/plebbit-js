@@ -28,6 +28,7 @@ import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
 import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
+import { PlebbitWsServerSettingsSchema, PlebbitWsServerSettingsSerializedSchema } from "../../schema.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -317,14 +318,14 @@ export default class PlebbitRpcClient {
     }
 
     async setSettings(settings: PlebbitWsServerSettings) {
-        // zod here
-        const res = <boolean>await this._webSocketClient.call("setSettings", [settings]);
+        const parsedSettings = PlebbitWsServerSettingsSchema.parse(settings);
+        const res = <boolean>await this._webSocketClient.call("setSettings", [parsedSettings]);
+        if (res !== true) throw Error("result of setSettings should be true");
         return res;
     }
 
     async getSettings() {
-        // zod here
-        const res = <PlebbitWsServerSettingsSerialized>await this._webSocketClient.call("getSettings", []);
+        const res = PlebbitWsServerSettingsSerializedSchema.parse(await this._webSocketClient.call("getSettings", []));
         return res;
     }
 

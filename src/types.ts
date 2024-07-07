@@ -3,7 +3,6 @@ import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
-import type { ChallengeFile } from "./subplebbit/types.js";
 import type { Plebbit } from "./plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
@@ -28,14 +27,21 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types.js";
-import { ChainProviderSchema, ChainTickerSchema, PlebbitUserOptionsSchema } from "./schema.js";
+import {
+    ChainProviderSchema,
+    ChainTickerSchema,
+    PlebbitParsedOptionsSchema,
+    PlebbitUserOptionsSchema,
+    PlebbitWsServerSettingsSchema,
+    PlebbitWsServerSettingsSerializedSchema
+} from "./schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
 export type ChainProvider = z.infer<typeof ChainProviderSchema>;
 
 export type InputPlebbitOptions = z.input<typeof PlebbitUserOptionsSchema>;
-export type ParsedPlebbitOptions = z.output<typeof PlebbitUserOptionsSchema>;
+export type ParsedPlebbitOptions = z.output<typeof PlebbitParsedOptionsSchema>;
 
 export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 
@@ -252,11 +258,6 @@ export interface LRUStorageInterface {
 }
 
 // RPC types
-export interface PlebbitWsServerSettings {
-    plebbitOptions: InputPlebbitOptions;
-}
+export type PlebbitWsServerSettings = z.infer<typeof PlebbitWsServerSettingsSchema>;
 
-export interface PlebbitWsServerSettingsSerialized {
-    plebbitOptions: ParsedPlebbitOptions;
-    challenges: Record<string, Omit<ChallengeFile, "getChallenge">>;
-}
+export type PlebbitWsServerSettingsSerialized = z.infer<typeof PlebbitWsServerSettingsSerializedSchema>;

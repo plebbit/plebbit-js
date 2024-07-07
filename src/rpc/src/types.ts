@@ -1,6 +1,4 @@
 import { Plebbit } from "../../plebbit.js";
-import type { InputPlebbitOptions } from "../../types.js";
-import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
@@ -8,17 +6,15 @@ import {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
     EncodedDecryptedChallengeVerificationMessageSchema,
     EncodedPubsubMessageSignatureSchema,
-    EncryptedEncodedSchema
+    EncryptedEncodedSchema,
+    PlebbitWsServerOptionsSchema
 } from "./schema.js";
 import { z } from "zod";
 
-export type PlebbitWsServerClassOptions = Pick<ConstructorParameters<typeof RpcWebsocketsServer>[0], "port" | "server"> & {
-    plebbit: Plebbit;
-    authKey?: string;
-};
+export type PlebbitWsServerOptions = z.infer<typeof PlebbitWsServerOptionsSchema>;
 
-export interface PlebbitWsServerOptions extends Omit<PlebbitWsServerClassOptions, "plebbit"> {
-    plebbitOptions?: InputPlebbitOptions;
+export interface PlebbitWsServerClassOptions extends PlebbitWsServerOptions {
+    plebbit: Plebbit;
 }
 
 export type JsonRpcSendNotificationOptions = {

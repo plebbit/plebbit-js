@@ -8,8 +8,12 @@ import {
     EncryptedSchema,
     PubsubMessageSignatureSchema
 } from "../../pubsub-messages/schema";
+import { PlebbitUserOptionsSchema } from "../../schema";
+import { Server as RpcWebsocketsServer } from "rpc-websockets";
+import { Server as HTTPServer } from "http";
+import { Server as HTTPSServer } from "https";
 
-const Base64StringSchema = z.string(); // TODO add validation
+const Base64StringSchema = z.string().base64();
 
 // Encrypted
 
@@ -81,3 +85,17 @@ export const EncodedDecryptedChallengeVerificationMessageSchema = BaseEncodedPub
         publication: DecryptedChallengeVerificationMessageSchema.shape.publication.optional()
     })
 );
+
+// Setting up WS
+
+const WsServerClassOptions = z.object({
+    port: z.number().int().positive().optional(),
+    server: z.custom<HTTPServer | HTTPSServer>((data) => data instanceof HTTPServer || data instanceof HTTPServer).optional()
+});
+
+export const PlebbitWsServerOptionsSchema = z
+    .object({
+        plebbitOptions: PlebbitUserOptionsSchema.optional(),
+        authKey: z.string().optional()
+    })
+    .merge(WsServerClassOptions);

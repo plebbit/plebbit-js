@@ -1,24 +1,9 @@
 import { z } from "zod";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import { parseIpfsRawOptionToIpfsOptions } from "./util";
+import { ChallengeFileSchema } from "./subplebbit/schema";
 
 // This file will have misc schemas, as well as Plebbit class schema
-
-// export interface PlebbitOptions {
-//     // Options as inputted by user
-//     ipfsGatewayUrls?: string[];
-//     ipfsHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
-//     pubsubHttpClientsOptions?: (IpfsHttpClientOptions | string)[];
-//     plebbitRpcClientsOptions?: string[]; // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
-//     dataPath?: string;
-//     chainProviders?: Partial<Record<ChainTicker, ChainProvider>>;
-//     resolveAuthorAddresses?: boolean;
-//     // Options for tests only. Should not be used in production
-//     publishInterval?: number; // in ms, the time to wait for subplebbit instances to publish updates
-//     updateInterval?: number; // in ms, the time to wait for comment/subplebbit instances to check for updates
-//     noData?: boolean; // if true, dataPath is ignored, all database and cache data is saved in memory
-//     browserLibp2pJsPublish?: boolean; // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
-// }
 
 export const ChainTickerSchema = z.enum(["eth", "matic", "avax", "sol"]);
 
@@ -28,7 +13,7 @@ const IpfsGatewayUrlSchema = z.string().url();
 
 const RpcUrlSchema = z.string().url(); // Optional websocket URLs of plebbit RPC servers, required to run a sub from a browser/electron/webview
 
-const IpfsHttpClientOptionSchema = z.custom<Parameters<typeof CreateKuboRpcClient>[0]>(); // Kubo-rpc-client library will do the validation for us
+const IpfsHttpCreateClientOptionSchema = z.custom<Parameters<typeof CreateKuboRpcClient>[0]>(); // Kubo-rpc-client library will do the validation for us
 
 const DirectoryPathSchema = z.string(); // TODO add validation for path
 
@@ -48,19 +33,54 @@ const defaultChainProviders = {
     }
 };
 
-const parsedIpfsHttpClientOptions = IpfsHttpClientOptionSchema.array().transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
+const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array().transform((options) =>
+    options.map(parseIpfsRawOptionToIpfsOptions)
+);
 
-export const PlebbitUserOptionsSchema = z.object({
-    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().default(["https://cloudflare-ipfs.com", "https://ipfs.io"]).optional(),
-    ipfsHttpClientsOptions: parsedIpfsHttpClientOptions.optional(),
-    pubsubHttpClientsOptions: parsedIpfsHttpClientOptions.default([{ url: "https://pubsubprovider.xyz/api/v0" }]).optional(),
+const ParsedIpfsHttpClientOptionsSchema = z.custom<z.output<typeof TransformIpfsHttpClientOptionsSchema>>();
+
+const PlebbitUserOptionBaseSchema = z.object({
+    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
+    ipfsHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
+    pubsubHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().optional(),
     dataPath: DirectoryPathSchema.optional(),
-    chainProviders: z.record(ChainTickerSchema, ChainProviderSchema).default(defaultChainProviders),
-    resolveAuthorAddresses: z.boolean().default(true),
+    chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
+    resolveAuthorAddresses: z.boolean(),
     // Options for tests only. Should not be used in production
-    publishInterval: z.number().positive().default(20000), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
-    updateInterval: z.number().positive().default(60000), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
-    noData: z.boolean().default(false), // if true, dataPath is ignored, all database and cache data is saved in memory
-    browserLibp2pJsPublish: z.boolean().default(false) // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
+    publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
+    updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
+    noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
+    browserLibp2pJsPublish: z.boolean() // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
+});
+
+export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
+    // used in await Plebbit({PlebbitOption}), will set defaults here
+    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://cloudflare-ipfs.com", "https://ipfs.io"]),
+    pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions
+        .default([{ url: "https://pubsubprovider.xyz/api/v0" }])
+        .optional(),
+    chainProviders: PlebbitUserOptionBaseSchema.shape.chainProviders.default(defaultChainProviders),
+    resolveAuthorAddresses: PlebbitUserOptionBaseSchema.shape.resolveAuthorAddresses.default(true),
+    publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
+    updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
+    noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
+    browserLibp2pJsPublish: PlebbitUserOptionBaseSchema.shape.browserLibp2pJsPublish.default(false)
+});
+
+export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
+    // used to parse responses from rpc when calling getSettings
+    ipfsHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional(),
+    pubsubHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional()
+});
+
+// rpc WS
+
+export const PlebbitWsServerSettingsSchema = z.object({
+    plebbitOptions: PlebbitUserOptionsSchema
+});
+
+export const PlebbitWsServerSettingsSerializedSchema = z.object({
+    plebbitOptions: PlebbitParsedOptionsSchema,
+    challenges: z.record(z.string(), ChallengeFileSchema.omit({ getChallenge: true }))
 });
