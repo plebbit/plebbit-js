@@ -9,7 +9,6 @@ import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { IpfsClient } from "./types.js";
 import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
-
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }

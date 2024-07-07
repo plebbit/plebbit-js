@@ -295,7 +295,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
 
 export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
-    const mockEthResolver = `mockEthRpc${uuidV4()}.com`;
+    const mockEthResolver = `https://mockEthRpc${uuidV4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,

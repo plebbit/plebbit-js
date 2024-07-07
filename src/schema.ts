@@ -6,7 +6,11 @@ import { parseIpfsRawOptionToIpfsOptions } from "./util";
 
 export const ChainTickerSchema = z.enum(["eth", "matic", "avax", "sol"]);
 
-export const ChainProviderSchema = z.object({ urls: z.string().url().array(), chainId: z.number().int() });
+const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
+export const ChainProviderSchema = z.object({
+    urls: z.string().url().or(LibraryChainProvider).array(),
+    chainId: z.number().int()
+});
 
 const IpfsGatewayUrlSchema = z.string().url();
 
@@ -72,4 +76,3 @@ export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     ipfsHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional(),
     pubsubHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional()
 });
-
