@@ -89,9 +89,9 @@ export const CreatePublicationUserOptionsSchema = z.object({
 });
 
 export const JsonSignatureSchema = z.object({
-    type: z.enum(["ed25519"]),
-    signature: z.string(), // base64, TODO add validation
-    publicKey: z.string(), // base64, TODO add validation
+    type: z.enum(["ed25519", "eip191"]),
+    signature: z.string(), // No need to validate here, it will be validated in verify signature function
+    publicKey: z.string(),
     signedPropertyNames: z.string().array() // TODO add validation
 });
 
