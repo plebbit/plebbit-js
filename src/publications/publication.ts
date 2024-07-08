@@ -655,6 +655,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return;
     }
 
+    _createRequestEncrypted() {
+        return DecryptedChallengeRequestSchema.parse(this.toJSONPubsubMessage());
+    }
+
+    _createDecryptedChallengeRequestMessage(args: DecryptedChallengeRequestMessageType) {
+        return DecryptedChallengeRequestMessageSchema.parse(args);
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
@@ -682,7 +690,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const pubsubMessageSigner = await this._plebbit.createSigner();
 
-        const pubsubMsgToEncrypt = DecryptedChallengeRequestSchema.parse(this.toJSONPubsubMessage());
+        const pubsubMsgToEncrypt = this._createRequestEncrypted();
         const encrypted = await encryptEd25519AesGcm(
             JSON.stringify(pubsubMsgToEncrypt),
             pubsubMessageSigner.privateKey,
@@ -751,7 +759,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 else continue;
             }
             this._pubsubProvidersDoneWaiting[this._pubsubProviders[this._currentPubsubProviderIndex]] = false;
-            const decryptedRequest = DecryptedChallengeRequestMessageSchema.parse(<DecryptedChallengeRequestMessageType>{
+            const decryptedRequest = this._createDecryptedChallengeRequestMessage({
                 ...challengeRequest,
                 ...pubsubMsgToEncrypt
             });

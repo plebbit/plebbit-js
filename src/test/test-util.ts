@@ -557,6 +557,12 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
         });
 }
 
+export async function disableZodValidationOfPublication(publication: Publication) {
+    publication._createRequestEncrypted = () => publication.toJSONPubsubMessage(); // skip the zod validation
+
+    publication._createDecryptedChallengeRequestMessage = (args) => args;
+}
+
 export async function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions) {
     if (!comment.signer) throw Error("Need comment.signer to overwrite the signature");
     //@ts-expect-error
@@ -566,6 +572,8 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
         removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
         comment._plebbit
     );
+
+    disableZodValidationOfPublication(comment);
 }
 
 export async function addStringToIpfs(content: string): Promise<string> {
