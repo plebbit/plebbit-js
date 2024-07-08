@@ -60,19 +60,19 @@ const PlebbitUserOptionBaseSchema = z.object({
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
     ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://cloudflare-ipfs.com", "https://ipfs.io"]),
-    pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions
-        .default([{ url: "https://pubsubprovider.xyz/api/v0" }])
-        .optional(),
+    pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions.default([
+        { url: "https://pubsubprovider.xyz/api/v0" }
+    ]),
     chainProviders: PlebbitUserOptionBaseSchema.shape.chainProviders.default(defaultChainProviders),
     resolveAuthorAddresses: PlebbitUserOptionBaseSchema.shape.resolveAuthorAddresses.default(true),
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
     updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
     noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
     browserLibp2pJsPublish: PlebbitUserOptionBaseSchema.shape.browserLibp2pJsPublish.default(false)
-});
+}).strict();
 
 export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used to parse responses from rpc when calling getSettings
     ipfsHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional(),
     pubsubHttpClientsOptions: ParsedIpfsHttpClientOptionsSchema.optional()
-});
+}).strict();

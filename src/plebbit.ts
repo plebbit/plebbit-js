@@ -103,7 +103,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // We default for ipfsHttpClientsOptions first, but if it's not defined we use the default from schema
         this.pubsubHttpClientsOptions = this.parsedPlebbitOptions.pubsubHttpClientsOptions = this.plebbitRpcClientsOptions
             ? undefined
-            : this.parsedPlebbitOptions.ipfsHttpClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
+            : this._userPlebbitOptions.pubsubHttpClientsOptions // did the user provide their own pubsub options
+              ? this.parsedPlebbitOptions.pubsubHttpClientsOptions // if not, then we use ipfsHttpClientOptions or defaults
+              : this.parsedPlebbitOptions.ipfsHttpClientsOptions || this.parsedPlebbitOptions.pubsubHttpClientsOptions;
 
         this.chainProviders = this.parsedPlebbitOptions.chainProviders = this.plebbitRpcClientsOptions
             ? {}
