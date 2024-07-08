@@ -238,6 +238,7 @@ class PlebbitWsServer extends EventEmitter {
     async createSubplebbit(params: any) {
         const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
+        if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Failed to create a local subplebbit. This is a critical error");
         return subplebbit.toJSONInternalRpc();
     }
 
