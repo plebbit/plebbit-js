@@ -217,7 +217,7 @@ export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof
         const authorization =
             url.username && url.password ? "Basic " + Buffer.from(`${url.username}:${url.password}`).toString("base64") : undefined;
         return {
-            url: authorization ? url.origin + url.pathname : url.toString(),
+            url: authorization ? url.origin + url.pathname : ipfsRawOption.toString(),
             ...(authorization ? { headers: { authorization, origin: "http://localhost" } } : undefined)
         };
     } else if ("bytes" in ipfsRawOption) return { url: ipfsRawOption };
