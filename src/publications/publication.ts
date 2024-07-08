@@ -60,7 +60,8 @@ import {
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
     EncodedDecryptedChallengeRequestMessageSchema,
-    EncodedDecryptedChallengeVerificationMessageSchema
+    EncodedDecryptedChallengeVerificationMessageSchema,
+    ChallengeAnswerMessageSchema
 } from "../pubsub-messages/schema.js";
 import { z } from "zod";
 
@@ -413,9 +414,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });
-        this._challengeAnswer = DecryptedChallengeAnswerMessageSchema.parse({
+
+        const answerMsgToPublish = ChallengeAnswerMessageSchema.parse({
             ...toSignAnswer,
-            ...toEncryptAnswers,
             signature: await signChallengeAnswer(
                 toSignAnswer,
                 this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()]
@@ -426,9 +427,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
         await this._clientsManager.pubsubPublishOnProvider(
             this._pubsubTopicWithfallback(),
-            this._challengeAnswer,
+            answerMsgToPublish,
             this._pubsubProviders[this._currentPubsubProviderIndex]
         );
+
+        this._challengeAnswer = DecryptedChallengeAnswerMessageSchema.parse({
+            ...toEncryptAnswers,
+            ...answerMsgToPublish
+        });
 
         this._updatePublishingState("waiting-challenge-verification");
         const providers = Object.entries(this._clientsManager.providerSubscriptions)

@@ -26,6 +26,7 @@ import type {
     SubplebbitChallengeSetting
 } from "../../../../subplebbit/types.js";
 import { LocalSubplebbit } from "../local-subplebbit.js";
+import * as remeda from "remeda";
 import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
 import {
     ChallengeFileFactorySchema,
@@ -287,9 +288,10 @@ const getChallengeVerification = async (
     }
     // author still has some pending challenges to complete
     else {
-        const challengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(
-            await getChallengeAnswers(res.pendingChallenges)
+        const rawAnswersFromPending = await getChallengeAnswers(
+            res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"]))
         );
+        const challengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(rawAnswersFromPending);
         challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
     }
 
