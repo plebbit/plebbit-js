@@ -89,7 +89,12 @@ import {
 } from "../../../publications/comment-edit/schema.js";
 import type { VotePubsubMessage } from "../../../publications/vote/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
-import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import {
+    InternalSubplebbitRecordSchema,
+    SubplebbitEditOptionsSchema,
+    SubplebbitIpfsSchema,
+    SubplebbitRoleSchema
+} from "../../../subplebbit/schema.js";
 import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
@@ -224,7 +229,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (remeda.isEmpty(props)) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]); // zod here
+        const internalStateBefore = InternalSubplebbitRecordSchema.parse(
+            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+        );
         await this.dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
@@ -234,7 +241,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _getDbInternalState(lock = true) {
         if (lock) await this.dbHandler.lockSubState();
-        const internalState: InternalSubplebbitType = await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]); // zod here
+        const internalState = InternalSubplebbitRecordSchema.parse(
+            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+        );
         if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }
