@@ -1453,7 +1453,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
 
         if (newProps.address && newProps.address !== this.address) {
-            // we're modify sub.address
+            // we're modifying sub.address
             if (doesDomainAddressHaveCapitalLetter(newProps.address))
                 throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newProps.address });
             this._assertDomainResolvesCorrectly(newProps.address).catch((err: PlebbitError) => {
