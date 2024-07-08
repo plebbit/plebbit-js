@@ -221,7 +221,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const ipfsNodeKeys = await this.clientsManager.getDefaultIpfs()._client.key.list();
         if (!ipfsNodeKeys.find((key) => key.name === this.signer.ipnsKeyName))
             await importSignerIntoIpfsNode(this.signer.ipnsKeyName, this.signer.ipfsKey, {
-                url: <string>this.plebbit.ipfsHttpClientsOptions![0].url,
+                url: this.plebbit.ipfsHttpClientsOptions![0].url!.toString(),
                 headers: this.plebbit.ipfsHttpClientsOptions![0].headers
             });
     }
