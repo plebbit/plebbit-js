@@ -7,6 +7,7 @@ import {
     publishRandomPost,
     overrideCommentInstancePropsAndSign,
     describeSkipIfRpc,
+    disableZodValidationOfPublication,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
@@ -133,6 +134,7 @@ describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async ()
         post.toJSONPubsubMessage = () => "<html>dwad";
         post._validateSignature = async () => {}; // Disable signature validation before publishing
 
+        disableZodValidationOfPublication(post);
         await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
     });
 });
@@ -150,6 +152,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
         post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenPubsubType });
         post._validateSignature = async () => {}; // Disable signature validation before publishing
 
+        disableZodValidationOfPublication(post);
         await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
     });
 
@@ -186,7 +189,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
             const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
             post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
             post._validateSignature = async () => {}; // Disable signature validation before publishing
-
+            disableZodValidationOfPublication(post);
             await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
         })
     );
@@ -228,6 +231,7 @@ describeSkipIfRpc("Posts with forbidden author fields are rejected", async () =>
             pubsubJsonAfterChange.signature = await signComment({ ...pubsubJsonAfterChange, signer }, plebbit);
             post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
             post._validateSignature = async () => {}; // Disable signature validation before publishing
+            disableZodValidationOfPublication(post);
             await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
         })
     );
