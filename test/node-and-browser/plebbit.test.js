@@ -3,7 +3,7 @@ import signers from "../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../dist/node/errors.js";
-import { mockRemotePlebbit, loadAllPages, mockPlebbit, itIfRpc } from "../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, loadAllPages, mockPlebbit, itIfRpc, describeIfRpc } from "../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -13,7 +13,6 @@ const subplebbitSigner = signers[0];
 
 describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
-        // RPC exception
         const defaultPlebbit = await Plebbit();
         expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
             ["https://cloudflare-ipfs.com", "https://ipfs.io"].sort()
@@ -223,8 +222,25 @@ describe("plebbit.fetchCid", async () => {
         const cid = (await ipfsPlebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(twoMbObject))).path; // Cid of a file with over 1mb size
         expect(cid).to.equal("QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4");
 
-        await assert.isRejected(plebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);
-        await assert.isRejected(gatewayPlebbit.fetchCid(cid), messages.ERR_OVER_DOWNLOAD_LIMIT);
+        try {
+            await plebbit.fetchCid(cid);
+            assert.fail("should not succeed");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+        }
+    });
+
+    it(`Throws an error when file to download is over 1mb via ipfs gateway`, async () => {
+        const twoMbCid = "QmQZDGmHHPetkjoMKP9sjnV5HaCVubJLnNUzQeCtzxLDX4";
+
+        const gatewayUrl = Object.keys(gatewayPlebbit.clients.ipfsGateways)[0];
+        try {
+            await gatewayPlebbit.fetchCid(twoMbCid);
+            assert.fail("should not succeed");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS");
+            expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+        }
     });
 
     it(`plebbit.fetchCid() resolves with the first gateway response`, async () => {
