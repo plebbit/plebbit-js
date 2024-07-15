@@ -1,3 +1,4 @@
+import { generateMockPost, mockPlebbit, publishWithExpectedResult, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import {
     verifyChallengeRequest,
     verifyChallengeAnswer,
@@ -7,11 +8,9 @@ import {
     signChallengeRequest,
     verifyComment
 } from "../../../dist/node/signer/signatures.js";
-import { generateMockPost, mockPlebbit, publishWithExpectedResult, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { expect, assert } from "chai";
 import { messages } from "../../../dist/node/errors.js";
-import { ChallengeAnswerMessage } from "../../../dist/node/challenge.js";
 import * as remeda from "remeda";
 import { default as PlebbitJsVersion } from "../../../dist/node/version.js";
 import { encode as cborgEncode, decode as cborgDecode } from "cborg";
@@ -84,7 +83,11 @@ describeSkipIfRpc("challengerequest", async () => {
 
         await comment.publish(); // comment._publishedChallengeRequests should be defined now, although it hasn't been published
 
-        const challengeRequestToModify = comment._publishedChallengeRequests[0];
+        const challengeRequestToModify = remeda.omit(comment._publishedChallengeRequests[0], [
+            "publication",
+            "challengeCommentCids",
+            "challengeAnswers"
+        ]);
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
         challengeRequestToModify.encrypted = await encryptEd25519AesGcm(
             JSON.stringify(comment.toJSONPubsubMessage()),
@@ -96,14 +99,7 @@ describeSkipIfRpc("challengerequest", async () => {
 
         await originalPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify, comment._pubsubProviders[0]);
 
-        let verificationMsg;
-
-        await new Promise((resolve) => {
-            comment.once("challengeverification", (_verificationMsg) => {
-                verificationMsg = _verificationMsg;
-                resolve();
-            });
-        });
+        const verificationMsg = await new Promise((resolve) => comment.once("challengeverification", resolve));
         expect(verificationMsg.challengeSuccess).to.be.false;
         expect(verificationMsg.reason).to.equal(messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
         expect(verificationMsg.publication).to.be.undefined;
@@ -135,7 +131,11 @@ describeSkipIfRpc("challengerequest", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        const challengeRequestToModify = comment._publishedChallengeRequests[0];
+        const challengeRequestToModify = remeda.omit(comment._publishedChallengeRequests[0], [
+            "publication",
+            "challengeCommentCids",
+            "challengeAnswers"
+        ]);
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
 
         challengeRequestToModify.encrypted = await encryptEd25519AesGcm(
@@ -148,16 +148,12 @@ describeSkipIfRpc("challengerequest", async () => {
 
         await comment._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify);
 
-        await new Promise((resolve) => {
-            comment.once("challengeverification", (verificationMsg) => {
-                expect(verificationMsg.challengeSuccess).to.be.false;
-                expect(verificationMsg.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
-                expect(verificationMsg.publication).to.be.undefined;
-                expect(verificationMsg.encrypted).to.be.undefined;
+        const verificationMsg = await new Promise((resolve) => comment.once("challengeverification", resolve));
 
-                resolve();
-            });
-        });
+        expect(verificationMsg.challengeSuccess).to.be.false;
+        expect(verificationMsg.reason).to.equal(messages.ERR_SIGNATURE_IS_INVALID);
+        expect(verificationMsg.publication).to.be.undefined;
+        expect(verificationMsg.encrypted).to.be.undefined;
     });
 
     it(`Sub ignores a challenge request with invalid pubsubMessage.signature`, async () => {
@@ -286,10 +282,10 @@ describeSkipIfRpc("challengeanswer", async () => {
         };
 
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
-        const challengeAnswer = new ChallengeAnswerMessage({
+        const challengeAnswer = {
             ...toSignAnswer,
             signature: await signChallengeAnswer(toSignAnswer, pubsubSigner)
-        });
+        };
         expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
 
         challengeAnswer.timestamp += "123"; // Invalidate signature
@@ -326,15 +322,17 @@ describeSkipIfRpc("challengeanswer", async () => {
             const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
             comment._clientsManager.pubsubPublishOnProvider = () => undefined; // Disable publishing
 
-            await comment.publishChallengeAnswers([]);
+            await comment.publishChallengeAnswers(["test hello"]);
             // comment._challengeAnswer should be defined now
-            comment._challengeAnswer.encrypted = await encryptEd25519AesGcm(
+
+            const challengeAnswerToModify = remeda.omit(comment._challengeAnswer, ["challengeAnswers"]);
+            challengeAnswerToModify.encrypted = await encryptEd25519AesGcm(
                 JSON.stringify({}),
                 pubsubSigner.privateKey,
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
-            comment._challengeAnswer.signature = await signChallengeAnswer(comment._challengeAnswer, pubsubSigner);
-            await originalPublish(comment.subplebbit.pubsubTopic, comment._challengeAnswer, comment._pubsubProviders[0]);
+            challengeAnswerToModify.signature = await signChallengeAnswer(challengeAnswerToModify, pubsubSigner);
+            await originalPublish(comment.subplebbit.pubsubTopic, challengeAnswerToModify, comment._pubsubProviders[0]);
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
@@ -358,10 +356,10 @@ describeSkipIfRpc("challengeanswer", async () => {
                     userAgent: PlebbitJsVersion.USER_AGENT,
                     protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION
                 };
-                const challengeAnswer = new ChallengeAnswerMessage({
+                const challengeAnswer = {
                     ...toSignAnswer,
                     signature: await signChallengeAnswer(toSignAnswer, newSigner)
-                });
+                };
                 expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
 
                 await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
