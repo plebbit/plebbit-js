@@ -109,10 +109,10 @@ describe("Comments with Authors as domains", async () => {
     itSkipIfRpc(`Subplebbit rejects a comment if plebbit-author-address points to a different address than signer`, async () => {
         // There are two mocks of resovleAuthorAddressIfNeeded, one return null on testgibbreish.eth (server side) and this one returns signers[6]
         // The purpose is to test whether server rejects publications that has different plebbit-author-address and signer address
-        const testEthRpc = `testEthRpc${uuidV4()}.com`;
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
 
         const authorAddress = "testgibbreish.eth";
-        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
 
         resolverClass.viemClients["eth" + testEthRpc] = {
             getEnsText: ({ name, key }) => {
@@ -160,8 +160,8 @@ describe(`Vote with authors as domains`, async () => {
     });
 
     itSkipIfRpc(`Subplebbit rejects a Vote with author.address (domain) that resolves to a different signer`, async () => {
-        const testEthRpc = `testEthRpc${uuidV4()}.com`;
-        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
+        const tempPlebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
 
         resolverClass.viemClients["eth" + testEthRpc] = {
             getEnsText: ({ name, key }) => {
@@ -186,8 +186,8 @@ describe(`Vote with authors as domains`, async () => {
 // This code won't run in rpc clients
 describeSkipIfRpc(`Resolving resiliency`, async () => {
     it(`Resolver retries four times before throwing error`, async () => {
-        const testEthRpc = `testEthRpc${uuidV4()}.com`;
-        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } });
+        const testEthRpc = `https://testEthRpc${uuidV4()}.com`;
+        const plebbit = await mockRemotePlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
 
         let resolveHit = 0;
 
