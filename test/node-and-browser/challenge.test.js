@@ -95,7 +95,7 @@ describe("Validate props of publication Pubsub messages", async () => {
         expect(challenge.type).to.equal("CHALLENGE");
         expect(challenge.challenges).to.be.a("array");
         expect(challenge.challenges[0].challenge).to.be.a("string");
-        expect(challenge.challenges[0].index).to.be.a("number");
+        expect(challenge.challenges[0].index).to.be.undefined; // you can get index from array
         expect(challenge.challenges[0].type).to.equal("text/plain");
 
         expect(challenge.encrypted).to.be.a("object");
