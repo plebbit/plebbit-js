@@ -770,7 +770,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             const parentFlags = await this.dbHandler.queryCommentFlags(parentCid);
 
-            if (parentFlags.removed && !this.isPublicationCommentEdit(publication)) // not allowed to vote or reply under removed comments
+            if (parentFlags.removed && !this.isPublicationCommentEdit(publication))
+                // not allowed to vote or reply under removed comments
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
 
             const isParentDeleted = await this.dbHandler.queryAuthorEditDeleted(parentCid);

@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
-import { InputPlebbitOptions, IpfsClient, NativeFunctions } from "../../types.js";
+import type { InputPlebbitOptions, IpfsClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";

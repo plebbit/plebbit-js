@@ -31,8 +31,9 @@ import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
 import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
-import { CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import { CommentIpfsWithCidPostCidDefined, CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -454,16 +455,27 @@ export class DbHandler {
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
-    ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
+    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }[]> {
         // protocolVersion, signature
-        const commentUpdateColumns: (keyof CommentUpdate)[] = [...CommentUpdateSignedPropertyNames, "protocolVersion", "signature"];
-        const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
-
-        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
 
         //@ts-expect-error
-        const comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
-            comment: remeda.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+        const commentUpdateColumns = <(keyof CommentUpdate)[]>remeda.keys.strict(CommentUpdateSchema.shape);
+        const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
+
+        const commentIpfsColumns = remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape);
+        const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
+
+        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([
+            ...commentIpfsColumnSelects,
+            ...commentUpdateColumnSelects
+        ]);
+
+        //@ts-expect-error
+        const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }[] = commentsRaw.map((commentRaw) => ({
+            comment: remeda.mapKeys(
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_")),
+                (key, value) => key.replace("commentIpfs_", "")
+            ),
             update: remeda.mapKeys(
                 remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
                 (key, value) => key.replace("commentUpdate_", "")
