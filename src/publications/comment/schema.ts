@@ -226,7 +226,6 @@ export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinement
     .or(CommentIpfsWithCidDefinedSchema)
     .or(CommentPubsubMessageWithRefinementSchema)
     .or(CommentChallengeRequestToEncryptSchema)
-    .or(CommentsTableRowSchema)
     .or(z.custom<Comment>((data) => data instanceof Comment))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));

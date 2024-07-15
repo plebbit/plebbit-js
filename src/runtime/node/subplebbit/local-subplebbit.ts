@@ -107,6 +107,7 @@ import {
     IncomingPubsubMessageSchema
 } from "../../../pubsub-messages/schema.js";
 import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
+import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema } from "../../../publications/comment/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -506,7 +507,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 // Everything below here is for verification purposes
                 const commentInDb = await this.dbHandler.queryComment(<string>commentToInsert.cid, trxForInsert);
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
-                const commentInDbInstance = await this.plebbit.createComment(commentInDb);
+                const commentInDbInstance = await this.plebbit.createComment(
+                    CommentIpfsWithCidPostCidDefinedSchema.strip().parse(commentInDb)
+                );
                 const validity = await verifyComment(
                     removeUndefinedValuesRecursively(commentInDbInstance.toJSONIpfs()),
                     this.plebbit.resolveAuthorAddresses,
@@ -1246,8 +1249,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const unpinnedCommentsFromDb = await this.dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const commentInstance = await this.plebbit.createComment(unpinnedCommentRow);
-            const commentIpfsJson = commentInstance.toJSONIpfs();
+            const commentIpfsJson = CommentIpfsSchema.strip().parse(unpinnedCommentRow);
             //@ts-expect-error
             if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
