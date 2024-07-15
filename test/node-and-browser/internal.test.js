@@ -24,18 +24,23 @@ describeSkipIfRpc("Test util functions", async () => {
     describe("loading IPNS", async () => {
         it("Throws if provided with invalid ipns through ipfs P2P", async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(
-                plebbit._clientsManager.resolveIpnsToCidP2P(gibberishIpns),
-                messages.ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS
-            );
+
+            try {
+                await plebbit._clientsManager.resolveIpnsToCidP2P(gibberishIpns);
+                assert.fail("should not resolve");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P");
+            }
         });
 
         it(`Throws if provided with invalid ipns through ipfs gateway`, async () => {
             const gibberishIpns = "12345";
-            await assert.isRejected(
-                gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: gibberishIpns }, "subplebbit"),
-                messages.ERR_FAILED_TO_FETCH_IPNS_VIA_GATEWAY
-            );
+            try {
+                await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: gibberishIpns }, "subplebbit");
+                assert.fail("should not resolve");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+            }
         });
 
         it("Loads an IPNS file as JSON correctly (IPFS Gateway)", async () => {
@@ -43,7 +48,7 @@ describeSkipIfRpc("Test util functions", async () => {
             const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
             const jsonFileAsIpns = await plebbit._clientsManager.getDefaultIpfs()._client.name.publish(cid, { allowOffline: true });
             const jsonFileLoaded = JSON.parse(
-                await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: jsonFileAsIpns.name }, "subplebbit")
+                await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: jsonFileAsIpns.name }, "subplebbit", () => {})
             );
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
@@ -60,10 +65,15 @@ describeSkipIfRpc("Test util functions", async () => {
                 })
             ).name;
 
-            await assert.isRejected(
-                gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns }, "subplebbit"),
-                messages.ERR_OVER_DOWNLOAD_LIMIT
-            );
+            const gatewayUrl = Object.keys(gatewayPlebbit.clients.ipfsGateways)[0];
+
+            try {
+                await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns }, "subplebbit", () => {});
+                assert.fail("should not resolve");
+            } catch (e) {
+                expect(e.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+            }
         });
     });
 });
