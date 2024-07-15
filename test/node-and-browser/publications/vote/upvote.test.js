@@ -8,7 +8,6 @@ import {
     mockRemotePlebbit,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
-import { timestamp } from "../../../../dist/node/util.js";
 import * as remeda from "remeda";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 
@@ -71,7 +70,9 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.pick(previousVotes[0], ["commentCid", "author", "signer", "subplebbitAddress"]),
+            commentCid: previousVotes[0].commentCid,
+            signer: previousVotes[0].signer,
+            subplebbitAddress: previousVotes[0].subplebbitAddress,
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
@@ -88,7 +89,9 @@ describe("Test upvote", async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.pick(previousVotes[1], ["commentCid", "author", "signer", "subplebbitAddress"]),
+            commentCid: previousVotes[1].commentCid,
+            signer: previousVotes[1].signer,
+            subplebbitAddress: previousVotes[1].subplebbitAddress,
             vote: -1
         });
         await publishWithExpectedResult(vote, true);
@@ -103,9 +106,10 @@ describe("Test upvote", async () => {
 
     it("Does not throw an error when vote is duplicated", async () => {
         const vote = await plebbit.createVote({
-            ...remeda.pick(previousVotes[0], ["commentCid", "author", "signer", "subplebbitAddress", "vote"]),
-
-            timestamp: timestamp()
+            commentCid: previousVotes[0].commentCid,
+            signer: previousVotes[0].signer,
+            subplebbitAddress: previousVotes[0].subplebbitAddress,
+            vote: previousVotes[0].vote
         });
         await publishWithExpectedResult(vote, true);
     });

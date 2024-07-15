@@ -69,7 +69,9 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.pick(previousVotes[0], ["commentCid", "author", "signer", "subplebbitAddress"]),
+            commentCid: previousVotes[0].commentCid,
+            subplebbitAddress: previousVotes[0].subplebbitAddress,
+            signer: previousVotes[0].signer,
             vote: 1
         });
         await publishWithExpectedResult(vote, true);
@@ -87,7 +89,9 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.pick(previousVotes[1], ["commentCid", "author", "signer", "subplebbitAddress"]),
+            commentCid: previousVotes[1].commentCid,
+            subplebbitAddress: previousVotes[1].subplebbitAddress,
+            signer: previousVotes[1].signer,
             vote: 1
         });
         await publishWithExpectedResult(vote, true);
@@ -104,7 +108,9 @@ describe(`Test Downvote`, async () => {
     it("plebbit.createVote fails when commentCid is invalid ", async () => {
         await assert.isRejected(
             plebbit.createVote({
-                ...remeda.pick(previousVotes[1], ["vote", "author", "signer", "subplebbitAddress"]),
+                vote: previousVotes[1].vote,
+                subplebbitAddress: previousVotes[1].subplebbitAddress,
+                signer: previousVotes[1].signer,
                 commentCid: "gibbrish"
             }),
             messages.ERR_CID_IS_INVALID
@@ -112,4 +118,6 @@ describe(`Test Downvote`, async () => {
     });
 
     it(`Subplebbits rejects votes with invalid commentCid`);
+
+    // TODO add a test for spreading Vote instance
 });
