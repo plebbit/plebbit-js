@@ -756,6 +756,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return messages.ERR_AUTHOR_IS_BANNED;
 
         if (!this.isPublicationPost(publication)) {
+            // vote or reply or edit
             const parentCid: string | undefined = this.isPublicationReply(publication)
                 ? publication.parentCid
                 : this.isPublicationVote(publication) || this.isPublicationCommentEdit(publication)
@@ -765,16 +766,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (!parentCid) return messages.ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED;
 
             const parent = await this.dbHandler.queryComment(parentCid);
-            if (!parent) return messages.ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST;
+            if (!parent) return messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB;
 
             const parentFlags = await this.dbHandler.queryCommentFlags(parentCid);
 
-            if (parentFlags.removed && !this.isPublicationCommentEdit(publication))
+            if (parentFlags.removed && !this.isPublicationCommentEdit(publication)) // not allowed to vote or reply under removed comments
                 return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_REMOVED;
 
             const isParentDeleted = await this.dbHandler.queryAuthorEditDeleted(parentCid);
 
-            if (isParentDeleted && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED;
+            if (isParentDeleted && !this.isPublicationCommentEdit(publication)) return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED; // not allowed to vote or reply under deleted comments
 
             const postFlags = await this.dbHandler.queryCommentFlags(parent.postCid);
 

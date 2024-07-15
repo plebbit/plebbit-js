@@ -86,7 +86,7 @@ export enum messages {
 
     ERR_UNAUTHORIZED_COMMENT_EDIT = "The author of this edit is not a mod/admin/owner or an author of the original comment. Can't edit",
     ERR_SUB_COMMENT_TIMESTAMP_IS_EARLIER_THAN_PARENT = "Rejecting post/comment because its timestamp is earlier than its parent",
-    ERR_SUB_COMMENT_PARENT_DOES_NOT_EXIST = "The parent of this comment does not exist",
+    ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB = "The parent of this publication does not exist within the subplebbit's records",
     ERR_SUB_COMMENT_PARENT_CID_NOT_DEFINED = "The parent cid of this comment is not defined",
     ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS = "The subplebbitAddress field of publication is not the same as the subplebbit being published to",
     ERR_AUTHOR_IS_BANNED = "Author is banned",
