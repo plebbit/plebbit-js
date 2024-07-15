@@ -15,7 +15,6 @@ import assert from "assert";
 import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
-import type { CommentUpdatesRow, CommentsTableRow } from "../types.js";
 import { Plebbit } from "../plebbit.js";
 
 //This is temp. TODO replace this with accurate mapping
@@ -55,7 +54,9 @@ export const REPLIES_SORT_TYPES: ReplySort = {
     old: { score: (...args) => oldScore(...args) }
 };
 
-export function hotScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+type CommentToSort = PageIpfs["comments"][0];
+
+export function hotScore(comment: CommentToSort) {
     assert(
         typeof comment.update.downvoteCount === "number" &&
             typeof comment.update.upvoteCount === "number" &&
@@ -70,7 +71,7 @@ export function hotScore(comment: { comment: CommentsTableRow; update: CommentUp
     return remeda.round(sign * order + seconds / 45000, 7);
 }
 
-export function controversialScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+export function controversialScore(comment: CommentToSort) {
     assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
     const upvoteCount = comment.update.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
@@ -83,18 +84,18 @@ export function controversialScore(comment: { comment: CommentsTableRow; update:
     return Math.pow(magnitude, balance);
 }
 
-export function topScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+export function topScore(comment: CommentToSort) {
     assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
 
     return comment.update.upvoteCount - comment.update.downvoteCount;
 }
 
-export function newScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+export function newScore(comment: CommentToSort) {
     assert(typeof comment.comment.timestamp === "number");
     return comment.comment.timestamp;
 }
 
-export function oldScore(comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) {
+export function oldScore(comment: CommentToSort) {
     assert(typeof comment.comment.timestamp === "number");
 
     return -comment.comment.timestamp;

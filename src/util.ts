@@ -91,13 +91,18 @@ export const parseDbResponses = (obj: any): any => {
         "pinned",
         "locked",
         "removed",
+        "commentIpfs_deleted",
+        "commentIpfs_spoiler",
+        "commentIpfs_pinned",
+        "commentIpfs_locked",
+        "commentIpfs_removed",
         "commentUpdate_deleted",
         "commentUpdate_spoiler",
         "commentUpdate_pinned",
         "commentUpdate_locked",
         "commentUpdate_removed",
         "isAuthorEdit"
-    ];
+    ]; // TODO use zod here
     for (const [key, value] of Object.entries(newObj)) {
         if (value === "[object Object]") throw Error(`key (${key}) shouldn't be [object Object]`);
 

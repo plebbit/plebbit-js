@@ -7,8 +7,8 @@ import {
     RepliesPagesJsonSchema,
     ReplySortNameSchema
 } from "./schema";
-import type { CommentUpdatesRow, CommentsTableRow } from "../types";
 import { Comment } from "../publications/comment/comment.js";
+import { CommentIpfsWithCidPostCidDefined, CommentUpdate } from "../publications/comment/types";
 
 export interface PageInstanceType {
     comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
@@ -50,7 +50,7 @@ export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
 export type SortProps = {
-    score: (comment: { comment: CommentsTableRow; update: CommentUpdatesRow }) => number;
+    score: (comment: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }) => number;
     timeframe?: Timeframe;
 };
 

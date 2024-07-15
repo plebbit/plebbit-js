@@ -30,6 +30,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         };
     }
 
+    // TODO This function should be changed to toJSONPubsubMessagePublication
     toJSONIpfs(): AuthorPubsubType {
         return {
             address: this.address,
