@@ -229,9 +229,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
         if (remeda.isEmpty(props)) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore = InternalSubplebbitRecordSchema.parse(
-            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
-        );
+        const internalStateBefore = <InternalSubplebbitType>await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
         await this.dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
@@ -241,9 +239,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _getDbInternalState(lock = true) {
         if (lock) await this.dbHandler.lockSubState();
-        const internalState = InternalSubplebbitRecordSchema.parse(
-            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
-        );
+        const internalState = <InternalSubplebbitType>await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
         if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }
@@ -351,9 +347,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         else delete newIpns.posts;
 
         const signature = await signSubplebbit(newIpns, this.signer);
-        const newSubplebbitRecord: SubplebbitIpfsType = { ...newIpns, signature };
+        const newSubplebbitRecord: SubplebbitIpfsType = SubplebbitIpfsSchema.parse({ ...newIpns, signature }); // Just to see if it's a valid record
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
-        SubplebbitIpfsSchema.parse(newSubplebbitRecord); // Just to see if it's a valid record
         await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
         this._subplebbitUpdateTrigger = false;
 
