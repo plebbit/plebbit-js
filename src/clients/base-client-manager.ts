@@ -424,8 +424,8 @@ export class BaseClientsManager {
             return cid;
         } catch (error) {
             p2pIpnsPromiseCache.delete(ipnsName);
-            if (error instanceof PlebbitError && error.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName, error });
+            if (error instanceof PlebbitError && error.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P") throw error;
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error });
         }
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
