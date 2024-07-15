@@ -1,3 +1,4 @@
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
 import chai from "chai";
@@ -7,7 +8,6 @@ const { expect, assert } = chai;
 import * as remeda from "remeda";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
-import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;

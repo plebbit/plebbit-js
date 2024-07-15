@@ -1,10 +1,10 @@
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { verifyPage } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 import { expect } from "chai";
 import signers from "../../fixtures/signers.js";
 import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
-import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 import validPageFixture from "../../fixtures/valid_page.json" assert { type: "json" };
 

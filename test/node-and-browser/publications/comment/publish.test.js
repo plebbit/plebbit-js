@@ -401,7 +401,8 @@ describe(`Publishing replies`, async () => {
             plebbit,
             {
                 title: `Test title on Comment ${Date.now()} ${Math.random()}`,
-                link: "https//plebbit.com"
+                content: "Random Content" + Math.random(),
+                link: "https://plebbit.com"
             },
             true
         );

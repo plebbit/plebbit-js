@@ -1,3 +1,4 @@
+import { mockRemotePlebbit } from "../../dist/node/test/test-util.js";
 import fixtureSigners from "../fixtures/signers.js";
 import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures.js";
 import chai from "chai";
@@ -5,7 +6,6 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
-import { mockRemotePlebbit } from "../../dist/node/test/test-util.js";
 const authorSignerFixture = fixtureSigners[1];
 
 describe("signer (node and browser)", async () => {
