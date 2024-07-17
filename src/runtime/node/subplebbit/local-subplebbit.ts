@@ -58,7 +58,6 @@ import {
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import {
-    Signer,
     SignerWithPublicKeyAddress,
     decryptEd25519AesGcmPublicKeyBuffer,
     verifyComment,
@@ -88,13 +87,13 @@ import {
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
 import type { VotePubsubMessage } from "../../../publications/vote/types.js";
-import type { CommentIpfsWithCidPostCidDefined, CommentPubsubMessage, CommentUpdate } from "../../../publications/comment/types.js";
-import {
-    InternalSubplebbitRecordSchema,
-    SubplebbitEditOptionsSchema,
-    SubplebbitIpfsSchema,
-    SubplebbitRoleSchema
-} from "../../../subplebbit/schema.js";
+import type {
+    CommentIpfsType,
+    CommentIpfsWithCidPostCidDefined,
+    CommentPubsubMessage,
+    CommentUpdate
+} from "../../../publications/comment/types.js";
+import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
@@ -902,7 +901,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const decryptedRequestMsg = DecryptedChallengeRequestMessageSchema.parse({ ...request, ...decryptedRequest });
         const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor =
             DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema.parse({
-                ...request,
+                ...decryptedRequestMsg,
                 publication: {
                     ...decryptedRequest.publication,
                     ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
@@ -919,6 +918,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
         }
+
+        log.trace("Received a valid challenge request", decryptedRequestWithSubplebbitAuthor);
 
         this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
 
@@ -1249,7 +1250,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const unpinnedCommentsFromDb = await this.dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
-            const commentIpfsJson = CommentIpfsSchema.strip().parse(unpinnedCommentRow);
+            const commentIpfsJson = <CommentIpfsType>{
+                ...CommentIpfsSchema.strip().parse(unpinnedCommentRow),
+                postCid: unpinnedCommentRow.depth === 0 ? undefined : unpinnedCommentRow.postCid // need to remove post cid because it's not part of ipfs file if depth is 0
+            };
             //@ts-expect-error
             if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
