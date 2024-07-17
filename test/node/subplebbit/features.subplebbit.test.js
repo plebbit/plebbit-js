@@ -2,6 +2,7 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     generateMockPost,
+    overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
     mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
@@ -36,8 +37,9 @@ describe(`subplebbit.features.requirePostLink`, async () => {
     });
 
     it(`Can't publish a post with invalid link`, async () => {
-        const invalidUrl = "http://example.com/file[/].html";
-        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: invalidUrl });
+        const invalidUrl = "test.com"; // invalid because it has no protocol
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await overrideCommentInstancePropsAndSign(post, { link: invalidUrl });
         expect(post.link).to.equal(invalidUrl);
         await publishWithExpectedResult(post, false, messages.ERR_POST_HAS_INVALID_LINK_FIELD);
     });

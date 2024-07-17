@@ -5,6 +5,7 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
     itSkipIfRpc,
+    itIfRpc,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";

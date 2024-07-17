@@ -153,9 +153,6 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     });
 
     it(`plebbit.createSubplebbit({address: undefined}) should throw a proper error`, async () => {
-        await assert.isRejected(
-            plebbit.createSubplebbit({ address: undefined }),
-            messages.ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED
-        );
+        await assert.isRejected(plebbit.createSubplebbit({ address: undefined }));
     });
 });

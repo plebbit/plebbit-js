@@ -6,9 +6,11 @@ import {
     mockRemotePlebbitIpfsOnly,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
+    describeIfRpc,
     mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
-import { timestamp, POSTS_SORT_TYPES } from "../../../dist/node/util";
+import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util";
+import { timestamp } from "../../../dist/node/util";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import fs from "fs";
 import path from "path";

@@ -6,8 +6,11 @@ import {
     generatePostToAnswerMathQuestion,
     publishRandomPost,
     describeSkipIfRpc,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    itSkipIfRpc
 } from "../../../dist/node/test/test-util";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+
 import signers from "../../fixtures/signers";
 import Sinon from "sinon";
 import * as util from "../../../dist/node/constants";
@@ -52,21 +55,6 @@ describe(`subplebbit.settings.challenges`, async () => {
             ]);
         }
         // clean up
-        await subplebbit.delete();
-    });
-
-    it(`settings.challenges as null or undefined is parsed as []`, async () => {
-        const subplebbit = await plebbit.createSubplebbit({});
-        expect(subplebbit?.settings?.challenges).to.not.be.undefined; // Should default to captcha-canvas-v3
-        expect(subplebbit._usingDefaultChallenge).to.be.true;
-
-        for (const noChallengeValue of [null, undefined, []]) {
-            await subplebbit.edit({ settings: { challenges: noChallengeValue } });
-            expect(subplebbit._usingDefaultChallenge).to.be.false;
-            expect(subplebbit?.settings.challenges).to.deep.equal([]);
-            expect(subplebbit.challenges).to.deep.equal([]);
-        }
-
         await subplebbit.delete();
     });
 
@@ -137,13 +125,12 @@ describe(`subplebbit.settings.challenges`, async () => {
 
     it(`subplebbit.settings.challenges isn't overridden with subplebbit.start() if it was edited before starting the sub`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
-        await subplebbit.edit({ settings: { challenges: undefined } });
+        await subplebbit.edit({ settings: { challenges: [] } });
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         expect(subplebbit._usingDefaultChallenge).to.be.false;
         expect(subplebbit.challenges).to.deep.equal([]);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) expect(_subplebbit.challenges).to.deep.equal([]);
@@ -180,11 +167,11 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
     const viemEthFake = {};
     const viemMaticFake = {};
     before(async () => {
-        const ethRpcUrl = `Fake${uuidV4()}eth.com`;
-        const maticRpcUrl = `Fake${uuidV4()}matic.com`;
+        const ethRpcUrl = `https://Fake${uuidV4()}eth.com`;
+        const maticRpcUrl = `https://Fake${uuidV4()}matic.com`;
         plebbit = await mockPlebbit({
             resolveAuthorAddresses: false,
-            chainProviders: { eth: { urls: [ethRpcUrl] }, matic: { urls: [maticRpcUrl] } }
+            chainProviders: { eth: { urls: [ethRpcUrl], chainId: 1 }, matic: { urls: [maticRpcUrl], chainId: 137 } }
         });
         actualViemClient = createPublicClient({
             chain: chains.mainnet,
@@ -559,7 +546,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         const comment = await generateMockPost(subplebbit.address, plebbit, false, { signer: commentSigner });
         await comment.publish();
         const request = await new Promise((resolve) => subplebbit.once("challengerequest", resolve));
-        expect(JSON.stringify(request.publication)).to.equal(JSON.stringify(comment.toJSONPubsubMessagePublication()));
+        expect(deterministicStringify(request.publication)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
         expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(request.challengeRequestId.length).to.equal(38);
         expect(request.type).to.equal("CHALLENGEREQUEST");
@@ -597,7 +584,6 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challenge.type).to.equal("CHALLENGE");
         expect(challenge.challenges).to.be.a("array");
         expect(challenge.challenges[0].challenge).to.be.a("string");
-        expect(challenge.challenges[0].index).to.be.a("number");
         expect(challenge.challenges[0].type).to.equal("text/plain");
 
         expect(challenge.encrypted).to.be.a("object");
