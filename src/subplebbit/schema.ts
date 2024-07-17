@@ -17,6 +17,7 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { ChallengeAnswerStringSchema, DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
+import { ChainTickerSchema } from "../schema.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -88,6 +89,8 @@ export const ChallengeOptionInputSchema = z
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
+const chainTickerValues = <`chain/${z.infer<typeof ChainTickerSchema>}`[]>ChainTickerSchema.options.map((ticker) => `chain/${ticker}`);
+
 export const ChallengeFromGetChallengeSchema = z
     .object({
         challenge: z.string(), // e.g. '2 + 2'
@@ -95,7 +98,7 @@ export const ChallengeFromGetChallengeSchema = z
             .function()
             .args(z.lazy(() => ChallengeAnswerStringSchema))
             .returns(z.promise(ChallengeResultSchema)), // args is answer
-        type: z.enum(["image/png", "text/plain", "chain/<chainTicker>"])
+        type: z.enum(["image/png", "text/plain", ...chainTickerValues])
     })
     .strict();
 
@@ -325,9 +328,7 @@ export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitF
 
 export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(
     CreateRemoteSubplebbitFunctionArgumentSchema
-)
-    .or(InternalSubplebbitRecordSchema)
-    .or(SubplebbitClassSchema);
+).or(InternalSubplebbitRecordSchema);
 
 // plebbit.listSubplebbits()
 
