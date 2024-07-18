@@ -26,8 +26,8 @@ const { expect, assert } = chai;
 describeSkipIfRpc(`subplebbit.edit`, async () => {
     let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
-        const testEthRpc = `testEthRpc-${uuidV4()}.com`;
-        plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc] } } }, true, false);
+        const testEthRpc = `https://testEthRpc-${uuidV4()}.com`;
+        plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } }, true, false);
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${uuidV4()}.eth`;
 
@@ -159,8 +159,8 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         { address: `address-eth-${uuidV4()}-2.eth`, rules: ["rule 1", "rule 2"] }
     ].map((editArgs) =>
         it(`edit subplebbit with multiple subplebbit instances running (${Object.keys(editArgs)})`, async () => {
-            const ethRpcTest = `testEthRpc${uuidV4()}.com`;
-            const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest] } } });
+            const ethRpcTest = `https://testEthRpc${uuidV4()}.com`;
+            const plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest], chainId: 1 } } });
             // create subplebbit
             const subplebbitTitle = "subplebbit title" + timestamp();
             const subplebbit = await plebbit.createSubplebbit({ title: subplebbitTitle });
@@ -241,8 +241,8 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
     );
 
     it(`Can edit a local sub address, then start it`, async () => {
-        const ethRpcTest = `testEthRpc${uuidV4()}.com`;
-        const customPlebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest] } } });
+        const ethRpcTest = `https://testEthRpc${uuidV4()}.com`;
+        const customPlebbit = await mockPlebbit({ chainProviders: { eth: { urls: [ethRpcTest], chainId: 1 } } });
         const signer = await customPlebbit.createSigner();
         const domain = `edit-before-start-${uuidV4()}.eth`;
 
@@ -293,7 +293,8 @@ describe(`Edit misc`, async () => {
         await newSub.delete();
     });
 
-    it(`Setting sub.settings.challenges[0].exclude.rateLimit to a string doesn't corrupt the signature`, async () => {
+    it.skip(`Setting sub.settings.challenges[0].exclude.rateLimit to a string doesn't corrupt the signature`, async () => {
+        // This test is not needed because zod will throw if you tried to set rateLimit to a string
         const customPlebbit = await mockPlebbit();
         const remotePlebbit = await mockRemotePlebbit();
         const newSub = await customPlebbit.createSubplebbit();
@@ -359,14 +360,17 @@ describe(`Editing subplebbit.roles`, async () => {
 
         // Now set the other author role to null, this should set subplebbit.roles to undefined
         await sub.edit({ roles: { [authorAddress]: null, [secondAuthorAddress]: null } });
-        expect(sub.roles).to.be.undefined;
+        expect(sub.roles).to.deep.equal({}); // {} after edit, but will be undefined after publishing because we remove any empty objects {} before publishing to IPFS
 
         await new Promise((resolve) => sub.once("update", resolve));
+        expect(sub.roles).to.be.undefined;
 
         remoteSub = await remotePlebbit.getSubplebbit(sub.address);
         expect(remoteSub.roles).to.be.undefined;
     });
-    it(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
+
+    it.skip(`Setting sub.roles.[author-address.eth].role to null doesn't corrupt the signature`, async () => {
+        // This test is not needed anymore because zod will catch it
         const newSub = await createSubWithNoChallenge({}, plebbit);
         await newSub.start();
         await resolveWhenConditionIsTrue(newSub, () => newSub.updatedAt); // wait until it publishes an ipns record
