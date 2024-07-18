@@ -224,6 +224,10 @@ export const SubplebbitSettingsSchema = z
     })
     .strict();
 
+const SubplebbitRoleToEditSchema = SubplebbitRoleSchema.or(z.null()); // when we pass null we're removing the role
+
+const SubplebbitRolesToEditSchema = z.record(AuthorAddressSchema, SubplebbitRoleToEditSchema);
+
 export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
     flairs: true,
     address: true,
@@ -231,14 +235,13 @@ export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
     description: true,
     roles: true,
     rules: true,
-    lastPostCid: true,
-    lastCommentCid: true,
     pubsubTopic: true,
     features: true,
     suggested: true
 })
     .extend({
-        settings: SubplebbitSettingsSchema.optional()
+        settings: SubplebbitSettingsSchema.optional(),
+        roles: SubplebbitRolesToEditSchema.optional()
     })
     .partial()
     .strict();
@@ -247,7 +250,8 @@ export const SubplebbitEditOptionsSchema = SubplebbitIpfsSchema.pick({
 
 export const CreateNewLocalSubplebbitUserOptionsSchema = SubplebbitEditOptionsSchema.omit({ address: true })
     .extend({
-        signer: CreateSignerSchema.optional()
+        signer: CreateSignerSchema.optional(),
+        roles: SubplebbitIpfsSchema.shape.roles
     })
     .strict();
 

@@ -6,10 +6,10 @@ import type {
     InternalSubplebbitRpcType,
     InternalSubplebbitType,
     LocalSubplebbitJsonType,
+    ParsedSubplebbitEditOptions,
     SubplebbitChallengeSetting,
     SubplebbitEditOptions,
-    SubplebbitIpfsType,
-    SubplebbitRole
+    SubplebbitIpfsType
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
@@ -178,8 +178,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._initSignerProps(newProps.signer);
         this.title = newProps.title;
         this.description = newProps.description;
-        this.lastPostCid = newProps.lastPostCid;
-        this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
         this.roles = newProps.roles;
@@ -1436,22 +1434,36 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
     }
 
+    private _parseRolesToEdit(newRawRoles: NonNullable<SubplebbitEditOptions["roles"]>): NonNullable<InternalSubplebbitType["roles"]> {
+        return <NonNullable<SubplebbitIpfsType["roles"]>>remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
+    }
+
+    private _parseChallengesToEdit(
+        newChallengeSettings: NonNullable<NonNullable<SubplebbitEditOptions["settings"]>["challenges"]>
+    ): NonNullable<Pick<InternalSubplebbitType, "challenges" | "_usingDefaultChallenge">> {
+        return {
+            challenges: newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings),
+            _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
+        };
+    }
+
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const log = Logger("plebbit-js:local-subplebbit:edit");
 
-        const parsedOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
+        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
 
-        const newProps: Partial<
-            SubplebbitEditOptions & Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges">
-        > = {
-            ...parsedOptions,
-            _subplebbitUpdateTrigger: true
+        const newInternalProps = <
+            Pick<InternalSubplebbitType, "_subplebbitUpdateTrigger" | "roles" | "challenges" | "_usingDefaultChallenge">
+        >{
+            _subplebbitUpdateTrigger: true,
+            ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
+            ...(parsedEditOptions?.settings?.challenges ? this._parseChallengesToEdit(parsedEditOptions.settings.challenges) : undefined)
         };
 
-        if (Array.isArray(newProps?.settings?.challenges)) {
-            newProps.challenges = newProps.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
-            newProps._usingDefaultChallenge = remeda.isDeepEqual(newProps?.settings?.challenges, this._defaultSubplebbitChallenges);
-        }
+        const newProps = <ParsedSubplebbitEditOptions>{
+            ...remeda.omit(parsedEditOptions, ["roles"]), // we omit here to make tsc shut up
+            ...newInternalProps
+        };
 
         await this.dbHandler.initDestroyedConnection();
 
