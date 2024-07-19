@@ -224,6 +224,7 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
 export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentJsonSchema)
     .or(CommentIpfsWithRefinmentSchema)
     .or(CommentIpfsWithCidDefinedSchema)
+    .or(CommentIpfsWithCidPostCidDefinedSchema)
     .or(CommentPubsubMessageWithRefinementSchema)
     .or(CommentChallengeRequestToEncryptSchema)
     .or(z.custom<Comment>((data) => data instanceof Comment))
