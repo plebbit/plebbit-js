@@ -78,13 +78,16 @@ export const AuthorPubsubSchema = z
     })
     .strict();
 
+export const ChallengeAnswerStringSchema = z.string(); // TODO add validation for challenge answer
+
+export const ChallengeAnswersSchema = ChallengeAnswerStringSchema.array().nonempty(); // for example ["1+1=2", "3+3=6"]
 export const CreatePublicationUserOptionsSchema = z.object({
     signer: CreateSignerSchema,
     author: AuthorPubsubSchema.partial().optional(),
     subplebbitAddress: SubplebbitAddressSchema,
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
-    challengeAnswers: z.string().array().optional(),
+    challengeAnswers: ChallengeAnswersSchema.optional(),
     challengeCommentCids: CommentCidSchema.array().optional()
 });
 

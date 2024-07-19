@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
     AuthorAddressSchema,
+    ChallengeAnswerStringSchema,
     CommentCidSchema,
     CreateSignerSchema,
     FlairSchema,
@@ -16,7 +17,7 @@ import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
-import { ChallengeAnswerStringSchema, DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
+import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import { ChainTickerSchema } from "../schema.js";
 
 // Other props of Subplebbit Ipfs here
@@ -107,7 +108,7 @@ export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(Cha
 export const ChallengeExcludeSubplebbitSchema = z
     .object({
         addresses: SubplebbitAddressSchema.array(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
-        maxCommentCids: z.number().nonnegative(), // maximum amount of comment cids that will be fetched to check
+        maxCommentCids: z.number().nonnegative().int(), // maximum amount of comment cids that will be fetched to check
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
         firstCommentTimestamp: PlebbitTimestampSchema.optional() // exclude if author account age is greater or equal than now - firstCommentTimestamp
@@ -120,7 +121,7 @@ export const ChallengeExcludeSchema = z
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
         firstCommentTimestamp: PlebbitTimestampSchema.optional(),
-        challenges: z.number().nonnegative().array().optional(),
+        challenges: z.number().nonnegative().int().array().optional(),
         post: z.boolean().optional(),
         reply: z.boolean().optional(),
         vote: z.boolean().optional(),

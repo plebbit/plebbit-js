@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CommentCidSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema";
+import { ChallengeAnswersSchema, CommentCidSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema";
 import { VotePubsubMessageSchema } from "../publications/vote/schema";
 import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
 import {
@@ -112,11 +112,9 @@ export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
     encrypted: EncryptedSchema // Will decrypt to DecryptedChallengeAnswerSchema
 }).strict();
 
-export const ChallengeAnswerStringSchema = z.string(); // TODO add validation for challenge answer
-
 export const DecryptedChallengeAnswerSchema = z
     .object({
-        challengeAnswers: ChallengeAnswerStringSchema.array().nonempty() // for example ['2+2=4', '1+7=8']
+        challengeAnswers: ChallengeAnswersSchema // for example ['2+2=4', '1+7=8']
     })
     .strict();
 

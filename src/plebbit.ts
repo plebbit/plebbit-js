@@ -293,7 +293,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         if (parsedOptions instanceof Comment) return this._createCommentInstanceFromExistingCommentInstance(parsedOptions);
         const commentInstance = new Comment(this);
-        if ("cid" in parsedOptions && typeof parsedOptions.cid === "string") {
+        if ("cid" in parsedOptions) {
             commentInstance.setCid(parsedOptions.cid);
             if (Object.keys(parsedOptions).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
