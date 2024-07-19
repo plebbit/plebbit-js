@@ -11,7 +11,8 @@ import {
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
     resolveWhenConditionIsTrue,
-    describeSkipIfRpc
+    describeSkipIfRpc,
+    describeIfRpc
 } from "../../../dist/node/test/test-util";
 import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
 
@@ -687,7 +688,7 @@ describe(`subplebbit.clients (Local)`, async () => {
         });
     });
 
-    describeSkipIfRpc(`subplebbit.clients.plebbitRpcClients (local subplebbit ran over RPC)`, async () => {
+    describeIfRpc(`subplebbit.clients.plebbitRpcClients (local subplebbit ran over RPC)`, async () => {
         it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
             const sub = await plebbit.createSubplebbit({});
             const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];
