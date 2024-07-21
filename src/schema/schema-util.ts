@@ -11,7 +11,7 @@ import {
     EncodedDecryptedChallengeRequestMessageSchema,
     EncodedDecryptedChallengeVerificationMessageSchema
 } from "../pubsub-messages/schema.js";
-import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
+import { RpcLocalSubplebbitUpdateResultSchema, SubplebbitIpfsSchema, UpdatingStateSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type {
     DecryptedChallenge,
@@ -130,6 +130,28 @@ export function parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFa
         throw new PlebbitError("ERR_INVALID_RPC_ENCODED_CHALLENGE_VERIFICATION_PUBSUB_MSG_SCHEMA", {
             zodError: e,
             encodedDecryptedChallengeVerification
+        });
+    }
+}
+
+export function parseLocalSubplebbitRpcUpdateResult(updateResult: any) {
+    try {
+        return RpcLocalSubplebbitUpdateResultSchema.parse(updateResult);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_LOCAL_SUBPLEBBIT_UPDATE_SCHEMA", {
+            zodError: e,
+            updateResult
+        });
+    }
+}
+
+export function parseRpcRemoteUpdatingState(updatingState: any) {
+    try {
+        return UpdatingStateSchema.parse(updatingState);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA", {
+            zodError: e,
+            updatingState
         });
     }
 }

@@ -1,12 +1,20 @@
 import Logger from "@plebbit/plebbit-logger";
 import { replaceXWithY } from "../util.js";
-import type { InternalSubplebbitRpcType, LocalSubplebbitJsonType, LocalSubplebbitRpcJsonType, SubplebbitEditOptions } from "./types.js";
+import type {
+    InternalSubplebbitBeforeFirstUpdateRpcType,
+    InternalSubplebbitRpcType,
+    LocalSubplebbitJsonType,
+    LocalSubplebbitRpcJsonType,
+    SubplebbitEditOptions
+} from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
 import { messages } from "../errors.js";
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { RpcInternalSubplebbitRecordSchema, StartedStateSchema, SubplebbitEditOptionsSchema } from "./schema.js";
+
+import { parseLocalSubplebbitRpcUpdateResult } from "../schema/schema-util.js";
+import { RpcLocalSubplebbitUpdateResultSchema, StartedStateSchema, SubplebbitEditOptionsSchema } from "./schema.js";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
@@ -37,11 +45,17 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     override toJSON(): LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType {
-        return {
-            ...this.toJSONInternalRpc(),
-            posts: this.posts.toJSON(),
-            shortAddress: this.shortAddress
-        };
+        if (typeof this.updatedAt === "number")
+            return {
+                ...this.toJSONInternalRpc(),
+                posts: this.posts.toJSON(),
+                shortAddress: this.shortAddress
+            };
+        else
+            return {
+                ...this.toJSONInternalRpcBeforeFirstUpdate(),
+                shortAddress: this.shortAddress
+            };
     }
 
     toJSONInternalRpc(): InternalSubplebbitRpcType {
@@ -54,16 +68,46 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         };
     }
 
-    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType) {
-        await super.initRemoteSubplebbitPropsNoMerge(newProps);
-        this.settings = newProps.settings;
-        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
-        this.started = newProps.started;
-        this.signer = newProps.signer;
+    toJSONInternalRpcBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateRpcType {
+        return {
+            address: this.address,
+            createdAt: this.createdAt,
+            description: this.description,
+            features: this.features,
+            flairs: this.flairs,
+            pubsubTopic: this.pubsubTopic,
+            signer: this.signer,
+            roles: this.roles,
+            rules: this.rules,
+            suggested: this.suggested,
+            title: this.title,
+            protocolVersion: this.protocolVersion,
+            encryption: this.encryption
+        };
     }
 
-    protected override async _handleRpcUpdateProps(rpcProps: InternalSubplebbitRpcType) {
-        await this.initRpcInternalSubplebbitNoMerge(rpcProps);
+    async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateRpcType) {
+        this.setAddress(newProps.address);
+        this.createdAt = newProps.createdAt;
+        this.description = newProps.description;
+        this.features = newProps.features;
+        this.flairs = newProps.flairs;
+        this.pubsubTopic = newProps.pubsubTopic;
+        this.signer = newProps.signer;
+        this.roles = newProps.roles;
+        this.rules = newProps.rules;
+        this.suggested = newProps.suggested;
+        this.title = newProps.title;
+        this.protocolVersion = newProps.protocolVersion;
+        this.encryption = newProps.encryption;
+        this.settings = newProps.settings;
+    }
+
+    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType) {
+        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.started = newProps.started;
     }
 
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {
@@ -83,6 +127,47 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         mapper[startedState].forEach(this._setRpcClientState.bind(this));
     }
 
+    protected override async _processUpdateEventFromRpcUpdate(args: any) {
+        // This function is gonna be called with every update event from rpcLocalSubplbebit.update()
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
+        let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
+        try {
+            updateRecord = parseLocalSubplebbitRpcUpdateResult(args.params.result);
+        } catch (e) {
+            log.error("The update event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitNoMerge(updateRecord);
+        else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
+
+        this.emit("update", this);
+    }
+
+    private async _handleRpcUpdateEventFromStart(args: any) {
+        // This function is gonna be called with every update event from rpcLocalSubplbebit.start()
+
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
+        let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
+        try {
+            updateRecord = parseLocalSubplebbitRpcUpdateResult(args.params.result);
+        } catch (e) {
+            log.error("The update event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        if ("updatedAt" in updateRecord) {
+            await this.initRpcInternalSubplebbitNoMerge(updateRecord);
+            if (!updateRecord.started)
+                // This is the rpc server telling us that this sub has been stopped by another instance
+                await this._cleanUpRpcConnection(log);
+        } else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
+
+        this.emit("update", this);
+    }
+
     override async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
         // we can't start the same instance multiple times
@@ -99,19 +184,10 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             throw e;
         }
         this.started = true;
+        // TODO make sure to process the below events and emit an error if there's a problem
         this.plebbit
             .plebbitRpcClient!.getSubscription(this._startRpcSubscriptionId)
-            .on("update", async (updateProps) => {
-                log(`Received update event from startSubplebbit (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
-
-                const newRpcRecord = RpcInternalSubplebbitRecordSchema.parse(updateProps.params.result);
-                await this._handleRpcUpdateProps(newRpcRecord);
-                this.emit("update", this);
-                if (!newRpcRecord.started) {
-                    // This is the rpc server telling us that this sub has been stopped by another instance
-                    await this._cleanUpRpcConnection(log);
-                }
-            })
+            .on("update", this._handleRpcUpdateEventFromStart.bind(this))
             .on("startedstatechange", (args) => {
                 const newStartedState = StartedStateSchema.parse(args.params.result);
                 this._setStartedState(newStartedState);
@@ -178,8 +254,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
         const optionsParsed = <SubplebbitEditOptions>replaceXWithY(parsedEditOptions, undefined, null); // JSON-RPC removes undefined, so we have to replace it with null
-        const newProps = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
-        await this._handleRpcUpdateProps(newProps);
+        const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
+        if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitNoMerge(subPropsAfterEdit);
+        else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
         return this;
     }
 

@@ -12,6 +12,7 @@ import {
     InternalSubplebbitRecordSchema,
     LocalSubplebbitJsonSchema,
     RemoteSubplebbitJsonSchema,
+    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcInternalSubplebbitRecordSchema,
     RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
@@ -61,7 +62,13 @@ export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
 export type InternalSubplebbitType = z.infer<typeof InternalSubplebbitRecordSchema>;
 
+export type InternalSubplebbitBeforeFirstUpdateType = z.infer<typeof RpcInternalSubplebbitRecordBeforeFirstUpdateSchema>;
+
+
 export type InternalSubplebbitRpcType = z.infer<typeof RpcInternalSubplebbitRecordSchema>;
+
+export type InternalSubplebbitBeforeFirstUpdateRpcType = z.infer<typeof RpcInternalSubplebbitRecordBeforeFirstUpdateSchema>;
+
 
 export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 
@@ -99,3 +106,7 @@ export type SubplebbitOnlyAddressAndPageCidsType = z.infer<typeof SubplebbitOnly
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
+
+// Subplebbit json here
+
+export type SubplebbitJson = RemoteSubplebbitJsonType | LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType;

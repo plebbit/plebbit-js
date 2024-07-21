@@ -264,32 +264,53 @@ export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubpleb
 
 // This type will be stored in the db as the current state
 
-export const InternalSubplebbitRecordSchema = SubplebbitIpfsSchema.extend({
+export const InternalSubplebbitRecordBeforeFirstUpdateSchema = CreateNewLocalSubplebbitParsedOptionsSchema.extend({
     settings: SubplebbitEditOptionsSchema.shape.settings,
-    signer: SignerWithAddressPublicKeySchema,
-    _subplebbitUpdateTrigger: z.boolean(),
-    _usingDefaultChallenge: z.boolean()
+    createdAt: SubplebbitIpfsSchema.shape.createdAt,
+    protocolVersion: ProtocolVersionSchema,
+    encryption: SubplebbitIpfsSchema.shape.encryption
 }).strict();
 
+export const InternalSubplebbitRecordSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
+    .extend({
+        _subplebbitUpdateTrigger: z.boolean(),
+        _usingDefaultChallenge: z.boolean()
+    })
+    .strict();
+
 // This will be transmitted over RPC connection for local subs to RPC clients
+
+export const RpcInternalSubplebbitRecordBeforeFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
+    signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
+}).strict();
+
+export const RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
+    shortAddress: ShortSubplebbitAddressSchema
+}).strict();
+
 export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.omit({
     signer: true,
     _subplebbitUpdateTrigger: true
 })
     .extend({
         started: z.boolean(),
-        signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
+        signer: RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape.signer
     })
     .strict();
 
-export const RpcUpdateResultSchema = SubplebbitIpfsSchema.or(RpcInternalSubplebbitRecordSchema);
-
-export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true })
+export const RpcInternalSubplebbitRecordJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true })
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
         posts: PostsPagesJsonSchema.optional()
     })
     .strict();
+
+export const RpcLocalSubplebbitUpdateResultSchema =
+    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.or(RpcInternalSubplebbitRecordSchema);
+
+export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordJsonSchema.or(
+    RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema
+);
 
 export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not sure if we need to modify it for now
 

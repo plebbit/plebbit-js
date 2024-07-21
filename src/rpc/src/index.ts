@@ -36,7 +36,13 @@ import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
 import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
-import { CreateNewLocalSubplebbitUserOptionsSchema, SubplebbitEditOptionsSchema } from "../../subplebbit/schema.js";
+import {
+    CreateNewLocalSubplebbitUserOptionsSchema,
+    InternalSubplebbitRecordBeforeFirstUpdateSchema,
+    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
+    RpcInternalSubplebbitRecordSchema,
+    SubplebbitEditOptionsSchema
+} from "../../subplebbit/schema.js";
 import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
@@ -239,14 +245,16 @@ class PlebbitWsServer extends EventEmitter {
         const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
         if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Failed to create a local subplebbit. This is a critical error");
-        return subplebbit.toJSONInternalRpc();
+        return InternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
     }
 
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number) {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
 
-        const updateListener = () => sendEvent("update", subplebbit.toJSONInternalRpc());
+        const getUpdateJson = () =>
+            typeof subplebbit.updatedAt === "number" ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
+        const updateListener = () => sendEvent("update", getUpdateJson());
         subplebbit.on("update", updateListener);
 
         const startedStateListener = () => sendEvent("startedstatechange", subplebbit.startedState);
@@ -361,7 +369,8 @@ class PlebbitWsServer extends EventEmitter {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
             delete startedSubplebbits[address];
         }
-        return subplebbit.toJSONInternalRpc();
+        if (typeof subplebbit.updatedAt === "number") return RpcInternalSubplebbitRecordSchema.parse(subplebbit.toJSONInternalRpc());
+        else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
     }
 
     async deleteSubplebbit(params: any) {

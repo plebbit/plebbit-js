@@ -42,6 +42,12 @@ export enum messages {
     ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",
     ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA = "The schema of decrypted challenge.encrypted is invalid",
     ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA = "The schema of challengeverification.encryption is invalid",
+    ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_PUBSUB_MSG_SCHEMA = "The rpc server transmitted an encoded challenge request pubsub message with invalid schema",
+    ERR_INVALID_RPC_ENCODED_CHALLENGE_PUBSUB_MSG_SCHEMA = "The rpc server transmitted an encoded challenge pubsub message with invalid schema",
+    ERR_INVALID_RPC_ENCODED_CHALLENGE_ANSWER_PUBSUB_MSG_SCHEMA = "The rpc server transmitted an encoded challenge answer pubsub message with invalid schema",
+    ERR_INVALID_RPC_ENCODED_CHALLENGE_VERIFICATION_PUBSUB_MSG_SCHEMA = "The rpc server transmitted an enocded challenge verification pubsub message with invalid schema",
+    ERR_INVALID_RPC_LOCAL_SUBPLEBBIT_UPDATE_SCHEMA = "RPC server has transmitted a local subplebbit update result with invalid schema",
+    ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA = "RPC server transmitted an invalid updating state schema",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

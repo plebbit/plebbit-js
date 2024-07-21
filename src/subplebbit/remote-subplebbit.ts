@@ -13,7 +13,8 @@ import type {
     RemoteSubplebbitJsonType,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
-    SubplebbitStats
+    SubplebbitStats,
+    SubplebbitJson
 } from "./types.js";
 import * as remeda from "remeda";
 import { z } from "zod";
@@ -158,8 +159,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.posts._subplebbitAddress = this.address;
     }
 
-    toJSON(): RemoteSubplebbitJsonType {
-        return {
+    toJSON(): SubplebbitJson {
+        return <RemoteSubplebbitJsonType>{
             ...this._toJSONBase(),
             posts: this.posts.toJSON(),
             shortAddress: this.shortAddress
