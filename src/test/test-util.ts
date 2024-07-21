@@ -103,9 +103,7 @@ export async function generateMockVote(
         vote: vote,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });
-    voteObj.once("challenge", (challengeMsg) => {
-        voteObj.publishChallengeAnswers([]);
-    });
+
     return voteObj;
 }
 
@@ -338,6 +336,7 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
     return plebbit;
 }
 
+// name should be changed to mockBrowserPlebbit
 export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
     // Mock browser environment
     const plebbit = await mockPlebbit(plebbitOptions);
