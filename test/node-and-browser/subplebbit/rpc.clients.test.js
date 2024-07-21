@@ -1,6 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import { describeIfRpc } from "../../../dist/node/test/test-util.js";
+import { describeIfRpc, mockPlebbit } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -8,6 +8,11 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 describeIfRpc(`subplebbit.clients.plebbitRpcClients (remote sub)`, async () => {
+    let plebbit;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+    });
     it(`subplebbit.clients.plebbitRpcClients[rpcUrl] is stopped by default`, async () => {
         const sub = await plebbit.createSubplebbit({ address: signers[0].address });
         const rpcUrl = Object.keys(plebbit.clients.plebbitRpcClients)[0];

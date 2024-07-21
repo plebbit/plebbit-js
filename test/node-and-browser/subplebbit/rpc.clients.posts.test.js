@@ -1,5 +1,7 @@
 import { describeIfRpc, mockPlebbit } from "../../../dist/node/test/test-util";
+import signers from "../../fixtures/signers";
 
+const subplebbitAddress = signers[0].address;
 describeIfRpc(`subplebbit.posts.clients.plebbitRpcClients`, async () => {
     let plebbit;
 
