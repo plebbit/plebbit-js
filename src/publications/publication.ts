@@ -12,7 +12,11 @@ import type {
     DecryptedChallengeRequest,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeVerification,
-    DecryptedChallengeVerificationMessageType
+    DecryptedChallengeVerificationMessageType,
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import type {
     IpfsHttpClientPubsubMessage,
@@ -47,6 +51,10 @@ import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubs
 import {
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
 import {
@@ -57,10 +65,6 @@ import {
     DecryptedChallengeRequestMessageSchema,
     DecryptedChallengeRequestSchema,
     IncomingPubsubMessageSchema,
-    EncodedDecryptedChallengeAnswerMessageSchema,
-    EncodedDecryptedChallengeMessageSchema,
-    EncodedDecryptedChallengeRequestMessageSchema,
-    EncodedDecryptedChallengeVerificationMessageSchema,
     ChallengeAnswerMessageSchema
 } from "../pubsub-messages/schema.js";
 import { z } from "zod";
@@ -185,24 +189,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
         };
     }
 
-    private async _handleRpcChallenge(challenge: DecryptedChallengeMessageType) {
-        this._challenge = challenge;
-        this._receivedChallengeFromSub = true;
-
-        this.emit("challenge", this._challenge);
-    }
-
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
         this._receivedChallengeVerification = true;
         if (verification.publication) this._updateLocalCommentPropsWithVerification(verification.publication);
         this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
-    }
-
-    private async _handleRpcChallengeAnswer(answer: DecryptedChallengeAnswerMessageType) {
-        this._challengeAnswer = answer;
-        this.emit("challengeanswer", answer);
     }
 
     private async _handleIncomingChallengePubsubMessage(msg: ChallengeMessageType) {
@@ -385,20 +377,21 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return this._handleIncomingChallengeVerificationPubsubMessage(pubsubMsgParsed);
     }
 
-    async publishChallengeAnswers(challengeAnswers: string[]) {
+    async publishChallengeAnswers(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]) {
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
-        assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
-
-        if (typeof this._currentPubsubProviderIndex !== "number")
-            throw Error("currentPubsubProviderIndex should be defined prior to publishChallengeAnswers");
-        if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         const toEncryptAnswers = DecryptedChallengeAnswerSchema.parse({ challengeAnswers: challengeAnswers });
+        if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
             await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, toEncryptAnswers.challengeAnswers);
             return;
         }
+
+        assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
+
+        if (typeof this._currentPubsubProviderIndex !== "number")
+            throw Error("currentPubsubProviderIndex should be defined prior to publishChallengeAnswers");
 
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),
@@ -591,6 +584,71 @@ class Publication extends TypedEmitter<PublicationEvents> {
         }
     }
 
+    private _handleIncomingChallengeRequestFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeRequestFromRpc");
+        let encodedRequest: EncodedDecryptedChallengeRequestMessageType;
+        try {
+            encodedRequest = parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of encoded challenge request from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
+        if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
+        else this._publishedChallengeRequests.push(request);
+        this.emit("challengerequest", request);
+    }
+
+    private _handleIncomingChallengeFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeFromRpc");
+        let encodedChallenge: EncodedDecryptedChallengeMessageType;
+        try {
+            encodedChallenge = parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of encoded challenge from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
+
+        this._challenge = challenge;
+        this._receivedChallengeFromSub = true;
+
+        this.emit("challenge", this._challenge);
+    }
+
+    private _handleIncomingChallengeAnswerFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeAnswerFromRpc");
+
+        let encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType;
+
+        try {
+            encodedChallengeAnswer = parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of encoded challenge answer from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
+        this._challengeAnswer = challengeAnswerMsg;
+        this.emit("challengeanswer", challengeAnswerMsg);
+    }
+
+    private _handleIncomingChallengeVerificationFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeVerificationFromRpc");
+        let encoded: EncodedDecryptedChallengeVerificationMessageType;
+        try {
+            encoded = parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of encoded challenge verification from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
+        this._handleRpcChallengeVerification(decoded);
+    }
+
     async _publishWithRpc() {
         const log = Logger("plebbit-js:publication:_publishWithRpc");
 
@@ -618,35 +676,18 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         this._plebbit.plebbitRpcClient
             .getSubscription(this._rpcPublishSubscriptionId)
-            .on("challengerequest", (args) => {
-                const encodedRequest = EncodedDecryptedChallengeRequestMessageSchema.parse(args.params.result);
-                const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
-                if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
-                else this._publishedChallengeRequests.push(request);
-                this.emit("challengerequest", request);
-            })
-            .on("challenge", (args) => {
-                const encodedChallenge = EncodedDecryptedChallengeMessageSchema.parse(args.params.result);
-                const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
-
-                this._handleRpcChallenge(challenge);
-            })
-            .on("challengeanswer", (args) => {
-                const encodedChallengeAnswer = EncodedDecryptedChallengeAnswerMessageSchema.parse(args.params.result);
-                const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
-                this._handleRpcChallengeAnswer(challengeAnswerMsg);
-            })
-            .on("challengeverification", (args) => {
-                const encoded = EncodedDecryptedChallengeVerificationMessageSchema.parse(args.params.result);
-                const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
-                this._handleRpcChallengeVerification(decoded);
-            })
+            .on("challengerequest", this._handleIncomingChallengeRequestFromRpc.bind(this))
+            .on("challenge", this._handleIncomingChallengeFromRpc.bind(this))
+            .on("challengeanswer", this._handleIncomingChallengeAnswerFromRpc.bind(this))
+            .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
             .on("publishingstatechange", (args) => {
+                // TODO this should be in a try/catch
                 const publishState = PublicationPublishingState.parse(args.params.result);
                 this._updatePublishingState(publishState);
                 this._updateRpcClientStateFromPublishingState(publishState);
             })
             .on("statechange", (args) => {
+                // TODO this should be in a try/catch
                 const state = PublicationStateSchema.parse(args.params.result);
                 this._updateState(state);
             })

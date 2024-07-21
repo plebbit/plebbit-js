@@ -152,17 +152,17 @@ const Base64StringSchema = z.string().base64();
 // Encrypted
 
 export const EncryptedEncodedSchema = z.object({
-    ciphertext: Base64StringSchema,
+    ciphertext: z.string(),
     iv: z.string(),
-    tag: Base64StringSchema,
+    tag: z.string(),
     type: EncryptedSchema.shape.type
 });
 
 // Pubsub messages
 
 export const EncodedPubsubMessageSignatureSchema = PubsubMessageSignatureSchema.omit({ signature: true, publicKey: true }).extend({
-    signature: Base64StringSchema,
-    publicKey: Base64StringSchema
+    signature: z.string(),
+    publicKey: z.string()
 });
 
 const BaseEncodedPubsubMessageSchema = z.object({

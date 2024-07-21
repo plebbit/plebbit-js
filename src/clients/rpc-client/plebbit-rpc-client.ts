@@ -179,7 +179,9 @@ export default class PlebbitRpcClient {
 
     async getComment(commentCid: string): Promise<Comment> {
         const parsedCommentCid = CommentCidSchema.parse(commentCid);
-        const commentProps = CommentIpfsSchema.parse(await this._webSocketClient.call("getComment", [parsedCommentCid]));
+        const commentProps = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
+            await this._webSocketClient.call("getComment", [parsedCommentCid])
+        );
         return this._plebbit.createComment({ cid: parsedCommentCid, ...commentProps });
     }
 

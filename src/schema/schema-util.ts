@@ -1,12 +1,26 @@
 import { PageIpfsSchema } from "../pages/schema.js";
-import { PageIpfs } from "../pages/types.js";
+import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { CommentIpfsType, CommentUpdate } from "../publications/comment/types.js";
-import { DecryptedChallengeSchema, DecryptedChallengeVerificationSchema } from "../pubsub-messages/schema.js";
+import {
+    DecryptedChallengeSchema,
+    DecryptedChallengeVerificationSchema,
+    EncodedDecryptedChallengeAnswerMessageSchema,
+    EncodedDecryptedChallengeMessageSchema,
+    EncodedDecryptedChallengeRequestMessageSchema,
+    EncodedDecryptedChallengeVerificationMessageSchema
+} from "../pubsub-messages/schema.js";
 import { SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import { DecryptedChallenge, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
+import type {
+    DecryptedChallenge,
+    DecryptedChallengeVerification,
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageType,
+    EncodedDecryptedChallengeVerificationMessageType
+} from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
@@ -64,6 +78,58 @@ export function parseDecryptedChallengeVerification(decryptedChallengeVerificati
         throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
             zodError: e,
             decryptedChallengeVerificationJson
+        });
+    }
+}
+
+export function parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails(
+    encodedDecryptedChallengeRequest: any
+): EncodedDecryptedChallengeRequestMessageType {
+    try {
+        return EncodedDecryptedChallengeRequestMessageSchema.parse(encodedDecryptedChallengeRequest);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_PUBSUB_MSG_SCHEMA", {
+            zodError: e,
+            encodedDecryptedChallengeRequest
+        });
+    }
+}
+
+export function parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails(
+    encodedDecryptedChallenge: any
+): EncodedDecryptedChallengeMessageType {
+    try {
+        return EncodedDecryptedChallengeMessageSchema.parse(encodedDecryptedChallenge);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_ENCODED_CHALLENGE_PUBSUB_MSG_SCHEMA", {
+            zodError: e,
+            encodedDecryptedChallenge
+        });
+    }
+}
+
+export function parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails(
+    encodedDecryptedChallengeAnswer: any
+): EncodedDecryptedChallengeAnswerMessageType {
+    try {
+        return EncodedDecryptedChallengeAnswerMessageSchema.parse(encodedDecryptedChallengeAnswer);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_ENCODED_CHALLENGE_ANSWER_PUBSUB_MSG_SCHEMA", {
+            zodError: e,
+            encodedDecryptedChallengeAnswer
+        });
+    }
+}
+
+export function parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails(
+    encodedDecryptedChallengeVerification: any
+): EncodedDecryptedChallengeVerificationMessageType {
+    try {
+        return EncodedDecryptedChallengeVerificationMessageSchema.parse(encodedDecryptedChallengeVerification);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_ENCODED_CHALLENGE_VERIFICATION_PUBSUB_MSG_SCHEMA", {
+            zodError: e,
+            encodedDecryptedChallengeVerification
         });
     }
 }
