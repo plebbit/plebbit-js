@@ -9,11 +9,12 @@ import {
     CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
     CreateRemoteSubplebbitOptionsSchema,
-    InternalSubplebbitRecordSchema,
+    InternalSubplebbitRecordBeforeFirstUpdateSchema,
+    InternalSubplebbitRecordAfterFirstUpdateSchema,
     LocalSubplebbitJsonSchema,
     RemoteSubplebbitJsonSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordSchema,
+    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
     SubplebbitChallengeSettingSchema,
@@ -60,15 +61,13 @@ export type LocalSubplebbitRpcJsonType = z.infer<typeof RpcLocalSubplebbitJsonSc
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
-export type InternalSubplebbitType = z.infer<typeof InternalSubplebbitRecordSchema>;
+export type InternalSubplebbitAfterFirstUpdateType = z.infer<typeof InternalSubplebbitRecordAfterFirstUpdateSchema>;
 
-export type InternalSubplebbitBeforeFirstUpdateType = z.infer<typeof RpcInternalSubplebbitRecordBeforeFirstUpdateSchema>;
+export type InternalSubplebbitBeforeFirstUpdateType = z.infer<typeof InternalSubplebbitRecordBeforeFirstUpdateSchema>;
 
-
-export type InternalSubplebbitRpcType = z.infer<typeof RpcInternalSubplebbitRecordSchema>;
+export type InternalSubplebbitAfterFirstUpdateRpcType = z.infer<typeof RpcInternalSubplebbitRecordAfterFirstUpdateSchema>;
 
 export type InternalSubplebbitBeforeFirstUpdateRpcType = z.infer<typeof RpcInternalSubplebbitRecordBeforeFirstUpdateSchema>;
-
 
 export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 
@@ -105,7 +104,7 @@ export type SubplebbitOnlyAddressAndPageCidsType = z.infer<typeof SubplebbitOnly
 // This is the object that gets passed to _updateDbInternalState after calling .edit()
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
-        Pick<InternalSubplebbitType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
+        Pick<InternalSubplebbitAfterFirstUpdateType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
 
 // Subplebbit json here
 

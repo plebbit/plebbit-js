@@ -25,7 +25,6 @@ import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
-import { CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
@@ -34,6 +33,7 @@ import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
 import { CommentIpfsWithCidPostCidDefined, CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
+import { STORAGE_KEYS } from "../../../constants.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -72,21 +72,26 @@ export class DbHandler {
         );
         await this.initDbConfigIfNeeded();
         if (!this._knex) this._knex = knex(this._dbConfig);
-        if (!this._createdTables)
-            try {
-                await this.createTablesIfNeeded();
-            } catch (e) {
-                log.error(
-                    `Sub (${
-                        this._subplebbit.address
-                    }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
-                        env.DB_VERSION
-                    }). Error`,
-                    e
-                );
-                throw e;
-            }
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
+    }
+
+    async createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:db-handler:createOrMigrateTablesIfNeeded");
+        if (this._createdTables) return;
+
+        try {
+            await this._createOrMigrateTablesIfNeeded();
+        } catch (e) {
+            log.error(
+                `Sub (${
+                    this._subplebbit.address
+                }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
+                    env.DB_VERSION
+                }). Error`,
+                e
+            );
+            throw e;
+        }
     }
 
     getDbConfig(): Knex.Config {
@@ -278,8 +283,8 @@ export class DbHandler {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
 
-    async createTablesIfNeeded() {
-        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
+    async _createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:db-handler:createOrMigrateTablesIfNeeded");
 
         const currentDbVersion = await this.getDbVersion();
 

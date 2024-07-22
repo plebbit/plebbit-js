@@ -2,7 +2,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { replaceXWithY } from "../util.js";
 import type {
     InternalSubplebbitBeforeFirstUpdateRpcType,
-    InternalSubplebbitRpcType,
+    InternalSubplebbitAfterFirstUpdateRpcType,
     LocalSubplebbitJsonType,
     LocalSubplebbitRpcJsonType,
     SubplebbitEditOptions
@@ -10,11 +10,17 @@ import type {
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
 import { messages } from "../errors.js";
+import * as remeda from "remeda";
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 
 import { parseLocalSubplebbitRpcUpdateResult } from "../schema/schema-util.js";
-import { RpcLocalSubplebbitUpdateResultSchema, StartedStateSchema, SubplebbitEditOptionsSchema } from "./schema.js";
+import {
+    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
+    RpcLocalSubplebbitUpdateResultSchema,
+    StartedStateSchema,
+    SubplebbitEditOptionsSchema
+} from "./schema.js";
 import {
     EncodedDecryptedChallengeAnswerMessageSchema,
     EncodedDecryptedChallengeMessageSchema,
@@ -33,10 +39,10 @@ import { SubscriptionIdSchema } from "../clients/rpc-client/schema.js";
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     private _startRpcSubscriptionId?: z.infer<typeof SubscriptionIdSchema>;
-    protected _usingDefaultChallenge!: InternalSubplebbitRpcType["_usingDefaultChallenge"];
+    protected _usingDefaultChallenge!: InternalSubplebbitAfterFirstUpdateRpcType["_usingDefaultChallenge"];
     startedState!: z.infer<typeof StartedStateSchema>;
-    signer!: InternalSubplebbitRpcType["signer"];
-    settings?: InternalSubplebbitRpcType["settings"];
+    signer!: InternalSubplebbitAfterFirstUpdateRpcType["signer"];
+    settings?: InternalSubplebbitAfterFirstUpdateRpcType["settings"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -58,32 +64,17 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             };
     }
 
-    toJSONInternalRpc(): InternalSubplebbitRpcType {
+    toJSONInternalRpc(): InternalSubplebbitAfterFirstUpdateRpcType {
         return {
             ...this.toJSONIpfs(),
-            settings: this.settings,
-            _usingDefaultChallenge: this._usingDefaultChallenge,
-            started: this.started,
-            signer: this.signer
+            ...this.toJSONInternalRpcBeforeFirstUpdate(),
+            started: this.started
         };
     }
 
     toJSONInternalRpcBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateRpcType {
-        return {
-            address: this.address,
-            createdAt: this.createdAt,
-            description: this.description,
-            features: this.features,
-            flairs: this.flairs,
-            pubsubTopic: this.pubsubTopic,
-            signer: this.signer,
-            roles: this.roles,
-            rules: this.rules,
-            suggested: this.suggested,
-            title: this.title,
-            protocolVersion: this.protocolVersion,
-            encryption: this.encryption
-        };
+        //@ts-expect-error
+        return remeda.pick(this, Object.keys(RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape));
     }
 
     async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateRpcType) {
@@ -101,12 +92,13 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.protocolVersion = newProps.protocolVersion;
         this.encryption = newProps.encryption;
         this.settings = newProps.settings;
+        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
+        this.challenges = newProps.challenges;
     }
 
-    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitRpcType) {
+    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
         await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
-        this._usingDefaultChallenge = newProps._usingDefaultChallenge;
         this.started = newProps.started;
     }
 

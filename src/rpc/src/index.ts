@@ -40,7 +40,7 @@ import {
     CreateNewLocalSubplebbitUserOptionsSchema,
     InternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordSchema,
+    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
@@ -369,7 +369,8 @@ class PlebbitWsServer extends EventEmitter {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
             delete startedSubplebbits[address];
         }
-        if (typeof subplebbit.updatedAt === "number") return RpcInternalSubplebbitRecordSchema.parse(subplebbit.toJSONInternalRpc());
+        if (typeof subplebbit.updatedAt === "number")
+            return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(subplebbit.toJSONInternalRpc());
         else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
     }
 

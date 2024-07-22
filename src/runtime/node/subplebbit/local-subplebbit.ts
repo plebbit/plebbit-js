@@ -3,8 +3,9 @@ import { Plebbit } from "../../../plebbit.js";
 import type {
     Challenge,
     CreateNewLocalSubplebbitParsedOptions,
-    InternalSubplebbitRpcType,
-    InternalSubplebbitType,
+    InternalSubplebbitBeforeFirstUpdateType,
+    InternalSubplebbitAfterFirstUpdateRpcType,
+    InternalSubplebbitAfterFirstUpdateType,
     LocalSubplebbitJsonType,
     ParsedSubplebbitEditOptions,
     SubplebbitChallengeSetting,
@@ -144,7 +145,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     // This will be stored in DB
-    toJSONInternal(): InternalSubplebbitType {
+    toJSONInternal(): InternalSubplebbitAfterFirstUpdateType {
         return {
             ...remeda.omit(this.toJSONInternalRpc(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
@@ -152,7 +153,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
     }
 
-    override toJSONInternalRpc(): InternalSubplebbitRpcType {
+    toJSONInternalBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateType {
+        return {
+            ...this.toJSONInternalRpcBeforeFirstUpdate(),
+            signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"])
+        };
+    }
+
+    override toJSONInternalRpc(): InternalSubplebbitAfterFirstUpdateRpcType {
         return {
             ...super.toJSONInternalRpc(),
             signer: remeda.pick(this.signer, ["publicKey", "address", "shortAddress", "type"])
@@ -187,10 +195,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.flairs = newProps.flairs;
     }
 
-    async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitType) {
+    async initInternalSubplebbitNoMerge(newProps: InternalSubplebbitAfterFirstUpdateType) {
         await this.initRpcInternalSubplebbitNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
+    }
+
+    async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateType) {
+        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
+        await this._initSignerProps(newProps.signer);
     }
 
     private async initDbHandlerIfNeeded() {
@@ -206,7 +219,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.initDbIfNeeded();
 
-        await this._mergeInstanceStateWithDbState({}); // Load InternalSubplebbit from DB here
+        await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         await this._updateStartedValue();
 
@@ -224,10 +237,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
     }
 
-    private async _updateDbInternalState(props: Partial<InternalSubplebbitType>) {
+    private async _updateDbInternalState(props: Partial<InternalSubplebbitAfterFirstUpdateType | InternalSubplebbitBeforeFirstUpdateType>) {
         if (remeda.isEmpty(props)) return;
         await this.dbHandler.lockSubState();
-        const internalStateBefore = <InternalSubplebbitType>await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalStateBefore = <InternalSubplebbitAfterFirstUpdateType | InternalSubplebbitBeforeFirstUpdateType | undefined>(
+            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+        );
         await this.dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
             ...internalStateBefore,
             ...props
@@ -237,14 +252,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _getDbInternalState(lock = true) {
         if (lock) await this.dbHandler.lockSubState();
-        const internalState = <InternalSubplebbitType>await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]);
+        const internalState = <InternalSubplebbitAfterFirstUpdateType | InternalSubplebbitBeforeFirstUpdateType>(
+            await this.dbHandler.keyvGet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT])
+        );
         if (lock) await this.dbHandler.unlockSubState();
         return internalState;
     }
 
-    private async _mergeInstanceStateWithDbState(overrideProps: Partial<InternalSubplebbitType>) {
-        const currentDbState = remeda.omit(await this._getDbInternalState(), ["address"]);
-        await this.initInternalSubplebbitNoMerge({ address: this.address, ...currentDbState, ...overrideProps }); // Not sure about this line
+    private async _updateInstanceStateWithDbState() {
+        const currentDbState = await this._getDbInternalState();
+
+        if ("updatedAt" in currentDbState) await this.initInternalSubplebbitNoMerge({ ...currentDbState, address: this.address });
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge({ ...currentDbState, address: this.address });
     }
 
     async _setChallengesToDefaultIfNotDefined(log: Logger) {
@@ -265,15 +284,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:_createNewLocalSubDb");
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.initDbIfNeeded();
-        await this._initSignerProps(this.signer); // init this.encryption as well 
+        await this.dbHandler.createOrMigrateTablesIfNeeded();
+        await this._initSignerProps(this.signer); // init this.encryption as well
 
         if (!this.pubsubTopic) this.pubsubTopic = remeda.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
 
-        await this._updateDbInternalState(this.toJSONInternal());
+        await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
 
         await this._setChallengesToDefaultIfNotDefined(log);
+
+        await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
+
         await this._updateStartedValue();
 
         await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
@@ -296,7 +319,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
         const dbInstance = await this._getDbInternalState(true);
-        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;
+        this._subplebbitUpdateTrigger =
+            this._subplebbitUpdateTrigger ||
+            ("_subplebbitUpdateTrigger" in dbInstance && dbInstance._subplebbitUpdateTrigger) ||
+            lastPublishTooOld;
 
         if (!this._subplebbitUpdateTrigger) return; // No reason to update
 
@@ -324,7 +350,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const statsCid = (await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(stats))).path;
         if (this.statsCid && statsCid !== this.statsCid) this._cidsToUnPin.push(this.statsCid);
 
-        await this._mergeInstanceStateWithDbState({});
+        await this._updateInstanceStateWithDbState();
 
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
@@ -1359,7 +1385,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._switchDbWhileRunningIfNeeded();
 
         try {
-            await this._mergeInstanceStateWithDbState({});
+            await this._updateInstanceStateWithDbState();
             await this._listenToIncomingRequests();
             await this._adjustPostUpdatesBucketsIfNeeded();
             this._setStartedState("publishing-ipns");
@@ -1387,7 +1413,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private async _initSignerProps(newSignerProps: InternalSubplebbitType["signer"]) {
+    private async _initSignerProps(newSignerProps: InternalSubplebbitBeforeFirstUpdateType["signer"]) {
         this.signer = new SignerWithPublicKeyAddress(newSignerProps);
         if (!this.signer?.ipfsKey?.byteLength || this.signer?.ipfsKey?.byteLength <= 0)
             this.signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(this.signer.privateKey));
@@ -1435,13 +1461,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.dbHandler.initDestroyedConnection();
     }
 
-    private _parseRolesToEdit(newRawRoles: NonNullable<SubplebbitEditOptions["roles"]>): NonNullable<InternalSubplebbitType["roles"]> {
+    private _parseRolesToEdit(
+        newRawRoles: NonNullable<SubplebbitEditOptions["roles"]>
+    ): NonNullable<InternalSubplebbitAfterFirstUpdateType["roles"]> {
         return <NonNullable<SubplebbitIpfsType["roles"]>>remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
     }
 
     private _parseChallengesToEdit(
         newChallengeSettings: NonNullable<NonNullable<SubplebbitEditOptions["settings"]>["challenges"]>
-    ): NonNullable<Pick<InternalSubplebbitType, "challenges" | "_usingDefaultChallenge">> {
+    ): NonNullable<Pick<InternalSubplebbitAfterFirstUpdateType, "challenges" | "_usingDefaultChallenge">> {
         return {
             challenges: newChallengeSettings.map(getSubplebbitChallengeFromSubplebbitChallengeSettings),
             _usingDefaultChallenge: remeda.isDeepEqual(newChallengeSettings, this._defaultSubplebbitChallenges)
@@ -1454,7 +1482,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
 
         const newInternalProps = <
-            Pick<InternalSubplebbitType, "_subplebbitUpdateTrigger" | "roles" | "challenges" | "_usingDefaultChallenge">
+            Pick<InternalSubplebbitAfterFirstUpdateType, "_subplebbitUpdateTrigger" | "roles" | "challenges" | "_usingDefaultChallenge">
         >{
             _subplebbitUpdateTrigger: true,
             ...(parsedEditOptions.roles ? { roles: this._parseRolesToEdit(parsedEditOptions.roles) } : undefined),
@@ -1492,10 +1520,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const latestState = await this._getDbInternalState(true);
 
-        await this.initInternalSubplebbitNoMerge(latestState);
+        if ("updatedAt" in latestState) await this.initInternalSubplebbitNoMerge(latestState);
+        else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(latestState);
 
         log(
             `Subplebbit (${this.address}) props (${remeda.keys.strict(newProps)}) has been edited: `,
+            //@ts-expect-error
             remeda.pick(latestState, remeda.keys.strict(newProps))
         );
         if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
@@ -1543,7 +1573,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
-            await this.initInternalSubplebbitNoMerge(subState);
+            if ("updatedAt" in subState) await this.initInternalSubplebbitNoMerge(subState);
+            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(subState);
             this.emit("update", this);
         }
     }

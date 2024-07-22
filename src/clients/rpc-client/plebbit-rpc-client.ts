@@ -10,7 +10,7 @@ import { throwWithErrorCode } from "../../util.js";
 import type {
     CreateNewLocalSubplebbitUserOptions,
     InternalSubplebbitBeforeFirstUpdateRpcType,
-    InternalSubplebbitRpcType,
+    InternalSubplebbitAfterFirstUpdateRpcType,
     SubplebbitEditOptions
 } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
@@ -23,7 +23,7 @@ import {
     CreateNewLocalSubplebbitUserOptionsSchema,
     ListOfSubplebbitsSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordSchema,
+    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
@@ -244,13 +244,13 @@ export default class PlebbitRpcClient {
     async editSubplebbit(
         subplebbitAddress: string,
         subplebbitEditOptions: SubplebbitEditOptions
-    ): Promise<InternalSubplebbitRpcType | InternalSubplebbitBeforeFirstUpdateRpcType> {
+    ): Promise<InternalSubplebbitAfterFirstUpdateRpcType | InternalSubplebbitBeforeFirstUpdateRpcType> {
         const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
-        const rawRes = <InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitRpcType>(
+        const rawRes = <InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitAfterFirstUpdateRpcType>(
             await this._webSocketClient.call("editSubplebbit", [parsedAddress, parsedEditOptions])
         );
-        if ("updatedAt" in rawRes) return RpcInternalSubplebbitRecordSchema.parse(rawRes);
+        if ("updatedAt" in rawRes) return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(rawRes);
         else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(rawRes);
     }
 

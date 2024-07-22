@@ -265,30 +265,31 @@ export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubpleb
 // This type will be stored in the db as the current state
 
 export const InternalSubplebbitRecordBeforeFirstUpdateSchema = CreateNewLocalSubplebbitParsedOptionsSchema.extend({
-    settings: SubplebbitEditOptionsSchema.shape.settings,
+    settings: SubplebbitSettingsSchema,
+    challenges: SubplebbitIpfsSchema.shape.challenges, // subplebbit.challenges will be set to default after creating the subplebbit
     createdAt: SubplebbitIpfsSchema.shape.createdAt,
     protocolVersion: ProtocolVersionSchema,
-    encryption: SubplebbitIpfsSchema.shape.encryption
+    encryption: SubplebbitIpfsSchema.shape.encryption,
+    _usingDefaultChallenge: z.boolean()
 }).strict();
 
-export const InternalSubplebbitRecordSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
+export const InternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
     .extend({
-        _subplebbitUpdateTrigger: z.boolean(),
-        _usingDefaultChallenge: z.boolean()
+        _subplebbitUpdateTrigger: z.boolean()
     })
     .strict();
 
 // This will be transmitted over RPC connection for local subs to RPC clients
 
 export const RpcInternalSubplebbitRecordBeforeFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
-    signer: InternalSubplebbitRecordSchema.shape.signer.omit({ privateKey: true })
+    signer: InternalSubplebbitRecordAfterFirstUpdateSchema.shape.signer.omit({ privateKey: true })
 }).strict();
 
 export const RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
     shortAddress: ShortSubplebbitAddressSchema
 }).strict();
 
-export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.omit({
+export const RpcInternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordAfterFirstUpdateSchema.omit({
     signer: true,
     _subplebbitUpdateTrigger: true
 })
@@ -298,17 +299,18 @@ export const RpcInternalSubplebbitRecordSchema = InternalSubplebbitRecordSchema.
     })
     .strict();
 
-export const RpcInternalSubplebbitRecordJsonSchema = RpcInternalSubplebbitRecordSchema.omit({ posts: true })
+export const RpcInternalSubplebbitRecordAfterFirstUpdateJsonSchema = RpcInternalSubplebbitRecordAfterFirstUpdateSchema.omit({ posts: true })
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
         posts: PostsPagesJsonSchema.optional()
     })
     .strict();
 
-export const RpcLocalSubplebbitUpdateResultSchema =
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.or(RpcInternalSubplebbitRecordSchema);
+export const RpcLocalSubplebbitUpdateResultSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.or(
+    RpcInternalSubplebbitRecordAfterFirstUpdateSchema
+);
 
-export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordJsonSchema.or(
+export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordAfterFirstUpdateJsonSchema.or(
     RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema
 );
 
@@ -349,12 +351,12 @@ export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebb
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
     CreateNewLocalSubplebbitUserOptionsSchema
 )
-    .or(InternalSubplebbitRecordSchema)
+    .or(InternalSubplebbitRecordAfterFirstUpdateSchema)
     .or(SubplebbitClassSchema);
 
 export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(
     CreateRemoteSubplebbitFunctionArgumentSchema
-).or(InternalSubplebbitRecordSchema);
+).or(InternalSubplebbitRecordAfterFirstUpdateSchema);
 
 // plebbit.listSubplebbits()
 
