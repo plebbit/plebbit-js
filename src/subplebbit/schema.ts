@@ -282,7 +282,8 @@ export const InternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbit
 // This will be transmitted over RPC connection for local subs to RPC clients
 
 export const RpcInternalSubplebbitRecordBeforeFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
-    signer: InternalSubplebbitRecordAfterFirstUpdateSchema.shape.signer.omit({ privateKey: true })
+    signer: InternalSubplebbitRecordAfterFirstUpdateSchema.shape.signer.omit({ privateKey: true }),
+    started: z.boolean()
 }).strict();
 
 export const RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
@@ -294,7 +295,7 @@ export const RpcInternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubpleb
     _subplebbitUpdateTrigger: true
 })
     .extend({
-        started: z.boolean(),
+        started: RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape.started,
         signer: RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape.signer
     })
     .strict();

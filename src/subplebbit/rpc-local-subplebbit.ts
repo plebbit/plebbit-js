@@ -22,18 +22,8 @@ import {
     parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails,
     parseRpcStartedStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
-import {
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcLocalSubplebbitUpdateResultSchema,
-    StartedStateSchema,
-    SubplebbitEditOptionsSchema
-} from "./schema.js";
-import {
-    EncodedDecryptedChallengeAnswerMessageSchema,
-    EncodedDecryptedChallengeMessageSchema,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
-    EncodedDecryptedChallengeVerificationMessageSchema
-} from "../pubsub-messages/schema.js";
+import { RpcInternalSubplebbitRecordBeforeFirstUpdateSchema, RpcLocalSubplebbitUpdateResultSchema, StartedStateSchema } from "./schema.js";
+import { EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import {
     decodeRpcChallengeAnswerPubsubMsg,
     decodeRpcChallengePubsubMsg,
@@ -41,7 +31,7 @@ import {
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
 import { SubscriptionIdSchema } from "../clients/rpc-client/schema.js";
-import {
+import type {
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeVerificationMessageType
@@ -79,8 +69,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     toJSONInternalRpc(): InternalSubplebbitAfterFirstUpdateRpcType {
         return {
             ...this.toJSONIpfs(),
-            ...this.toJSONInternalRpcBeforeFirstUpdate(),
-            started: this.started
+            ...this.toJSONInternalRpcBeforeFirstUpdate()
         };
     }
 
@@ -106,12 +95,12 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.settings = newProps.settings;
         this._usingDefaultChallenge = newProps._usingDefaultChallenge;
         this.challenges = newProps.challenges;
+        this.started = newProps.started;
     }
 
     async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
         await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
-        this.started = newProps.started;
     }
 
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {

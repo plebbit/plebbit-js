@@ -10,7 +10,8 @@ import type {
     ParsedSubplebbitEditOptions,
     SubplebbitChallengeSetting,
     SubplebbitEditOptions,
-    SubplebbitIpfsType
+    SubplebbitIpfsType,
+    InternalSubplebbitBeforeFirstUpdateRpcType
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
@@ -167,6 +168,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
     }
 
+    override toJSONInternalRpcBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateRpcType {
+        return {
+            ...super.toJSONInternalRpcBeforeFirstUpdate(),
+            signer: remeda.pick(this.signer, ["publicKey", "address", "shortAddress", "type"])
+        };
+    }
+
     override toJSON(): LocalSubplebbitJsonType {
         const internalJson = this.toJSONInternal();
         return {
@@ -202,7 +210,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateType) {
-        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
+        await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
     }
 
@@ -1568,13 +1576,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async _updateOnce() {
         const log = Logger("plebbit-js:local-subplebbit:update");
-        const subState = await this._getDbInternalState(false);
+        const dbSubState = await this._getDbInternalState(false);
+        const currentState = typeof this.updatedAt === "number" ? this.toJSONInternal() : this.toJSONInternalBeforeFirstUpdate();
         await this._updateStartedValue();
-        if (deterministicStringify(this.toJSONInternal()) !== deterministicStringify(subState)) {
+        if (deterministicStringify(currentState) !== deterministicStringify(dbSubState)) {
             log(`Local Subplebbit received a new update. Will emit an update event`);
             this._setUpdatingState("succeeded");
-            if ("updatedAt" in subState) await this.initInternalSubplebbitNoMerge(subState);
-            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(subState);
+            if ("updatedAt" in dbSubState) await this.initInternalSubplebbitNoMerge(dbSubState);
+            else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(dbSubState);
             this.emit("update", this);
         }
     }
