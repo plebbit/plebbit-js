@@ -43,8 +43,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit._usingDefaultChallenge).to.be.true;
 
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         for (const _subplebbit of [subplebbit, remoteSub]) {
             expect(_subplebbit.challenges[0].type).to.equal("image/png");
@@ -62,8 +61,7 @@ describe(`subplebbit.settings.challenges`, async () => {
         const subplebbit = await plebbit.createSubplebbit({});
         await subplebbit.edit({ settings: { challenges: [] } });
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
 
         await subplebbit.delete();
