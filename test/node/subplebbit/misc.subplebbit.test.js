@@ -182,14 +182,10 @@ describe(`subplebbit.pubsubTopic`, async () => {
     });
     it(`Publications can be published to a sub with pubsubTopic=undefined`, async () => {
         await subplebbit.edit({ pubsubTopic: undefined });
-        if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
-            expect.fail("subplebbit.pubsubTopic should be null or undefined");
+        expect(subplebbit.pubsubTopic).to.be.undefined;
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
-
-        if (subplebbit.pubsubTopic !== undefined && subplebbit.pubsubTopic !== null)
-            expect.fail("subplebbit.pubsubTopic should be null or undefined");
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+        expect(subplebbit.pubsubTopic).to.be.undefined;
 
         const post = await publishRandomPost(subplebbit.address, plebbit, {}, false);
         expect(post.subplebbit?.pubsubTopic).to.be.undefined;
@@ -706,7 +702,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => sub.once("update", resolve));
 
-            expect(recordedStates).to.deep.equal(["publishing-ipns"]);
+            expect(recordedStates).to.deep.equal(["publishing-ipns", "stopped"]);
 
             await sub.delete();
         });
