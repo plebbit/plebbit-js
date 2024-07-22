@@ -242,7 +242,7 @@ class PlebbitWsServer extends EventEmitter {
         const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
         if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Failed to create a local subplebbit. This is a critical error");
-        return InternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
+        return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
     }
 
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number) {
@@ -541,7 +541,14 @@ class PlebbitWsServer extends EventEmitter {
             : <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
 
         const sendSubJson = () => {
-            const jsonToSend = subplebbit instanceof LocalSubplebbit ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONIpfs();
+            let jsonToSend: SubplebbitIpfsType | InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitAfterFirstUpdateRpcType;
+            if (subplebbit instanceof LocalSubplebbit)
+                jsonToSend =
+                    typeof subplebbit.updatedAt === "number"
+                        ? subplebbit.toJSONInternalRpc()
+                        : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
+            else jsonToSend = subplebbit.toJSONIpfs();
+
             sendEvent("update", jsonToSend);
         };
 
