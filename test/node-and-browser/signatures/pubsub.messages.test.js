@@ -188,7 +188,6 @@ describeSkipIfRpc("challengerequest", async () => {
     });
 });
 
-// prettier-ignore
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc(`challengemessage`, async () => {
     let plebbit;
@@ -387,7 +386,6 @@ describeSkipIfRpc("challengeanswer", async () => {
     });
 });
 
-// prettier-ignore
 // Clients of RPC will trust the response of RPC and won't validate
 describeSkipIfRpc("challengeverification", async () => {
     let plebbit;
@@ -395,9 +393,7 @@ describeSkipIfRpc("challengeverification", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
-        const challengeVerification = parseMsgJson(
-            remeda.clone(validChallengeVerificationFixture)
-        );
+        const challengeVerification = parseMsgJson(remeda.clone(validChallengeVerificationFixture));
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -414,9 +410,7 @@ describeSkipIfRpc("challengeverification", async () => {
         });
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
-        const challengeVerification = parseMsgJson(
-            remeda.clone(validChallengeVerificationFixture)
-        );
+        const challengeVerification = parseMsgJson(remeda.clone(validChallengeVerificationFixture));
         challengeVerification.timestamp -= 1234; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
