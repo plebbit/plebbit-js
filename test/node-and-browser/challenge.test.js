@@ -9,6 +9,8 @@ import {
     mockPlebbit
 } from "../../dist/node/test/test-util.js";
 
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+
 const mathCliSubplebbitAddress = signers[1].address;
 
 describe.skip(`Stress test challenge exchange`, async () => {
@@ -57,7 +59,7 @@ describe("Validate props of publication Pubsub messages", async () => {
 
         comment.publish();
         const request = await new Promise((resolve) => comment.once("challengerequest", resolve));
-        expect(request.publication).to.deep.equal(comment.toJSONPubsubMessagePublication());
+        expect(deterministicStringify(request.publication)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
         expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(request.challengeRequestId.length).to.equal(38);
         expect(request.type).to.equal("CHALLENGEREQUEST");
