@@ -26,8 +26,7 @@ describe(`subplebbit.start`, async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
     after(async () => subplebbit.stop());
 
@@ -62,9 +61,8 @@ describe(`subplebbit.start`, async () => {
         const listedTopics = async () => await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
         expect(await listedTopics()).to.not.include(subplebbit.address);
 
-        await resolveWhenConditionIsTrue(subplebbit, async () => {
-            return (await listedTopics()).includes(subplebbit.address);
-        });
+        await new Promise((resolve) => setTimeout(resolve, subplebbit.plebbit.publishInterval * 2));
+        expect(await listedTopics()).to.include(subplebbit.address);
 
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
     });
