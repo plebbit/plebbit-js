@@ -376,7 +376,7 @@ const getChallenge = async (
 function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     let { chainTicker } = subplebbitChallengeSettings?.options || {};
 
-    const type = <Challenge["type"]>("chain/" + (chainTicker || "<chainTicker>"));
+    const type = <Challenge["type"]>("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };
 }
 
