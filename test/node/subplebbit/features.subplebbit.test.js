@@ -4,7 +4,7 @@ import {
     generateMockPost,
     overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
-    mockRemotePlebbit
+    mockRemotePlebbitIpfsOnly
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 
@@ -17,7 +17,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
@@ -55,7 +55,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
