@@ -324,7 +324,7 @@ describe(`Editing subplebbit.roles`, async () => {
 
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         sub = await plebbit.createSubplebbit();
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => Boolean(sub.updatedAt));
