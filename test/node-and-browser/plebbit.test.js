@@ -74,7 +74,7 @@ describe("Plebbit options", async () => {
     });
 
     itIfRpc("Error is thrown if RPC is down", async () => {
-        const plebbit = await mockRemotePlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
+        const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
         // plebbit.listSubplebbits will take 20s to timeout and throw this error
         await assert.isRejected(plebbit.listSubplebbits(), messages["ERR_FAILED_TO_OPEN_CONNECTION_TO_RPC"]); // Use the rpc so it would detect it's not loading
     });
