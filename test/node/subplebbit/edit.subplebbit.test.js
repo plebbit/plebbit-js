@@ -334,7 +334,7 @@ describe(`Editing subplebbit.roles`, async () => {
         await sub.delete();
     });
 
-    it(`Setting sub.roles[author-address] to null removes the role`, async () => {
+    it(`Setting sub.roles[author-address] to undefined removes the role`, async () => {
         const authorAddress = "hello.eth";
         const secondAuthorAddress = "hello2.eth";
         await sub.edit({ roles: { [authorAddress]: { role: "admin" }, [secondAuthorAddress]: { role: "moderator" } } });
@@ -348,7 +348,7 @@ describe(`Editing subplebbit.roles`, async () => {
         expect(remoteSub.roles[authorAddress].role).to.equal("admin");
         expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
 
-        await sub.edit({ roles: { [authorAddress]: null, [secondAuthorAddress]: { role: "moderator" } } });
+        await sub.edit({ roles: { [authorAddress]: undefined, [secondAuthorAddress]: { role: "moderator" } } });
         expect(sub.roles[authorAddress]).to.be.undefined;
         expect(sub.roles[secondAuthorAddress].role).to.equal("moderator");
 
@@ -359,7 +359,7 @@ describe(`Editing subplebbit.roles`, async () => {
         expect(remoteSub.roles[secondAuthorAddress].role).to.equal("moderator");
 
         // Now set the other author role to null, this should set subplebbit.roles to undefined
-        await sub.edit({ roles: { [authorAddress]: null, [secondAuthorAddress]: null } });
+        await sub.edit({ roles: { [authorAddress]: undefined, [secondAuthorAddress]: undefined } });
         expect(sub.roles).to.deep.equal({}); // {} after edit, but will be undefined after publishing because we remove any empty objects {} before publishing to IPFS
 
         await new Promise((resolve) => sub.once("update", resolve));
