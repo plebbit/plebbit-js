@@ -312,9 +312,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
-        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
-        const optionsParsed = <SubplebbitEditOptions>replaceXWithY(parsedEditOptions, undefined, null); // JSON-RPC removes undefined, so we have to replace it with null
-        const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, optionsParsed);
+        const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
         return this;

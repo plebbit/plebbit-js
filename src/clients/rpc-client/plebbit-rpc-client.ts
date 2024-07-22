@@ -6,7 +6,7 @@ import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
-import { throwWithErrorCode } from "../../util.js";
+import { replaceXWithY, throwWithErrorCode } from "../../util.js";
 import type {
     CreateNewLocalSubplebbitUserOptions,
     InternalSubplebbitBeforeFirstUpdateRpcType,
@@ -115,12 +115,9 @@ export default class PlebbitRpcClient {
                     //e is an error json representation of PlebbitError
                     if ("code" in <PlebbitError>e) {
                         const actualPlebError = e as PlebbitError;
-                        // zod here
                         throw new PlebbitError(actualPlebError.code, actualPlebError.details);
                     } else if ("message" in <Error>e) throw new Error((<Error>e).message);
-                    else {
-                        throw Error("plebbit rpc client call throwed a non Error" + e);
-                    }
+                    else throw e;
                 }
             };
         }
@@ -247,8 +244,9 @@ export default class PlebbitRpcClient {
     ): Promise<InternalSubplebbitAfterFirstUpdateRpcType | InternalSubplebbitBeforeFirstUpdateRpcType> {
         const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
+        const propsAfterReplacing = replaceXWithY(parsedEditOptions, undefined, null);
         const rawRes = <InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitAfterFirstUpdateRpcType>(
-            await this._webSocketClient.call("editSubplebbit", [parsedAddress, parsedEditOptions])
+            await this._webSocketClient.call("editSubplebbit", [parsedAddress, propsAfterReplacing])
         );
         if ("updatedAt" in rawRes) return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(rawRes);
         else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(rawRes);

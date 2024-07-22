@@ -225,7 +225,7 @@ export const SubplebbitSettingsSchema = z
     })
     .strict();
 
-const SubplebbitRoleToEditSchema = SubplebbitRoleSchema.or(z.null()); // when we pass null we're removing the role
+const SubplebbitRoleToEditSchema = SubplebbitRoleSchema.or(z.undefined()); // when we pass undefined we're removing the role
 
 const SubplebbitRolesToEditSchema = z.record(AuthorAddressSchema, SubplebbitRoleToEditSchema);
 

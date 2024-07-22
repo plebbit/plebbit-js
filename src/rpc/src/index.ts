@@ -31,14 +31,13 @@ import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
-import { throwWithErrorCode } from "../../util.js";
+import { replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
 import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import {
     CreateNewLocalSubplebbitUserOptionsSchema,
-    InternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     SubplebbitEditOptionsSchema
@@ -49,6 +48,11 @@ import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/c
 import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "./schema.js";
+import type {
+    InternalSubplebbitAfterFirstUpdateRpcType,
+    InternalSubplebbitBeforeFirstUpdateRpcType,
+    SubplebbitIpfsType
+} from "../../subplebbit/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -173,16 +177,9 @@ class PlebbitWsServer extends EventEmitter {
             } catch (e: any) {
                 log.error(`${callback.name} error`, { params, error: e });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                if (!e.code) {
-                    const errorJson = JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e)));
-                    delete errorJson["stack"];
-                    throw errorJson;
-                } else {
-                    // PlebbitError
-                    const errorJson = clone(e);
-                    delete errorJson["stack"];
-                    throw errorJson;
-                }
+                const errorJson = clone(e);
+                delete errorJson["stack"];
+                throw errorJson;
             }
         };
         this.rpcWebsockets.register(method, callbackWithErrorHandled);
@@ -356,7 +353,8 @@ class PlebbitWsServer extends EventEmitter {
 
     async editSubplebbit(params: any) {
         const address = SubplebbitAddressSchema.parse(params[0]);
-        const editSubplebbitOptions = SubplebbitEditOptionsSchema.parse(params[1]);
+        const replacedProps = replaceXWithY(params[1], null, undefined);
+        const editSubplebbitOptions = SubplebbitEditOptionsSchema.parse(replacedProps);
 
         const localSubs = await this.plebbit.listSubplebbits();
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
