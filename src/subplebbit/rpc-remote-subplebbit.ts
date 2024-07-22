@@ -5,7 +5,10 @@ import * as remeda from "remeda";
 import { z } from "zod";
 import { UpdatingStateSchema } from "./schema.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { parseRpcRemoteUpdatingState, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import {
+    parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails,
+    parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
+} from "../schema/schema-util.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number;
@@ -56,7 +59,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_handleUpdatingStateChangeFromRpcUpdate");
         let newUpdatingState: z.infer<typeof UpdatingStateSchema>;
         try {
-            newUpdatingState = parseRpcRemoteUpdatingState(args.params.result);
+            newUpdatingState = parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("Failed to parse the schema of updating state from rpc", e);
             this.emit("error", <PlebbitError>e);

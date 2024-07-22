@@ -14,7 +14,14 @@ import * as remeda from "remeda";
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 
-import { parseLocalSubplebbitRpcUpdateResult } from "../schema/schema-util.js";
+import {
+    parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
+    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
+    parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails,
+    parseRpcStartedStateWithPlebbitErrorIfItFails
+} from "../schema/schema-util.js";
 import {
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcLocalSubplebbitUpdateResultSchema,
@@ -34,6 +41,11 @@ import {
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
 import { SubscriptionIdSchema } from "../clients/rpc-client/schema.js";
+import {
+    EncodedDecryptedChallengeAnswerMessageType,
+    EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeVerificationMessageType
+} from "../pubsub-messages/types.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
@@ -124,7 +136,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
         let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
         try {
-            updateRecord = parseLocalSubplebbitRpcUpdateResult(args.params.result);
+            updateRecord = parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("The update event from rpc contains an invalid schema", e);
             this.emit("error", <PlebbitError>e);
@@ -143,7 +155,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
         let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
         try {
-            updateRecord = parseLocalSubplebbitRpcUpdateResult(args.params.result);
+            updateRecord = parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("The update event from rpc contains an invalid schema", e);
             this.emit("error", <PlebbitError>e);
@@ -158,6 +170,90 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         } else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
         this.emit("update", this);
+    }
+
+    private _handleRpcStartedStateChangeEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcStartedStateChangeEvent");
+
+        let newStartedState: RpcLocalSubplebbit["startedState"];
+        try {
+            newStartedState = parseRpcStartedStateWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("The startedstatechange event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        this._setStartedState(newStartedState);
+        this._updateRpcClientStateFromStartedState(newStartedState);
+    }
+
+    private _handleRpcChallengeRequestEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeRequestEvent");
+        let encodedRequest: z.infer<typeof EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema>;
+        try {
+            encodedRequest = parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("The challengerequest event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
+        this._setRpcClientState("waiting-challenge-requests");
+        this.emit("challengerequest", request);
+    }
+
+    private _handleRpcChallengeEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeEvent");
+
+        let encodedChallenge: EncodedDecryptedChallengeMessageType;
+        try {
+            encodedChallenge = parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("The challenge event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
+
+        this._setRpcClientState("publishing-challenge");
+        this.emit("challenge", challenge);
+        this._setRpcClientState("waiting-challenge-answers");
+    }
+
+    private _handleRpcChallengeAnswerEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeAnswerEvent");
+
+        let encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType;
+        try {
+            encodedChallengeAnswer = parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("The challengeanswer event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        const challengeAnswer = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
+        this.emit("challengeanswer", challengeAnswer);
+    }
+
+    private _handleRpcChallengeVerificationEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeVerificationEvent");
+
+        let encodedChallengeVerification: EncodedDecryptedChallengeVerificationMessageType;
+
+        try {
+            encodedChallengeVerification = parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("The challengeverification event from rpc contains an invalid schema", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        const challengeVerification = decodeRpcChallengeVerificationPubsubMsg(encodedChallengeVerification);
+        this._setRpcClientState("publishing-challenge-verification");
+        this.emit("challengeverification", challengeVerification);
+        this._setRpcClientState("waiting-challenge-requests");
     }
 
     override async start() {
@@ -176,42 +272,14 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             throw e;
         }
         this.started = true;
-        // TODO make sure to process the below events and emit an error if there's a problem
         this.plebbit
             .plebbitRpcClient!.getSubscription(this._startRpcSubscriptionId)
             .on("update", this._handleRpcUpdateEventFromStart.bind(this))
-            .on("startedstatechange", (args) => {
-                const newStartedState = StartedStateSchema.parse(args.params.result);
-                this._setStartedState(newStartedState);
-                this._updateRpcClientStateFromStartedState(newStartedState);
-            })
-            .on("challengerequest", (args) => {
-                const encodedRequest = EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema.parse(args.params.result);
-                const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
-                this._setRpcClientState("waiting-challenge-requests");
-                this.emit("challengerequest", request);
-            })
-            .on("challenge", (args) => {
-                const encodedChallenge = EncodedDecryptedChallengeMessageSchema.parse(args.params.result);
-                const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
-
-                this._setRpcClientState("publishing-challenge");
-                this.emit("challenge", challenge);
-                this._setRpcClientState("waiting-challenge-answers");
-            })
-            .on("challengeanswer", (args) => {
-                const encodedChallengeAnswer = EncodedDecryptedChallengeAnswerMessageSchema.parse(args.params.result);
-
-                const challengeAnswer = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
-                this.emit("challengeanswer", challengeAnswer);
-            })
-            .on("challengeverification", (args) => {
-                const encodedChallengeVerification = EncodedDecryptedChallengeVerificationMessageSchema.parse(args.params.result);
-                const challengeVerification = decodeRpcChallengeVerificationPubsubMsg(encodedChallengeVerification);
-                this._setRpcClientState("publishing-challenge-verification");
-                this.emit("challengeverification", challengeVerification);
-                this._setRpcClientState("waiting-challenge-requests");
-            })
+            .on("startedstatechange", this._handleRpcStartedStateChangeEvent.bind(this))
+            .on("challengerequest", this._handleRpcChallengeRequestEvent.bind(this))
+            .on("challenge", this._handleRpcChallengeEvent.bind(this))
+            .on("challengeanswer", this._handleRpcChallengeAnswerEvent.bind(this))
+            .on("challengeverification", this._handleRpcChallengeVerificationEvent.bind(this))
 
             .on("error", (args) => this.emit("error", args.params.result)); // TODO need to figure out how to zod parse error
 
