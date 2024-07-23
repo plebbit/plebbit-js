@@ -23,4 +23,31 @@ describe(`subplebbit.update - Local subs`, async () => {
         await recreatedSub.stop();
         await sub.delete();
     });
+
+    it(`A local subplebbit is not emitting updates unneccessarily`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+
+        const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
+        const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
+        expect(oldUpdatedAt).to.equal(sub.updatedAt);
+
+        await recreatedSub.update();
+
+        const failPromise = new Promise((resolve, reject) =>
+            recreatedSub.on("update", () => {
+                if (recreatedSub.updatedAt === oldUpdatedAt) reject("It should not emit an update if there's no new info");
+            })
+        );
+
+        try {
+            await Promise.race([failPromise, new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2))]);
+        } catch (e) {
+            throw e;
+        } finally {
+            await sub.delete();
+            await recreatedSub.stop();
+        }
+    });
 });
