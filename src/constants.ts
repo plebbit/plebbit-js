@@ -8,7 +8,8 @@ import Logger from "@plebbit/plebbit-logger";
 
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
-    PERSISTENT_DELETED_SUBPLEBBITS // These are basically sub db files that we're unable to remove for some reason on windows
+    PERSISTENT_DELETED_SUBPLEBBITS, // These are basically sub db files that we're unable to remove for some reason on windows
+    COMMENTS_WITH_INVALID_SCHEMA // Comments in DB with invalid Comment Ipfs schema and have been moved away from comments
 }
 
 // Configs for LRU storage

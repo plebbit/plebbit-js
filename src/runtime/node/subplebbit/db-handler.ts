@@ -32,7 +32,7 @@ import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edi
 import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
 import { CommentIpfsWithCidPostCidDefined, CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
-import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
+import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 
 const TABLES = Object.freeze({
@@ -332,20 +332,27 @@ export class DbHandler {
         if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+            // we need to remove posts because it may include old incompatible comments
+            // LocalSubplebbit will automatically produce a new posts json
+            if (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
+                //@ts-expect-error
+                await this._subplebbit._updateDbInternalState({ posts: undefined });
         }
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
+        if (needToMigrate) log("Done with migrating db to latest version", newDbVersion);
     }
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords: any[] = await this._knex(srcTable).select("*");
+        const commentsToMoveFromCommentsTable: CommentsTableRow[] = []; // They're moved away because they may have signature or schema problem, so we don't wanna include them in pages
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
+            let srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of remeda.keys.strict(srcRecord))
@@ -369,6 +376,32 @@ export class DbHandler {
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
                     srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
                 }
+
+                if (currentDbVersion <= 14 && srcTable === TABLES.COMMENTS) {
+                    // Need to move records with invalid schema out of the table
+                    try {
+                        CommentIpfsSchema.passthrough().parse(srcRecord);
+                    } catch (e) {
+                        // Has an invalid Comment Ipfs schema, should be moved somewhere else
+                        const commentRecord = <CommentsTableRow>srcRecord;
+                        log.error(
+                            `Comment (${commentRecord.cid}) in DB has an invalid schema, will be moved to key ${STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]} in keyv`
+                        );
+                        commentsToMoveFromCommentsTable.push(commentRecord);
+                    }
+                }
+            }
+
+            if (commentsToMoveFromCommentsTable.length > 0) {
+                const existingComments = await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]);
+                const newValue = Array.isArray(existingComments)
+                    ? [...existingComments, ...commentsToMoveFromCommentsTable]
+                    : commentsToMoveFromCommentsTable;
+                await this.keyvSet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA], newValue);
+
+                const cidsMapped = newValue.map((comment) => comment.cid);
+
+                srcRecordFiltered = srcRecordFiltered.filter((commentRecord) => !cidsMapped.includes(commentRecord.cid));
             }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"

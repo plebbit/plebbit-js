@@ -226,6 +226,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // This function will load the InternalSubplebbit props from the local db and update its props with it
         await this.initDbHandlerIfNeeded();
         await this.dbHandler.initDbIfNeeded();
+        await this.dbHandler.createOrMigrateTablesIfNeeded();
 
         await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
@@ -368,7 +369,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 lastCommentCid: latestComment?.cid,
                 statsCid,
                 updatedAt,
-                postUpdates: newPostUpdates
+                postUpdates: newPostUpdates,
+                protocolVersion: env.PROTOCOL_VERSION
             })
         };
         // posts should not be cleaned up because we want to make sure not to modify authors' posts
