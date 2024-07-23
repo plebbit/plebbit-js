@@ -55,7 +55,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     override toJSON(): LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType {
         if (typeof this.updatedAt === "number")
             return {
-                ...this.toJSONInternalRpc(),
+                ...this.toJSONInternalRpcAfterFirstUpdate(),
                 posts: this.posts.toJSON(),
                 shortAddress: this.shortAddress
             };
@@ -66,7 +66,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             };
     }
 
-    toJSONInternalRpc(): InternalSubplebbitAfterFirstUpdateRpcType {
+    toJSONInternalRpcAfterFirstUpdate(): InternalSubplebbitAfterFirstUpdateRpcType {
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONInternalRpcBeforeFirstUpdate()
@@ -98,7 +98,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.started = newProps.started;
     }
 
-    async initRpcInternalSubplebbitNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
+    async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
         await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
     }
@@ -132,7 +132,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             throw e;
         }
 
-        if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitNoMerge(updateRecord);
+        if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
         this.emit("update", this);
@@ -152,7 +152,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         }
 
         if ("updatedAt" in updateRecord) {
-            await this.initRpcInternalSubplebbitNoMerge(updateRecord);
+            await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
             if (!updateRecord.started)
                 // This is the rpc server telling us that this sub has been stopped by another instance
                 await this._cleanUpRpcConnection(log);
@@ -302,7 +302,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
-        if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitNoMerge(subPropsAfterEdit);
+        if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
         return this;
     }

@@ -250,7 +250,9 @@ class PlebbitWsServer extends EventEmitter {
             this.jsonRpcSendNotification({ method: "startSubplebbit", subscription: subscriptionId, event, result, connectionId });
 
         const getUpdateJson = () =>
-            typeof subplebbit.updatedAt === "number" ? subplebbit.toJSONInternalRpc() : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
+            typeof subplebbit.updatedAt === "number"
+                ? subplebbit.toJSONInternalRpcAfterFirstUpdate()
+                : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
         const updateListener = () => sendEvent("update", getUpdateJson());
         subplebbit.on("update", updateListener);
 
@@ -368,7 +370,7 @@ class PlebbitWsServer extends EventEmitter {
             delete startedSubplebbits[address];
         }
         if (typeof subplebbit.updatedAt === "number")
-            return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(subplebbit.toJSONInternalRpc());
+            return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcAfterFirstUpdate());
         else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
     }
 
@@ -545,7 +547,7 @@ class PlebbitWsServer extends EventEmitter {
             if (subplebbit instanceof LocalSubplebbit)
                 jsonToSend =
                     typeof subplebbit.updatedAt === "number"
-                        ? subplebbit.toJSONInternalRpc()
+                        ? subplebbit.toJSONInternalRpcAfterFirstUpdate()
                         : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
             else jsonToSend = subplebbit.toJSONIpfs();
 
