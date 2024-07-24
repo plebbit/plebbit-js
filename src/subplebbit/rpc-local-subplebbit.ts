@@ -22,7 +22,12 @@ import {
     parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails,
     parseRpcStartedStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
-import { RpcInternalSubplebbitRecordBeforeFirstUpdateSchema, RpcLocalSubplebbitUpdateResultSchema, StartedStateSchema } from "./schema.js";
+import {
+    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
+    RpcLocalSubplebbitUpdateResultSchema,
+    StartedStateSchema,
+    SubplebbitEditOptionsSchema
+} from "./schema.js";
 import { EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import {
     decodeRpcChallengeAnswerPubsubMsg,
@@ -45,11 +50,15 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     startedState!: z.infer<typeof StartedStateSchema>;
     signer!: InternalSubplebbitAfterFirstUpdateRpcType["signer"];
     settings?: InternalSubplebbitAfterFirstUpdateRpcType["settings"];
+    editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this.started = false;
         this._setStartedState("stopped");
+        this.on("update", () => {
+            this.editable = remeda.pick(this, remeda.keys.strict(SubplebbitEditOptionsSchema.shape));
+        });
     }
 
     override toJSON(): LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType {
@@ -304,6 +313,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
+        this.emit("update", this);
         return this;
     }
 
