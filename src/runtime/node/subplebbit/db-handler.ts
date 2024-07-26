@@ -6,7 +6,7 @@ import fs from "fs";
 import os from "os";
 import Keyv from "keyv";
 import Transaction = Knex.Transaction;
-import {
+import type {
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
     CommentsTableRow,
@@ -19,6 +19,7 @@ import {
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
@@ -334,9 +335,18 @@ export class DbHandler {
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
             // we need to remove posts because it may include old incompatible comments
             // LocalSubplebbit will automatically produce a new posts json
-            if (await this.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))
+            //@ts-expect-error
+            const internalState = await this._subplebbit._getDbInternalState(false);
+            if (internalState) {
+                const protocolVersion = internalState.protocolVersion || env.PROTOCOL_VERSION;
+                const _usingDefaultChallenge =
+                    "_usingDefaultChallenge" in internalState
+                        ? internalState._usingDefaultChallenge //@ts-expect-error
+                        : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
+                const cid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
                 //@ts-expect-error
-                await this._subplebbit._updateDbInternalState({ posts: undefined });
+                await this._subplebbit._updateDbInternalState({ posts: undefined, cid, protocolVersion, _usingDefaultChallenge });
+            }
         }
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
