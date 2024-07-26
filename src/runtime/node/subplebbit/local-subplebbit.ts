@@ -176,7 +176,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     override toJSON(): LocalSubplebbitJsonType {
-        const internalJson = this.toJSONInternalAfterFirstUpdate();
+        const internalJson =
+            typeof this.updatedAt === "number" ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate();
         return {
             ...internalJson,
             posts: this.posts.toJSON(),
@@ -390,16 +391,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         else delete newIpns.posts;
 
         const signature = await signSubplebbit(newIpns, this.signer);
-        const newSubplebbitRecord: SubplebbitIpfsType = SubplebbitIpfsSchema.parse({ ...newIpns, signature }); // Just to see if it's a valid record
+        const newSubplebbitRecord = SubplebbitIpfsSchema.parse(<SubplebbitIpfsType>{ ...newIpns, signature }); // Just to see if it's a valid record
         await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
-        await this.initRemoteSubplebbitPropsNoMerge(newSubplebbitRecord);
-        this._subplebbitUpdateTrigger = false;
 
-        await this._updateDbInternalState(remeda.omit(this.toJSONInternalAfterFirstUpdate(), ["address"]));
-
-        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
         const file = await this.clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        this._cidsToUnPin = [file.path];
         // If this._isSubRunningLocally = false, then this is the last publish before stopping
         // TODO double check these values
         const ttl = this._isSubRunningLocally ? `${this.plebbit.publishInterval * 3}ms` : undefined;
@@ -413,6 +408,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
         );
+        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
+
+        this._cidsToUnPin = [file.path];
+
+        await this.initRemoteSubplebbitPropsNoMerge({ ...newSubplebbitRecord, cid: file.path });
+        this._subplebbitUpdateTrigger = false;
+
+        await this._updateDbInternalState(remeda.omit(this.toJSONInternalAfterFirstUpdate(), ["address"]));
+
         this._setStartedState("succeeded");
         this.clientsManager.updateIpfsState("stopped");
         this.emit("update", this);

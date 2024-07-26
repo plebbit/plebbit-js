@@ -51,7 +51,7 @@ import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema
 import type {
     InternalSubplebbitAfterFirstUpdateRpcType,
     InternalSubplebbitBeforeFirstUpdateRpcType,
-    SubplebbitIpfsType
+    RpcRemoteSubplebbitType
 } from "../../subplebbit/types.js";
 
 // store started subplebbits  to be able to stop them
@@ -543,13 +543,16 @@ class PlebbitWsServer extends EventEmitter {
             : <LocalSubplebbit | RemoteSubplebbit>await this.plebbit.createSubplebbit({ address });
 
         const sendSubJson = () => {
-            let jsonToSend: SubplebbitIpfsType | InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitAfterFirstUpdateRpcType;
+            let jsonToSend:
+                | RpcRemoteSubplebbitType
+                | InternalSubplebbitBeforeFirstUpdateRpcType
+                | InternalSubplebbitAfterFirstUpdateRpcType;
             if (subplebbit instanceof LocalSubplebbit)
                 jsonToSend =
                     typeof subplebbit.updatedAt === "number"
                         ? subplebbit.toJSONInternalRpcAfterFirstUpdate()
                         : subplebbit.toJSONInternalRpcBeforeFirstUpdate();
-            else jsonToSend = subplebbit.toJSONIpfs();
+            else jsonToSend = subplebbit.toJSONRpcRemote();
 
             sendEvent("update", jsonToSend);
         };

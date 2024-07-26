@@ -189,7 +189,7 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<string> {
+    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<{ resText: string; res: Response }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
         try {
@@ -201,7 +201,7 @@ export class BaseClientsManager {
             });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-            if (res?.body?.getReader === undefined) return await res.text();
+            if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
         } catch (e) {
             if (e instanceof Error && e.message.includes("over limit"))
                 throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
@@ -235,7 +235,7 @@ export class BaseClientsManager {
                     throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                 totalBytesRead += value.length;
             }
-            return resText;
+            return { resText, res };
         }
 
         throw Error("should not reach this block in _fetchWithLimit");
@@ -258,17 +258,17 @@ export class BaseClientsManager {
     ) {
         log.trace(`Fetching url (${url})`);
 
-        const resText = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
-        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
-        return resText;
+        const resObj = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
+        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resObj.resText, url.split("/ipfs/")[1]);
+        return resObj;
     }
     protected async _fetchWithGateway(
         gateway: string,
         path: string,
         loadType: LoadType,
         abortController: AbortController,
-        validateGatewayResponse: (res: string) => Promise<void>
-    ): Promise<string | { error: PlebbitError }> {
+        validateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
+    ): Promise<{ res: Response; resText: string } | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
@@ -280,8 +280,8 @@ export class BaseClientsManager {
         const cacheKey = url;
         let isUsingCache = true;
         try {
-            let resText: string;
-            if (gatewayFetchPromiseCache.has(cacheKey)) resText = <string>await gatewayFetchPromiseCache.get(cacheKey);
+            let resObj: { res: Response; resText: string };
+            if (gatewayFetchPromiseCache.has(cacheKey)) resObj = await gatewayFetchPromiseCache.get(cacheKey)!;
             else {
                 isUsingCache = false;
                 const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(
@@ -292,14 +292,14 @@ export class BaseClientsManager {
                     log
                 );
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
-                resText = await fetchPromise;
+                resObj = await fetchPromise;
                 if (loadType === "subplebbit") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
-            await validateGatewayResponse(resText); // should throw if there's an issue
+            await validateGatewayResponse(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, path, loadType);
             if (!isUsingCache)
                 await this._plebbit.stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
-            return resText;
+            return resObj;
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
@@ -315,12 +315,12 @@ export class BaseClientsManager {
         }
     }
 
-    protected _firstResolve(promises: Promise<string | { error: PlebbitError }>[]) {
+    protected _firstResolve(promises: Promise<{ res: Response; resText: string } | { error: PlebbitError }>[]) {
         if (promises.length === 0) throw Error("No promises to find the first resolve");
-        return new Promise<{ res: string; i: number }>((resolve) =>
+        return new Promise<{ res: { res: Response; resText: string }; i: number }>((resolve) =>
             promises.forEach((promise, i) =>
                 promise.then((res) => {
-                    if (typeof res === "string") resolve({ res, i });
+                    if ("resText" in res) resolve({ res, i });
                 })
             )
         );
@@ -339,8 +339,8 @@ export class BaseClientsManager {
     async fetchFromMultipleGateways(
         loadOpts: { cid?: string; ipns?: string },
         loadType: LoadType,
-        valiateGatewayResponse: (res: string) => Promise<void>
-    ): Promise<string> {
+        valiateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
+    ): Promise<{ resText: string; res: Response }> {
         assert(loadOpts.cid || loadOpts.ipns, "You did not provide cid or ipns to load from gateways");
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
@@ -381,7 +381,7 @@ export class BaseClientsManager {
         const gatewayPromises = Object.values(gatewayFetches).map((fetching) => fetching.promise);
 
         //@ts-expect-error
-        const res: { res: string; i: number } | { value: { error: PlebbitError } }[] = await Promise.race([
+        const res: { res: { resText: string; res: Response }; i: number } | { value: { error: PlebbitError } }[] = await Promise.race([
             this._firstResolve(gatewayPromises),
             Promise.allSettled(gatewayPromises)
         ]);

@@ -178,7 +178,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
         const res = await this.fetchFromMultipleGateways({ cid: pageCid }, "page-ipfs", async (_) => {});
-        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
+        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
 
         return pageIpfs;
     }

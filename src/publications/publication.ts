@@ -507,7 +507,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return subplebbitForPublishingCache.get(this.subplebbitAddress, { allowStale: true });
     }
 
-    async _fetchSubplebbitForPublishing() {
+    async _fetchSubplebbitForPublishing(): Promise<NonNullable<Publication["subplebbit"]>> {
         const log = Logger("plebbit-js:publish:_fetchSubplebbitForPublishing");
         const cachedSubplebbit = this._getSubplebbitCache();
 
@@ -520,7 +520,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
             }
             return cachedSubplebbit;
-        } else return this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
+        } else {
+            const subRes = await this._clientsManager.fetchSubplebbit(this.subplebbitAddress);
+            return subRes.subplebbit;
+        }
     }
 
     async stop() {

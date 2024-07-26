@@ -202,6 +202,13 @@ export const SubplebbitIpfsSchema = z
     })
     .strict();
 
+// This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
+export const RpcRemoteSubplebbitSchema = z
+    .object({
+        subplebbit: SubplebbitIpfsSchema,
+        cid: CommentCidSchema
+    })
+    .strict();
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
 
 export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial()
@@ -211,7 +218,8 @@ export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial(
 export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: true })
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
-        posts: PostsPagesJsonSchema.optional()
+        posts: PostsPagesJsonSchema.optional(),
+        cid: CommentCidSchema
     })
     .strict();
 
@@ -275,7 +283,8 @@ export const InternalSubplebbitRecordBeforeFirstUpdateSchema = CreateNewLocalSub
 
 export const InternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
     .extend({
-        _subplebbitUpdateTrigger: z.boolean()
+        _subplebbitUpdateTrigger: z.boolean(),
+        cid: CommentCidSchema
     })
     .strict();
 

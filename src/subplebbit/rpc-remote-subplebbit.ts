@@ -1,13 +1,13 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { SubplebbitIpfsType } from "./types.js";
+import type { RpcRemoteSubplebbitType } from "./types.js";
 import * as remeda from "remeda";
 import { z } from "zod";
 import { UpdatingStateSchema } from "./schema.js";
 import { PlebbitError } from "../plebbit-error.js";
 import {
-    parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails,
-    parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
+    parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails,
+    parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
@@ -41,16 +41,16 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         // This function is to handle "update" event emitted after calling rpcRemoteSubplebbit.update()
         // It's overidden in rpc-local-subplebbit
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_processUpdateEventFromRpcUpdate");
-        let updateRecord: SubplebbitIpfsType;
+        let updateRecord: RpcRemoteSubplebbitType;
         try {
-            updateRecord = parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(args.params.result);
+            updateRecord = parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("Failed to parse the schema of remote subplebbit sent by rpc", e);
             this.emit("error", <PlebbitError>e);
             throw e;
         }
 
-        await this.initRemoteSubplebbitPropsNoMerge(updateRecord);
+        await this.initRemoteSubplebbitPropsNoMerge({ ...updateRecord.subplebbit, ...updateRecord });
 
         this.emit("update", this);
     }

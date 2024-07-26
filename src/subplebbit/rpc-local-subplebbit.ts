@@ -23,6 +23,7 @@ import {
     parseRpcStartedStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import {
+    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcLocalSubplebbitUpdateResultSchema,
     StartedStateSchema,
@@ -76,10 +77,11 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     toJSONInternalRpcAfterFirstUpdate(): InternalSubplebbitAfterFirstUpdateRpcType {
-        return {
+        return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse({
             ...this.toJSONIpfs(),
-            ...this.toJSONInternalRpcBeforeFirstUpdate()
-        };
+            ...this.toJSONInternalRpcBeforeFirstUpdate(),
+            cid: this.cid
+        });
     }
 
     toJSONInternalRpcBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateRpcType {
@@ -110,6 +112,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
         await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
+        this.cid = newProps.cid;
     }
 
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {

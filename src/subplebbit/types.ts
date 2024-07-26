@@ -25,7 +25,8 @@ import {
     SubplebbitOnlyAddressAndPageCidsSchema,
     SubplebbitRoleSchema,
     SubplebbitSettingsSchema,
-    SubplebbitSuggestedSchema
+    SubplebbitSuggestedSchema,
+    RpcRemoteSubplebbitSchema
 } from "./schema.js";
 
 export type SubplebbitStats = {
@@ -54,6 +55,8 @@ export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 
 export type RemoteSubplebbitJsonType = z.infer<typeof RemoteSubplebbitJsonSchema>;
+
+export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitSchema>;
 
 export type LocalSubplebbitJsonType = z.infer<typeof LocalSubplebbitJsonSchema>;
 
