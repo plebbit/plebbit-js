@@ -166,7 +166,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         return <RemoteSubplebbitJsonType>{
             ...this._toJSONBase(),
             posts: this.posts.toJSON(),
-            shortAddress: this.shortAddress
+            shortAddress: this.shortAddress,
+            cid: this.cid
         };
     }
 
