@@ -275,10 +275,17 @@ const setUpMockGateways = async () => {
     if (process.env["USE_RPC"] === "1") {
         // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
+        // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
-        console.log(`test server plebbit wss listening on port ${rpcPort}`);
+        // This server will fetch subs remotely
+
+        const remotePort = rpcPort + 1;
+        const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({ port: remotePort, authKey: rpcAuthKey });
+        plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server" + 2) });
+
+        console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
     }
 
     if (process.env["NO_SUBPLEBBITS"] !== "1") {
