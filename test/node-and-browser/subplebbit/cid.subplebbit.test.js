@@ -44,5 +44,10 @@ testConfigs.map((config) =>
             const sub = await plebbit.getSubplebbit(subplebbitAddress);
             expect(sub.cid).to.be.a("string");
         });
+
+        it(`subplebbit.cid is part of subplebbit.toJSON()`, async () => {
+            const subJson = (await plebbit.getSubplebbit(subplebbitAddress)).toJSON();
+            expect(subJson.cid).to.be.a("string");
+        });
     })
 );

@@ -32,4 +32,16 @@ describe(`Subplebbit.cid`, async () => {
 
         await sub.delete();
     });
+
+    it(`subplebbit.cid is part of subplebbit.toJSON()`, async () => {
+        const sub = await plebbit.createSubplebbit({});
+        expect(sub.cid).to.be.undefined;
+
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
+
+        const subJson = sub.toJSON();
+        expect(subJson.cid).to.be.a("string");
+        await sub.delete();
+    });
 });
