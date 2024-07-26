@@ -24,7 +24,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
-    const _createAndValidateSubArsg = async (subArgs) => {
+    const _createAndValidateSubArgs = async (subArgs) => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
         await newSubplebbit.start();
         await resolveWhenConditionIsTrue(newSubplebbit, () => typeof newSubplebbit.updatedAt === "number");
@@ -46,17 +46,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
-            await _createAndValidateSubArsg(subArgs);
+            await _createAndValidateSubArgs(subArgs);
         })
     );
 
     it(`createSubplebbit({signer: await plebbit.createSigner()})`, async () => {
-        await _createAndValidateSubArsg({ signer: await plebbit.createSigner() });
+        await _createAndValidateSubArgs({ signer: await plebbit.createSigner() });
     });
 
     it(`createSubplebbit({signer: {privateKey, type}})`, async () => {
         const signer = await plebbit.createSigner();
-        await _createAndValidateSubArsg({ signer: { privateKey: signer.privateKey, type: signer.type } });
+        await _createAndValidateSubArgs({ signer: { privateKey: signer.privateKey, type: signer.type } });
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -97,7 +97,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
         const title = `Test retention ${Date.now()}`;
-        const sub = await _createAndValidateSubArsg({ title });
+        const sub = await _createAndValidateSubArgs({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
         expect(deterministicStringify(createdSub.toJSON())).to.equal(deterministicStringify(sub.toJSON()));
