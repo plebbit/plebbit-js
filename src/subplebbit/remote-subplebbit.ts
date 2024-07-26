@@ -14,7 +14,8 @@ import type {
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitStats,
-    SubplebbitJson
+    SubplebbitJson,
+    RpcRemoteSubplebbitType
 } from "./types.js";
 import * as remeda from "remeda";
 import { z } from "zod";
@@ -54,6 +55,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
     clientsManager: SubplebbitClientsManager;
+    cid?: RemoteSubplebbitJsonType["cid"];
 
     // should be used internally
     _ipnsLoadingOperation?: RetryOperation;
@@ -143,6 +145,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         if (newProps.encryption) this.encryption = newProps.encryption;
         if (newProps.signature) this.signature = newProps.signature;
         await this._updateLocalPostsInstance(newProps.posts);
+        if ("cid" in newProps) this.cid = newProps.cid;
     }
 
     setAddress(newAddress: string) {
@@ -192,10 +195,18 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     toJSONIpfs(): SubplebbitIpfsType {
-        // TODO should verify all props of SubplebbitIpfsType is there
+        // TODO use zod here
         return {
             ...this._toJSONBase(),
             posts: this.posts.toJSONIpfs()
+        };
+    }
+
+    toJSONRpcRemote(): RpcRemoteSubplebbitType {
+        if (!this.cid) throw Error("subplebbit.cid should be defined before calling toJSONRpcRemote");
+        return {
+            subplebbit: this.toJSONIpfs(),
+            cid: this.cid
         };
     }
 
@@ -237,7 +248,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this.clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
-                    resolve(update);
+                    this.cid = update.cid;
+                    resolve(update.subplebbit);
                 } catch (e) {
                     this._setUpdatingState("failed");
                     log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);

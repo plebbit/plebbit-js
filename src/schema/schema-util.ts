@@ -14,6 +14,7 @@ import {
 } from "../pubsub-messages/schema.js";
 import {
     RpcLocalSubplebbitUpdateResultSchema,
+    RpcRemoteSubplebbitSchema,
     StartedStateSchema,
     SubplebbitIpfsSchema,
     UpdatingStateSchema
@@ -174,6 +175,17 @@ export function parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(updatingSta
         throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA", {
             zodError: e,
             updatingState
+        });
+    }
+}
+
+export function parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails(rpcRemoteSubplebbit: any) {
+    try {
+        return RpcRemoteSubplebbitSchema.parse(rpcRemoteSubplebbit);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA", {
+            zodError: e,
+            rpcRemoteSubplebbit
         });
     }
 }

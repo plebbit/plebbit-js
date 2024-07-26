@@ -370,6 +370,12 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
     return plebbit;
 }
 
+export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
+    // This instance will connect to an rpc server that has no local subs
+    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
+    return plebbit;
+}
+
 export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
     // Keep only pubsub and gateway
     const plebbit = await mockRemotePlebbit({
