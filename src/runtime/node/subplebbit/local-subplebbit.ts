@@ -1548,6 +1548,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             remeda.pick(latestState, remeda.keys.strict(parsedEditOptions))
         );
         if (!this._isSubRunningLocally) await this.dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        this.emit("update", this);
 
         return this;
     }
