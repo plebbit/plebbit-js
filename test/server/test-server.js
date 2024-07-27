@@ -130,6 +130,7 @@ const setUpMockGateways = async () => {
         else if (req.url.includes("/ipns")) {
             const subAddress = req.url.split("/")[2];
             const sub = await plebbit.getSubplebbit(subAddress);
+            res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
             res.end(JSON.stringify(sub.toJSONIpfs()));
         } else res.end(await plebbit.fetchCid(req.url));
     })
@@ -211,6 +212,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordThirtyMinuteOld.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
     })
@@ -226,6 +228,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
@@ -241,6 +244,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
