@@ -30,7 +30,7 @@ export const SubplebbitRoleSchema = z.object({
     role: z.enum(["owner", "admin", "moderator"])
 });
 
-export const PubsubTopicSchema = z.string().min(1); // TODO add validation
+export const PubsubTopicSchema = z.string().min(1);
 
 export const SubplebbitSuggestedSchema = z
     .object({
