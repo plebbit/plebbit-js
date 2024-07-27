@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ChallengeAnswersSchema, CommentCidSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema";
+import { ChallengeAnswersSchema, CidStringSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema";
 import { VotePubsubMessageSchema } from "../publications/vote/schema";
 import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
 import {
@@ -70,7 +70,7 @@ export const DecryptedChallengeRequestSchema = z
 
         publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageWithRefinementSchema),
         challengeAnswers: z.string().array().optional(), // some challenges might be included in subplebbit.challenges and can be pre-answered
-        challengeCommentCids: CommentCidSchema.array().optional() // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+        challengeCommentCids: CidStringSchema.array().optional() // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
     })
     .strict();
 

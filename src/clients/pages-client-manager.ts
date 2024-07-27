@@ -10,7 +10,7 @@ import Logger from "@plebbit/plebbit-logger";
 import { BasePages } from "../pages/pages.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import { CommentCidSchema } from "../schema/schema.js";
+import { CidStringSchema } from "../schema/schema.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -183,7 +183,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         return pageIpfs;
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
-        const parsedPageCid = CommentCidSchema.parse(pageCid);
+        const parsedPageCid = CidStringSchema.parse(pageCid);
 
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(parsedPageCid);

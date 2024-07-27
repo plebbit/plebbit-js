@@ -30,6 +30,7 @@ import type {
     EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
+import { PublicationPublishingState, PublicationStateSchema } from "../publications/schema.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     try {
@@ -197,6 +198,28 @@ export function parseRpcStartedStateWithPlebbitErrorIfItFails(startedState: any)
         throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_STARTED_STATE_SCHEMA", {
             zodError: e,
             startedState
+        });
+    }
+}
+
+export function parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails(publishingState: any) {
+    try {
+        return PublicationPublishingState.parse(publishingState);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_PUBLICATION_PUBLISHING_STATE_SCHEMA", {
+            zodError: e,
+            publishingState
+        });
+    }
+}
+
+export function parseRpcPublicationStateWithPlebbitErrorIfItFails(state: any) {
+    try {
+        return PublicationStateSchema.parse(state);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA", {
+            zodError: e,
+            state
         });
     }
 }

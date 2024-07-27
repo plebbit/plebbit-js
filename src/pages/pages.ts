@@ -16,7 +16,8 @@ import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
-import { CommentCidSchema } from "../schema/schema.js";
+import { CidStringSchema } from "../schema/schema.js";
+import { hideClassPrivateProps } from "../util.js";
 
 type BaseProps = {
     plebbit: BasePages["_plebbit"];
@@ -91,7 +92,7 @@ export class BasePages {
 
     async getPage(pageCid: string): Promise<PageInstanceType> {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
-        const parsedCid = CommentCidSchema.parse(pageCid);
+        const parsedCid = CidStringSchema.parse(pageCid);
         return await parsePageIpfs(await this._fetchAndVerifyPage(parsedCid), this._plebbit);
     }
 

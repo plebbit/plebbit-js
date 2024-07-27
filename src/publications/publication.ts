@@ -55,7 +55,9 @@ import {
     parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
-    parseJsonWithPlebbitErrorIfFails
+    parseJsonWithPlebbitErrorIfFails,
+    parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails,
+    parseRpcPublicationStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import {
     ChallengeRequestMessageSchema,
@@ -652,6 +654,33 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._handleRpcChallengeVerification(decoded);
     }
 
+    private _handleIncomingPublishingStateFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingPublishingStateFromRpc");
+        let publishState: Publication["publishingState"];
+        try {
+            publishState = parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of publication.publishingState from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        this._updatePublishingState(publishState);
+        this._updateRpcClientStateFromPublishingState(publishState);
+    }
+
+    private _handleIncomingStateFromRpc(args: any) {
+        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingStateFromRpc");
+        let state: Publication["state"];
+        try {
+            state = parseRpcPublicationStateWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of publication.state from RPC");
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        this._updateState(state);
+    }
+
     async _publishWithRpc() {
         const log = Logger("plebbit-js:publication:_publishWithRpc");
 
@@ -683,17 +712,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .on("challenge", this._handleIncomingChallengeFromRpc.bind(this))
             .on("challengeanswer", this._handleIncomingChallengeAnswerFromRpc.bind(this))
             .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
-            .on("publishingstatechange", (args) => {
-                // TODO this should be in a try/catch
-                const publishState = PublicationPublishingState.parse(args.params.result);
-                this._updatePublishingState(publishState);
-                this._updateRpcClientStateFromPublishingState(publishState);
-            })
-            .on("statechange", (args) => {
-                // TODO this should be in a try/catch
-                const state = PublicationStateSchema.parse(args.params.result);
-                this._updateState(state);
-            })
+            .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
+            .on("statechange", this._handleIncomingStateFromRpc.bind(this))
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
         this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;

@@ -27,7 +27,7 @@ import {
     SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
-import { AuthorAddressSchema, CommentCidSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { AuthorAddressSchema, CidStringSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
 import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
@@ -182,7 +182,7 @@ export default class PlebbitRpcClient {
     }
 
     async getComment(commentCid: string): Promise<Comment> {
-        const parsedCommentCid = CommentCidSchema.parse(commentCid);
+        const parsedCommentCid = CidStringSchema.parse(commentCid);
         const commentProps = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
             await this._webSocketClient.call("getComment", [parsedCommentCid])
         );
@@ -190,8 +190,8 @@ export default class PlebbitRpcClient {
     }
 
     async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        const parsedPageCid = CommentCidSchema.parse(pageCid);
-        const parsedCommentCid = CommentCidSchema.parse(commentCid);
+        const parsedPageCid = CidStringSchema.parse(pageCid);
+        const parsedCommentCid = CidStringSchema.parse(commentCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const pageIpfs = PageIpfsSchema.parse(
             await this._webSocketClient.call("getCommentPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
@@ -200,7 +200,7 @@ export default class PlebbitRpcClient {
     }
 
     async getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
-        const parsedPageCid = CommentCidSchema.parse(pageCid);
+        const parsedPageCid = CidStringSchema.parse(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const pageIpfs = PageIpfsSchema.parse(
             await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress])
@@ -284,7 +284,7 @@ export default class PlebbitRpcClient {
     }
 
     async commentUpdate(commentCid: string) {
-        const parsedCid = CommentCidSchema.parse(commentCid);
+        const parsedCid = CidStringSchema.parse(commentCid);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdate", [parsedCid]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
@@ -322,7 +322,7 @@ export default class PlebbitRpcClient {
     }
 
     async fetchCid(cid: string): Promise<string> {
-        const parsedCid = CommentCidSchema.parse(cid);
+        const parsedCid = CidStringSchema.parse(cid);
         const res = <string>await this._webSocketClient.call("fetchCid", [parsedCid]);
         if (typeof res !== "string") throw Error("RPC function fetchCid did not respond with string");
         return res;

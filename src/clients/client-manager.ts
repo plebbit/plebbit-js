@@ -38,7 +38,7 @@ import {
     parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import { verifyComment, verifyCommentUpdate } from "../signer/signatures.js";
-import { CommentCidSchema } from "../schema/schema.js";
+import { CidStringSchema } from "../schema/schema.js";
 
 type ResultOfFetchingSubplebbit = { subplebbit: SubplebbitIpfsType; cid: string };
 
@@ -282,7 +282,7 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     private _parseCidFromResponse(res: Response) {
-        return CommentCidSchema.parse(res.headers.get("x-ipfs-roots"));
+        return CidStringSchema.parse(res.headers.get("x-ipfs-roots"));
     }
 
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {

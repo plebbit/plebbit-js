@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
     AuthorAddressSchema,
     ChallengeAnswerStringSchema,
-    CommentCidSchema,
+    CidStringSchema,
     CreateSignerSchema,
     FlairSchema,
     JsonSignatureSchema,
@@ -30,7 +30,7 @@ export const SubplebbitRoleSchema = z.object({
     role: z.enum(["owner", "admin", "moderator"])
 });
 
-export const PubsubTopicSchema = z.string(); // TODO add validation
+export const PubsubTopicSchema = z.string().min(1); // TODO add validation
 
 export const SubplebbitSuggestedSchema = z
     .object({
@@ -187,15 +187,15 @@ export const SubplebbitIpfsSchema = z
         createdAt: PlebbitTimestampSchema,
         updatedAt: PlebbitTimestampSchema,
         pubsubTopic: PubsubTopicSchema.optional(),
-        statsCid: CommentCidSchema,
+        statsCid: CidStringSchema,
         protocolVersion: ProtocolVersionSchema,
-        postUpdates: z.record(z.string(), CommentCidSchema).optional(),
+        postUpdates: z.record(z.string(), CidStringSchema).optional(),
         title: z.string().optional(),
         description: z.string().optional(),
         roles: z.record(AuthorAddressSchema, SubplebbitRoleSchema).optional(),
         rules: z.string().array().optional(),
-        lastPostCid: CommentCidSchema.optional(),
-        lastCommentCid: CommentCidSchema.optional(),
+        lastPostCid: CidStringSchema.optional(),
+        lastCommentCid: CidStringSchema.optional(),
         features: SubplebbitFeaturesSchema.optional(),
         suggested: SubplebbitSuggestedSchema.optional(),
         flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
@@ -206,7 +206,7 @@ export const SubplebbitIpfsSchema = z
 export const RpcRemoteSubplebbitSchema = z
     .object({
         subplebbit: SubplebbitIpfsSchema,
-        cid: CommentCidSchema
+        cid: CidStringSchema
     })
     .strict();
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
@@ -219,7 +219,7 @@ export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: tru
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
         posts: PostsPagesJsonSchema.optional(),
-        cid: CommentCidSchema
+        cid: CidStringSchema
     })
     .strict();
 
@@ -284,7 +284,7 @@ export const InternalSubplebbitRecordBeforeFirstUpdateSchema = CreateNewLocalSub
 export const InternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
     .extend({
         _subplebbitUpdateTrigger: z.boolean(),
-        cid: CommentCidSchema
+        cid: CidStringSchema
     })
     .strict();
 

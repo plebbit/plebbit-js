@@ -6,7 +6,7 @@ import {
     AuthorPubsubJsonSchema,
     ChallengeRequestToEncryptBaseSchema,
     CommentAuthorSchema,
-    CommentCidSchema,
+    CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
     PublicationBaseBeforeSigning,
@@ -18,7 +18,7 @@ import { keysToOmitFromSignature } from "../../signer/constants.js";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({
-        commentCid: CommentCidSchema,
+        commentCid: CidStringSchema,
         content: z.string().optional(), // TODO Should use CommentIpfsSchema.content later on
         deleted: z.boolean().optional(),
         flair: FlairSchema.optional(),
@@ -29,7 +29,7 @@ export const AuthorCommentEditOptionsSchema = z
 
 export const ModeratorCommentEditOptionsSchema = z
     .object({
-        commentCid: CommentCidSchema,
+        commentCid: CidStringSchema,
         flair: FlairSchema.optional(),
         spoiler: z.boolean().optional(),
         pinned: z.boolean().optional(),

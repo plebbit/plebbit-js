@@ -5,7 +5,7 @@ import {
     AuthorPubsubJsonSchema,
     AuthorPubsubSchema,
     ChallengeRequestToEncryptBaseSchema,
-    CommentCidSchema,
+    CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
     PlebbitTimestampSchema,
@@ -62,7 +62,7 @@ export const CreateCommentOptionsSchema = z
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
         linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
-        parentCid: CommentCidSchema.optional() // The parent comment CID
+        parentCid: CidStringSchema.optional() // The parent comment CID
     })
     .merge(CreatePublicationUserOptionsSchema)
     .strict();
@@ -103,11 +103,11 @@ export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptB
 // These are the props added by the subplebbit before adding the comment to ipfs
 export const CommentIpfsSchema = CommentPubsubMessageSchema.extend({
     depth: z.number().nonnegative().int(),
-    postCid: CommentCidSchema.optional(),
+    postCid: CidStringSchema.optional(),
     thumbnailUrl: z.string().url().optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
     thumbnailUrlHeight: z.number().positive().optional(),
-    previousCid: CommentCidSchema.optional()
+    previousCid: CidStringSchema.optional()
 }).strict();
 
 // This one should be used for parsing user's input or from gateway/p2p etc
@@ -117,11 +117,11 @@ export const CommentIpfsWithRefinmentSchema = CommentIpfsSchema.refine(
 );
 
 export const CommentIpfsWithCidDefinedSchema = CommentIpfsSchema.extend({
-    cid: CommentCidSchema
+    cid: CidStringSchema
 }).strict();
 
 export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedSchema.extend({
-    postCid: CommentCidSchema
+    postCid: CidStringSchema
 }).strict();
 
 // Comment update schemas
@@ -133,7 +133,7 @@ export const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.au
     .strict();
 
 const CommentUpdateNoRepliesSchema = z.object({
-    cid: CommentCidSchema, // cid of the comment, need it in signature to prevent attack
+    cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
     replyCount: z.number().nonnegative().int(),
@@ -147,7 +147,7 @@ const CommentUpdateNoRepliesSchema = z.object({
     updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
     author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
 
-    lastChildCid: CommentCidSchema.optional(), // The cid of the most recent direct child of the comment
+    lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
     lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
     signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
     protocolVersion: ProtocolVersionSchema

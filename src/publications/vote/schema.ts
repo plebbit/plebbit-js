@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
     AuthorPubsubJsonSchema,
     ChallengeRequestToEncryptBaseSchema,
-    CommentCidSchema,
+    CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
     PublicationBaseBeforeSigning,
@@ -15,7 +15,7 @@ import { VoteSignedPropertyNamesUnion } from "../../signer/types";
 import { keysToOmitFromSignature } from "../../signer/constants";
 
 export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
-    commentCid: CommentCidSchema,
+    commentCid: CidStringSchema,
     vote: z.union([z.literal(1), z.literal(0), z.literal(-1)])
 }).strict();
 

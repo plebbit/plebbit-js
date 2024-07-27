@@ -14,14 +14,13 @@ export const SignerWithAddressPublicKeyShortAddressSchema = SignerWithAddressPub
     shortAddress: z.string().length(12)
 });
 
-// TODO should also check if there's a capital letter in address for domains
-export const SubplebbitAddressSchema = z.string(); // TODO add a regex for checking if it's a domain or IPNS address
-export const ShortSubplebbitAddressSchema = z.string(); // TODO should have validation here
+export const SubplebbitAddressSchema = z.string().min(1); // TODO add a regex for checking if it's a domain or IPNS address
+export const ShortSubplebbitAddressSchema = z.string().min(1);
 
-export const AuthorAddressSchema = z.string(); // TODO should have validation here
-export const ShortAuthorAddressSchema = z.string(); // TODO should have validation here
+export const AuthorAddressSchema = z.string().min(1);
+export const ShortAuthorAddressSchema = z.string().min(1);
 
-export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)  - Unix timestamp
+export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)
 
 const regexSemverNumberedGroups =
     /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
@@ -36,7 +35,7 @@ const WalletSchema = z.object({
     signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
 });
 
-export const CommentCidSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
+export const CidStringSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
 export const ShortCidSchema = z.string().length(12);
 
 // '/ipfs/QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1' => 'QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1'
@@ -45,7 +44,7 @@ export const CidPathSchema = z
     .transform((arg) => arg.split("/")[2])
     .refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID);
 
-const ChainTickerSchema = z.string(); // chain ticker can be anything for now
+const ChainTickerSchema = z.string().min(1); // chain ticker can be anything for now
 
 const AuthorWalletsSchema = z.record(ChainTickerSchema, WalletSchema);
 
@@ -70,7 +69,7 @@ export const FlairSchema = z.object({
 export const AuthorPubsubSchema = z
     .object({
         address: AuthorAddressSchema,
-        previousCommentCid: CommentCidSchema.optional(),
+        previousCommentCid: CidStringSchema.optional(),
         displayName: z.string().optional(),
         wallets: AuthorWalletsSchema.optional(),
         avatar: AuthorAvatarNftSchema.optional(),
@@ -88,7 +87,7 @@ export const CreatePublicationUserOptionsSchema = z.object({
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
     challengeAnswers: ChallengeAnswersSchema.optional(),
-    challengeCommentCids: CommentCidSchema.array().optional()
+    challengeCommentCids: CidStringSchema.array().optional()
 });
 
 export const JsonSignatureSchema = z.object({
@@ -117,7 +116,7 @@ export const SubplebbitAuthorSchema = z
         banExpiresAt: PlebbitTimestampSchema.optional(), // timestamp in second, if defined the author was banned for this comment
         flair: FlairSchema.optional(), // not part of the signature, mod can edit it after comment is published
         firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
-        lastCommentCid: CommentCidSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
+        lastCommentCid: CidStringSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
     })
     .strict();
 export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });

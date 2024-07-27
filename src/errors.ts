@@ -51,6 +51,8 @@ export enum messages {
     ERR_INVALID_RPC_SUBPLEBBIT_STARTED_STATE_SCHEMA = "RPC server transmitted an invalid started state schema",
     ERR_INVALID_RPC_ENCODED_CHALLENGE_REQUEST_WITH_SUBPLEBBIT_AUTHOR_PUBSUB_MSG_SCHEMA = "RPC server transmitted an invalid challenge request schema for RpcLocalSubplebbit",
     ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA = "Invalid schema of remote subplebbit transmitted by RPC",
+    ERR_INVALID_RPC_PUBLICATION_PUBLISHING_STATE_SCHEMA = "Invalid schema of publication.publishingState transmitted by RPC",
+    ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA = "Invalid schema of publication.state transmitted by RPC",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
