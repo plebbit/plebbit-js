@@ -52,6 +52,7 @@ import {
     PubsubTopicSchema
 } from "./subplebbit/schema.js";
 import { PlebbitUserOptionsSchema } from "./schema.js";
+import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "./schema/schema-util.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
