@@ -385,13 +385,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
         const subplebbit = new RemoteSubplebbit(this);
-        const subProps = options instanceof RemoteSubplebbit ? options.toJSONIpfs() : options;
-        if ("protocolVersion" in subProps)
-            await subplebbit.initRemoteSubplebbitPropsNoMerge(subProps); // we're setting SubplebbitIpfs
-        else {
-            // we're setting {address, posts: {pageCids}}
-            subplebbit.setAddress(subProps.address);
-            await subplebbit._updateLocalPostsInstance(subProps.posts);
+        if (options instanceof RemoteSubplebbit) {
+            Object.assign(subplebbit, options);
+            if (subplebbit.state !== "stopped") await subplebbit.stop(); // to reset states
+        } else {
+            if ("protocolVersion" in options)
+                await subplebbit.initRemoteSubplebbitPropsNoMerge(options); // we're setting SubplebbitIpfs
+            else {
+                // we're setting {address, posts: {pageCids}}
+                subplebbit.setAddress(options.address);
+                await subplebbit._updateLocalPostsInstance(options.posts);
+            }
         }
 
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
