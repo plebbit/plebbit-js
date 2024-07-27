@@ -56,6 +56,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this.started = false;
+        this.start = this.start.bind(this);
+        this.edit = this.edit.bind(this);
         this._setStartedState("stopped");
         this.on("update", () => {
             this.editable = remeda.pick(this, remeda.keys.strict(SubplebbitEditOptionsSchema.shape));
@@ -257,7 +259,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this._setRpcClientState("waiting-challenge-requests");
     }
 
-    override async start() {
+    async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
         // we can't start the same instance multiple times
         if (typeof this._startRpcSubscriptionId === "number")
@@ -312,7 +314,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         } else throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
 
-    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+    async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const subPropsAfterEdit = await this.plebbit.plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
@@ -325,7 +327,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         else return super.update();
     }
 
-    override async delete() {
+    async delete() {
         // Make sure to stop updating or starting first
         if (this.state === "started" || this.state === "updating") await this.stop();
 

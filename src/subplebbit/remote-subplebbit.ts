@@ -70,10 +70,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this._setUpdatingState("stopped");
 
         // these functions might get separated from their `this` when used
-        this.start = this.start.bind(this);
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
-        this.edit = this.edit.bind(this);
 
         this.on("error", (...args) => this.plebbit.emit("error", ...args));
 
@@ -341,15 +339,4 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     //         }
     //     }
     // }
-
-    async edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this> {
-        throw Error("Can't edit a remote subplebbit");
-    }
-    async start() {
-        throw Error("A remote subplebbit can't be started");
-    }
-
-    async delete() {
-        throw Error("A remote subplebbit can't be deleted");
-    }
 }

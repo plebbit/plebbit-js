@@ -128,7 +128,7 @@ async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: Inp
 
 async function _startMathCliSubplebbit(signers: SignerType[], plebbit: Plebbit) {
     const signer = await plebbit.createSigner(signers[1]);
-    const subplebbit = await plebbit.createSubplebbit({ signer });
+    const subplebbit = <LocalSubplebbit | RpcLocalSubplebbit>await plebbit.createSubplebbit({ signer });
 
     await subplebbit.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
@@ -187,7 +187,7 @@ async function _publishVotes(
 }
 
 async function _populateSubplebbit(
-    subplebbit: RemoteSubplebbit,
+    subplebbit: LocalSubplebbit | RpcLocalSubplebbit,
     props: {
         signers: SignerType[];
         votesPerCommentToPublish: number;
@@ -229,7 +229,7 @@ type TestServerSubs = {
 export async function startOnlineSubplebbit() {
     const onlinePlebbit = await createOnlinePlebbit();
 
-    const onlineSub = await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
+    const onlineSub = <LocalSubplebbit | RpcLocalSubplebbit>await onlinePlebbit.createSubplebbit(); // Will create a new sub that is on the ipfs network
 
     await onlineSub.edit({ settings: { challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] } });
 
@@ -529,9 +529,9 @@ export async function createSubWithNoChallenge(
     props: CreateNewLocalSubplebbitUserOptions,
     plebbit: Plebbit
 ): Promise<LocalSubplebbit | RpcLocalSubplebbit> {
-    const sub = await plebbit.createSubplebbit(props);
+    const sub = <LocalSubplebbit | RpcLocalSubplebbit>await plebbit.createSubplebbit(props);
     await sub.edit({ settings: { challenges: [] } }); // No challenge
-    return <LocalSubplebbit | RpcLocalSubplebbit>sub;
+    return sub;
 }
 
 export async function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit) {
