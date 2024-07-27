@@ -537,7 +537,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return nodeListSubplebbits(this);
     }
 
-    async fetchCid(cid: string) {
+    async fetchCid(cid: string): Promise<string> {
         const parsedCid = CommentCidSchema.parse(cid);
         if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(parsedCid);
         else return this._clientsManager.fetchCid(parsedCid);

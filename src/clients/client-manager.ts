@@ -182,12 +182,15 @@ export class ClientsManager extends BaseClientsManager {
         this.clients.chainProviders[chainTicker][chainProviderUrl].emit("statechange", newState);
     }
 
-    async fetchCid(cid: string) {
+    async fetchCid(cid: string): Promise<string> {
         let finalCid = remeda.clone(cid);
         if (!isIpfsCid(finalCid) && isIpfsPath(finalCid)) finalCid = finalCid.split("/")[2];
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
-        else return this.fetchFromMultipleGateways({ cid }, "generic-ipfs", async () => {});
+        else {
+            const resObj = await this.fetchFromMultipleGateways({ cid }, "generic-ipfs", async () => {});
+            return resObj.resText;
+        }
     }
 
     // fetchSubplebbit should be here
