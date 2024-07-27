@@ -90,7 +90,9 @@ describe("subplebbit.update (remote)", async () => {
         let retries = 0;
         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
-        tempSubplebbit.clientsManager._fetchWithLimit = async () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.clientsManager._fetchWithLimit = async () => {
+            return { resText: JSON.stringify(rawSubplebbitJson) };
+        };
         tempSubplebbit.update();
         await new Promise((resolve) => {
             tempSubplebbit.on("error", (err) => {
@@ -160,7 +162,7 @@ describe("subplebbit.update (remote)", async () => {
         let retries = 0;
         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = 12345; // This will make schema invalid
-        tempSubplebbit.clientsManager._fetchWithLimit = async () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit.clientsManager._fetchWithLimit = async () => ({ resText: JSON.stringify(rawSubplebbitJson) });
         tempSubplebbit.update();
         await new Promise((resolve) => {
             tempSubplebbit.on("error", (err) => {
