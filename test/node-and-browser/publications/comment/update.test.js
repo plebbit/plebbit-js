@@ -345,7 +345,7 @@ describe(`comment.update() emits errors if needed`, async () => {
             if (url.includes("/update")) {
                 loadingRetries++;
                 if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return JSON.stringify(commentUpdateWithInvalidSignatureJson);
+                return { resText: JSON.stringify(commentUpdateWithInvalidSignatureJson) };
             } else return originalFetch(...args);
         };
 
@@ -567,7 +567,7 @@ describe(`comment.update() emits errors if needed`, async () => {
             if (cidOrPath.endsWith("/update")) {
                 loadingRetries++;
                 if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return invalidCommentUpdateJson;
+                return { resText: invalidCommentUpdateJson };
             } else return originalFetch(cidOrPath);
         };
 
@@ -638,7 +638,7 @@ describe(`comment.update() emits errors if needed`, async () => {
             if (url.includes("/update")) {
                 loadingRetries++;
                 if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return invalidJson;
+                return { resText: invalidJson };
             } else return originalFetch(...args);
         };
 
@@ -782,7 +782,7 @@ describe(`comment.update() emits errors if needed`, async () => {
             if (url.includes("/update")) {
                 loadingRetries++;
                 if (errorsEmittedCount > 0) didItRetryAfterEmittingError = true;
-                return JSON.stringify(invalidCommentUpdateSchema);
+                return { resText: JSON.stringify(invalidCommentUpdateSchema) };
             } else return originalFetch(...args);
         };
 
