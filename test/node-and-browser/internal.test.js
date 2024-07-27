@@ -48,7 +48,8 @@ describeSkipIfRpc("Test util functions", async () => {
             const cid = (await plebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(jsonFileTest))).path;
             const jsonFileAsIpns = await plebbit._clientsManager.getDefaultIpfs()._client.name.publish(cid, { allowOffline: true });
             const jsonFileLoaded = JSON.parse(
-                await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: jsonFileAsIpns.name }, "subplebbit", () => {})
+                (await gatewayPlebbit._clientsManager.fetchFromMultipleGateways({ ipns: jsonFileAsIpns.name }, "subplebbit", () => {}))
+                    .resText
             );
             expect(jsonFileLoaded).to.deep.equal(jsonFileTest);
         });
