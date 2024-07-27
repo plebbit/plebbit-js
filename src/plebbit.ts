@@ -225,7 +225,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     async getComment(cid: z.infer<typeof CidStringSchema>): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:getComment");
-        const parsedCid = CidStringSchema.parse(cid);
+        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
         const comment = await this.createComment({ cid: parsedCid });
 
         // The reason why we override this function is because we don't want update() to load the IPNS
@@ -545,7 +545,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async fetchCid(cid: string): Promise<string> {
-        const parsedCid = CidStringSchema.parse(cid);
+        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
         if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(parsedCid);
         else return this._clientsManager.fetchCid(parsedCid);
     }

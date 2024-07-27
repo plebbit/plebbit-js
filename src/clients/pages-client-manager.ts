@@ -10,7 +10,6 @@ import Logger from "@plebbit/plebbit-logger";
 import { BasePages } from "../pages/pages.js";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
 import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
-import { CidStringSchema } from "../schema/schema.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -183,16 +182,14 @@ export class BasePagesClientsManager extends BaseClientsManager {
         return pageIpfs;
     }
     async fetchPage(pageCid: string): Promise<PageIpfs> {
-        const parsedPageCid = CidStringSchema.parse(pageCid);
-
         const log = Logger("plebbit-js:pages:getPage");
-        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(parsedPageCid);
+        const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
         let page: PageIpfs;
-        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(parsedPageCid, log, sortTypes);
-        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(parsedPageCid, log, sortTypes);
-        else page = await this._fetchPageFromGateways(parsedPageCid);
+        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
+        else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
+        else page = await this._fetchPageFromGateways(pageCid);
 
-        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, parsedPageCid);
+        if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
         return page;
     }
 }

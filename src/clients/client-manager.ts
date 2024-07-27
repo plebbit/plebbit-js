@@ -32,6 +32,7 @@ import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
 import type { PageIpfs } from "../pages/types.js";
 import {
+    parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
     parseCommentUpdateSchemaWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails,
@@ -282,7 +283,11 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     private _parseCidFromResponse(res: Response) {
-        return CidStringSchema.parse(res.headers.get("x-ipfs-roots"));
+        try {
+            return parseCidStringSchemaWithPlebbitErrorIfItFails(res.headers.get("x-ipfs-roots"));
+        } catch (e) {
+            throw new PlebbitError("ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE", { res });
+        }
     }
 
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {

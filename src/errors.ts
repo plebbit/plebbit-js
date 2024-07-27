@@ -33,6 +33,7 @@ export enum messages {
     ERR_FAILED_TO_FETCH_THUMBNAIL_URL_OF_LINK = "Failed to fetch the thumbnail url of the link",
     ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER = "Domain address has an uppercase letter. Subplebbit domain address should be lowercase",
     ERR_GATEWAY_TIMED_OUT_OR_ABORTED = "Fetching from gateway has been aborted/timed out",
+    ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE = "Failed to parse the CID of IPNS file from x-ipfs-roots header",
 
     // Schema errors
     ERR_INVALID_JSON = "The loaded file is not the expected json",
@@ -53,6 +54,7 @@ export enum messages {
     ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA = "Invalid schema of remote subplebbit transmitted by RPC",
     ERR_INVALID_RPC_PUBLICATION_PUBLISHING_STATE_SCHEMA = "Invalid schema of publication.publishingState transmitted by RPC",
     ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA = "Invalid schema of publication.state transmitted by RPC",
+    ERR_INVALID_CID_STRING_SCHEMA = "Invalid cid string schema",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

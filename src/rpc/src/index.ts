@@ -209,7 +209,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getComment(params: any): Promise<CommentIpfsType> {
-        const cid = CidStringSchema.parse(params[0]);
+        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const comment = await this.plebbit.getComment(cid);
         const commentIpfs = comment._rawCommentIpfs;
         if (!commentIpfs) throw Error("Failed to get comment._rawCommentIpfs");
@@ -217,7 +217,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getSubplebbitPage(params: any) {
-        const pageCid = CidStringSchema.parse(params[0]);
+        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[1]);
 
         // Use started subplebbit to fetch the page if possible, to expediete the process
@@ -230,8 +230,8 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async getCommentPage(params: any) {
-        const pageCid = CidStringSchema.parse(params[0]);
-        const commentCid = CidStringSchema.parse(params[1]);
+        const pageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
+        const commentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[1]);
         const subplebbitAddress = SubplebbitAddressSchema.parse(params[2]);
         const comment = await this.plebbit.createComment({ cid: commentCid, subplebbitAddress });
         const page = await comment.replies._fetchAndVerifyPage(pageCid);
@@ -447,7 +447,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async fetchCid(params: any) {
-        const cid = CidStringSchema.parse(params[0]);
+        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const res = await this.plebbit.fetchCid(cid);
         if (typeof res !== "string") throw Error("Result of fetchCid should be a string");
         return res;
@@ -490,7 +490,7 @@ class PlebbitWsServer extends EventEmitter {
     }
 
     async commentUpdate(params: any, connectionId: string) {
-        const cid = CidStringSchema.parse(params[0]);
+        const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>

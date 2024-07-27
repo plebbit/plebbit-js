@@ -31,6 +31,7 @@ import type {
 } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
 import { PublicationPublishingState, PublicationStateSchema } from "../publications/schema.js";
+import { CidStringSchema } from "./schema.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     try {
@@ -220,6 +221,17 @@ export function parseRpcPublicationStateWithPlebbitErrorIfItFails(state: any) {
         throw new PlebbitError("ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA", {
             zodError: e,
             state
+        });
+    }
+}
+
+export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
+    try {
+        return CidStringSchema.parse(cidString);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_CID_STRING_SCHEMA", {
+            zodError: cidString,
+            cidString
         });
     }
 }
