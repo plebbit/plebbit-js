@@ -22,6 +22,7 @@ describe(`plebbit.createSubplebbit - Remote`, async () => {
         const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
         expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
+        expect(loadedSubplebbit.toJSONIpfs()).to.deep.equal(createdSubplebbit.toJSONIpfs());
     });
 
     it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
