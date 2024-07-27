@@ -43,7 +43,7 @@ import type { CreateVoteOptions, LocalVoteOptions, VoteOptionsToSign } from "./p
 import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
 import type { CommentOptionsToSign, CreateCommentOptions, LocalCommentOptions } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
-import { AuthorAddressSchema, AuthorPubsubSchema, CommentCidSchema, SubplebbitAddressSchema } from "./schema/schema.js";
+import { AuthorAddressSchema, AuthorPubsubSchema, CidStringSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
@@ -376,6 +376,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 `Created local-RPC subplebbit (${newLocalSub.address}) with props:`,
                 removeNullUndefinedEmptyObjectsValuesRecursively(newLocalSub.toJSON())
             );
+            newLocalSub.emit("update", newLocalSub);
             return newLocalSub;
         } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
@@ -421,6 +422,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
                 removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
             );
+            subplebbit.emit("update", subplebbit);
             return subplebbit;
         } else if ("signer" in options) {
             // This is a new sub
@@ -432,6 +434,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 `Created a new local subplebbit (${subplebbit.address}) with props:`,
                 removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
             );
+            subplebbit.emit("update", subplebbit);
             return subplebbit;
         } else throw Error("Are you trying to create a local sub with no address or signer? This is a critical error");
     }
