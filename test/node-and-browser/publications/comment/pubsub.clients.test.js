@@ -56,7 +56,7 @@ describeSkipIfRpc(`comment.clients.pubsubClients`, async () => {
     it(`correct order of pubsubClients state when publishing a comment with a sub that requires challenge`, async () => {
         const mockPost = await generatePostToAnswerMathQuestion({ subplebbitAddress: mathCliSubplebbitAddress }, plebbit);
 
-        const pubsubUrls = await plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
+        const pubsubUrls = Object.keys(mockPost.clients.pubsubClients);
         // Only first pubsub url is used for subscription. For publishing we use all providers
         const expectedStates = {
             [pubsubUrls[0]]: [
