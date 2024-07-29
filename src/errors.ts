@@ -55,6 +55,7 @@ export enum messages {
     ERR_INVALID_RPC_PUBLICATION_PUBLISHING_STATE_SCHEMA = "Invalid schema of publication.publishingState transmitted by RPC",
     ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA = "Invalid schema of publication.state transmitted by RPC",
     ERR_INVALID_CID_STRING_SCHEMA = "Invalid cid string schema",
+    ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA = "Local subplebbit produced a subplebbit record with invalid schema",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",
@@ -77,7 +78,7 @@ export enum messages {
     ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE = "Challenge request id is not derived from signature.publicKey",
     ERR_CHALLENGE_SIGNATURE_IS_INVALID = "Received a challenge message with an invalid signature",
     ERR_CHALLENGE_VERIFICATION_SIGNATURE_IS_INVALID = "Received a challenge verification message with an invalid signature",
-    ERR_LOCAL_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Local subplebbit signature is invalid",
+    ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE = "Local subplebbit produced a new record with invalid signature",
     ERR_SUBPLEBBIT_POSTS_INVALID = "subplebbit.posts signature is invalid",
     ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID = "CommentIpfs signature is invalid",
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
