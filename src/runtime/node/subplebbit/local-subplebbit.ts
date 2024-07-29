@@ -95,7 +95,7 @@ import type {
     CommentPubsubMessage,
     CommentUpdate
 } from "../../../publications/comment/types.js";
-import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitEditOptionsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
@@ -107,7 +107,7 @@ import {
     DecryptedChallengeVerificationMessageSchema,
     IncomingPubsubMessageSchema
 } from "../../../pubsub-messages/schema.js";
-import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
+import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
 import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema } from "../../../publications/comment/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
@@ -393,8 +393,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         else delete newIpns.posts;
 
         const signature = await signSubplebbit(newIpns, this.signer);
-        const newSubplebbitRecord = SubplebbitIpfsSchema.parse(<SubplebbitIpfsType>{ ...newIpns, signature }); // Just to see if it's a valid record
-        await this._validateSubSignatureBeforePublishing(newSubplebbitRecord); // this commented line should be taken out later
+        const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
+
+        await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
         // If this._isSubRunningLocally = false, then this is the last publish before stopping
@@ -428,16 +429,34 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return this.address.includes(".") && Math.random() < 0.005; // Resolving domain should be a rare process because default rpcs throttle if we resolve too much
     }
 
-    private async _validateSubSignatureBeforePublishing(recordTobePublished: SubplebbitIpfsType) {
-        const log = Logger("plebbit-js:local-subplebbit:_validateSubSignatureBeforePublishing");
-        const validation = await verifySubplebbit(recordTobePublished, false, this._clientsManager, false, false);
-        if (!validation.valid) {
-            this._cidsToUnPin = [];
-            throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_RECORD", {
-                validation,
-                subplebbitAddress: recordTobePublished.address
-            });
+    private async _validateSubSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
+
+        let parsedRecord: SubplebbitIpfsType;
+        try {
+            parsedRecord = parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(recordToPublishRaw);
+        } catch (e) {
+            const error = new PlebbitError("ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA", { invalidRecord: recordToPublishRaw, err: e });
+            log.error(`Local subplebbit (${this.address}) produced an invalid SubplebbitIpfs schema`, error);
+            this.emit("error", error);
+            throw error;
         }
+
+        try {
+            const validation = await verifySubplebbit(parsedRecord, false, this._clientsManager, false, false);
+            if (!validation.valid) {
+                this._cidsToUnPin = [];
+                throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
+                    validation,
+                    invalidRecord: parsedRecord
+                });
+            }
+        } catch (e) {
+            log.error(`Local subplebbit (${this.address}) produced an invalid signature`, e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
         if (this.shouldResolveDomainForVerification()) {
             try {
                 log(`Resolving domain ${this.address} to make sure it's the same as signer.address ${this.signer.address}`);
