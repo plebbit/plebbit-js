@@ -52,7 +52,7 @@ describe("subplebbit.update (remote)", async () => {
 
         const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
-        tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit._clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
 
         let retries = 0;
 
@@ -90,7 +90,7 @@ describe("subplebbit.update (remote)", async () => {
         let retries = 0;
         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = "QmXhfEmQRGZ1RxgifbfeE1PhpWLg8sZ12yCGn42HCt1cBm"; // This will corrupt the signature
-        tempSubplebbit.clientsManager._fetchWithLimit = async () => {
+        tempSubplebbit._clientsManager._fetchWithLimit = async () => {
             return { resText: JSON.stringify(rawSubplebbitJson) };
         };
         tempSubplebbit.update();
@@ -126,7 +126,7 @@ describe("subplebbit.update (remote)", async () => {
 
         const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = 1234; // This will make schema invalid
-        tempSubplebbit.clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit._clientsManager._fetchCidP2P = () => JSON.stringify(rawSubplebbitJson);
 
         let retries = 0;
 
@@ -162,7 +162,7 @@ describe("subplebbit.update (remote)", async () => {
         let retries = 0;
         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
         rawSubplebbitJson.lastPostCid = 12345; // This will make schema invalid
-        tempSubplebbit.clientsManager._fetchWithLimit = async () => ({ resText: JSON.stringify(rawSubplebbitJson) });
+        tempSubplebbit._clientsManager._fetchWithLimit = async () => ({ resText: JSON.stringify(rawSubplebbitJson) });
         tempSubplebbit.update();
         await new Promise((resolve) => {
             tempSubplebbit.on("error", (err) => {
@@ -195,7 +195,7 @@ describe("subplebbit.update (remote)", async () => {
         tempSubplebbit.clients.ipfsClients[ipfsClientUrl].on("statechange", (state) => ipfsClientStates.push(state));
 
         const rawSubplebbitJson = (await remotePlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-        tempSubplebbit.clientsManager._fetchCidP2P = () => "." + JSON.stringify(rawSubplebbitJson); // invalid json
+        tempSubplebbit._clientsManager._fetchCidP2P = () => "." + JSON.stringify(rawSubplebbitJson); // invalid json
 
         let retries = 0;
 
@@ -231,7 +231,7 @@ describe("subplebbit.update (remote)", async () => {
 
         let retries = 0;
         const rawSubplebbitJson = (await remoteGatewayPlebbit.getSubplebbit(signers[0].address)).toJSONIpfs();
-        tempSubplebbit.clientsManager._fetchWithLimit = async () => "." + JSON.stringify(rawSubplebbitJson);
+        tempSubplebbit._clientsManager._fetchWithLimit = async () => "." + JSON.stringify(rawSubplebbitJson);
         tempSubplebbit.update();
         await new Promise((resolve) => {
             tempSubplebbit.on("error", (err) => {
