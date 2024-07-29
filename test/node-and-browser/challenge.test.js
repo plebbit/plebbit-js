@@ -15,7 +15,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 const mathCliSubplebbitAddress = signers[1].address;
 
 const getExpectedSignedPropertyNames = (msg) =>
-    remeda.keys.strict(remeda.omit(msg, ["signature", "publication", "challenges", "challengeAnswers"])).sort();
+    remeda.keys.strict(remeda.omit(msg, ["signature", "publication", "challenges", "challengeAnswers", "challengeCommentCids"])).sort();
 
 describe.skip(`Stress test challenge exchange`, async () => {
     const num = 50;
@@ -166,7 +166,7 @@ describe("Validate props of publication Pubsub messages", async () => {
         expect(challengeVerifcation.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.signature.publicKey.length).to.equal(32);
         expect(challengeVerifcation.signature.signedPropertyNames.sort()).to.deep.equal(
-            [...getExpectedSignedPropertyNames(challengeVerifcation), "reason"].sort()
+            [...getExpectedSignedPropertyNames(challengeVerifcation), "reason", "encrypted"].sort()
         );
         expect(challengeVerifcation.signature.type).to.equal("ed25519");
         expect(challengeVerifcation.timestamp).to.be.a("number");
