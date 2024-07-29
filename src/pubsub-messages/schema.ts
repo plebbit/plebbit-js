@@ -92,8 +92,8 @@ export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
 export const ChallengeInChallengePubsubMessageSchema = z
     .object({
         challenge: z.string(),
-        type: ChallengeFromGetChallengeSchema.shape.type,
-        caseInsensitive: ChallengeFileSchema.shape.caseInsensitive
+        type: z.lazy(() => ChallengeFromGetChallengeSchema.shape.type),
+        caseInsensitive: z.lazy(() => ChallengeFileSchema.shape.caseInsensitive)
     })
     .strict();
 
