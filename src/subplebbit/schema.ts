@@ -18,7 +18,7 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
-import { ChainTickerSchema } from "../schema.js";
+import * as remeda from "remeda";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -201,6 +201,8 @@ export const SubplebbitIpfsSchema = z
         flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
     })
     .strict();
+
+export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["signature"]));
 
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
 export const RpcRemoteSubplebbitSchema = z

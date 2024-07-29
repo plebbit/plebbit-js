@@ -14,7 +14,7 @@ import {
 } from "../../schema/schema.js";
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
-import { keysToOmitFromSignature } from "../../signer/constants.js";
+import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({
@@ -67,7 +67,7 @@ export const LocalCommentEditAfterSigningSchema = CreateCommentEditOptionsSchema
 // ChallengeRequest.publication
 
 export const CommentEditSignedPropertyNames = remeda.keys.strict(
-    remeda.omit(CreateCommentEditOptionsSchema.shape, keysToOmitFromSignature)
+    remeda.omit(CreateCommentEditOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
     remeda.mapToObj([...CommentEditSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])

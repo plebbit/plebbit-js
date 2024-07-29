@@ -22,8 +22,7 @@ import * as remeda from "remeda";
 import type { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../pages/types";
 import { Comment } from "./comment.js";
 import { messages } from "../../errors.js";
-import { keysToOmitFromSignature } from "../../signer/constants.js";
-import { isLinkValid } from "../../util.js";
+import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema, RepliesPagesJsonSchema } from "../../pages/schema.js";
 import { PublicationStateSchema } from "../schema.js";
 
@@ -81,7 +80,9 @@ export const LocalCommentSchema = CommentOptionsToSignSchema.extend({ signature:
     ChallengeRequestToEncryptBaseSchema
 );
 
-export const CommentSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignature));
+export const CommentSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
+);
 
 const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
     remeda.mapToObj([...CommentSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
@@ -160,6 +161,11 @@ type CommentUpdateWithRepliesType = z.infer<typeof CommentUpdateNoRepliesSchema>
 export const CommentUpdateSchema: z.ZodType<CommentUpdateWithRepliesType> = CommentUpdateNoRepliesSchema.extend({
     replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }).strict();
+
+export const CommentUpdateSignedPropertyNames = <(keyof Omit<CommentUpdateWithRepliesType, "signature">)[]>[
+    ...remeda.keys.strict(remeda.omit(CommentUpdateNoRepliesSchema.shape, ["signature"])),
+    "replies"
+];
 
 const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchema.pick({
     author: true,

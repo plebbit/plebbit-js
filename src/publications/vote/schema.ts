@@ -12,7 +12,7 @@ import {
 } from "../../schema/schema";
 import * as remeda from "remeda";
 import { VoteSignedPropertyNamesUnion } from "../../signer/types";
-import { keysToOmitFromSignature } from "../../signer/constants";
+import { keysToOmitFromSignedPropertyNames } from "../../signer/constants";
 
 export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
     commentCid: CidStringSchema,
@@ -25,7 +25,9 @@ export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend
     ChallengeRequestToEncryptBaseSchema
 );
 
-export const VoteSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateVoteUserOptionsSchema.shape, keysToOmitFromSignature));
+export const VoteSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(CreateVoteUserOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
+);
 
 const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
     remeda.mapToObj([...VoteSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])

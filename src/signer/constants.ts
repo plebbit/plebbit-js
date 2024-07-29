@@ -1,8 +1,5 @@
 // Signer section
 
-import type { CommentUpdate } from "../publications/comment/types.js";
-
-import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 
 import type {
     ChallengeAnswerMessageType,
@@ -11,7 +8,7 @@ import type {
     ChallengeVerificationMessageType
 } from "../pubsub-messages/types";
 
-export const keysToOmitFromSignature = <["signer", "challengeCommentCids", "challengeAnswers"]>[
+export const keysToOmitFromSignedPropertyNames = <["signer", "challengeCommentCids", "challengeAnswers"]>[
     "signer",
     "challengeCommentCids",
     "challengeAnswers"
@@ -20,25 +17,6 @@ export const keysToOmitFromSignature = <["signer", "challengeCommentCids", "chal
 // TODO this whole file should use props from zod
 
 // TODO move the signed property names below to their respective files
-export const SubplebbitSignedPropertyNames: (keyof SubplebbitIpfsType)[] = [
-    "title",
-    "description",
-    "roles",
-    "pubsubTopic",
-    "lastPostCid",
-    "posts",
-    "challenges",
-    "statsCid",
-    "createdAt",
-    "updatedAt",
-    "features",
-    "suggested",
-    "rules",
-    "address",
-    "flairs",
-    "encryption",
-    "postUpdates"
-] as const;
 
 export const ChallengeRequestMessageSignedPropertyNames: (keyof ChallengeRequestMessageType)[] = [
     "type",
@@ -67,23 +45,4 @@ export const ChallengeVerificationMessageSignedPropertyNames: (keyof ChallengeVe
     "challengeSuccess",
     "challengeErrors",
     "timestamp"
-] as const;
-
-export const CommentUpdateSignedPropertyNames: (keyof CommentUpdate)[] = [
-    "author",
-    "spoiler",
-    "pinned",
-    "locked",
-    "removed",
-    "reason",
-    "flair",
-    "upvoteCount",
-    "downvoteCount",
-    "replies",
-    "updatedAt",
-    "replyCount",
-    "edit",
-    "cid",
-    "lastChildCid",
-    "lastReplyTimestamp"
 ] as const;
