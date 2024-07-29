@@ -53,6 +53,7 @@ import type {
     InternalSubplebbitBeforeFirstUpdateRpcType,
     RpcRemoteSubplebbitType
 } from "../../subplebbit/types.js";
+import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
