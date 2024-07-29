@@ -22,19 +22,21 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { SubplebbitIpfsType } from "../../subplebbit/types.js";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<RemoteSubplebbit, "address"> & { plebbit: NonNullable<Pick<InputPlebbitOptions, "dataPath" | "noData">> }
+    subplebbitAddress: SubplebbitIpfsType["address"],
+    plebbit: Plebbit
 ): Promise<Knex.Config<any>> => {
     let filename: string;
-    if (subplebbit.plebbit.noData) filename = ":memory:";
+    if (plebbit.noData) filename = ":memory:";
     else {
-        assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
-        filename = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
+        assert(typeof plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
+        filename = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
         await fs.mkdir(path.dirname(filename), { recursive: true });
     }
 

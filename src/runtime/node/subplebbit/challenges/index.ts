@@ -158,7 +158,7 @@ const getPendingChallengesOrChallengeVerification = async (
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage.publication, subplebbit)) {
             continue;
         }
-        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit.plebbit)) {
+        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit._plebbit)) {
             continue;
         }
 
@@ -270,7 +270,7 @@ const getChallengeVerification = async (
     if (!challengeRequestMessage) {
         throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }
-    if (typeof subplebbit?.plebbit?.getComment !== "function") {
+    if (typeof subplebbit?._plebbit?.getComment !== "function") {
         throw Error(`getChallengeVerification invalid subplebbit argument '${subplebbit}' invalid subplebbit.plebbit instance`);
     }
     if (typeof getChallengeAnswers !== "function") {

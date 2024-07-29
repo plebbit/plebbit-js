@@ -95,11 +95,11 @@ export class BaseClientsManager {
                     log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err);
                 }
             });
-            await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
+            await this._plebbit._stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
             this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
             return;
         } catch (e) {
-            await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+            await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
             log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
             throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubProviderUrl, error: e });
         }
@@ -107,7 +107,7 @@ export class BaseClientsManager {
 
     async pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
+        const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
@@ -157,10 +157,10 @@ export class BaseClientsManager {
         try {
             await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
-            this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
+            this._plebbit._stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
             this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, <PlebbitError>error);
-            await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
+            await this._plebbit._stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
     }
@@ -168,7 +168,7 @@ export class BaseClientsManager {
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
-        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
+        const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
@@ -298,7 +298,7 @@ export class BaseClientsManager {
             await validateGatewayResponse(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, path, loadType);
             if (!isUsingCache)
-                await this._plebbit.stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
+                await this._plebbit._stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
             return resObj;
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
@@ -308,7 +308,7 @@ export class BaseClientsManager {
                 return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e }) };
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
-                if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
+                if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
                 delete (<PlebbitError>e)!["stack"];
                 return { error: <PlebbitError>e };
             }
@@ -357,7 +357,7 @@ export class BaseClientsManager {
         const gatewaysSorted =
             remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
                 ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-                : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
+                : await this._plebbit._stats.sortGatewaysAccordingToScore(type);
 
         const gatewayFetches: GenericGatewayFetch = {};
 
@@ -558,13 +558,13 @@ export class BaseClientsManager {
                     chainproviderUrl
                 });
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
-            if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
             domainResolverPromiseCache.delete(cacheKey);
             const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { error: e });
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
-            if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: parsedError };
         }
     }
@@ -603,7 +603,7 @@ export class BaseClientsManager {
             const providersSorted =
                 this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit
                     ? this._plebbit.clients.chainProviders[chain].urls
-                    : await this._plebbit.stats.sortGatewaysAccordingToScore(chain);
+                    : await this._plebbit._stats.sortGatewaysAccordingToScore(chain);
 
             try {
                 const providerPromises = providersSorted.map((providerUrl) =>

@@ -863,8 +863,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
                             this._publishToDifferentProviderThresholdSeconds
                         }s of not receiving challenge from provider (${this._pubsubProviders[this._currentPubsubProviderIndex]})`
                     );
-                    this._plebbit.stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-publish");
-                    this._plebbit.stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-subscribe");
+                    this._plebbit._stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-publish");
+                    this._plebbit._stats.recordGatewayFailure(this._pubsubProviders[this._currentPubsubProviderIndex], "pubsub-subscribe");
 
                     this._currentPubsubProviderIndex += 1;
 

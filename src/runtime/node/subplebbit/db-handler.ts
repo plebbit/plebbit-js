@@ -58,7 +58,7 @@ export class DbHandler {
     }
 
     async initDbConfigIfNeeded() {
-        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit.address, this._subplebbit._plebbit);
     }
 
     toJSON() {
@@ -897,7 +897,7 @@ export class DbHandler {
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", oldDbName);
+        const oldPathString = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
@@ -906,7 +906,7 @@ export class DbHandler {
         //@ts-expect-error
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit.plebbit);
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit._plebbit);
         else await fs.promises.rm(oldPathString);
 
         this._dbConfig = {
@@ -924,8 +924,8 @@ export class DbHandler {
     async lockSubStart(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:start");
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
 
         try {
             await lockfile.lock(subDbPath, {
@@ -947,8 +947,8 @@ export class DbHandler {
         const log = Logger("plebbit-js:lock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
 
         try {
@@ -961,8 +961,8 @@ export class DbHandler {
     }
 
     async isSubStartLocked(subAddress = this._subplebbit.address): Promise<boolean> {
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
         return isLocked;
     }
@@ -971,8 +971,8 @@ export class DbHandler {
 
     async lockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:lockSubState");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -989,8 +989,8 @@ export class DbHandler {
     async unlockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:unlockSubState");
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath)) return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
@@ -1002,7 +1002,7 @@ export class DbHandler {
     // Misc functions
 
     subDbExists(subAddress = this._subplebbit.address) {
-        const dbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const dbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         return fs.existsSync(dbPath);
     }
 

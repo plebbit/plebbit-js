@@ -11,7 +11,6 @@ import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
     RemoteSubplebbitJsonType,
-    SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitStats,
     SubplebbitJson,
@@ -52,20 +51,20 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // Only for Subplebbit instance
     state!: "stopped" | "updating" | "started";
     updatingState!: z.infer<typeof UpdatingStateSchema>;
-    plebbit: Plebbit;
     clients: SubplebbitClientsManager["clients"];
-    clientsManager: SubplebbitClientsManager;
     cid?: RemoteSubplebbitJsonType["cid"];
 
     // should be used internally
-    _ipnsLoadingOperation?: RetryOperation;
+    _plebbit: Plebbit;
+    _ipnsLoadingOperation?: RetryOperation = undefined;
+    _clientsManager: SubplebbitClientsManager;
 
     // private
-    protected _updateTimeout?: NodeJS.Timeout;
+    protected _updateTimeout?: NodeJS.Timeout = undefined;
 
     constructor(plebbit: Plebbit) {
         super();
-        this.plebbit = plebbit;
+        this._plebbit = plebbit;
         this._setState("stopped");
         this._setUpdatingState("stopped");
 
@@ -73,15 +72,15 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.update = this.update.bind(this);
         this.stop = this.stop.bind(this);
 
-        this.on("error", (...args) => this.plebbit.emit("error", ...args));
+        this.on("error", (...args) => this._plebbit.emit("error", ...args));
 
-        this.clientsManager = new SubplebbitClientsManager(this);
-        this.clients = this.clientsManager.clients;
+        this._clientsManager = new SubplebbitClientsManager(this);
+        this.clients = this._clientsManager.clients;
 
         this.posts = new PostsPages({
             pageCids: {},
             pages: {},
-            plebbit: this.plebbit,
+            plebbit: this._plebbit,
             subplebbitAddress: this.address,
             pagesIpfs: undefined
         });
@@ -106,11 +105,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
             if (shouldUpdatePosts) {
                 log.trace(`Updating the props of subplebbit (${this.address}) posts`);
                 const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
-                    await parseRawPages(newPosts, this.plebbit)
+                    await parseRawPages(newPosts, this._plebbit)
                 );
                 this.posts.updateProps({
                     ...parsedPages,
-                    plebbit: this.plebbit,
+                    plebbit: this._plebbit,
                     subplebbitAddress: this.address,
                     pageCids: newPosts?.pageCids || {}
                 });
@@ -246,7 +245,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
             this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
-                    const update = await this.clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
+                    const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
                     this.cid = update.cid;
                     resolve(update.subplebbit);
                 } catch (e) {
@@ -268,7 +267,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         if (loadedSubIpfsOrError instanceof Error) {
             log.error(
                 `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`,
-                `Will retry after ${this.plebbit.updateInterval}ms`
+                `Will retry after ${this._plebbit.updateInterval}ms`
             );
             this.emit("error", <PlebbitError>loadedSubIpfsOrError);
             return;
@@ -291,14 +290,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
             if (this.state === "updating")
                 this.updateOnce()
                     .catch((e) => log.error(`Failed to update subplebbit`, e))
-                    .finally(() => setTimeout(updateLoop, this.plebbit.updateInterval));
+                    .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
         }).bind(this);
 
         this._setState("updating");
 
         this.updateOnce()
             .catch((e) => log.error(`Failed to update subplebbit`, e))
-            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this.plebbit.updateInterval)));
+            .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
 
     async stop() {

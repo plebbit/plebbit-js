@@ -64,8 +64,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     browserLibp2pJsPublish: ParsedPlebbitOptions["browserLibp2pJsPublish"];
     resolveAuthorAddresses: ParsedPlebbitOptions["resolveAuthorAddresses"];
     chainProviders!: ParsedPlebbitOptions["chainProviders"];
-    _storage!: StorageInterface;
-    stats!: Stats;
     parsedPlebbitOptions: ParsedPlebbitOptions;
     publishInterval: ParsedPlebbitOptions["publishInterval"];
     updateInterval: ParsedPlebbitOptions["updateInterval"];
@@ -82,6 +80,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
     _clientsManager!: ClientsManager;
     private _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
+    _stats!: Stats;
+    _storage!: StorageInterface;
 
     private _storageLRUs: Record<string, LRUStorageInterface> = {}; // Cache name to storage interface
 
@@ -191,7 +191,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         await this._storage.init();
 
         // Init stats
-        this.stats = new Stats({ _storage: this._storage, clients: this.clients });
+        this._stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
     }

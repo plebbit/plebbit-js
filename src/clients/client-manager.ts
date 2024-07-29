@@ -303,7 +303,7 @@ export class ClientsManager extends BaseClientsManager {
         const gatewaysSorted =
             remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
                 ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-                : await this._plebbit.stats.sortGatewaysAccordingToScore("ipns");
+                : await this._plebbit._stats.sortGatewaysAccordingToScore("ipns");
 
         const gatewayFetches: SubplebbitGatewayFetch = {};
 
@@ -971,7 +971,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     private _subplebbit: RemoteSubplebbit;
 
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
-        super(subplebbit.plebbit);
+        super(subplebbit._plebbit);
         this._subplebbit = subplebbit;
     }
 

@@ -347,7 +347,7 @@ const getChallenge = async (
     // If any of them pass, then the challenge pass
 
     // First try to validate author
-    const sharedProps = { plebbit: subplebbit.plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
+    const sharedProps = { plebbit: subplebbit._plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
 
     const walletFailureReason = await verifyAuthorWalletAddress(sharedProps);
     if (!walletFailureReason)
