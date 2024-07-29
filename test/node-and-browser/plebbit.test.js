@@ -205,8 +205,8 @@ describe("plebbit.fetchCid", async () => {
     it("plebbit.fetchCid() throws if provided with invalid cid", async () => {
         const gibberishCid = "12345";
 
-        await assert.isRejected(plebbit.fetchCid(gibberishCid), messages.ERR_CID_IS_INVALID);
-        await assert.isRejected(gatewayPlebbit.fetchCid(gibberishCid), messages.ERR_CID_IS_INVALID);
+        await assert.isRejected(plebbit.fetchCid(gibberishCid), messages.ERR_INVALID_CID_STRING_SCHEMA);
+        await assert.isRejected(gatewayPlebbit.fetchCid(gibberishCid), messages.ERR_INVALID_CID_STRING_SCHEMA);
     });
     it("plebbit.fetchCid() loads an ipfs file under 1mb as JSON correctly", async () => {
         const jsonFileTest = { 123: "123" };
