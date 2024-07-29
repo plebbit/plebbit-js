@@ -4,7 +4,7 @@ import { parseIpfsRawOptionToIpfsOptions } from "./util";
 
 // This file will have misc schemas, as well as Plebbit class schema
 
-export const ChainTickerSchema = z.enum(["eth", "matic", "avax", "sol"]);
+export const ChainTickerSchema = z.string().min(1);
 
 const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
 export const ChainProviderSchema = z.object({

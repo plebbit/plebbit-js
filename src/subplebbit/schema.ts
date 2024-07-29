@@ -90,7 +90,7 @@ export const ChallengeOptionInputSchema = z
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
-const chainTickerValues = <`chain/${z.infer<typeof ChainTickerSchema>}`[]>ChainTickerSchema.options.map((ticker) => `chain/${ticker}`);
+const ChainTickerChallengeTypeSchema = z.string().startsWith("chain/");
 
 export const ChallengeFromGetChallengeSchema = z
     .object({
@@ -99,7 +99,7 @@ export const ChallengeFromGetChallengeSchema = z
             .function()
             .args(z.lazy(() => ChallengeAnswerStringSchema))
             .returns(z.promise(ChallengeResultSchema)), // args is answer
-        type: z.enum(["image/png", "text/plain", ...chainTickerValues])
+        type: z.enum(["image/png", "text/plain"]).or(ChainTickerChallengeTypeSchema)
     })
     .strict();
 
