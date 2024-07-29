@@ -6,9 +6,11 @@ import {
     CommentIpfsWithCidPostCidDefinedSchema,
     CommentPubsubMessageWithRefinementSchema,
     AuthorWithCommentUpdateSchema,
-    CommentPubsubMessageSchema
+    CommentPubsubMessageSchema,
+    CreateCommentOptionsSchema
 } from "../publications/comment/schema";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema";
+import * as remeda from "remeda";
 
 const AcceptedChallengeTypeSchema = z.string(); // TODO figure out the accepted challenge types
 export const PubsubMessageSignatureSchema = z
@@ -16,7 +18,7 @@ export const PubsubMessageSignatureSchema = z
         signature: z.instanceof(Uint8Array), // (byte string in cbor)
         publicKey: z.instanceof(Uint8Array), // (byte string in cbor) 32 bytes
         type: z.enum(["ed25519"]),
-        signedPropertyNames: z.string().array()
+        signedPropertyNames: z.string().array().nonempty()
     })
     .strict();
 
@@ -69,8 +71,8 @@ export const DecryptedChallengeRequestSchema = z
         // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
 
         publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageWithRefinementSchema),
-        challengeAnswers: z.string().array().optional(), // some challenges might be included in subplebbit.challenges and can be pre-answered
-        challengeCommentCids: CidStringSchema.array().optional() // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+        challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
+        challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
     })
     .strict();
 
@@ -82,6 +84,9 @@ export const DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema = Decryp
     )
 }).strict();
 
+export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"])
+);
 // Challenge message
 
 export const ChallengeInChallengePubsubMessageSchema = z
@@ -105,6 +110,8 @@ export const DecryptedChallengeSchema = z
 
 export const DecryptedChallengeMessageSchema = ChallengeMessageSchema.merge(DecryptedChallengeSchema).strict();
 
+export const ChallengeMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeMessageSchema.shape, ["signature"]));
+
 // Challenge answer
 
 export const ChallengeAnswerMessageSchema = PubsubMessageBaseSchema.extend({
@@ -119,6 +126,8 @@ export const DecryptedChallengeAnswerSchema = z
     .strict();
 
 export const DecryptedChallengeAnswerMessageSchema = ChallengeAnswerMessageSchema.merge(DecryptedChallengeAnswerSchema).strict();
+
+export const ChallengeAnswerMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeAnswerMessageSchema.shape, ["signature"]));
 
 // Challenge Verification
 
@@ -139,6 +148,10 @@ export const DecryptedChallengeVerificationSchema = z
 export const DecryptedChallengeVerificationMessageSchema = ChallengeVerificationMessageSchema.merge(
     DecryptedChallengeVerificationSchema
 ).strict();
+
+export const ChallengeVerificationMessageSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(ChallengeVerificationMessageSchema.shape, ["signature"])
+);
 
 // Handling challenges for subplebbit
 

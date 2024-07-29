@@ -24,12 +24,6 @@ import type {
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";
-import {
-    ChallengeAnswerMessageSignedPropertyNames,
-    ChallengeMessageSignedPropertyNames,
-    ChallengeRequestMessageSignedPropertyNames,
-    ChallengeVerificationMessageSignedPropertyNames
-} from "./constants.js";
 import { BaseClientsManager } from "../clients/base-client-manager.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
@@ -50,6 +44,12 @@ import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
 import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
+import {
+    ChallengeRequestMessageSignedPropertyNames,
+    ChallengeMessageSignedPropertyNames,
+    ChallengeAnswerMessageSignedPropertyNames,
+    ChallengeVerificationMessageSignedPropertyNames
+} from "../pubsub-messages/schema.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -183,17 +183,17 @@ export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signa
 
 export async function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    return _signPubsubMsg(ChallengeRequestMessageSignedPropertyNames, request, signer, log);
+    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeRequestMessageSignedPropertyNames, request, signer, log);
 }
 
 export async function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    return _signPubsubMsg(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
+    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
 }
 
 export async function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    return _signPubsubMsg(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
+    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
 }
 
 export async function signChallengeVerification(
@@ -201,7 +201,12 @@ export async function signChallengeVerification(
     signer: SignerType
 ) {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    return _signPubsubMsg(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log);
+    return _signPubsubMsg(
+        <PubsubSignature["signedPropertyNames"]>ChallengeVerificationMessageSignedPropertyNames,
+        challengeVerification,
+        signer,
+        log
+    );
 }
 
 type VerifyAuthorRes = { useDerivedAddress: false; reason?: string } | { useDerivedAddress: true; derivedAddress: string; reason: string };
