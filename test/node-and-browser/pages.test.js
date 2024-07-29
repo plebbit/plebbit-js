@@ -1,6 +1,3 @@
-import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
-import { expect } from "chai";
-import signers from "../fixtures/signers.js";
 import {
     loadAllPages,
     publishRandomPost,
@@ -10,6 +7,9 @@ import {
     mockPlebbit,
     addStringToIpfs
 } from "../../dist/node/test/test-util.js";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
+import { expect } from "chai";
+import signers from "../fixtures/signers.js";
 import * as remeda from "remeda";
 
 let subplebbit;
