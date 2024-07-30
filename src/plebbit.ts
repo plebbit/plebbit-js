@@ -369,6 +369,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 log.trace("Creating a remote RPC subplebbit instance with address", options.address);
                 const remoteSub = new RpcRemoteSubplebbit(this);
                 Object.assign(remoteSub, options);
+                remoteSub._rawSubplebbitIpfs = options._rawSubplebbitIpfs;
                 if (remoteSub.state !== "stopped") await remoteSub.stop(); // to reset states
                 return remoteSub;
             } else {
@@ -402,6 +403,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const subplebbit = new RemoteSubplebbit(this);
         if (options instanceof RemoteSubplebbit) {
             Object.assign(subplebbit, options);
+            subplebbit._rawSubplebbitIpfs = options._rawSubplebbitIpfs;
             if (subplebbit.state !== "stopped") await subplebbit.stop(); // to reset states
         } else {
             const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(options);

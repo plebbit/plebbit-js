@@ -58,7 +58,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     _plebbit: Plebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _clientsManager: SubplebbitClientsManager;
-    protected _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
+    _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
 
     // private
     protected _updateTimeout?: NodeJS.Timeout = undefined;
