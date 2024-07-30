@@ -5,12 +5,10 @@ import {
     mockRemotePlebbit,
     mockGatewayPlebbit,
     itSkipIfRpc,
-    createNewIpns,
+    publishSubplebbitRecordWithExtraProp,
     getRemotePlebbitConfigs,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
-
-import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
 
 import * as remeda from "remeda";
 import chai from "chai";
@@ -332,28 +330,20 @@ describe("subplebbit.update (remote)", async () => {
 getRemotePlebbitConfigs().map((config) => {
     describe(`subplebbit.update() and backward compatibility - ${config.name}`, async () => {
         it(`subplebbit.update() should have no problem with extra props, as long as they're in subplebbit.signature.signedPropertyNames`, async () => {
-            const ipnsObj = await createNewIpns();
-            const subplebbitRecord = JSON.parse(JSON.stringify(validSubplebbitFixture));
-            subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
-            delete subplebbitRecord.posts;
-            subplebbitRecord.extraProp = "1234";
-            subplebbitRecord.signature = await _signJson(
-                [...subplebbitRecord.signature.signedPropertyNames, "extraProp"],
-                subplebbitRecord,
-                ipnsObj.signer
-            );
-
-            await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+            const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
+            const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
 
             const remotePlebbit = await config.plebbitInstancePromise();
 
-            const sub = await remotePlebbit.createSubplebbit({ address: ipnsObj.signer.address });
+            const sub = await remotePlebbit.createSubplebbit({ address: publishedSub.subplebbitRecord.address });
 
             await sub.update();
 
             await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
-            expect(sub.toJSONIpfs().extraProp).to.equal("1234");
+            expect(sub.toJSONIpfs().extraProp).to.equal(opts.extraProps.extraProp);
+
+            expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
 
             await sub.stop();
             // TODO should we be testing for sub.extraProp as well?
@@ -361,18 +351,13 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`subplebbit.update() emit an error if there are unknown props not included in signature.signedPropertyNames`, async () => {
-            const ipnsObj = await createNewIpns();
-            const subplebbitRecord = JSON.parse(JSON.stringify(validSubplebbitFixture));
-            subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
-            delete subplebbitRecord.posts;
-            subplebbitRecord.extraProp = "1234";
-            subplebbitRecord.signature = await _signJson(subplebbitRecord.signature.signedPropertyNames, subplebbitRecord, ipnsObj.signer);
+            const opts = { includeExtraPropInSignedPropertyNames: false, extraProps: { extraProp: "1234" } };
 
-            await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+            const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
 
             const remotePlebbit = await config.plebbitInstancePromise();
 
-            const sub = await remotePlebbit.createSubplebbit({ address: ipnsObj.signer.address });
+            const sub = await remotePlebbit.createSubplebbit({ address: publishedSub.subplebbitRecord.address });
 
             await sub.update();
 
@@ -398,7 +383,5 @@ getRemotePlebbitConfigs().map((config) => {
 
             await sub.stop();
         });
-
-        it(`Can create a subplebbit instance with subplebbit record with extra props`);
     });
 });

@@ -1,7 +1,14 @@
 import signers from "../../fixtures/signers.js";
 import { messages } from "../../../dist/node/errors.js";
 
-import { getRemotePlebbitConfigs, isRpcFlagOn, mockPlebbit, mockRemotePlebbit } from "../../../dist/node/test/test-util.js";
+import {
+    getRemotePlebbitConfigs,
+    isRpcFlagOn,
+    mockPlebbit,
+    publishSubplebbitRecordWithExtraProp
+} from "../../../dist/node/test/test-util.js";
+
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 import * as remeda from "remeda";
 import chai from "chai";
@@ -41,11 +48,7 @@ getRemotePlebbitConfigs().map((config) =>
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
             const loadedSubJson = loadedSubplebbit.toJSON();
             const createdSubJson = createdSubplebbit.toJSON();
-            expect(remeda.omit(loadedSubJson, ["posts"])).to.deep.equal(remeda.omit(createdSubplebbit.toJSON(), ["posts"]));
-            expect(loadedSubJson.posts.pageCids).to.deep.equal(createdSubJson.posts.pageCids);
-
-            for (let i = 0; i < loadedSubJson.posts.pages.hot.comments.length; i++)
-                expect(loadedSubJson.posts.pages.hot.comments[i]).to.deep.equal(createdSubJson.posts.pages.hot.comments[i]);
+            expect(deterministicStringify(loadedSubJson)).to.equal(deterministicStringify(createdSubJson));
         });
 
         it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
@@ -89,6 +92,30 @@ getRemotePlebbitConfigs().map((config) =>
             const page = await newSubplebbit.posts.getPage(pageCid);
             expect(page.comments.length).to.be.greaterThan(0);
         });
+
+        describe(`plebbit.createSubplebbit - Backward Compatiblity`, async () => {
+            it(`Can create a subplebbit instance with subplebbit record with extra props`, async () => {
+                const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
+                const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
+
+                const remotePlebbit = await config.plebbitInstancePromise();
+
+                const sub = await remotePlebbit.createSubplebbit(publishedSub.subplebbitRecord);
+
+                expect(sub.toJSONIpfs().extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
+                expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
+
+                const recreatedSubFromInstance = await remotePlebbit.createSubplebbit(sub);
+                expect(recreatedSubFromInstance.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
+                expect(recreatedSubFromInstance.toJSON().extraProp).to.equal(opts.extraProps.extraProp);
+
+                const recreatedSubFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
+                expect(recreatedSubFromJson.toJSON().extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
+
+                // TODO should we be testing for sub.extraProp as well?
+                // TODO should we be testing for sub.toJSON().extraProp as well?
+            });
+        });
     })
 );
 
@@ -117,5 +144,3 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
             }
         });
 });
-
-describe(`plebbit.createSubplebbit - Backward Compatiblity`, async () => {});

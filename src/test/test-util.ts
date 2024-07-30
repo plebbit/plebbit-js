@@ -21,7 +21,7 @@ import type { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
 import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
-import { signComment } from "../signer/signatures.js";
+import { signComment, _signJson } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
@@ -598,7 +598,7 @@ export function getRemotePlebbitConfigs() {
     return [
         { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
         { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
-        ...(isRpcFlagOn() ? [{name: "RPC Local", plebbitInstancePromise: mockPlebbit}]: [])
+        ...(isRpcFlagOn() ? [{ name: "RPC Local", plebbitInstancePromise: mockPlebbit }] : [])
         // { name: "RPC remote", plebbitInstancePromise: mockRpcRemotePlebbit }
         // ...(isRpcFlagOn() ? [{ name: "RPC Local", plebbitInstancePromise: mockPlebbit }] : [])
     ];
@@ -625,8 +625,30 @@ export async function createNewIpns() {
 
     return {
         signer,
-        publishToIpns
+        publishToIpns,
+        plebbit
     };
+}
+
+export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraPropInSignedPropertyNames: boolean; extraProps: Object }) {
+    const ipnsObj = await createNewIpns();
+    const actualSub = await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+    const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
+    subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
+    delete subplebbitRecord.posts;
+    Object.assign(subplebbitRecord, opts.extraProps);
+    const signedPropertyNames = subplebbitRecord.signature.signedPropertyNames;
+    if (opts.includeExtraPropInSignedPropertyNames) signedPropertyNames.push("extraProp");
+    subplebbitRecord.signature = await _signJson(
+        signedPropertyNames,
+        subplebbitRecord,
+        ipnsObj.signer,
+        Logger("plebbit-js:test-util:publishSubplebbitRecordWithExtraProp")
+    );
+
+    await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+
+    return { subplebbitRecord, ipnsObj };
 }
 
 export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];
