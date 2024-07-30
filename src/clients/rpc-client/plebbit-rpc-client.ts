@@ -17,14 +17,14 @@ import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
 import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
 import type { CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
 import type { PageIpfs } from "../../pages/types.js";
-import { CommentChallengeRequestToEncryptSchema, CommentIpfsSchema } from "../../publications/comment/schema.js";
+import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
 import { PageIpfsSchema } from "../../pages/schema.js";
 import {
     CreateNewLocalSubplebbitUserOptionsSchema,
     ListOfSubplebbitsSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
-    SubplebbitEditOptionsSchema
+    SubplebbitEditOptionsSchema,
+    RpcLocalSubplebbitUpdateResultSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
@@ -35,7 +35,10 @@ import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/c
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
 import { PlebbitWsServerSettingsSerializedSchema, SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
 import { SetNewSettingsPlebbitWsServer } from "../../rpc/src/types.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentIpfsSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import {
+    parseCidStringSchemaWithPlebbitErrorIfItFails,
+    parseCommentIpfsSchemaWithPlebbitErrorIfItFails
+} from "../../schema/schema-util.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -246,11 +249,10 @@ export default class PlebbitRpcClient {
         const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
         const propsAfterReplacing = replaceXWithY(parsedEditOptions, undefined, null);
-        const rawRes = <InternalSubplebbitBeforeFirstUpdateRpcType | InternalSubplebbitAfterFirstUpdateRpcType>(
+        const rawRes = RpcLocalSubplebbitUpdateResultSchema.parse(
             await this._webSocketClient.call("editSubplebbit", [parsedAddress, propsAfterReplacing])
         );
-        if ("updatedAt" in rawRes) return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(rawRes);
-        else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(rawRes);
+        return rawRes;
     }
 
     async deleteSubplebbit(subplebbitAddress: string) {

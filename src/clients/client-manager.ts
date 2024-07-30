@@ -36,7 +36,7 @@ import {
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
     parseCommentUpdateSchemaWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails,
-    parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
+    parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import { verifyComment, verifyCommentUpdate } from "../signer/signatures.js";
 
@@ -249,7 +249,9 @@ export class ClientsManager extends BaseClientsManager {
         this.postFetchSubplebbitStringJsonP2PSuccess();
 
         try {
-            const subIpfs = parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(rawSubJsonString));
+            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+                parseJsonWithPlebbitErrorIfFails(rawSubJsonString)
+            );
 
             const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
 
@@ -312,7 +314,7 @@ export class ClientsManager extends BaseClientsManager {
                 abortController,
                 promise: queueLimit(() =>
                     this._fetchWithGateway(gateway, path, "subplebbit", abortController, async (gatewayRes) => {
-                        const subIpfs = parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(
+                        const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
                             parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
                         );
                         const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);

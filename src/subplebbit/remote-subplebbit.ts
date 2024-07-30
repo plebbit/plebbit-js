@@ -1,4 +1,4 @@
-import { doesDomainAddressHaveCapitalLetter, isIpns, shortifyAddress } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress } from "../util.js";
 import { Plebbit } from "../plebbit.js";
 
 import type { SubplebbitEvents } from "../types.js";
@@ -85,6 +85,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
             subplebbitAddress: this.address,
             pagesIpfs: undefined
         });
+        hideClassPrivateProps(this);
     }
 
     async _updateLocalPostsInstance(
