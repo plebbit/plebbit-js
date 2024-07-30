@@ -5,7 +5,7 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import { messages } from "../../../dist/node/errors.js";
-import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing } from "../../../dist/node/signer/signatures.js";
+import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing, _signJson } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
 import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
 import validSubplebbitWithEnsCommentsFixture from "../../fixtures/valid_subplebbit_with_ens_comments.json" assert { type: "json" };
@@ -103,5 +103,51 @@ describeSkipIfRpc("Verify subplebbit", async () => {
 
         // The author.address should be overridden here
         expect(getLatestComment().comment.author.address).to.equal(signers[6].address);
+    });
+
+    it(`A subplebbit record is rejected if it includes a field not in signature.signedPropertyNames`, async () => {
+        const tempPlebbit = await mockRemotePlebbit();
+
+        const subFixture = remeda.clone(validSubplebbitFixture);
+        const subFixtureClone = remeda.clone(subFixture);
+        subFixtureClone.extraProp = "1234";
+        const signature = await signSubplebbit(subFixtureClone, signers[0]);
+        expect(signature).to.deep.equal(subFixture.signature);
+        expect(signature.signedPropertyNames).to.not.include("extraProp");
+
+        const validation = await verifySubplebbit(
+            subFixtureClone,
+            tempPlebbit.resolveAuthorAddresses,
+            tempPlebbit._clientsManager,
+            true,
+            true
+        );
+        expect(validation).to.deep.equal({
+            valid: false,
+            reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+        });
+    });
+
+    it(`A subplebbit record is accepted if it includes an extra prop as long as it's in signature.signedPropertyNames`, async () => {
+        const tempPlebbit = await mockRemotePlebbit();
+
+        const subFixture = remeda.clone(validSubplebbitFixture);
+        const subFixtureClone = remeda.clone(subFixture);
+        subFixtureClone.extraProp = "1234";
+        const signature = await _signJson([...subFixture.signature.signedPropertyNames, "extraProp"], subFixtureClone, signers[0]);
+        expect(signature.signedPropertyNames).to.include("extraProp");
+
+        subFixtureClone.signature = signature;
+
+        const validation = await verifySubplebbit(
+            subFixtureClone,
+            tempPlebbit.resolveAuthorAddresses,
+            tempPlebbit._clientsManager,
+            true,
+            true
+        );
+        expect(validation).to.deep.equal({
+            valid: true
+        });
     });
 });

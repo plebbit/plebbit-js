@@ -24,6 +24,8 @@ import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, Creat
 import { signComment } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
+import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
+import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -586,6 +588,40 @@ export async function addStringToIpfs(content: string): Promise<string> {
     const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
     const cid = (await ipfsClient._client.add(content)).path;
     return cid;
+}
+
+export function getRemotePlebbitConfigs() {
+    return [
+        { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
+        { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
+        { name: "RPC remote", plebbitInstancePromise: mockRpcRemotePlebbit }
+        // ...(isRpcFlagOn() ? [{ name: "RPC Local", plebbitInstancePromise: mockPlebbit }] : [])
+    ];
+}
+
+export async function createNewIpns() {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const signer = await plebbit.createSigner();
+    signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
+
+    await importSignerIntoIpfsNode(signer.address, signer.ipfsKey, {
+        url: plebbit.ipfsHttpClientsOptions![0].url!.toString(),
+        headers: plebbit.ipfsHttpClientsOptions![0].headers
+    });
+
+    const publishToIpns = async (content: string) => {
+        const cid = await addStringToIpfs(content);
+        await ipfsClient._client.name.publish(cid, {
+            key: signer.address,
+            allowOffline: true
+        });
+    };
+
+    return {
+        signer,
+        publishToIpns
+    };
 }
 
 export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];
