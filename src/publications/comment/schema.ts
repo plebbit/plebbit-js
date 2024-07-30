@@ -84,7 +84,7 @@ export const CommentSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 
-const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
+const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature", true>>(
     remeda.mapToObj([...CommentSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
 );
 

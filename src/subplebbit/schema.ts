@@ -99,7 +99,7 @@ export const ChallengeFromGetChallengeSchema = z
             .function()
             .args(z.lazy(() => ChallengeAnswerStringSchema))
             .returns(z.promise(ChallengeResultSchema)), // args is answer
-        type: z.enum(["image/png", "text/plain"]).or(ChainTickerChallengeTypeSchema)
+        type: z.enum(["image/png", "text/plain"]).or(ChainTickerChallengeTypeSchema).or(z.string().min(1))
     })
     .strict();
 
