@@ -50,7 +50,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             throw e;
         }
 
-        await this.initRemoteSubplebbitPropsNoMerge({ ...updateRecord.subplebbit, ...updateRecord });
+        await this.initSubplebbitIpfsPropsNoMerge(updateRecord.subplebbit);
+        this.cid = updateRecord.cid;
 
         this.emit("update", this);
     }

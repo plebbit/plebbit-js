@@ -58,6 +58,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     _plebbit: Plebbit;
     _ipnsLoadingOperation?: RetryOperation = undefined;
     _clientsManager: SubplebbitClientsManager;
+    protected _rawSubplebbitIpfs?: SubplebbitIpfsType = undefined;
 
     // private
     protected _updateTimeout?: NodeJS.Timeout = undefined;
@@ -117,7 +118,12 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         }
     }
 
-    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitIpfsType | RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
+    async initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType) {
+        this._rawSubplebbitIpfs = newProps;
+        await this.initRemoteSubplebbitPropsNoMerge(newProps);
+    }
+
+    async initRemoteSubplebbitPropsNoMerge(newProps: RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
@@ -193,11 +199,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     toJSONIpfs(): SubplebbitIpfsType {
-        // TODO use zod here
-        return {
-            ...this._toJSONBase(),
-            posts: this.posts.toJSONIpfs()
-        };
+        if (!this._rawSubplebbitIpfs) throw Error("should not be calling toJSONIpfs() before defining _rawSubplebbitIpfs");
+        return this._rawSubplebbitIpfs;
     }
 
     toJSONRpcRemote(): RpcRemoteSubplebbitType {
@@ -275,7 +278,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         // Signature already has been validated
 
         if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
-            await this.initRemoteSubplebbitPropsNoMerge(loadedSubIpfsOrError);
+            await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError);
             log(`Remote Subplebbit received a new update. Will emit an update event`);
             this.emit("update", this);
         } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
