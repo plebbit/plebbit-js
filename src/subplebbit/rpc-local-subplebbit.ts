@@ -104,7 +104,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
     async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
         const subplebbitIpfs = SubplebbitIpfsSchema.passthrough().parse(
-            remeda.pick(newProps, <(keyof SubplebbitIpfsType)[]>newProps.signature.signedPropertyNames)
+            remeda.pick(newProps, <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"])
         );
         await super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfs);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
