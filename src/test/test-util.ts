@@ -598,9 +598,7 @@ export function getRemotePlebbitConfigs() {
     return [
         { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
         { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
-        ...(isRpcFlagOn() ? [{ name: "RPC Local", plebbitInstancePromise: mockPlebbit }] : [])
-        // { name: "RPC remote", plebbitInstancePromise: mockRpcRemotePlebbit }
-        // ...(isRpcFlagOn() ? [{ name: "RPC Local", plebbitInstancePromise: mockPlebbit }] : [])
+        ...(isRpcFlagOn() ? [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }] : [])
     ];
 }
 
