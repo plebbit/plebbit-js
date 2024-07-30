@@ -345,6 +345,8 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
 
+            expect(sub.toJSON().extraProp).to.equal(opts.extraProps.extraProp);
+
             await sub.stop();
             // TODO should we be testing for sub.extraProp as well?
             // TODO should we be testing for sub.toJSON().extraProp as well?
