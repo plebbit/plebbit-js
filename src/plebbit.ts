@@ -32,7 +32,13 @@ import { ClientsManager } from "./clients/client-manager.js";
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "./plebbit-error.js";
 import { GenericPlebbitRpcStateClient } from "./clients/rpc-client/plebbit-rpc-state-client.js";
-import type { CreateInstanceOfLocalOrRemoteSubplebbitOptions, CreateNewLocalSubplebbitParsedOptions } from "./subplebbit/types.js";
+import type {
+    CreateInstanceOfLocalOrRemoteSubplebbitOptions,
+    CreateNewLocalSubplebbitParsedOptions,
+    CreateRemoteSubplebbitOptions,
+    RemoteSubplebbitJsonType,
+    SubplebbitIpfsType
+} from "./subplebbit/types.js";
 import LRUStorage from "./runtime/node/lru-storage.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
@@ -337,6 +343,20 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return isNode;
     }
 
+    private async _setSubplebbitIpfsOnInstanceIfPossible(
+        subplebbit: RpcRemoteSubplebbit | RemoteSubplebbit,
+        options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJsonType
+    ) {
+        if (options.signature) {
+            const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
+                remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
+            );
+            if (resParseSubplebbitIpfs.success)
+                await subplebbit.initSubplebbitIpfsPropsNoMerge(resParseSubplebbitIpfs.data); // we're setting SubplebbitIpfs
+            else await subplebbit.initRemoteSubplebbitPropsNoMerge(options); // options are not adherent to SubplebbitIpfs, let's use less strict init
+        } else await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
+    }
+
     private async _createSubplebbitRpc(
         options: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
@@ -375,12 +395,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             } else {
                 log.trace("Creating a remote RPC subplebbit instance with address", options.address);
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                const safeParseIpfs = SubplebbitIpfsSchema.passthrough().safeParse(options);
-                if (safeParseIpfs.success) await remoteSub.initSubplebbitIpfsPropsNoMerge(safeParseIpfs.data);
-                else {
-                    // options are not adherent to SubplebbitIpfs, let's use less strict init
-                    await remoteSub.initRemoteSubplebbitPropsNoMerge(options);
-                }
+                await this._setSubplebbitIpfsOnInstanceIfPossible(remoteSub, options);
 
                 return remoteSub;
             }
@@ -405,14 +420,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             Object.assign(subplebbit, options);
             subplebbit._rawSubplebbitIpfs = options._rawSubplebbitIpfs;
             if (subplebbit.state !== "stopped") await subplebbit.stop(); // to reset states
-        } else {
-            const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(options);
-            if (resParseSubplebbitIpfs.success)
-                await subplebbit.initSubplebbitIpfsPropsNoMerge(resParseSubplebbitIpfs.data); // we're setting SubplebbitIpfs
-            else {
-                await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
-            }
-        }
+        } else await this._setSubplebbitIpfsOnInstanceIfPossible(subplebbit, options);
 
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;

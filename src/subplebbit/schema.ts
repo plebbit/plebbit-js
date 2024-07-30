@@ -355,9 +355,9 @@ const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | R
         arg instanceof LocalSubplebbit // I think this is gonna throw in browsers
 );
 
-export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(RemoteSubplebbitJsonSchema)
-    .or(SubplebbitIpfsSchema)
-    .or(SubplebbitClassSchema);
+export const CreateRemoteSubplebbitFunctionArgumentSchema = SubplebbitClassSchema.or(CreateRemoteSubplebbitOptionsSchema)
+    .or(RemoteSubplebbitJsonSchema)
+    .or(SubplebbitIpfsSchema.passthrough());
 
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
     CreateNewLocalSubplebbitUserOptionsSchema
