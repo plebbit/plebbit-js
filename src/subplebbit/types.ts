@@ -22,7 +22,6 @@ import {
     SubplebbitEncryptionSchema,
     SubplebbitFeaturesSchema,
     SubplebbitIpfsSchema,
-    SubplebbitOnlyAddressAndPageCidsSchema,
     SubplebbitRoleSchema,
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema,
@@ -101,8 +100,6 @@ export type ChallengeFile = z.infer<typeof ChallengeFileSchema>;
 export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
-
-export type SubplebbitOnlyAddressAndPageCidsType = z.infer<typeof SubplebbitOnlyAddressAndPageCidsSchema>;
 
 // This is the object that gets passed to _updateDbInternalState after calling .edit()
 export interface ParsedSubplebbitEditOptions

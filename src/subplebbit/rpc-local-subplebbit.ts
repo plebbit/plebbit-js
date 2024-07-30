@@ -27,7 +27,8 @@ import {
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcLocalSubplebbitUpdateResultSchema,
     StartedStateSchema,
-    SubplebbitEditOptionsSchema
+    SubplebbitEditOptionsSchema,
+    SubplebbitIpfsSchema
 } from "./schema.js";
 import { EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import {
@@ -94,27 +95,18 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateRpcType) {
-        this.setAddress(newProps.address);
-        this.createdAt = newProps.createdAt;
-        this.description = newProps.description;
-        this.features = newProps.features;
-        this.flairs = newProps.flairs;
-        this.pubsubTopic = newProps.pubsubTopic;
+        await this.initRemoteSubplebbitPropsNoMerge(newProps);
         this.signer = newProps.signer;
-        this.roles = newProps.roles;
-        this.rules = newProps.rules;
-        this.suggested = newProps.suggested;
-        this.title = newProps.title;
-        this.protocolVersion = newProps.protocolVersion;
-        this.encryption = newProps.encryption;
         this.settings = newProps.settings;
         this._usingDefaultChallenge = newProps._usingDefaultChallenge;
-        this.challenges = newProps.challenges;
         this.started = newProps.started;
     }
 
     async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
-        await super.initRemoteSubplebbitPropsNoMerge(newProps);
+        const subplebbitIpfs = SubplebbitIpfsSchema.passthrough().parse(
+            remeda.pick(newProps, <(keyof SubplebbitIpfsType)[]>newProps.signature.signedPropertyNames)
+        );
+        await super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfs);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
         this.cid = newProps.cid;
     }
@@ -137,7 +129,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     protected override async _processUpdateEventFromRpcUpdate(args: any) {
-        // This function is gonna be called with every update event from rpcLocalSubplbebit.update()
+        // This function is gonna be called with every update event from rpcLocalSubplebbit.update()
         const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
         let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
         try {
@@ -155,7 +147,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     private async _handleRpcUpdateEventFromStart(args: any) {
-        // This function is gonna be called with every update event from rpcLocalSubplbebit.start()
+        // This function is gonna be called with every update event from rpcLocalSubplebbit.start()
 
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
         let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;

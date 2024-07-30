@@ -205,25 +205,34 @@ export const SubplebbitIpfsSchema = z
 export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["signature"]));
 
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
-export const RpcRemoteSubplebbitSchema = z
-    .object({
-        subplebbit: SubplebbitIpfsSchema,
-        cid: CidStringSchema
-    })
-    .strict();
+export const RpcRemoteSubplebbitSchema = z.object({
+    subplebbit: SubplebbitIpfsSchema.passthrough(),
+    cid: CidStringSchema
+});
 // If you're trying to create a subplebbit instance with any props, all props are optional except address
 
 export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial()
     .merge(SubplebbitIpfsSchema.pick({ address: true }))
+    .extend({
+        posts: SubplebbitIpfsSchema.shape.posts.or(PostsPagesIpfsSchema.pick({ pageCids: true })),
+        cid: CidStringSchema.optional()
+    })
     .strict();
 
-export const RemoteSubplebbitJsonSchema = SubplebbitIpfsSchema.omit({ posts: true })
+const RemoteSubplebbitOptionalRemotePropsJsonSchema = CreateRemoteSubplebbitOptionsSchema.extend({
+    shortAddress: ShortSubplebbitAddressSchema,
+    posts: PostsPagesJsonSchema.or(PostsPagesJsonSchema.pick({ pageCids: true })).optional()
+}).strict();
+
+const RemoteSubplebbitAfterFirstUpdateJsonSchema = SubplebbitIpfsSchema.omit({ posts: true })
     .extend({
         shortAddress: ShortSubplebbitAddressSchema,
         posts: PostsPagesJsonSchema.optional(),
         cid: CidStringSchema
     })
     .strict();
+
+export const RemoteSubplebbitJsonSchema = RemoteSubplebbitAfterFirstUpdateJsonSchema.or(RemoteSubplebbitOptionalRemotePropsJsonSchema);
 
 // Local Subplebbit schemas
 
@@ -338,15 +347,6 @@ export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not su
 // | RpcRemoteSubplebbit
 // | LocalSubplebbit = {}
 
-export const SubplebbitOnlyAddressAndPageCidsSchema = z
-    .object({
-        address: SubplebbitAddressSchema,
-        posts: z.object({
-            pageCids: PostsPagesIpfsSchema.shape.pageCids
-        })
-    })
-    .strict();
-
 const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | LocalSubplebbit>(
     (arg) =>
         arg instanceof RemoteSubplebbit ||
@@ -356,7 +356,6 @@ const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | R
 );
 
 export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(RemoteSubplebbitJsonSchema)
-    .or(SubplebbitOnlyAddressAndPageCidsSchema)
     .or(SubplebbitIpfsSchema)
     .or(SubplebbitClassSchema);
 

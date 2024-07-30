@@ -334,6 +334,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
+
         if ("address" in options && typeof options.address === "string") {
             const rpcSubs = await this.listSubplebbits();
             const isSubRpcLocal = rpcSubs.includes(options.address);
@@ -355,17 +356,21 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 if (error) throw error;
 
                 return sub;
-            } else {
-                // Remote subplebbit
+            } else if (options instanceof RemoteSubplebbit) {
+                // Remote subplebbit , we need to create new instance and copy props to it
                 log.trace("Creating a remote RPC subplebbit instance with address", options.address);
                 const remoteSub = new RpcRemoteSubplebbit(this);
-                const parsedOptions = options instanceof RemoteSubplebbit ? options.toJSONIpfs() : options;
-                if ("protocolVersion" in parsedOptions)
-                    await remoteSub.initRemoteSubplebbitPropsNoMerge(parsedOptions); // We're setting SubplebbitIpfs
+                Object.assign(remoteSub, options);
+                if (remoteSub.state !== "stopped") await remoteSub.stop(); // to reset states
+                return remoteSub;
+            } else {
+                log.trace("Creating a remote RPC subplebbit instance with address", options.address);
+                const remoteSub = new RpcRemoteSubplebbit(this);
+                const safeParseIpfs = SubplebbitIpfsSchema.passthrough().safeParse(options);
+                if (safeParseIpfs.success) await remoteSub.initSubplebbitIpfsPropsNoMerge(safeParseIpfs.data);
                 else {
-                    // we're setting {address, posts: {pageCids}}
-                    remoteSub.setAddress(parsedOptions.address);
-                    await remoteSub._updateLocalPostsInstance(parsedOptions.posts);
+                    // options are not adherent to SubplebbitIpfs, let's use less strict init
+                    await remoteSub.initRemoteSubplebbitPropsNoMerge(options);
                 }
 
                 return remoteSub;
@@ -391,12 +396,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             Object.assign(subplebbit, options);
             if (subplebbit.state !== "stopped") await subplebbit.stop(); // to reset states
         } else {
-            if ("protocolVersion" in options)
-                await subplebbit.initRemoteSubplebbitPropsNoMerge(options); // we're setting SubplebbitIpfs
+            const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(options);
+            if (resParseSubplebbitIpfs.success)
+                await subplebbit.initSubplebbitIpfsPropsNoMerge(resParseSubplebbitIpfs.data); // we're setting SubplebbitIpfs
             else {
-                // we're setting {address, posts: {pageCids}}
-                subplebbit.setAddress(options.address);
-                await subplebbit._updateLocalPostsInstance(options.posts);
+                await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
             }
         }
 

@@ -124,6 +124,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async initRemoteSubplebbitPropsNoMerge(newProps: RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
+        // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
         this.description = newProps.description;
         this.lastPostCid = newProps.lastPostCid;
@@ -138,9 +139,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
         this.postUpdates = newProps.postUpdates;
-        // A potential issue here is that if SubplebbitIpfsType or RemoteSubplebbitJsonType had a required prop as undefined or null
-        // The subplebbit instance will not update its prop accordingly because it checks if it's defined
-        // The way to fix this is with zod I believe
         if (Array.isArray(newProps.challenges)) this.challenges = newProps.challenges;
         if (newProps.statsCid) this.statsCid = newProps.statsCid;
         if (typeof newProps.createdAt === "number") this.createdAt = newProps.createdAt;
@@ -311,34 +309,4 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this._setUpdatingState("stopped");
         this._setState("stopped");
     }
-
-    // *[Symbol.iterator]() {
-    //     yield 1;
-    //     yield 2;
-    //     yield 3;
-    // }
-    // Control what properties are included when spreading
-    // *[Symbol.iterator]() {
-    //     // Yield the properties you want to be included when spreading
-    //     const json = this.toJSON();
-    //     for (const key in this.toJSON()) {
-    //         if (Object.prototype.hasOwnProperty.call(json, key)) {
-    //             yield [key, json[key]];
-    //         }
-    //     }
-    // }
-
-    // [Symbol.iterator]() {
-    //     return this.toJSON();
-    // }
-
-    // // Control what properties are included when spreading
-    // *[Symboliterator]() {
-    //     // Yield the properties you want to be included when spreading
-    //     for (const key in this._data) {
-    //         if (Object.prototype.hasOwnProperty.call(this._data, key)) {
-    //             yield [key, this._data[key]];
-    //         }
-    //     }
-    // }
 }
