@@ -13,7 +13,12 @@ import type {
     InputPlebbitOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, removeNullUndefinedEmptyObjectsValuesRecursively, timestamp } from "./util.js";
+import {
+    doesDomainAddressHaveCapitalLetter,
+    hideClassPrivateProps,
+    removeNullUndefinedEmptyObjectsValuesRecursively,
+    timestamp
+} from "./util.js";
 import Vote from "./publications/vote/vote.js";
 import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
@@ -49,7 +54,8 @@ import {
     CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema,
     CreateNewLocalSubplebbitParsedOptionsSchema,
-    PubsubTopicSchema
+    PubsubTopicSchema,
+    SubplebbitIpfsSchema
 } from "./subplebbit/schema.js";
 import { PlebbitUserOptionsSchema } from "./schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "./schema/schema-util.js";
@@ -194,6 +200,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this._stats = new Stats({ _storage: this._storage, clients: this.clients });
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
+
+        hideClassPrivateProps(this);
     }
 
     async getSubplebbit(subplebbitAddress: z.infer<typeof SubplebbitAddressSchema>) {

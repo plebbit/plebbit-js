@@ -4,6 +4,7 @@ import Publication from "../../publications/publication.js";
 import { Comment } from "../../publications/comment/comment.js";
 import { BasePages } from "../../pages/pages.js";
 import { RpcRemoteSubplebbit } from "../../subplebbit/rpc-remote-subplebbit.js";
+import { hideClassPrivateProps } from "../../util.js";
 
 // Types
 type PublicationRpcState =
@@ -33,6 +34,7 @@ class BasePlebbitRpcStateClient<T extends GenericRpcState> extends TypedEmitter<
     constructor(state: T) {
         super();
         this.state = state;
+        hideClassPrivateProps(this);
     }
 }
 

@@ -1,5 +1,6 @@
 import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types.js";
+import { hideClassPrivateProps } from "../util.js";
 
 // Types
 type PublicationPubsubState =
@@ -25,6 +26,7 @@ export class GenericPubsubClient extends TypedEmitter<GenericClientEvents<Generi
     constructor(state: GenericPubsubClient["state"]) {
         super();
         this.state = state;
+        hideClassPrivateProps(this);
     }
 }
 

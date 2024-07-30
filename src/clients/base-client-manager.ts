@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { delay, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import {
@@ -59,6 +59,7 @@ export class BaseClientsManager {
         if (this._defaultPubsubProviderUrl) {
             for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
         }
+        hideClassPrivateProps(this);
     }
 
     toJSON() {

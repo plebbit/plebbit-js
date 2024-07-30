@@ -1,5 +1,6 @@
 import { TypedEmitter } from "tiny-typed-emitter";
 import { GenericClientEvents } from "../types.js";
+import { hideClassPrivateProps } from "../util.js";
 
 // Types
 type PublicationIpfsState = "stopped" | "fetching-subplebbit-ipns" | "fetching-subplebbit-ipfs";
@@ -15,6 +16,7 @@ class BaseIpfsClient<T extends GenericIpfsState> extends TypedEmitter<GenericCli
     constructor(state: T) {
         super();
         this.state = state;
+        hideClassPrivateProps(this);
     }
 }
 

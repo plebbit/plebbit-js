@@ -1,4 +1,4 @@
-import { throwWithErrorCode, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, throwWithErrorCode, timestamp } from "../../../util.js";
 import knex, { Knex } from "knex";
 import path from "path";
 import assert from "assert";
@@ -19,7 +19,6 @@ import type {
 import Logger from "@plebbit/plebbit-logger";
 import { deleteOldSubplebbitInWindows, getDefaultSubplebbitDbConfig } from "../util.js";
 import env from "../../../version.js";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
@@ -93,6 +92,7 @@ export class DbHandler {
             );
             throw e;
         }
+        hideClassPrivateProps(this);
     }
 
     getDbConfig(): Knex.Config {

@@ -6,7 +6,7 @@ import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";
 import pTimeout from "p-timeout";
-import { replaceXWithY, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import type {
     CreateNewLocalSubplebbitUserOptions,
     InternalSubplebbitBeforeFirstUpdateRpcType,
@@ -61,6 +61,7 @@ export default class PlebbitRpcClient {
                 return this._webSocketClient.call(...args);
             }
         };
+        hideClassPrivateProps(this);
     }
 
     async _init() {

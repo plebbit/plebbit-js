@@ -1,7 +1,7 @@
 import Publication from "../publications/publication.js";
 import { Plebbit } from "../plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
-import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
+import { getPostUpdateTimestampRange, hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
 import type { ChainTicker } from "../types.js";
 import { verifySubplebbit } from "../signer/index.js";
@@ -39,7 +39,6 @@ import {
     parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import { verifyComment, verifyCommentUpdate } from "../signer/signatures.js";
-import { CidStringSchema } from "../schema/schema.js";
 
 type ResultOfFetchingSubplebbit = { subplebbit: SubplebbitIpfsType; cid: string };
 
@@ -62,6 +61,7 @@ export class ClientsManager extends BaseClientsManager {
         this._initPubsubClients();
         this._initChainProviders();
         this._initPlebbitRpcClients();
+        hideClassPrivateProps(this);
     }
 
     protected _initIpfsGateways() {
@@ -80,7 +80,6 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initChainProviders() {
-        //@ts-expect-error
         this.clients.chainProviders = {};
         for (const [chain, chainProvider] of remeda.entries.strict(this._plebbit.chainProviders)) {
             this.clients.chainProviders[chain] = {};

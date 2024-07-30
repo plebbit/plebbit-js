@@ -35,13 +35,14 @@ export class BasePages {
     _clientsManager!: BasePagesClientsManager;
     _plebbit: Plebbit;
     _subplebbitAddress!: string;
-    _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"];
-    protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
+    _parentCid: RepliesPages["_parentCid"] | PostsPages["_parentCid"] = undefined;
+    protected _pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: PostsProps | RepliesProps) {
         this._plebbit = props.plebbit;
         this._initClientsManager();
         this.updateProps(props);
+        hideClassPrivateProps(this);
     }
 
     updateProps(props: PostsProps | RepliesProps) {
@@ -130,7 +131,7 @@ export class RepliesPages extends BasePages {
 
     override _parentCid!: string | undefined; // would be undefined if the comment is not initialized yet and we don't have comment.cid
 
-    protected override _pagesIpfs: RepliesPagesTypeIpfs | undefined; // when we create a new page from an existing subplebbit
+    protected override _pagesIpfs: RepliesPagesTypeIpfs | undefined = undefined; // when we create a new page from an existing subplebbit
 
     constructor(props: RepliesProps) {
         super(props);
@@ -162,8 +163,8 @@ export class PostsPages extends BasePages {
     override clients!: PostsPagesClientsManager["clients"];
 
     override _clientsManager!: PostsPagesClientsManager;
-    override _parentCid: undefined;
-    protected override _pagesIpfs: PostsPagesTypeIpfs | undefined;
+    override _parentCid: undefined = undefined;
+    protected override _pagesIpfs: PostsPagesTypeIpfs | undefined = undefined;
 
     constructor(props: PostsProps) {
         super(props);

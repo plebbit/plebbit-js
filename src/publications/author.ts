@@ -1,5 +1,5 @@
 import { AuthorPubsubType, AuthorTypeJson, AuthorTypeWithCommentUpdate } from "../types.js";
-import { shortifyAddress } from "../util.js";
+import { hideClassPrivateProps, shortifyAddress } from "../util.js";
 import { SubplebbitAuthor } from "./comment/types.js";
 
 class Author implements AuthorTypeWithCommentUpdate {
@@ -21,6 +21,7 @@ class Author implements AuthorTypeWithCommentUpdate {
         this.flair = props.flair;
         this.subplebbit = "subplebbit" in props ? props.subplebbit : undefined;
         this.shortAddress = shortifyAddress(this.address);
+        hideClassPrivateProps(this);
     }
 
     toJSON(): AuthorTypeJson {

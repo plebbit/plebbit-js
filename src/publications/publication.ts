@@ -35,7 +35,7 @@ import {
     verifyChallengeMessage,
     verifyChallengeVerification
 } from "../signer/signatures.js";
-import { shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
+import { hideClassPrivateProps, shortifyAddress, throwWithErrorCode, timestamp } from "../util.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { Comment } from "./comment/comment.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -130,6 +130,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         // public method should be bound
         this.publishChallengeAnswers = this.publishChallengeAnswers.bind(this);
         this._pubsubProviders = remeda.keys.strict(this._plebbit.clients.pubsubClients);
+        hideClassPrivateProps(this);
     }
 
     protected _initClients() {

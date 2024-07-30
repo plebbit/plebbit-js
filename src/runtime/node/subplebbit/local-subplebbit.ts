@@ -20,6 +20,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
     doesDomainAddressHaveCapitalLetter,
     genToArray,
+    hideClassPrivateProps,
     isLinkOfMedia,
     isStringDomain,
     removeNullUndefinedEmptyObjectsValuesRecursively,
@@ -143,6 +144,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.started = false;
         this._isSubRunningLocally = false;
         this._subplebbitUpdateTrigger = false;
+        hideClassPrivateProps(this);
     }
 
     // This will be stored in DB

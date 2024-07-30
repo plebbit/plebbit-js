@@ -1,7 +1,6 @@
-import assert from "assert";
 import type { SignerType } from "./types.js";
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util.js";
-import { shortifyAddress } from "../util.js";
+import { hideClassPrivateProps, shortifyAddress } from "../util.js";
 export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
 export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
 import { CreateSignerSchema } from "../schema/schema.js";
@@ -30,6 +29,7 @@ export class Signer implements SignerType {
                 : props.ipfsKey
                   ? new Uint8Array(props.ipfsKey)
                   : undefined;
+        hideClassPrivateProps(this);
     }
 }
 

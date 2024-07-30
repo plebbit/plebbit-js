@@ -228,3 +228,11 @@ export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof
     } else if ("bytes" in ipfsRawOption) return { url: ipfsRawOption };
     else return ipfsRawOption;
 }
+
+export function hideClassPrivateProps(_this: any) {
+    // make props that start with _ not enumerable
+
+    for (const propertyName in _this) {
+        if (propertyName.startsWith("_")) Object.defineProperty(_this, propertyName, { enumerable: false });
+    }
+}

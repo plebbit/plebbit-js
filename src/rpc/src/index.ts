@@ -31,7 +31,7 @@ import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import path from "path";
 import { watch as fsWatch } from "node:fs";
-import { replaceXWithY, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
@@ -167,6 +167,8 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
         this.rpcWebsocketsRegister("publishChallengeAnswers", this.publishChallengeAnswers.bind(this));
         this.rpcWebsocketsRegister("unsubscribe", this.unsubscribe.bind(this));
+
+        hideClassPrivateProps(this);
     }
 
     // util function to log errors of registered methods

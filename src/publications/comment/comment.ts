@@ -160,6 +160,8 @@ export class Comment extends Publication {
         this._initPubsubMessageProps(props.publication);
     }
 
+    // TODO have toJSONCommentUpdate that return this._rawCommentUpdate
+
     async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
         if ("depth" in props)
             // CommentWithCommentUpdateJson
@@ -286,6 +288,7 @@ export class Comment extends Publication {
     }
 
     toJSONIpfs(): CommentIpfsType {
+        // TODO return this._rawCommentIpfs
         if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
         return {
             ...this.toJSONPubsubMessagePublication(),
