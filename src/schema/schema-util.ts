@@ -49,6 +49,14 @@ export function parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(subJson: any)
     }
 }
 
+export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(subJson: any): SubplebbitIpfsType {
+    try {
+        return SubplebbitIpfsSchema.passthrough().parse(subJson);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: e, subJson });
+    }
+}
+
 export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: any): CommentIpfsType {
     try {
         return CommentIpfsSchema.parse(commentIpfsJson);

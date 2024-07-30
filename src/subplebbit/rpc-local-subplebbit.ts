@@ -1,11 +1,11 @@
 import Logger from "@plebbit/plebbit-logger";
-import { replaceXWithY } from "../util.js";
 import type {
     InternalSubplebbitBeforeFirstUpdateRpcType,
     InternalSubplebbitAfterFirstUpdateRpcType,
     LocalSubplebbitJsonType,
     LocalSubplebbitRpcJsonType,
-    SubplebbitEditOptions
+    SubplebbitEditOptions,
+    SubplebbitIpfsType
 } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
@@ -173,6 +173,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcStartedStateChangeEvent");
 
         let newStartedState: RpcLocalSubplebbit["startedState"];
+        // TODO default rpc client state if we can't recognize the new updating state
+
         try {
             newStartedState = parseRpcStartedStateWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {

@@ -59,6 +59,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _handleUpdatingStateChangeFromRpcUpdate(args: any) {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_handleUpdatingStateChangeFromRpcUpdate");
         let newUpdatingState: z.infer<typeof UpdatingStateSchema>;
+        // TODO default rpc client state if we can't recognize the new updating state
         try {
             newUpdatingState = parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {

@@ -101,7 +101,7 @@ async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign[
     }
 }
 
-async function _signJson(
+export async function _signJson(
     signedPropertyNames: JsonSignature["signedPropertyNames"],
     publication: PublicationsToSign,
     signer: SignerType,
@@ -355,6 +355,12 @@ export async function verifyComment(
     return validation;
 }
 
+function _allFieldsOfSubInSignedPropertyNames(subplebbit: SubplebbitIpfsType): boolean {
+    const fieldsOfSub = remeda.keys.strict(remeda.omit(subplebbit, ["signature"]));
+    for (const field of fieldsOfSub) if (!subplebbit.signature.signedPropertyNames.includes(field)) return false;
+
+    return true;
+}
 export async function verifySubplebbit(
     subplebbit: SubplebbitIpfsType,
     resolveAuthorAddresses: boolean,
@@ -363,6 +369,8 @@ export async function verifySubplebbit(
     resolveDomainSubAddress = true
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
+    if (!_allFieldsOfSubInSignedPropertyNames(subplebbit))
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
     const cacheKey = sha256(
