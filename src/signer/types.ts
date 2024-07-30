@@ -57,9 +57,9 @@ export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSigned
 // Signing
 
 export type PublicationsToSign =
-    | CreateCommentEditOptions
-    | CreateVoteOptions
-    | CreateCommentOptions
+    | Omit<CommentEditPubsubMessage, "signature">
+    | Omit<VotePubsubMessage, "signature">
+    | Omit<CommentPubsubMessage, "signature">
     | Omit<CommentUpdate, "signature">
     | Omit<SubplebbitIpfsType, "signature">;
 
