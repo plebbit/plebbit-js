@@ -55,13 +55,13 @@ describe(`subplebbit.start`, async () => {
         // There are cases where ipfs node can fail and be restarted
         // When that happens, the subscription to subplebbit.pubsubTopic will not be restored
         // The restoration of subscription should happen within the sync loop of Subplebbit
-        await subplebbit.plebbit._clientsManager
+        await subplebbit._plebbit._clientsManager
             .getDefaultPubsub()
             ._client.pubsub.unsubscribe(subplebbit.pubsubTopic, subplebbit.handleChallengeExchange);
-        const listedTopics = async () => await subplebbit.plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
+        const listedTopics = async () => await subplebbit._plebbit._clientsManager.getDefaultPubsub()._client.pubsub.ls();
         expect(await listedTopics()).to.not.include(subplebbit.address);
 
-        await new Promise((resolve) => setTimeout(resolve, subplebbit.plebbit.publishInterval * 2));
+        await new Promise((resolve) => setTimeout(resolve, subplebbit._plebbit.publishInterval * 2));
         expect(await listedTopics()).to.include(subplebbit.address);
 
         await publishRandomPost(subplebbit.address, plebbit, {}, false); // Should receive publication since subscription to pubsub topic has been restored
@@ -332,7 +332,7 @@ describe(`Publish loop resiliency`, async () => {
     });
     itSkipIfRpc(`Subplebbit can still publish an IPNS, even if all domain resolvers throw an error`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
-        sub.clientsManager._resolveTextRecordSingleChainProvider = () => {
+        sub._clientsManager._resolveTextRecordSingleChainProvider = () => {
             return { error: new Error("test error") };
         };
         await sub.edit({ address: `sub-does-not-exist-${uuidV4()}.eth` });
@@ -355,10 +355,10 @@ describe(`Publish loop resiliency`, async () => {
         subplebbit.on("error", (err) => {
             console.log(err);
         });
-        subplebbit.plebbit.resolveAuthorAddresses = false; // So the post gets accepted
+        subplebbit._plebbit.resolveAuthorAddresses = false; // So the post gets accepted
 
         await publishWithExpectedResult(mockPost, true);
-        subplebbit.plebbit.resolveAuthorAddresses = true;
+        subplebbit._plebbit.resolveAuthorAddresses = true;
 
         expect(mockPost.author.address).to.equal("plebbit.eth");
 
