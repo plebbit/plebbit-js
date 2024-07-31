@@ -1,7 +1,7 @@
 import { parsePageIpfs } from "../pages/util.js";
 import type {
-    PageInstanceType,
     PageIpfs,
+    PageTypeJson,
     PostSortName,
     PostsPagesTypeIpfs,
     PostsPagesTypeJson,
@@ -91,10 +91,10 @@ export class BasePages {
         return pageIpfs;
     }
 
-    async getPage(pageCid: string): Promise<PageInstanceType> {
+    async getPage(pageCid: string): Promise<PageTypeJson> {
         assert(typeof this._subplebbitAddress === "string", "Subplebbit address needs to be defined under page");
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
-        return await parsePageIpfs(await this._fetchAndVerifyPage(parsedCid), this._plebbit);
+        return parsePageIpfs(await this._fetchAndVerifyPage(parsedCid));
     }
 
     toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined {
@@ -102,8 +102,7 @@ export class BasePages {
         if (remeda.isEmpty(this.pageCids)) throw Error("pageInstance.pageCids should not be empty while pageInstance.pages is defined");
         const pagesJson: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"] = remeda.mapValues(this.pages, (page) => {
             if (!page) return undefined;
-            const commentsJson = page.comments.map((comment) => comment.toJSONCommentWithinPage());
-            return { comments: commentsJson, nextCid: page.nextCid };
+            return page;
         });
         return { pages: pagesJson, pageCids: this.pageCids };
     }
@@ -121,7 +120,7 @@ export class BasePages {
 }
 
 export class RepliesPages extends BasePages {
-    override pages!: Partial<Record<ReplySortName, PageInstanceType>>;
+    override pages!: Partial<Record<ReplySortName, PageTypeJson>>;
 
     override pageCids!: Record<ReplySortName, string> | {};
 
@@ -156,7 +155,7 @@ export class RepliesPages extends BasePages {
 }
 
 export class PostsPages extends BasePages {
-    override pages!: Partial<Record<PostSortName, PageInstanceType>>;
+    override pages!: Partial<Record<PostSortName, PageTypeJson>>;
 
     override pageCids!: Record<PostSortName, string> | {};
 

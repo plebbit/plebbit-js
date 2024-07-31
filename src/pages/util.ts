@@ -1,14 +1,13 @@
 import type {
     PageIpfs,
-    PagesInstanceType,
     PagesTypeIpfs,
     PagesTypeJson,
-    PageInstanceType,
     PostSort,
     ReplySort,
     Timeframe,
     RepliesPagesTypeIpfs,
-    PostsPagesTypeIpfs
+    PostsPagesTypeIpfs,
+    PageTypeJson
 } from "./types.js";
 
 import assert from "assert";
@@ -16,6 +15,9 @@ import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
 import { Plebbit } from "../plebbit.js";
+import type { CommentWithCommentUpdateJson } from "../publications/comment/types.js";
+import { shortifyAddress, shortifyCid } from "../util.js";
+import { CommentWithCommentUpdateNoRepliesJsonSchema } from "../publications/comment/schema.js";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -101,58 +103,64 @@ export function oldScore(comment: CommentToSort) {
     return -comment.comment.timestamp;
 }
 
-export async function parsePageIpfs(pageIpfs: PageIpfs, plebbit: Plebbit): Promise<PageInstanceType> {
-    const finalComments = await Promise.all(pageIpfs.comments.map((commentObj) => plebbit.createComment(commentObj.comment)));
-    await Promise.all(finalComments.map((comment, i) => comment._initCommentUpdate(pageIpfs.comments[i].update)));
+export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
+    const finalComments = pageIpfs.comments.map((commentObj) => {
+        const parsedPages = commentObj.update.replies ? parsePagesIpfs(commentObj.update.replies) : undefined;
+        const finalJson: CommentWithCommentUpdateJson = {
+            ...commentObj.comment,
+            ...commentObj.update,
+            author: {
+                ...commentObj.comment.author,
+                ...commentObj.update.author,
+                shortAddress: shortifyAddress(commentObj.comment.author.address)
+            },
+            shortCid: shortifyCid(commentObj.comment.cid),
+            shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
+            original: remeda.pick(commentObj.comment, remeda.keys.strict(CommentWithCommentUpdateNoRepliesJsonSchema.shape.original.shape)),
+            deleted: commentObj.update.edit?.deleted,
+            replies: parsedPages
+        };
+        return finalJson;
+    });
 
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export async function parsePagesIpfs(pagesRaw: PagesTypeIpfs, plebbit: Plebbit): Promise<PagesInstanceType> {
+export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): PagesTypeJson {
     const keys = remeda.keys.strict(pagesRaw.pages);
-    const parsedPages = await Promise.all(Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs, plebbit)));
+    const parsedPages = Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs));
     const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 
 // To use for both subplebbit.posts and comment.replies
 
-export async function parseRawPages(
-    replies: PagesTypeIpfs | PagesTypeJson | BasePages | undefined,
-    plebbit: Plebbit
-): Promise<Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined }> {
-    if (!replies)
+export function parseRawPages(
+    pages: PagesTypeIpfs | PagesTypeJson | BasePages | undefined
+): Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined } {
+    if (!pages)
         return {
             pages: {},
             pagesIpfs: undefined
         };
 
-    const isIpfs = typeof Object.values(replies.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
+    const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
 
     if (isIpfs) {
-        // replies is a PagesTypeIpfs
-        const parsedPages = await parsePagesIpfs(<PagesTypeIpfs>replies, plebbit);
+        pages = <PagesTypeIpfs>pages;
+        // pages is a PagesTypeIpfs
+        const parsedPages = parsePagesIpfs(pages);
         return {
             pages: parsedPages.pages,
-            pagesIpfs: <PagesTypeIpfs>replies
+            pagesIpfs: <PagesTypeIpfs>pages
         };
-    } else if (replies instanceof BasePages)
-        return { pages: replies.pages, pagesIpfs: replies.toJSONIpfs() }; // already parsed
+    } else if (pages instanceof BasePages)
+        return { pages: pages.pages, pagesIpfs: pages.toJSONIpfs() }; // already parsed
     else {
-        replies = replies as PagesTypeJson;
-        const pagesWithCommentInstancesEntries = await Promise.all(
-            remeda.entries.strict(replies.pages).map(async ([pageKey, pageJson]) => {
-                const comments = await Promise.all(
-                    pageJson.comments.map((commentJson) => plebbit.createComment.bind(plebbit)(commentJson))
-                );
-                return remeda.entries.strict({ [pageKey]: { comments, nextCid: pageJson.nextCid } })[0];
-            })
-        );
-
-        const pagesWithCommentInstances = remeda.fromEntries.strict(pagesWithCommentInstancesEntries);
+        pages = pages as PagesTypeJson;
 
         return {
-            pages: pagesWithCommentInstances,
+            pages: pages.pages,
             pagesIpfs: undefined
         };
     }

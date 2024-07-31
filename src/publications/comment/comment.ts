@@ -218,7 +218,7 @@ export class Comment extends Publication {
             if (shouldUpdateReplies) {
                 log.trace(`Updating the props of comment instance (${this.cid}) replies`);
                 const parsedPages = <Pick<RepliesPages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | undefined }>(
-                    await parseRawPages(newReplies, this._plebbit)
+                    parseRawPages(newReplies)
                 );
                 this.replies.updateProps({
                     ...parsedPages,

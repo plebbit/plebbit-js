@@ -7,19 +7,13 @@ import {
     RepliesPagesJsonSchema,
     ReplySortNameSchema
 } from "./schema";
-import { Comment } from "../publications/comment/comment.js";
-import { CommentIpfsWithCidPostCidDefined, CommentUpdate } from "../publications/comment/types";
-
-export interface PageInstanceType {
-    comments: Comment[]; // TODO should be a comment instance with defined cid and other CommentWithCommentUpdateJson props
-    nextCid?: string;
-}
+import type { CommentIpfsWithCidPostCidDefined, CommentUpdate } from "../publications/comment/types";
 
 export type PageTypeJson = z.infer<typeof PageJsonSchema>;
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 
 export interface PagesInstanceType {
-    pages: Partial<Record<PostSortName | ReplySortName, PageInstanceType>>;
+    pages: Partial<Record<PostSortName | ReplySortName, PageTypeJson>>;
     pageCids: Record<PostSortName | ReplySortName, string> | {}; // defaults to empty if page instance is not initialized yet
 }
 

@@ -106,9 +106,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
 
             if (shouldUpdatePosts) {
                 log.trace(`Updating the props of subplebbit (${this.address}) posts`);
-                const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>(
-                    await parseRawPages(newPosts, this._plebbit)
-                );
+                const parsedPages = <Pick<PostsPages, "pages"> & { pagesIpfs: PostsPagesTypeIpfs | undefined }>parseRawPages(newPosts);
                 this.posts.updateProps({
                     ...parsedPages,
                     plebbit: this._plebbit,
@@ -122,6 +120,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     async initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType) {
         this._rawSubplebbitIpfs = newProps;
         await this.initRemoteSubplebbitPropsNoMerge(newProps);
+        // TODO set unknown props on instance
     }
 
     async initRemoteSubplebbitPropsNoMerge(newProps: RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {

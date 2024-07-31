@@ -26,6 +26,7 @@ import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
+import type { PageTypeJson } from "../pages/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -109,9 +110,9 @@ export async function generateMockVote(
     return voteObj;
 }
 
-export async function loadAllPages(pageCid: string, pagesInstance: BasePages): Promise<Comment[]> {
+export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
     let sortedCommentsPage = await pagesInstance.getPage(pageCid);
-    let sortedComments: Comment[] = sortedCommentsPage.comments;
+    let sortedComments: (typeof sortedCommentsPage)["comments"] = sortedCommentsPage.comments;
     while (sortedCommentsPage.nextCid) {
         sortedCommentsPage = await pagesInstance.getPage(sortedCommentsPage.nextCid);
         sortedComments = sortedComments.concat(sortedCommentsPage.comments);
@@ -466,7 +467,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
     });
 }
 
-export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<Comment | undefined> {
+export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages) {
     let currentPageCid: string | undefined = remeda.clone(pageCid);
     while (currentPageCid) {
         const loadedPage = await pages.getPage(currentPageCid);
@@ -480,7 +481,7 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 export async function waitTillCommentIsInParentPages(
     comment: Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
     plebbit: Plebbit,
-    propsToCheckFor: Partial<CreateCommentOptions> = {},
+    propsToCheckFor: Partial<PageTypeJson["comments"][number]> = {},
     checkInAllPages = false
 ) {
     if (comment.depth > 0 && !comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
@@ -490,7 +491,7 @@ export async function waitTillCommentIsInParentPages(
             : await plebbit.createComment({ cid: <string>comment.parentCid });
     await parent.update();
     const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
-    let commentInPage: Comment | undefined;
+    let commentInPage: PageTypeJson["comments"][number] | undefined;
     const isCommentInParentPages = async () => {
         const instance = pagesInstance();
         const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
