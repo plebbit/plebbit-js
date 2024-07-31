@@ -74,17 +74,15 @@ export class Comment extends Publication {
     updatingState!: z.infer<typeof CommentUpdatingStateSchema>;
 
     // private
-    private _updateInterval?: any;
-    private _isUpdating: boolean;
-    _rawCommentUpdate?: CommentUpdate;
-    _rawCommentIpfs?: CommentIpfsType;
-    private _loadingOperation?: RetryOperation;
+    private _updateInterval?: any = undefined;
+    _rawCommentUpdate?: CommentUpdate = undefined;
+    _rawCommentIpfs?: CommentIpfsType = undefined;
+    private _loadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
-    private _updateRpcSubscriptionId?: number;
+    private _updateRpcSubscriptionId?: number = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
-        this._isUpdating = false;
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
@@ -535,6 +533,7 @@ export class Comment extends Publication {
 
     async update() {
         const log = Logger("plebbit-js:comment:update");
+        if (this.state === "updating") return; // Do nothing if it's already updating
 
         if (this._plebbit.plebbitRpcClient) {
             const rpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
@@ -585,13 +584,10 @@ export class Comment extends Publication {
                 });
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-            this._isUpdating = true;
         }
-        if (this._isUpdating) return; // Do nothing if it's already updating
-        this._isUpdating = true;
         this._updateState("updating");
         const updateLoop = (async () => {
-            if (this._isUpdating)
+            if (this.state === "updating")
                 this.updateOnce()
                     .catch((e) => log.error("Failed to update comment", e))
                     .finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
@@ -602,7 +598,6 @@ export class Comment extends Publication {
     private async _stopUpdateLoop() {
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
-        this._isUpdating = false;
         if (this._updateRpcSubscriptionId) {
             await this._plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
