@@ -21,7 +21,7 @@ import { z } from "zod";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
-import { UpdatingStateSchema } from "./schema.js";
+import { SubplebbitIpfsSchema, UpdatingStateSchema } from "./schema.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -118,9 +118,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType) {
+        const log = Logger("plebbit-js:remote-subplebbit:initSubplebbitIpfsPropsNoMerge");
         this._rawSubplebbitIpfs = newProps;
         await this.initRemoteSubplebbitPropsNoMerge(newProps);
-        // TODO set unknown props on instance
+        const unknownProps = remeda.difference(remeda.keys.strict(this._rawSubplebbitIpfs), remeda.keys.strict(SubplebbitIpfsSchema.shape));
+        if (unknownProps.length > 0) {
+            log(`Found unknown props on subplebbit (${this._rawSubplebbitIpfs.address}) ipfs record`, unknownProps);
+            Object.assign(this, remeda.pick(this._rawSubplebbitIpfs, unknownProps));
+        }
     }
 
     async initRemoteSubplebbitPropsNoMerge(newProps: RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
