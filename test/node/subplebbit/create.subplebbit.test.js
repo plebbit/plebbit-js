@@ -40,7 +40,9 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
         const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings", "started"];
 
-        expect(subplebbitIpns.toJSON()).to.deep.equal(remeda.omit(newSubplebbit.toJSON(), internalProps));
+        expect(deterministicStringify(subplebbitIpns.toJSON())).to.equal(
+            deterministicStringify(remeda.omit(newSubplebbit.toJSON(), internalProps))
+        );
         return newSubplebbit;
     };
 
