@@ -20,7 +20,7 @@ import {
     parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
     parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails,
-    parseRpcStartedStateWithPlebbitErrorIfItFails
+    parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import {
     RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
@@ -176,7 +176,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         // TODO default rpc client state if we can't recognize the new updating state
 
         try {
-            newStartedState = parseRpcStartedStateWithPlebbitErrorIfItFails(args.params.result);
+            newStartedState = parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("The startedstatechange event from rpc contains an invalid schema", e);
             this.emit("error", <PlebbitError>e);

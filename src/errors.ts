@@ -56,6 +56,9 @@ export enum messages {
     ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA = "Invalid schema of publication.state transmitted by RPC",
     ERR_INVALID_CID_STRING_SCHEMA = "Invalid cid string schema",
     ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA = "Local subplebbit produced a subplebbit record with invalid schema",
+    ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA = "RPC server transmitted an update event with invalid schema",
+    ERR_INVALID_RPC_COMMENT_UPDATING_STATE_SCHEMA = "RPC server transmitted a comment's updating state with invalid schema",
+    ERR_INVALID_RPC_COMMENT_STATE_SCHEMA = "RPC server transmitted a comment state with invalid schema",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

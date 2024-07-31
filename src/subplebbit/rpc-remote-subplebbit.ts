@@ -6,8 +6,8 @@ import { z } from "zod";
 import { UpdatingStateSchema } from "./schema.js";
 import { PlebbitError } from "../plebbit-error.js";
 import {
-    parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails,
-    parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails
+    parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails,
+    parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
@@ -43,7 +43,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         const log = Logger("plebbit-js:rpc-remote-subplebbit:_processUpdateEventFromRpcUpdate");
         let updateRecord: RpcRemoteSubplebbitType;
         try {
-            updateRecord = parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails(args.params.result);
+            updateRecord = parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("Failed to parse the schema of remote subplebbit sent by rpc", e);
             this.emit("error", <PlebbitError>e);
@@ -61,7 +61,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         let newUpdatingState: z.infer<typeof UpdatingStateSchema>;
         // TODO default rpc client state if we can't recognize the new updating state
         try {
-            newUpdatingState = parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
+            newUpdatingState = parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
         } catch (e) {
             log.error("Failed to parse the schema of updating state from rpc", e);
             this.emit("error", <PlebbitError>e);

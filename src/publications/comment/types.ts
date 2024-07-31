@@ -13,6 +13,7 @@ import {
     LocalCommentSchema
 } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
+import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
@@ -37,3 +38,5 @@ export type CommentIpfsWithCidPostCidDefined = z.infer<typeof CommentIpfsWithCid
 export type CommentTypeJson = z.infer<typeof CommentJsonSchema>;
 
 export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;
+
+export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;

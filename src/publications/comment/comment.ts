@@ -21,12 +21,17 @@ import type {
     CommentTypeJson,
     CommentUpdate,
     CommentWithCommentUpdateJson,
-    LocalCommentOptions
+    LocalCommentOptions,
+    RpcCommentUpdateResultType
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
-import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
-import { CommentStateSchema, CommentUpdatingStateSchema } from "./schema.js";
+import { CommentStateSchema, CommentUpdatingStateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import {
+    parseRpcCommentStateWithPlebbitErrorIfItFails,
+    parseRpcCommentUpdateEventWithPlebbitErrorIfItFails,
+    parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails
+} from "../../schema/schema-util.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -160,7 +165,7 @@ export class Comment extends Publication {
 
     // TODO have toJSONCommentUpdate that return this._rawCommentUpdate
 
-    async _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
+    _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
         if ("depth" in props)
             // CommentWithCommentUpdateJson
             this.original = props.original;
@@ -196,7 +201,7 @@ export class Comment extends Publication {
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
 
-        await this._updateRepliesPostsInstance(props.replies);
+        this._updateRepliesPostsInstance(props.replies);
     }
 
     async _updateRepliesPostsInstance(
@@ -531,6 +536,67 @@ export class Comment extends Publication {
         return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
     }
 
+    private _handleUpdateEventFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:_handleUpdateEventFromRpc");
+        let newUpdate: RpcCommentUpdateResultType;
+        try {
+            newUpdate = parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the rpc update event of", this.cid, e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        if ("subplebbitAddress" in newUpdate) {
+            log(`Received new CommentIpfs (${this.cid})`);
+            this._rawCommentIpfs = newUpdate;
+            this._initIpfsProps(this._rawCommentIpfs);
+        } else {
+            log(`Received new CommentUpdate (${this.cid})`);
+            this._initCommentUpdate(newUpdate);
+        }
+
+        this.emit("update", this);
+    }
+
+    private _handleUpdatingStateChangeFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:_handleUpdatingStateChangeFromRpc");
+
+        let updateState: Comment["updatingState"];
+        try {
+            updateState = parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse rpc updating state schema of comment", this.cid, e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        this._setUpdatingState(updateState);
+        this._updateRpcClientStateFromUpdatingState(updateState);
+    }
+
+    private _handleStateChangeFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:_handleStateChangeFromRpc");
+
+        let commentState: Comment["state"];
+        try {
+            commentState = parseRpcCommentStateWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse schema rpc state schema of comment", this.cid, e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+        this._updateState(commentState);
+    }
+
+    private async _handleErrorEventFromRpc(args: any) {
+        const err = <PlebbitError>args.params.result;
+        if (this._isCriticalRpcError(err)) {
+            this._setUpdatingState("failed");
+            this._updateState("stopped");
+            await this._stopUpdateLoop();
+        }
+        this.emit("error", err);
+    }
+
     async update() {
         const log = Logger("plebbit-js:comment:update");
         if (this.state === "updating") return; // Do nothing if it's already updating
@@ -550,38 +616,10 @@ export class Comment extends Publication {
             }
             this._plebbit.plebbitRpcClient
                 .getSubscription(this._updateRpcSubscriptionId)
-                .on("update", async (updateProps) => {
-                    const newUpdate = RpcCommentUpdateResultSchema.parse(updateProps.params.result);
-                    if ("subplebbitAddress" in newUpdate) {
-                        log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
-                        this._rawCommentIpfs = newUpdate;
-                        this._initIpfsProps(this._rawCommentIpfs);
-                    } else {
-                        log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);
-                        await this._initCommentUpdate(newUpdate);
-                    }
-
-                    this.emit("update", this);
-                })
-                .on("updatingstatechange", (args) => {
-                    const updateState = CommentUpdatingStateSchema.parse(args.params.result);
-                    this._setUpdatingState(updateState);
-                    this._updateRpcClientStateFromUpdatingState(updateState);
-                })
-                .on("statechange", (args) => {
-                    const commentState = CommentStateSchema.parse(args.params.result);
-                    this._updateState(commentState);
-                })
-                .on("error", async (args) => {
-                    // zod here
-                    const err = <PlebbitError>args.params.result;
-                    if (this._isCriticalRpcError(err)) {
-                        this._setUpdatingState("failed");
-                        this._updateState("stopped");
-                        await this._stopUpdateLoop();
-                    }
-                    this.emit("error", err);
-                });
+                .on("update", this._handleUpdateEventFromRpc.bind(this))
+                .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
+                .on("statechange", this._handleStateChangeFromRpc.bind(this))
+                .on("error", this._handleErrorEventFromRpc.bind(this));
 
             this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
         }

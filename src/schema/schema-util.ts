@@ -1,7 +1,7 @@
 import { PageIpfsSchema } from "../pages/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
+import { CommentIpfsSchema, CommentStateSchema, CommentUpdateSchema, CommentUpdatingStateSchema } from "../publications/comment/schema.js";
 import type { CommentIpfsType, CommentUpdate } from "../publications/comment/types.js";
 import {
     DecryptedChallengeSchema,
@@ -17,7 +17,7 @@ import {
     RpcRemoteSubplebbitSchema,
     StartedStateSchema,
     SubplebbitIpfsSchema,
-    UpdatingStateSchema
+    UpdatingStateSchema as SubplebbitUpdatingStateSchema
 } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type {
@@ -32,6 +32,7 @@ import type {
 import { throwWithErrorCode } from "../util.js";
 import { PublicationPublishingState, PublicationStateSchema } from "../publications/schema.js";
 import { CidStringSchema } from "./schema.js";
+import { RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     try {
@@ -178,9 +179,9 @@ export function parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(upd
     }
 }
 
-export function parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(updatingState: any) {
+export function parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails(updatingState: any) {
     try {
-        return UpdatingStateSchema.parse(updatingState);
+        return SubplebbitUpdatingStateSchema.parse(updatingState);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA", {
             zodError: e,
@@ -189,7 +190,7 @@ export function parseRpcRemoteUpdatingStateWithPlebbitErrorIfItFails(updatingSta
     }
 }
 
-export function parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails(rpcRemoteSubplebbit: any) {
+export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(rpcRemoteSubplebbit: any) {
     try {
         return RpcRemoteSubplebbitSchema.parse(rpcRemoteSubplebbit);
     } catch (e) {
@@ -200,7 +201,7 @@ export function parseRpcRemoteSubplebbitWithPlebbitErrorIfItFails(rpcRemoteSubpl
     }
 }
 
-export function parseRpcStartedStateWithPlebbitErrorIfItFails(startedState: any) {
+export function parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails(startedState: any) {
     try {
         return StartedStateSchema.parse(startedState);
     } catch (e) {
@@ -240,6 +241,39 @@ export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
         throw new PlebbitError("ERR_INVALID_CID_STRING_SCHEMA", {
             zodError: cidString,
             cidString
+        });
+    }
+}
+
+export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: any) {
+    try {
+        return RpcCommentUpdateResultSchema.parse(updateResult);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
+            zodError: e,
+            updateResult
+        });
+    }
+}
+
+export function parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails(updatingState: any) {
+    try {
+        return CommentUpdatingStateSchema.parse(updatingState);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATING_STATE_SCHEMA", {
+            zodError: e,
+            updatingState
+        });
+    }
+}
+
+export function parseRpcCommentStateWithPlebbitErrorIfItFails(state: any) {
+    try {
+        return CommentStateSchema.parse(state);
+    } catch (e) {
+        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_STATE_SCHEMA", {
+            zodError: e,
+            state
         });
     }
 }
