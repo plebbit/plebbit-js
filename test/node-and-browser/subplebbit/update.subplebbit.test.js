@@ -347,9 +347,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(sub.toJSON().extraProp).to.equal(opts.extraProps.extraProp);
 
+            expect(sub.extraProp).to.equal(opts.extraProps.extraProp);
+
             await sub.stop();
-            // TODO should we be testing for sub.extraProp as well?
-            // TODO should we be testing for sub.toJSON().extraProp as well?
         });
 
         it(`subplebbit.update() emit an error if there are unknown props not included in signature.signedPropertyNames`, async () => {
