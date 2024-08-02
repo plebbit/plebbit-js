@@ -411,7 +411,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             lifetime
         });
         log(
-            `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${this.updatedAt})`
+            `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt})`
         );
         this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
