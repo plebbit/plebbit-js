@@ -244,7 +244,9 @@ export class Comment extends Publication {
         this.setCid(props.cid);
         const strippedOutProps = <CommentIpfsType>remeda.omit(props, ["cid"]); // fields that do not exist on CommentIpfs
         if (strippedOutProps.depth === 0) delete strippedOutProps["postCid"];
-        const commentIpfsRecreated = <CommentIpfsType>{ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() };
+        const commentIpfsRecreated = <CommentIpfsType>(
+            removeUndefinedValuesRecursively({ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() })
+        );
         const calculatedIpfsHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
         if (calculatedIpfsHash !== props.cid)
             throw Error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid. This is a critical error`);
