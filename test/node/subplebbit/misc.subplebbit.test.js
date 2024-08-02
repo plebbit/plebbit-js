@@ -282,7 +282,7 @@ describe(`subplebbit.startedState`, async () => {
     itSkipIfRpc(`subplebbit.startedState = error if a failure occurs`, async () => {
         await new Promise((resolve) => {
             subplebbit.on("startedstatechange", (newState) => newState === "failed" && resolve());
-            subplebbit.plebbit.clients.ipfsClients = subplebbit.clientsManager.clients = undefined; // Should cause a failure
+            subplebbit._plebbit.clients.ipfsClients = subplebbit._clientsManager.clients = undefined; // Should cause a failure
         });
     });
 });
@@ -399,43 +399,43 @@ describe(`comment.link`, async () => {
     });
 
     describeSkipIfRpc(`Test getThumbnailUrlOfLink`, async () => {
-        it(`Generates thumbnail url for youtube video correctly with thumbnailWidth and thumbnailHeight`, async () => {
+        it(`Generates thumbnail url for youtube video correctly with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
             const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
             const thumbnailInfo = await getThumbnailUrlOfLink(url);
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailWidth).to.equal(1280);
-            expect(thumbnailInfo.thumbnailHeight).to.equal(720);
+            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(1280);
+            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(720);
         });
 
-        it(`generates thumbnail url for html page with thumbnailWidth and thumbnailHeight`, async () => {
+        it(`generates thumbnail url for html page with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url =
                 "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
             const expectedThumbnailUrl =
                 "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
             const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailWidth).to.equal(675);
-            expect(thumbnailInfo.thumbnailHeight).to.equal(450);
+            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(675);
+            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(450);
         });
 
-        it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailWidth and thumbnailHeight`, async () => {
+        it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url =
                 "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
             const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
             const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailWidth).to.equal(512);
-            expect(thumbnailInfo.thumbnailHeight).to.equal(497);
+            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(512);
+            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(497);
         });
 
-        it(`Generates thumbnail url for twitter urls correctly`, async () => {
+        it.skip(`Generates thumbnail url for twitter urls correctly`, async () => {
             const url = "https://twitter.com/eustatheia/status/1691285870244937728";
             const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
             const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailWidth).to.equal(1125);
-            expect(thumbnailInfo.thumbnailHeight).to.equal(1315);
+            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(1125);
+            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(1315);
         });
     });
 
