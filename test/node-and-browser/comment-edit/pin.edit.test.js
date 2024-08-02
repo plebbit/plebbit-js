@@ -169,8 +169,8 @@ describe(`Pinning posts`, async () => {
                     if (sortName !== "active") {
                         // Temporary. Active does not have a sorting function as of now
                         const [scoreA, scoreB] = [
-                            scoreFunc({ comment: commentA.toJSONIpfs(), update: commentA._rawCommentUpdate }),
-                            scoreFunc({ comment: commentB.toJSONIpfs(), update: commentB._rawCommentUpdate })
+                            scoreFunc({ comment: commentA, update: commentA }),
+                            scoreFunc({ comment: commentB, update: commentB })
                         ];
                         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
                     }
@@ -232,8 +232,8 @@ describe(`Pinning posts`, async () => {
                 if (sortName !== "active") {
                     // Temporary. Active does not have a sorting function as of now
                     const [scoreA, scoreB] = [
-                        scoreFunc({ comment: commentA.toJSONIpfs(), update: commentA._rawCommentUpdate }),
-                        scoreFunc({ comment: commentB.toJSONIpfs(), update: commentB._rawCommentUpdate })
+                        scoreFunc({ comment: commentA, update: commentA }),
+                        scoreFunc({ comment: commentB, update: commentB })
                     ];
                     expect(scoreA).to.be.greaterThanOrEqual(scoreB);
                 }
