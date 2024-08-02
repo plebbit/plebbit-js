@@ -892,7 +892,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Reject publications if their size is over 40kb
         const publicationKilobyteSize = Buffer.byteLength(JSON.stringify(publication)) / 1000;
 
-        if (publicationKilobyteSize > 40) return messages.ERR_COMMENT_OVER_ALLOWED_SIZE;
+        if (publicationKilobyteSize > 40) return messages.ERR_REQUEST_PUBLICATION_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
             if (this.features?.requirePostLinkIsMedia && publication.link && !isLinkOfMedia(publication.link))

@@ -120,7 +120,7 @@ export enum messages {
     ERR_DUPLICATE_COMMENT = "Comment is duplicated",
     ERR_AUTHOR_ADDRESS_UNDEFINED = "author address is undefined",
     ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG = "Subplebbit failed to decrypt the pubsub message",
-    ERR_COMMENT_OVER_ALLOWED_SIZE = "Comment size is over the allowed size",
+    ERR_REQUEST_PUBLICATION_OVER_ALLOWED_SIZE = "request.publication size is over 40kb",
     UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE = "An author attempted to change another author's vote",
     COMMENT_LINK_LENGTH_IS_OVER_LIMIT = "comment.link length is over the limit",
     INCORRECT_VOTE_VALUE = "The vote can only be 1 or 0 or -1",
