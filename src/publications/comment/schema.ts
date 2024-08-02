@@ -25,6 +25,7 @@ import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema, RepliesPagesJsonSchema } from "../../pages/schema.js";
 import { PublicationStateSchema } from "../schema.js";
+import { CommentPubsubMessage, CommentUpdate } from "./types.js";
 
 // Comment schemas here
 
@@ -167,12 +168,20 @@ export const CommentUpdateSignedPropertyNames = <(keyof Omit<CommentUpdateWithRe
     "replies"
 ];
 
-const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchema.pick({
-    author: true,
-    content: true,
-    flair: true,
-    protocolVersion: true
-}).strict();
+type OverlapCommentPubsubAndCommentUpdate = (keyof CommentPubsubMessage & keyof Omit<CommentUpdate, "signature">) | "content";
+
+const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>(
+    remeda
+        .intersection(remeda.keys.strict(CommentPubsubMessageSchema.shape), [
+            ...remeda.keys.strict(remeda.omit(CommentUpdateNoRepliesSchema.shape, ["signature"])),
+            "replies"
+        ])
+        .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
+);
+
+const originalFieldsObj = <Record<OverlapCommentPubsubAndCommentUpdate, true>>remeda.fromKeys(originalFields, () => true);
+
+export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchema.pick(originalFieldsObj).strip();
 
 // Comment JSON schemas here
 

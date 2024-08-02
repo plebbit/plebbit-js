@@ -116,8 +116,8 @@ export class Comment extends Publication {
     private _setOriginalFieldBeforeModifying() {
         // Need to make sure we have the props first
         if (!this.original && this.protocolVersion)
-            this.original = removeUndefinedValuesRecursively(
-                remeda.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"])
+            this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(
+                removeUndefinedValuesRecursively(this.toJSONPubsubMessagePublication())
             );
     }
 
