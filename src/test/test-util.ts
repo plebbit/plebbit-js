@@ -20,7 +20,12 @@ import * as resolverClass from "../resolver.js";
 import type { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
+import type {
+    CommentIpfsType,
+    CommentIpfsWithCidDefined,
+    CommentIpfsWithCidPostCidDefined,
+    CreateCommentOptions
+} from "../publications/comment/types.js";
 import { signComment, _signJson } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
@@ -65,13 +70,11 @@ export async function generateMockPost(
 
 // TODO rework this
 export async function generateMockComment(
-    parentPostOrComment: Comment,
+    parentPostOrComment: CommentIpfsWithCidDefined,
     plebbit: Plebbit,
     randomTimestamp = false,
     commentProps: Partial<CreateCommentOptions> = {}
 ): Promise<Comment> {
-    if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
-        throw Error("Need to have parentComment defined to generate mock comment");
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
     const signer = commentProps?.signer || (await plebbit.createSigner());
@@ -89,7 +92,7 @@ export async function generateMockComment(
 }
 
 export async function generateMockVote(
-    parentPostOrComment: Comment,
+    parentPostOrComment: CommentIpfsWithCidDefined,
     vote: -1 | 0 | 1,
     plebbit: Plebbit,
     signer?: SignerType
@@ -159,7 +162,7 @@ async function _publishPosts(subplebbitAddress: string, numOfPosts: number, pleb
     return Promise.all(new Array(numOfPosts).fill(null).map(() => publishRandomPost(subplebbitAddress, plebbit, {}, false)));
 }
 
-async function _publishReplies(parentComment: Comment, numOfReplies: number, plebbit: Plebbit) {
+async function _publishReplies(parentComment: CommentIpfsWithCidDefined, numOfReplies: number, plebbit: Plebbit) {
     return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
 }
 
@@ -208,7 +211,7 @@ async function _populateSubplebbit(
     await new Promise((resolve) => subplebbit.once("update", resolve));
     const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit._plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
-    const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit._plebbit);
+    const replies = await _publishReplies(<CommentIpfsWithCidDefined>posts[0], props.numOfCommentsToPublish, subplebbit._plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
     const postVotes = await _publishVotes(<CommentIpfsWithCidPostCidDefined[]>posts, props.votesPerCommentToPublish, subplebbit._plebbit);
     console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
@@ -396,7 +399,7 @@ export async function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitO
 }
 
 export async function publishRandomReply(
-    parentComment: Comment,
+    parentComment: CommentIpfsWithCidDefined,
     plebbit: Plebbit,
     commentProps: Partial<CreateCommentOptions>,
     verifyCommentPropsInParentPages = true

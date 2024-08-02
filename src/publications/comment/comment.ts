@@ -277,34 +277,14 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONPagesIpfs(commentUpdate: CommentUpdate): { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate } {
-        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONPagesIpfs");
-        return {
-            comment: {
-                ...this.toJSONIpfs(),
-                author: this.author.toJSONIpfs(),
-                cid: this.cid,
-                postCid: this.postCid
-            },
-            update: commentUpdate
-        };
-    }
-
     toJSONIpfs(): CommentIpfsType {
         // TODO return this._rawCommentIpfs
-        if (typeof this.depth !== "number") throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            previousCid: this.previousCid,
-            postCid: this.depth === 0 ? undefined : this.postCid,
-            depth: this.depth,
-            thumbnailUrl: this.thumbnailUrl,
-            thumbnailUrlWidth: this.thumbnailUrlWidth,
-            thumbnailUrlHeight: this.thumbnailUrlHeight
-        };
+        if (!this._rawCommentIpfs) throw Error("comment._rawCommentIpfs has to be defined before calling toJSONIpfs()");
+        return this._rawCommentIpfs;
     }
 
     override toJSONPubsubMessagePublication(): CommentPubsubMessage {
+        // TODO change this to use zod
         return {
             subplebbitAddress: this.subplebbitAddress,
             timestamp: this.timestamp,
@@ -326,56 +306,6 @@ export class Comment extends Publication {
     toJSONAfterChallengeVerification(): CommentIpfsWithCidPostCidDefined {
         assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
         return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
-    }
-
-    toJSONCommentsTableRowInsert(
-        publicationHash: CommentsTableRowInsert["challengeRequestPublicationSha256"],
-        authorSignerAddress: string
-    ): CommentsTableRowInsert {
-        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONCommentsTableRowInsert");
-        return {
-            ...this.toJSONIpfs(),
-            postCid: this.postCid,
-            cid: this.cid,
-            authorAddress: this.author.address,
-            challengeRequestPublicationSha256: publicationHash,
-            authorSignerAddress
-        };
-    }
-
-    toJSONCommentWithinPage(): PageTypeJson["comments"][0] {
-        assert(
-            typeof this.updatedAt === "number" &&
-                this.original &&
-                this.shortCid &&
-                typeof this.upvoteCount === "number" &&
-                typeof this.downvoteCount === "number" &&
-                typeof this.replyCount === "number",
-            "updatedAt, original, shortCid, upvoteCount, downvoteCount, replyCount should be defined before calling toJSONMerged"
-        );
-        return {
-            ...this.toJSONAfterChallengeVerification(),
-            author: this.author.toJSON(),
-            original: this.original,
-            upvoteCount: this.upvoteCount,
-            downvoteCount: this.downvoteCount,
-            replyCount: this.replyCount,
-            updatedAt: this.updatedAt,
-            deleted: this.deleted,
-            pinned: this.pinned,
-            locked: this.locked,
-            removed: this.removed,
-            reason: this.reason,
-            edit: this.edit,
-            protocolVersion: this.protocolVersion,
-            spoiler: this.spoiler,
-            flair: this.flair,
-            replies: this.replies?.toJSON(),
-            lastChildCid: this.lastChildCid,
-            lastReplyTimestamp: this.lastReplyTimestamp,
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            shortCid: this.shortCid
-        };
     }
 
     setPostCid(newPostCid: string) {

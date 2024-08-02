@@ -523,6 +523,45 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return !this.isPublicationVote(publication) && "commentCid" in publication && typeof publication.commentCid === "string";
     }
 
+    private async _calculateLinkProps(
+        link: CommentPubsubMessage["link"]
+    ): Promise<Pick<CommentIpfsType, "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> | undefined> {
+        if (!link || !this.settings?.fetchThumbnailUrls) return undefined;
+        return getThumbnailUrlOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
+    }
+
+    private async _calculatePostProps(
+        comment: CommentPubsubMessage,
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+    ): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
+        const trx = await this.dbHandler.createTransaction(challengeRequestId.toString());
+        const previousCid = (await this.dbHandler.queryLatestPostCid(trx))?.cid;
+        await this.dbHandler.commitTransaction(challengeRequestId.toString());
+        return { depth: 0, previousCid };
+    }
+
+    private async _calculateReplyProps(
+        comment: CommentPubsubMessage,
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+    ): Promise<Pick<CommentIpfsType, "previousCid" | "depth" | "postCid">> {
+        if (!comment.parentCid) throw Error("Reply has to have parentCid");
+
+        const trx = await this.dbHandler.createTransaction(challengeRequestId.toString());
+        const [commentsUnderParent, parent] = await Promise.all([
+            this.dbHandler.queryCommentsUnderComment(comment.parentCid, trx),
+            this.dbHandler.queryComment(comment.parentCid, trx)
+        ]);
+        await this.dbHandler.commitTransaction(challengeRequestId.toString());
+
+        if (!parent) throw Error("Failed to find parent of reply");
+
+        return {
+            depth: parent.depth + 1,
+            postCid: parent.postCid,
+            previousCid: commentsUnderParent[0]?.cid
+        };
+    }
+
     private async storePublication(request: DecryptedChallengeRequestMessageType): Promise<CommentIpfsWithCidPostCidDefined | undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storePublicationIfValid");
 
@@ -531,58 +570,42 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.isPublicationVote(publication)) return this.storeVote(publication, request.challengeRequestId);
         else if (this.isPublicationCommentEdit(publication)) return this.storeCommentEdit(publication, request.challengeRequestId);
         else if (this.isPublicationComment(publication)) {
-            const commentToInsert = await this._plebbit.createComment(publication);
+            const commentIpfs = <CommentIpfsType>{
+                ...publication,
+                ...(await this._calculateLinkProps(publication.link)),
+                ...(this.isPublicationPost(publication) && (await this._calculatePostProps(publication, request.challengeRequestId))),
+                ...(this.isPublicationReply(publication) && (await this._calculateReplyProps(publication, request.challengeRequestId)))
+            };
 
-            if (commentToInsert.link && this.settings?.fetchThumbnailUrls) {
-                const thumbnailInfo = await getThumbnailUrlOfLink(commentToInsert.link, this, this.settings.fetchThumbnailUrlsProxyUrl);
-                if (thumbnailInfo) {
-                    commentToInsert.thumbnailUrl = thumbnailInfo.thumbnailUrl;
-                    commentToInsert.thumbnailUrlWidth = thumbnailInfo.thumbnailWidth;
-                    commentToInsert.thumbnailUrlHeight = thumbnailInfo.thumbnailHeight;
-                }
-            }
-            const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentToInsert.signature.publicKey);
+            const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentIpfs));
 
-            if (this.isPublicationPost(publication)) {
-                // Post
-                const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                commentToInsert.setPreviousCid((await this.dbHandler.queryLatestPostCid(trx))?.cid);
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-                commentToInsert.setDepth(0);
-                const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
-                commentToInsert.setPostCid(file.path);
-                commentToInsert.setCid(file.path);
-            } else {
-                if (!commentToInsert.parentCid) throw Error("Reply has to have parentCid");
-                // Reply
-                const trx = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
-                const [commentsUnderParent, parent] = await Promise.all([
-                    this.dbHandler.queryCommentsUnderComment(commentToInsert.parentCid, trx),
-                    this.dbHandler.queryComment(commentToInsert.parentCid, trx)
-                ]);
-                await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
-                if (!parent) throw Error("Failed to find parent of reply");
-                commentToInsert.setPreviousCid(commentsUnderParent[0]?.cid);
-                commentToInsert.setDepth(parent.depth + 1);
-                commentToInsert.setPostCid(parent.postCid);
-                const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentToInsert.toJSONIpfs()));
-                commentToInsert.setCid(file.path);
-            }
+            const commentCid = file.path;
+            const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
+            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+
+            const commentRow = <CommentsTableRow>{
+                ...commentIpfs,
+                cid: commentCid,
+                postCid,
+                authorAddress: commentIpfs.author.address,
+                authorSignerAddress,
+                challengeRequestPublicationSha256: publicationHash
+            };
 
             const trxForInsert = await this.dbHandler.createTransaction(request.challengeRequestId.toString());
             try {
-                await this.dbHandler.insertComment(
-                    commentToInsert.toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress),
-                    trxForInsert
-                );
+                // This would throw for extra props
+                await this.dbHandler.insertComment(commentRow, trxForInsert);
                 // Everything below here is for verification purposes
-                const commentInDb = await this.dbHandler.queryComment(<string>commentToInsert.cid, trxForInsert);
+                // The goal here is to find out if storing comment props in DB causes them to change in any way
+                const commentInDb = await this.dbHandler.queryComment(commentRow.cid, trxForInsert);
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
-                const commentInDbInstance = await this._plebbit.createComment(
-                    CommentIpfsWithCidPostCidDefinedSchema.strip().parse(commentInDb)
+                // The line below will fail with extra props
+                const commentPubsubMessageRecreated = <CommentPubsubMessage>(
+                    remeda.pick(commentInDb, <(keyof CommentPubsubMessage)[]>[...commentInDb.signature.signedPropertyNames, "signature"])
                 );
                 const validity = await verifyComment(
-                    removeUndefinedValuesRecursively(commentInDbInstance.toJSONIpfs()),
+                    removeUndefinedValuesRecursively(commentPubsubMessageRecreated),
                     this._plebbit.resolveAuthorAddresses,
                     this._clientsManager,
                     false
@@ -591,7 +614,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     throw Error(
                         "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
                     );
-                const calculatedHash = await calculateIpfsHash(deterministicStringify(commentInDbInstance.toJSONIpfs()));
+                const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
+                const calculatedHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
                 if (calculatedHash !== commentInDb.cid)
                     throw Error("There is a problem with db processing comment rows, the cids don't match");
             } catch (e) {
@@ -602,9 +626,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             await this.dbHandler.commitTransaction(request.challengeRequestId.toString());
 
-            log(`New comment with cid ${commentToInsert.cid}  and depth (${commentToInsert.depth}) has been inserted into DB`);
+            log(`New comment with cid ${commentRow.cid}  and depth (${commentRow.depth}) has been inserted into DB`);
 
-            return commentToInsert.toJSONAfterChallengeVerification();
+            return { ...commentIpfs, cid: commentCid, postCid };
         }
     }
 
