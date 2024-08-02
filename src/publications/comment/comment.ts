@@ -2,9 +2,12 @@ import retry, { RetryOperation } from "retry";
 import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
-import type { CommentsTableRowInsert, PublicationTypeName } from "../../types.js";
+import type { PublicationTypeName } from "../../types.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+
 import { z } from "zod";
-import { PageTypeJson, RepliesPagesTypeIpfs } from "../../pages/types.js";
+import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
 import { verifyComment } from "../../signer/signatures.js";
@@ -32,6 +35,7 @@ import {
     parseRpcCommentUpdateEventWithPlebbitErrorIfItFails,
     parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
+import Author from "../author.js";
 
 export class Comment extends Publication {
     // Only Comment props
@@ -146,6 +150,7 @@ export class Comment extends Publication {
 
     _initIpfsProps(props: CommentIpfsType) {
         // we're loading remote CommentIpfs
+        this._rawCommentIpfs = props;
         this._setOriginalFieldBeforeModifying();
         this._initPubsubMessageProps(props);
         this.depth = props.depth;
@@ -204,7 +209,7 @@ export class Comment extends Publication {
         this._updateRepliesPostsInstance(props.replies);
     }
 
-    async _updateRepliesPostsInstance(
+    _updateRepliesPostsInstance(
         newReplies: CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
@@ -234,10 +239,17 @@ export class Comment extends Publication {
         }
     }
 
-    protected override _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
+    protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
         if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
-        this._initIpfsProps(props);
+        const strippedOutProps = <CommentIpfsType>remeda.omit(props, ["cid"]); // fields that do not exist on CommentIpfs
+        if (strippedOutProps.depth === 0) delete strippedOutProps["postCid"];
+        const commentIpfsRecreated = <CommentIpfsType>{ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() };
+        const calculatedIpfsHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
+        if (calculatedIpfsHash !== props.cid)
+            throw Error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid. This is a critical error`);
+        this._initIpfsProps(commentIpfsRecreated);
+        this.author = new Author(props.author);
     }
 
     override getType(): PublicationTypeName {
@@ -418,7 +430,6 @@ export class Comment extends Publication {
                 return;
             } else {
                 log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-                this._rawCommentIpfs = newCommentIpfsOrError;
                 this._initIpfsProps(newCommentIpfsOrError);
                 this.emit("update", this);
             }
@@ -478,8 +489,7 @@ export class Comment extends Publication {
         }
         if ("subplebbitAddress" in newUpdate) {
             log(`Received new CommentIpfs (${this.cid})`);
-            this._rawCommentIpfs = newUpdate;
-            this._initIpfsProps(this._rawCommentIpfs);
+            this._initIpfsProps(newUpdate);
         } else {
             log(`Received new CommentUpdate (${this.cid})`);
             this._initCommentUpdate(newUpdate);

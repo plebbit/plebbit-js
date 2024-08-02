@@ -121,7 +121,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
-        this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
+        this._handleChallengeExchange = this._handleChallengeExchange.bind(this);
         this.publish = this.publish.bind(this);
         this.on("error", (...args) => this._plebbit.emit("error", ...args));
         this._publishToDifferentProviderThresholdSeconds = 10;
@@ -166,7 +166,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.protocolVersion = props.protocolVersion;
     }
 
-    protected _updateLocalCommentPropsWithVerification(publication: DecryptedChallengeVerificationMessageType["publication"]) {
+    protected async _updateLocalCommentPropsWithVerification(publication: DecryptedChallengeVerificationMessageType["publication"]) {
         throw Error("should be handled in comment, not publication");
     }
 
@@ -194,7 +194,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
         this._receivedChallengeVerification = true;
-        if (verification.publication) this._updateLocalCommentPropsWithVerification(verification.publication);
+        if (verification.publication) await this._updateLocalCommentPropsWithVerification(verification.publication);
         this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
@@ -328,7 +328,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
                 decryptedPublication = decryptedChallengeVerification.publication;
                 if (decryptedPublication) {
-                    this._updateLocalCommentPropsWithVerification(decryptedPublication);
+                    await this._updateLocalCommentPropsWithVerification(decryptedPublication);
                     log("Updated the props of this instance with challengeVerification.publication");
                 }
             }
@@ -347,7 +347,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         );
     }
 
-    private async handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
+    private async _handleChallengeExchange(pubsubMsg: IpfsHttpClientPubsubMessage) {
         const log = Logger("plebbit-js:publication:handleChallengeExchange");
 
         let decodedJson: string;
@@ -559,7 +559,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 await this._clientsManager.pubsubUnsubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
                     this._pubsubProviders[providerIndex],
-                    this.handleChallengeExchange
+                    this._handleChallengeExchange
                 );
                 this._clientsManager.updatePubsubState("stopped", this._pubsubProviders[providerIndex]);
 
@@ -585,7 +585,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         } else if (this.subplebbit) {
-            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this.handleChallengeExchange);
+            await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this._handleChallengeExchange);
             this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
         }
     }
@@ -641,7 +641,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.emit("challengeanswer", challengeAnswerMsg);
     }
 
-    private _handleIncomingChallengeVerificationFromRpc(args: any) {
+    private async _handleIncomingChallengeVerificationFromRpc(args: any) {
         const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeVerificationFromRpc");
         let encoded: EncodedDecryptedChallengeVerificationMessageType;
         try {
@@ -652,7 +652,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             throw e;
         }
         const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
-        this._handleRpcChallengeVerification(decoded);
+        await this._handleRpcChallengeVerification(decoded);
     }
 
     private _handleIncomingPublishingStateFromRpc(args: any) {
@@ -794,7 +794,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             try {
                 await this._clientsManager.pubsubSubscribeOnProvider(
                     this._pubsubTopicWithfallback(),
-                    this.handleChallengeExchange,
+                    this._handleChallengeExchange,
                     this._pubsubProviders[this._currentPubsubProviderIndex]
                 );
                 this._clientsManager.updatePubsubState(
