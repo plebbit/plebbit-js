@@ -64,14 +64,13 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
 
     it(`The new Comment with spoiler=true has valid signature`, async () => {
         const recreatedPost = await plebbit.createComment({ cid: authorPost.cid });
-        recreatedPost.update();
-        await new Promise((resolve) => recreatedPost.once("update", resolve));
-        await new Promise((resolve) => recreatedPost.once("update", resolve));
+        await recreatedPost.update();
+        await resolveWhenConditionIsTrue(recreatedPost, () => typeof recreatedPost.updatedAt === "number");
 
         await recreatedPost.stop();
         expect(recreatedPost.spoiler).to.be.true;
 
-        const commentIpfsValidity = await verifyComment(recreatedPost._rawCommentIpfs, true, recreatedPost._clientsManager, false);
+        const commentIpfsValidity = await verifyComment(recreatedPost.toJSONIpfs(), true, recreatedPost._clientsManager, false);
         expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
         const commentUpdateValidity = await verifyCommentUpdate(
@@ -79,7 +78,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
             true,
             recreatedPost._clientsManager,
             recreatedPost.subplebbitAddress,
-            recreatedPost,
+            { cid: recreatedPost.cid, signature: recreatedPost.signature },
             false
         );
         expect(commentUpdateValidity).to.deep.equal({ valid: true });
