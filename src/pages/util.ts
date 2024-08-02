@@ -109,6 +109,7 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
         const finalJson: CommentWithCommentUpdateJson = {
             ...commentObj.comment,
             ...commentObj.update,
+            signature: commentObj.comment.signature,
             author: {
                 ...commentObj.comment.author,
                 ...commentObj.update.author,
