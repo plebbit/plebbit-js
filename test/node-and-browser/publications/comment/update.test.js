@@ -5,7 +5,9 @@ import {
     publishRandomReply,
     mockRemotePlebbitIpfsOnly,
     itSkipIfRpc,
-    mockGatewayPlebbit
+    mockGatewayPlebbit,
+    addStringToIpfs,
+    resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -115,18 +117,16 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
     const plebbit = await mockRemotePlebbitIpfsOnly();
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-    const postJson = cleanUpBeforePublishing(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+    const postIpfs = cleanUpBeforePublishing((await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs());
 
-    postJson.title += "1234"; // Invalidate signature
+    postIpfs.title += "1234"; // Invalidate signature
 
-    expect(await verifyComment(postJson, true, plebbit._clientsManager, false)).to.deep.equal({
+    expect(await verifyComment(postIpfs, true, plebbit._clientsManager, false)).to.deep.equal({
         valid: false,
         reason: messages.ERR_SIGNATURE_IS_INVALID
     });
 
-    const postWithInvalidSignatureCid = (
-        await (await mockRemotePlebbitIpfsOnly())._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))
-    ).path;
+    const postWithInvalidSignatureCid = addStringToIpfs(JSON.stringify(postIpfs));
 
     return postWithInvalidSignatureCid;
 };
@@ -135,13 +135,11 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
     const plebbit = await mockRemotePlebbitIpfsOnly();
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-    const postJson = cleanUpBeforePublishing(subplebbit.posts.pages.hot.comments[0].toJSONIpfs());
+    const postIpfs = (await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs();
 
-    postJson.updatedAt = "1234"; // Invalidate schema
+    postIpfs.updatedAt = "1234"; // Invalidate schema
 
-    const postWithInvalidSchemaCid = (
-        await (await mockRemotePlebbitIpfsOnly())._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(postJson))
-    ).path;
+    const postWithInvalidSchemaCid = addStringToIpfs(JSON.stringify(postIpfs));
 
     return postWithInvalidSchemaCid;
 };
@@ -151,7 +149,13 @@ const createCommentUpdateWithInvalidSignature = async () => {
 
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
 
-    const invalidCommentUpdateJson = subplebbit.posts.pages.hot.comments[0]._rawCommentUpdate;
+    const comment = await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid);
+
+    await comment.update();
+
+    await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+
+    const invalidCommentUpdateJson = comment._rawCommentUpdate;
 
     invalidCommentUpdateJson.updatedAt += 1234; // Invalidate CommentUpdate signature
 
@@ -161,7 +165,7 @@ const createCommentUpdateWithInvalidSignature = async () => {
             true,
             plebbit._clientsManager,
             subplebbit.address,
-            { cid: subplebbit.posts.pages.hot.comments[0].cid, signature: subplebbit.posts.pages.hot.comments[0].signature },
+            { cid: comment.cid, signature: comment.original.signature },
             false
         )
     ).to.deep.equal({
