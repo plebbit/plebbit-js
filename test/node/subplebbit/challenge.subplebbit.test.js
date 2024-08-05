@@ -560,13 +560,9 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(request.signature.signature.length).to.equal(64);
         expect(request.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(request.signature.publicKey.length).to.equal(32);
-        expect(request.signature.signedPropertyNames).to.deep.equal([
-            "type",
-            "challengeRequestId",
-            "encrypted",
-            "acceptedChallengeTypes",
-            "timestamp"
-        ]);
+        expect(request.signature.signedPropertyNames.sort()).to.deep.equal(
+            ["type", "challengeRequestId", "encrypted", "acceptedChallengeTypes", "timestamp", "userAgent", "protocolVersion"].sort()
+        );
         expect(request.signature.type).to.equal("ed25519");
         expect(request.timestamp).to.be.a("number");
         expect(request.userAgent).to.be.a("string");
@@ -595,7 +591,9 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challenge.signature.signature.length).to.equal(64);
         expect(challenge.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challenge.signature.publicKey.length).to.equal(32);
-        expect(challenge.signature.signedPropertyNames).to.deep.equal(["type", "challengeRequestId", "encrypted", "timestamp"]);
+        expect(challenge.signature.signedPropertyNames.sort()).to.deep.equal(
+            ["type", "challengeRequestId", "encrypted", "timestamp", "userAgent", "protocolVersion"].sort()
+        );
         expect(challenge.signature.type).to.equal("ed25519");
         expect(challenge.timestamp).to.be.a("number");
         expect(challenge.userAgent).to.be.a("string");
@@ -622,7 +620,9 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challengeAnswer.signature.signature.length).to.equal(64);
         expect(challengeAnswer.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challengeAnswer.signature.publicKey.length).to.equal(32);
-        expect(challengeAnswer.signature.signedPropertyNames).to.deep.equal(["type", "challengeRequestId", "encrypted", "timestamp"]);
+        expect(challengeAnswer.signature.signedPropertyNames.sort()).to.deep.equal(
+            ["type", "challengeRequestId", "encrypted", "timestamp", "userAgent", "protocolVersion"].sort()
+        );
         expect(challengeAnswer.signature.type).to.equal("ed25519");
         expect(challengeAnswer.timestamp).to.be.a("number");
         expect(challengeAnswer.userAgent).to.be.a("string");
@@ -652,15 +652,19 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challengeVerifcation.signature.signature.length).to.equal(64);
         expect(challengeVerifcation.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.signature.publicKey.length).to.equal(32);
-        expect(challengeVerifcation.signature.signedPropertyNames).to.deep.equal([
-            "reason",
-            "type",
-            "challengeRequestId",
-            "encrypted",
-            "challengeSuccess",
-            "challengeErrors",
-            "timestamp"
-        ]);
+        expect(challengeVerifcation.signature.signedPropertyNames.sort()).to.deep.equal(
+            [
+                "reason",
+                "type",
+                "challengeRequestId",
+                "encrypted",
+                "challengeSuccess",
+                "challengeErrors",
+                "timestamp",
+                "userAgent",
+                "protocolVersion"
+            ].sort()
+        );
         expect(challengeVerifcation.signature.type).to.equal("ed25519");
         expect(challengeVerifcation.timestamp).to.be.a("number");
         expect(challengeVerifcation.userAgent).to.be.a("string");
@@ -690,15 +694,19 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challengeVerifcation.signature.signature.length).to.equal(64);
         expect(challengeVerifcation.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.signature.publicKey.length).to.equal(32);
-        expect(challengeVerifcation.signature.signedPropertyNames).to.deep.equal([
-            "reason",
-            "type",
-            "challengeRequestId",
-            "encrypted",
-            "challengeSuccess",
-            "challengeErrors",
-            "timestamp"
-        ]);
+        expect(challengeVerifcation.signature.signedPropertyNames.sort()).to.deep.equal(
+            [
+                "reason",
+                "protocolVersion",
+                "userAgent",
+                "type",
+                "challengeRequestId",
+                "encrypted",
+                "challengeSuccess",
+                "challengeErrors",
+                "timestamp"
+            ].sort()
+        );
         expect(challengeVerifcation.signature.type).to.equal("ed25519");
         expect(challengeVerifcation.timestamp).to.be.a("number");
         expect(challengeVerifcation.userAgent).to.be.a("string");
