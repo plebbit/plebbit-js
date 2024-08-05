@@ -5,6 +5,7 @@ import {
     getRemotePlebbitConfigs,
     isRpcFlagOn,
     mockPlebbit,
+    jsonifySubplebbitAndRemoveInternalProps,
     publishSubplebbitRecordWithExtraProp
 } from "../../../dist/node/test/test-util.js";
 
@@ -66,16 +67,15 @@ getRemotePlebbitConfigs().map((config) =>
 
             expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids).and.to.be.a("object");
 
-            for (const pageKey of Object.keys(subJson.posts.pages)) {
-                const subJsonComments = await Promise.all(
-                    subJson.posts.pages[pageKey].comments.map((comment) => plebbit.createComment(comment.comment)) // Load CommentIpfs
-                );
-
-                for (let i = 0; i < subJsonComments.length; i++)
-                    await subJsonComments[i]._initCommentUpdate(subJson.posts.pages[pageKey].comments[i].update);
-
-                expect(subJsonComments.map((c) => c.toJSON())).to.deep.equal(subObj.posts.pages[pageKey].comments.map((c) => c.toJSON()));
+            const omittedKeys = ["clients"];
+            for (const fixtureField of Object.keys(subJson)) {
+                if (omittedKeys.includes(fixtureField)) continue;
+                expect(deterministicStringify(subObj[fixtureField])).to.equal(deterministicStringify(subJson[fixtureField]));
             }
+            expect(jsonifySubplebbitAndRemoveInternalProps(subJson)).to.deep.equal(jsonifySubplebbitAndRemoveInternalProps(subObj));
+
+            for (const pageKey of Object.keys(subJson.posts.pages))
+                expect(subJson.posts.pages[pageKey].comments).to.deep.equal(subObj.posts.pages[pageKey].comments);
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {
