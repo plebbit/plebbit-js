@@ -10,18 +10,17 @@ import retry, { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
 import type {
     CreateRemoteSubplebbitOptions,
-    RemoteSubplebbitJsonType,
     SubplebbitIpfsType,
     SubplebbitStats,
-    SubplebbitJson,
-    RpcRemoteSubplebbitType
+    RpcRemoteSubplebbitType,
+    SubplebbitJson
 } from "./types.js";
 import * as remeda from "remeda";
 import { z } from "zod";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
-import { SubplebbitIpfsSchema, UpdatingStateSchema } from "./schema.js";
+import { SubplebbitIpfsSchema, SubplebbitStateSchema, UpdatingStateSchema } from "./schema.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -37,7 +36,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     suggested?: SubplebbitIpfsType["suggested"];
     flairs?: SubplebbitIpfsType["flairs"];
     address!: SubplebbitIpfsType["address"];
-    shortAddress!: RemoteSubplebbitJsonType["shortAddress"];
+    shortAddress!: string;
     statsCid!: SubplebbitIpfsType["statsCid"];
     createdAt!: SubplebbitIpfsType["createdAt"];
     updatedAt!: SubplebbitIpfsType["updatedAt"];
@@ -49,10 +48,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     postUpdates?: SubplebbitIpfsType["postUpdates"];
 
     // Only for Subplebbit instance
-    state!: "stopped" | "updating" | "started";
+    state!: z.infer<typeof SubplebbitStateSchema>;
     updatingState!: z.infer<typeof UpdatingStateSchema>;
     clients: SubplebbitClientsManager["clients"];
-    cid?: RemoteSubplebbitJsonType["cid"];
+    cid?: string;
 
     // should be used internally
     _plebbit: Plebbit;
@@ -89,10 +88,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     async _updateLocalPostsInstance(
-        newPosts:
-            | SubplebbitIpfsType["posts"]
-            | RemoteSubplebbitJsonType["posts"]
-            | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">
+        newPosts: SubplebbitIpfsType["posts"] | SubplebbitJson["posts"] | Pick<NonNullable<SubplebbitIpfsType["posts"]>, "pageCids">
     ) {
         const log = Logger("plebbit-js:remote-subplebbit:_updateLocalPostsInstanceIfNeeded");
         if (!newPosts)
@@ -128,7 +124,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         }
     }
 
-    async initRemoteSubplebbitPropsNoMerge(newProps: RemoteSubplebbitJsonType | CreateRemoteSubplebbitOptions) {
+    async initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions) {
         // This function is not strict, and will assume all props can be undefined, except address
         this.title = newProps.title;
         this.description = newProps.description;
@@ -168,15 +164,6 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.posts._subplebbitAddress = this.address;
     }
 
-    toJSON(): SubplebbitJson {
-        const baseJson = this._rawSubplebbitIpfs ? this.toJSONIpfs() : this._toJSONBase();
-        return <RemoteSubplebbitJsonType>{
-            ...baseJson,
-            posts: this.posts.toJSON(),
-            shortAddress: this.shortAddress,
-            cid: this.cid
-        };
-    }
 
     protected _toJSONBase() {
         return {

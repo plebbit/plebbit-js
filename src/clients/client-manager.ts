@@ -25,7 +25,7 @@ import {
     PublicationPlebbitRpcStateClient,
     SubplebbitPlebbitRpcStateClient
 } from "./rpc-client/plebbit-rpc-state-client.js";
-import type { RemoteSubplebbitJsonType, SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
@@ -954,7 +954,7 @@ type SubplebbitGatewayFetch = {
     [gateway: string]: {
         abortController: AbortController;
         promise: Promise<any>;
-        cid?: RemoteSubplebbitJsonType["cid"];
+        cid?: SubplebbitJson["cid"];
         subplebbitRecord?: SubplebbitIpfsType;
         error?: PlebbitError;
         timeoutId: any;

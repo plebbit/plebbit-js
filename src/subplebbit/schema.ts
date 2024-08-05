@@ -8,17 +8,29 @@ import {
     JsonSignatureSchema,
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
-    ShortSubplebbitAddressSchema,
     SignerWithAddressPublicKeySchema,
     SubplebbitAddressSchema
 } from "../schema/schema.js";
-import { PostsPagesIpfsSchema, PostsPagesJsonSchema } from "../pages/schema.js";
-import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
-import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
+import { PostsPagesIpfsSchema } from "../pages/schema.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import * as remeda from "remeda";
+
+// Schema of states
+
+export const SubplebbitStateSchema = z.enum(["stopped", "updating", "started"]);
+
+export const StartedStateSchema = z.enum(["stopped", "publishing-ipns", "failed", "succeeded"]);
+
+export const UpdatingStateSchema = z.enum([
+    ...StartedStateSchema.options,
+    "stopped",
+    "resolving-address",
+    "fetching-ipns",
+    "fetching-ipfs",
+    "failed",
+    "succeeded"
+]);
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
@@ -219,21 +231,6 @@ export const CreateRemoteSubplebbitOptionsSchema = SubplebbitIpfsSchema.partial(
     })
     .strict();
 
-const RemoteSubplebbitOptionalRemotePropsJsonSchema = CreateRemoteSubplebbitOptionsSchema.extend({
-    shortAddress: ShortSubplebbitAddressSchema,
-    posts: PostsPagesJsonSchema.or(PostsPagesJsonSchema.pick({ pageCids: true })).optional()
-}).strict();
-
-const RemoteSubplebbitAfterFirstUpdateJsonSchema = SubplebbitIpfsSchema.omit({ posts: true })
-    .extend({
-        shortAddress: ShortSubplebbitAddressSchema,
-        posts: PostsPagesJsonSchema.optional(),
-        cid: CidStringSchema
-    })
-    .strict();
-
-export const RemoteSubplebbitJsonSchema = RemoteSubplebbitAfterFirstUpdateJsonSchema.or(RemoteSubplebbitOptionalRemotePropsJsonSchema);
-
 // Local Subplebbit schemas
 
 export const SubplebbitSettingsSchema = z
@@ -306,10 +303,6 @@ export const RpcInternalSubplebbitRecordBeforeFirstUpdateSchema = InternalSubple
     started: z.boolean()
 }).strict();
 
-export const RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
-    shortAddress: ShortSubplebbitAddressSchema
-}).strict();
-
 export const RpcInternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordAfterFirstUpdateSchema.omit({
     signer: true,
     _subplebbitUpdateTrigger: true
@@ -320,22 +313,9 @@ export const RpcInternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubpleb
     })
     .strict();
 
-export const RpcInternalSubplebbitRecordAfterFirstUpdateJsonSchema = RpcInternalSubplebbitRecordAfterFirstUpdateSchema.omit({ posts: true })
-    .extend({
-        shortAddress: ShortSubplebbitAddressSchema,
-        posts: PostsPagesJsonSchema.optional()
-    })
-    .strict();
-
 export const RpcLocalSubplebbitUpdateResultSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.or(
     RpcInternalSubplebbitRecordAfterFirstUpdateSchema
 );
-
-export const RpcLocalSubplebbitJsonSchema = RpcInternalSubplebbitRecordAfterFirstUpdateJsonSchema.or(
-    RpcInternalSubplebbitRecordBeforeFirstUpdateJsonSchema
-);
-
-export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not sure if we need to modify it for now
 
 // | CreateNewLocalSubplebbitUserOptions
 // | CreateRemoteSubplebbitOptions
@@ -347,23 +327,11 @@ export const LocalSubplebbitJsonSchema = RpcLocalSubplebbitJsonSchema; // Not su
 // | RpcRemoteSubplebbit
 // | LocalSubplebbit = {}
 
-const SubplebbitClassSchema = z.custom<RemoteSubplebbit | RpcLocalSubplebbit | RpcRemoteSubplebbit | LocalSubplebbit>(
-    (arg) =>
-        arg instanceof RemoteSubplebbit ||
-        arg instanceof RpcLocalSubplebbit ||
-        arg instanceof RpcRemoteSubplebbit ||
-        arg instanceof LocalSubplebbit // I think this is gonna throw in browsers
-);
-
-export const CreateRemoteSubplebbitFunctionArgumentSchema = SubplebbitClassSchema.or(CreateRemoteSubplebbitOptionsSchema)
-    .or(RemoteSubplebbitJsonSchema)
-    .or(SubplebbitIpfsSchema.passthrough());
+export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitOptionsSchema.or(SubplebbitIpfsSchema.passthrough());
 
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
     CreateNewLocalSubplebbitUserOptionsSchema
-)
-    .or(InternalSubplebbitRecordAfterFirstUpdateSchema)
-    .or(SubplebbitClassSchema);
+).or(InternalSubplebbitRecordAfterFirstUpdateSchema);
 
 export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(
     CreateRemoteSubplebbitFunctionArgumentSchema
@@ -372,17 +340,3 @@ export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitU
 // plebbit.listSubplebbits()
 
 export const ListOfSubplebbitsSchema = SubplebbitAddressSchema.array();
-
-// Schema of states
-
-export const StartedStateSchema = z.enum(["stopped", "publishing-ipns", "failed", "succeeded"]);
-
-export const UpdatingStateSchema = z.enum([
-    ...StartedStateSchema.options,
-    "stopped",
-    "resolving-address",
-    "fetching-ipns",
-    "fetching-ipfs",
-    "failed",
-    "succeeded"
-]);

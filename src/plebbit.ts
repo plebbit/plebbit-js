@@ -13,12 +13,7 @@ import type {
     InputPlebbitOptions
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
-import {
-    doesDomainAddressHaveCapitalLetter,
-    hideClassPrivateProps,
-    removeNullUndefinedEmptyObjectsValuesRecursively,
-    timestamp
-} from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, timestamp } from "./util.js";
 import Vote from "./publications/vote/vote.js";
 import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
@@ -36,8 +31,10 @@ import type {
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
     CreateRemoteSubplebbitOptions,
-    RemoteSubplebbitJsonType,
-    SubplebbitIpfsType
+    SubplebbitJson,
+    SubplebbitIpfsType,
+    RemoteSubplebbitJson,
+    RpcRemoteSubplebbitJson
 } from "./subplebbit/types.js";
 import LRUStorage from "./runtime/node/lru-storage.js";
 import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
@@ -345,16 +342,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     private async _setSubplebbitIpfsOnInstanceIfPossible(
         subplebbit: RpcRemoteSubplebbit | RemoteSubplebbit,
-        options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJsonType
+        options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJson | RpcRemoteSubplebbitJson
     ) {
+        await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
         if (options.signature) {
             const resParseSubplebbitIpfs = SubplebbitIpfsSchema.passthrough().safeParse(
                 remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
             );
-            if (resParseSubplebbitIpfs.success)
-                await subplebbit.initSubplebbitIpfsPropsNoMerge(resParseSubplebbitIpfs.data); // we're setting SubplebbitIpfs
-            else await subplebbit.initRemoteSubplebbitPropsNoMerge(options); // options are not adherent to SubplebbitIpfs, let's use less strict init
-        } else await subplebbit.initRemoteSubplebbitPropsNoMerge(options);
+            if (resParseSubplebbitIpfs.success) {
+                const cleanedRecord = cleanUpBeforePublishing(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
+                await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord); // we're setting SubplebbitIpfs
+            }
+        }
     }
 
     private async _createSubplebbitRpc(
@@ -384,14 +383,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 if (error) throw error;
 
                 return sub;
-            } else if (options instanceof RemoteSubplebbit) {
-                // Remote subplebbit , we need to create new instance and copy props to it
-                log.trace("Creating a remote RPC subplebbit instance with address", options.address);
-                const remoteSub = new RpcRemoteSubplebbit(this);
-                Object.assign(remoteSub, options);
-                remoteSub._rawSubplebbitIpfs = options._rawSubplebbitIpfs;
-                if (remoteSub.state !== "stopped") await remoteSub.stop(); // to reset states
-                return remoteSub;
             } else {
                 log.trace("Creating a remote RPC subplebbit instance with address", options.address);
                 const remoteSub = new RpcRemoteSubplebbit(this);
@@ -402,10 +393,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         } else if (!("address" in options)) {
             // We're creating a new local sub
             const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
-            log(
-                `Created local-RPC subplebbit (${newLocalSub.address}) with props:`,
-                removeNullUndefinedEmptyObjectsValuesRecursively(newLocalSub.toJSON())
-            );
+            log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, JSON.parse(JSON.stringify(newLocalSub)));
             newLocalSub.emit("update", newLocalSub);
             return newLocalSub;
         } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
@@ -416,11 +404,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         log.trace("Received subplebbit options to create a remote subplebbit instance:", options);
         const subplebbit = new RemoteSubplebbit(this);
-        if (options instanceof RemoteSubplebbit) {
-            Object.assign(subplebbit, options);
-            subplebbit._rawSubplebbitIpfs = options._rawSubplebbitIpfs;
-            if (subplebbit.state !== "stopped") await subplebbit.stop(); // to reset states
-        } else await this._setSubplebbitIpfsOnInstanceIfPossible(subplebbit, options);
+        await this._setSubplebbitIpfsOnInstanceIfPossible(subplebbit, options);
 
         log.trace(`Created remote subplebbit instance (${subplebbit.address})`);
         return subplebbit;
@@ -443,7 +427,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             await subplebbit._loadLocalSubDb();
             log.trace(
                 `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
-                removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
+                JSON.parse(JSON.stringify(subplebbit))
             );
             subplebbit.emit("update", subplebbit);
             return subplebbit;
@@ -453,19 +437,27 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             const parsedOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>options);
             await subplebbit.initNewLocalSubPropsNoMerge(parsedOptions); // We're initializing a new local sub props here
             await subplebbit._createNewLocalSubDb();
-            log.trace(
-                `Created a new local subplebbit (${subplebbit.address}) with props:`,
-                removeNullUndefinedEmptyObjectsValuesRecursively(subplebbit.toJSON())
-            );
+            log.trace(`Created a new local subplebbit (${subplebbit.address}) with props:`, JSON.parse(JSON.stringify(subplebbit)));
             subplebbit.emit("update", subplebbit);
             return subplebbit;
         } else throw Error("Are you trying to create a local sub with no address or signer? This is a critical error");
     }
 
+    private async _createSubInstanceFromJsonifiedSub(jsonfied: SubplebbitJson): ReturnType<Plebbit["createSubplebbit"]> {
+        // jsonfied = JSON.parse(JSON.stringify(subplebbitInstance))
+        // should probably exclude internal and instance-exclusive props like states
+
+        // TODO should we copy states and internal props?
+        if (this.plebbitRpcClient) return this._createSubplebbitRpc(jsonfied);
+        else if ("startedState" in jsonfied) return this._createLocalSub(jsonfied);
+        else return this._createRemoteSubplebbitInstance(jsonfied);
+    }
+
     async createSubplebbit(
-        options: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema> = {}
+        options: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema> | SubplebbitJson = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        if ("clients" in options) return this._createSubInstanceFromJsonifiedSub(<SubplebbitJson>options);
         const parsedOptions = CreateSubplebbitFunctionArgumentsSchema.parse(options);
         log.trace("Received options: ", parsedOptions);
 

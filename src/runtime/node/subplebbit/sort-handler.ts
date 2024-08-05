@@ -62,7 +62,7 @@ export class SortHandler {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.comment.cid] = await this.subplebbit.dbHandler.queryActiveScore(comment.comment);
+                activeScores[comment.comment.cid] = await this.subplebbit._dbHandler.queryActiveScore(comment.comment);
         }
 
         const scoreSort = (obj1: PageIpfs["comments"][0], obj2: PageIpfs["comments"][0]) => {
@@ -115,7 +115,7 @@ export class SortHandler {
 
     private async _generateSubplebbitPosts(pageOptions: PageOptions): Promise<PostsPagesTypeIpfs | undefined> {
         // Sorting posts on a subplebbit level
-        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const rawPosts = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
 
         if (rawPosts.length === 0) return undefined;
 
@@ -135,7 +135,7 @@ export class SortHandler {
             pageSize: 50
         };
 
-        const comments = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const comments = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
 
         const sortResults = await Promise.all(
             remeda.keys.strict(REPLIES_SORT_TYPES).map((sortName) => this.sortComments(comments, sortName, pageOptions))

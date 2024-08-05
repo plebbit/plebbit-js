@@ -57,8 +57,11 @@ export function removeNullUndefinedEmptyObjectsValuesRecursively<T>(obj: T): T {
     if (Array.isArray(obj)) return <T>obj.map(removeNullUndefinedEmptyObjectsValuesRecursively);
     if (!remeda.isPlainObject(obj)) return obj;
     const cleanedObj: any = removeNullUndefinedEmptyObjectValues(obj);
-    for (const [key, value] of Object.entries(cleanedObj))
-        if (remeda.isPlainObject(value) || Array.isArray(value)) cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(value);
+    for (const key of Object.keys(cleanedObj)) {
+        if (remeda.isPlainObject(cleanedObj[key]) || Array.isArray(cleanedObj[key]))
+            cleanedObj[key] = removeNullUndefinedEmptyObjectsValuesRecursively(cleanedObj[key]);
+        if (remeda.isPlainObject(cleanedObj[key]) && remeda.isEmpty(cleanedObj[key])) delete cleanedObj[key];
+    }
 
     return cleanedObj;
 }

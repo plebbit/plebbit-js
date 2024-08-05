@@ -2,8 +2,6 @@ import Logger from "@plebbit/plebbit-logger";
 import type {
     InternalSubplebbitBeforeFirstUpdateRpcType,
     InternalSubplebbitAfterFirstUpdateRpcType,
-    LocalSubplebbitJsonType,
-    LocalSubplebbitRpcJsonType,
     SubplebbitEditOptions,
     SubplebbitIpfsType
 } from "./types.js";
@@ -47,7 +45,6 @@ import type {
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
-    protected _usingDefaultChallenge!: InternalSubplebbitAfterFirstUpdateRpcType["_usingDefaultChallenge"];
     startedState!: z.infer<typeof StartedStateSchema>;
     signer!: InternalSubplebbitAfterFirstUpdateRpcType["signer"];
     settings?: InternalSubplebbitAfterFirstUpdateRpcType["settings"];
@@ -55,10 +52,13 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
     // Private stuff
     private _startRpcSubscriptionId?: z.infer<typeof SubscriptionIdSchema> = undefined;
+    protected _usingDefaultChallenge!: InternalSubplebbitAfterFirstUpdateRpcType["_usingDefaultChallenge"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
         this.started = false;
+        //@ts-expect-error
+        this._usingDefaultChallenge = undefined;
         this.start = this.start.bind(this);
         this.edit = this.edit.bind(this);
         this._setStartedState("stopped");
@@ -67,19 +67,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         });
     }
 
-    override toJSON(): LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType {
-        if (typeof this.updatedAt === "number")
-            return {
-                ...this.toJSONInternalRpcAfterFirstUpdate(),
-                posts: this.posts.toJSON(),
-                shortAddress: this.shortAddress
-            };
-        else
-            return {
-                ...this.toJSONInternalRpcBeforeFirstUpdate(),
-                shortAddress: this.shortAddress
-            };
-    }
 
     toJSONInternalRpcAfterFirstUpdate(): InternalSubplebbitAfterFirstUpdateRpcType {
         return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse({

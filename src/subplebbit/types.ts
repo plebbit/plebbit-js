@@ -11,11 +11,8 @@ import {
     CreateRemoteSubplebbitOptionsSchema,
     InternalSubplebbitRecordBeforeFirstUpdateSchema,
     InternalSubplebbitRecordAfterFirstUpdateSchema,
-    LocalSubplebbitJsonSchema,
-    RemoteSubplebbitJsonSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
-    RpcLocalSubplebbitJsonSchema,
     SubplebbitChallengeSchema,
     SubplebbitChallengeSettingSchema,
     SubplebbitEditOptionsSchema,
@@ -27,6 +24,10 @@ import {
     SubplebbitSuggestedSchema,
     RpcRemoteSubplebbitSchema
 } from "./schema.js";
+import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
+import { RemoteSubplebbit } from "./remote-subplebbit.js";
+import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -53,13 +54,7 @@ export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 
-export type RemoteSubplebbitJsonType = z.infer<typeof RemoteSubplebbitJsonSchema>;
-
 export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitSchema>;
-
-export type LocalSubplebbitJsonType = z.infer<typeof LocalSubplebbitJsonSchema>;
-
-export type LocalSubplebbitRpcJsonType = z.infer<typeof RpcLocalSubplebbitJsonSchema>;
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
@@ -106,6 +101,18 @@ export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<InternalSubplebbitAfterFirstUpdateType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
 
+// util functions
+type OmitUnderscoreProps<T> = Omit<T, `_${string}`>;
+type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: T[K] };
+
 // Subplebbit json here
 
-export type SubplebbitJson = RemoteSubplebbitJsonType | LocalSubplebbitJsonType | LocalSubplebbitRpcJsonType;
+export type RemoteSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RemoteSubplebbit>>;
+
+export type RpcRemoteSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RpcRemoteSubplebbit>>;
+
+type RpcLocalSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RpcLocalSubplebbit>>;
+
+type LocalSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<LocalSubplebbit>>;
+
+export type SubplebbitJson = RemoteSubplebbitJson | RpcRemoteSubplebbitJson | RpcLocalSubplebbitJson | LocalSubplebbitJson; // after calling JSON.parse(JSON.stringify(subplebbitInstance)), this should be the output
