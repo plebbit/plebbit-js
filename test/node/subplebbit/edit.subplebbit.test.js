@@ -7,6 +7,8 @@ import {
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
     describeIfRpc,
+    jsonifyLocalSubWithNoInternalProps,
+    jsonifySubplebbitAndRemoveInternalProps,
     mockRemotePlebbit
 } from "../../../dist/node/test/test-util";
 import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util";
@@ -24,10 +26,11 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 describeSkipIfRpc(`subplebbit.edit`, async () => {
-    let plebbit, subplebbit, postToPublishAfterEdit, ethAddress;
+    let plebbit, remotePlebbit, subplebbit, postToPublishAfterEdit, ethAddress;
     before(async () => {
         const testEthRpc = `https://testEthRpc-${uuidV4()}.com`;
         plebbit = await mockPlebbit({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } }, true, false);
+        remotePlebbit = await mockRemotePlebbitIpfsOnly({ chainProviders: { eth: { urls: [testEthRpc], chainId: 1 } } });
         subplebbit = await createSubWithNoChallenge({}, plebbit, 1000);
         ethAddress = `test-edit-${uuidV4()}.eth`;
 
@@ -53,18 +56,20 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
                 const [keyToEdit, newValue] = Object.entries(editArgs)[0];
                 await subplebbit.edit(editArgs);
                 expect(subplebbit[keyToEdit]).to.equal(newValue);
-                const loadedSubplebbit = await plebbit.getSubplebbit(subplebbit.address);
-                await loadedSubplebbit.update();
-                await resolveWhenConditionIsTrue(loadedSubplebbit, () => loadedSubplebbit[keyToEdit] === newValue);
-                loadedSubplebbit.stop();
-                expect(loadedSubplebbit[keyToEdit]).to.equal(newValue);
-                expect(deterministicStringify(loadedSubplebbit.toJSON())).to.equal(deterministicStringify(subplebbit.toJSON()));
+                const remoteSubplebbit = await remotePlebbit.getSubplebbit(subplebbit.address);
+                await remoteSubplebbit.update();
+                await resolveWhenConditionIsTrue(remoteSubplebbit, () => remoteSubplebbit[keyToEdit] === newValue);
+                remoteSubplebbit.stop();
+                expect(remoteSubplebbit[keyToEdit]).to.equal(newValue);
+                expect(jsonifySubplebbitAndRemoveInternalProps(remoteSubplebbit)).to.deep.equal(
+                    jsonifySubplebbitAndRemoveInternalProps(subplebbit)
+                );
             })
     );
 
     it(`Sub is locked for start`, async () => {
         // Check for locks
-        expect(await subplebbit.dbHandler.isSubStartLocked(subplebbit.signer.address)).to.be.true;
+        expect(await subplebbit._dbHandler.isSubStartLocked(subplebbit.signer.address)).to.be.true;
     });
 
     it(`Can edit a subplebbit to have ENS domain as address`, async () => {
@@ -89,14 +94,17 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
 
     it(`Start locks are moved to the new address`, async () => {
         // Check for locks
-        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", `${subplebbit.signer.address}.start.lock`))).to.be.false;
-        expect(fs.existsSync(path.join(subplebbit.plebbit.dataPath, "subplebbits", `${ethAddress}.start.lock`))).to.be.true;
+        expect(fs.existsSync(path.join(subplebbit._plebbit.dataPath, "subplebbits", `${subplebbit.signer.address}.start.lock`))).to.be
+            .false;
+        expect(fs.existsSync(path.join(subplebbit._plebbit.dataPath, "subplebbits", `${ethAddress}.start.lock`))).to.be.true;
     });
 
     it(`Can load a subplebbit with ENS domain as address`, async () => {
-        const loadedSubplebbit = await plebbit.getSubplebbit(ethAddress);
+        const loadedSubplebbit = await remotePlebbit.getSubplebbit(ethAddress);
         expect(loadedSubplebbit.address).to.equal(ethAddress);
-        expect(deterministicStringify(loadedSubplebbit)).to.equal(deterministicStringify(subplebbit));
+        expect(jsonifySubplebbitAndRemoveInternalProps(loadedSubplebbit)).to.deep.equal(
+            jsonifySubplebbitAndRemoveInternalProps(subplebbit)
+        );
     });
 
     it(`remote subplebbit.posts is reset after changing address`, async () => {
@@ -147,7 +155,7 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         await new Promise((resolve) => subTwo.once("update", resolve));
 
         expect(subTwo.title).to.equal(newTitle);
-        expect(deterministicStringify(subTwo.toJSON())).to.equal(deterministicStringify(subOne.toJSON()));
+        expect(jsonifyLocalSubWithNoInternalProps(subTwo)).to.deep.equal(jsonifyLocalSubWithNoInternalProps(subOne));
 
         subOne.stop();
         subTwo.stop();
@@ -257,16 +265,16 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         const sub = await createSubWithNoChallenge({ signer }, customPlebbit);
         await sub.edit({ address: domain });
         // Check for locks
-        expect(await sub.dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
-        expect(await sub.dbHandler.isSubStartLocked(domain)).to.be.false;
+        expect(await sub._dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
+        expect(await sub._dbHandler.isSubStartLocked(domain)).to.be.false;
 
         await sub.start();
         await new Promise((resolve) => sub.once("update", resolve));
 
         expect(sub.address).to.equal(domain);
         // Check for locks
-        expect(await sub.dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
-        expect(await sub.dbHandler.isSubStartLocked(domain)).to.be.true;
+        expect(await sub._dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
+        expect(await sub._dbHandler.isSubStartLocked(domain)).to.be.true;
 
         await publishRandomPost(sub.address, customPlebbit);
         await sub.stop();

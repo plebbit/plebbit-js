@@ -17,15 +17,10 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
-import type { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
+import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type {
-    CommentIpfsType,
-    CommentIpfsWithCidDefined,
-    CommentIpfsWithCidPostCidDefined,
-    CreateCommentOptions
-} from "../publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
 import { signComment, _signJson } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
@@ -651,6 +646,16 @@ export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraP
     await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
 
     return { subplebbitRecord, ipnsObj };
+}
+
+export function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit) {
+    const jsonfied = JSON.parse(JSON.stringify(sub));
+    return remeda.omit(jsonfied, ["startedState", "started", "signer", "settings", "editable", "clients", "updatingState", "state"]);
+}
+
+export function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit) {
+    const localJson = <LocalSubplebbitJson>JSON.parse(JSON.stringify(sub));
+    return remeda.omit(localJson, ["startedState", "started", "clients", "state", "updatingState"]);
 }
 
 export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];
