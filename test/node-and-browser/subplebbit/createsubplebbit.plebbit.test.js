@@ -29,25 +29,24 @@ getRemotePlebbitConfigs().map((config) =>
 
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
-            expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
-            expect(loadedSubplebbit.toJSONIpfs()).to.deep.equal(createdSubplebbit.toJSONIpfs());
+            const jsonfiedSub = JSON.parse(JSON.stringify(loadedSubplebbit));
+            const createdSubplebbit = await plebbit.createSubplebbit(jsonfiedSub);
+            expect(jsonfiedSub).to.deep.equal(JSON.parse(JSON.stringify(createdSubplebbit)));
         });
 
-        it.skip(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
+        it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
             // This test will fail because plebbit.createSubplebbit doesn't accept spread
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const spread = { ...loadedSubplebbit };
             const createdSubplebbit = await plebbit.createSubplebbit(spread);
-            expect(loadedSubplebbit.toJSON()).to.deep.equal(createdSubplebbit.toJSON());
-            expect(loadedSubplebbit.toJSONIpfs()).to.deep.equal(createdSubplebbit.toJSONIpfs());
+            expect(JSON.parse(JSON.stringify(loadedSubplebbit))).to.deep.equal(JSON.parse(JSON.stringify(createdSubplebbit)));
         });
 
         it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(await getSubplebbit())))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const createdSubplebbit = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(loadedSubplebbit)));
-            const loadedSubJson = loadedSubplebbit.toJSON();
-            const createdSubJson = createdSubplebbit.toJSON();
+            const loadedSubJson = JSON.parse(JSON.stringify(loadedSubplebbit));
+            const createdSubJson = JSON.parse(JSON.stringify(createdSubplebbit));
             expect(deterministicStringify(loadedSubJson)).to.equal(deterministicStringify(createdSubJson));
         });
 
@@ -108,11 +107,11 @@ getRemotePlebbitConfigs().map((config) =>
 
                 const recreatedSubFromInstance = await remotePlebbit.createSubplebbit(sub);
                 expect(recreatedSubFromInstance.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
-                expect(recreatedSubFromInstance.toJSON().extraProp).to.equal(opts.extraProps.extraProp);
+                expect(JSON.parse(JSON.stringify(recreatedSubFromInstance)).extraProp).to.equal(opts.extraProps.extraProp);
                 expect(recreatedSubFromInstance.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
 
                 const recreatedSubFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
-                expect(recreatedSubFromJson.toJSON().extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
+                expect(JSON.parse(JSON.stringify(recreatedSubFromJson)).extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
                 expect(recreatedSubFromJson.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
             });
         });

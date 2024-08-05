@@ -40,7 +40,7 @@ describe(`Subplebbit.cid`, async () => {
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
 
-        const subJson = sub.toJSON();
+        const subJson = JSON.parse(JSON.stringify(sub));
         expect(subJson.cid).to.be.a("string");
         await sub.delete();
     });

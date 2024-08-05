@@ -36,13 +36,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const listedSubs = await plebbit.listSubplebbits();
         expect(listedSubs).to.include(newSubplebbit.address);
 
-        const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit(newSubplebbit.address);
 
-        const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings", "started"];
+        const localAndInternalProps = ["signer", "settings", "started", "editable", "clients", "state", "startedState", "updatingState"];
 
-        expect(deterministicStringify(subplebbitIpns.toJSON())).to.equal(
-            deterministicStringify(remeda.omit(newSubplebbit.toJSON(), internalProps))
-        );
+        const remoteSubJson = JSON.parse(JSON.stringify(remeda.omit(remoteSub, localAndInternalProps)));
+
+        const localSubRemoteJson = remeda.omit(JSON.parse(JSON.stringify(newSubplebbit)), localAndInternalProps);
+
+        expect(deterministicStringify(remoteSubJson)).to.equal(deterministicStringify(localSubRemoteJson));
+
+        expect(remoteSub.toJSONIpfs()).to.deep.equal(newSubplebbit.toJSONIpfs());
         return newSubplebbit;
     };
 
@@ -80,7 +84,10 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         expect(sub.posts).to.be.a("object");
         const clonedSub = await plebbit.createSubplebbit(sub);
         expect(clonedSub.posts).to.be.a("object");
-        expect(sub.toJSON()).to.deep.equal(clonedSub.toJSON());
+        const internalProps = ["clients", "state", "startedState"];
+        const clonedSubJson = JSON.parse(JSON.stringify(remeda.omit(clonedSub, internalProps)));
+        const localSubJson = JSON.parse(JSON.stringify(remeda.omit(sub, internalProps)));
+        expect(localSubJson).to.deep.equal(clonedSubJson);
         await sub.delete();
     });
 
@@ -102,7 +109,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const sub = await _createAndValidateSubArgs({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
-        expect(deterministicStringify(createdSub.toJSON())).to.equal(deterministicStringify(sub.toJSON()));
+        expect(deterministicStringify(createdSub)).to.equal(deterministicStringify(sub));
         await createdSub.delete();
     });
 
