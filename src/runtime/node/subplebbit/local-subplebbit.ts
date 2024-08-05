@@ -385,11 +385,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 pageCids: subplebbitPosts.pageCids,
                 pages: remeda.pick(subplebbitPosts.pages, ["hot"])
             });
-        else delete newIpns.posts;
+        else await this._updateDbInternalState({ posts: undefined }); // make sure db resets posts as well
 
         const signature = await signSubplebbit(newIpns, this.signer);
         const newSubplebbitRecord = <SubplebbitIpfsType>{ ...newIpns, signature };
-        if (!subplebbitPosts) newSubplebbitRecord.posts = undefined; // we make it defined after because signSubplebbit does not accept undefined values
 
         await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
