@@ -28,6 +28,7 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
+import type { ClassWithNoEnumerables } from "../types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -101,18 +102,14 @@ export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<InternalSubplebbitAfterFirstUpdateType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
 
-// util functions
-type OmitUnderscoreProps<T> = Omit<T, `_${string}`>;
-type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: T[K] };
-
 // Subplebbit json here
 
-export type RemoteSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RemoteSubplebbit>>;
+export type RemoteSubplebbitJson = ClassWithNoEnumerables<RemoteSubplebbit>;
 
-export type RpcRemoteSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RpcRemoteSubplebbit>>;
+export type RpcRemoteSubplebbitJson = ClassWithNoEnumerables<RpcRemoteSubplebbit>;
 
-type RpcLocalSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<RpcLocalSubplebbit>>;
+export type RpcLocalSubplebbitJson = ClassWithNoEnumerables<RpcLocalSubplebbit>;
 
-type LocalSubplebbitJson = ExcludeMethods<OmitUnderscoreProps<LocalSubplebbit>>;
+export type LocalSubplebbitJson = ClassWithNoEnumerables<LocalSubplebbit>;
 
 export type SubplebbitJson = RemoteSubplebbitJson | RpcRemoteSubplebbitJson | RpcLocalSubplebbitJson | LocalSubplebbitJson; // after calling JSON.parse(JSON.stringify(subplebbitInstance)), this should be the output
