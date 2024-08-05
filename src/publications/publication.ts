@@ -97,27 +97,25 @@ class Publication extends TypedEmitter<PublicationEvents> {
     challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
     // private
-    private subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address">; // will be used for publishing, TODO should change it to _subplebbit
-    private _challengeAnswer?: DecryptedChallengeAnswerMessageType;
-    private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[];
-    private _challengeIdToPubsubSigner: Record<string, Signer>;
+    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing, TODO should change it to _subplebbit
+    private _challengeAnswer?: DecryptedChallengeAnswerMessageType = undefined;
+    private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[] = undefined;
+    private _challengeIdToPubsubSigner: Record<string, Signer> = {};
     private _pubsubProviders: string[];
-    private _pubsubProvidersDoneWaiting?: Record<string, boolean>;
-    private _currentPubsubProviderIndex?: number;
-    private _receivedChallengeFromSub: boolean;
-    private _receivedChallengeVerification: boolean;
-    private _challenge?: DecryptedChallengeMessageType;
+    private _pubsubProvidersDoneWaiting?: Record<string, boolean> = {};
+    private _currentPubsubProviderIndex?: number = undefined;
+    private _receivedChallengeFromSub: boolean = false;
+    private _receivedChallengeVerification: boolean = false;
+    private _challenge?: DecryptedChallengeMessageType = undefined;
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
-    private _rpcPublishSubscriptionId?: number;
+    private _rpcPublishSubscriptionId?: number = undefined;
     _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
     constructor(plebbit: Plebbit) {
         super();
         this._plebbit = plebbit;
-        this._receivedChallengeFromSub = this._receivedChallengeVerification = false;
-        this._challengeIdToPubsubSigner = {};
         this._updatePublishingState("stopped");
         this._updateState("stopped");
         this._initClients();
@@ -179,10 +177,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
         throw Error("Should be overridden");
     }
 
-    toJSON() {
-        throw Error("should be overridden");
-    }
-
     // TODO change this to toJSONPubsubMessageToEncrypt
     toJSONPubsubMessage(): DecryptedChallengeRequest {
         return {
@@ -225,7 +219,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             decryptedRawString = await decryptEd25519AesGcm(
                 msg.encrypted,
                 this._challengeIdToPubsubSigner[msg.challengeRequestId.toString()].privateKey,
-                this.subplebbit!.encryption.publicKey
+                this._subplebbit!.encryption.publicKey
             );
         } catch (e) {
             const plebbitError = new PlebbitError("ERR_PUBLICATION_FAILED_TO_DECRYPT_CHALLENGE", { decryptErr: e });
@@ -297,7 +291,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     decryptedRawString = await decryptEd25519AesGcm(
                         msg.encrypted,
                         this._challengeIdToPubsubSigner[msg.challengeRequestId.toString()].privateKey,
-                        this.subplebbit!.encryption.publicKey
+                        this._subplebbit!.encryption.publicKey
                     );
                 } catch (e) {
                     const plebbitError = new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", { decryptErr: e });
@@ -391,7 +385,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return;
         }
 
-        assert(this.subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
+        assert(this._subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
 
         if (typeof this._currentPubsubProviderIndex !== "number")
             throw Error("currentPubsubProviderIndex should be defined prior to publishChallengeAnswers");
@@ -399,7 +393,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const encryptedChallengeAnswers = await encryptEd25519AesGcm(
             JSON.stringify(toEncryptAnswers),
             this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()].privateKey,
-            this.subplebbit.encryption.publicKey
+            this._subplebbit.encryption.publicKey
         );
 
         const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = cleanUpBeforePublishing({
@@ -453,12 +447,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _validateSubFields() {
-        if (typeof this.subplebbit?.encryption?.publicKey !== "string")
-            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: this.subplebbit?.encryption?.publicKey });
+        if (typeof this._subplebbit?.encryption?.publicKey !== "string")
+            throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", { subplebbitPublicKey: this._subplebbit?.encryption?.publicKey });
         if (typeof this._pubsubTopicWithfallback() !== "string")
             throwWithErrorCode("ERR_SUBPLEBBIT_MISSING_FIELD", {
-                pubsubTopic: this.subplebbit?.pubsubTopic,
-                address: this.subplebbit?.address
+                pubsubTopic: this._subplebbit?.pubsubTopic,
+                address: this._subplebbit?.address
             });
     }
 
@@ -501,7 +495,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _pubsubTopicWithfallback(): string {
-        const pubsubTopic = this.subplebbit?.pubsubTopic || this.subplebbit?.address;
+        const pubsubTopic = this._subplebbit?.pubsubTopic || this._subplebbit?.address;
         if (typeof pubsubTopic !== "string") throw Error("Failed to load the pubsub topic of subplebbit");
         return pubsubTopic;
     }
@@ -510,7 +504,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return subplebbitForPublishingCache.get(this.subplebbitAddress, { allowStale: true });
     }
 
-    async _fetchSubplebbitForPublishing(): Promise<NonNullable<Publication["subplebbit"]>> {
+    async _fetchSubplebbitForPublishing(): Promise<NonNullable<Publication["_subplebbit"]>> {
         const log = Logger("plebbit-js:publish:_fetchSubplebbitForPublishing");
         const cachedSubplebbit = this._getSubplebbitCache();
 
@@ -584,7 +578,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
-        } else if (this.subplebbit) {
+        } else if (this._subplebbit) {
             await this._clientsManager.pubsubUnsubscribe(this._pubsubTopicWithfallback(), this._handleChallengeExchange);
             this._pubsubProviders.forEach((provider) => this._clientsManager.updatePubsubState("stopped", provider));
         }
@@ -744,7 +738,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const options = { acceptedChallengeTypes: [] };
         try {
-            this.subplebbit = await this._fetchSubplebbitForPublishing();
+            this._subplebbit = await this._fetchSubplebbitForPublishing();
             this._validateSubFields();
         } catch (e) {
             this._updateState("stopped");
@@ -759,7 +753,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const encrypted = await encryptEd25519AesGcm(
             JSON.stringify(pubsubMsgToEncrypt),
             pubsubMessageSigner.privateKey,
-            this.subplebbit.encryption.publicKey
+            this._subplebbit.encryption.publicKey
         );
 
         const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(pubsubMessageSigner.publicKey);
