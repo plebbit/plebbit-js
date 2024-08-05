@@ -2,13 +2,11 @@
 
 import { z } from "zod";
 import {
-    AuthorPubsubJsonSchema,
     ChallengeRequestToEncryptBaseSchema,
     CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
-    PublicationBaseBeforeSigning,
-    ShortSubplebbitAddressSchema
+    PublicationBaseBeforeSigning
 } from "../../schema/schema";
 import * as remeda from "remeda";
 import { VoteSignedPropertyNamesUnion } from "../../signer/types";
@@ -39,11 +37,5 @@ export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBase
     publication: VotePubsubMessageSchema
 }).strict();
 
-export const VoteJsonSchema = VotePubsubMessageSchema.extend({
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
-export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema)
-    .or(VoteChallengeRequestToEncryptSchema)
-    .or(VoteJsonSchema);
+export const CreateVoteFunctionArgumentSchema =
+    CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema).or(VoteChallengeRequestToEncryptSchema);

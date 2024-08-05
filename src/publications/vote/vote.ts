@@ -1,9 +1,9 @@
 import Publication from "../publication.js";
-import { PublicationTypeName, VotesTableRowInsert } from "../../types.js";
+import type { PublicationTypeName } from "../../types.js";
 import { Plebbit } from "../../plebbit.js";
 import { verifyVote } from "../../signer/index.js";
-import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessage, VoteTypeJson } from "./types.js";
+import { throwWithErrorCode } from "../../util.js";
+import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessage } from "./types.js";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication {
@@ -46,24 +46,8 @@ class Vote extends Publication {
         };
     }
 
-    override toJSON(): VoteTypeJson {
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            author: this.author.toJSON()
-        };
-    }
-
     override getType(): PublicationTypeName {
         return "vote";
-    }
-
-    toJSONForDb(authorSignerAddress: string): VotesTableRowInsert {
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            authorAddress: this.author.address,
-            authorSignerAddress
-        };
     }
 
     private async _validateSignature() {
@@ -73,11 +57,7 @@ class Vote extends Publication {
     }
 
     override async publish(): Promise<void> {
-        if (![-1, 0, 1].includes(this.vote)) throwWithErrorCode("ERR_PUBLICATION_MISSING_FIELD", { vote: this.vote });
-        if (!isIpfsCid(this.commentCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { commentCid: this.commentCid });
-
         await this._validateSignature();
-
         return super.publish();
     }
 }

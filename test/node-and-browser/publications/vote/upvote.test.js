@@ -36,7 +36,11 @@ describe("Test upvote", async () => {
     it(`(vote: Vote) === plebbit.createVote(JSON.parse(JSON.stringify(vote)))`, async () => {
         const vote = await generateMockVote(postToVote, 1, plebbit, remeda.sample(signers, 1)[0]);
         const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
-        expect(deterministicStringify(vote)).to.equal(deterministicStringify(voteFromStringifiedVote));
+        const jsonPropsToOmit = ["clients"];
+
+        const voteJson = remeda.omit(JSON.parse(JSON.stringify(vote)), jsonPropsToOmit);
+        const stringifiedVoteJson = remeda.omit(JSON.parse(JSON.stringify(voteFromStringifiedVote)), jsonPropsToOmit);
+        expect(voteJson).to.deep.equal(stringifiedVoteJson);
     });
 
     it("Can upvote a post", async () => {

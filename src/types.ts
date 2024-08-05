@@ -249,3 +249,10 @@ export interface LRUStorageInterface {
     keys: () => Promise<string[]>;
     destroy: () => Promise<void>;
 }
+
+// Util function of types here
+
+type OmitUnderscoreProps<T> = Omit<T, `_${string}`>;
+type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: T[K] };
+
+export type ClassWithNoEnumerables<T> = ExcludeMethods<OmitUnderscoreProps<T>>;

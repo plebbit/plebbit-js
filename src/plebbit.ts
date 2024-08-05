@@ -507,8 +507,19 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { parsedOptions });
     }
 
-    async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema>): Promise<Vote> {
+    async _createVoteInstanceFromJsonfiedVote(jsonfied: VoteJson) {
+        const clonedOptions = remeda.clone(jsonfied);
+        //@ts-expect-error
+        if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
+        const strippedOptions = VotePubsubMessageSchema.strip().parse(clonedOptions);
+        const voteInstance = await this.createVote(strippedOptions);
+        voteInstance.signer = jsonfied.signer;
+        return voteInstance;
+    }
+
+    async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema> | VoteJson): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
+        if ("clients" in options) return this._createVoteInstanceFromJsonfiedVote(options);
         const parsedOptions = CreateVoteFunctionArgumentSchema.parse(options);
         const voteInstance = new Vote(this);
 
