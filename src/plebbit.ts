@@ -59,6 +59,7 @@ import type {
     CommentJson,
     CommentOptionsToSign,
     CommentUpdate,
+    CommentWithinPageJson,
     CreateCommentOptions,
     LocalCommentOptions
 } from "./publications/comment/types.js";
@@ -300,12 +301,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         };
     }
 
-    private async _createCommentInstanceFromJsonfiedComment(options: CommentJson) {
+    private async _createCommentInstanceFromJsonfiedOrPageComment(options: CommentJson | CommentWithinPageJson) {
         const commentInstance = new Comment(this);
 
-        if (options.cid) commentInstance.setCid(options.cid);
+        // Should copy all props except class instances like, comment.author and comment.replies or instance-only props like states
+        //@ts-expect-error
+        Object.assign(commentInstance, remeda.omit(options, ["author", "replies", "clients", "state", "publishingState", "updatingState"]));
 
-        if (options.signer) {
+        if ("signer" in options) {
             // A jsonfied local comment, need to init signer as well as challengeCommentCids and challengeAnswers
             commentInstance._initLocalProps(options as LocalCommentOptions);
         }
@@ -320,10 +323,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return commentInstance;
     }
 
-    async createComment(options: z.infer<typeof CreateCommentFunctionArguments> | CommentJson): Promise<Comment> {
+    async createComment(options: z.infer<typeof CreateCommentFunctionArguments> | CommentJson | CommentWithinPageJson): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        if ("clients" in options) return this._createCommentInstanceFromJsonfiedComment(options);
+        if ("clients" in options) return this._createCommentInstanceFromJsonfiedOrPageComment(options);
+        if ("original" in options) return this._createCommentInstanceFromJsonfiedOrPageComment(options);
         const parsedOptions = CreateCommentFunctionArguments.parse(options);
 
         const commentInstance = new Comment(this);
@@ -333,13 +337,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
 
         if ("publication" in parsedOptions) commentInstance._initChallengeRequestProps(parsedOptions);
-        if ("depth" in parsedOptions && "original" in parsedOptions) {
-            // CommentWithinPageJson
-
-            commentInstance._initIpfsProps(parsedOptions);
-            delete commentInstance["_rawCommentIpfs"]; // delete because it's not the actual CommentIpfs, there is no way to derive CommentIpfs from CommentWithinPage
-            commentInstance._initCommentUpdate(parsedOptions);
-        } else if ("depth" in parsedOptions) {
+        if ("depth" in parsedOptions) {
             // Options is CommentIpfs
             commentInstance._initIpfsProps(parsedOptions);
         } else if ("signature" in parsedOptions) {
@@ -653,9 +651,5 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
         await this._storage.destroy();
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
-    }
-
-    toJSON() {
-        return undefined;
     }
 }

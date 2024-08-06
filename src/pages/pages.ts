@@ -1,14 +1,5 @@
 import { parsePageIpfs } from "../pages/util.js";
-import type {
-    PageIpfs,
-    PageTypeJson,
-    PostSortName,
-    PostsPagesTypeIpfs,
-    PostsPagesTypeJson,
-    RepliesPagesTypeIpfs,
-    RepliesPagesTypeJson,
-    ReplySortName
-} from "./types.js";
+import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
 import { verifyPage } from "../signer/signatures.js";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
@@ -97,16 +88,6 @@ export class BasePages {
         return parsePageIpfs(await this._fetchAndVerifyPage(parsedCid));
     }
 
-    toJSON(): RepliesPagesTypeJson | PostsPagesTypeJson | undefined {
-        if (remeda.isEmpty(this.pages)) return undefined;
-        if (remeda.isEmpty(this.pageCids)) throw Error("pageInstance.pageCids should not be empty while pageInstance.pages is defined");
-        const pagesJson: RepliesPagesTypeJson["pages"] | PostsPagesTypeJson["pages"] = remeda.mapValues(this.pages, (page) => {
-            if (!page) return undefined;
-            return page;
-        });
-        return { pages: pagesJson, pageCids: this.pageCids };
-    }
-
     toJSONIpfs(): RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined {
         if (remeda.isEmpty(this.pages)) return undefined; // I forgot why this line is here
         if (!this._pagesIpfs && !remeda.isEmpty(this.pages)) {
@@ -145,10 +126,6 @@ export class RepliesPages extends BasePages {
         this.clients = this._clientsManager.clients;
     }
 
-    override toJSON(): RepliesPagesTypeJson | undefined {
-        return <RepliesPagesTypeJson | undefined>super.toJSON();
-    }
-
     override toJSONIpfs(): RepliesPagesTypeIpfs | undefined {
         return <RepliesPagesTypeIpfs | undefined>super.toJSONIpfs();
     }
@@ -176,10 +153,6 @@ export class PostsPages extends BasePages {
     protected override _initClientsManager(): void {
         this._clientsManager = new PostsPagesClientsManager(this);
         this.clients = this._clientsManager.clients;
-    }
-
-    override toJSON(): PostsPagesTypeJson | undefined {
-        return <PostsPagesTypeJson | undefined>super.toJSON();
     }
 
     override toJSONIpfs(): PostsPagesTypeIpfs | undefined {

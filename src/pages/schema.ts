@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { CidStringSchema } from "../schema/schema.js";
-import {
-    CommentIpfsWithCidPostCidDefinedSchema,
-    CommentUpdateSchema,
-    CommentWithCommentUpdateJsonSchema
-} from "../publications/comment/schema.js";
+import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 
 // Pages schemas here
 
@@ -13,11 +9,7 @@ export const PageIpfsSchema = z.object({
     nextCid: CidStringSchema.optional()
 });
 
-export const PageJsonSchema = z.object({
-    comments: z.lazy(() => CommentWithCommentUpdateJsonSchema.array()),
-    nextCid: CidStringSchema.optional()
-});
-
+// TODO change this to be flexible
 export const PostSortNameSchema = z.enum([
     "hot",
     "new",
@@ -40,6 +32,7 @@ export const PostSortNameSchema = z.enum([
 
 export const ReplySortNameSchema = z.enum(["topAll", "new", "old", "controversialAll"]);
 
+// TODO combine the two into one schema
 export const PostsPagesIpfsSchema = z.object({
     pages: z.record(PostSortNameSchema, PageIpfsSchema), // should be partial
     pageCids: z.record(PostSortNameSchema, CidStringSchema)
@@ -48,14 +41,4 @@ export const PostsPagesIpfsSchema = z.object({
 export const RepliesPagesIpfsSchema = z.object({
     pages: z.record(ReplySortNameSchema, PageIpfsSchema), // should be partial
     pageCids: z.record(ReplySortNameSchema, CidStringSchema)
-});
-
-export const RepliesPagesJsonSchema = z.object({
-    pages: z.record(ReplySortNameSchema, PageJsonSchema),
-    pageCids: RepliesPagesIpfsSchema.shape.pageCids
-});
-
-export const PostsPagesJsonSchema = z.object({
-    pages: z.record(PostSortNameSchema, PageJsonSchema),
-    pageCids: PostsPagesIpfsSchema.shape.pageCids
 });

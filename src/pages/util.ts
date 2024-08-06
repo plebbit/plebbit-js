@@ -14,10 +14,9 @@ import assert from "assert";
 import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
-import { Plebbit } from "../plebbit.js";
 import type { CommentWithinPageJson } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
-import { CommentWithCommentUpdateNoRepliesJsonSchema } from "../publications/comment/schema.js";
+import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "../publications/comment/schema.js";
 
 //This is temp. TODO replace this with accurate mapping
 export const TIMEFRAMES_TO_SECONDS: Record<Timeframe, number> = Object.freeze({
@@ -105,6 +104,8 @@ export function oldScore(comment: CommentToSort) {
 
 export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
     const finalComments = pageIpfs.comments.map((commentObj) => {
+        // This code below is duplicated in comment._initCommentUpdate
+        // TODO move it to a shared function
         const parsedPages = commentObj.update.replies ? parsePagesIpfs(commentObj.update.replies) : undefined;
         const finalJson: CommentWithinPageJson = {
             ...commentObj.comment,
@@ -113,13 +114,24 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
             author: {
                 ...commentObj.comment.author,
                 ...commentObj.update.author,
-                shortAddress: shortifyAddress(commentObj.comment.author.address)
+                shortAddress: shortifyAddress(commentObj.comment.author.address),
+                flair:
+                    commentObj.update?.author?.subplebbit?.flair ||
+                    commentObj.update?.edit?.author?.flair ||
+                    commentObj.comment.author.flair
             },
             shortCid: shortifyCid(commentObj.comment.cid),
             shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
-            original: remeda.pick(commentObj.comment, remeda.keys.strict(CommentWithCommentUpdateNoRepliesJsonSchema.shape.original.shape)),
+            original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(commentObj.comment),
             deleted: commentObj.update.edit?.deleted,
-            replies: parsedPages
+            replies: parsedPages,
+            content: commentObj.update.edit?.content || commentObj.comment.content,
+            reason: commentObj.update.reason || commentObj.update.edit?.reason,
+            spoiler:
+                ("spoiler" in commentObj.update && commentObj.update.spoiler) ||
+                (commentObj.update.edit && "spoiler" in commentObj.update.edit && commentObj.update.edit.spoiler) ||
+                commentObj.comment.spoiler,
+            flair: commentObj.comment.flair || commentObj.update.edit?.flair
         };
         return finalJson;
     });
@@ -127,17 +139,17 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
     return { comments: finalComments, nextCid: pageIpfs.nextCid };
 }
 
-export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): PagesTypeJson {
+export function parsePagesIpfs(pagesRaw: PagesTypeIpfs): Omit<PagesTypeJson, "clients"> {
     const keys = remeda.keys.strict(pagesRaw.pages);
     const parsedPages = Object.values(pagesRaw.pages).map((pageIpfs) => parsePageIpfs(pageIpfs));
-    const pagesType = Object.fromEntries(keys.map((key, i) => [key, parsedPages[i]]));
+    const pagesType = remeda.fromEntries.strict(keys.map((key, i) => [key, parsedPages[i]]));
     return { pages: pagesType, pageCids: pagesRaw.pageCids };
 }
 
 // To use for both subplebbit.posts and comment.replies
 
 export function parseRawPages(
-    pages: PagesTypeIpfs | PagesTypeJson | BasePages | undefined
+    pages: PagesTypeIpfs | Omit<PagesTypeJson, "clients"> | BasePages | undefined
 ): Pick<BasePages, "pages"> & { pagesIpfs: RepliesPagesTypeIpfs | PostsPagesTypeIpfs | undefined } {
     if (!pages)
         return {
