@@ -664,12 +664,13 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     async _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string> {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const commentProps = this._comment.toJSONAfterChallengeVerification();
-        const pathCache: string | undefined = await parentsPathCache.getItem(commentProps.cid);
+        const commentCid = this._comment.cid;
+        if (!commentCid) throw Error("Can't retrieve parent path without defined comment.cid");
+        const pathCache: string | undefined = await parentsPathCache.getItem(commentCid);
         if (pathCache) return pathCache.split("/").reverse().join("/");
 
         const postTimestampCache = await this._plebbit._createStorageLRU(postTimestampConfig);
-        if (this._comment.depth === 0) await postTimestampCache.setItem(commentProps.cid, this._comment.timestamp);
+        if (this._comment.depth === 0) await postTimestampCache.setItem(commentCid, this._comment.timestamp);
         let parentCid = this._comment.parentCid;
         let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
         while (parentCid) {
@@ -690,7 +691,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             }
         }
 
-        await parentsPathCache.setItem(commentProps.cid, reversedPath);
+        await parentsPathCache.setItem(commentCid, reversedPath);
 
         const finalParentsPath = reversedPath.split("/").reverse().join("/"); // will be postCid/replyCid/nestedReplyCid
 
@@ -750,12 +751,14 @@ export class CommentClientsManager extends PublicationClientsManager {
     }
 
     private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdate) {
+        if (!this._comment.cid) throw Error("Can't validate comment update when comment.cid is undefined");
+        const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
         const signatureValidity = await verifyCommentUpdate(
             commentUpdate,
             this._plebbit.resolveAuthorAddresses,
             this,
             this._comment.subplebbitAddress,
-            this._comment.toJSONAfterChallengeVerification(), // we're calling toJSONAfterChallengeVerification because it asserts that cid and signature do exist
+            commentIpfsProps,
             true
         );
         if (!signatureValidity.valid) {
@@ -811,9 +814,9 @@ export class CommentClientsManager extends PublicationClientsManager {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = (await this.fetchSubplebbit(this._comment.subplebbitAddress)).subplebbit;
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
-        const postTimestamp = await (
-            await this._plebbit._createStorageLRU(postTimestampConfig)
-        ).getItem(this._comment.toJSONAfterChallengeVerification().postCid);
+        const postCid = this._comment.postCid;
+        if (!postCid) throw Error("comment.postCid needs to be defined to fetch comment update");
+        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
         if (typeof postTimestamp !== "number") throw Error("Failed to fetch cached post timestamp");
         if (!subIpns.postUpdates) throw Error("Subplebbit IPNS record has no postUpdates field");
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);

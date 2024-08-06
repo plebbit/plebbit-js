@@ -20,7 +20,12 @@ import * as resolverClass from "../resolver.js";
 import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
+import type {
+    CommentIpfsWithCidDefined,
+    CommentIpfsWithCidPostCidDefined,
+    CommentJson,
+    CreateCommentOptions
+} from "../publications/comment/types.js";
 import { signComment, _signJson } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
@@ -404,7 +409,8 @@ export async function publishRandomReply(
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(reply.toJSONAfterChallengeVerification(), plebbit);
+    const commentIpfsProps = { ...reply.toJSONIpfs(), cid: reply.cid! };
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return reply;
 }
 
@@ -420,7 +426,8 @@ export async function publishRandomPost(
         ...postProps
     });
     await publishWithExpectedResult(post, true);
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(post.toJSONAfterChallengeVerification(), plebbit);
+    const commentIpfsProps = { ...post.toJSONIpfs(), cid: post.cid! };
+    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return post;
 }
 
@@ -479,7 +486,7 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
 export async function waitTillCommentIsInParentPages(
     comment: Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
     plebbit: Plebbit,
-    propsToCheckFor: Partial<PageTypeJson["comments"][number]> = {},
+    propsToCheckFor: Partial<CommentJson> = {},
     checkInAllPages = false
 ) {
     if (comment.depth > 0 && !comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
@@ -516,12 +523,13 @@ export async function waitTillCommentIsInParentPages(
             const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
             if (!commentInPage) throw Error("Failed to find comment in page");
             for (const commentKey of commentKeys) {
+                //@ts-expect-error
                 if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
                     throw Error(`commentInPage[${commentKey}] is incorrect`);
             }
         }
     else
-        for (const commentKey of commentKeys)
+        for (const commentKey of commentKeys) //@ts-expect-error
             if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
                 throw Error(`commentInPage[${commentKey}] is incorrect`);
 }
@@ -656,6 +664,11 @@ export function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit) {
 export function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit) {
     const localJson = <LocalSubplebbitJson>JSON.parse(JSON.stringify(sub));
     return remeda.omit(localJson, ["startedState", "started", "clients", "state", "updatingState"]);
+}
+
+export function jsonifyCommentAndRemoveInstanceProps(comment: Comment) {
+    const jsonfied = JSON.parse(JSON.stringify(comment));
+    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
 }
 
 export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];

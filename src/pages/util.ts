@@ -15,7 +15,7 @@ import { BasePages } from "./pages.js";
 
 import * as remeda from "remeda";
 import { Plebbit } from "../plebbit.js";
-import type { CommentWithCommentUpdateJson } from "../publications/comment/types.js";
+import type { CommentWithinPageJson } from "../publications/comment/types.js";
 import { shortifyAddress, shortifyCid } from "../util.js";
 import { CommentWithCommentUpdateNoRepliesJsonSchema } from "../publications/comment/schema.js";
 
@@ -106,7 +106,7 @@ export function oldScore(comment: CommentToSort) {
 export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
     const finalComments = pageIpfs.comments.map((commentObj) => {
         const parsedPages = commentObj.update.replies ? parsePagesIpfs(commentObj.update.replies) : undefined;
-        const finalJson: CommentWithCommentUpdateJson = {
+        const finalJson: CommentWithinPageJson = {
             ...commentObj.comment,
             ...commentObj.update,
             signature: commentObj.comment.signature,

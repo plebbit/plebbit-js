@@ -1,5 +1,5 @@
 import retry, { RetryOperation } from "retry";
-import { removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
 import type { PublicationTypeName } from "../../types.js";
@@ -21,9 +21,8 @@ import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
-    CommentTypeJson,
     CommentUpdate,
-    CommentWithCommentUpdateJson,
+    CommentWithinPageJson,
     LocalCommentOptions,
     RpcCommentUpdateResultType
 } from "./types.js";
@@ -39,7 +38,7 @@ import Author from "../author.js";
 
 export class Comment extends Publication {
     // Only Comment props
-    shortCid?: CommentWithCommentUpdateJson["shortCid"];
+    shortCid?: CommentWithinPageJson["shortCid"];
 
     override clients!: CommentClientsManager["clients"];
 
@@ -61,7 +60,7 @@ export class Comment extends Publication {
     linkHtmlTagName?: CommentPubsubMessage["linkHtmlTagName"];
 
     // CommentEdit and CommentUpdate props
-    original?: CommentWithCommentUpdateJson["original"];
+    original?: CommentWithinPageJson["original"];
     upvoteCount?: CommentUpdate["upvoteCount"];
     downvoteCount?: CommentUpdate["downvoteCount"];
     replyCount?: CommentUpdate["replyCount"];
@@ -69,7 +68,7 @@ export class Comment extends Publication {
     replies!: RepliesPages;
     edit?: CommentUpdate["edit"];
     flair?: CommentPubsubMessage["flair"];
-    deleted?: CommentWithCommentUpdateJson["deleted"];
+    deleted?: CommentWithinPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
     pinned?: CommentUpdate["pinned"];
     locked?: CommentUpdate["locked"];
@@ -106,6 +105,7 @@ export class Comment extends Publication {
             pagesIpfs: undefined,
             parentCid: this.cid
         });
+        hideClassPrivateProps(this);
     }
 
     override _initClients() {
@@ -156,11 +156,13 @@ export class Comment extends Publication {
         this.depth = props.depth;
         const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
         if (!postCid) throw Error("There is no way to set comment.postCid");
-        this.setPostCid(postCid);
-        this.setPreviousCid(props.previousCid);
+        this.postCid = postCid;
+        this.previousCid = props.previousCid;
         this.thumbnailUrl = props.thumbnailUrl;
         this.thumbnailUrlHeight = props.thumbnailUrlHeight;
         this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+
+        // TODO Add a way to set extra props on instance here as well
     }
 
     _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
@@ -170,9 +172,9 @@ export class Comment extends Publication {
 
     // TODO have toJSONCommentUpdate that return this._rawCommentUpdate
 
-    _initCommentUpdate(props: CommentUpdate | CommentWithCommentUpdateJson) {
+    _initCommentUpdate(props: CommentUpdate | CommentWithinPageJson) {
         if ("depth" in props)
-            // CommentWithCommentUpdateJson
+            // CommentWithinPageJson
             this.original = props.original;
         else {
             // CommentUpdate
@@ -210,7 +212,7 @@ export class Comment extends Publication {
     }
 
     _updateRepliesPostsInstance(
-        newReplies: CommentUpdate["replies"] | CommentWithCommentUpdateJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
+        newReplies: CommentUpdate["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
@@ -258,39 +260,6 @@ export class Comment extends Publication {
         return "comment";
     }
 
-    override toJSON(): CommentTypeJson {
-        const base = this.cid
-            ? { ...this.toJSONAfterChallengeVerification(), shortCid: this.shortCid }
-            : this.toJSONPubsubMessagePublication();
-        return {
-            ...base,
-            ...(typeof this.updatedAt === "number"
-                ? {
-                      author: this.author.toJSON(),
-                      original: this.original,
-                      upvoteCount: this.upvoteCount,
-                      downvoteCount: this.downvoteCount,
-                      replyCount: this.replyCount,
-                      updatedAt: this.updatedAt,
-                      deleted: this.deleted,
-                      pinned: this.pinned,
-                      locked: this.locked,
-                      removed: this.removed,
-                      reason: this.reason,
-                      edit: this.edit,
-                      protocolVersion: this.protocolVersion,
-                      spoiler: this.spoiler,
-                      flair: this.flair,
-                      replies: this.replies?.toJSON(),
-                      lastChildCid: this.lastChildCid,
-                      lastReplyTimestamp: this.lastReplyTimestamp
-                  }
-                : {}),
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            author: this.author.toJSON()
-        };
-    }
-
     toJSONIpfs(): CommentIpfsType {
         // TODO return this._rawCommentIpfs
         if (!this._rawCommentIpfs) throw Error("comment._rawCommentIpfs has to be defined before calling toJSONIpfs()");
@@ -317,15 +286,6 @@ export class Comment extends Publication {
         };
     }
 
-    toJSONAfterChallengeVerification(): CommentIpfsWithCidPostCidDefined {
-        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
-        return { ...this.toJSONIpfs(), postCid: this.postCid, cid: this.cid };
-    }
-
-    setPostCid(newPostCid: string) {
-        this.postCid = newPostCid;
-    }
-
     setCid(newCid: string) {
         this.cid = newCid;
         this.shortCid = shortifyCid(this.cid);
@@ -335,18 +295,6 @@ export class Comment extends Publication {
     override setSubplebbitAddress(newSubplebbitAddress: string) {
         super.setSubplebbitAddress(newSubplebbitAddress);
         this.replies._subplebbitAddress = newSubplebbitAddress;
-    }
-
-    setPreviousCid(newPreviousCid?: string) {
-        this.previousCid = newPreviousCid;
-    }
-
-    setDepth(newDepth: number) {
-        this.depth = newDepth;
-    }
-
-    setUpdatedAt(newUpdatedAt: number) {
-        this.updatedAt = newUpdatedAt;
     }
 
     private _isCommentIpfsErrorRetriable(err: PlebbitError) {
@@ -447,8 +395,7 @@ export class Comment extends Publication {
             return;
         } else if (commentUpdateOrError && (this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
             log(`Comment (${this.cid}) received a new CommentUpdate`);
-            this._rawCommentUpdate = commentUpdateOrError;
-            await this._initCommentUpdate(commentUpdateOrError);
+            this._initCommentUpdate(commentUpdateOrError);
             this.emit("update", this);
         } else log.trace(`Comment (${this.cid}) has no new CommentUpdate`);
     }

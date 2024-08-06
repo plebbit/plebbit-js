@@ -20,7 +20,6 @@ import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema.js";
 import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
 import type { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../pages/types";
-import { Comment } from "./comment.js";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema, RepliesPagesJsonSchema } from "../../pages/schema.js";
@@ -201,25 +200,10 @@ type CommentWithCommentUpdateWithRepliesJsonSchema = z.infer<typeof CommentWithC
     replies?: RepliesPagesTypeJson;
 };
 
-export const CommentWithCommentUpdateJsonSchema: z.ZodType<CommentWithCommentUpdateWithRepliesJsonSchema> =
+export const CommentWithinPageJsonSchema: z.ZodType<CommentWithCommentUpdateWithRepliesJsonSchema> =
     CommentWithCommentUpdateNoRepliesJsonSchema.extend({
         replies: z.lazy(() => RepliesPagesJsonSchema.optional())
     }).strict();
-
-export const CommentJsonAfterChallengeVerificationNoCommentUpdateSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    shortCid: ShortCidSchema,
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
-export const CommentJsonBeforeChallengeVerificationSchema = CommentPubsubMessageSchema.extend({
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
-export const CommentJsonSchema = CommentWithCommentUpdateJsonSchema.or(CommentJsonAfterChallengeVerificationNoCommentUpdateSchema).or(
-    CommentJsonBeforeChallengeVerificationSchema
-);
 
 // Comment pubsub message here
 
@@ -236,12 +220,11 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
 
 // Plebbit.createComment here
 
-export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentJsonSchema)
-    .or(CommentIpfsWithRefinmentSchema)
+export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentIpfsWithRefinmentSchema)
     .or(CommentIpfsWithCidDefinedSchema)
     .or(CommentIpfsWithCidPostCidDefinedSchema)
     .or(CommentPubsubMessageWithRefinementSchema)
+    .or(CommentWithinPageJsonSchema)
     .or(CommentChallengeRequestToEncryptSchema)
-    .or(z.custom<Comment>((data) => data instanceof Comment))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));
