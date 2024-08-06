@@ -40,6 +40,7 @@ describe("Test upvote", async () => {
 
         const voteJson = remeda.omit(JSON.parse(JSON.stringify(vote)), jsonPropsToOmit);
         const stringifiedVoteJson = remeda.omit(JSON.parse(JSON.stringify(voteFromStringifiedVote)), jsonPropsToOmit);
+        expect(voteJson.signer).to.be.a("object").and.to.deep.equal(stringifiedVoteJson.signer); // make sure internal props like signer are copied properly
         expect(voteJson).to.deep.equal(stringifiedVoteJson);
     });
 
