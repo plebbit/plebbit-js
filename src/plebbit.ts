@@ -537,7 +537,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
         const strippedOptions = VotePubsubMessageSchema.strip().parse(clonedOptions);
         const voteInstance = await this.createVote(strippedOptions);
-        voteInstance.signer = jsonfied.signer; // It's gonna miss setting challengeCommentCids and challengeAnswers
+        if (jsonfied.signer) voteInstance._initLocalProps(jsonfied as LocalVoteOptions);
+
         return voteInstance;
     }
 
