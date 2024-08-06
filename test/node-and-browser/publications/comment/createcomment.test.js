@@ -1,17 +1,15 @@
-import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
-    mockRemotePlebbit,
     publishRandomPost,
     publishRandomReply,
+    jsonifyCommentAndRemoveInstanceProps,
     loadAllPages,
     resolveWhenConditionIsTrue,
     getRemotePlebbitConfigs
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -25,7 +23,8 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
 
-        it(`comment = await createComment(await createComment)`, async () => {
+        it.skip(`comment = await createComment(await createComment)`, async () => {
+            // For now we're not supporting creating a comment instance from another instance
             const props = {
                 content: `test comment = await createComment(await createComment) ${Date.now()}`,
                 subplebbitAddress,
@@ -49,17 +48,61 @@ getRemotePlebbitConfigs().map((config) => {
             expect(comment.toJSON()).to.deep.equal(nestedComment.toJSON());
         });
 
-        it(`Can recreate a stringifed Comment instance with plebbit.createComment`, async () => {
-            const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(subplebbit.posts.pages.hot.comments[0])));
-            expect(deterministicStringify(subplebbit.posts.pages.hot.comments[0])).to.equal(deterministicStringify(commentClone));
+        it(`Can recreate a stringifed local Comment instance before publishing with plebbit.createComment`, async () => {
+            const localComment = await generateMockPost(subplebbitAddress, plebbit, {}, false);
+            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
+            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
+            const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
+
+            expect(localCommentJson).to.deep.equal(commentCloneJson);
+        });
+
+        it(`Can recreate a stringifed local Comment instance after publishing with plebbit.createComment`, async () => {
+            const localComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
+            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
+            const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
+
+            expect(localCommentJson).to.deep.equal(commentCloneJson);
+        });
+
+        it(`Can recreate a stringified local comment instance after comment.update() with plebbit.createComment`, async () => {
+            const localComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            await localComment.update();
+            await resolveWhenConditionIsTrue(localComment, () => typeof localComment.updatedAt === "number");
+            await localComment.stop();
+            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
+            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
+            expect(commentCloneJson.signer).to.be.a("object");
+            const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
+            expect(localCommentJson).to.deep.equal(commentCloneJson);
+        });
+
+        it(`challengeCommentCids and challengeAnswers are copied properly with plebbit.createComment(commentJsonfied)`, async () => {
+            const localComment = await publishRandomPost(
+                subplebbitAddress,
+                plebbit,
+                { challengeAnswers: ["1234"], challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"] },
+                false
+            );
+            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
+
+            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
+            expect(commentCloneJson.signer).to.be.a("object");
+            expect(commentCloneJson.challengeAnswers).to.be.a("array");
+            expect(commentCloneJson.challengeCommentCids).to.be.a("array");
+
+            const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
+
+            expect(commentCloneJson).to.deep.equal(localCommentJson);
         });
 
         it(`Can create a Comment instance with subplebbit.posts.pages.hot.comments[0]`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const commentFromPage = subplebbit.posts.pages.hot.comments[0];
+            const commentFromPage = jsonifyCommentAndRemoveInstanceProps(subplebbit.posts.pages.hot.comments[0]);
             const commentClone = await plebbit.createComment(commentFromPage);
-            expect(deterministicStringify(commentFromPage)).to.equal(deterministicStringify(commentClone.toJSON()));
+            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
+            expect(commentCloneJson).to.deep.equal(commentFromPage);
         });
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
@@ -69,7 +112,9 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(commentToCloneFromPage);
             expect(commentCloneInstance.replies).to.be.a("object");
-            expect(deterministicStringify(commentToCloneFromPage)).to.equal(deterministicStringify(commentCloneInstance.toJSON()));
+            const commentCloneInstanceJson = jsonifyCommentAndRemoveInstanceProps(commentCloneInstance);
+            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentToCloneFromPage);
+            expect(commentToCloneFromPageJson).to.deep.equal(commentCloneInstanceJson);
         });
 
         it(`Can recreate a stringified Comment instance with replies with plebbit.createComment`, async () => {
@@ -79,13 +124,17 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToCloneFromPage.replies).to.be.a("object");
             const commentCloneInstance = await plebbit.createComment(JSON.parse(JSON.stringify(commentToCloneFromPage)));
             expect(commentCloneInstance.replies).to.be.a("object");
-            expect(deterministicStringify(commentToCloneFromPage)).to.equal(deterministicStringify(commentCloneInstance.toJSON()));
+            const commentCloneInstanceJson = jsonifyCommentAndRemoveInstanceProps(commentCloneInstance);
+            const commentToCloneFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentToCloneFromPage);
+            expect(commentCloneInstanceJson).to.deep.equal(commentToCloneFromPageJson);
         });
 
         it(`Can recreate a stringified Post instance with plebbit.createComment`, async () => {
             const post = await generateMockPost(subplebbitAddress, plebbit, false);
             const postFromStringifiedPost = await plebbit.createComment(JSON.parse(JSON.stringify(post)));
-            expect(deterministicStringify(post)).to.equal(deterministicStringify(postFromStringifiedPost));
+            const postJson = jsonifyCommentAndRemoveInstanceProps(post);
+            const postFromStringifiedPostJson = jsonifyCommentAndRemoveInstanceProps(postFromStringifiedPost);
+            expect(postJson).to.deep.equal(postFromStringifiedPostJson);
         });
 
         it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
