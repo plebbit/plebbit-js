@@ -23,7 +23,7 @@ const roles = [
     { role: "mod", signer: signers[3] }
 ];
 
-describe("CommentEdit", async () => {
+describe("plebbit.createCommentEdit", async () => {
     let plebbit;
 
     before(async () => {
@@ -54,24 +54,33 @@ describe("CommentEdit", async () => {
 
     it(`(edit: CommentEdit) === await plebbit.createCommentEdit(edit)`, async () => {
         const props = {
+            challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"],
+            challengeAnswers: ["1234"],
             subplebbitAddress: subplebbitAddress,
             commentCid: commentToEditCid,
             reason: "editReason" + Date.now(),
             content: "editedText" + Date.now(),
             signer: signers[7] // Create a new signer, different than the signer of the original comment
         };
-        const edit = await plebbit.createCommentEdit(props);
-        const editFromEdit = await plebbit.createCommentEdit(edit.toJSON());
-        [edit, editFromEdit].forEach((curEdit) => {
+        const localEdit = await plebbit.createCommentEdit(props);
+        const recreatedLocalEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(localEdit)));
+        [localEdit, recreatedLocalEdit].forEach((curEdit) => {
             expect(curEdit.subplebbitAddress).to.equal(props.subplebbitAddress);
             expect(curEdit.commentCid).to.equal(props.commentCid);
             expect(curEdit.reason).to.equal(props.reason);
             expect(curEdit.content).to.equal(props.content);
             expect(curEdit.author.address).to.deep.equal(props.signer.address);
+            expect(curEdit.challengeAnswers).to.deep.equal(props.challengeAnswers);
+            expect(curEdit.challengeCommentCids).to.deep.equal(props.challengeCommentCids);
         });
-        expect(edit.timestamp).to.equal(editFromEdit.timestamp);
 
-        expect(deterministicStringify(edit)).to.equal(deterministicStringify(editFromEdit));
+        const localEditJson = JSON.parse(JSON.stringify(localEdit));
+        const recreatedLocalEditJson = JSON.parse(JSON.stringify(recreatedLocalEdit));
+        expect(localEdit.timestamp).to.equal(recreatedLocalEdit.timestamp);
+
+        expect(localEditJson.signer).to.be.a("object").and.deep.equal(recreatedLocalEditJson.signer);
+
+        expect(deterministicStringify(localEdit)).to.equal(deterministicStringify(recreatedLocalEdit));
     });
 });
 

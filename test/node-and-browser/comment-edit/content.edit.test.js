@@ -70,19 +70,14 @@ describe("Editing comment.content", async () => {
         expect(commentToBeEdited.edit.challengeRequestId).to.be.undefined;
     });
 
-    it(`The new content is reflected correctly in comment.toJSON() and toJSONCommentWithinPage`, async () => {
+    it(`The new content is reflected correctly in JSON.parse(JSON.stringif(comment)) and toJSONCommentWithinPage`, async () => {
         const recreatedComment = await plebbit.getComment(commentToBeEdited.cid);
         await recreatedComment.update();
 
         await resolveWhenConditionIsTrue(recreatedComment, () => recreatedComment.updatedAt);
         await recreatedComment.stop();
 
-        for (const commentJson of [
-            commentToBeEdited.toJSON(),
-            recreatedComment.toJSON(),
-            commentToBeEdited.toJSONCommentWithinPage(),
-            recreatedComment.toJSONCommentWithinPage()
-        ]) {
+        for (const commentJson of [JSON.parse(JSON.stringify(commentToBeEdited)), JSON.parse(JSON.stringify(recreatedComment))]) {
             expect(commentJson.content.startsWith("edit test")).to.be.true;
             expect(commentJson.edit.content.startsWith("edit test")).to.be.true;
             expect(commentJson.original.content).to.equal(originalContent);
@@ -94,8 +89,7 @@ describe("Editing comment.content", async () => {
         const subplebbit1 = await plebbit.getSubplebbit(commentToBeEdited.subplebbitAddress);
         const subplebbit2 = await plebbit.createSubplebbit(subplebbit1); // we're testing if posts from subplebbit are parsed correctly
         const subplebbit3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(subplebbit1)));
-        const subplebbit4 = await plebbit.createSubplebbit(subplebbit1.toJSON());
-        for (const subplebbit of [subplebbit1, subplebbit2, subplebbit3, subplebbit4]) {
+        for (const subplebbit of [subplebbit1, subplebbit2, subplebbit3]) {
             const editedCommentInPage = await findCommentInPage(commentToBeEdited.cid, subplebbit.posts.pageCids.new, subplebbit.posts);
             expect(editedCommentInPage).to.be.a("object");
             // Should reflect the new content, and also have original.content
@@ -106,14 +100,13 @@ describe("Editing comment.content", async () => {
         }
     });
 
-    it(`The new content should be reflected in subplebbit.toJSON().posts.pages`, async () => {
+    it(`The new content should be reflected in JSON.parse(JSON.stringify(subplebbit)).posts.pages`, async () => {
         const sub1 = await plebbit.getSubplebbit(commentToBeEdited.subplebbitAddress);
         const sub2 = await plebbit.createSubplebbit(sub1); // we're testing if posts from subplebbit are parsed correctly
         const sub3 = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(sub1)));
-        const sub4 = await plebbit.createSubplebbit(sub1.toJSON());
 
-        for (const sub of [sub1, sub2, sub3, sub4]) {
-            const subJson = sub.toJSON();
+        for (const sub of [sub1, sub2, sub3]) {
+            const subJson = JSON.parse(JSON.stringify(sub));
             const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
                 comment.reason?.startsWith("To test editing content")
             );
