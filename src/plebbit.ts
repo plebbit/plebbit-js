@@ -45,8 +45,13 @@ import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
 import type { CreateSignerOptions } from "./signer/types.js";
-import type { CommentEditOptionsToSign, CreateCommentEditOptions, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
-import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
+import type {
+    CommentEditOptionsToSign,
+    CommentEditTypeJson,
+    CreateCommentEditOptions,
+    LocalCommentEditOptions
+} from "./publications/comment-edit/types.js";
+import { CommentEditPubsubMessageSchema, CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema, VotePubsubMessageSchema } from "./publications/vote/schema.js";
 import type {
@@ -532,7 +537,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
         const strippedOptions = VotePubsubMessageSchema.strip().parse(clonedOptions);
         const voteInstance = await this.createVote(strippedOptions);
-        voteInstance.signer = jsonfied.signer;
+        voteInstance.signer = jsonfied.signer; // It's gonna miss setting challengeCommentCids and challengeAnswers
         return voteInstance;
     }
 
@@ -558,8 +563,19 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return voteInstance;
     }
 
-    async createCommentEdit(options: z.infer<typeof CreateCommentEditFunctionArgumentSchema>): Promise<CommentEdit> {
+    async _createCommentEditInstanceFromJsonfiedCommentEdit(jsonfied: CommentEditTypeJson) {
+        const clonedOptions = remeda.clone(jsonfied);
+        //@ts-expect-error
+        if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
+        const strippedOptions = CommentEditPubsubMessageSchema.strip().parse(clonedOptions);
+        const editInstance = await this.createCommentEdit(strippedOptions);
+        if (jsonfied.signer) editInstance._initLocalProps(jsonfied as LocalCommentEditOptions);
+        return editInstance;
+    }
+
+    async createCommentEdit(options: z.infer<typeof CreateCommentEditFunctionArgumentSchema> | CommentEditTypeJson): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
+        if ("clients" in options) return this._createCommentEditInstanceFromJsonfiedCommentEdit(options);
         const parsedOptions = CreateCommentEditFunctionArgumentSchema.parse(options);
         const editInstance = new CommentEdit(this);
 

@@ -1,13 +1,8 @@
 import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
-import { isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type {
-    CommentEditChallengeRequestToEncryptType,
-    CommentEditPubsubMessage,
-    CommentEditTypeJson,
-    LocalCommentEditOptions
-} from "./types.js";
+import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
+import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, LocalCommentEditOptions } from "./types.js";
 import { CommentEditsTableRowInsert, PublicationTypeName } from "../../types.js";
 
 export class CommentEdit extends Publication {
@@ -27,6 +22,8 @@ export class CommentEdit extends Publication {
 
         // public method should be bound
         this.publish = this.publish.bind(this);
+
+        hideClassPrivateProps(this);
     }
 
     _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessage) {
@@ -74,14 +71,6 @@ export class CommentEdit extends Publication {
             locked: this.locked,
             removed: this.removed,
             commentAuthor: this.commentAuthor
-        };
-    }
-
-    override toJSON(): CommentEditTypeJson {
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            author: this.author.toJSON()
         };
     }
 
