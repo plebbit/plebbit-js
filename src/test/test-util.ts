@@ -26,7 +26,7 @@ import type {
     CommentJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { signComment, _signJson, signCommentEdit } from "../signer/signatures.js";
+import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
@@ -680,7 +680,9 @@ export function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit) {
 }
 
 export function jsonifyCommentAndRemoveInstanceProps(comment: Comment) {
-    const jsonfied = JSON.parse(JSON.stringify(comment));
+    const jsonfied = cleanUpBeforePublishing(JSON.parse(JSON.stringify(comment)));
+    if ("replies" in jsonfied) delete jsonfied["replies"]["clients"];
+    if ("replies" in jsonfied && remeda.isEmpty(jsonfied.replies)) delete jsonfied["replies"];
     return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
 }
 

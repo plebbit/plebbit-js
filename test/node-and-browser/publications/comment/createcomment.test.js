@@ -99,10 +99,12 @@ getRemotePlebbitConfigs().map((config) => {
 
         it(`Can create a Comment instance with subplebbit.posts.pages.hot.comments[0]`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const commentFromPage = jsonifyCommentAndRemoveInstanceProps(subplebbit.posts.pages.hot.comments[0]);
+            const commentFromPage = subplebbit.posts.pages.hot.comments[0];
             const commentClone = await plebbit.createComment(commentFromPage);
             const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
-            expect(commentCloneJson).to.deep.equal(commentFromPage);
+            const commentFromPageJson = jsonifyCommentAndRemoveInstanceProps(commentFromPage);
+
+            expect(commentCloneJson).to.deep.equal(commentFromPageJson);
         });
 
         it(`Can recreate a Comment instance with replies with plebbit.createComment`, async () => {
