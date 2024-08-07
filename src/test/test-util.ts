@@ -26,7 +26,7 @@ import type {
     CommentJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing } from "../signer/signatures.js";
+import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, signVote } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
@@ -579,6 +579,9 @@ export async function disableZodValidationOfPublication(publication: Publication
     publication._createRequestEncrypted = () => publication.toJSONPubsubMessage(); // skip the zod validation
 
     publication._createDecryptedChallengeRequestMessage = (args) => args;
+
+    //@ts-expect-error
+    publication._validateSignature = () => {};
 }
 
 export async function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions) {
@@ -605,6 +608,22 @@ export async function overrideCommentEditInstancePropsAndSign(commentEdit: Comme
     );
 
     disableZodValidationOfPublication(commentEdit);
+}
+
+export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnVoteAndSign");
+
+    const publicationWithExtraProp = { ...vote.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson(
+            [...vote.signature.signedPropertyNames, ...Object.keys(extraProps)],
+            cleanUpBeforePublishing(publicationWithExtraProp),
+            vote.signer!,
+            log
+        );
+    vote.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+
+    disableZodValidationOfPublication(vote);
 }
 
 export async function addStringToIpfs(content: string): Promise<string> {
