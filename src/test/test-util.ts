@@ -26,12 +26,14 @@ import type {
     CommentJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { signComment, _signJson } from "../signer/signatures.js";
+import { signComment, _signJson, signCommentEdit } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import type { PageTypeJson } from "../pages/types.js";
+import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
+import { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -510,17 +512,15 @@ export async function waitTillCommentIsInParentPages(
 
     if (!commentInPage) throw Error("Failed to find comment in page");
 
-    const pagesJson = parent instanceof Comment ? parent.replies.toJSON() : parent.posts.toJSON();
+    const pageCids = parent instanceof Comment ? parent.replies?.pageCids : parent.posts?.pageCids;
 
-    if (!pagesJson) throw Error("Failed to retrieve pages");
-
-    const pageCids = pagesJson.pageCids;
+    if (!pageCids || remeda.isEmpty(pageCids)) throw Error("Failed to retrieve pages");
 
     const commentKeys = remeda.keys.strict(propsToCheckFor);
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
-            const commentInPage = await findCommentInPage(comment.cid, pageCid, pagesInstance());
+            const commentInPage = await findCommentInPage(comment.cid, <string>pageCid, pagesInstance());
             if (!commentInPage) throw Error("Failed to find comment in page");
             for (const commentKey of commentKeys) {
                 //@ts-expect-error
@@ -592,6 +592,19 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
     );
 
     disableZodValidationOfPublication(comment);
+}
+
+export async function overrideCommentEditInstancePropsAndSign(commentEdit: CommentEdit, props: CreateCommentEditOptions) {
+    if (!commentEdit.signer) throw Error("Need commentEdit.signer to overwrite the signature");
+    //@ts-expect-error
+    for (const optionKey of Object.keys(props)) commentEdit[optionKey] = props[optionKey];
+
+    commentEdit.signature = await signCommentEdit(
+        removeUndefinedValuesRecursively({ ...commentEdit.toJSONPubsubMessagePublication(), signer: commentEdit.signer }),
+        commentEdit._plebbit
+    );
+
+    disableZodValidationOfPublication(commentEdit);
 }
 
 export async function addStringToIpfs(content: string): Promise<string> {
