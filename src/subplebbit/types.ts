@@ -113,3 +113,18 @@ export type RpcLocalSubplebbitJson = ClassWithNoEnumerables<RpcLocalSubplebbit>;
 export type LocalSubplebbitJson = ClassWithNoEnumerables<LocalSubplebbit>;
 
 export type SubplebbitJson = RemoteSubplebbitJson | RpcRemoteSubplebbitJson | RpcLocalSubplebbitJson | LocalSubplebbitJson; // after calling JSON.parse(JSON.stringify(subplebbitInstance)), this should be the output
+
+// States here
+
+export type SubplebbitState = "stopped" | "updating" | "started";
+
+export type SubplebbitStartedState = "stopped" | "publishing-ipns" | "failed" | "succeeded";
+
+export type SubplebbitUpdatingState =
+    | SubplebbitStartedState
+    | "stopped"
+    | "resolving-address"
+    | "fetching-ipns"
+    | "fetching-ipfs"
+    | "failed"
+    | "succeeded";

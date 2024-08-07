@@ -2,13 +2,8 @@ import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import type { RpcRemoteSubplebbitType } from "./types.js";
 import * as remeda from "remeda";
-import { z } from "zod";
-import { UpdatingStateSchema } from "./schema.js";
 import { PlebbitError } from "../plebbit-error.js";
-import {
-    parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails,
-    parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails
-} from "../schema/schema-util.js";
+import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?: number = undefined;
@@ -21,10 +16,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
-    protected _updateRpcClientStateFromUpdatingState(updatingState: RemoteSubplebbit["updatingState"]) {
+    protected _updateRpcClientStateFromUpdatingState(updatingState: RpcRemoteSubplebbit["updatingState"]) {
         // We're deriving the the rpc state from updating state
 
-        const mapper: Record<RemoteSubplebbit["updatingState"], RemoteSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
+        const mapper: Record<RpcRemoteSubplebbit["updatingState"], RemoteSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
@@ -34,7 +29,8 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             succeeded: ["stopped"]
         };
 
-        mapper[updatingState].forEach(this._setRpcClientState.bind(this));
+        const newRpcClientState = mapper[updatingState] || [updatingState]; // There may be a case where the rpc server transmits a new state that is not part of mapper
+        newRpcClientState.forEach(this._setRpcClientState.bind(this));
     }
 
     protected async _processUpdateEventFromRpcUpdate(args: any) {
@@ -57,16 +53,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
     }
 
     private _handleUpdatingStateChangeFromRpcUpdate(args: any) {
-        const log = Logger("plebbit-js:rpc-remote-subplebbit:_handleUpdatingStateChangeFromRpcUpdate");
-        let newUpdatingState: z.infer<typeof UpdatingStateSchema>;
-        // TODO default rpc client state if we can't recognize the new updating state
-        try {
-            newUpdatingState = parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of updating state from rpc", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const newUpdatingState: RpcRemoteSubplebbit["updatingState"] = args.params.result; // we're being optimistic that RPC server sent an appropiate updating state string
 
         this._setUpdatingState(newUpdatingState);
         this._updateRpcClientStateFromUpdatingState(newUpdatingState);

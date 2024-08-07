@@ -13,14 +13,15 @@ import type {
     SubplebbitIpfsType,
     SubplebbitStats,
     RpcRemoteSubplebbitType,
-    SubplebbitJson
+    SubplebbitJson,
+    SubplebbitUpdatingState,
+    SubplebbitState
 } from "./types.js";
 import * as remeda from "remeda";
-import { z } from "zod";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
-import { SubplebbitIpfsSchema, SubplebbitStateSchema, UpdatingStateSchema } from "./schema.js";
+import { SubplebbitIpfsSchema } from "./schema.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     // public
@@ -48,8 +49,8 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     postUpdates?: SubplebbitIpfsType["postUpdates"];
 
     // Only for Subplebbit instance
-    state!: z.infer<typeof SubplebbitStateSchema>;
-    updatingState!: z.infer<typeof UpdatingStateSchema>;
+    state!: SubplebbitState;
+    updatingState!: SubplebbitUpdatingState;
     clients: SubplebbitClientsManager["clients"];
     cid?: string;
 

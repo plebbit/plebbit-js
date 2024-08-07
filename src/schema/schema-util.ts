@@ -12,13 +12,7 @@ import {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
     EncodedDecryptedChallengeVerificationMessageSchema
 } from "../pubsub-messages/schema.js";
-import {
-    RpcLocalSubplebbitUpdateResultSchema,
-    RpcRemoteSubplebbitSchema,
-    StartedStateSchema,
-    SubplebbitIpfsSchema,
-    UpdatingStateSchema as SubplebbitUpdatingStateSchema
-} from "../subplebbit/schema.js";
+import { RpcLocalSubplebbitUpdateResultSchema, RpcRemoteSubplebbitSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type {
     DecryptedChallenge,
@@ -179,35 +173,13 @@ export function parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(upd
     }
 }
 
-export function parseRpcRemoteSubplebbitUpdatingStateWithPlebbitErrorIfItFails(updatingState: any) {
-    try {
-        return SubplebbitUpdatingStateSchema.parse(updatingState);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_UPDATING_STATE_SCHEMA", {
-            zodError: e,
-            updatingState
-        });
-    }
-}
-
 export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(rpcRemoteSubplebbit: any) {
     try {
-        return RpcRemoteSubplebbitSchema.parse(rpcRemoteSubplebbit);
+        return RpcRemoteSubplebbitSchema.strip().parse(rpcRemoteSubplebbit);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA", {
             zodError: e,
             rpcRemoteSubplebbit
-        });
-    }
-}
-
-export function parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails(startedState: any) {
-    try {
-        return StartedStateSchema.parse(startedState);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_SUBPLEBBIT_STARTED_STATE_SCHEMA", {
-            zodError: e,
-            startedState
         });
     }
 }

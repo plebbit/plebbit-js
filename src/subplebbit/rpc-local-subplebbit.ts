@@ -3,7 +3,8 @@ import type {
     InternalSubplebbitBeforeFirstUpdateRpcType,
     InternalSubplebbitAfterFirstUpdateRpcType,
     SubplebbitEditOptions,
-    SubplebbitIpfsType
+    SubplebbitIpfsType,
+    SubplebbitStartedState
 } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
@@ -17,14 +18,12 @@ import {
     parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
-    parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails,
-    parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails
+    parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import {
     RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
     RpcLocalSubplebbitUpdateResultSchema,
-    StartedStateSchema,
     SubplebbitEditOptionsSchema,
     SubplebbitIpfsSchema
 } from "./schema.js";
@@ -45,7 +44,7 @@ import type {
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
-    startedState!: z.infer<typeof StartedStateSchema>;
+    startedState!: SubplebbitStartedState;
     signer!: InternalSubplebbitAfterFirstUpdateRpcType["signer"];
     settings?: InternalSubplebbitAfterFirstUpdateRpcType["settings"];
     editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
@@ -66,7 +65,6 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             this.editable = remeda.pick(this, remeda.keys.strict(SubplebbitEditOptionsSchema.shape));
         });
     }
-
 
     toJSONInternalRpcAfterFirstUpdate(): InternalSubplebbitAfterFirstUpdateRpcType {
         return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse({
@@ -112,7 +110,9 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             succeeded: ["stopped"]
         };
 
-        mapper[startedState].forEach(this._setRpcClientState.bind(this));
+        const newClientState = mapper[startedState] || [startedState]; // in case rpc server transmits a startedState we don't know about, default to startedState
+
+        newClientState.forEach(this._setRpcClientState.bind(this));
     }
 
     protected override async _processUpdateEventFromRpcUpdate(args: any) {
@@ -157,18 +157,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     private _handleRpcStartedStateChangeEvent(args: any) {
-        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcStartedStateChangeEvent");
-
-        let newStartedState: RpcLocalSubplebbit["startedState"];
-        // TODO default rpc client state if we can't recognize the new updating state
-
-        try {
-            newStartedState = parseRpcSubplebbitStartedStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The startedstatechange event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const newStartedState: RpcLocalSubplebbit["startedState"] = args.params.result; // we're being optimistic that the rpc server transmitted a valid string here
 
         this._setStartedState(newStartedState);
         this._updateRpcClientStateFromStartedState(newStartedState);
