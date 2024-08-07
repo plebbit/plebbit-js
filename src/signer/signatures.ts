@@ -50,6 +50,7 @@ import {
     ChallengeAnswerMessageSignedPropertyNames,
     ChallengeVerificationMessageSignedPropertyNames
 } from "../pubsub-messages/schema.js";
+import type { PublicationPubsubMessage } from "../types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -327,6 +328,9 @@ export async function verifyVote(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
+    if (!_allFieldsOfRecordInSignedPropertyNames(vote))
+        return { valid: false, reason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+
     const res = await _verifyPublicationWithAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
@@ -355,9 +359,9 @@ export async function verifyComment(
     return validation;
 }
 
-function _allFieldsOfSubInSignedPropertyNames(subplebbit: SubplebbitIpfsType): boolean {
-    const fieldsOfSub = remeda.keys.strict(remeda.omit(subplebbit, ["signature"]));
-    for (const field of fieldsOfSub) if (!subplebbit.signature.signedPropertyNames.includes(field)) return false;
+function _allFieldsOfRecordInSignedPropertyNames(record: PublicationPubsubMessage | SubplebbitIpfsType): boolean {
+    const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
+    for (const field of fieldsOfRecord) if (!record.signature.signedPropertyNames.includes(field)) return false;
 
     return true;
 }
@@ -369,7 +373,7 @@ export async function verifySubplebbit(
     resolveDomainSubAddress = true
 ): Promise<ValidationResult> {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
-    if (!_allFieldsOfSubInSignedPropertyNames(subplebbit))
+    if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
