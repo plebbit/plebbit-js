@@ -205,7 +205,11 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         "shortCid",
         "shortSubplebbitAddress",
         "deleted",
-        "signer"
+        "signer",
+        "state",
+        "clients",
+        "publishingState",
+        "updatingState"
     ]),
     remeda.keys.strict(CommentPubsubMessageSchema.shape)
 );
