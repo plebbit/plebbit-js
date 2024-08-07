@@ -23,12 +23,12 @@ describe("Sign commentedit", async () => {
             signer: signers[7],
             timestamp: timestamp()
         };
-        editSignature = await signCommentEdit(editProps, signers[7], plebbit);
+        editSignature = await signCommentEdit(editProps, plebbit);
     });
 
     it(`plebbit.createCommentEdit creates a valid CommentEdit`, async () => {
         const verification = await verifyCommentEdit(
-            { ...editProps, signature: editSignature },
+            remeda.omit({ ...editProps, signature: editSignature }, ["signer"]),
             plebbit.resolveAuthorAddresses,
             plebbit._clientsManager,
             false
