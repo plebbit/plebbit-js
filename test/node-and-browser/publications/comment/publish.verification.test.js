@@ -153,7 +153,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
         post._validateSignature = async () => {}; // Disable signature validation before publishing
 
         disableZodValidationOfPublication(post);
-        await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
+        await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
     });
 
     const forbiddenFieldsWithValue = [
@@ -190,7 +190,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
             post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
             post._validateSignature = async () => {}; // Disable signature validation before publishing
             disableZodValidationOfPublication(post);
-            await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
+            await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
         })
     );
 });
