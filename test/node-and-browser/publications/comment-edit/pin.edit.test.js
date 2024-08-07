@@ -1,4 +1,4 @@
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 import {
     publishRandomPost,
     publishWithExpectedResult,
@@ -7,11 +7,11 @@ import {
     mockRemotePlebbit,
     findCommentInPage,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util.js";
+} from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
-import { messages } from "../../../dist/node/errors.js";
+import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../dist/node/pages/util.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../../../dist/node/pages/util.js";
 
 const subplebbitAddress = "plebbit.eth";
 const roles = [

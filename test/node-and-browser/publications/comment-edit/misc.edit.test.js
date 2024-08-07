@@ -1,5 +1,5 @@
-import signers from "../../fixtures/signers.js";
-import { messages } from "../../../dist/node/errors.js";
+import signers from "../../../fixtures/signers.js";
+import { messages } from "../../../../dist/node/errors.js";
 import * as remeda from "remeda";
 import {
     mockRemotePlebbit,
@@ -7,7 +7,7 @@ import {
     publishWithExpectedResult,
     overrideCommentEditInstancePropsAndSign,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util.js";
+} from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import chaiAsPromised from "chai-as-promised";

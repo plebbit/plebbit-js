@@ -1,14 +1,14 @@
-import signers from "../../fixtures/signers.js";
+import signers from "../../../fixtures/signers.js";
 import {
     mockRemotePlebbit,
     generateMockPost,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util.js";
+} from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
-import { messages } from "../../../dist/node/errors.js";
-import { timestamp } from "../../../dist/node/util.js";
+import { messages } from "../../../../dist/node/errors.js";
+import { timestamp } from "../../../../dist/node/util.js";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
