@@ -112,7 +112,7 @@ import {
     CommentPubsubMessageReservedFields,
     CommentPubsubMessagePassthroughWithRefinementSchema
 } from "../../../publications/comment/schema.js";
-import { VotePubsubMessageSchema } from "../../../publications/vote/schema.js";
+import { VotePubsubMessageSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -909,6 +909,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (this.isPublicationVote(publication)) {
+            if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(publication)).length > 0)
+                return messages.ERR_VOTE_HAS_RESERVED_FIELD;
             const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
             const lastVote = await this._dbHandler.getStoredVoteOfAuthor(publication.commentCid, authorSignerAddress);
             if (lastVote && publication.signature.publicKey !== lastVote.signature.publicKey)

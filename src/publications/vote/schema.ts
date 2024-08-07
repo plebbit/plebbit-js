@@ -6,7 +6,9 @@ import {
     CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
-    PublicationBaseBeforeSigning
+    PlebbitTimestampSchema,
+    PublicationBaseBeforeSigning,
+    SignerWithAddressPublicKeySchema
 } from "../../schema/schema";
 import * as remeda from "remeda";
 import { VoteSignedPropertyNamesUnion } from "../../signer/types";
@@ -32,6 +34,17 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "pr
 );
 
 export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
+
+export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
+    authorAddress: VotePubsubMessageSchema.shape.author.shape.address,
+    insertedAt: PlebbitTimestampSchema,
+    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address
+});
+
+export const VotePubsubReservedFields = remeda.difference(
+    [...remeda.keys.strict(VoteTablesRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer"],
+    remeda.keys.strict(VotePubsubMessageSchema.shape)
+);
 
 export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: VotePubsubMessageSchema

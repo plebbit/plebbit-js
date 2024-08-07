@@ -14,7 +14,6 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { SignerType } from "./signer/types.js";
 import type { CommentEditPubsubMessage, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
 import type { LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
 import type { CommentPubsubMessage, CommentUpdate, LocalCommentOptions } from "./publications/comment/types.js";
@@ -28,6 +27,7 @@ import type {
     DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types.js";
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
+import { VoteTablesRowSchema } from "./publications/vote/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -78,11 +78,7 @@ export interface CommentUpdatesTableRowInsert extends Omit<CommentUpdatesRow, "i
 
 // Votes table
 
-export interface VotesTableRow extends VotePubsubMessage {
-    authorAddress: AuthorPubsubType["address"];
-    insertedAt: number;
-    authorSignerAddress: SignerType["address"];
-}
+export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
 
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {}
 
