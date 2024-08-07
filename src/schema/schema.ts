@@ -15,10 +15,8 @@ export const SignerWithAddressPublicKeyShortAddressSchema = SignerWithAddressPub
 });
 
 export const SubplebbitAddressSchema = z.string().min(1); // TODO add a regex for checking if it's a domain or IPNS address
-export const ShortSubplebbitAddressSchema = z.string().min(1);
 
 export const AuthorAddressSchema = z.string().min(1);
-export const ShortAuthorAddressSchema = z.string().min(1);
 
 export const PlebbitTimestampSchema = z.number().positive().int(); // Math.round(Date.now() / 1000)
 
@@ -36,7 +34,6 @@ const WalletSchema = z.object({
 });
 
 export const CidStringSchema = z.string().refine((arg) => isIpfsCid(arg), messages.ERR_CID_IS_INVALID); // TODO should change name to CidStringSchema
-export const ShortCidSchema = z.string().length(12);
 
 // '/ipfs/QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1' => 'QmeBYYTTmRNmwbcSVw5TpdxsmR26HeNs8P47FYXQZ65NS1'
 export const CidPathSchema = z
@@ -96,10 +93,6 @@ export const JsonSignatureSchema = z.object({
     publicKey: z.string(),
     signedPropertyNames: z.string().array().nonempty()
 });
-
-export const AuthorJsonBaseSchema = z.object({ shortAddress: ShortAuthorAddressSchema });
-
-export const AuthorPubsubJsonSchema = AuthorPubsubSchema.merge(AuthorJsonBaseSchema);
 
 // Common stuff here
 export const PublicationBaseBeforeSigning = z.object({

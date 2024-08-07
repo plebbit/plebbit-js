@@ -1,7 +1,7 @@
 import { PageIpfsSchema } from "../pages/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { CommentIpfsSchema, CommentStateSchema, CommentUpdateSchema, CommentUpdatingStateSchema } from "../publications/comment/schema.js";
+import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { CommentIpfsType, CommentUpdate } from "../publications/comment/types.js";
 import {
     DecryptedChallengeSchema,
@@ -24,7 +24,6 @@ import type {
     EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
-import { PublicationPublishingState, PublicationStateSchema } from "../publications/schema.js";
 import { CidStringSchema } from "./schema.js";
 import { RpcCommentUpdateResultSchema } from "../clients/rpc-client/schema.js";
 
@@ -184,28 +183,6 @@ export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(rpc
     }
 }
 
-export function parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails(publishingState: any) {
-    try {
-        return PublicationPublishingState.parse(publishingState);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_PUBLICATION_PUBLISHING_STATE_SCHEMA", {
-            zodError: e,
-            publishingState
-        });
-    }
-}
-
-export function parseRpcPublicationStateWithPlebbitErrorIfItFails(state: any) {
-    try {
-        return PublicationStateSchema.parse(state);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_PUBLICATION_STATE_SCHEMA", {
-            zodError: e,
-            state
-        });
-    }
-}
-
 export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
     try {
         return CidStringSchema.parse(cidString);
@@ -224,28 +201,6 @@ export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult
         throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
             zodError: e,
             updateResult
-        });
-    }
-}
-
-export function parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails(updatingState: any) {
-    try {
-        return CommentUpdatingStateSchema.parse(updatingState);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATING_STATE_SCHEMA", {
-            zodError: e,
-            updatingState
-        });
-    }
-}
-
-export function parseRpcCommentStateWithPlebbitErrorIfItFails(state: any) {
-    try {
-        return CommentStateSchema.parse(state);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_RPC_COMMENT_STATE_SCHEMA", {
-            zodError: e,
-            state
         });
     }
 }
