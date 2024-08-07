@@ -207,6 +207,19 @@ export const CommentWithinPageJsonSchema: z.ZodType<CommentWithCommentUpdateWith
 
 // Comment pubsub message here
 
+export const CommentPubsubMessageReservedFields = remeda.difference(
+    remeda.unique([
+        ...remeda.keys.strict(CommentIpfsSchema.shape),
+        ...CommentUpdateSignedPropertyNames,
+        "original",
+        "shortCid",
+        "shortSubplebbitAddress",
+        "deleted",
+        "signer"
+    ]),
+    remeda.keys.strict(CommentPubsubMessageSchema.shape)
+);
+
 // Comment table here
 
 export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({

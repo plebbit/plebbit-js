@@ -888,6 +888,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (publicationKilobyteSize > 40) return messages.ERR_REQUEST_PUBLICATION_OVER_ALLOWED_SIZE;
 
         if (this.isPublicationComment(publication)) {
+            if (remeda.intersection(remeda.keys.strict(publication), CommentPubsubMessageReservedFields).length > 0)
+                return messages.ERR_COMMENT_HAS_RESERVED_FIELD;
             if (this.features?.requirePostLinkIsMedia && publication.link && !isLinkOfMedia(publication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
