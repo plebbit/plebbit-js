@@ -4,7 +4,6 @@ import { VotePubsubMessageSchema } from "../publications/vote/schema";
 import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
-    CommentPubsubMessageWithRefinementSchema,
     AuthorWithCommentUpdateSchema,
     CommentPubsubMessageSchema,
     CreateCommentOptionsSchema
@@ -66,15 +65,13 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
     acceptedChallengeTypes: AcceptedChallengeTypeSchema.array().optional()
 }).strict();
 
-export const DecryptedChallengeRequestSchema = z
-    .object({
-        // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
+export const DecryptedChallengeRequestSchema = z.object({
+    // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
 
-        publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageWithRefinementSchema),
-        challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
-        challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
-    })
-    .strict();
+    publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageSchema),
+    challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
+    challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+});
 
 export const DecryptedChallengeRequestMessageSchema = ChallengeRequestMessageSchema.merge(DecryptedChallengeRequestSchema);
 

@@ -84,6 +84,7 @@ import * as remeda from "remeda";
 import type { CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
 import {
     AuthorCommentEditPubsubSchema,
+    CommentEditPubsubMessageSchema,
     ModeratorCommentEditPubsubSchema,
     uniqueAuthorFields,
     uniqueModFields
@@ -100,14 +101,18 @@ import {
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
-    DecryptedChallengeRequestMessageSchema,
-    DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema,
+    DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationMessageSchema,
     IncomingPubsubMessageSchema
 } from "../../../pubsub-messages/schema.js";
 import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
-import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema } from "../../../publications/comment/schema.js";
+import {
+    CommentIpfsSchema,
+    CommentPubsubMessageReservedFields,
+    CommentPubsubMessagePassthroughWithRefinementSchema
+} from "../../../publications/comment/schema.js";
+import { VotePubsubMessageSchema } from "../../../publications/vote/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -180,7 +185,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             signer: remeda.pick(this.signer, ["publicKey", "address", "shortAddress", "type"])
         };
     }
-
 
     private async _updateStartedValue() {
         this.started = await this._dbHandler.isSubStartLocked(this.address);
@@ -486,9 +490,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
         const log = Logger("plebbit-js:local-subplebbit:handleVote");
+        const strippedOutVotePublication = VotePubsubMessageSchema.strip().parse(newVoteProps); // we strip out here so we don't store any extra props in votes table
+
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVoteProps.signature.publicKey);
         await this._dbHandler.deleteVote(authorSignerAddress, newVoteProps.commentCid);
-        const voteTableRow = <VotesTableRow>{ ...newVoteProps, authorSignerAddress, authorAddress: newVoteProps.author.address };
+        const voteTableRow = <VotesTableRow>{
+            ...strippedOutVotePublication,
+            authorSignerAddress,
+            authorAddress: newVoteProps.author.address
+        };
         await this._dbHandler.insertVote(voteTableRow);
         log.trace(`inserted new vote (${newVoteProps}) for comment ${newVoteProps.commentCid}`);
         return undefined;
@@ -946,7 +956,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         request: ChallengeRequestMessageType,
         decryptedRawString: string
     ): Promise<DecryptedChallengeRequest> {
-        let decryptedJson: any;
+        let decryptedJson: DecryptedChallengeRequest;
         try {
             decryptedJson = parseJsonWithPlebbitErrorIfFails(decryptedRawString);
         } catch (e) {
@@ -957,14 +967,34 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             throw e;
         }
 
-        try {
-            return DecryptedChallengeRequestSchema.parse(decryptedJson);
-        } catch (e) {
+        // Parsing DecryptedChallengeRequest.publication here
+        let parsedPublication: VotePubsubMessage | CommentPubsubMessage | CommentEditPubsubMessage | undefined = undefined;
+
+        const publicationSchemasToParse = [
+            VotePubsubMessageSchema.passthrough(),
+            CommentPubsubMessagePassthroughWithRefinementSchema,
+            CommentEditPubsubMessageSchema.passthrough()
+        ];
+
+        for (const schema of publicationSchemasToParse) {
+            const res = schema.safeParse(decryptedJson?.publication);
+            if (res.success) {
+                parsedPublication = res.data;
+                break;
+            }
+        }
+
+        const parseRestOfDecrypted = DecryptedChallengeRequestSchema.omit({ publication: true }).safeParse(decryptedJson);
+
+        if (parseRestOfDecrypted.success && parsedPublication) return { ...parseRestOfDecrypted.data, publication: parsedPublication };
+        else {
+            // All schemas failed
             await this._publishFailedChallengeVerification(
                 { reason: messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA },
                 request.challengeRequestId
             );
-            throw e;
+
+            throw new PlebbitError("ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA", { decryptedJson });
         }
     }
 
@@ -989,15 +1019,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(decryptedRequest.publication.signature.publicKey);
 
         const subplebbitAuthor = await this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
-        const decryptedRequestMsg = DecryptedChallengeRequestMessageSchema.parse({ ...request, ...decryptedRequest });
-        const decryptedRequestWithSubplebbitAuthor: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor =
-            DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema.parse({
-                ...decryptedRequestMsg,
-                publication: {
-                    ...decryptedRequest.publication,
-                    ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
-                }
-            });
+        const decryptedRequestMsg = <DecryptedChallengeRequestMessageType>{ ...request, ...decryptedRequest };
+        const decryptedRequestWithSubplebbitAuthor = <DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>{
+            ...decryptedRequestMsg,
+            publication: {
+                ...decryptedRequest.publication,
+                ...(subplebbitAuthor ? { author: { ...decryptedRequest.publication.author, subplebbit: subplebbitAuthor } } : undefined)
+            }
+        };
 
         try {
             await this._respondWithErrorIfSignatureOfPublicationIsInvalid(decryptedRequestMsg); // This function will throw an error if signature is invalid
@@ -1140,7 +1169,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         try {
             parsedPubsubMsg = IncomingPubsubMessageSchema.parse(decodedMsg);
         } catch (e) {
-            log.error(`Failed to parse the schema of pubsub message received at (${timeReceived})`, (<Error>e).toString());
+            log.error(`Failed to parse the schema of pubsub message received at (${timeReceived})`, (<Error>e).toString(), decodedMsg);
             return;
         }
 
