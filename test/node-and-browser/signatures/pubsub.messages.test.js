@@ -97,7 +97,7 @@ describeSkipIfRpc("challengerequest", async () => {
 
         challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, pubsubSigner);
 
-        await originalPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify, comment._pubsubProviders[0]);
+        await originalPublish(comment._subplebbit.pubsubTopic, challengeRequestToModify, comment._pubsubProviders[0]);
 
         const verificationMsg = await new Promise((resolve) => comment.once("challengeverification", resolve));
         expect(verificationMsg.challengeSuccess).to.be.false;
@@ -141,12 +141,12 @@ describeSkipIfRpc("challengerequest", async () => {
         challengeRequestToModify.encrypted = await encryptEd25519AesGcm(
             JSON.stringify(commentObjToEncrypt),
             pubsubSigner.privateKey,
-            comment.subplebbit.encryption.publicKey
+            comment._subplebbit.encryption.publicKey
         );
 
         challengeRequestToModify.signature = await signChallengeRequest(challengeRequestToModify, pubsubSigner);
 
-        await comment._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeRequestToModify);
+        await comment._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeRequestToModify);
 
         const verificationMsg = await new Promise((resolve) => comment.once("challengeverification", resolve));
 
@@ -169,7 +169,7 @@ describeSkipIfRpc("challengerequest", async () => {
         const verificaiton = await verifyChallengeRequest(requestWithInvalidSignature);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
 
-        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, requestWithInvalidSignature);
+        await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, requestWithInvalidSignature);
 
         await new Promise(async (resolve) => {
             const subMethod = (pubsubMsg) => {
@@ -181,7 +181,7 @@ describeSkipIfRpc("challengerequest", async () => {
                     assert.fail("Subplebbit should not respond to a challenge request with invalid signature");
                 }
             };
-            await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+            await plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, subMethod);
             await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the request has been ignored
             resolve();
         });
@@ -271,7 +271,7 @@ describeSkipIfRpc("challengeanswer", async () => {
 
         await new Promise((resolve) => comment.once("challenge", resolve));
 
-        await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
+        await comment._plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, comment.handleChallengeExchange);
         const toSignAnswer = {
             type: "CHALLENGEANSWER",
             challengeRequestId: comment._publishedChallengeRequests[0].challengeRequestId,
@@ -294,7 +294,7 @@ describeSkipIfRpc("challengeanswer", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
+        await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeAnswer);
 
         const subMethod = (pubsubMsg) => {
             const msgParsed = cborgDecode(pubsubMsg["data"]);
@@ -306,7 +306,7 @@ describeSkipIfRpc("challengeanswer", async () => {
             }
         };
 
-        await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+        await plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, subMethod);
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
     });
 
@@ -331,7 +331,7 @@ describeSkipIfRpc("challengeanswer", async () => {
                 signers[5].publicKey // Use a public key that cannot be decrypted for the sub
             );
             challengeAnswerToModify.signature = await signChallengeAnswer(challengeAnswerToModify, pubsubSigner);
-            await originalPublish(comment.subplebbit.pubsubTopic, challengeAnswerToModify, comment._pubsubProviders[0]);
+            await originalPublish(comment._subplebbit.pubsubTopic, challengeAnswerToModify, comment._pubsubProviders[0]);
         });
 
         await publishWithExpectedResult(comment, false, messages.ERR_SUB_FAILED_TO_DECRYPT_PUBSUB_MSG);
@@ -345,7 +345,7 @@ describeSkipIfRpc("challengeanswer", async () => {
 
         await new Promise(async (resolve) => {
             comment.once("challenge", async () => {
-                await comment._plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, comment.handleChallengeExchange);
+                await comment._plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, comment.handleChallengeExchange);
                 const newSigner = await plebbit.createSigner();
                 const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(newSigner.publicKey);
                 const toSignAnswer = {
@@ -361,7 +361,7 @@ describeSkipIfRpc("challengeanswer", async () => {
                 };
                 expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
 
-                await plebbit._clientsManager.pubsubPublish(comment.subplebbit.pubsubTopic, challengeAnswer);
+                await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeAnswer);
 
                 const subMethod = (pubsubMsg) => {
                     const msgParsed = cborgDecode(pubsubMsg["data"]);
@@ -373,12 +373,12 @@ describeSkipIfRpc("challengeanswer", async () => {
                         expect(msgParsed.reason).to.equal(messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST);
                         expect(msgParsed.publication).to.be.undefined;
                         expect(msgParsed.encrypted).to.be.undefined;
-                        plebbit._clientsManager.pubsubUnsubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                        plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, subMethod);
                         resolve();
                     }
                 };
 
-                await plebbit._clientsManager.pubsubSubscribe(comment.subplebbit.pubsubTopic, subMethod);
+                await plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, subMethod);
                 await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
                 resolve();
             });
