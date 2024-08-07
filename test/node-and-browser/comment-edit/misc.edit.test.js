@@ -5,6 +5,7 @@ import {
     mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
+    overrideCommentEditInstancePropsAndSign,
     resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util.js";
 import chai from "chai";
@@ -103,14 +104,29 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
             content: "Test change multiple fields" + Date.now()
         };
 
-        await assert.isRejected(
-            plebbit.createCommentEdit({
+        try {
+            await plebbit.createCommentEdit({
                 ...fieldsToChange,
                 commentCid: modPost.cid,
                 signer: roles[2].signer,
                 subplebbitAddress
-            })
-        );
+            });
+        } catch (e) {
+            expect(e.errors[0].code).to.equal("unrecognized_keys");
+            expect(e.errors[0].keys).to.deep.equal(["removed", "pinned", "locked"]);
+        }
+
+        // We're gonna test publishing over pubsub, the sub should reject it
+        const commentEdit = await plebbit.createCommentEdit({
+            ...remeda.omit(fieldsToChange, ["locked", "pinned", "removed"]),
+            commentCid: modPost.cid,
+            signer: roles[2].signer,
+            subplebbitAddress
+        });
+
+        await overrideCommentEditInstancePropsAndSign(commentEdit, fieldsToChange);
+
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS);
     });
 
     it(`A mod publishing multiple mod edit fields`, async () => {
