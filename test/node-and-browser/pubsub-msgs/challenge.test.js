@@ -48,7 +48,13 @@ describe("math-cli", async () => {
         mockPost.once("challenge", (challengeMessage) => {
             mockPost.publishChallengeAnswers(["3"]); // wrong answer
         });
+        let challengeverification;
+        mockPost.once("challengeverification", (msg) => {
+            challengeverification = msg;
+        });
         await publishWithExpectedResult(mockPost, false);
+        expect(challengeverification.challengeErrors).to.deep.equal(["Wrong answer."]);
+        expect(challengeverification.challengeSuccess).to.be.false;
     });
 });
 
