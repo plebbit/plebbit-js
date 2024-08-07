@@ -1,8 +1,6 @@
 import { z } from "zod";
 import {
     FlairSchema,
-    AuthorJsonBaseSchema,
-    AuthorPubsubJsonSchema,
     AuthorPubsubSchema,
     ChallengeRequestToEncryptBaseSchema,
     CidStringSchema,
@@ -11,20 +9,18 @@ import {
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
     PublicationBaseBeforeSigning,
-    ShortCidSchema,
-    ShortSubplebbitAddressSchema,
     SignerWithAddressPublicKeySchema,
     SubplebbitAuthorSchema
 } from "../../schema/schema.js";
 import { AuthorCommentEditPubsubSchema } from "../comment-edit/schema.js";
 import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
-import type { RepliesPagesTypeIpfs, RepliesPagesTypeJson } from "../../pages/types";
+import type { RepliesPagesTypeIpfs } from "../../pages/types";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
-import { RepliesPagesIpfsSchema, RepliesPagesJsonSchema } from "../../pages/schema.js";
+import { RepliesPagesIpfsSchema } from "../../pages/schema.js";
 import { PublicationStateSchema } from "../schema.js";
-import { CommentPubsubMessage, CommentUpdate } from "./types.js";
+import type { CommentPubsubMessage, CommentUpdate } from "./types.js";
 
 // Comment schemas here
 
@@ -85,10 +81,15 @@ export const CommentSignedPropertyNames = remeda.keys.strict(
 );
 
 const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature", true>>(
-    remeda.mapToObj([...CommentSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
+    remeda.mapToObj([...CommentSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
 export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
+
+export const CommentPubsubMessagePassthroughWithRefinementSchema = CommentPubsubMessageSchema.passthrough().refine(
+    (arg) => arg.link || arg.content || arg.title,
+    messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
+);
 
 export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSchema.refine(
     (arg) => arg.link || arg.content || arg.title,
@@ -96,7 +97,7 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSche
 );
 
 export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentPubsubMessageSchema
+    publication: CommentPubsubMessageSchema.strict()
 }).strict();
 
 // Remote comments
@@ -182,44 +183,6 @@ const originalFieldsObj = <Record<OverlapCommentPubsubAndCommentUpdate, true>>re
 
 export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchema.pick(originalFieldsObj).strip();
 
-// Comment JSON schemas here
-
-const AuthorWithCommentUpdateJsonSchema = AuthorWithCommentUpdateSchema.merge(AuthorJsonBaseSchema).strict();
-
-export const CommentWithCommentUpdateNoRepliesJsonSchema = CommentIpfsWithCidPostCidDefinedSchema.merge(CommentUpdateNoRepliesSchema)
-    .extend({
-        original: OriginalCommentFieldsBeforeCommentUpdateSchema,
-        shortCid: ShortCidSchema,
-        author: AuthorWithCommentUpdateJsonSchema,
-        deleted: z.boolean().optional(),
-        shortSubplebbitAddress: ShortSubplebbitAddressSchema
-    })
-    .strict();
-
-type CommentWithCommentUpdateWithRepliesJsonSchema = z.infer<typeof CommentWithCommentUpdateNoRepliesJsonSchema> & {
-    replies?: RepliesPagesTypeJson;
-};
-
-export const CommentWithinPageJsonSchema: z.ZodType<CommentWithCommentUpdateWithRepliesJsonSchema> =
-    CommentWithCommentUpdateNoRepliesJsonSchema.extend({
-        replies: z.lazy(() => RepliesPagesJsonSchema.optional())
-    }).strict();
-
-// Comment pubsub message here
-
-export const CommentPubsubMessageReservedFields = remeda.difference(
-    remeda.unique([
-        ...remeda.keys.strict(CommentIpfsSchema.shape),
-        ...CommentUpdateSignedPropertyNames,
-        "original",
-        "shortCid",
-        "shortSubplebbitAddress",
-        "deleted",
-        "signer"
-    ]),
-    remeda.keys.strict(CommentPubsubMessageSchema.shape)
-);
-
 // Comment table here
 
 export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
@@ -231,13 +194,28 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address
 }).strict();
 
+// Comment pubsub message here
+
+export const CommentPubsubMessageReservedFields = remeda.difference(
+    remeda.unique([
+        ...remeda.keys.strict(CommentIpfsSchema.shape),
+        ...remeda.keys.strict(CommentsTableRowSchema.shape),
+        ...CommentUpdateSignedPropertyNames,
+        "original",
+        "shortCid",
+        "shortSubplebbitAddress",
+        "deleted",
+        "signer"
+    ]),
+    remeda.keys.strict(CommentPubsubMessageSchema.shape)
+);
+
 // Plebbit.createComment here
 
 export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentIpfsWithRefinmentSchema)
     .or(CommentIpfsWithCidDefinedSchema)
     .or(CommentIpfsWithCidPostCidDefinedSchema)
     .or(CommentPubsubMessageWithRefinementSchema)
-    .or(CommentWithinPageJsonSchema)
     .or(CommentChallengeRequestToEncryptSchema)
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
     .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));

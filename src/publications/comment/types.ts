@@ -7,14 +7,15 @@ import {
     CommentOptionsToSignSchema,
     CommentPubsubMessageSchema,
     CommentUpdateSchema,
-    CommentWithinPageJsonSchema,
     CreateCommentOptionsSchema,
-    LocalCommentSchema
+    LocalCommentSchema,
+    OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
-import { ClassWithNoEnumerables } from "../../types.js";
+import type { AuthorTypeWithCommentUpdate, ClassWithNoEnumerables } from "../../types.js";
 import { Comment } from "./comment.js";
+import type { RepliesPagesTypeJson } from "../../pages/types.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
@@ -28,8 +29,6 @@ export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 
 export type CommentUpdate = z.infer<typeof CommentUpdateSchema>;
 
-export type CommentWithinPageJson = z.infer<typeof CommentWithinPageJsonSchema>;
-
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
 export type CommentIpfsWithCidDefined = z.infer<typeof CommentIpfsWithCidDefinedSchema>;
@@ -40,6 +39,20 @@ export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallen
 
 export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;
 
+type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpdateSchema>;
+
 // JSON types
 
 export type CommentJson = ClassWithNoEnumerables<Comment>;
+
+type AuthorWithShortSubplebbitAddress = AuthorTypeWithCommentUpdate & { shortAddress: string };
+
+// subplebbit.posts.pages.hot.comments[0] will have this shape
+export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdate, "replies"> {
+    original: CommentOriginalField;
+    shortCid: string;
+    shortSubplebbitAddress: string;
+    author: AuthorWithShortSubplebbitAddress;
+    deleted?: boolean;
+    replies?: Omit<RepliesPagesTypeJson, "clients">;
+}

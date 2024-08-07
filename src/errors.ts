@@ -131,6 +131,7 @@ export enum messages {
     ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA = "request.publication has an invalid schema",
     ERR_CHALLENGE_ANSWER_IS_INVALID_JSON = "challenganswer.challengeAnswers is an invalid json",
     ERR_CHALLENGE_ANSWER_IS_INVALID_SCHEMA = "challengeanswer.challengeAnswers is an invalid schema",
+    ERR_COMMENT_HAS_RESERVED_FIELD = "request.publication (Comment) has a reserved field",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
