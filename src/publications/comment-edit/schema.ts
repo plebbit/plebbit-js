@@ -3,14 +3,14 @@
 import { z } from "zod";
 import {
     FlairSchema,
-    AuthorPubsubJsonSchema,
     ChallengeRequestToEncryptBaseSchema,
     CommentAuthorSchema,
     CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
     PublicationBaseBeforeSigning,
-    ShortSubplebbitAddressSchema
+    PlebbitTimestampSchema,
+    SignerWithAddressPublicKeySchema
 } from "../../schema/schema.js";
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
@@ -77,6 +77,18 @@ export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSche
     remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
 );
 export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
+
+export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend({
+    authorAddress: CommentEditPubsubMessageSchema.shape.author.shape.address,
+    insertedAt: PlebbitTimestampSchema,
+    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
+    isAuthorEdit: z.boolean() // if true, then it was an author at the time of editing, otherwise it's a mod
+}).strict();
+
+export const CommentEditReservedFields = remeda.difference(
+    [...remeda.keys.strict(CommentEditsTableRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer"],
+    remeda.keys.strict(CommentEditPubsubMessageSchema.shape)
+);
 
 export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: CommentEditPubsubMessageSchema

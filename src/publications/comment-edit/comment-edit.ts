@@ -74,16 +74,6 @@ export class CommentEdit extends Publication {
         };
     }
 
-    toJSONForDb(isAuthorEdit: boolean, authorSignerAddress: string): CommentEditsTableRowInsert {
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            author: this.author.toJSONIpfs(),
-            authorAddress: this.author.address,
-            isAuthorEdit,
-            authorSignerAddress
-        };
-    }
-
     override getType(): PublicationTypeName {
         return "commentedit";
     }

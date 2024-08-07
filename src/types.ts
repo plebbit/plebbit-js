@@ -28,6 +28,7 @@ import type {
 } from "./pubsub-messages/types.js";
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
 import { VoteTablesRowSchema } from "./publications/vote/schema.js";
+import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -84,13 +85,7 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 
 // Comment edits table
 
-export interface CommentEditsTableRow extends CommentEditPubsubMessage {
-    authorAddress: AuthorPubsubType["address"];
-    insertedAt: number;
-    isAuthorEdit: boolean; // If false, then mod edit
-    authorSignerAddress: string;
-}
-
+export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
 export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
 
 // Setting up the types of tables here so we can utilize auto completion in queries

@@ -44,7 +44,13 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
 } from "../../../pubsub-messages/types.js";
 
-import type { CommentUpdatesRow, CommentsTableRow, IpfsHttpClientPubsubMessage, VotesTableRow } from "../../../types.js";
+import type {
+    CommentEditsTableRow,
+    CommentUpdatesRow,
+    CommentsTableRow,
+    IpfsHttpClientPubsubMessage,
+    VotesTableRow
+} from "../../../types.js";
 import {
     ValidationResult,
     cleanUpBeforePublishing,
@@ -85,6 +91,7 @@ import type { CommentEditPubsubMessage } from "../../../publications/comment-edi
 import {
     AuthorCommentEditPubsubSchema,
     CommentEditPubsubMessageSchema,
+    CommentEditReservedFields,
     ModeratorCommentEditPubsubSchema,
     uniqueAuthorFields,
     uniqueModFields
@@ -477,15 +484,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<undefined> {
         const log = Logger("plebbit-js:local-subplebbit:handleCommentEdit");
-        const commentEdit = await this._plebbit.createCommentEdit(commentEditRaw);
-        const commentToBeEdited = await this._dbHandler.queryComment(commentEdit.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+        const strippedOutEditPublication = CommentEditPubsubMessageSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
+        const commentToBeEdited = await this._dbHandler.queryComment(commentEditRaw.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
 
         const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
-        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
-        await this._dbHandler.insertEdit(commentEdit.toJSONForDb(isAuthorEdit, authorSignerAddress));
-        log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEdit.commentCid}) with CommentEdit: `, commentEditRaw);
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentEditRaw.signature.publicKey);
+
+        const editTableRow = <CommentEditsTableRow>{
+            ...strippedOutEditPublication,
+            isAuthorEdit,
+            authorSignerAddress,
+            authorAddress: strippedOutEditPublication.author.address
+        };
+        await this._dbHandler.insertEdit(editTableRow);
+        log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEditRaw.commentCid}) with CommentEdit: `, commentEditRaw);
     }
 
     private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
@@ -918,6 +932,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         if (this.isPublicationCommentEdit(publication)) {
+            if (remeda.intersection(CommentEditReservedFields, remeda.keys.strict(publication)).length > 0)
+                return messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD;
+
             const commentToBeEdited = await this._dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
