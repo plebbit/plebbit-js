@@ -82,14 +82,8 @@ export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncr
     publication: CommentEditPubsubMessageSchema
 }).strict();
 
-export const CommentEditJsonSchema = CommentEditPubsubMessageSchema.extend({
-    shortSubplebbitAddress: ShortSubplebbitAddressSchema,
-    author: AuthorPubsubJsonSchema
-}).strict();
-
 export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditAuthorPublicationSchema.or(
     CreateCommentEditModeratorPublicationSchema
 )
     .or(CommentEditPubsubMessageSchema)
-    .or(CommentEditChallengeRequestToEncryptSchema)
-    .or(CommentEditJsonSchema);
+    .or(CommentEditChallengeRequestToEncryptSchema);

@@ -4,7 +4,6 @@ import {
     AuthorCommentEditPubsubSchema,
     CommentEditAuthorOptionsToSignSchema,
     CommentEditChallengeRequestToEncryptSchema,
-    CommentEditJsonSchema,
     CommentEditModeratorOptionsToSignSchema,
     CommentEditPubsubMessageSchema,
     CreateCommentEditOptionsSchema,
@@ -13,6 +12,8 @@ import {
 } from "./schema";
 import { CommentAuthorSchema } from "../../schema/schema";
 import { CommentEditPubsubMessageWithSubplebbitAuthorSchema } from "../../pubsub-messages/schema";
+import type { ClassWithNoEnumerables } from "../../types";
+import { CommentEdit } from "./comment-edit";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
 
@@ -38,4 +39,4 @@ export type CommentEditChallengeRequestToEncryptType = z.infer<typeof CommentEdi
 
 export type CommentEditPubsubMessageWithSubplebbitAuthor = z.infer<typeof CommentEditPubsubMessageWithSubplebbitAuthorSchema>;
 
-export type CommentEditTypeJson = z.infer<typeof CommentEditJsonSchema>;
+export type CommentEditTypeJson = ClassWithNoEnumerables<CommentEdit>;
