@@ -6,7 +6,6 @@ import type { PublicationTypeName } from "../../types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
-import { z } from "zod";
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
@@ -21,19 +20,17 @@ import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
+    CommentState,
     CommentUpdate,
+    CommentUpdatingState,
     CommentWithinPageJson,
     LocalCommentOptions,
     RpcCommentUpdateResultType
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
-import { CommentStateSchema, CommentUpdatingStateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
-import {
-    parseRpcCommentStateWithPlebbitErrorIfItFails,
-    parseRpcCommentUpdateEventWithPlebbitErrorIfItFails,
-    parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails
-} from "../../schema/schema-util.js";
+import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import Author from "../author.js";
 
 export class Comment extends Publication {
@@ -78,8 +75,8 @@ export class Comment extends Publication {
     lastReplyTimestamp?: CommentUpdate["lastReplyTimestamp"];
 
     // updating states
-    override state!: z.infer<typeof CommentStateSchema>;
-    updatingState!: z.infer<typeof CommentUpdatingStateSchema>;
+    override state!: CommentState;
+    updatingState!: CommentUpdatingState;
 
     // private
     private _updateInterval?: any = undefined;
@@ -415,8 +412,20 @@ export class Comment extends Publication {
     protected _updateRpcClientStateFromUpdatingState(updatingState: Comment["updatingState"]) {
         // We're deriving the the rpc state from publishing state
 
-        const rpcState: Comment["clients"]["plebbitRpcClients"][0]["state"] =
-            updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        const mapper: Record<Comment["updatingState"], Comment["clients"]["plebbitRpcClients"][number]["state"]> = {
+            failed: "stopped",
+            succeeded: "stopped",
+            "fetching-ipfs": "fetching-ipfs",
+            "fetching-subplebbit-ipfs": "fetching-subplebbit-ipfs",
+            "fetching-subplebbit-ipns": "fetching-subplebbit-ipns",
+            "fetching-update-ipfs": "fetching-update-ipfs",
+            "resolving-author-address": "resolving-author-address",
+            "resolving-subplebbit-address": "resolving-subplebbit-address",
+            stopped: "stopped"
+        };
+
+        const rpcState = mapper[updatingState] || updatingState; // in case rpc server transmits unknown prop, just use it as is
+
         this._setRpcClientState(rpcState);
     }
 
@@ -448,16 +457,7 @@ export class Comment extends Publication {
     }
 
     private _handleUpdatingStateChangeFromRpc(args: any) {
-        const log = Logger("plebbit-js:comment:_handleUpdatingStateChangeFromRpc");
-
-        let updateState: Comment["updatingState"];
-        try {
-            updateState = parseRpcCommentUpdatingStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse rpc updating state schema of comment", this.cid, e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const updateState: Comment["updatingState"] = args.params.result; // optimistic, rpc server could transmit an updating state that is not known to us
         this._setUpdatingState(updateState);
         this._updateRpcClientStateFromUpdatingState(updateState);
     }
@@ -465,14 +465,7 @@ export class Comment extends Publication {
     private _handleStateChangeFromRpc(args: any) {
         const log = Logger("plebbit-js:comment:_handleStateChangeFromRpc");
 
-        let commentState: Comment["state"];
-        try {
-            commentState = parseRpcCommentStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse schema rpc state schema of comment", this.cid, e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const commentState: Comment["state"] = args.params.result;
         this._updateState(commentState);
     }
 

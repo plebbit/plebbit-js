@@ -19,26 +19,11 @@ import type { RepliesPagesTypeIpfs } from "../../pages/types";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema } from "../../pages/schema.js";
-import { PublicationStateSchema } from "../schema.js";
 import type { CommentPubsubMessage, CommentUpdate } from "./types.js";
 
 // Comment schemas here
 
 const CommentContentSchema = z.string();
-
-export const CommentStateSchema = z.enum([...PublicationStateSchema.options, "updating"]);
-
-export const CommentUpdatingStateSchema = z.enum([
-    "stopped",
-    "resolving-author-address",
-    "fetching-ipfs",
-    "fetching-update-ipfs",
-    "resolving-subplebbit-address",
-    "fetching-subplebbit-ipns",
-    "fetching-subplebbit-ipfs",
-    "failed",
-    "succeeded"
-]);
 
 // Create Comment schemas here
 

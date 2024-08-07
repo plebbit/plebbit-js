@@ -55,9 +55,7 @@ import {
     parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
-    parseJsonWithPlebbitErrorIfFails,
-    parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails,
-    parseRpcPublicationStateWithPlebbitErrorIfItFails
+    parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
 import {
     ChallengeRequestMessageSchema,
@@ -77,7 +75,7 @@ import {
     decodeRpcChallengeRequestPubsubMsg,
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
-import { PublicationPublishingState, PublicationStateSchema } from "./schema.js";
+import { PublicationPublishingState, PublicationState } from "./types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -91,8 +89,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     author!: Author;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
-    state!: z.infer<typeof PublicationStateSchema> | Comment["state"];
-    publishingState!: z.infer<typeof PublicationPublishingState>;
+    state!: PublicationState | Comment["state"];
+    publishingState!: PublicationPublishingState;
     challengeAnswers?: DecryptedChallengeRequestMessageType["challengeAnswers"];
     challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
@@ -479,7 +477,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
             "waiting-challenge-verification": ["waiting-challenge-verification"]
         };
 
-        mapper[publishingState].forEach(this._setRpcClientState.bind(this));
+        const newRpcClientState = mapper[publishingState] || [publishingState]; // In case RPC server transmitted a state we don't know about
+
+        newRpcClientState.forEach(this._setRpcClientState.bind(this));
     }
 
     protected _updateState(newState: Publication["state"]) {
@@ -650,29 +650,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _handleIncomingPublishingStateFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingPublishingStateFromRpc");
-        let publishState: Publication["publishingState"];
-        try {
-            publishState = parseRpcPublicationPublishingStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of publication.publishingState from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const publishState: Publication["publishingState"] = args.params.result; // we're optimistic that RPC server transmitted a correct string
         this._updatePublishingState(publishState);
         this._updateRpcClientStateFromPublishingState(publishState);
     }
 
     private _handleIncomingStateFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingStateFromRpc");
-        let state: Publication["state"];
-        try {
-            state = parseRpcPublicationStateWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of publication.state from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const state: Publication["state"] = args.params.result; // optimistic
         this._updateState(state);
     }
 

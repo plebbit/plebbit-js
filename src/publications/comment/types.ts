@@ -16,6 +16,7 @@ import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js
 import type { AuthorTypeWithCommentUpdate, ClassWithNoEnumerables } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesTypeJson } from "../../pages/types.js";
+import type { PublicationState } from "../types.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
@@ -56,3 +57,18 @@ export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined,
     deleted?: boolean;
     replies?: Omit<RepliesPagesTypeJson, "clients">;
 }
+
+// Comment states
+
+export type CommentState = PublicationState | "updating";
+
+export type CommentUpdatingState =
+    | "stopped"
+    | "resolving-author-address"
+    | "fetching-ipfs"
+    | "fetching-update-ipfs"
+    | "resolving-subplebbit-address"
+    | "fetching-subplebbit-ipns"
+    | "fetching-subplebbit-ipfs"
+    | "failed"
+    | "succeeded";

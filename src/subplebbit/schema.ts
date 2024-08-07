@@ -16,22 +16,6 @@ import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js"
 import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import * as remeda from "remeda";
 
-// Schema of states
-
-export const SubplebbitStateSchema = z.enum(["stopped", "updating", "started"]);
-
-export const StartedStateSchema = z.enum(["stopped", "publishing-ipns", "failed", "succeeded"]);
-
-export const UpdatingStateSchema = z.enum([
-    ...StartedStateSchema.options,
-    "stopped",
-    "resolving-address",
-    "fetching-ipns",
-    "fetching-ipfs",
-    "failed",
-    "succeeded"
-]);
-
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z.object({
     type: z.enum(["ed25519-aes-gcm"]), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
