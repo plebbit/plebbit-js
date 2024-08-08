@@ -248,6 +248,8 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
+
             table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
         });
     }

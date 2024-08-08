@@ -503,7 +503,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
-        const log = Logger("plebbit-js:local-subplebbit:handleVote");
+        const log = Logger("plebbit-js:local-subplebbit:storeVote");
         const strippedOutVotePublication = VotePubsubMessageSchema.strip().parse(newVoteProps); // we strip out here so we don't store any extra props in votes table
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVoteProps.signature.publicKey);
@@ -513,6 +513,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             authorSignerAddress,
             authorAddress: newVoteProps.author.address
         };
+        const extraPropsInVote = remeda.difference(remeda.keys.strict(newVoteProps), remeda.keys.strict(VotePubsubMessageSchema.shape));
+        if (extraPropsInVote.length > 0) {
+            log("Found extra props on Vote", extraPropsInVote, "Will be adding them to extraProps column");
+            voteTableRow.extraProps = remeda.pick(newVoteProps, extraPropsInVote);
+        }
+
         await this._dbHandler.insertVote(voteTableRow);
         log.trace(`inserted new vote (${newVoteProps}) for comment ${newVoteProps.commentCid}`);
         return undefined;
