@@ -1170,6 +1170,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const timeReceived = timestamp();
 
+        const pubsubKilobyteSize = Buffer.byteLength(pubsubMsg.data) / 1000;
+        if (pubsubKilobyteSize > 80) {
+            log.error(`Received a pubsub message at (${timeReceived}) with size of ${pubsubKilobyteSize}. Silently dropping it`);
+            return;
+        }
+
         let decodedMsg: any;
 
         try {
