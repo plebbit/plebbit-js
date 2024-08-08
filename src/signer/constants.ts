@@ -5,7 +5,3 @@ export const keysToOmitFromSignedPropertyNames = <["signer", "challengeCommentCi
     "challengeCommentCids",
     "challengeAnswers"
 ];
-
-// TODO this whole file should use props from zod
-
-// TODO move the signed property names below to their respective files

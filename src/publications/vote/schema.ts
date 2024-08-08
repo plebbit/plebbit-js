@@ -29,8 +29,8 @@ export const VoteSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateVoteUserOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 
-const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
-    remeda.mapToObj([...VoteSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
+const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature", true>>(
+    remeda.mapToObj([...VoteSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
 export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
@@ -38,13 +38,16 @@ export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(v
 export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
     authorAddress: VotePubsubMessageSchema.shape.author.shape.address,
     insertedAt: PlebbitTimestampSchema,
-    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address
+    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
+    extraProps: z.object({}).passthrough().optional()
 });
 
 export const VotePubsubReservedFields = remeda.difference(
     [...remeda.keys.strict(VoteTablesRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer"],
     remeda.keys.strict(VotePubsubMessageSchema.shape)
 );
+
+console.log(VotePubsubReservedFields);
 
 export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: VotePubsubMessageSchema
