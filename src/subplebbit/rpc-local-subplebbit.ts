@@ -14,14 +14,7 @@ import * as remeda from "remeda";
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 
-import {
-    parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails
-} from "../schema/schema-util.js";
 import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "./schema.js";
-import { EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import {
     decodeRpcChallengeAnswerPubsubMsg,
     decodeRpcChallengePubsubMsg,
@@ -32,6 +25,7 @@ import { SubscriptionIdSchema } from "../clients/rpc-client/schema.js";
 import type {
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
+    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 
@@ -150,31 +144,14 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     private _handleRpcChallengeRequestEvent(args: any) {
-        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeRequestEvent");
-        let encodedRequest: z.infer<typeof EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema>;
-        try {
-            encodedRequest = parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The challengerequest event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedRequest: EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = args.params.result;
         const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
         this._setRpcClientState("waiting-challenge-requests");
         this.emit("challengerequest", request);
     }
 
     private _handleRpcChallengeEvent(args: any) {
-        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeEvent");
-
-        let encodedChallenge: EncodedDecryptedChallengeMessageType;
-        try {
-            encodedChallenge = parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The challenge event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
 
         this._setRpcClientState("publishing-challenge");
@@ -183,33 +160,14 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     private _handleRpcChallengeAnswerEvent(args: any) {
-        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeAnswerEvent");
-
-        let encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType;
-        try {
-            encodedChallengeAnswer = parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The challengeanswer event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType = args.params.result;
 
         const challengeAnswer = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
         this.emit("challengeanswer", challengeAnswer);
     }
 
     private _handleRpcChallengeVerificationEvent(args: any) {
-        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcChallengeVerificationEvent");
-
-        let encodedChallengeVerification: EncodedDecryptedChallengeVerificationMessageType;
-
-        try {
-            encodedChallengeVerification = parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The challengeverification event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedChallengeVerification: EncodedDecryptedChallengeVerificationMessageType = args.params.result;
 
         const challengeVerification = decodeRpcChallengeVerificationPubsubMsg(encodedChallengeVerification);
         this._setRpcClientState("publishing-challenge-verification");

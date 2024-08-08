@@ -1,3 +1,4 @@
+import type { PubsubSignature } from "../signer/types";
 import {
     ChallengeAnswerMessageSchema,
     ChallengeInChallengePubsubMessageSchema,
@@ -13,12 +14,7 @@ import {
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationMessageSchema,
-    DecryptedChallengeVerificationSchema,
-    EncodedDecryptedChallengeAnswerMessageSchema,
-    EncodedDecryptedChallengeMessageSchema,
-    EncodedDecryptedChallengeRequestMessageSchema,
-    EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema,
-    EncodedDecryptedChallengeVerificationMessageSchema
+    DecryptedChallengeVerificationSchema
 } from "./schema";
 
 import { z } from "zod";
@@ -72,20 +68,46 @@ export type PubsubMessage =
 
 // encoded for rpc here
 
-// challenge request here
+export type EncryptedEncoded = {
+    ciphertext: string; // base64
+    iv: string; // base64
+    tag: string; // base64
+    type: "ed25519-aes-gcm";
+};
 
-export type EncodedDecryptedChallengeRequestMessageType = z.infer<typeof EncodedDecryptedChallengeRequestMessageSchema>;
+export interface EncodedPubsubSignature extends Omit<PubsubSignature, "signature" | "publicKey"> {
+    signature: string; // base64
+    publicKey: string; // base64
+}
 
-export type EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = z.infer<
-    typeof EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema
->;
+export interface BaseEncodedPubsubMessage {
+    challengeRequestId: string; // base64 string
+    signature: EncodedPubsubSignature;
+}
+export interface EncodedDecryptedChallengeRequestMessageType
+    extends Omit<DecryptedChallengeRequestMessageType, "challengeRequestId" | "encrypted" | "signature">,
+        BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded; // all base64 strings
+}
 
-// challenge here
+export interface EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+    extends Omit<EncodedDecryptedChallengeRequestMessageType, "publication">,
+        Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, "publication"> {}
 
-export type EncodedDecryptedChallengeMessageType = z.infer<typeof EncodedDecryptedChallengeMessageSchema>;
+export interface EncodedDecryptedChallengeMessageType
+    extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encrypted" | "signature">,
+        BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded; // all base64 strings
+}
 
-// challenge answer
-export type EncodedDecryptedChallengeAnswerMessageType = z.infer<typeof EncodedDecryptedChallengeAnswerMessageSchema>;
-// challenge verification
+export interface EncodedDecryptedChallengeAnswerMessageType
+    extends Omit<DecryptedChallengeAnswerMessageType, "challengeRequestId" | "encrypted" | "signature">,
+        BaseEncodedPubsubMessage {
+    encrypted: EncryptedEncoded; // all base64 strings
+}
 
-export type EncodedDecryptedChallengeVerificationMessageType = z.infer<typeof EncodedDecryptedChallengeVerificationMessageSchema>;
+export interface EncodedDecryptedChallengeVerificationMessageType
+    extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">,
+        BaseEncodedPubsubMessage {
+    encrypted?: EncryptedEncoded; // all base64 strings
+}

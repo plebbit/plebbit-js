@@ -51,10 +51,6 @@ import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubs
 import {
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
 import {
@@ -585,15 +581,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _handleIncomingChallengeRequestFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeRequestFromRpc");
-        let encodedRequest: EncodedDecryptedChallengeRequestMessageType;
-        try {
-            encodedRequest = parseEncodedDecryptedChallengeRequestWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of encoded challenge request from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedRequest: EncodedDecryptedChallengeRequestMessageType = args.params.result;
         const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
         if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
         else this._publishedChallengeRequests.push(request);
@@ -602,14 +590,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private _handleIncomingChallengeFromRpc(args: any) {
         const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeFromRpc");
-        let encodedChallenge: EncodedDecryptedChallengeMessageType;
-        try {
-            encodedChallenge = parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of encoded challenge from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
 
         this._challenge = challenge;
@@ -619,32 +600,15 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _handleIncomingChallengeAnswerFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeAnswerFromRpc");
+        const encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType = args.params.result;
 
-        let encodedChallengeAnswer: EncodedDecryptedChallengeAnswerMessageType;
-
-        try {
-            encodedChallengeAnswer = parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of encoded challenge answer from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
         const challengeAnswerMsg = decodeRpcChallengeAnswerPubsubMsg(encodedChallengeAnswer);
         this._challengeAnswer = challengeAnswerMsg;
         this.emit("challengeanswer", challengeAnswerMsg);
     }
 
     private async _handleIncomingChallengeVerificationFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeVerificationFromRpc");
-        let encoded: EncodedDecryptedChallengeVerificationMessageType;
-        try {
-            encoded = parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("Failed to parse the schema of encoded challenge verification from RPC");
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const encoded: EncodedDecryptedChallengeVerificationMessageType = args.params.result;
         const decoded = decodeRpcChallengeVerificationPubsubMsg(encoded);
         await this._handleRpcChallengeVerification(decoded);
     }

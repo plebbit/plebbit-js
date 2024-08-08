@@ -9,8 +9,8 @@ import type {
 import type { PublicationTypeName } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
 
-import type { CommentEditPubsubMessage, CreateCommentEditOptions } from "../publications/comment-edit/types";
-import type { CreateVoteOptions, VotePubsubMessage } from "../publications/vote/types";
+import type { CommentEditPubsubMessage } from "../publications/comment-edit/types";
+import type { VotePubsubMessage } from "../publications/vote/types";
 import type { CommentPubsubMessage, CommentUpdate, CreateCommentOptions } from "../publications/comment/types";
 import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
