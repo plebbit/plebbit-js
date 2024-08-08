@@ -76,7 +76,7 @@ describeSkipIfRpc(`DB importing`, async () => {
 
         await subplebbit.start();
         await new Promise((resolve) => subplebbit.once("update", resolve));
-        const currentDbVersion = await subplebbit.dbHandler.getDbVersion();
+        const currentDbVersion = await subplebbit._dbHandler.getDbVersion();
         expect(currentDbVersion).to.equal(plebbitVersion.DB_VERSION);
 
         const mockPost = await generateMockPost(subplebbit.address, tempPlebbit);
