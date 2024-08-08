@@ -89,7 +89,7 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend(
 }).strict();
 
 export const CommentEditReservedFields = remeda.difference(
-    [...remeda.keys.strict(CommentEditsTableRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer"],
+    [...remeda.keys.strict(CommentEditsTableRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer", "clients"],
     remeda.keys.strict(CommentEditPubsubMessageSchema.shape)
 );
 

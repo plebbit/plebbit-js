@@ -43,7 +43,7 @@ export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
 });
 
 export const VotePubsubReservedFields = remeda.difference(
-    [...remeda.keys.strict(VoteTablesRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer"],
+    [...remeda.keys.strict(VoteTablesRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer", "clients"],
     remeda.keys.strict(VotePubsubMessageSchema.shape)
 );
 
