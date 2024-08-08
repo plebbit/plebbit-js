@@ -311,10 +311,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!this.pubsubTopic) this.pubsubTopic = remeda.clone(this.signer.address);
         if (typeof this.createdAt !== "number") this.createdAt = timestamp();
         if (!this.protocolVersion) this.protocolVersion = env.PROTOCOL_VERSION;
-
-        await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
-
-        await this._setChallengesToDefaultIfNotDefined(log);
+        if (!this.settings?.challenges) {
+            this.settings = { ...this.settings, challenges: this._defaultSubplebbitChallenges };
+            this.challenges = this.settings.challenges!.map(getSubplebbitChallengeFromSubplebbitChallengeSettings);
+            this._usingDefaultChallenge = true;
+            log(`Defaulted the challenges of subplebbit (${this.address}) to`, this._defaultSubplebbitChallenges);
+        }
 
         await this._updateDbInternalState(this.toJSONInternalBeforeFirstUpdate());
 
@@ -485,7 +487,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         commentEditRaw: CommentEditPubsubMessage,
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<undefined> {
-        const log = Logger("plebbit-js:local-subplebbit:handleCommentEdit");
+        const log = Logger("plebbit-js:local-subplebbit:storeCommentEdit");
         const strippedOutEditPublication = CommentEditPubsubMessageSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
         const commentToBeEdited = await this._dbHandler.queryComment(commentEditRaw.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
@@ -500,6 +502,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             authorSignerAddress,
             authorAddress: strippedOutEditPublication.author.address
         };
+
+        const extraPropsInEdit = remeda.difference(
+            remeda.keys.strict(commentEditRaw),
+            remeda.keys.strict(CommentEditPubsubMessageSchema.shape)
+        );
+        if (extraPropsInEdit.length > 0) {
+            log("Found extra props on CommentEdit", extraPropsInEdit, "Will be adding them to extraProps column");
+            editTableRow.extraProps = remeda.pick(commentEditRaw, extraPropsInEdit);
+        }
+
         await this._dbHandler.insertEdit(editTableRow);
         log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEditRaw.commentCid}) with CommentEdit: `, commentEditRaw);
     }
@@ -960,7 +972,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? authorEditPubsubFields : isEditorMod ? modEditPubsubFields : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            const publicationEditFields = remeda.keys.strict(publication);
+            const publicationEditFields = remeda.keys.strict(CommentEditPubsubMessageSchema.strip().parse(publication)); // we strip here because we don't wanna include unknown props
             for (const editField of publicationEditFields)
                 if (!allowedEditFields.includes(<any>editField)) {
                     log(

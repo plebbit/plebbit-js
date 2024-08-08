@@ -90,6 +90,7 @@ export enum messages {
     ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN = "Failed to resolve the author domain address to use for verification",
     ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "SubplebbitIpfs record includes a field not included in signature.signedPropertyNames",
     ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "VotePubsubMessage record includes a field that's not included in signature.signedPropertyNames",
+    ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "CommentEditPubsubMessage record includes a field that's not included in signature.signedPropertyNames",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

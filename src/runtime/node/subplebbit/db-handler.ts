@@ -278,6 +278,8 @@ export class DbHandler {
             table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
 
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+
+            table.json("extraProps").nullable();
             table.primary(["id", "commentCid"]);
         });
     }
@@ -713,12 +715,21 @@ export class DbHandler {
     }
 
     private async _queryAuthorEdit(cid: string, authorSignerAddress: string, trx?: Transaction): Promise<AuthorCommentEdit | undefined> {
-        const authorEditPubsubFields = remeda.keys.strict(AuthorCommentEditPubsubSchema.shape);
-        const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        const authorEditPubsubFields = <(keyof (AuthorCommentEdit & Pick<CommentEditsTableRow, "extraProps">))[]>[
+            ...remeda.keys.strict(AuthorCommentEditPubsubSchema.shape),
+            "extraProps"
+        ];
+
+        let authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select(authorEditPubsubFields)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
+
+        if (authorEdit?.extraProps) {
+            authorEdit = { ...authorEdit, ...authorEdit.extraProps };
+            delete authorEdit.extraProps;
+        }
 
         return authorEdit;
     }

@@ -15,6 +15,7 @@ import {
 import * as remeda from "remeda";
 import type { CommentEditSignedPropertyNamesUnion } from "../../signer/types";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
+import type { AuthorCommentEdit } from "./types.js";
 
 export const AuthorCommentEditOptionsSchema = z
     .object({
@@ -73,6 +74,7 @@ const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "sig
     remeda.mapToObj([...CommentEditSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
 );
 export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueModFields));
+export const AuthorCommentEditPubsubPassthroughSchema = <z.ZodType<AuthorCommentEdit>>AuthorCommentEditPubsubSchema.passthrough();
 export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(
     remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
 );
@@ -82,7 +84,8 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend(
     authorAddress: CommentEditPubsubMessageSchema.shape.author.shape.address,
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    isAuthorEdit: z.boolean() // if true, then it was an author at the time of editing, otherwise it's a mod
+    isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing, otherwise it's a mod
+    extraProps: z.object({}).passthrough().optional() // will hold unknown props
 }).strict();
 
 export const CommentEditReservedFields = remeda.difference(

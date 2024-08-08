@@ -342,6 +342,9 @@ export async function verifyCommentEdit(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ): Promise<ValidationResult> {
+    if (!_allFieldsOfRecordInSignedPropertyNames(edit))
+        return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+
     const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
