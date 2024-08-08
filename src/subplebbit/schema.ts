@@ -262,45 +262,6 @@ export const CreateNewLocalSubplebbitParsedOptionsSchema = CreateNewLocalSubpleb
     signer: SignerWithAddressPublicKeySchema
 }).strict();
 
-// This type will be stored in the db as the current state
-
-export const InternalSubplebbitRecordBeforeFirstUpdateSchema = CreateNewLocalSubplebbitParsedOptionsSchema.extend({
-    settings: SubplebbitSettingsSchema,
-    challenges: SubplebbitIpfsSchema.shape.challenges, // subplebbit.challenges will be set to default after creating the subplebbit
-    createdAt: SubplebbitIpfsSchema.shape.createdAt,
-    protocolVersion: ProtocolVersionSchema,
-    encryption: SubplebbitIpfsSchema.shape.encryption,
-    _usingDefaultChallenge: z.boolean()
-}).strict();
-
-export const InternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.merge(SubplebbitIpfsSchema)
-    .extend({
-        _subplebbitUpdateTrigger: z.boolean(),
-        cid: CidStringSchema
-    })
-    .strict();
-
-// This will be transmitted over RPC connection for local subs to RPC clients
-
-export const RpcInternalSubplebbitRecordBeforeFirstUpdateSchema = InternalSubplebbitRecordBeforeFirstUpdateSchema.extend({
-    signer: InternalSubplebbitRecordAfterFirstUpdateSchema.shape.signer.omit({ privateKey: true }),
-    started: z.boolean()
-}).strict();
-
-export const RpcInternalSubplebbitRecordAfterFirstUpdateSchema = InternalSubplebbitRecordAfterFirstUpdateSchema.omit({
-    signer: true,
-    _subplebbitUpdateTrigger: true
-})
-    .extend({
-        started: RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape.started,
-        signer: RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape.signer
-    })
-    .strict();
-
-export const RpcLocalSubplebbitUpdateResultSchema = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.or(
-    RpcInternalSubplebbitRecordAfterFirstUpdateSchema
-);
-
 // | CreateNewLocalSubplebbitUserOptions
 // | CreateRemoteSubplebbitOptions
 // | RemoteSubplebbitJsonType
@@ -315,11 +276,11 @@ export const CreateRemoteSubplebbitFunctionArgumentSchema = CreateRemoteSubplebb
 
 export const CreateRpcSubplebbitFunctionArgumentSchema = CreateRemoteSubplebbitFunctionArgumentSchema.or(
     CreateNewLocalSubplebbitUserOptionsSchema
-).or(InternalSubplebbitRecordAfterFirstUpdateSchema);
+);
 
 export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitUserOptionsSchema.or(
     CreateRemoteSubplebbitFunctionArgumentSchema
-).or(InternalSubplebbitRecordAfterFirstUpdateSchema);
+);
 
 // plebbit.listSubplebbits()
 

@@ -9,10 +9,6 @@ import {
     CreateNewLocalSubplebbitParsedOptionsSchema,
     CreateNewLocalSubplebbitUserOptionsSchema,
     CreateRemoteSubplebbitOptionsSchema,
-    InternalSubplebbitRecordBeforeFirstUpdateSchema,
-    InternalSubplebbitRecordAfterFirstUpdateSchema,
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
     SubplebbitChallengeSchema,
     SubplebbitChallengeSettingSchema,
     SubplebbitEditOptionsSchema,
@@ -59,14 +55,6 @@ export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitSchema>;
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
-export type InternalSubplebbitAfterFirstUpdateType = z.infer<typeof InternalSubplebbitRecordAfterFirstUpdateSchema>;
-
-export type InternalSubplebbitBeforeFirstUpdateType = z.infer<typeof InternalSubplebbitRecordBeforeFirstUpdateSchema>;
-
-export type InternalSubplebbitAfterFirstUpdateRpcType = z.infer<typeof RpcInternalSubplebbitRecordAfterFirstUpdateSchema>;
-
-export type InternalSubplebbitBeforeFirstUpdateRpcType = z.infer<typeof RpcInternalSubplebbitRecordBeforeFirstUpdateSchema>;
-
 export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 
 export type CreateNewLocalSubplebbitUserOptions = z.infer<typeof CreateNewLocalSubplebbitUserOptionsSchema>;
@@ -97,11 +85,6 @@ export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 
-// This is the object that gets passed to _updateDbInternalState after calling .edit()
-export interface ParsedSubplebbitEditOptions
-    extends Omit<SubplebbitEditOptions, "roles">,
-        Pick<InternalSubplebbitAfterFirstUpdateType, "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"> {}
-
 // Subplebbit json here
 
 export type RemoteSubplebbitJson = ClassWithNoEnumerables<RemoteSubplebbit>;
@@ -128,3 +111,44 @@ export type SubplebbitUpdatingState =
     | "fetching-ipfs"
     | "failed"
     | "succeeded";
+
+// Internal subplebbit state (in DB)
+
+export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNewLocalSubplebbitParsedOptions {
+    settings: SubplebbitSettings;
+    challenges: SubplebbitIpfsType["challenges"];
+    createdAt: SubplebbitIpfsType["createdAt"];
+    protocolVersion: SubplebbitIpfsType["protocolVersion"];
+    encryption: SubplebbitIpfsType["encryption"];
+    _usingDefaultChallenge: boolean;
+}
+
+export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
+    _subplebbitUpdateTrigger: boolean;
+    cid: string;
+}
+
+// RPC server transmitting Internal Subplebbit records to clients
+
+export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer"> {
+    signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
+    started: boolean;
+}
+
+export interface RpcInternalSubplebbitRecordAfterFirstUpdateType
+    extends Omit<InternalSubplebbitRecordAfterFirstUpdateType, "_subplebbitUpdateTrigger" | "signer"> {
+    started: RpcInternalSubplebbitRecordBeforeFirstUpdateType["started"];
+    signer: RpcInternalSubplebbitRecordBeforeFirstUpdateType["signer"];
+}
+
+export type RpcLocalSubplebbitUpdateResultType =
+    | RpcInternalSubplebbitRecordBeforeFirstUpdateType
+    | RpcInternalSubplebbitRecordAfterFirstUpdateType;
+
+// This is the object that gets passed to _updateDbInternalState after calling .edit()
+export interface ParsedSubplebbitEditOptions
+    extends Omit<SubplebbitEditOptions, "roles">,
+        Pick<
+            InternalSubplebbitRecordAfterFirstUpdateType,
+            "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"
+        > {}

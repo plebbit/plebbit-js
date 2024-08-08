@@ -1,7 +1,8 @@
 import Logger from "@plebbit/plebbit-logger";
 import type {
-    InternalSubplebbitBeforeFirstUpdateRpcType,
-    InternalSubplebbitAfterFirstUpdateRpcType,
+    RpcInternalSubplebbitRecordAfterFirstUpdateType,
+    RpcInternalSubplebbitRecordBeforeFirstUpdateType,
+    RpcLocalSubplebbitUpdateResultType,
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     SubplebbitStartedState
@@ -17,16 +18,9 @@ import {
     parseEncodedDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeRequestWithSubplebbitAuthorWithPlebbitErrorIfItFails,
     parseEncodedDecryptedChallengeVerificationWithPlebbitErrorIfItFails,
-    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails,
-    parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails
+    parseEncodedDecryptedChallengeWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
-import {
-    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcLocalSubplebbitUpdateResultSchema,
-    SubplebbitEditOptionsSchema,
-    SubplebbitIpfsSchema
-} from "./schema.js";
+import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "./schema.js";
 import { EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import {
     decodeRpcChallengeAnswerPubsubMsg,
@@ -45,13 +39,13 @@ import type {
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     startedState!: SubplebbitStartedState;
-    signer!: InternalSubplebbitAfterFirstUpdateRpcType["signer"];
-    settings?: InternalSubplebbitAfterFirstUpdateRpcType["settings"];
+    signer!: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
+    settings?: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
 
     // Private stuff
     private _startRpcSubscriptionId?: z.infer<typeof SubscriptionIdSchema> = undefined;
-    protected _usingDefaultChallenge!: InternalSubplebbitAfterFirstUpdateRpcType["_usingDefaultChallenge"];
+    protected _usingDefaultChallenge!: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -66,20 +60,27 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         });
     }
 
-    toJSONInternalRpcAfterFirstUpdate(): InternalSubplebbitAfterFirstUpdateRpcType {
-        return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse({
+    toJSONInternalRpcAfterFirstUpdate(): RpcInternalSubplebbitRecordAfterFirstUpdateType {
+        if (!this.cid) throw Error("rpcLocalSubplebbit.cid should be defined before calling toJSONInternalRpcAfterFirstUpdate");
+        return {
             ...this.toJSONIpfs(),
             ...this.toJSONInternalRpcBeforeFirstUpdate(),
             cid: this.cid
-        });
+        };
     }
 
-    toJSONInternalRpcBeforeFirstUpdate(): InternalSubplebbitBeforeFirstUpdateRpcType {
-        //@ts-expect-error
-        return remeda.pick(this, Object.keys(RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.shape));
+    toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType {
+        if (!this.settings) throw Error("Attempting to transmit InternalRpc record without defining settings");
+        return {
+            ...this._toJSONBase(),
+            signer: this.signer,
+            settings: this.settings,
+            _usingDefaultChallenge: this._usingDefaultChallenge,
+            started: this.started
+        };
     }
 
-    async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitBeforeFirstUpdateRpcType) {
+    async initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordBeforeFirstUpdateType) {
         await this.initRemoteSubplebbitPropsNoMerge(newProps);
         this.signer = newProps.signer;
         this.settings = newProps.settings;
@@ -87,7 +88,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.started = newProps.started;
     }
 
-    async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: InternalSubplebbitAfterFirstUpdateRpcType) {
+    async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType) {
         const subplebbitIpfs = SubplebbitIpfsSchema.passthrough().parse(
             remeda.pick(newProps, <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"])
         );
@@ -118,15 +119,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     protected override async _processUpdateEventFromRpcUpdate(args: any) {
         // This function is gonna be called with every update event from rpcLocalSubplebbit.update()
         const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
-        let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
-        try {
-            updateRecord = parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The update event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
-
+        const updateRecord: RpcLocalSubplebbitUpdateResultType = args.params.result; // we're being optimistic here and hoping the rpc server sent the correct update
         if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
 
@@ -137,14 +130,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         // This function is gonna be called with every update event from rpcLocalSubplebbit.start()
 
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
-        let updateRecord: z.infer<typeof RpcLocalSubplebbitUpdateResultSchema>;
-        try {
-            updateRecord = parseLocalSubplebbitRpcUpdateResultWithPlebbitErrorIfItFails(args.params.result);
-        } catch (e) {
-            log.error("The update event from rpc contains an invalid schema", e);
-            this.emit("error", <PlebbitError>e);
-            throw e;
-        }
+        const updateRecord: RpcLocalSubplebbitUpdateResultType = args.params.result;
 
         if ("updatedAt" in updateRecord) {
             await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);

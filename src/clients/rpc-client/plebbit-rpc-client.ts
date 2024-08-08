@@ -9,9 +9,9 @@ import pTimeout from "p-timeout";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import type {
     CreateNewLocalSubplebbitUserOptions,
-    InternalSubplebbitBeforeFirstUpdateRpcType,
-    InternalSubplebbitAfterFirstUpdateRpcType,
-    SubplebbitEditOptions
+    RpcInternalSubplebbitRecordBeforeFirstUpdateType,
+    SubplebbitEditOptions,
+    RpcLocalSubplebbitUpdateResultType
 } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
 import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
@@ -22,9 +22,7 @@ import { PageIpfsSchema } from "../../pages/schema.js";
 import {
     CreateNewLocalSubplebbitUserOptionsSchema,
     ListOfSubplebbitsSchema,
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    SubplebbitEditOptionsSchema,
-    RpcLocalSubplebbitUpdateResultSchema
+    SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
@@ -215,7 +213,7 @@ export default class PlebbitRpcClient {
     async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
         const parsedCreateSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(createSubplebbitOptions);
-        const subProps = RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(
+        const subProps = <RpcInternalSubplebbitRecordBeforeFirstUpdateType>(
             await this._webSocketClient.call("createSubplebbit", [parsedCreateSubplebbitOptions])
         );
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
@@ -245,11 +243,11 @@ export default class PlebbitRpcClient {
     async editSubplebbit(
         subplebbitAddress: string,
         subplebbitEditOptions: SubplebbitEditOptions
-    ): Promise<InternalSubplebbitAfterFirstUpdateRpcType | InternalSubplebbitBeforeFirstUpdateRpcType> {
+    ): Promise<RpcLocalSubplebbitUpdateResultType> {
         const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
         const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
         const propsAfterReplacing = replaceXWithY(parsedEditOptions, undefined, null);
-        const rawRes = RpcLocalSubplebbitUpdateResultSchema.parse(
+        const rawRes = <RpcLocalSubplebbitUpdateResultType>(
             await this._webSocketClient.call("editSubplebbit", [parsedAddress, propsAfterReplacing])
         );
         return rawRes;

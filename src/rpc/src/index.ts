@@ -35,13 +35,8 @@ import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
-import { AuthorAddressSchema, CidStringSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
-import {
-    CreateNewLocalSubplebbitUserOptionsSchema,
-    RpcInternalSubplebbitRecordBeforeFirstUpdateSchema,
-    RpcInternalSubplebbitRecordAfterFirstUpdateSchema,
-    SubplebbitEditOptionsSchema
-} from "../../subplebbit/schema.js";
+import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { CreateNewLocalSubplebbitUserOptionsSchema, SubplebbitEditOptionsSchema } from "../../subplebbit/schema.js";
 import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
@@ -49,8 +44,8 @@ import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js"
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "./schema.js";
 import type {
-    InternalSubplebbitAfterFirstUpdateRpcType,
-    InternalSubplebbitBeforeFirstUpdateRpcType,
+    RpcInternalSubplebbitRecordAfterFirstUpdateType,
+    RpcInternalSubplebbitRecordBeforeFirstUpdateType,
     RpcRemoteSubplebbitType
 } from "../../subplebbit/types.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
@@ -245,7 +240,7 @@ class PlebbitWsServer extends EventEmitter {
         const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
         const subplebbit = <LocalSubplebbit>await this.plebbit.createSubplebbit(createSubplebbitOptions);
         if (!(subplebbit instanceof LocalSubplebbit)) throw Error("Failed to create a local subplebbit. This is a critical error");
-        return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
+        return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
     }
 
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number) {
@@ -372,9 +367,8 @@ class PlebbitWsServer extends EventEmitter {
             startedSubplebbits[editSubplebbitOptions.address] = startedSubplebbits[address];
             delete startedSubplebbits[address];
         }
-        if (typeof subplebbit.updatedAt === "number")
-            return RpcInternalSubplebbitRecordAfterFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcAfterFirstUpdate());
-        else return RpcInternalSubplebbitRecordBeforeFirstUpdateSchema.parse(subplebbit.toJSONInternalRpcBeforeFirstUpdate());
+        if (typeof subplebbit.updatedAt === "number") return subplebbit.toJSONInternalRpcAfterFirstUpdate();
+        else return subplebbit.toJSONInternalRpcBeforeFirstUpdate();
     }
 
     async deleteSubplebbit(params: any) {
@@ -548,8 +542,8 @@ class PlebbitWsServer extends EventEmitter {
         const sendSubJson = () => {
             let jsonToSend:
                 | RpcRemoteSubplebbitType
-                | InternalSubplebbitBeforeFirstUpdateRpcType
-                | InternalSubplebbitAfterFirstUpdateRpcType;
+                | RpcInternalSubplebbitRecordAfterFirstUpdateType
+                | RpcInternalSubplebbitRecordBeforeFirstUpdateType;
             if (subplebbit instanceof LocalSubplebbit)
                 jsonToSend =
                     typeof subplebbit.updatedAt === "number"
