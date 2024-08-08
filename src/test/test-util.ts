@@ -626,6 +626,26 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
     disableZodValidationOfPublication(vote);
 }
 
+export async function setExtraPropOnCommentEditAndSign(
+    commentEdit: CommentEdit,
+    extraProps: Object,
+    includeExtraPropInSignedPropertyNames: boolean
+) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnCommentEditAndSign");
+
+    const publicationWithExtraProp = { ...commentEdit.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson(
+            [...commentEdit.signature.signedPropertyNames, ...Object.keys(extraProps)],
+            cleanUpBeforePublishing(publicationWithExtraProp),
+            commentEdit.signer!,
+            log
+        );
+    commentEdit.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+
+    disableZodValidationOfPublication(commentEdit);
+}
+
 export async function addStringToIpfs(content: string): Promise<string> {
     const plebbit = await mockRemotePlebbitIpfsOnly();
     const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
