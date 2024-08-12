@@ -83,10 +83,12 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     }
 
     async initRpcInternalSubplebbitAfterFirstUpdateNoMerge(newProps: RpcInternalSubplebbitRecordAfterFirstUpdateType) {
-        const subplebbitIpfs = SubplebbitIpfsSchema.passthrough().parse(
-            remeda.pick(newProps, <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"])
-        );
-        await super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfs);
+        const keysOfSubplebbitIpfs = <(keyof SubplebbitIpfsType)[]>[...newProps.signature.signedPropertyNames, "signature"];
+        const subplebbitIpfsParseRes = SubplebbitIpfsSchema.passthrough().safeParse(remeda.pick(newProps, keysOfSubplebbitIpfs));
+        if (subplebbitIpfsParseRes.success) {
+            await super.initSubplebbitIpfsPropsNoMerge(subplebbitIpfsParseRes.data);
+        } else await super.initRemoteSubplebbitPropsNoMerge(newProps);
+
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
         this.cid = newProps.cid;
     }
