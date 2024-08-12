@@ -59,7 +59,11 @@ describeSkipIfRpc("challengerequest", async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
         await comment.publish();
         expect(comment._publishedChallengeRequests).to.be.a("array");
-        const challengeRequestToEdit = remeda.clone(comment._publishedChallengeRequests[0]);
+        const challengeRequestToEdit = remeda.omit(remeda.clone(comment._publishedChallengeRequests[0]), [
+            "publication",
+            "challengeAnswers",
+            "challengeCommentCids"
+        ]);
         challengeRequestToEdit.timestamp = timestamp() - 6 * 60; // Should be invalidated now
         const signer = Object.values(comment._challengeIdToPubsubSigner)[0];
         challengeRequestToEdit.signature = await signChallengeRequest(challengeRequestToEdit, signer);
@@ -72,7 +76,12 @@ describeSkipIfRpc("challengerequest", async () => {
         await comment.publish();
         // comment._publishedChallengeRequests (ChallengeRequest[]) should be defined now
         expect(comment._publishedChallengeRequests).to.be.a("array");
-        const verificaiton = await verifyChallengeRequest(comment._publishedChallengeRequests[0]);
+        const requestToValidate = remeda.omit(comment._publishedChallengeRequests[0], [
+            "publication",
+            "challengeAnswers",
+            "challengeCommentCids"
+        ]);
+        const verificaiton = await verifyChallengeRequest(requestToValidate);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
@@ -164,7 +173,11 @@ describeSkipIfRpc("challengerequest", async () => {
 
         // comment._publishedChallengeRequests (ChallengeRequest) should be defined now
         expect(comment._publishedChallengeRequests).to.be.a("array");
-        const requestWithInvalidSignature = remeda.clone(comment._publishedChallengeRequests[0]);
+        const requestWithInvalidSignature = remeda.omit(remeda.clone(comment._publishedChallengeRequests[0]), [
+            "publication",
+            "challengeCommentCids",
+            "challengeAnswers"
+        ]);
         requestWithInvalidSignature.acceptedChallengeTypes.push("test"); // Signature should be invalid after
         const verificaiton = await verifyChallengeRequest(requestWithInvalidSignature);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
@@ -218,13 +231,12 @@ describeSkipIfRpc(`challengemessage`, async () => {
 
         await comment.publish();
 
-        await new Promise(async (resolve) => {
-            comment.once("challenge", async (challengeMessage) => {
-                const verification = await verifyChallengeMessage(challengeMessage, mathCliSubplebbitAddress);
-                expect(verification).to.deep.equal({ valid: true });
-                resolve();
-            });
-        });
+        const challengePubsubMsg = await new Promise((resolve) => comment.once("challenge", resolve));
+
+        const challengePubsubMsgNoExtraProps = remeda.omit(challengePubsubMsg, ["challenges"]);
+
+        const verification = await verifyChallengeMessage(challengePubsubMsgNoExtraProps, mathCliSubplebbitAddress);
+        expect(verification).to.deep.equal({ valid: true });
     });
 });
 
@@ -253,13 +265,11 @@ describeSkipIfRpc("challengeanswer", async () => {
         await comment.publish();
 
         comment.once("challenge", () => comment.publishChallengeAnswers(["2"]));
-        await new Promise((resolve) => {
-            comment.once("challengeanswer", async (challengeAnswer) => {
-                const verificaiton = await verifyChallengeAnswer(challengeAnswer);
-                expect(verificaiton).to.deep.equal({ valid: true });
-                resolve();
-            });
-        });
+
+        const challengeAnswerPubsubMsg = await new Promise((resolve) => comment.once("challengeanswer", resolve));
+        const challengeAnswerPubsubMsgNoExtraProps = remeda.omit(challengeAnswerPubsubMsg, ["challengeAnswers"]);
+        const verificaiton = await verifyChallengeAnswer(challengeAnswerPubsubMsgNoExtraProps);
+        expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`Sub ignores a challenge answer with invalid answer.signature`, async () => {
@@ -343,46 +353,47 @@ describeSkipIfRpc("challengeanswer", async () => {
         comment.removeAllListeners();
         await comment.publish();
 
-        await new Promise(async (resolve) => {
-            comment.once("challenge", async () => {
-                await comment._plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, comment.handleChallengeExchange);
-                const newSigner = await plebbit.createSigner();
-                const challengeRequestId = await getBufferedPlebbitAddressFromPublicKey(newSigner.publicKey);
-                const toSignAnswer = {
-                    type: "CHALLENGEANSWER",
-                    challengeRequestId,
-                    encryptedChallengeAnswers: JSON.stringify([2]),
-                    userAgent: PlebbitJsVersion.USER_AGENT,
-                    protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION
-                };
-                const challengeAnswer = {
-                    ...toSignAnswer,
-                    signature: await signChallengeAnswer(toSignAnswer, newSigner)
-                };
-                expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
+        await new Promise((resolve) => comment.once("challenge", resolve));
 
-                await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeAnswer);
+        await comment._plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, comment.handleChallengeExchange);
+        const pubsubSigner = await plebbit.createSigner();
+        const differentChallengeRequestId = await getBufferedPlebbitAddressFromPublicKey(pubsubSigner.publicKey);
+        const toSignAnswer = {
+            type: "CHALLENGEANSWER",
+            challengeRequestId: differentChallengeRequestId,
+            userAgent: PlebbitJsVersion.USER_AGENT,
+            protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION,
+            timestamp: Math.round(Date.now() / 1000)
+        };
+        toSignAnswer.encrypted = await encryptEd25519AesGcm(
+            JSON.stringify({ challengeAnswers: ["2"] }),
+            pubsubSigner.privateKey,
+            comment._subplebbit.encryption.publicKey // Use a public key that cannot be decrypted for the sub
+        );
+        const challengeAnswer = {
+            ...toSignAnswer,
+            signature: await signChallengeAnswer(toSignAnswer, pubsubSigner)
+        };
+        expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
 
-                const subMethod = (pubsubMsg) => {
-                    const msgParsed = cborgDecode(pubsubMsg["data"]);
-                    if (
-                        msgParsed.type === "CHALLENGEVERIFICATION" &&
-                        msgParsed.challengeRequestId.toString() === toSignAnswer.challengeRequestId.toString()
-                    ) {
-                        expect(msgParsed.challengeSuccess).to.be.false;
-                        expect(msgParsed.reason).to.equal(messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST);
-                        expect(msgParsed.publication).to.be.undefined;
-                        expect(msgParsed.encrypted).to.be.undefined;
-                        plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, subMethod);
-                        resolve();
-                    }
-                };
+        await plebbit._clientsManager.pubsubPublish(comment._subplebbit.pubsubTopic, challengeAnswer);
 
-                await plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, subMethod);
-                await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5s for sub response, if we didn't get a response then the answer has been ignored
-                resolve();
-            });
-        });
+        const challengeVerification = await new Promise((resolve) =>
+            plebbit._clientsManager.pubsubSubscribe(comment._subplebbit.pubsubTopic, (pubsubMsg) => {
+                const msgParsed = cborgDecode(pubsubMsg["data"]);
+                if (
+                    msgParsed.type === "CHALLENGEVERIFICATION" &&
+                    msgParsed.challengeRequestId.toString() === toSignAnswer.challengeRequestId.toString()
+                )
+                    resolve(msgParsed);
+            })
+        );
+
+        expect(challengeVerification.challengeSuccess).to.be.false;
+        expect(challengeVerification.reason).to.equal(messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST);
+        expect(challengeVerification.publication).to.be.undefined;
+        expect(challengeVerification.encrypted).to.be.undefined;
+        plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic);
     });
 });
 
@@ -401,13 +412,10 @@ describeSkipIfRpc("challengeverification", async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
         await comment.publish();
 
-        await new Promise((resolve) => {
-            comment.once("challengeverification", async (challengeVerifcation, _) => {
-                const verification = await verifyChallengeVerification(challengeVerifcation, signers[0].address);
-                expect(verification).to.deep.equal({ valid: true });
-                resolve();
-            });
-        });
+        const challengeVerification = await new Promise((resolve) => comment.once("challengeverification", resolve));
+        const challengeVerificationNoExtraProps = remeda.omit(challengeVerification, ["publication"]);
+        const verification = await verifyChallengeVerification(challengeVerificationNoExtraProps, signers[0].address);
+        expect(verification).to.deep.equal({ valid: true });
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
         const challengeVerification = parseMsgJson(remeda.clone(validChallengeVerificationFixture));
