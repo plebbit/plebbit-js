@@ -610,6 +610,22 @@ export async function overrideCommentEditInstancePropsAndSign(commentEdit: Comme
     disableZodValidationOfPublication(commentEdit);
 }
 
+export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnVoteAndSign");
+
+    const publicationWithExtraProp = { ...comment.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson(
+            [...comment.signature.signedPropertyNames, ...Object.keys(extraProps)],
+            cleanUpBeforePublishing(publicationWithExtraProp),
+            comment.signer!,
+            log
+        );
+    comment.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+
+    disableZodValidationOfPublication(comment);
+}
+
 export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
     const log = Logger("plebbit-js:test-util:setExtraPropOnVoteAndSign");
 
