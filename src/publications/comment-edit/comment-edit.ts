@@ -3,7 +3,8 @@ import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
 import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, LocalCommentEditOptions } from "./types.js";
-import { CommentEditsTableRowInsert, PublicationTypeName } from "../../types.js";
+import type { PublicationTypeName } from "../../types.js";
+import * as remeda from "remeda";
 
 export class CommentEdit extends Publication {
     commentCid!: CommentEditPubsubMessage["commentCid"];
@@ -16,6 +17,8 @@ export class CommentEdit extends Publication {
     locked?: CommentEditPubsubMessage["locked"];
     removed?: CommentEditPubsubMessage["removed"];
     commentAuthor?: CommentEditPubsubMessage["commentAuthor"];
+
+    _pubsubMessageToPublish?: CommentEditPubsubMessage = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -42,6 +45,8 @@ export class CommentEdit extends Publication {
     _initLocalProps(props: LocalCommentEditOptions) {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
+        const keysCasted = <(keyof CommentEditPubsubMessage)[]>props.signature.signedPropertyNames;
+        this._pubsubMessageToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
     _initRemoteProps(props: CommentEditPubsubMessage): void {
@@ -55,23 +60,8 @@ export class CommentEdit extends Publication {
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
-        return {
-            subplebbitAddress: this.subplebbitAddress,
-            timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author.toJSONIpfs(),
-            protocolVersion: this.protocolVersion,
-            commentCid: this.commentCid,
-            content: this.content,
-            reason: this.reason,
-            deleted: this.deleted,
-            flair: this.flair,
-            spoiler: this.spoiler,
-            pinned: this.pinned,
-            locked: this.locked,
-            removed: this.removed,
-            commentAuthor: this.commentAuthor
-        };
+        if (!this._pubsubMessageToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
+        return this._pubsubMessageToPublish;
     }
 
     override getType(): PublicationTypeName {
