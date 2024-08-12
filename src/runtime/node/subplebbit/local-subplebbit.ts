@@ -1146,7 +1146,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         if (!this._ongoingChallengeExchanges.has(challengeAnswer.challengeRequestId.toString()))
             // Respond with error to answers without challenge request
-            await this._publishFailedChallengeVerification(
+            return this._publishFailedChallengeVerification(
                 { reason: messages.ERR_CHALLENGE_ANSWER_WITH_NO_CHALLENGE_REQUEST },
                 challengeAnswer.challengeRequestId
             );
