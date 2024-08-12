@@ -68,7 +68,8 @@ import { getErrorCodeFromMessage } from "../../../util.js";
 import {
     SignerWithPublicKeyAddress,
     decryptEd25519AesGcmPublicKeyBuffer,
-    verifyComment,
+    verifyCommentIpfs,
+    verifyCommentPubsubMessage,
     verifySubplebbit,
     verifyVote
 } from "../../../signer/index.js";
@@ -638,11 +639,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const commentInDb = await this._dbHandler.queryComment(commentRow.cid, trxForInsert);
                 if (!commentInDb) throw Error("Failed to query the comment we just inserted");
                 // The line below will fail with extra props
-                const commentPubsubMessageRecreated = <CommentPubsubMessage>(
-                    remeda.pick(commentInDb, <(keyof CommentPubsubMessage)[]>[...commentInDb.signature.signedPropertyNames, "signature"])
-                );
-                const validity = await verifyComment(
-                    removeUndefinedValuesRecursively(commentPubsubMessageRecreated),
+
+                const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
+                const validity = await verifyCommentIpfs(
+                    removeUndefinedValuesRecursively(commentIpfsRecreated),
                     this._plebbit.resolveAuthorAddresses,
                     this._clientsManager,
                     false
@@ -651,7 +651,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                     throw Error(
                         "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
                     );
-                const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
                 const calculatedHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
                 if (calculatedHash !== commentInDb.cid)
                     throw Error("There is a problem with db processing comment rows, the cids don't match");
@@ -687,26 +686,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _respondWithErrorIfSignatureOfPublicationIsInvalid(request: DecryptedChallengeRequestMessageType): Promise<void> {
         let validity: ValidationResult;
         if (this.isPublicationComment(request.publication))
-            validity = await verifyComment(
-                <CommentPubsubMessage>request.publication,
+            validity = await verifyCommentPubsubMessage(
+                request.publication,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 false
             );
         else if (this.isPublicationCommentEdit(request.publication))
-            validity = await verifyCommentEdit(
-                <CommentEditPubsubMessage>request.publication,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            validity = await verifyCommentEdit(request.publication, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
         else if (this.isPublicationVote(request.publication))
-            validity = await verifyVote(
-                <VotePubsubMessage>request.publication,
-                this._plebbit.resolveAuthorAddresses,
-                this._clientsManager,
-                false
-            );
+            validity = await verifyVote(request.publication, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
         else throw Error("Can't detect the type of publication");
 
         if (!validity.valid) {

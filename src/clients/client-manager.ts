@@ -4,7 +4,7 @@ import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
 import type { ChainTicker } from "../types.js";
-import { verifySubplebbit } from "../signer/index.js";
+import { verifyCommentIpfs, verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
 import { FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
@@ -38,7 +38,7 @@ import {
     parseJsonWithPlebbitErrorIfFails,
     parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
-import { verifyComment, verifyCommentUpdate } from "../signer/signatures.js";
+import { verifyCommentUpdate } from "../signer/signatures.js";
 
 type ResultOfFetchingSubplebbit = { subplebbit: SubplebbitIpfsType; cid: string };
 
@@ -850,7 +850,7 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     private async _throwIfCommentIpfsIsInvalid(commentIpfs: CommentIpfsType) {
         // Can potentially throw if resolver if not working
-        const commentIpfsValidation = await verifyComment(commentIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        const commentIpfsValidation = await verifyCommentIpfs(commentIpfs, this._plebbit.resolveAuthorAddresses, this, true);
         if (!commentIpfsValidation.valid)
             throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfs, commentIpfsValidation });
     }
