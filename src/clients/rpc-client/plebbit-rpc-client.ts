@@ -337,7 +337,7 @@ export default class PlebbitRpcClient {
     }
 
     async getSettings() {
-        const res = PlebbitWsServerSettingsSerializedSchema.parse(await this._webSocketClient.call("getSettings", []));
+        const res = PlebbitWsServerSettingsSerializedSchema.passthrough().parse(await this._webSocketClient.call("getSettings", []));
         return res;
     }
 
