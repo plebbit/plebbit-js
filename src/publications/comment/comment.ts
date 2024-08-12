@@ -479,32 +479,39 @@ export class Comment extends Publication {
         this.emit("error", err);
     }
 
+    private async _updateViaRpc() {
+        const log = Logger("plebbit-js:comment:update:_updateViaRpc");
+
+        const rpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
+        if (!rpcUrl) throw Error("Failed to get rpc url");
+        if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
+        try {
+            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient!.commentUpdate(this.cid);
+            this._updateState("updating");
+        } catch (e) {
+            log.error("Failed to receive commentUpdate from RPC due to error", e);
+            this._updateState("stopped");
+            this._setUpdatingState("failed");
+            throw e;
+        }
+        this._updateState("updating");
+
+        this._plebbit
+            .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
+            .on("update", this._handleUpdateEventFromRpc.bind(this))
+            .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
+            .on("statechange", this._handleStateChangeFromRpc.bind(this))
+            .on("error", this._handleErrorEventFromRpc.bind(this));
+
+        this._plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
+    }
+
     async update() {
         const log = Logger("plebbit-js:comment:update");
         if (this.state === "updating") return; // Do nothing if it's already updating
 
-        if (this._plebbit.plebbitRpcClient) {
-            const rpcUrl = this._plebbit.plebbitRpcClientsOptions![0];
-            if (!rpcUrl) throw Error("Failed to get rpc url");
-            if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
-            try {
-                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
-                this._updateState("updating");
-            } catch (e) {
-                log.error("Failed to receive commentUpdate from RPC due to error", e);
-                this._updateState("stopped");
-                this._setUpdatingState("failed");
-                throw e;
-            }
-            this._plebbit.plebbitRpcClient
-                .getSubscription(this._updateRpcSubscriptionId)
-                .on("update", this._handleUpdateEventFromRpc.bind(this))
-                .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
-                .on("statechange", this._handleStateChangeFromRpc.bind(this))
-                .on("error", this._handleErrorEventFromRpc.bind(this));
+        if (this._plebbit.plebbitRpcClient) return this._updateViaRpc();
 
-            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-        }
         this._updateState("updating");
         const updateLoop = (async () => {
             if (this.state === "updating")
