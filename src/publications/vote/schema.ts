@@ -43,11 +43,17 @@ export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
 });
 
 export const VotePubsubReservedFields = remeda.difference(
-    [...remeda.keys.strict(VoteTablesRowSchema.shape), "shortSubplebbitAddress", "state", "publishingState", "signer", "clients"],
+    [
+        ...remeda.keys.strict(VoteTablesRowSchema.shape),
+        ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
+        "shortSubplebbitAddress",
+        "state",
+        "publishingState",
+        "signer",
+        "clients"
+    ],
     remeda.keys.strict(VotePubsubMessageSchema.shape)
 );
-
-console.log(VotePubsubReservedFields);
 
 export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
     publication: VotePubsubMessageSchema
