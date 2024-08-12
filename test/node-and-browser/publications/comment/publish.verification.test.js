@@ -6,6 +6,7 @@ import {
     mockRemotePlebbit,
     publishRandomPost,
     overrideCommentInstancePropsAndSign,
+    setExtraPropOnCommentAndSign,
     describeSkipIfRpc,
     disableZodValidationOfPublication,
     itSkipIfRpc
@@ -146,13 +147,8 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
     });
 
     it(`Can't publish a post to sub with signer being part of CommentPubsubMessage`, async () => {
-        const forbiddenPubsubType = { signer: signers[1] };
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, forbiddenPubsubType);
-        const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
-        post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenPubsubType });
-        post._validateSignature = async () => {}; // Disable signature validation before publishing
-
-        disableZodValidationOfPublication(post);
+        const post = await generateMockPost(subplebbitAddress, plebbit, false);
+        await setExtraPropOnCommentAndSign(post, { signer: { privateKey: post.signer.privateKey } }, true);
         await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
     });
 
@@ -186,10 +182,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
             }
 
             const post = await generateMockPost(subplebbitAddress, plebbit, false);
-            const postPubsubJsonPrior = post.toJSONPubsubMessagePublication();
-            post.toJSONPubsubMessagePublication = () => ({ ...postPubsubJsonPrior, ...forbiddenType });
-            post._validateSignature = async () => {}; // Disable signature validation before publishing
-            disableZodValidationOfPublication(post);
+            await setExtraPropOnCommentAndSign(post, forbiddenType, true);
             await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
         })
     );

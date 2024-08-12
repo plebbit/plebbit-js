@@ -141,7 +141,7 @@ const testRepliesSort = async (parentComments, replySortName, plebbit) => {
         const commentInstance = await plebbit.createComment(comment);
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], commentInstance.replies);
         await testListOfSortedComments(commentPages, replySortName, plebbit);
-        await testRepliesSort(commentPages, replySortName);
+        await testRepliesSort(commentPages, replySortName, plebbit);
     }
 };
 

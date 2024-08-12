@@ -21,10 +21,9 @@ describe("Sign Vote", async () => {
             subplebbitAddress: subplebbit.address,
             commentCid: subplebbit.lastPostCid,
             timestamp: timestamp(),
-            vote: 1,
-            signer: signers[7]
+            vote: 1
         };
-        voteSignature = await signVote(voteProps, signers[7], plebbit);
+        voteSignature = await signVote({ ...voteProps, signer: signers[7] }, plebbit);
     });
     it(`Can sign and validate Vote correctly`, async () => {
         const verification = await verifyVote(

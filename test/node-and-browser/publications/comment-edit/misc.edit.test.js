@@ -5,7 +5,7 @@ import {
     mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
-    overrideCommentEditInstancePropsAndSign,
+    setExtraPropOnCommentEditAndSign,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
@@ -124,7 +124,8 @@ describe(`Changing multiple fields simultaneously in one CommentEdit`, async () 
             subplebbitAddress
         });
 
-        await overrideCommentEditInstancePropsAndSign(commentEdit, fieldsToChange);
+        await setExtraPropOnCommentEditAndSign(commentEdit, fieldsToChange, true);
+        expect(commentEdit.toJSONPubsubMessagePublication().removed).to.be.true;
 
         await publishWithExpectedResult(commentEdit, false, messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS);
     });

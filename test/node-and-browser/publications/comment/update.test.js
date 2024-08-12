@@ -13,7 +13,7 @@ import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
-import { cleanUpBeforePublishing, verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+import { cleanUpBeforePublishing, verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -121,7 +121,7 @@ const addCommentIpfsWithInvalidSignatureToIpfs = async () => {
 
     postIpfs.title += "1234"; // Invalidate signature
 
-    expect(await verifyComment(postIpfs, true, plebbit._clientsManager, false)).to.deep.equal({
+    expect(await verifyCommentIpfs(postIpfs, true, plebbit._clientsManager, false)).to.deep.equal({
         valid: false,
         reason: messages.ERR_SIGNATURE_IS_INVALID
     });
