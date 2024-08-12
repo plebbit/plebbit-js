@@ -9,7 +9,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
-import { verifyComment } from "../../signer/signatures.js";
+import { verifyCommentPubsubMessage } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
@@ -534,7 +534,12 @@ export class Comment extends Publication {
 
     private async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
-        const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentPubsubMessage(
+            commentObj,
+            this._plebbit.resolveAuthorAddresses,
+            this._clientsManager,
+            true
+        ); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 
