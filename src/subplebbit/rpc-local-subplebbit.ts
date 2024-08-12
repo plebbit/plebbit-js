@@ -28,6 +28,7 @@ import type {
     EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
+import { hideClassPrivateProps } from "../util.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
@@ -52,6 +53,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         this.on("update", () => {
             this.editable = remeda.pick(this, remeda.keys.strict(SubplebbitEditOptionsSchema.shape));
         });
+        hideClassPrivateProps(this);
     }
 
     toJSONInternalRpcAfterFirstUpdate(): RpcInternalSubplebbitRecordAfterFirstUpdateType {
