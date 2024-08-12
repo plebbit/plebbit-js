@@ -4,7 +4,8 @@ import {
     publishRandomReply,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    jsonifySubplebbitAndRemoveInternalProps
 } from "../../../dist/node/test/test-util";
 import { timestamp } from "../../../dist/node/util";
 import { messages } from "../../../dist/node/errors";
@@ -26,6 +27,9 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     const _createAndValidateSubArgs = async (subArgs) => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+        if (!("signer" in subArgs))
+            // signer shape changes after createSubplebbit
+            expect(remeda.pick(newSubplebbit, Object.keys(subArgs))).to.deep.equal(subArgs); // the args should exist after creating immedietely
         await newSubplebbit.start();
         await resolveWhenConditionIsTrue(newSubplebbit, () => typeof newSubplebbit.updatedAt === "number");
         await newSubplebbit.stop();
@@ -38,13 +42,11 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
         const remoteSub = await remotePlebbit.getSubplebbit(newSubplebbit.address);
 
-        const localAndInternalProps = ["signer", "settings", "started", "editable", "clients", "state", "startedState", "updatingState"];
+        const remoteSubJson = jsonifySubplebbitAndRemoveInternalProps(remoteSub);
 
-        const remoteSubJson = JSON.parse(JSON.stringify(remeda.omit(remoteSub, localAndInternalProps)));
+        const localSubRemoteJson = jsonifySubplebbitAndRemoveInternalProps(newSubplebbit);
 
-        const localSubRemoteJson = remeda.omit(JSON.parse(JSON.stringify(newSubplebbit)), localAndInternalProps);
-
-        expect(deterministicStringify(remoteSubJson)).to.equal(deterministicStringify(localSubRemoteJson));
+        expect(localSubRemoteJson).to.deep.equal(remoteSubJson);
 
         expect(remoteSub.toJSONIpfs()).to.deep.equal(newSubplebbit.toJSONIpfs());
         return newSubplebbit;
