@@ -269,12 +269,15 @@ const _verifyJsonSignature = async (publicationToBeVerified: PublicationToVerify
         }
     }
 
-    const signatureIsValid = await verifyBufferEd25519(
-        cborg.encode(propsToSign, cborgEncodeOptions),
-        uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
-        publicationToBeVerified.signature.publicKey
-    );
-    return signatureIsValid;
+    try {
+        return await verifyBufferEd25519(
+            cborg.encode(propsToSign, cborgEncodeOptions),
+            uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"),
+            publicationToBeVerified.signature.publicKey
+        );
+    } catch (e) {
+        return false;
+    }
 };
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
 const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
@@ -284,13 +287,12 @@ const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
         if (msg[propertyName] !== undefined && msg[propertyName] !== null) propsToSign[propertyName] = msg[propertyName];
     }
 
-    const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
-    const signatureIsValid = await verifyBufferEd25519(
-        cborg.encode(propsToSign, cborgEncodeOptions),
-        msg.signature.signature,
-        publicKeyBase64
-    );
-    return signatureIsValid;
+    try {
+        const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
+        return await verifyBufferEd25519(cborg.encode(propsToSign, cborgEncodeOptions), msg.signature.signature, publicKeyBase64);
+    } catch (e) {
+        return false;
+    }
 };
 
 const _verifyPublicationWithAuthor = async (
