@@ -91,6 +91,12 @@ export enum messages {
     ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "SubplebbitIpfs record includes a field not included in signature.signedPropertyNames",
     ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "VotePubsubMessage record includes a field that's not included in signature.signedPropertyNames",
     ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "CommentEditPubsubMessage record includes a field that's not included in signature.signedPropertyNames",
+    ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "CommentPubsubMessage includes a field that's not included in signature.signedPropertyNames",
+    ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "CommentUpdate record includes a field that's not included in signature.signedPropertyNames",
+    ERR_CHALLENGE_REQUEST_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeRequestPubsubMessage include a field that's not part of signature.signedPropertyNames",
+    ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengePubsubMessage includes a field that's not part of signature.signedPropertyNames",
+    ERR_CHALLENGE_ANSWER_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeAnswerPubsubMessage includes a field that's not part of signature.signedPropertyNames",
+    ERR_CHALLENGE_VERIFICATION_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeVerificationPubsubMessage includes a field that's not part of signature.signedPropertyNames",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",
