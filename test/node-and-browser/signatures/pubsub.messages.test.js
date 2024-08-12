@@ -6,7 +6,7 @@ import {
     verifyChallengeMessage,
     verifyChallengeVerification,
     signChallengeRequest,
-    verifyComment
+    verifyCommentPubsubMessage
 } from "../../../dist/node/signer/signatures.js";
 import signers from "../../fixtures/signers.js";
 import { expect, assert } from "chai";
@@ -121,12 +121,12 @@ describeSkipIfRpc("challengerequest", async () => {
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubMessage()));
 
         expect(
-            await verifyComment(commentObjToEncrypt.publication, plebbit.resolveAuthorAddresses, comment._clientsManager, true)
+            await verifyCommentPubsubMessage(commentObjToEncrypt.publication, plebbit.resolveAuthorAddresses, comment._clientsManager, true)
         ).to.deep.equal({
             valid: true
         });
         commentObjToEncrypt.publication.timestamp += 1; // Should invalidate signature
-        expect(await verifyComment(commentObjToEncrypt.publication, false, comment._clientsManager, false)).to.deep.equal({
+        expect(await verifyCommentPubsubMessage(commentObjToEncrypt.publication, false, comment._clientsManager, false)).to.deep.equal({
             valid: false,
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });

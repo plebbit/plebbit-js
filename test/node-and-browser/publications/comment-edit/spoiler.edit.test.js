@@ -7,7 +7,7 @@ import {
 } from "../../../../dist/node/test/test-util.js";
 import { expect } from "chai";
 import { messages } from "../../../../dist/node/errors.js";
-import { verifyComment, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
+import { verifyCommentIpfs, verifyCommentUpdate } from "../../../../dist/node/signer/signatures.js";
 
 const subplebbitAddress = signers[0].address;
 const roles = [
@@ -70,7 +70,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         await recreatedPost.stop();
         expect(recreatedPost.spoiler).to.be.true;
 
-        const commentIpfsValidity = await verifyComment(recreatedPost.toJSONIpfs(), true, recreatedPost._clientsManager, false);
+        const commentIpfsValidity = await verifyCommentIpfs(recreatedPost.toJSONIpfs(), true, recreatedPost._clientsManager, false);
         expect(commentIpfsValidity).to.deep.equal({ valid: true });
 
         const commentUpdateValidity = await verifyCommentUpdate(
