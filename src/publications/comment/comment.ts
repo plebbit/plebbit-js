@@ -363,7 +363,7 @@ export class Comment extends Publication {
             // User may have attempted to call plebbit.createComment({cid}).update
             const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
 
-            if (newCommentIpfsOrError instanceof PlebbitError) {
+            if (newCommentIpfsOrError instanceof Error) {
                 // This is a non-retriable error, it should stop the comment from updating
                 log.error(
                     `Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`,
