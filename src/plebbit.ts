@@ -337,7 +337,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
 
         if ("publication" in parsedOptions) commentInstance._initChallengeRequestProps(parsedOptions);
-        if ("depth" in parsedOptions) {
+        else if ("depth" in parsedOptions) {
             // Options is CommentIpfs
             commentInstance._initIpfsProps(parsedOptions);
         } else if ("signature" in parsedOptions) {
