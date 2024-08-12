@@ -175,7 +175,7 @@ class PlebbitWsServer extends EventEmitter {
             } catch (e: any) {
                 log.error(`${callback.name} error`, { params, error: e });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                const errorJson = clone(e);
+                const errorJson = JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e)));
                 delete errorJson["stack"];
                 throw errorJson;
             }
