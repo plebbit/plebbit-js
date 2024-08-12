@@ -578,8 +578,6 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
 export async function disableZodValidationOfPublication(publication: Publication) {
     publication._createRequestEncrypted = () => publication.toJSONPubsubMessage(); // skip the zod validation
 
-    publication._createDecryptedChallengeRequestMessage = (args) => args;
-
     //@ts-expect-error
     publication._validateSignature = () => {};
 }
@@ -726,11 +724,15 @@ export async function publishSubplebbitRecordWithExtraProp(opts: { includeExtraP
 
 export function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit) {
     const jsonfied = JSON.parse(JSON.stringify(sub));
+    delete jsonfied["posts"]["clients"];
+
     return remeda.omit(jsonfied, ["startedState", "started", "signer", "settings", "editable", "clients", "updatingState", "state"]);
 }
 
 export function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit) {
     const localJson = <LocalSubplebbitJson>JSON.parse(JSON.stringify(sub));
+    //@ts-expect-error
+    delete localJson["posts"]["clients"];
     return remeda.omit(localJson, ["startedState", "started", "clients", "state", "updatingState"]);
 }
 
