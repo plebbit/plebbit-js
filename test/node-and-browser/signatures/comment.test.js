@@ -2,24 +2,25 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
+import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import {
     signComment,
     verifyCommentUpdate,
     signCommentUpdate,
     signCommentEdit,
-    verifyCommentPubsubMessage
+    verifyCommentPubsubMessage,
+    verifyCommentIpfs
 } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
 import * as remeda from "remeda";
-import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
+import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
 import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
 import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" assert { type: "json" };
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
-import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json" assert { type: "json" };
-import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json" assert { type: "json" };
+import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_update.json" assert { type: "json" };
+import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_ipfs.json" assert { type: "json" };
 import { comment as fixtureComment } from "../../fixtures/publications.js";
 
 const fixtureSignature = {
@@ -156,13 +157,13 @@ describeSkipIfRpc("verify Comment", async () => {
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
         const comment = remeda.clone(validCommentFixture);
 
-        const verification = await verifyCommentPubsubMessage(comment, plebbit);
+        const verification = await verifyCommentIpfs(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
         const comment = remeda.clone(validCommentAvatarFixture);
-        const verification = await verifyCommentPubsubMessage(comment, plebbit, true);
+        const verification = await verifyCommentIpfs(comment, plebbit, true);
         expect(verification).to.deep.equal({ valid: true });
     });
 
@@ -215,12 +216,7 @@ describeSkipIfRpc(`Comment with author.address as domain`, async () => {
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyCommentPubsubMessage(
-            comment,
-            tempPlebbit.resolveAuthorAddresses,
-            tempPlebbit._clientsManager,
-            false
-        );
+        const verification = await verifyCommentIpfs(comment, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, false);
 
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
 
@@ -251,7 +247,8 @@ describeSkipIfRpc(`commentupdate`, async () => {
 
     it(`Can validate live CommentUpdate`, async () => {
         const comment = await plebbit.getComment(subplebbit.lastPostCid);
-        await Promise.all([comment.update(), new Promise((resolve) => comment.once("update", resolve))]);
+        await comment.update();
+        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
         await comment.stop();
         // If a comment emits "update" that means the commentUpdate have been verified correctly
     });
