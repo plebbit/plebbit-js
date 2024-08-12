@@ -345,7 +345,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
 
-            expect(sub.toJSON().extraProp).to.equal(opts.extraProps.extraProp);
+            expect(JSON.parse(JSON.stringify(sub)).extraProp).to.equal(opts.extraProps.extraProp);
 
             expect(sub.extraProp).to.equal(opts.extraProps.extraProp);
 

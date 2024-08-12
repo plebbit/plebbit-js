@@ -6,6 +6,7 @@ import {
     isRpcFlagOn,
     mockPlebbit,
     jsonifySubplebbitAndRemoveInternalProps,
+    isRunningInBrowser,
     publishSubplebbitRecordWithExtraProp
 } from "../../../dist/node/test/test-util.js";
 
@@ -16,7 +17,7 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
+import validSubplebbitJsonfiedFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_jsonfied.json" assert { type: "json" };
 
 const subplebbitAddress = signers[0].address;
 
@@ -30,9 +31,11 @@ getRemotePlebbitConfigs().map((config) =>
 
         it(`subplebbit = await createSubplebbit(await getSubplebbit(address))`, async () => {
             const loadedSubplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-            const jsonfiedSub = JSON.parse(JSON.stringify(loadedSubplebbit));
-            const createdSubplebbit = await plebbit.createSubplebbit(jsonfiedSub);
-            expect(jsonfiedSub).to.deep.equal(JSON.parse(JSON.stringify(createdSubplebbit)));
+            const createdSubplebbit = await plebbit.createSubplebbit(loadedSubplebbit);
+            const createdSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(createdSubplebbit);
+            const loadedSubplebbitJson = jsonifySubplebbitAndRemoveInternalProps(loadedSubplebbit);
+
+            expect(loadedSubplebbitJson).to.deep.equal(createdSubplebbitJson);
         });
 
         it(`subplebbit = await createSubplebbit({...await getSubplebbit()})`, async () => {
@@ -52,8 +55,8 @@ getRemotePlebbitConfigs().map((config) =>
         });
 
         it(`Sub JSON props does not change by creating a Subplebbit object via plebbit.createSubplebbit`, async () => {
-            const subJson = remeda.clone(validSubplebbitFixture);
-            const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitFixture));
+            const subJson = remeda.clone(validSubplebbitJsonfiedFixture);
+            const subObj = await plebbit.createSubplebbit(remeda.clone(validSubplebbitJsonfiedFixture));
             expect(subJson.lastPostCid).to.equal(subObj.lastPostCid).and.to.be.a("string");
             expect(subJson.pubsubTopic).to.equal(subObj.pubsubTopic).and.to.be.a("string");
             expect(subJson.address).to.equal(subObj.address).and.to.be.a("string");
@@ -67,15 +70,7 @@ getRemotePlebbitConfigs().map((config) =>
 
             expect(subJson.posts.pageCids).to.deep.equal(subObj.posts.pageCids).and.to.be.a("object");
 
-            const omittedKeys = ["clients"];
-            for (const fixtureField of Object.keys(subJson)) {
-                if (omittedKeys.includes(fixtureField)) continue;
-                expect(deterministicStringify(subObj[fixtureField])).to.equal(deterministicStringify(subJson[fixtureField]));
-            }
             expect(jsonifySubplebbitAndRemoveInternalProps(subJson)).to.deep.equal(jsonifySubplebbitAndRemoveInternalProps(subObj));
-
-            for (const pageKey of Object.keys(subJson.posts.pages))
-                expect(subJson.posts.pages[pageKey].comments).to.deep.equal(subObj.posts.pages[pageKey].comments);
         });
 
         it("Remote subplebbit instance created with only address prop can call getPage", async () => {

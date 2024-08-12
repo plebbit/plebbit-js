@@ -7,8 +7,8 @@ import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/te
 import { messages } from "../../../dist/node/errors.js";
 import { verifySubplebbit, signSubplebbit, cleanUpBeforePublishing, _signJson } from "../../../dist/node/signer/signatures.js";
 import * as remeda from "remeda";
-import validSubplebbitFixture from "../../fixtures/valid_subplebbit.json" assert { type: "json" };
-import validSubplebbitWithEnsCommentsFixture from "../../fixtures/valid_subplebbit_with_ens_comments.json" assert { type: "json" };
+import validSubplebbitFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs.json" assert { type: "json" };
+import validSubplebbitWithEnsCommentsFixture from "../../fixtures/signatures/subplebbit/valid_subplebbit_ipfs_with_ens_comments.json" assert { type: "json" };
 import { removeUndefinedValuesRecursively } from "../../../dist/node/util.js";
 
 // Clients of RPC will trust the response of RPC and won't validate
