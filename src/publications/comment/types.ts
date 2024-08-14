@@ -13,7 +13,7 @@ import {
 } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
-import type { AuthorTypeWithCommentUpdate, ClassWithNoEnumerables } from "../../types.js";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationState } from "../types.js";
@@ -44,7 +44,7 @@ type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpd
 
 // JSON types
 
-export type CommentJson = ClassWithNoEnumerables<Comment>;
+export type CommentJson = JsonOfClass<Comment>;
 
 type AuthorWithShortSubplebbitAddress = AuthorTypeWithCommentUpdate & { shortAddress: string };
 

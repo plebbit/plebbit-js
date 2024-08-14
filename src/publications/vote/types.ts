@@ -8,7 +8,7 @@ import {
 } from "./schema";
 import { VotePubsubMessageWithSubplebbitAuthorSchema } from "../../pubsub-messages/schema";
 import Vote from "./vote";
-import { ClassWithNoEnumerables } from "../../types";
+import { JsonOfClass } from "../../types";
 
 export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
 
@@ -22,4 +22,4 @@ export type VoteChallengeRequestToEncryptType = z.infer<typeof VoteChallengeRequ
 
 export type VoteOptionsToSign = z.infer<typeof VoteOptionsToSignSchema>;
 
-export type VoteJson = ClassWithNoEnumerables<Vote>;
+export type VoteJson = JsonOfClass<Vote>;

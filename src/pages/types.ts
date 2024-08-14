@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema";
 import type { CommentIpfsWithCidPostCidDefined, CommentUpdate, CommentWithinPageJson } from "../publications/comment/types";
-import { ClassWithNoEnumerables } from "../types";
+import { JsonOfClass } from "../types";
 import { PostsPages, RepliesPages } from "./pages";
 
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
@@ -32,7 +32,7 @@ export interface PageTypeJson extends Omit<PageIpfs, "comments"> {
     comments: CommentWithinPageJson[];
 }
 
-export type PostsPagesTypeJson = ClassWithNoEnumerables<PostsPages>;
-export type RepliesPagesTypeJson = ClassWithNoEnumerables<RepliesPages>;
+export type PostsPagesTypeJson = JsonOfClass<PostsPages>;
+export type RepliesPagesTypeJson = JsonOfClass<RepliesPages>;
 
 export type PagesTypeJson = PostsPagesTypeJson | RepliesPagesTypeJson;

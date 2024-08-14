@@ -246,4 +246,4 @@ export interface LRUStorageInterface {
 type OmitUnderscoreProps<T> = Omit<T, `_${string}`>;
 type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: T[K] };
 
-export type ClassWithNoEnumerables<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
+export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;

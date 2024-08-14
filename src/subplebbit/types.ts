@@ -24,7 +24,7 @@ import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import type { ClassWithNoEnumerables } from "../types.js";
+import type { JsonOfClass } from "../types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -87,13 +87,13 @@ export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
 
 // Subplebbit json here
 
-export type RemoteSubplebbitJson = ClassWithNoEnumerables<RemoteSubplebbit>;
+export type RemoteSubplebbitJson = JsonOfClass<RemoteSubplebbit>;
 
-export type RpcRemoteSubplebbitJson = ClassWithNoEnumerables<RpcRemoteSubplebbit>;
+export type RpcRemoteSubplebbitJson = JsonOfClass<RpcRemoteSubplebbit>;
 
-export type RpcLocalSubplebbitJson = ClassWithNoEnumerables<RpcLocalSubplebbit>;
+export type RpcLocalSubplebbitJson = JsonOfClass<RpcLocalSubplebbit>;
 
-export type LocalSubplebbitJson = ClassWithNoEnumerables<LocalSubplebbit>;
+export type LocalSubplebbitJson = JsonOfClass<LocalSubplebbit>;
 
 export type SubplebbitJson = RemoteSubplebbitJson | RpcRemoteSubplebbitJson | RpcLocalSubplebbitJson | LocalSubplebbitJson; // after calling JSON.parse(JSON.stringify(subplebbitInstance)), this should be the output
 
