@@ -38,6 +38,7 @@ import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
     ChallengeRequestMessageType,
+    ChallengeVerificationMessageType,
     PubsubMessage
 } from "../pubsub-messages/types.js";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
@@ -762,6 +763,41 @@ export async function publishChallengeMessageWithExtraProps(
     );
 
     await publishOverPubsub(pubsubSigner.address, { ...toSignChallenge, signature });
+}
+
+export async function publishChallengeVerificationMessageWithExtraProps(
+    publication: Publication,
+    pubsubSigner: SignerType,
+    extraProps: Object,
+    includeExtraPropsInChallengeSignedPropertyNames: boolean
+) {
+    const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
+
+    const toSignChallengeVerification: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
+        type: "CHALLENGEVERIFICATION",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeSuccess: false,
+        challengeErrors: [],
+        reason: "Random reason",
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignChallengeVerification);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames) signedPropertyNames.push(...Object.keys(extraProps));
+
+    Object.assign(toSignChallengeVerification, extraProps);
+
+    const signature = await _signPubsubMsg(
+        <ChallengeVerificationMessageType["signature"]["signedPropertyNames"]>signedPropertyNames,
+        toSignChallengeVerification,
+        pubsubSigner,
+        log
+    );
+
+    await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
 }
 
 export async function addStringToIpfs(content: string): Promise<string> {
