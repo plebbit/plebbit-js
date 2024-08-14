@@ -172,7 +172,7 @@ describe("Validate props of publication Pubsub messages", async () => {
         expect(challengeVerifcation.signature.publicKey.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.signature.publicKey.length).to.equal(32);
         expect(challengeVerifcation.signature.signedPropertyNames.sort()).to.deep.equal(
-            [...getExpectedSignedPropertyNames(challengeVerifcation), "reason", "encrypted"].sort()
+            remeda.uniq([...getExpectedSignedPropertyNames(challengeVerifcation), "reason", "encrypted"]).sort()
         );
         expect(challengeVerifcation.signature.type).to.equal("ed25519");
         expect(challengeVerifcation.timestamp).to.be.a("number");
