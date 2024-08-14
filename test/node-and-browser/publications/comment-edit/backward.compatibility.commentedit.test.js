@@ -1,5 +1,6 @@
 import {
     getRemotePlebbitConfigs,
+    itSkipIfRpc,
     mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
@@ -35,21 +36,26 @@ getRemotePlebbitConfigs().map((config) => {
             await commentToEdit.stop();
         });
 
-        it(`Publishing commentEdit.extraProp should fail if it's not included in commentEdit.signature.signedPropertyNames`, async () => {
-            const commentEdit = await plebbit.createCommentEdit({
-                commentCid: commentToEdit.cid,
-                subplebbitAddress: commentToEdit.subplebbitAddress,
-                content: "Radn" + Math.random(),
-                signer: commentToEdit.signer
-            });
-            await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
+        itSkipIfRpc(
+            `Publishing commentEdit.extraProp should fail if it's not included in commentEdit.signature.signedPropertyNames`,
+            async () => {
+                // Skipped for rpc because it will generate an invalid signature, which will be thrown in rpc server
+                const commentEdit = await plebbit.createCommentEdit({
+                    commentCid: commentToEdit.cid,
+                    subplebbitAddress: commentToEdit.subplebbitAddress,
+                    content: "Radn" + Math.random(),
+                    signer: commentToEdit.signer
+                });
+                await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
 
-            await publishWithExpectedResult(
-                commentEdit,
-                false,
-                messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-            );
-        });
+                await publishWithExpectedResult(
+                    commentEdit,
+                    false,
+                    messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+                );
+                expect(commentEdit._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
+            }
+        );
 
         it(`publishing commentEdit.extraProp should succeed as an author edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
             const commentEdit = await plebbit.createCommentEdit({
@@ -66,6 +72,7 @@ getRemotePlebbitConfigs().map((config) => {
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
             expect(commentToEdit.extraProp).to.be.undefined;
+            expect(commentEdit._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
         });
 
         it(`publishing commentEdit.extraProp should succeed as a mod edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
@@ -83,6 +90,7 @@ getRemotePlebbitConfigs().map((config) => {
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToEdit.removed).to.be.true; // should process only removed since it's the known field
             expect(commentToEdit.extraProp).to.be.undefined;
+            expect(commentEdit._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
         });
 
         it(`Publishing commentEdit.reservedField should be rejected`, async () => {
@@ -95,6 +103,7 @@ getRemotePlebbitConfigs().map((config) => {
             await setExtraPropOnCommentEditAndSign(commentEdit, { insertedAt: "1234" }, true);
 
             await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD);
+            expect(commentEdit._publishedChallengeRequests[0].publication.insertedAt).to.equal("1234");
         });
     });
 });
