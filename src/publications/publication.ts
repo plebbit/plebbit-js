@@ -56,12 +56,10 @@ import {
 import {
     ChallengeRequestMessageSchema,
     DecryptedChallengeAnswerSchema,
-    DecryptedChallengeMessageSchema,
     ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema
 } from "../pubsub-messages/schema.js";
-import { z } from "zod";
 
 import {
     decodeRpcChallengeAnswerPubsubMsg,
