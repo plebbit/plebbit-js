@@ -663,7 +663,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     _createRequestEncrypted() {
-        return DecryptedChallengeRequestSchema.parse(this.toJSONPubsubMessage());
+        return this.toJSONPubsubMessage();
     }
 
     _createDecryptedChallengeRequestMessage(args: DecryptedChallengeRequestMessageType) {

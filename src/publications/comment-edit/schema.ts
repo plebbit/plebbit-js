@@ -102,8 +102,8 @@ export const CommentEditReservedFields = remeda.difference(
 );
 
 export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentEditPubsubMessageSchema
-}).strict();
+    publication: CommentEditPubsubMessageSchema.passthrough()
+});
 
 export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditAuthorPublicationSchema.or(
     CreateCommentEditModeratorPublicationSchema
