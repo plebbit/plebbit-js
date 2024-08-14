@@ -176,7 +176,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     toJSONInternalBeforeFirstUpdate(): InternalSubplebbitRecordBeforeFirstUpdateType {
         return {
             ...remeda.omit(this.toJSONInternalRpcBeforeFirstUpdate(), ["started"]),
-            signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"])
+            signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
         };
     }
 

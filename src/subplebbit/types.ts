@@ -121,16 +121,17 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
     protocolVersion: SubplebbitIpfsType["protocolVersion"];
     encryption: SubplebbitIpfsType["encryption"];
     _usingDefaultChallenge: boolean;
+    _subplebbitUpdateTrigger: boolean;
 }
 
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
-    _subplebbitUpdateTrigger: boolean;
     cid: string;
 }
 
 // RPC server transmitting Internal Subplebbit records to clients
 
-export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer"> {
+export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType
+    extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_subplebbitUpdateTrigger"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
     started: boolean;
 }
@@ -149,6 +150,6 @@ export type RpcLocalSubplebbitUpdateResultType =
 export interface ParsedSubplebbitEditOptions
     extends Omit<SubplebbitEditOptions, "roles">,
         Pick<
-            InternalSubplebbitRecordAfterFirstUpdateType,
+            InternalSubplebbitRecordBeforeFirstUpdateType,
             "_usingDefaultChallenge" | "_subplebbitUpdateTrigger" | "challenges" | "roles"
         > {}
