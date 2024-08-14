@@ -121,6 +121,7 @@ import {
     CommentPubsubMessagePassthroughWithRefinementSchema
 } from "../../../publications/comment/schema.js";
 import { VotePubsubMessageSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
+import { v4 as uuidV4 } from "uuid";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -148,6 +149,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private _isSubRunningLocally: boolean;
     private _publishLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
+    private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -159,7 +161,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._challengeAnswerPromises = //@ts-expect-error
             this._challengeAnswerResolveReject = //@ts-expect-error
             this._ongoingChallengeExchanges = //@ts-expect-error
-            this._cidsToUnPin =
+            this._cidsToUnPin = //@ts-expect-error
+            this._internalStateUpdateId =
                 undefined;
         hideClassPrivateProps(this);
     }
@@ -169,7 +172,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return {
             ...remeda.omit(this.toJSONInternalRpcAfterFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
+            _internalStateUpdateId: this._internalStateUpdateId
         };
     }
 
@@ -177,7 +181,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return {
             ...remeda.omit(this.toJSONInternalRpcBeforeFirstUpdate(), ["started"]),
             signer: remeda.pick(this.signer, ["privateKey", "type", "address", "shortAddress", "publicKey"]),
-            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger
+            _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger,
+            _internalStateUpdateId: this._internalStateUpdateId
         };
     }
 
@@ -216,11 +221,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
         this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
+        this._internalStateUpdateId = newProps._internalStateUpdateId;
     }
 
     async initInternalSubplebbitBeforeFirstUpdateNoMerge(newProps: InternalSubplebbitRecordBeforeFirstUpdateType) {
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge({ ...newProps, started: this.started });
         await this._initSignerProps(newProps.signer);
+        this._subplebbitUpdateTrigger = newProps._subplebbitUpdateTrigger;
+        this._internalStateUpdateId = newProps._internalStateUpdateId;
     }
 
     private async initDbHandlerIfNeeded() {
@@ -259,6 +267,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>
     ) {
         if (remeda.isEmpty(props)) return;
+        props._internalStateUpdateId = uuidV4();
         await this._dbHandler.lockSubState();
         const internalStateBefore = await this._getDbInternalState(false);
         await this._dbHandler.keyvSet(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT], {
@@ -266,6 +275,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...props
         });
         await this._dbHandler.unlockSubState();
+        this._internalStateUpdateId = props._internalStateUpdateId;
     }
 
     private async _getDbInternalState(
@@ -515,7 +525,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertEdit(editTableRow);
-        log.trace(`(${challengeRequestId}): `, `Updated comment (${commentEditRaw.commentCid}) with CommentEdit: `, commentEditRaw);
+        log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, commentEditRaw);
     }
 
     private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
@@ -536,7 +546,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertVote(voteTableRow);
-        log.trace(`inserted new vote (${newVoteProps}) for comment ${newVoteProps.commentCid}`);
+        log(`inserted new vote (${newVoteProps}) for comment ${newVoteProps.commentCid}`);
         return undefined;
     }
 
@@ -1707,14 +1717,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:update");
         const dbSubState = await this._getDbInternalState(false);
         if (!dbSubState) throw Error("There is no internal sub state in db");
-        const currentState =
-            typeof this.updatedAt === "number" ? this.toJSONInternalAfterFirstUpdate() : this.toJSONInternalBeforeFirstUpdate();
         await this._updateStartedValue();
-        if (deterministicStringify(currentState) !== deterministicStringify(dbSubState)) {
-            log(`Local Subplebbit received a new update. Will emit an update event`);
+        if (this._internalStateUpdateId !== dbSubState._internalStateUpdateId) {
             this._setUpdatingState("succeeded");
             if ("updatedAt" in dbSubState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(dbSubState);
             else await this.initInternalSubplebbitBeforeFirstUpdateNoMerge(dbSubState);
+            log(`Local Subplebbit (${this.address}) received a new update with updatedAt (${this.updatedAt}). Will emit an update event`);
+
             this.emit("update", this);
         }
     }
