@@ -200,7 +200,7 @@ describe(`subplebbit.state`, async () => {
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`subplebbit.state defaults to "stopped" if not updating or started`, async () => {
@@ -402,7 +402,7 @@ describe(`comment.link`, async () => {
         it(`Generates thumbnail url for youtube video correctly with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
             const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url);
+            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
             expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
             expect(thumbnailInfo.thumbnailUrlWidth).to.equal(1280);
             expect(thumbnailInfo.thumbnailUrlHeight).to.equal(720);
@@ -701,6 +701,7 @@ describe(`subplebbit.clients (Local)`, async () => {
             await sub.start();
 
             await new Promise((resolve) => sub.once("update", resolve));
+            await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval / 2)); // until stopped state is transmitted
 
             expect(recordedStates).to.deep.equal(["publishing-ipns", "stopped"]);
 
@@ -724,8 +725,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await sub.start();
 
-            await new Promise((resolve) => sub.once("update", resolve));
-            if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
+            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
             await publishRandomPost(sub.address, plebbit, {}, true);
             if (recordedStates[recordedStates.length - 1] === "stopped")
@@ -757,8 +757,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await sub.start();
 
-            await new Promise((resolve) => sub.once("update", resolve));
-            if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
+            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
             const mockPost = await generateMockPost(sub.address, plebbit);
 
@@ -782,12 +781,11 @@ describe(`subplebbit.statsCid`, async () => {
         plebbit = await mockPlebbit();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
-        if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
-        await subplebbit.stop();
+        await subplebbit.delete();
     });
 
     it(`stats of subplebbit is all zeros by default`, async () => {

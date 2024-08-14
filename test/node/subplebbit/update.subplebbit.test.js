@@ -52,7 +52,7 @@ describe(`subplebbit.update - Local subs`, async () => {
         );
 
         try {
-            await Promise.race([failPromise, new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2))]);
+            await Promise.race([failPromise, new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 3))]);
         } catch (e) {
             throw e;
         } finally {

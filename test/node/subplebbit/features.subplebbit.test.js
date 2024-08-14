@@ -4,7 +4,8 @@ import {
     generateMockPost,
     overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 
@@ -20,7 +21,7 @@ describe(`subplebbit.features.requirePostLink`, async () => {
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
@@ -29,9 +30,11 @@ describe(`subplebbit.features.requirePostLink`, async () => {
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true } });
         expect(subplebbit.features.requirePostLink).to.be.true;
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.features.requirePostLink).to.be.true;
     });
@@ -58,7 +61,7 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
@@ -67,9 +70,10 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
         expect(subplebbit.features.requirePostLinkIsMedia).to.be.true;
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.features.requirePostLinkIsMedia).to.be.true;
     });

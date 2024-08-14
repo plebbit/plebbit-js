@@ -67,6 +67,20 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
             })
     );
 
+    it(`An update is triggered after calling subplebbit.edit()`, async () => {
+        const sub = await createSubWithNoChallenge({}, plebbit);
+        await sub.start();
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+
+        await sub.edit({ features: { requirePostLink: true } });
+        expect(sub.features.requirePostLink).to.be.true;
+        expect(sub._subplebbitUpdateTrigger).to.be.true;
+        await new Promise((resolve) => sub.once("update", resolve)); // the edit should trigger an update immedietely
+        expect(sub._subplebbitUpdateTrigger).to.be.false;
+        expect(sub.features.requirePostLink).to.be.true;
+
+        await sub.delete();
+    });
     it(`Sub is locked for start`, async () => {
         // Check for locks
         expect(await subplebbit._dbHandler.isSubStartLocked(subplebbit.signer.address)).to.be.true;
