@@ -52,13 +52,12 @@ export class CommentEdit extends Publication {
     _initRemoteProps(props: CommentEditPubsubMessage): void {
         super._initBaseRemoteProps(props);
         this._initEditProps(props);
-        const keysCasted = <(keyof CommentEditPubsubMessage)[]>props.signature.signedPropertyNames;
-        this._pubsubMessageToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
     _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
+        this._pubsubMessageToPublish = props.publication;
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
