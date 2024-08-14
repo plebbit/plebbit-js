@@ -151,7 +151,3 @@ export const ChallengeVerificationMessageSignedPropertyNames = remeda.keys.stric
 );
 
 // Handling challenges for subplebbit
-
-export const IncomingPubsubMessageSchema = ChallengeRequestMessageSchema.or(ChallengeMessageSchema)
-    .or(ChallengeAnswerMessageSchema)
-    .or(ChallengeVerificationMessageSchema);

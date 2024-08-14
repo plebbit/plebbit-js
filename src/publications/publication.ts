@@ -55,13 +55,11 @@ import {
 } from "../schema/schema-util.js";
 import {
     ChallengeRequestMessageSchema,
-    DecryptedChallengeAnswerMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeMessageSchema,
-    DecryptedChallengeRequestMessageSchema,
-    DecryptedChallengeRequestSchema,
-    IncomingPubsubMessageSchema,
-    ChallengeAnswerMessageSchema
+    ChallengeAnswerMessageSchema,
+    ChallengeMessageSchema,
+    ChallengeVerificationMessageSchema
 } from "../pubsub-messages/schema.js";
 import { z } from "zod";
 
@@ -72,6 +70,7 @@ import {
     decodeRpcChallengeVerificationPubsubMsg
 } from "../clients/rpc-client/decode-rpc-response-util.js";
 import { PublicationPublishingState, PublicationState } from "./types.js";
+import type { SignerType } from "../signer/types.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -223,8 +222,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return;
         }
 
-        this._receivedChallengeFromSub = true;
-
         let decryptedJson: any;
 
         try {
@@ -246,10 +243,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this.emit("error", <PlebbitError>e);
             return;
         }
-        this._challenge = DecryptedChallengeMessageSchema.parse({
+        this._challenge = <DecryptedChallengeMessageType>{
             ...msg,
             ...decryptedChallenge
-        });
+        };
+        this._receivedChallengeFromSub = true;
+
         this._updatePublishingState("waiting-challenge-answers");
         const subscribedProviders = Object.entries(this._clientsManager.providerSubscriptions)
             .filter(([, pubsubTopics]) => pubsubTopics.includes(this._pubsubTopicWithfallback()))
@@ -346,11 +345,29 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return;
         }
 
-        let pubsubMsgParsed: z.infer<typeof IncomingPubsubMessageSchema>;
-        try {
-            pubsubMsgParsed = IncomingPubsubMessageSchema.parse(decodedJson);
-        } catch (e) {
-            log.error("Failed to parse the schema of decoded pubsub message", e);
+        const pubsubSchemas = [
+            ChallengeRequestMessageSchema.passthrough(),
+            ChallengeMessageSchema.passthrough(),
+            ChallengeAnswerMessageSchema.passthrough(),
+            ChallengeVerificationMessageSchema.passthrough()
+        ];
+
+        let pubsubMsgParsed:
+            | ChallengeRequestMessageType
+            | ChallengeMessageType
+            | ChallengeAnswerMessageType
+            | ChallengeVerificationMessageType
+            | undefined;
+        for (const pubsubSchema of pubsubSchemas) {
+            const parseRes = pubsubSchema.safeParse(decodedJson);
+            if (parseRes.success) {
+                pubsubMsgParsed = parseRes.data;
+                break;
+            }
+        }
+
+        if (!pubsubMsgParsed) {
+            log.error(`Failed to parse the schema of decoded pubsub message`, decodedJson);
             return;
         }
 
@@ -375,8 +392,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
         if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
-            await this._plebbit.plebbitRpcClient.publishChallengeAnswers(this._rpcPublishSubscriptionId, toEncryptAnswers.challengeAnswers);
-            return;
+            return this._plebbit.plebbitRpcClient.publishChallengeAnswers(
+                this._rpcPublishSubscriptionId,
+                toEncryptAnswers.challengeAnswers
+            );
         }
 
         assert(this._subplebbit, "Local plebbit-js needs publication.subplebbit to be defined to publish challenge answer");
@@ -399,13 +418,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
             timestamp: timestamp()
         });
 
-        const answerMsgToPublish = ChallengeAnswerMessageSchema.parse({
+        const answerMsgToPublish = <ChallengeAnswerMessageType>{
             ...toSignAnswer,
             signature: await signChallengeAnswer(
                 toSignAnswer,
                 this._challengeIdToPubsubSigner[this._challenge.challengeRequestId.toString()]
             )
-        });
+        };
 
         this._updatePublishingState("publishing-challenge-answer");
         this._clientsManager.updatePubsubState("publishing-challenge-answer", this._pubsubProviders[this._currentPubsubProviderIndex]);
@@ -415,10 +434,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this._pubsubProviders[this._currentPubsubProviderIndex]
         );
 
-        this._challengeAnswer = DecryptedChallengeAnswerMessageSchema.parse({
+        this._challengeAnswer = <DecryptedChallengeAnswerMessageType>{
             ...toEncryptAnswers,
             ...answerMsgToPublish
-        });
+        };
 
         this._updatePublishingState("waiting-challenge-verification");
         const providers = Object.entries(this._clientsManager.providerSubscriptions)
@@ -589,7 +608,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     private _handleIncomingChallengeFromRpc(args: any) {
-        const log = Logger("plebbit-js:publication:_publishWithRpc:_handleIncomingChallengeFromRpc");
         const encodedChallenge: EncodedDecryptedChallengeMessageType = args.params.result;
         const challenge = decodeRpcChallengePubsubMsg(encodedChallenge);
 
@@ -666,8 +684,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return this.toJSONPubsubMessage();
     }
 
-    _createDecryptedChallengeRequestMessage(args: DecryptedChallengeRequestMessageType) {
-        return DecryptedChallengeRequestMessageSchema.parse(args);
+    private async _signAndValidateChallengeRequestBeforePublishing(
+        requestWithoutSignature: Omit<ChallengeRequestMessageType, "signature">,
+        pubsubMsgSigner: SignerType
+    ): Promise<ChallengeRequestMessageType> {
+        return ChallengeRequestMessageSchema.parse({
+            ...requestWithoutSignature,
+            signature: await signChallengeRequest(requestWithoutSignature, pubsubMsgSigner)
+        });
     }
 
     async publish() {
@@ -717,10 +741,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             timestamp: timestamp()
         });
 
-        const challengeRequest = ChallengeRequestMessageSchema.parse({
-            ...toSignMsg,
-            signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
-        });
+        const challengeRequest = await this._signAndValidateChallengeRequestBeforePublishing(toSignMsg, pubsubMessageSigner);
         log(
             `Attempting to publish ${this.getType()} with challenge id (${
                 challengeRequest.challengeRequestId
@@ -766,10 +787,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 else continue;
             }
             this._pubsubProvidersDoneWaiting[this._pubsubProviders[this._currentPubsubProviderIndex]] = false;
-            const decryptedRequest = this._createDecryptedChallengeRequestMessage({
+            const decryptedRequest = <DecryptedChallengeRequestMessageType>{
                 ...challengeRequest,
                 ...pubsubMsgToEncrypt
-            });
+            };
             this._publishedChallengeRequests.push(decryptedRequest);
             this._clientsManager.updatePubsubState("waiting-challenge", this._pubsubProviders[this._currentPubsubProviderIndex]);
             this._setProviderToFailIfNoResponse(this._currentPubsubProviderIndex);

@@ -106,13 +106,14 @@ import type {
 } from "../../../publications/comment/types.js";
 import { SubplebbitEditOptionsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
+    ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
+    ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
-    DecryptedChallengeVerificationMessageSchema,
-    IncomingPubsubMessageSchema
+    DecryptedChallengeVerificationMessageSchema
 } from "../../../pubsub-messages/schema.js";
 import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
 import {
@@ -546,7 +547,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertVote(voteTableRow);
-        log(`inserted new vote (${newVoteProps}) for comment ${newVoteProps.commentCid}`);
+        log(`inserted new vote for comment ${newVoteProps.commentCid}`, newVoteProps);
         return undefined;
     }
 
@@ -1205,16 +1206,29 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return;
         }
 
+        const pubsubSchemas = [
+            ChallengeRequestMessageSchema.passthrough(),
+            ChallengeMessageSchema.passthrough(),
+            ChallengeAnswerMessageSchema.passthrough(),
+            ChallengeVerificationMessageSchema.passthrough()
+        ];
+
         let parsedPubsubMsg:
             | ChallengeRequestMessageType
-            | ChallengeAnswerMessageType
             | ChallengeMessageType
-            | ChallengeVerificationMessageType;
+            | ChallengeAnswerMessageType
+            | ChallengeVerificationMessageType
+            | undefined;
+        for (const pubsubSchema of pubsubSchemas) {
+            const parseRes = pubsubSchema.safeParse(decodedMsg);
+            if (parseRes.success) {
+                parsedPubsubMsg = parseRes.data;
+                break;
+            }
+        }
 
-        try {
-            parsedPubsubMsg = IncomingPubsubMessageSchema.parse(decodedMsg);
-        } catch (e) {
-            log.error(`Failed to parse the schema of pubsub message received at (${timeReceived})`, (<Error>e).toString(), decodedMsg);
+        if (!parsedPubsubMsg) {
+            log.error(`Failed to parse the schema of pubsub message received at (${timeReceived})`, decodedMsg);
             return;
         }
 
