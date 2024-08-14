@@ -11,7 +11,7 @@ import {
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema";
 import * as remeda from "remeda";
 
-const AcceptedChallengeTypeSchema = z.string(); // TODO figure out the accepted challenge types
+const AcceptedChallengeTypeSchema = z.string().min(1);
 export const PubsubMessageSignatureSchema = z
     .object({
         signature: z.instanceof(Uint8Array), // (byte string in cbor)
