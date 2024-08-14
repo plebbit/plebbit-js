@@ -117,6 +117,8 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     protected override async _processUpdateEventFromRpcUpdate(args: any) {
         // This function is gonna be called with every update event from rpcLocalSubplebbit.update()
         const log = Logger("plebbit-js:rpc-local-subplebbit:_processUpdateEventFromRpcUpdate");
+        log("Received an update event from rpc within rpcLocalSubplebbit.update for sub " + this.address);
+
         const updateRecord: RpcLocalSubplebbitUpdateResultType = args.params.result; // we're being optimistic here and hoping the rpc server sent the correct update
         if ("updatedAt" in updateRecord) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
@@ -129,19 +131,27 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
 
         const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcUpdateEventFromStart");
         const updateRecord: RpcLocalSubplebbitUpdateResultType = args.params.result;
+        log("Received an update event from rpc within rpcLocalSubplebbit.start for sub " + this.address);
 
         if ("updatedAt" in updateRecord) {
             await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(updateRecord);
-            if (!updateRecord.started)
-                // This is the rpc server telling us that this sub has been stopped by another instance
-                await this._cleanUpRpcConnection(log);
         } else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(updateRecord);
+
+        if (updateRecord.started === false) {
+            // This is the rpc server telling us that this sub has been stopped by another instance
+            // we should stop this instance as well
+            log("Received an update record with started=false", "will stop the current instance");
+            await this._cleanUpRpcConnection(log);
+        }
 
         this.emit("update", this);
     }
 
     private _handleRpcStartedStateChangeEvent(args: any) {
+        const log = Logger("plebbit-js:rpc-local-subplebbit:_handleRpcStartedStateChangeEvent");
+
         const newStartedState: RpcLocalSubplebbit["startedState"] = args.params.result; // we're being optimistic that the rpc server transmitted a valid string here
+        log("Received a startedstatechange for sub " + this.address, "new started state is", newStartedState);
 
         this._setStartedState(newStartedState);
         this._updateRpcClientStateFromStartedState(newStartedState);
