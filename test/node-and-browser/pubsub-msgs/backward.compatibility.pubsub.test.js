@@ -5,10 +5,13 @@ import {
     setExtraPropOnChallengeRequestAndSign,
     describeSkipIfRpc,
     getRemotePlebbitConfigs,
+    publishChallengeMessageWithExtraProps,
     publishChallengeAnswerMessageWithExtraProps
 } from "../../../dist/node/test/test-util.js";
+import { v4 as uuidV4 } from "uuid";
 
 import { _signJson, _signPubsubMsg } from "../../../dist/node/signer/signatures.js";
+import { messages } from "../../../dist/node/errors.js";
 const mathCliSubplebbitAddress = signers[1].address;
 
 getRemotePlebbitConfigs().map((config) => {
@@ -59,6 +62,60 @@ getRemotePlebbitConfigs().map((config) => {
                 const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve)); // we received a challenge verification, meaning there is no issue with challenge request
 
                 expect(challengeVerification).to.be.a("object");
+            });
+        });
+
+        describe(`ChallengeMessage with extra props`, async () => {
+            it(`A challenge message with an extra prop not included in signature.signedPropertyNames will get emit cause the Publication class to emit an error`, async () => {
+                const pubsubSigner = await plebbit.createSigner();
+                const post = await generateMockPost(signers[0].address, plebbit);
+
+                post._getSubplebbitCache = () => ({
+                    address: post.subplebbitAddress,
+                    pubsubTopic: pubsubSigner.address,
+                    encryption: {
+                        type: "ed25519-aes-gcm",
+                        publicKey: pubsubSigner.publicKey
+                    }
+                });
+                const extraProps = { extraProp: 1234 };
+
+                await post.publish();
+
+                let emittedChallenge;
+
+                post.once("challenge", (_challenge) => (emittedChallenge = _challenge));
+
+                await publishChallengeMessageWithExtraProps(post, pubsubSigner, extraProps, false);
+
+                const error = await new Promise((resolve) => post.once("error", resolve));
+                expect(error.code).to.equal("ERR_CHALLENGE_SIGNATURE_IS_INVALID");
+                expect(error.details.reason).to.equal(messages.ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES);
+
+                expect(emittedChallenge).to.be.undefined;
+            });
+
+            it(`A challenge message with an extra prop included in signature.signedPropertyNames will be accepted`, async () => {
+                const pubsubSigner = await plebbit.createSigner();
+                const post = await generateMockPost(signers[0].address, plebbit);
+
+                post._getSubplebbitCache = () => ({
+                    address: post.subplebbitAddress,
+                    pubsubTopic: pubsubSigner.address,
+                    encryption: {
+                        type: "ed25519-aes-gcm",
+                        publicKey: pubsubSigner.publicKey
+                    }
+                });
+                const extraProps = { extraProp: 1234 };
+
+                await post.publish();
+
+                await publishChallengeMessageWithExtraProps(post, pubsubSigner, extraProps, true);
+
+                const emittedChallenge = await new Promise((resolve) => post.once("challenge", resolve));
+
+                expect(emittedChallenge.extraProp).to.equal(extraProps.extraProp);
             });
         });
 

@@ -123,7 +123,7 @@ export async function _signJson(
     };
 }
 
-async function _signPubsubMsg(
+export async function _signPubsubMsg(
     signedPropertyNames: PubsubSignature["signedPropertyNames"],
     msg: PubsubMsgsToSign,
     signer: SignerType,

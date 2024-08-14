@@ -26,14 +26,22 @@ import type {
     CommentJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, signVote } from "../signer/signatures.js";
+import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, signVote, _signPubsubMsg } from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
 import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
-import { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
+import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
+import type {
+    ChallengeAnswerMessageType,
+    ChallengeMessageType,
+    ChallengeRequestMessageType,
+    PubsubMessage
+} from "../pubsub-messages/types.js";
+import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
+import env from "../version.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -660,11 +668,112 @@ export async function setExtraPropOnCommentEditAndSign(
     disableZodValidationOfPublication(commentEdit);
 }
 
+export async function setExtraPropOnChallengeRequestAndSign(
+    publication: Publication,
+    extraProps: Object,
+    includeExtraPropsInRequestSignedPropertyNames: boolean
+) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnChallengeRequestAndSign");
+
+    //@ts-expect-error
+    publication._signAndValidateChallengeRequestBeforePublishing = async (requestWithoutSignature, signer) => {
+        const signedPropertyNames = <ChallengeRequestMessageType["signature"]["signedPropertyNames"]>Object.keys(requestWithoutSignature);
+        if (includeExtraPropsInRequestSignedPropertyNames) signedPropertyNames.push(...Object.keys(extraProps));
+        const requestWithExtraProps = { ...requestWithoutSignature, ...extraProps };
+        const signature = await _signPubsubMsg(signedPropertyNames, requestWithExtraProps, signer, log);
+        return { ...requestWithExtraProps, signature };
+    };
+}
+
+export async function publishChallengeAnswerMessageWithExtraProps(
+    publication: Publication,
+    challengeAnswers: string[],
+    extraProps: Object,
+    includeExtraPropsInChallengeSignedPropertyNames: boolean
+) {
+    // we're crafting a challenge answer from scratch here
+
+    const log = Logger("plebbit-js:test-util:setExtraPropsOnChallengeAnswerMessageAndSign");
+    //@ts-expect-error
+    const signer = publication._challengeIdToPubsubSigner[publication._challenge.challengeRequestId.toString()];
+    const encryptedChallengeAnswers = await encryptEd25519AesGcm(
+        JSON.stringify({ challengeAnswers }),
+        signer.privateKey,
+        //@ts-expect-error
+        publication._subplebbit.encryption.publicKey
+    );
+    const toSignAnswer: Omit<ChallengeAnswerMessageType, "signature"> = cleanUpBeforePublishing({
+        type: "CHALLENGEANSWER",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        encrypted: encryptedChallengeAnswers,
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignAnswer);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames) signedPropertyNames.push(...Object.keys(extraProps));
+
+    Object.assign(toSignAnswer, extraProps);
+
+    //@ts-expect-error
+    const signature = await _signPubsubMsg(signedPropertyNames, toSignAnswer, signer, log);
+
+    //@ts-expect-error
+    await publishOverPubsub(publication._subplebbit.pubsubTopic!, { ...toSignAnswer, signature });
+}
+
+export async function publishChallengeMessageWithExtraProps(
+    publication: Publication,
+    pubsubSigner: SignerType,
+    extraProps: Object,
+    includeExtraPropsInChallengeSignedPropertyNames: boolean
+) {
+    const log = Logger("plebbit-js:test-util:publishChallengeMessageWithExtraProps");
+
+    const encryptedChallenges = await encryptEd25519AesGcmPublicKeyBuffer(
+        deterministicStringify({ challenges: [] })!,
+        pubsubSigner.privateKey,
+        //@ts-expect-error
+        publication._publishedChallengeRequests[0].signature.publicKey
+    );
+
+    const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
+        type: "CHALLENGE",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        encrypted: encryptedChallenges,
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignChallenge);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames) signedPropertyNames.push(...Object.keys(extraProps));
+
+    Object.assign(toSignChallenge, extraProps);
+
+    const signature = await _signPubsubMsg(
+        <ChallengeMessageType["signature"]["signedPropertyNames"]>signedPropertyNames,
+        toSignChallenge,
+        pubsubSigner,
+        log
+    );
+
+    await publishOverPubsub(pubsubSigner.address, { ...toSignChallenge, signature });
+}
+
 export async function addStringToIpfs(content: string): Promise<string> {
     const plebbit = await mockRemotePlebbitIpfsOnly();
     const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
     const cid = (await ipfsClient._client.add(content)).path;
     return cid;
+}
+
+export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: PubsubMessage) {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    await plebbit._clientsManager.pubsubPublish(pubsubTopic, jsonToPublish);
 }
 
 export function getRemotePlebbitConfigs() {
