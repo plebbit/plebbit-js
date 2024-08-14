@@ -91,7 +91,7 @@ export class SortHandler {
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
-        const listOfPage = Object.values(res)[0].pages;
+        const listOfPage = Object.values(res)[0]!.pages;
 
         const expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
         assert.equal(
@@ -108,8 +108,8 @@ export class SortHandler {
         if (filteredGeneratedPages.length === 0) return undefined;
         const mergedObject: PageGenerationRes = Object.assign({}, ...filteredGeneratedPages);
         return {
-            pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.pages[0] }))),
-            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.cids[0] })))
+            pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.pages[0] }))),
+            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.cids[0] })))
         };
     }
 
