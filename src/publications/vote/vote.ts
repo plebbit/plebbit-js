@@ -34,6 +34,8 @@ class Vote extends Publication {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
+        const keysCasted = <(keyof VotePubsubMessage)[]>props.signature.signedPropertyNames;
+        this._pubsubMessageToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
     _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType) {

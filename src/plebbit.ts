@@ -447,10 +447,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             // If the sub is already created before, then load it with address only. We don't care about other props
             subplebbit.setAddress(options.address);
             await subplebbit._loadLocalSubDb();
-            log.trace(
-                `Created instance of existing local subplebbit (${subplebbit.address}) with props:`,
-                JSON.parse(JSON.stringify(subplebbit))
-            );
+            log.trace(`Created instance of existing local subplebbit (${subplebbit.address}) with props:`);
             subplebbit.emit("update", subplebbit);
             return subplebbit;
         } else if ("signer" in options) {
@@ -459,7 +456,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             const parsedOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>options);
             await subplebbit.initNewLocalSubPropsNoMerge(parsedOptions); // We're initializing a new local sub props here
             await subplebbit._createNewLocalSubDb();
-            log.trace(`Created a new local subplebbit (${subplebbit.address}) with props:`, JSON.parse(JSON.stringify(subplebbit)));
+            log.trace(`Created a new local subplebbit (${subplebbit.address}) with props:`);
             subplebbit.emit("update", subplebbit);
             return subplebbit;
         } else throw Error("Are you trying to create a local sub with no address or signer? This is a critical error");
@@ -535,8 +532,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
         const strippedOptions = VotePubsubMessageSchema.strip().parse(clonedOptions);
         const voteInstance = await this.createVote(strippedOptions);
-        if (jsonfied.signer) voteInstance._initLocalProps(jsonfied as LocalVoteOptions);
-
+        Object.assign(voteInstance, remeda.omit(jsonfied, ["author", "state", "publishingState", "clients"]));
         return voteInstance;
     }
 
@@ -568,7 +564,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
         const strippedOptions = CommentEditPubsubMessageSchema.strip().parse(clonedOptions);
         const editInstance = await this.createCommentEdit(strippedOptions);
-        if (jsonfied.signer) editInstance._initLocalProps(jsonfied as LocalCommentEditOptions);
+        Object.assign(editInstance, remeda.omit(jsonfied, ["author", "state", "publishingState", "clients"]));
+
         return editInstance;
     }
 
