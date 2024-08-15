@@ -222,6 +222,7 @@ async function _populateSubplebbit(
             [props.signers[3].address]: { role: "moderator" }
         }
     });
+    if (props.numOfPostsToPublish === 0) return;
     await new Promise((resolve) => subplebbit.once("update", resolve));
     const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit._plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
