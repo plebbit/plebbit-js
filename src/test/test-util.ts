@@ -66,15 +66,18 @@ export async function generateMockPost(
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
     const signer = postProps?.signer || (await plebbit.createSigner());
-    const post = await plebbit.createComment({
+
+    const baseProps = <CreateCommentOptions>{
+        subplebbitAddress,
         author: { displayName: `Mock Author - ${postStartTestTime}` },
         title: `Mock Post - ${postStartTestTime}`,
         content: `Mock content - ${postStartTestTime}`,
         signer,
-        timestamp: postTimestamp,
-        subplebbitAddress,
-        ...postProps
-    });
+        timestamp: postTimestamp
+    };
+
+    const finalPostProps = <CreateCommentOptions>remeda.mergeDeep(baseProps, postProps);
+    const post = await plebbit.createComment(finalPostProps);
 
     return post;
 }
@@ -593,13 +596,19 @@ export async function disableZodValidationOfPublication(publication: Publication
 
 export async function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions) {
     if (!comment.signer) throw Error("Need comment.signer to overwrite the signature");
-    //@ts-expect-error
-    for (const optionKey of Object.keys(props)) comment[optionKey] = props[optionKey];
+    const pubsubPublication = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
 
-    comment.signature = await signComment(
+    for (const optionKey of remeda.keys.strict(props)) {
+        //@ts-expect-error
+        comment[optionKey] = pubsubPublication[optionKey] = props[optionKey];
+    }
+
+    comment.signature = pubsubPublication.signature = await signComment(
         removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }),
         comment._plebbit
     );
+
+    comment.toJSONPubsubMessagePublication = () => pubsubPublication;
 
     disableZodValidationOfPublication(comment);
 }
