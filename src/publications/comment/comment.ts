@@ -143,7 +143,6 @@ export class Comment extends Publication {
         const log = Logger("plebbit-js:comment:_initIpfsProps");
         // we're loading remote CommentIpfs
         this._rawCommentIpfs = props;
-        this._setOriginalFieldBeforeModifying();
         this._initProps(props);
 
         const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentIpfsSchema.shape));
@@ -257,6 +256,8 @@ export class Comment extends Publication {
     protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
         if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
+        this._setOriginalFieldBeforeModifying(); // because we will be updating author
+        // TODO we should avoid re-creating
         const strippedOutProps = <CommentIpfsType>remeda.omit(props, ["cid"]); // fields that do not exist on CommentIpfs
         if (strippedOutProps.depth === 0) delete strippedOutProps["postCid"];
         const commentIpfsRecreated = <CommentIpfsType>(
