@@ -196,6 +196,8 @@ export class DbHandler {
 
             table.boolean("spoiler");
 
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
+
             table.text("protocolVersion").notNullable();
 
             table.increments("id"); // Used for sorts
@@ -511,10 +513,10 @@ export class DbHandler {
         // protocolVersion, signature
 
         //@ts-expect-error
-        const commentUpdateColumns = <(keyof CommentUpdate)[]>remeda.keys.strict(CommentUpdateSchema.shape);
+        const commentUpdateColumns = <(keyof CommentUpdate)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
-        const commentIpfsColumns = remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape);
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape), "extraProps"];
         const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([
@@ -525,7 +527,9 @@ export class DbHandler {
         //@ts-expect-error
         const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }[] = commentsRaw.map((commentRaw) => ({
             comment: remeda.mapKeys(
-                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_")),
+                // we need to exclude extraProps from pageIpfs.comments[0].comment
+                // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
                 (key, value) => key.replace("commentIpfs_", "")
             ),
             update: remeda.mapKeys(
@@ -696,7 +700,7 @@ export class DbHandler {
     }
 
     private async _queryCommentDownvote(cid: string, trx?: Transaction): Promise<number> {
-        const downvotes: number = <number>(
+        const downvotes = <number>(
             (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: -1 }).count())[0]["count(*)"]
         );
         return downvotes;
@@ -720,15 +724,14 @@ export class DbHandler {
             "extraProps"
         ];
 
-        let authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select(authorEditPubsubFields)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
 
         if (authorEdit?.extraProps) {
-            authorEdit = { ...authorEdit, ...authorEdit.extraProps };
-            delete authorEdit.extraProps;
+            delete authorEdit.extraProps; // parseDbResponses will include props under extraProps in authorEdit for us
         }
 
         return authorEdit;

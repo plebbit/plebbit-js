@@ -138,9 +138,9 @@ export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend
 
 export const DecryptedChallengeVerificationSchema = z
     .object({
-        publication: CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema.optional()
+        publication: CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema.passthrough().optional()
     })
-    .strict();
+    .passthrough();
 
 export const DecryptedChallengeVerificationMessageSchema = ChallengeVerificationMessageSchema.merge(
     DecryptedChallengeVerificationSchema

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isIpfsCid } from "../util.js";
 import { messages } from "../errors.js";
+import * as remeda from "remeda";
 
 // TODO add validation for private key here
 export const CreateSignerSchema = z.object({ type: z.enum(["ed25519"]), privateKey: z.string() });

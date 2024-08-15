@@ -5,7 +5,9 @@ import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../
 // Pages schemas here
 
 export const PageIpfsSchema = z.object({
-    comments: z.lazy(() => z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema, update: CommentUpdateSchema }).array()),
+    comments: z.lazy(() =>
+        z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema.passthrough(), update: CommentUpdateSchema }).array()
+    ),
     nextCid: CidStringSchema.optional()
 });
 

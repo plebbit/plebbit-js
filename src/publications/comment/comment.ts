@@ -29,7 +29,7 @@ import type {
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
-import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import { CommentIpfsSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 
 export class Comment extends Publication {
@@ -112,7 +112,7 @@ export class Comment extends Publication {
 
     private _setOriginalFieldBeforeModifying() {
         // Need to make sure we have the props first
-        if (!this.original && this.protocolVersion)
+        if (!this.original)
             this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(
                 removeUndefinedValuesRecursively(this._rawCommentIpfs || this._pubsubMsgToPublish)
             );
@@ -140,12 +140,17 @@ export class Comment extends Publication {
     }
 
     _initIpfsProps(props: CommentIpfsType) {
+        const log = Logger("plebbit-js:comment:_initIpfsProps");
         // we're loading remote CommentIpfs
         this._rawCommentIpfs = props;
         this._setOriginalFieldBeforeModifying();
         this._initProps(props);
 
-        // TODO Add a way to set extra props on instance here as well
+        const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentIpfsSchema.shape));
+        if (unknownProps.length > 0) {
+            log("Found unknown props on loaded CommentIpfs", unknownProps, "Will set them on the Comment instance");
+            Object.assign(this, remeda.pick(props, unknownProps));
+        }
     }
 
     _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {

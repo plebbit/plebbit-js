@@ -112,14 +112,14 @@ import {
     ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeRequestSchema,
-    DecryptedChallengeSchema,
-    DecryptedChallengeVerificationMessageSchema
+    DecryptedChallengeSchema
 } from "../../../pubsub-messages/schema.js";
 import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
     CommentPubsubMessageReservedFields,
-    CommentPubsubMessagePassthroughWithRefinementSchema
+    CommentPubsubMessagePassthroughWithRefinementSchema,
+    CommentPubsubMessageSchema
 } from "../../../publications/comment/schema.js";
 import { VotePubsubMessageSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
 import { v4 as uuidV4 } from "uuid";
@@ -633,8 +633,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
             const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
 
+            const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
             const commentRow = <CommentsTableRow>{
-                ...commentIpfs,
+                ...strippedOutCommentIpfs,
                 cid: commentCid,
                 postCid,
                 authorAddress: commentIpfs.author.address,
@@ -642,6 +643,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 challengeRequestPublicationSha256: publicationHash
             };
 
+            const unknownProps = remeda.difference(remeda.keys.strict(publication), remeda.keys.strict(CommentPubsubMessageSchema.shape));
+
+            if (unknownProps.length > 0) {
+                log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
+                commentRow.extraProps = remeda.pick(publication, unknownProps);
+            }
             const trxForInsert = await this._dbHandler.createTransaction(request.challengeRequestId.toString());
             try {
                 // This would throw for extra props
@@ -816,7 +823,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                           author: { ...publicationNoSubplebbitAuthor.author, subplebbit: subplebbitAuthor }
                       }
                     : publicationNoSubplebbitAuthor;
-                publication = DecryptedChallengeVerificationMessageSchema.shape.publication.parse(publication); // Make sure it adheres to the correct schema
             }
             // could contain "publication" or "reason"
             const encrypted = remeda.isPlainObject(publication)
@@ -838,10 +844,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
             });
-            const challengeVerification = ChallengeVerificationMessageSchema.parse({
+            const challengeVerification = <ChallengeVerificationMessageType>{
                 ...toSignMsg,
                 signature: await signChallengeVerification(toSignMsg, this.signer)
-            });
+            };
 
             this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
 
@@ -849,7 +855,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
-            const objectToEmit = DecryptedChallengeVerificationMessageSchema.parse({ ...challengeVerification, publication });
+            const objectToEmit = <DecryptedChallengeVerificationMessageType>{ ...challengeVerification, publication };
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());

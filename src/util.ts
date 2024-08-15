@@ -112,6 +112,13 @@ export const parseDbResponses = (obj: any): any => {
         if (booleanFields.includes(key) && (value === 1 || value === 0)) newObj[key] = Boolean(value);
         else newObj[key] = parseIfJsonString(value) || value;
     }
+    if (newObj.extraProps) return { ...newObj, ...newObj.extraProps };
+    else if (newObj["commentIpfs_extraProps"]) {
+        // needed when creating pages
+        const mappedExtraPropsOnCommentIpfs = remeda.mapKeys(newObj["commentIpfs_extraProps"], (key) => `commentIpfs_${String(key)}`);
+        return { ...newObj, ...mappedExtraPropsOnCommentIpfs };
+    }
+
     return <any>newObj;
 };
 

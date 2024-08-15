@@ -37,7 +37,7 @@ export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(su
 
 export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: any): CommentIpfsType {
     try {
-        return CommentIpfsSchema.parse(commentIpfsJson);
+        return CommentIpfsSchema.passthrough().parse(commentIpfsJson);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: e, commentIpfsJson });
     }

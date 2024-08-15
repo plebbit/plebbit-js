@@ -271,7 +271,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             return;
         }
         this._receivedChallengeVerification = true;
-        let decryptedPublication: DecryptedChallengeVerificationMessageType["publication"];
+        let decryptedChallengeVerification: DecryptedChallengeVerification | undefined;
         if (msg.challengeSuccess) {
             this._updatePublishingState("succeeded");
             log(`Challenge (${msg.challengeRequestId}) has passed`);
@@ -301,8 +301,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     return;
                 }
 
-                let decryptedChallengeVerification: DecryptedChallengeVerification;
-
                 try {
                     decryptedChallengeVerification = parseDecryptedChallengeVerification(decryptedJson);
                 } catch (e) {
@@ -311,9 +309,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     return;
                 }
 
-                decryptedPublication = decryptedChallengeVerification.publication;
-                if (decryptedPublication) {
-                    await this._updateLocalCommentPropsWithVerification(decryptedPublication);
+                if (decryptedChallengeVerification.publication) {
+                    await this._updateLocalCommentPropsWithVerification(decryptedChallengeVerification.publication);
                     log("Updated the props of this instance with challengeVerification.publication");
                 }
             }
@@ -327,8 +324,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
         await this._postSucessOrFailurePublishing();
         this.emit(
             "challengeverification",
-            { ...msg, publication: decryptedPublication },
-            this instanceof Comment && decryptedPublication ? this : undefined
+            { ...msg, ...decryptedChallengeVerification },
+            this instanceof Comment && decryptedChallengeVerification?.publication ? this : undefined
         );
     }
 

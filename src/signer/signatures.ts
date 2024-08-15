@@ -372,7 +372,7 @@ export async function verifyCommentIpfs(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ) {
-    const keysCasted = <(keyof CommentIpfsType)[]>comment.signature.signedPropertyNames;
+    const keysCasted = <(keyof CommentPubsubMessage)[]>comment.signature.signedPropertyNames;
     return verifyCommentPubsubMessage(
         remeda.pick(comment, ["signature", ...keysCasted]),
         resolveAuthorAddresses,

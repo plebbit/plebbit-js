@@ -82,7 +82,7 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSche
 );
 
 export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentPubsubMessageSchema.strict()
+    publication: CommentPubsubMessageSchema.passthrough()
 }).strict();
 
 // Remote comments
@@ -176,7 +176,8 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
     ipnsName: z.string().optional(),
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,
-    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address
+    authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
+    extraProps: z.object({}).passthrough().optional()
 }).strict();
 
 // Comment pubsub message here
