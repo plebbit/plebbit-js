@@ -111,12 +111,18 @@ export const SubplebbitAuthorSchema = z
         firstCommentTimestamp: PlebbitTimestampSchema, // timestamp of the first comment by the author in the subplebbit, used for account age based challenges
         lastCommentCid: CidStringSchema // last comment by the author in the subplebbit, can be used with author.previousCommentCid to get a recent author comment history in all subplebbits
     })
-    .strict();
+    .passthrough();
 export const CommentAuthorSchema = SubplebbitAuthorSchema.pick({ banExpiresAt: true, flair: true });
 
-export const AuthorWithOptionalCommentUpdate = AuthorPubsubSchema.extend({
+export const AuthorWithOptionalCommentUpdateSchema = AuthorPubsubSchema.extend({
     subplebbit: SubplebbitAuthorSchema.optional() // (added by CommentUpdate) up to date author properties specific to the subplebbit it's in
 });
+
+export const AuthorReservedFields = remeda.difference(
+    remeda.unique([...remeda.keys.strict(AuthorWithOptionalCommentUpdateSchema.shape), "shortAddress"]),
+    remeda.keys.strict(AuthorPubsubSchema.shape)
+);
+
 
 // Challenge requests and pubsub here
 

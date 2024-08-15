@@ -9,7 +9,7 @@ import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import {
     AuthorAvatarNftSchema,
     AuthorPubsubSchema,
-    AuthorWithOptionalCommentUpdate,
+    AuthorWithOptionalCommentUpdateSchema,
     CreatePublicationUserOptionsSchema,
     ProtocolVersionSchema
 } from "./schema/schema.js";
@@ -41,7 +41,7 @@ export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | Loc
 
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
-export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdate>;
+export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdateSchema>;
 
 export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 
