@@ -28,7 +28,9 @@ describe(`Client side verification`, async () => {
     });
     it(".publish() throws if publication has invalid signature", async () => {
         const mockComment = await generateMockPost(subplebbitAddress, plebbit, false, { signer: signers[0] });
-        mockComment.timestamp += 1; // Corrupts signature
+        const pubsubPublication = JSON.parse(JSON.stringify(mockComment.toJSONPubsubMessagePublication()));
+        pubsubPublication.timestamp += 1; // corrupts signature
+        mockComment.toJSONPubsubMessagePublication = () => pubsubPublication;
         await assert.isRejected(mockComment.publish(), messages.ERR_SIGNATURE_IS_INVALID);
     });
 
