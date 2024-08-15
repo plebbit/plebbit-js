@@ -1,4 +1,3 @@
-import Author from "./author.js";
 import assert from "assert";
 import { Signer, decryptEd25519AesGcm, encryptEd25519AesGcm } from "../signer/index.js";
 import type {
@@ -19,6 +18,7 @@ import type {
     EncodedDecryptedChallengeVerificationMessageType
 } from "../pubsub-messages/types.js";
 import type {
+    AuthorPubsubJsonType,
     IpfsHttpClientPubsubMessage,
     LocalPublicationProps,
     PublicationEvents,
@@ -79,7 +79,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     timestamp!: DecryptedChallengeRequestMessageType["publication"]["timestamp"];
     signature!: DecryptedChallengeRequestMessageType["publication"]["signature"];
     signer?: LocalPublicationProps["signer"];
-    author!: Author;
+    author!: AuthorPubsubJsonType;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
     state!: PublicationState | Comment["state"];
@@ -142,7 +142,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.timestamp = props.timestamp;
         this.signer = props.signer;
         this.signature = props.signature;
-        this.author = new Author(props.author);
+        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
         this.protocolVersion = props.protocolVersion;
         this._initChallengeRequestChallengeProps(props);
     }
@@ -151,7 +151,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signature = props.signature;
-        this.author = new Author(props.author);
+        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
         this.protocolVersion = props.protocolVersion;
     }
 

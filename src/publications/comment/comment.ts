@@ -1,8 +1,8 @@
 import retry, { RetryOperation } from "retry";
-import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
 import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
-import type { PublicationTypeName } from "../../types.js";
+import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from "../../types.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
@@ -31,14 +31,13 @@ import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
 import { OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
-import Author from "../author.js";
 
 export class Comment extends Publication {
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
 
     override clients!: CommentClientsManager["clients"];
-
+    override author!: AuthorWithOptionalCommentUpdateJson;
     // public (CommentType)
     title?: CommentPubsubMessage["title"];
     link?: CommentPubsubMessage["link"];
@@ -85,6 +84,7 @@ export class Comment extends Publication {
     private _loadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
+    _pubsubMsgToPublish?: CommentPubsubMessage = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -114,7 +114,7 @@ export class Comment extends Publication {
         // Need to make sure we have the props first
         if (!this.original && this.protocolVersion)
             this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(
-                removeUndefinedValuesRecursively(this.toJSONPubsubMessagePublication())
+                removeUndefinedValuesRecursively(this._rawCommentIpfs || this._pubsubMsgToPublish)
             );
     }
 
@@ -130,9 +130,31 @@ export class Comment extends Publication {
         this.timestamp = props.timestamp;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
+        const keysCasted = <(keyof CommentPubsubMessage)[]>[...props.signature.signedPropertyNames, "signature"];
+        this._pubsubMsgToPublish = remeda.pick(props, keysCasted);
     }
 
     _initPubsubMessageProps(props: CommentPubsubMessage) {
+        this._pubsubMsgToPublish = props;
+        this._initProps(props);
+    }
+
+    _initIpfsProps(props: CommentIpfsType) {
+        // we're loading remote CommentIpfs
+        this._rawCommentIpfs = props;
+        this._setOriginalFieldBeforeModifying();
+        this._initProps(props);
+
+        // TODO Add a way to set extra props on instance here as well
+    }
+
+    _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
+        super._initChallengeRequestChallengeProps(props);
+        this._initPubsubMessageProps(props.publication);
+    }
+
+    _initProps(props: CommentIpfsType | CommentPubsubMessage) {
+        // Initializing CommentPubsubMessage
         super._initBaseRemoteProps(props);
         this.content = props.content;
         this.flair = props.flair;
@@ -143,28 +165,17 @@ export class Comment extends Publication {
         this.spoiler = props.spoiler;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
-    }
-
-    _initIpfsProps(props: CommentIpfsType) {
-        // we're loading remote CommentIpfs
-        this._rawCommentIpfs = props;
-        this._setOriginalFieldBeforeModifying();
-        this._initPubsubMessageProps(props);
-        this.depth = props.depth;
-        const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
-        if (!postCid) throw Error("There is no way to set comment.postCid");
-        this.postCid = postCid;
-        this.previousCid = props.previousCid;
-        this.thumbnailUrl = props.thumbnailUrl;
-        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
-        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
-
-        // TODO Add a way to set extra props on instance here as well
-    }
-
-    _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initPubsubMessageProps(props.publication);
+        // Initializing Comment Ipfs props
+        if ("depth" in props) {
+            this.depth = props.depth;
+            const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
+            if (!postCid) throw Error("There is no way to set comment.postCid");
+            this.postCid = postCid;
+            this.previousCid = props.previousCid;
+            this.thumbnailUrl = props.thumbnailUrl;
+            this.thumbnailUrlHeight = props.thumbnailUrlHeight;
+            this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        }
     }
 
     // TODO have toJSONCommentUpdate that return this._rawCommentUpdate
@@ -250,7 +261,7 @@ export class Comment extends Publication {
         if (calculatedIpfsHash !== props.cid)
             throw Error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid. This is a critical error`);
         this._initIpfsProps(commentIpfsRecreated);
-        this.author = new Author(props.author);
+        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
     }
 
     override getType(): PublicationTypeName {
@@ -258,29 +269,13 @@ export class Comment extends Publication {
     }
 
     toJSONIpfs(): CommentIpfsType {
-        // TODO return this._rawCommentIpfs
         if (!this._rawCommentIpfs) throw Error("comment._rawCommentIpfs has to be defined before calling toJSONIpfs()");
         return this._rawCommentIpfs;
     }
 
     override toJSONPubsubMessagePublication(): CommentPubsubMessage {
-        // TODO change this to use zod
-        return {
-            subplebbitAddress: this.subplebbitAddress,
-            timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author.toJSONIpfs(),
-            protocolVersion: this.protocolVersion,
-            content: this.content,
-            parentCid: this.parentCid,
-            flair: this.flair,
-            spoiler: this.spoiler,
-            link: this.link,
-            linkWidth: this.linkWidth,
-            linkHeight: this.linkHeight,
-            title: this.title,
-            linkHtmlTagName: this.linkHtmlTagName
-        };
+        if (!this._pubsubMsgToPublish) throw Error("comment._pubsubMsgToPublish should be defined before calling ");
+        return this._pubsubMsgToPublish;
     }
 
     setCid(newCid: string) {
@@ -359,7 +354,7 @@ export class Comment extends Publication {
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
+        if (this.cid && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
             const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
 

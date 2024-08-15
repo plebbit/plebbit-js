@@ -301,33 +301,62 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         };
     }
 
-    private async _createCommentInstanceFromJsonfiedOrPageComment(options: CommentJson | CommentWithinPageJson) {
+    private async _createCommentInstanceFromAnotherCommentInstance(options: Comment) {
+        const commentInstance = new Comment(this);
+        commentInstance._rawCommentIpfs = options._rawCommentIpfs;
+        commentInstance._rawCommentUpdate = options._rawCommentUpdate;
+        commentInstance._pubsubMsgToPublish = options._pubsubMsgToPublish;
+
+        Object.assign(
+            commentInstance, // we jsonify here to get rid of private and function props
+            remeda.omit(JSON.parse(JSON.stringify(options)), ["replies", "clients", "state", "publishingState", "updatingState"])
+        );
+
+
+        if (commentInstance._rawCommentIpfs) commentInstance._initIpfsProps(commentInstance._rawCommentIpfs);
+        else if (commentInstance._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(commentInstance._pubsubMsgToPublish);
+        if (commentInstance._rawCommentUpdate) commentInstance._initCommentUpdate(commentInstance._rawCommentUpdate);
+        return commentInstance;
+    }
+
+    private async _createCommentInstanceFromJsonfiedPageComment(options: CommentWithinPageJson) {
+        const commentInstance = new Comment(this);
+
+        Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
+
+        commentInstance._initProps(options);
+        commentInstance._initCommentUpdate(options);
+        return commentInstance;
+    }
+
+    private async _createCommentInstanceFromJsonfiedCommentInstance(options: CommentJson) {
         const commentInstance = new Comment(this);
 
         // Should copy all props except class instances like, comment.author and comment.replies or instance-only props like states
-        //@ts-expect-error
-        Object.assign(commentInstance, remeda.omit(options, ["author", "replies", "clients", "state", "publishingState", "updatingState"]));
+        Object.assign(
+            commentInstance, // we jsonify here to get rid of private and function props
+            remeda.omit(<CommentJson>JSON.parse(JSON.stringify(options)), [
+                "replies",
+                "clients",
+                "state",
+                "publishingState",
+                "updatingState"
+            ])
+        );
 
-        if ("signer" in options) {
-            // A jsonfied local comment, need to init signer as well as challengeCommentCids and challengeAnswers
-            commentInstance._initLocalProps(options as LocalCommentOptions);
-        }
-
-        if ("depth" in options) {
-            commentInstance._initIpfsProps(options as CommentIpfsType);
-            delete commentInstance["_rawCommentIpfs"];
-        } else commentInstance._initPubsubMessageProps(options);
-
-        if ("updatedAt" in options) commentInstance._initCommentUpdate(options as CommentUpdate);
+        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update this manually because it's a class instance
 
         return commentInstance;
     }
 
-    async createComment(options: z.infer<typeof CreateCommentFunctionArguments> | CommentJson | CommentWithinPageJson): Promise<Comment> {
+    async createComment(
+        options: z.infer<typeof CreateCommentFunctionArguments> | CommentJson | Comment | CommentWithinPageJson
+    ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        if ("clients" in options) return this._createCommentInstanceFromJsonfiedOrPageComment(options);
-        if ("original" in options) return this._createCommentInstanceFromJsonfiedOrPageComment(options);
+        if (options instanceof Comment) return this._createCommentInstanceFromAnotherCommentInstance(options);
+        else if ("clients" in options) return this._createCommentInstanceFromJsonfiedCommentInstance(options);
+        else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options);
         const parsedOptions = CreateCommentFunctionArguments.parse(options);
 
         const commentInstance = new Comment(this);

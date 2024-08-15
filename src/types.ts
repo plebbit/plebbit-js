@@ -54,7 +54,9 @@ export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptio
 
 export type Nft = z.infer<typeof AuthorAvatarNftSchema>;
 
-export type AuthorTypeJson = (AuthorPubsubType | AuthorTypeWithCommentUpdate) & { shortAddress: string };
+export type AuthorPubsubJsonType = AuthorPubsubType & { shortAddress: string };
+
+export type AuthorWithOptionalCommentUpdateJson = AuthorTypeWithCommentUpdate & { shortAddress: string };
 
 export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
 
