@@ -341,10 +341,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
         }
 
         const pubsubSchemas = [
-            ChallengeRequestMessageSchema.passthrough(),
+            ChallengeVerificationMessageSchema.passthrough(),
             ChallengeMessageSchema.passthrough(),
-            ChallengeAnswerMessageSchema.passthrough(),
-            ChallengeVerificationMessageSchema.passthrough()
+            ChallengeRequestMessageSchema.passthrough(),
+            ChallengeAnswerMessageSchema.passthrough()
         ];
 
         let pubsubMsgParsed:
