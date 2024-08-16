@@ -73,6 +73,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
             expect(commentToEdit.extraProp).to.be.undefined;
             expect(commentEdit._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
+            await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
         });
 
         it(`publishing commentEdit.extraProp should succeed as a mod edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
@@ -91,6 +92,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(commentToEdit.removed).to.be.true; // should process only removed since it's the known field
             expect(commentToEdit.extraProp).to.be.undefined;
             expect(commentEdit._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
+            await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
         });
 
         it(`Publishing commentEdit.reservedField should be rejected`, async () => {
@@ -137,6 +139,8 @@ getRemotePlebbitConfigs().map((config) => {
                     { author: { ...commentEdit._pubsubMsgToPublish.author, ...extraProps } },
                     true
                 );
+
+                await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
 
                 await publishWithExpectedResult(commentEdit, true);
                 expect(commentEdit._publishedChallengeRequests[0].publication.author.extraProp).to.equal(extraProps.extraProp);

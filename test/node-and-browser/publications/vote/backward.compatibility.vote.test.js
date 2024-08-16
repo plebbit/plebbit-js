@@ -35,6 +35,7 @@ getRemotePlebbitConfigs().map((config) => {
             const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
             await setExtraPropOnVoteAndSign(vote, { extraProp: "1234" }, false); // will include extra prop in request.publication, but not in signedPropertyNames
 
+            await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
             await publishWithExpectedResult(vote, false, messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES);
             expect(vote._publishedChallengeRequests[0].publication.extraProp).to.equal("1234");
         });
@@ -68,6 +69,7 @@ getRemotePlebbitConfigs().map((config) => {
                 const extraProps = { extraProp: "1234" };
                 await setExtraPropOnVoteAndSign(vote, { author: { ...vote._pubsubMsgToPublish.author, ...extraProps } }, true);
 
+                await plebbit.createVote(JSON.parse(JSON.stringify(vote))); // attempt to create just to see if createVote will throw due to extra prop
                 await publishWithExpectedResult(vote, true);
                 expect(vote._publishedChallengeRequests[0].publication.author.extraProp).to.equal(extraProps.extraProp);
             });
