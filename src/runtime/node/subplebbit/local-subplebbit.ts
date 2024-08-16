@@ -92,6 +92,7 @@ import type { CommentEditPubsubMessage } from "../../../publications/comment-edi
 import {
     AuthorCommentEditPubsubSchema,
     CommentEditPubsubMessageSchema,
+    CommentEditPubsubMessageWithFlexibleAuthorSchema,
     CommentEditReservedFields,
     ModeratorCommentEditPubsubSchema,
     uniqueAuthorFields,
@@ -118,11 +119,12 @@ import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitE
 import {
     CommentIpfsSchema,
     CommentPubsubMessageReservedFields,
-    CommentPubsubMessagePassthroughWithRefinementSchema,
-    CommentPubsubMessageSchema
+    CommentPubsubMessageSchema,
+    CommentPubsubMessageWithFlexibleAuthorRefinementSchema
 } from "../../../publications/comment/schema.js";
 import { VotePubsubMessageSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
 import { v4 as uuidV4 } from "uuid";
+import { AuthorReservedFields } from "../../../schema/schema.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -597,10 +599,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!comment.parentCid) throw Error("Reply has to have parentCid");
 
         const trx = await this._dbHandler.createTransaction(challengeRequestId.toString());
-        const [commentsUnderParent, parent] = await Promise.all([
-            this._dbHandler.queryCommentsUnderComment(comment.parentCid, trx),
-            this._dbHandler.queryComment(comment.parentCid, trx)
-        ]);
+        const commentsUnderParent = await this._dbHandler.queryCommentsUnderComment(comment.parentCid, trx);
+        const parent = await this._dbHandler.queryComment(comment.parentCid, trx);
         await this._dbHandler.commitTransaction(challengeRequestId.toString());
 
         if (!parent) throw Error("Failed to find parent of reply");
@@ -897,6 +897,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (typeof authorSubplebbit?.banExpiresAt === "number" && authorSubplebbit.banExpiresAt > timestamp())
             return messages.ERR_AUTHOR_IS_BANNED;
 
+        if (remeda.intersection(remeda.keys.strict(publication.author), AuthorReservedFields).length > 0)
+            return messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD;
+
         if (!this.isPublicationPost(publication)) {
             // vote or reply or edit
             const parentCid: string | undefined = this.isPublicationReply(publication)
@@ -979,7 +982,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? authorEditPubsubFields : isEditorMod ? modEditPubsubFields : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            const publicationEditFields = remeda.keys.strict(CommentEditPubsubMessageSchema.strip().parse(publication)); // we strip here because we don't wanna include unknown props
+            const publicationEditFields = remeda.keys.strict(CommentEditPubsubMessageWithFlexibleAuthorSchema.strip().parse(publication)); // we strip here because we don't wanna include unknown props
             for (const editField of publicationEditFields)
                 if (!allowedEditFields.includes(<any>editField)) {
                     log(
@@ -1018,8 +1021,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const publicationSchemasToParse = [
             VotePubsubMessageSchema.passthrough(),
-            CommentPubsubMessagePassthroughWithRefinementSchema,
-            CommentEditPubsubMessageSchema.passthrough()
+            CommentPubsubMessageWithFlexibleAuthorRefinementSchema,
+            CommentEditPubsubMessageWithFlexibleAuthorSchema.passthrough()
         ];
 
         for (const schema of publicationSchemasToParse) {

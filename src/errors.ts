@@ -142,6 +142,7 @@ export enum messages {
     ERR_COMMENT_HAS_RESERVED_FIELD = "request.publication (Comment) has a reserved field",
     ERR_VOTE_HAS_RESERVED_FIELD = "request.publication (Vote) has a reserved field",
     ERR_COMMENT_EDIT_HAS_RESERVED_FIELD = "request.publication (CommentEdit) has a reserved field",
+    ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD = "request.publication.author has a reserved field",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",

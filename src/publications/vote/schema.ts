@@ -33,7 +33,10 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature", true
     remeda.mapToObj([...VoteSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
-export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions).strict();
+// Will be used by the sub when parsing request.publication
+export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions)
+    .merge(z.object({ author: LocalVoteOptionsAfterSigningSchema.shape.author.passthrough() }))
+    .strict();
 
 export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
     authorAddress: VotePubsubMessageSchema.shape.author.shape.address,

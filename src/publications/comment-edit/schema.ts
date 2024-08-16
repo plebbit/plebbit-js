@@ -70,8 +70,8 @@ export const LocalCommentEditAfterSigningSchema = CreateCommentEditOptionsSchema
 export const CommentEditSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateCommentEditOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
-const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "signature" | "protocolVersion", true>>(
-    remeda.mapToObj([...CommentEditSignedPropertyNames, "signature", "protocolVersion"], (x) => [x, true])
+const editPubsubPickOptions = <Record<CommentEditSignedPropertyNamesUnion | "signature", true>>(
+    remeda.mapToObj([...CommentEditSignedPropertyNames, "signature"], (x) => [x, true])
 );
 export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueModFields));
 export const AuthorCommentEditPubsubPassthroughSchema = <z.ZodType<AuthorCommentEdit>>AuthorCommentEditPubsubSchema.passthrough();
@@ -79,6 +79,10 @@ export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSche
     remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
 );
 export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
+
+export const CommentEditPubsubMessageWithFlexibleAuthorSchema = CommentEditPubsubMessageSchema.extend({
+    author: CommentEditPubsubMessageSchema.shape.author.passthrough()
+}).strict();
 
 export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend({
     authorAddress: CommentEditPubsubMessageSchema.shape.author.shape.address,

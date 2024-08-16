@@ -70,7 +70,12 @@ const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature",
 
 export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
 
-export const CommentPubsubMessagePassthroughWithRefinementSchema = CommentPubsubMessageSchema.passthrough().refine(
+export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessageSchema.merge(
+    z.object({ author: AuthorPubsubSchema.passthrough() })
+).strict();
+
+// This is used by the subplebbit when parsing request.publication
+export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.passthrough().refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
@@ -87,7 +92,7 @@ export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptB
 // Remote comments
 
 // These are the props added by the subplebbit before adding the comment to ipfs
-export const CommentIpfsSchema = CommentPubsubMessageSchema.extend({
+export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.extend({
     depth: z.number().nonnegative().int(),
     postCid: CidStringSchema.optional(),
     thumbnailUrl: z.string().url().optional(),
@@ -157,7 +162,7 @@ const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>(
 
 const originalFieldsObj = <Record<OverlapCommentPubsubAndCommentUpdate, true>>remeda.fromKeys(originalFields, () => true);
 
-export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageSchema.pick(originalFieldsObj).strip();
+export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageWithFlexibleAuthorSchema.pick(originalFieldsObj).strip();
 
 // Comment table here
 
