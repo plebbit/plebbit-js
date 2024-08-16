@@ -54,5 +54,23 @@ getRemotePlebbitConfigs().map((config) => {
             await publishWithExpectedResult(vote, false, messages.ERR_VOTE_HAS_RESERVED_FIELD);
             expect(vote._publishedChallengeRequests[0].publication.insertedAt).to.equal("1234");
         });
+
+        describe(`Publishing vote with extra props in author field - ${config.name}`, async () => {
+            it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
+                const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+                await setExtraPropOnVoteAndSign(vote, { author: { ...vote._pubsubMsgToPublish.author, subplebbit: "random" } }, true);
+
+                await publishWithExpectedResult(vote, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
+                expect(vote._publishedChallengeRequests[0].publication.author.subplebbit).to.equal("random");
+            });
+            it(`Publishing with extra prop for author should succeed`, async () => {
+                const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
+                const extraProps = { extraProp: "1234" };
+                await setExtraPropOnVoteAndSign(vote, { author: { ...vote._pubsubMsgToPublish.author, ...extraProps } }, true);
+
+                await publishWithExpectedResult(vote, true);
+                expect(vote._publishedChallengeRequests[0].publication.author.extraProp).to.equal(extraProps.extraProp);
+            });
+        });
     });
 });
