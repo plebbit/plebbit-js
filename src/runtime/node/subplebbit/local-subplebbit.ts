@@ -503,7 +503,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<undefined> {
         const log = Logger("plebbit-js:local-subplebbit:storeCommentEdit");
-        const strippedOutEditPublication = CommentEditPubsubMessageSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
+        const strippedOutEditPublication = CommentEditPubsubMessageWithFlexibleAuthorSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
         const commentToBeEdited = await this._dbHandler.queryComment(commentEditRaw.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
