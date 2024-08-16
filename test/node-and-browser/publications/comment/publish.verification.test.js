@@ -227,7 +227,7 @@ describeSkipIfRpc("Posts with forbidden author fields are rejected", async () =>
             post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
             post._validateSignature = async () => {}; // Disable signature validation before publishing
             disableZodValidationOfPublication(post);
-            await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
+            await publishWithExpectedResult(post, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
         })
     );
 });
