@@ -56,12 +56,14 @@ export const AuthorAvatarNftSchema = z
     })
     .strict();
 
-export const FlairSchema = z.object({
-    text: z.string(),
-    backgroundColor: z.string().optional(),
-    textColor: z.string().optional(),
-    expiresAt: PlebbitTimestampSchema.optional()
-});
+export const FlairSchema = z
+    .object({
+        text: z.string(),
+        backgroundColor: z.string().optional(),
+        textColor: z.string().optional(),
+        expiresAt: PlebbitTimestampSchema.optional()
+    })
+    .passthrough();
 
 // When author creates their publication, this is publication.author
 export const AuthorPubsubSchema = z
@@ -123,7 +125,6 @@ export const AuthorReservedFields = remeda.difference(
     remeda.unique([...remeda.keys.strict(AuthorWithOptionalCommentUpdateSchema.shape), "shortAddress"]),
     remeda.keys.strict(AuthorPubsubSchema.shape)
 );
-
 
 // Challenge requests and pubsub here
 
