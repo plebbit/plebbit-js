@@ -18,7 +18,7 @@ export class CommentEdit extends Publication {
     removed?: CommentEditPubsubMessage["removed"];
     commentAuthor?: CommentEditPubsubMessage["commentAuthor"];
 
-    _pubsubMessageToPublish?: CommentEditPubsubMessage = undefined;
+    _pubsubMsgToPublish?: CommentEditPubsubMessage = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -46,7 +46,7 @@ export class CommentEdit extends Publication {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
         const keysCasted = <(keyof CommentEditPubsubMessage)[]>props.signature.signedPropertyNames;
-        this._pubsubMessageToPublish = remeda.pick(props, ["signature", ...keysCasted]);
+        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
     _initRemoteProps(props: CommentEditPubsubMessage): void {
@@ -57,12 +57,12 @@ export class CommentEdit extends Publication {
     _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
-        this._pubsubMessageToPublish = props.publication;
+        this._pubsubMsgToPublish = props.publication;
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
-        if (!this._pubsubMessageToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
-        return this._pubsubMessageToPublish;
+        if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
+        return this._pubsubMsgToPublish;
     }
 
     override getType(): PublicationTypeName {
