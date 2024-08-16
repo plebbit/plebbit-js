@@ -16,7 +16,7 @@ import {
 import { z } from "zod";
 import type { CommentEditPubsubMessage, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
 import type { LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
-import type { CommentPubsubMessage, CommentUpdate, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentPubsubMessage, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
 import type {
@@ -72,7 +72,7 @@ export interface CommentsTableRowInsert extends Omit<CommentsTableRow, "id" | "i
 
 // CommentUpdates table
 
-export interface CommentUpdatesRow extends CommentUpdate {
+export interface CommentUpdatesRow extends CommentUpdateType {
     insertedAt: number;
     ipfsPath: string;
 }

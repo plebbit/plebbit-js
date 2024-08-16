@@ -11,7 +11,7 @@ import type { SubplebbitIpfsType } from "../subplebbit/types";
 
 import type { CommentEditPubsubMessage } from "../publications/comment-edit/types";
 import type { VotePubsubMessage } from "../publications/vote/types";
-import type { CommentPubsubMessage, CommentUpdate, CreateCommentOptions } from "../publications/comment/types";
+import type { CommentPubsubMessage, CommentUpdateType, CreateCommentOptions } from "../publications/comment/types";
 import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
 import { VoteSignedPropertyNames } from "../publications/vote/schema";
@@ -60,7 +60,7 @@ export type PublicationsToSign =
     | Omit<CommentEditPubsubMessage, "signature">
     | Omit<VotePubsubMessage, "signature">
     | Omit<CommentPubsubMessage, "signature">
-    | Omit<CommentUpdate, "signature">
+    | Omit<CommentUpdateType, "signature">
     | Omit<SubplebbitIpfsType, "signature">;
 
 export type PubsubMsgsToSign =
@@ -71,4 +71,9 @@ export type PubsubMsgsToSign =
 
 // ---------------------------
 // Verifying
-export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdate;
+export type PublicationToVerify =
+    | CommentEditPubsubMessage
+    | VotePubsubMessage
+    | CommentPubsubMessage
+    | SubplebbitIpfsType
+    | CommentUpdateType;

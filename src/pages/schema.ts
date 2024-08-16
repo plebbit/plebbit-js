@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { CidStringSchema } from "../schema/schema.js";
 import { CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
+import type { PageIpfsManuallyDefined } from "./types.js";
 
 // Pages schemas here
 
-export const PageIpfsSchema = z.object({
+export const PageIpfsSchema = <z.ZodType<PageIpfsManuallyDefined>>z.object({
     comments: z.lazy(() =>
-        z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema.passthrough(), update: CommentUpdateSchema }).array()
+        z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema.passthrough(), update: CommentUpdateSchema.passthrough() }).array()
     ),
     nextCid: CidStringSchema.optional()
 });

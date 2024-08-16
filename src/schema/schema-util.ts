@@ -2,7 +2,7 @@ import { PageIpfsSchema } from "../pages/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
-import type { CommentIpfsType, CommentUpdate } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentUpdateType } from "../publications/comment/types.js";
 import { DecryptedChallengeSchema, DecryptedChallengeVerificationSchema } from "../pubsub-messages/schema.js";
 import { RpcRemoteSubplebbitSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
@@ -43,9 +43,9 @@ export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson:
     }
 }
 
-export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(commentUpdateJson: any): CommentUpdate {
+export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(commentUpdateJson: any): CommentUpdateType {
     try {
-        return CommentUpdateSchema.parse(commentUpdateJson);
+        return CommentUpdateSchema.passthrough().parse(commentUpdateJson);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: e, commentUpdateJson });
     }

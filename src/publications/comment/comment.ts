@@ -21,7 +21,7 @@ import type {
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
     CommentState,
-    CommentUpdate,
+    CommentUpdateType,
     CommentUpdatingState,
     CommentWithinPageJson,
     LocalCommentOptions,
@@ -29,7 +29,7 @@ import type {
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
-import { CommentIpfsSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import { CommentIpfsSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 
 export class Comment extends Publication {
@@ -57,21 +57,21 @@ export class Comment extends Publication {
 
     // CommentEdit and CommentUpdate props
     original?: CommentWithinPageJson["original"];
-    upvoteCount?: CommentUpdate["upvoteCount"];
-    downvoteCount?: CommentUpdate["downvoteCount"];
-    replyCount?: CommentUpdate["replyCount"];
-    updatedAt?: CommentUpdate["updatedAt"];
+    upvoteCount?: CommentUpdateType["upvoteCount"];
+    downvoteCount?: CommentUpdateType["downvoteCount"];
+    replyCount?: CommentUpdateType["replyCount"];
+    updatedAt?: CommentUpdateType["updatedAt"];
     replies!: RepliesPages;
-    edit?: CommentUpdate["edit"];
+    edit?: CommentUpdateType["edit"];
     flair?: CommentPubsubMessage["flair"];
     deleted?: CommentWithinPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
-    pinned?: CommentUpdate["pinned"];
-    locked?: CommentUpdate["locked"];
-    removed?: CommentUpdate["removed"];
-    reason?: CommentUpdate["reason"];
-    lastChildCid?: CommentUpdate["lastChildCid"];
-    lastReplyTimestamp?: CommentUpdate["lastReplyTimestamp"];
+    pinned?: CommentUpdateType["pinned"];
+    locked?: CommentUpdateType["locked"];
+    removed?: CommentUpdateType["removed"];
+    reason?: CommentUpdateType["reason"];
+    lastChildCid?: CommentUpdateType["lastChildCid"];
+    lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
 
     // updating states
     override state!: CommentState;
@@ -79,7 +79,7 @@ export class Comment extends Publication {
 
     // private
     private _updateInterval?: any = undefined;
-    _rawCommentUpdate?: CommentUpdate = undefined;
+    _rawCommentUpdate?: CommentUpdateType = undefined;
     _rawCommentIpfs?: CommentIpfsType = undefined;
     private _loadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
@@ -182,9 +182,8 @@ export class Comment extends Publication {
         }
     }
 
-    // TODO have toJSONCommentUpdate that return this._rawCommentUpdate
-
-    _initCommentUpdate(props: CommentUpdate | CommentWithinPageJson) {
+    _initCommentUpdate(props: CommentUpdateType | CommentWithinPageJson) {
+        const log = Logger("plebbit-js:comment:_initCommentUpdate");
         if ("depth" in props)
             // CommentWithinPageJson
             this.original = props.original;
@@ -192,6 +191,12 @@ export class Comment extends Publication {
             // CommentUpdate
             this._setOriginalFieldBeforeModifying();
             this._rawCommentUpdate = props;
+
+            const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentUpdateSchema.shape));
+            if (unknownProps.length > 0) {
+                log("Found unknown props on CommentUpdate record", unknownProps, "Will set them on Comment instance");
+                Object.assign(this, remeda.pick(props, unknownProps));
+            }
         }
 
         this.upvoteCount = props.upvoteCount;
@@ -224,7 +229,7 @@ export class Comment extends Publication {
     }
 
     _updateRepliesPostsInstance(
-        newReplies: CommentUpdate["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
+        newReplies: CommentUpdateType["replies"] | CommentWithinPageJson["replies"] | Pick<RepliesPagesTypeIpfs, "pageCids">
     ) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
@@ -335,12 +340,12 @@ export class Comment extends Publication {
         });
     }
 
-    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdate | PlebbitError> {
+    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdateType | PlebbitError> {
         return new Promise((resolve) => {
             this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
-                    const update: CommentUpdate = await this._clientsManager.fetchCommentUpdate();
+                    const update: CommentUpdateType = await this._clientsManager.fetchCommentUpdate();
                     this._setUpdatingState("succeeded");
                     resolve(update);
                 } catch (e) {

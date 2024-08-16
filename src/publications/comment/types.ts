@@ -6,7 +6,7 @@ import {
     CommentIpfsWithCidPostCidDefinedSchema,
     CommentOptionsToSignSchema,
     CommentPubsubMessageSchema,
-    CommentUpdateSchema,
+    CommentUpdateNoRepliesSchema,
     CreateCommentOptionsSchema,
     LocalCommentSchema,
     OriginalCommentFieldsBeforeCommentUpdateSchema
@@ -15,7 +15,7 @@ import { SubplebbitAuthorSchema } from "../../schema/schema.js";
 import { RpcCommentUpdateResultSchema } from "../../clients/rpc-client/schema.js";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
-import type { RepliesPagesTypeJson } from "../../pages/types.js";
+import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationState } from "../types.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
@@ -28,7 +28,9 @@ export type CommentPubsubMessage = z.infer<typeof CommentPubsubMessageSchema>;
 
 export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 
-export type CommentUpdate = z.infer<typeof CommentUpdateSchema>;
+export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
+    replies?: RepliesPagesIpfsDefinedManuallyType;
+};
 
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
@@ -49,7 +51,7 @@ export type CommentJson = JsonOfClass<Comment>;
 type AuthorWithShortSubplebbitAddress = AuthorTypeWithCommentUpdate & { shortAddress: string };
 
 // subplebbit.posts.pages.hot.comments[0] will have this shape
-export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdate, "replies"> {
+export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdateType, "replies"> {
     original: CommentOriginalField;
     shortCid: string;
     shortSubplebbitAddress: string;

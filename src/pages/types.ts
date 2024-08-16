@@ -1,10 +1,15 @@
 import { z } from "zod";
 import { PageIpfsSchema, PostSortNameSchema, PostsPagesIpfsSchema, RepliesPagesIpfsSchema, ReplySortNameSchema } from "./schema";
-import type { CommentIpfsWithCidPostCidDefined, CommentUpdate, CommentWithinPageJson } from "../publications/comment/types";
+import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, CommentWithinPageJson } from "../publications/comment/types";
 import { JsonOfClass } from "../types";
 import { PostsPages, RepliesPages } from "./pages";
 
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
+
+export interface PageIpfsManuallyDefined {
+    comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[];
+    nextCid?: string;
+}
 
 export type RepliesPagesTypeIpfs = z.infer<typeof RepliesPagesIpfsSchema>;
 
@@ -15,10 +20,15 @@ export type PagesTypeIpfs = RepliesPagesTypeIpfs | PostsPagesTypeIpfs;
 export type PostSortName = z.infer<typeof PostSortNameSchema>;
 export type ReplySortName = z.infer<typeof ReplySortNameSchema>;
 
+export interface RepliesPagesIpfsDefinedManuallyType {
+    pages: Record<ReplySortName, PageIpfsManuallyDefined>;
+    pageCids: Record<ReplySortName, string>;
+}
+
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
 export type SortProps = {
-    score: (comment: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }) => number;
+    score: (comment: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }) => number;
     timeframe?: Timeframe;
 };
 

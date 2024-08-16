@@ -29,7 +29,7 @@ import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js"
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdate } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdateType } from "../publications/comment/types.js";
 import type { PageIpfs } from "../pages/types.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
@@ -698,16 +698,20 @@ export class CommentClientsManager extends PublicationClientsManager {
         return finalParentsPath;
     }
 
+    private _calculatePathForCommentUpdate(folderCid: string, parentsPostUpdatePath: string) {
+        return `${folderCid}/` + parentsPostUpdatePath + "/update";
+    }
+
     private async _fetchCommentUpdateIpfsP2P(
         subIpns: SubplebbitIpfsType,
         timestampRanges: string[],
         parentsPostUpdatePath: string,
         log: Logger
-    ): Promise<CommentUpdate> {
+    ): Promise<CommentUpdateType> {
         const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             const folderCid = subIpns.postUpdates![timestampRange];
-            const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
             attemptedPaths.push(path);
             this.updateIpfsState("fetching-update-ipfs");
             let res: string;
@@ -750,7 +754,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         return true;
     }
 
-    private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdate) {
+    private async _throwIfCommentUpdateHasInvalidSignature(commentUpdate: CommentUpdateType) {
         if (!this._comment.cid) throw Error("Can't validate comment update when comment.cid is undefined");
         const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
         const signatureValidity = await verifyCommentUpdate(
@@ -773,15 +777,15 @@ export class CommentClientsManager extends PublicationClientsManager {
         timestampRanges: string[],
         parentsPostUpdatePath: string,
         log: Logger
-    ): Promise<CommentUpdate> {
+    ): Promise<CommentUpdateType> {
         const attemptedPaths: string[] = [];
         for (const timestampRange of timestampRanges) {
             // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
 
             const folderCid = subIpns.postUpdates![timestampRange];
-            const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
             attemptedPaths.push(path);
-            let commentUpdate: CommentUpdate | undefined;
+            let commentUpdate: CommentUpdateType | undefined;
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
@@ -810,7 +814,7 @@ export class CommentClientsManager extends PublicationClientsManager {
         });
     }
 
-    async fetchCommentUpdate(): Promise<CommentUpdate> {
+    async fetchCommentUpdate(): Promise<CommentUpdateType> {
         const log = Logger("plebbit-js:comment:update");
         const subIpns = (await this.fetchSubplebbit(this._comment.subplebbitAddress)).subplebbit;
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);

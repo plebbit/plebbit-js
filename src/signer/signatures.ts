@@ -37,7 +37,7 @@ import type {
     CommentIpfsWithCidDefined,
     CommentOptionsToSign,
     CommentPubsubMessage,
-    CommentUpdate
+    CommentUpdateType
 } from "../publications/comment/types.js";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
 import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
@@ -159,7 +159,7 @@ export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbi
     return _signJson(<JsonSignature["signedPropertyNames"]>CommentSignedPropertyNames, comment, comment.signer, log);
 }
 
-export async function signCommentUpdate(update: Omit<CommentUpdate, "signature">, signer: SignerType) {
+export async function signCommentUpdate(update: Omit<CommentUpdateType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     return _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateSignedPropertyNames, update, signer, log);
@@ -382,7 +382,7 @@ export async function verifyCommentIpfs(
 }
 
 function _allFieldsOfRecordInSignedPropertyNames(
-    record: PublicationPubsubMessage | SubplebbitIpfsType | PubsubMessage | CommentUpdate
+    record: PublicationPubsubMessage | SubplebbitIpfsType | PubsubMessage | CommentUpdateType
 ): boolean {
     const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
     for (const field of fieldsOfRecord) if (!record.signature.signedPropertyNames.includes(field)) return false;
@@ -471,7 +471,7 @@ async function _getBinaryValidationResult(publication: PubsubMessage): Promise<V
 }
 
 export async function verifyCommentUpdate(
-    update: CommentUpdate,
+    update: CommentUpdateType,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     subplebbitAddress: string,

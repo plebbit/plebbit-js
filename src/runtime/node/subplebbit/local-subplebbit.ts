@@ -102,7 +102,7 @@ import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessage,
-    CommentUpdate
+    CommentUpdateType
 } from "../../../publications/comment/types.js";
 import { SubplebbitEditOptionsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
@@ -1277,7 +1277,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private async _writeCommentUpdateToIpfsFilePath(newCommentUpdate: CommentUpdate, ipfsPath: string, oldIpfsPath?: string) {
+    private async _writeCommentUpdateToIpfsFilePath(newCommentUpdate: CommentUpdateType, ipfsPath: string, oldIpfsPath?: string) {
         // TODO need to exclude reply.replies here
         await this._clientsManager
             .getDefaultIpfs()
@@ -1309,7 +1309,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         const newUpdatedAt = storedCommentUpdate?.updatedAt === timestamp() ? timestamp() + 1 : timestamp();
 
-        const commentUpdatePriorToSigning: Omit<CommentUpdate, "signature"> = {
+        const commentUpdatePriorToSigning: Omit<CommentUpdateType, "signature"> = {
             ...cleanUpBeforePublishing({
                 ...calculatedCommentUpdate,
                 updatedAt: newUpdatedAt,
@@ -1323,7 +1323,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 pages: remeda.pick(generatedPages.pages, ["topAll"])
             });
 
-        const newCommentUpdate: CommentUpdate = {
+        const newCommentUpdate: CommentUpdateType = {
             ...commentUpdatePriorToSigning,
             signature: await signCommentUpdate(commentUpdatePriorToSigning, this.signer)
         };
@@ -1336,7 +1336,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
     }
 
-    private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdate, comment: CommentsTableRow, log: Logger) {
+    private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
         // This function should be deleted at some point, once the protocol ossifies
         const validation = await verifyCommentUpdate(newCommentUpdate, false, this._clientsManager, this.address, comment, false, false);
         if (!validation.valid) {

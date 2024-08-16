@@ -15,11 +15,10 @@ import {
 import { AuthorCommentEditPubsubPassthroughSchema, AuthorCommentEditPubsubSchema } from "../comment-edit/schema.js";
 import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
-import type { RepliesPagesTypeIpfs } from "../../pages/types";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema } from "../../pages/schema.js";
-import type { CommentPubsubMessage, CommentUpdate } from "./types.js";
+import type { CommentPubsubMessage, CommentUpdateType } from "./types.js";
 
 // Comment schemas here
 
@@ -117,9 +116,9 @@ export const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.au
     .extend({
         subplebbit: SubplebbitAuthorSchema.optional()
     })
-    .strict();
+    .passthrough();
 
-const CommentUpdateNoRepliesSchema = z.object({
+export const CommentUpdateNoRepliesSchema = z.object({
     cid: CidStringSchema, // cid of the comment, need it in signature to prevent attack
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
@@ -133,34 +132,26 @@ const CommentUpdateNoRepliesSchema = z.object({
     reason: z.string().optional(), // reason the mod took a mood action,
     updatedAt: PlebbitTimestampSchema, // timestamp in seconds the CommentUpdate was updated
     author: AuthorWithCommentUpdateSchema.pick({ subplebbit: true }).optional(), // add commentUpdate.author.subplebbit to comment.author.subplebbit, override comment.author.flair with commentUpdate.author.subplebbit.flair if any
-
     lastChildCid: CidStringSchema.optional(), // The cid of the most recent direct child of the comment
     lastReplyTimestamp: PlebbitTimestampSchema.optional(), // The timestamp of the most recent direct or indirect child of the comment
     signature: JsonSignatureSchema, // signature of the CommentUpdate by the sub owner to protect against malicious gateway
     protocolVersion: ProtocolVersionSchema
 });
 
-type CommentUpdateWithRepliesType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
-    replies?: RepliesPagesTypeIpfs;
-};
-
-export const CommentUpdateSchema: z.ZodType<CommentUpdateWithRepliesType> = CommentUpdateNoRepliesSchema.extend({
+export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
     replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }).strict();
 
-export const CommentUpdateSignedPropertyNames = <(keyof Omit<CommentUpdateWithRepliesType, "signature">)[]>[
-    ...remeda.keys.strict(remeda.omit(CommentUpdateNoRepliesSchema.shape, ["signature"])),
-    "replies"
-];
+export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
 
-type OverlapCommentPubsubAndCommentUpdate = (keyof CommentPubsubMessage & keyof Omit<CommentUpdate, "signature">) | "content";
+type OverlapCommentPubsubAndCommentUpdate = (keyof CommentPubsubMessage & keyof Omit<CommentUpdateType, "signature">) | "content";
 
 const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>(
     remeda
-        .intersection(remeda.keys.strict(CommentPubsubMessageSchema.shape), [
-            ...remeda.keys.strict(remeda.omit(CommentUpdateNoRepliesSchema.shape, ["signature"])),
-            "replies"
-        ])
+        .intersection(
+            remeda.keys.strict(CommentPubsubMessageSchema.shape),
+            remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]))
+        )
         .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
 );
 

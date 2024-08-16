@@ -55,10 +55,8 @@ import { CommentEditPubsubMessageSchema, CreateCommentEditFunctionArgumentSchema
 import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "./publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema, VotePubsubMessageSchema } from "./publications/vote/schema.js";
 import type {
-    CommentIpfsType,
     CommentJson,
     CommentOptionsToSign,
-    CommentUpdate,
     CommentWithinPageJson,
     CreateCommentOptions,
     LocalCommentOptions
@@ -312,7 +310,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             remeda.omit(JSON.parse(JSON.stringify(options)), ["replies", "clients", "state", "publishingState", "updatingState"])
         );
 
-
         if (commentInstance._rawCommentIpfs) commentInstance._initIpfsProps(commentInstance._rawCommentIpfs);
         else if (commentInstance._pubsubMsgToPublish) commentInstance._initPubsubMessageProps(commentInstance._pubsubMsgToPublish);
         if (commentInstance._rawCommentUpdate) commentInstance._initCommentUpdate(commentInstance._rawCommentUpdate);
@@ -324,8 +321,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
 
-        commentInstance._initProps(options);
-        commentInstance._initCommentUpdate(options);
+        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update this manually because it's a class instance
+
         return commentInstance;
     }
 

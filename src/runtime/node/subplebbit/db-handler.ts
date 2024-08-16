@@ -30,7 +30,7 @@ import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
 import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
-import { CommentIpfsWithCidPostCidDefined, CommentUpdate, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { STORAGE_KEYS } from "../../../constants.js";
@@ -509,11 +509,10 @@ export class DbHandler {
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
-    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }[]> {
+    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[]> {
         // protocolVersion, signature
 
-        //@ts-expect-error
-        const commentUpdateColumns = <(keyof CommentUpdate)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
         const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape), "extraProps"];
@@ -525,7 +524,7 @@ export class DbHandler {
         ]);
 
         //@ts-expect-error
-        const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdate }[] = commentsRaw.map((commentRaw) => ({
+        const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[] = commentsRaw.map((commentRaw) => ({
             comment: remeda.mapKeys(
                 // we need to exclude extraProps from pageIpfs.comments[0].comment
                 // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
@@ -709,7 +708,7 @@ export class DbHandler {
     private async _queryCommentCounts(
         cid: string,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdate, "replyCount" | "upvoteCount" | "downvoteCount">> {
+    ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
         const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
             this.queryReplyCount(cid, trx),
             this._queryCommentUpvote(cid, trx),
@@ -740,7 +739,7 @@ export class DbHandler {
     private async _queryLatestModeratorReason(
         comment: Pick<CommentsTableRow, "cid">,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdate, "reason"> | undefined> {
+    ): Promise<Pick<CommentUpdateType, "reason"> | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("reason")
             .where("commentCid", comment.cid)
@@ -750,8 +749,8 @@ export class DbHandler {
             .first();
     }
 
-    async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed">> {
-        const res: Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
+    async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
             {},
             ...(await Promise.all(
                 ["spoiler", "pinned", "locked", "removed"].map((field) =>
@@ -805,7 +804,7 @@ export class DbHandler {
     async queryCalculatedCommentUpdate(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">,
         trx?: Transaction
-    ): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
+    ): Promise<Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
         const [
             authorSubplebbit,
             authorEdit,
