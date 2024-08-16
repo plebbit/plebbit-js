@@ -641,6 +641,8 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
     comment.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
 
     disableZodValidationOfPublication(comment);
+
+    Object.assign(comment, extraProps);
 }
 
 export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
@@ -657,6 +659,8 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
     vote.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
 
     disableZodValidationOfPublication(vote);
+
+    Object.assign(vote, extraProps);
 }
 
 export async function setExtraPropOnCommentEditAndSign(
@@ -677,6 +681,8 @@ export async function setExtraPropOnCommentEditAndSign(
     commentEdit.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
 
     disableZodValidationOfPublication(commentEdit);
+
+    Object.assign(commentEdit, extraProps);
 }
 
 export async function setExtraPropOnChallengeRequestAndSign(
@@ -823,11 +829,12 @@ export async function publishOverPubsub(pubsubTopic: string, jsonToPublish: Pubs
 }
 
 export function getRemotePlebbitConfigs() {
-    return [
-        { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
-        { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly },
-        ...(isRpcFlagOn() ? [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }] : [])
-    ];
+    if (isRpcFlagOn()) return [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }];
+    else
+        return [
+            { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
+            { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly }
+        ];
 }
 
 export async function createNewIpns() {
