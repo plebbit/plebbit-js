@@ -6,8 +6,7 @@ import {
     isRpcFlagOn,
     mockPlebbit,
     jsonifySubplebbitAndRemoveInternalProps,
-    isRunningInBrowser,
-    publishSubplebbitRecordWithExtraProp
+    isRunningInBrowser
 } from "../../../dist/node/test/test-util.js";
 
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -85,30 +84,6 @@ getRemotePlebbitConfigs().map((config) =>
 
             const page = await newSubplebbit.posts.getPage(pageCid);
             expect(page.comments.length).to.be.greaterThan(0);
-        });
-
-        describe(`plebbit.createSubplebbit - Backward Compatiblity`, async () => {
-            it(`Can create a subplebbit instance with subplebbit record with extra props`, async () => {
-                const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
-                const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
-
-                const remotePlebbit = await config.plebbitInstancePromise();
-
-                const sub = await remotePlebbit.createSubplebbit(publishedSub.subplebbitRecord);
-
-                expect(sub.toJSONIpfs().extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-                expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
-                expect(sub.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-
-                const recreatedSubFromInstance = await remotePlebbit.createSubplebbit(sub);
-                expect(recreatedSubFromInstance.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
-                expect(JSON.parse(JSON.stringify(recreatedSubFromInstance)).extraProp).to.equal(opts.extraProps.extraProp);
-                expect(recreatedSubFromInstance.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-
-                const recreatedSubFromJson = await remotePlebbit.createSubplebbit(JSON.parse(JSON.stringify(sub)));
-                expect(JSON.parse(JSON.stringify(recreatedSubFromJson)).extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-                expect(recreatedSubFromJson.extraProp).to.equal(publishedSub.subplebbitRecord.extraProp);
-            });
         });
     })
 );

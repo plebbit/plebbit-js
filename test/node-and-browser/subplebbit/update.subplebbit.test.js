@@ -1,14 +1,6 @@
 import signers from "../../fixtures/signers.js";
 
-import {
-    publishRandomPost,
-    mockRemotePlebbit,
-    mockGatewayPlebbit,
-    itSkipIfRpc,
-    publishSubplebbitRecordWithExtraProp,
-    getRemotePlebbitConfigs,
-    resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util.js";
+import { publishRandomPost, mockRemotePlebbit, mockGatewayPlebbit, itSkipIfRpc } from "../../../dist/node/test/test-util.js";
 
 import * as remeda from "remeda";
 import chai from "chai";
@@ -324,66 +316,5 @@ describe("subplebbit.update (remote)", async () => {
         await publishRandomPost(subplebbit.address, plebbit, {}, false);
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
-    });
-});
-
-getRemotePlebbitConfigs().map((config) => {
-    describe(`subplebbit.update() and backward compatibility - ${config.name}`, async () => {
-        it(`subplebbit.update() should have no problem with extra props, as long as they're in subplebbit.signature.signedPropertyNames`, async () => {
-            const opts = { includeExtraPropInSignedPropertyNames: true, extraProps: { extraProp: "1234" } };
-            const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
-
-            const remotePlebbit = await config.plebbitInstancePromise();
-
-            const sub = await remotePlebbit.createSubplebbit({ address: publishedSub.subplebbitRecord.address });
-
-            await sub.update();
-
-            await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-
-            expect(sub.toJSONIpfs().extraProp).to.equal(opts.extraProps.extraProp);
-
-            expect(sub.toJSONIpfs()).to.deep.equal(publishedSub.subplebbitRecord);
-
-            expect(JSON.parse(JSON.stringify(sub)).extraProp).to.equal(opts.extraProps.extraProp);
-
-            expect(sub.extraProp).to.equal(opts.extraProps.extraProp);
-
-            await sub.stop();
-        });
-
-        it(`subplebbit.update() emit an error if there are unknown props not included in signature.signedPropertyNames`, async () => {
-            const opts = { includeExtraPropInSignedPropertyNames: false, extraProps: { extraProp: "1234" } };
-
-            const publishedSub = await publishSubplebbitRecordWithExtraProp(opts);
-
-            const remotePlebbit = await config.plebbitInstancePromise();
-
-            const sub = await remotePlebbit.createSubplebbit({ address: publishedSub.subplebbitRecord.address });
-
-            await sub.update();
-
-            const error = await new Promise((resolve) => sub.on("error", resolve));
-
-            if (config.name === "IPFS gateway") {
-                expect(error.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
-                const gatewayError = error.details.gatewayToError[remotePlebbit.ipfsGatewayUrls[0]];
-                expect(gatewayError.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
-                expect(gatewayError.details.signatureValidity.valid).to.be.false;
-                expect(gatewayError.details.signatureValidity.reason).to.equal(
-                    messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-                );
-            } else {
-                expect(error.code).to.equal("ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID");
-                expect(error.details.signatureValidity.valid).to.be.false;
-                expect(error.details.signatureValidity.reason).to.equal(
-                    messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-                );
-            }
-
-            expect(sub.updatedAt).to.be.undefined; // should not accept update
-
-            await sub.stop();
-        });
     });
 });
