@@ -137,7 +137,7 @@ const addCommentIpfsWithInvalidSchemaToIpfs = async () => {
 
     const postIpfs = (await plebbit.getComment(subplebbit.posts.pages.hot.comments[0].cid)).toJSONIpfs();
 
-    postIpfs.updatedAt = "1234"; // Invalidate schema
+    postIpfs.content = 1234; // Content is supposed to be a string, this will make the schema invalid
 
     const postWithInvalidSchemaCid = addStringToIpfs(JSON.stringify(postIpfs));
 
