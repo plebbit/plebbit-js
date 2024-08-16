@@ -86,7 +86,7 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSche
 );
 
 export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentPubsubMessageSchema.passthrough()
+    publication: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
 }).strict();
 
 // Remote comments
