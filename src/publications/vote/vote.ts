@@ -11,7 +11,7 @@ class Vote extends Publication {
     commentCid!: VotePubsubMessage["commentCid"];
     vote!: VotePubsubMessage["vote"]; // (upvote, cancel vote, downvote)
 
-    private _pubsubMessageToPublish?: VotePubsubMessage = undefined;
+    private _pubsubMsgToPublish?: VotePubsubMessage = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -27,7 +27,7 @@ class Vote extends Publication {
         this.commentCid = props.commentCid;
         this.vote = props.vote;
         const keysCasted = <(keyof VotePubsubMessage)[]>props.signature.signedPropertyNames;
-        this._pubsubMessageToPublish = remeda.pick(props, ["signature", ...keysCasted]);
+        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
     _initRemoteProps(props: VotePubsubMessage): void {
@@ -39,12 +39,12 @@ class Vote extends Publication {
     _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
-        this._pubsubMessageToPublish = props.publication;
+        this._pubsubMsgToPublish = props.publication;
     }
 
     override toJSONPubsubMessagePublication(): VotePubsubMessage {
-        if (!this._pubsubMessageToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
-        return this._pubsubMessageToPublish;
+        if (!this._pubsubMsgToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
+        return this._pubsubMsgToPublish;
     }
 
     override getType(): PublicationTypeName {
