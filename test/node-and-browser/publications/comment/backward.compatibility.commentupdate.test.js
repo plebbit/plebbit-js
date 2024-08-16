@@ -3,7 +3,8 @@ import {
     getRemotePlebbitConfigs,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
-    publishRandomPost
+    publishRandomPost,
+    itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -31,10 +32,10 @@ getRemotePlebbitConfigs().map((config) => {
     // pageIpfs.comments[0].update
     // PageJson.comments[0]
 
-    describe(`Loading CommentUpdate with extra prop`, async () => {
+    describe(`Loading CommentUpdate with extra prop - ${config.name}`, async () => {
         const extraProps = { extraPropUpdate: "1234" };
 
-        it(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
+        itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
             const invalidCommentUpdate = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(invalidCommentUpdate, extraProps);
 
@@ -73,7 +74,7 @@ getRemotePlebbitConfigs().map((config) => {
                 });
             }
         });
-        it(`Can load CommentUpdate with extra props if they're included in signedPropertyNames`, async () => {
+        itSkipIfRpc(`Can load CommentUpdate with extra props if they're included in signedPropertyNames`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps, extraProps);
 
