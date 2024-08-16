@@ -105,5 +105,42 @@ getRemotePlebbitConfigs().map((config) => {
             await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD);
             expect(commentEdit._publishedChallengeRequests[0].publication.insertedAt).to.equal("1234");
         });
+
+        describe(`Publishing CommentEdit with extra props in author field - ${config.name}`, async () => {
+            it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
+                const commentEdit = await plebbit.createCommentEdit({
+                    commentCid: commentToEdit.cid,
+                    subplebbitAddress: commentToEdit.subplebbitAddress,
+                    removed: true,
+                    signer: signers[3]
+                });
+
+                await setExtraPropOnCommentEditAndSign(
+                    commentEdit,
+                    { author: { ...commentEdit._pubsubMsgToPublish.author, subplebbit: "random" } },
+                    true
+                );
+
+                await publishWithExpectedResult(commentEdit, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
+                expect(commentEdit._publishedChallengeRequests[0].publication.author.subplebbit).to.equal("random");
+            });
+            it(`Publishing with extra prop for author should succeed`, async () => {
+                const commentEdit = await plebbit.createCommentEdit({
+                    commentCid: commentToEdit.cid,
+                    subplebbitAddress: commentToEdit.subplebbitAddress,
+                    removed: true,
+                    signer: signers[3]
+                });
+                const extraProps = { extraProp: "1234" };
+                await setExtraPropOnCommentEditAndSign(
+                    commentEdit,
+                    { author: { ...commentEdit._pubsubMsgToPublish.author, ...extraProps } },
+                    true
+                );
+
+                await publishWithExpectedResult(commentEdit, true);
+                expect(commentEdit._publishedChallengeRequests[0].publication.author.extraProp).to.equal(extraProps.extraProp);
+            });
+        });
     });
 });
