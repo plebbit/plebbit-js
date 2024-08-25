@@ -515,7 +515,7 @@ export async function waitTillCommentIsInParentPages(
     const isCommentInParentPages = async () => {
         const instance = pagesInstance();
         const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
-        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, instance);
         return Boolean(commentInPage);
     };
 
