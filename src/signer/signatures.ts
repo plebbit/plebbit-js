@@ -41,7 +41,11 @@ import type {
 } from "../publications/comment/types.js";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
 import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
-import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema.js";
+import {
+    CommentSignedPropertyNames,
+    CommentUpdateReservedFields,
+    CommentUpdateSignedPropertyNames
+} from "../publications/comment/schema.js";
 import type { PageIpfs } from "../pages/types.js";
 import { SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
 import {
@@ -470,6 +474,10 @@ async function _getBinaryValidationResult(publication: PubsubMessage): Promise<V
     return { valid: true };
 }
 
+function _isThereReservedFieldInRecord(record: CommentUpdateType, reservedFields: string[]) {
+    return remeda.intersection(Object.keys(record), reservedFields).length > 0;
+}
+
 export async function verifyCommentUpdate(
     update: CommentUpdateType,
     resolveAuthorAddresses: boolean,
@@ -481,6 +489,8 @@ export async function verifyCommentUpdate(
 ): Promise<ValidationResult> {
     if (!_allFieldsOfRecordInSignedPropertyNames(update))
         return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
 
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
 
