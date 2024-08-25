@@ -1441,10 +1441,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
             const commentIpfsJson = <CommentIpfsType>{
                 ...CommentIpfsSchema.strip().parse(unpinnedCommentRow),
+                ...unpinnedCommentRow.extraProps,
+                ipnsName: unpinnedCommentRow["ipnsName"], // Added for backward compatibility
                 postCid: unpinnedCommentRow.depth === 0 ? undefined : unpinnedCommentRow.postCid // need to remove post cid because it's not part of ipfs file if depth is 0
             };
-            //@ts-expect-error
-            if (unpinnedCommentRow.ipnsName) commentIpfsJson["ipnsName"] = unpinnedCommentRow.ipnsName; // Added for backward compatibility
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
             const contentHash: string = await calculateIpfsHash(commentIpfsContent);
             if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
