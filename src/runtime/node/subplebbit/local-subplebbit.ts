@@ -1033,7 +1033,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
         }
 
-        const parseRestOfDecrypted = DecryptedChallengeRequestSchema.omit({ publication: true }).safeParse(decryptedJson);
+        const parseRestOfDecrypted = DecryptedChallengeRequestSchema.omit({ publication: true }).passthrough().safeParse(decryptedJson);
 
         if (parseRestOfDecrypted.success && parsedPublication) return { ...parseRestOfDecrypted.data, publication: parsedPublication };
         else {

@@ -17,14 +17,18 @@ import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../p
 import * as remeda from "remeda";
 
 // Other props of Subplebbit Ipfs here
-export const SubplebbitEncryptionSchema = z.object({
-    type: z.enum(["ed25519-aes-gcm"]), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
-    publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
-});
+export const SubplebbitEncryptionSchema = z
+    .object({
+        type: z.enum(["ed25519-aes-gcm"]), // https://github.com/plebbit/plebbit-js/blob/master/docs/encryption.md
+        publicKey: SignerWithAddressPublicKeySchema.shape.publicKey // 32 bytes base64 string (same as subplebbit.signer.publicKey)
+    })
+    .passthrough();
 
-export const SubplebbitRoleSchema = z.object({
-    role: z.enum(["owner", "admin", "moderator"])
-});
+export const SubplebbitRoleSchema = z
+    .object({
+        role: z.enum(["owner", "admin", "moderator"])
+    })
+    .passthrough();
 
 export const PubsubTopicSchema = z.string().min(1);
 
@@ -33,13 +37,13 @@ export const SubplebbitSuggestedSchema = z
         // values suggested by the sub owner, the client/user can ignore them without breaking interoperability
         primaryColor: z.string().optional(),
         secondaryColor: z.string().optional(),
-        avatarUrl: z.string().optional(),
-        bannerUrl: z.string().optional(),
-        backgroundUrl: z.string().optional(),
+        avatarUrl: z.string().url().optional(),
+        bannerUrl: z.string().url().optional(),
+        backgroundUrl: z.string().url().optional(),
         language: z.string().optional()
         // TODO: menu links, wiki pages, sidebar widgets
     })
-    .strict();
+    .passthrough();
 
 export const SubplebbitFeaturesSchema = z
     .object({
@@ -69,7 +73,7 @@ export const SubplebbitFeaturesSchema = z
         requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
         requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
     })
-    .strict();
+    .passthrough();
 
 // Local subplebbit challenge here (Challenges API)
 
@@ -194,7 +198,7 @@ export const SubplebbitIpfsSchema = z
         lastCommentCid: CidStringSchema.optional(),
         features: SubplebbitFeaturesSchema.optional(),
         suggested: SubplebbitSuggestedSchema.optional(),
-        flairs: z.record(z.enum(["post", "author"], FlairSchema.array())).optional()
+        flairs: z.record(z.string(), FlairSchema.array()).optional()
     })
     .strict();
 

@@ -54,7 +54,7 @@ export const AuthorAvatarNftSchema = z
         timestamp: PlebbitTimestampSchema,
         signature: z.object({ signature: z.string().startsWith("0x"), type: z.enum(["eip191"]) })
     })
-    .strict();
+    .passthrough();
 
 export const FlairSchema = z
     .object({
