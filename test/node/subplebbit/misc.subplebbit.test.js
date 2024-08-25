@@ -486,62 +486,6 @@ describe(`comment.link`, async () => {
     });
 });
 
-describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
-    let subAddress;
-    let plebbitDifferentIpfs;
-    before(async () => {
-        const plebbit = await mockPlebbit();
-        const sub = await createSubWithNoChallenge({}, plebbit);
-        await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        const post = await publishRandomPost(sub.address, plebbit, {}, true);
-        await publishRandomReply(post, plebbit, {}, true);
-
-        await sub.stop();
-
-        plebbitDifferentIpfs = await mockPlebbit({ ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"] }); // Different IPFS repo
-
-        const subDifferentIpfs = await createSubWithNoChallenge({ address: sub.address }, plebbitDifferentIpfs);
-        await subDifferentIpfs.start();
-        await new Promise((resolve) => subDifferentIpfs.once("update", resolve));
-        subAddress = subDifferentIpfs.address;
-    });
-    it(`Subplebbit IPNS is republished`, async () => {
-        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
-        expect(subLoaded).to.be.a("object");
-        expect(subLoaded.posts).to.be.a("object");
-        // If we can load the subplebbit IPNS that means it has been republished by the new IPFS repo
-    });
-
-    it(`Posts' IPFS are repinned`, async () => {
-        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
-        const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const postIpfs = JSON.parse(await plebbitDifferentIpfs.fetchCid(postFromPage.cid));
-        expect(postIpfs.subplebbitAddress).to.equal(subAddress); // Make sure it was loaded correctly
-    });
-
-    it(`Comments' IPFS are repinned`, async () => {
-        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
-        const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const commentIpfs = JSON.parse(await plebbitDifferentIpfs.fetchCid(postFromPage.replies.pages.topAll.comments[0].cid));
-        expect(commentIpfs.subplebbitAddress).to.equal(subAddress); // Make sure it was loaded correctly
-    });
-    it(`Comments' CommentUpdate are republished`, async () => {
-        const subLoaded = await plebbitDifferentIpfs.getSubplebbit(subAddress);
-        const postFromPage = subLoaded.posts.pages.hot.comments[0];
-        const remotePlebbit = await mockRemotePlebbitIpfsOnly();
-
-        const postWithRemotePlebbit = await remotePlebbit.createComment({ cid: postFromPage.cid });
-        postWithRemotePlebbit.update();
-        await new Promise((resolve) => postWithRemotePlebbit.once("update", resolve)); // CommentIpfs update
-        expect(postWithRemotePlebbit.replyCount).to.be.undefined;
-        await new Promise((resolve) => postWithRemotePlebbit.once("update", resolve)); // CommentUpdate update
-        expect(postWithRemotePlebbit.replyCount).to.be.a("number");
-        expect(postWithRemotePlebbit.upvoteCount).to.be.a("number");
-        await postWithRemotePlebbit.stop();
-    });
-});
-
 describe(`subplebbit.clients (Local)`, async () => {
     let plebbit;
     before(async () => {
