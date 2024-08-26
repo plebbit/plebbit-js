@@ -502,6 +502,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         options: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema> | SubplebbitJson = {}
     ): Promise<RemoteSubplebbit | RpcRemoteSubplebbit | RpcLocalSubplebbit | LocalSubplebbit> {
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
+        if (options instanceof RemoteSubplebbit) return options; // not sure why somebody would call createSubplebbit with an instance, will probably change later
         if ("clients" in options) return this._createSubInstanceFromJsonifiedSub(<SubplebbitJson>options);
         const parsedOptions = CreateSubplebbitFunctionArgumentsSchema.parse(options);
         log.trace("Received options: ", parsedOptions);
