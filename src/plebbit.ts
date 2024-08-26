@@ -10,10 +10,11 @@ import type {
     LRUStorageInterface,
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
-    InputPlebbitOptions
+    InputPlebbitOptions,
+    AuthorPubsubType
 } from "./types.js";
 import { Comment } from "./publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, timestamp } from "./util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "./util.js";
 import Vote from "./publications/vote/vote.js";
 import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
@@ -284,10 +285,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
         const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
         const filledSigner = await this.createSigner(finalOptions.signer);
-        const filledAuthor = AuthorPubsubSchema.parse({
+        const filledAuthor = <AuthorPubsubType>{
             ...finalOptions.author,
             address: finalOptions.author?.address || filledSigner.address
-        });
+        };
         const filledProtocolVersion = finalOptions.protocolVersion || env.PROTOCOL_VERSION;
 
         return {
@@ -321,7 +322,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         Object.assign(commentInstance, remeda.omit(options, ["replies"])); // These two fields are instances so we shouldn't copy them
 
-        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update this manually because it's a class instance
+        commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
 
         return commentInstance;
     }
@@ -329,7 +330,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private async _createCommentInstanceFromJsonfiedCommentInstance(options: CommentJson) {
         const commentInstance = new Comment(this);
 
-        // Should copy all props except class instances like, comment.author and comment.replies or instance-only props like states
+        // Should copy all props except class instances like, comment.replies or instance-only props like states
         Object.assign(
             commentInstance, // we jsonify here to get rid of private and function props
             remeda.omit(<CommentJson>JSON.parse(JSON.stringify(options)), [
@@ -341,7 +342,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             ])
         );
 
-        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update this manually because it's a class instance
+        if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
 
         return commentInstance;
     }
@@ -398,7 +399,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 remeda.pick(options, <(keyof SubplebbitIpfsType)[]>[...options.signature.signedPropertyNames, "signature"])
             );
             if (resParseSubplebbitIpfs.success) {
-                const cleanedRecord = cleanUpBeforePublishing(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
+                const cleanedRecord = removeUndefinedValuesRecursively(resParseSubplebbitIpfs.data); // safe way to replicate JSON.stringify() which is done before adding record to ipfs
                 await subplebbit.initSubplebbitIpfsPropsNoMerge(cleanedRecord); // we're setting SubplebbitIpfs
             }
         }
@@ -492,7 +493,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // jsonfied = JSON.parse(JSON.stringify(subplebbitInstance))
         // should probably exclude internal and instance-exclusive props like states
 
-        // TODO should we copy states and internal props?
         if (this.plebbitRpcClient) return this._createSubplebbitRpc(jsonfied);
         else if ("startedState" in jsonfied) return this._createLocalSub(jsonfied);
         else return this._createRemoteSubplebbitInstance(jsonfied);
@@ -553,12 +553,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async _createVoteInstanceFromJsonfiedVote(jsonfied: VoteJson) {
-        const clonedOptions = remeda.clone(jsonfied);
-        //@ts-expect-error
-        if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
-        const strippedOptions = VotePubsubMessageSchema.strip().parse(clonedOptions);
-        const voteInstance = await this.createVote(strippedOptions);
-        Object.assign(voteInstance, remeda.omit(jsonfied, ["author", "state", "publishingState", "clients"]));
+        const voteInstance = new Vote(this);
+        // we stringify here to remove functions and create a deep copy
+        Object.assign(voteInstance, remeda.omit(<VoteJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"]));
         return voteInstance;
     }
 
@@ -585,12 +582,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async _createCommentEditInstanceFromJsonfiedCommentEdit(jsonfied: CommentEditTypeJson) {
-        const clonedOptions = remeda.clone(jsonfied);
-        //@ts-expect-error
-        if ("shortAddress" in clonedOptions["author"]) delete clonedOptions["author"]["shortAddress"];
-        const strippedOptions = CommentEditPubsubMessageSchema.strip().parse(clonedOptions);
-        const editInstance = await this.createCommentEdit(strippedOptions);
-        Object.assign(editInstance, remeda.omit(jsonfied, ["author", "state", "publishingState", "clients"]));
+        const editInstance = new CommentEdit(this);
+        // we stringify here to remove functions and create a deep copy
+        Object.assign(
+            editInstance,
+            remeda.omit(<CommentEditTypeJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"])
+        );
 
         return editInstance;
     }
