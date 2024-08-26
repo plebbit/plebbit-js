@@ -76,6 +76,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         await createdSub.delete();
     });
 
+    it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(subplebbitInstance)))`, async () => {
+        const props = { title: Math.random() + "123" };
+        const firstSub = await plebbit.createSubplebbit(props);
+        const secondSub = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(firstSub)));
+        expect(secondSub.title).to.equal(props.title);
+
+        const firstSubJson = jsonifySubplebbitAndRemoveInternalProps(firstSub);
+        const secondSubJson = jsonifySubplebbitAndRemoveInternalProps(secondSub);
+        expect(firstSubJson).to.deep.equal(secondSubJson);
+    });
+
     it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
         const props = { title: "Test hello", description: "Hello there" };
         const sub = await createSubWithNoChallenge(props, plebbit);
