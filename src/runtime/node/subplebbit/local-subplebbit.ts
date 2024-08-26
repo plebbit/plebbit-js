@@ -149,7 +149,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private _sortHandler!: SortHandler;
     _dbHandler!: DbHandler;
-    private _isSubRunningLocally: boolean;
+    private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
     private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
@@ -158,8 +158,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         super(plebbit);
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
-        this._isSubRunningLocally = false;
         this._subplebbitUpdateTrigger = false;
+        this._stopHasBeenCalled = false;
         //@ts-expect-error
         this._challengeAnswerPromises = //@ts-expect-error
             this._challengeAnswerResolveReject = //@ts-expect-error
@@ -423,9 +423,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        // If this._isSubRunningLocally = false, then this is the last publish before stopping
+        // If this._stopHasBeenCalled = false, then this is the last publish before stopping
         // TODO double check these values
-        const ttl = this._isSubRunningLocally ? `${this._plebbit.publishInterval * 3}ms` : undefined;
+        const ttl = this._stopHasBeenCalled ? `${this._plebbit.publishInterval * 3}ms` : undefined;
         const lifetime = `24h`; // doesn't matter anyway, DHT drops all entries after 24h
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
@@ -1593,7 +1593,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _publishLoop(syncIntervalMs: number) {
-        if (!this._isSubRunningLocally) return;
+        if (this.state !== "started" || this._stopHasBeenCalled) return;
         const loop = async () => {
             this._publishLoopPromise = this.syncIpnsWithDb();
             await this._publishLoopPromise;
@@ -1697,7 +1697,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             `Subplebbit (${this.address}) props (${remeda.keys.strict(newProps)}) has been edited: `,
             remeda.pick(latestState, remeda.keys.strict(parsedEditOptions))
         );
-        if (!this._isSubRunningLocally) await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
+        if (this.state === "stopped") await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
         this.emit("update", this);
 
         return this;
@@ -1706,6 +1706,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
 
+        this._stopHasBeenCalled = false;
         try {
             await this._initBeforeStarting();
             // update started value twice because it could be started prior lockSubStart
@@ -1713,7 +1714,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateStartedValue();
             await this._dbHandler.lockSubStart(); // Will throw if sub is locked already
             await this._updateStartedValue();
-            this._isSubRunningLocally = true;
             await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.initDestroyedConnection();
 
@@ -1775,18 +1775,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     override async stop() {
         const log = Logger("plebbit-js:local-subplebbit:stop");
-
+        this._stopHasBeenCalled = true;
         if (this.state === "started") {
-            if (this._isSubRunningLocally) await this.dbHandler.unlockSubStart();
-            this._isSubRunningLocally = false;
+            try {
+                await this._dbHandler.unlockSubStart();
+            } catch (e) {
+                log.error(`Failed to unlock start lock on sub (${this.address})`, e);
+            }
             if (this._publishLoopPromise) await this._publishLoopPromise; // should be in try/catch
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this._dbHandler.rollbackAllTransactions();
             await this._dbHandler.unlockSubState();
-            await this._dbHandler.unlockSubStart();
             await this._updateStartedValue();
-
             clearInterval(this._publishInterval);
             this._clientsManager.updateIpfsState("stopped");
             this._clientsManager.updatePubsubState("stopped", undefined);
@@ -1799,6 +1800,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
         } else throw Error("User called localSubplebbit.stop() without updating or starting first");
+        this._stopHasBeenCalled = false;
     }
 
     override async delete() {
