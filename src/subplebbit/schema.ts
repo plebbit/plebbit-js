@@ -86,7 +86,7 @@ export const ChallengeOptionInputSchema = z
         placeholder: z.string().optional(), // the value to display if the input field is empty, e.g. "10"
         required: z.boolean().optional() // If this is true, the challenge option is required, the challenge will throw without it
     })
-    .strict();
+    .passthrough(); // should be flexible
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
@@ -130,7 +130,7 @@ export const ChallengeExcludeSchema = z
         rateLimit: z.number().nonnegative().int().optional(),
         rateLimitChallengeSuccess: z.boolean().optional()
     })
-    .strict();
+    .passthrough();
 
 export const SubplebbitChallengeSchema = z
     .object({
@@ -139,7 +139,7 @@ export const SubplebbitChallengeSchema = z
         challenge: z.string().optional(), // TODO eventually use ChallengeFile.challenge
         type: z.string().optional() // TODO eventually use ChallengeFile.type
     })
-    .strict();
+    .passthrough();
 
 export const SubplebbitChallengeSettingSchema = z
     .object({
