@@ -138,12 +138,7 @@ describe("publishing comments", async () => {
         const comment1 = await generateMockPost(subplebbitAddress, plebbit);
         const commentToPublish = await plebbit.createComment(comment1);
         await publishWithExpectedResult(commentToPublish, true);
-        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(commentToPublish.toJSONPubsubMessagePublication());
-    });
-
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
-        await publishWithExpectedResult(post, true);
-        await post.stop();
+        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
     });
 
     it(`Can publish a comment with linkHtmlTagName defined`, async () => {
@@ -176,20 +171,17 @@ describe("publishing comments", async () => {
     });
 
     it(`A comment with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false);
-        post.author.wallets = {};
-        post.signature = await signComment(
-            { ...removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), signer: post.signer },
-            plebbit
-        );
+        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets: {} } });
+        // plebbit.createComment will remove empty {}, so author.wallets will be undefined
+        expect(post.author.wallets).to.be.undefined;
         await publishWithExpectedResult(post, true);
-        expect(post.author.wallets).to.deep.equal({});
+        expect(post.author.wallets).to.be.undefined;
         await waitTillCommentIsInParentPages(post, plebbit);
         await post.stop();
-        expect(post.author.wallets).to.deep.equal({});
+        expect(post.author.wallets).to.be.undefined;
 
         const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
-        expect(loadedPost.author.wallets).deep.equal({});
+        expect(loadedPost.author.wallets).to.be.undefined;
     });
 
     itSkipIfRpc(`publish() can be caught if subplebbit failed to load (gateway)`, async () => {
