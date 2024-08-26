@@ -2,8 +2,10 @@ import {
     mockPlebbit,
     createSubWithNoChallenge,
     generateMockPost,
+    overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
-    mockRemotePlebbit
+    mockRemotePlebbitIpfsOnly,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 
@@ -16,10 +18,10 @@ describe(`subplebbit.features.requirePostLink`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
@@ -28,16 +30,19 @@ describe(`subplebbit.features.requirePostLink`, async () => {
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLink: true } });
         expect(subplebbit.features.requirePostLink).to.be.true;
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.features.requirePostLink).to.be.true;
     });
 
     it(`Can't publish a post with invalid link`, async () => {
-        const invalidUrl = "http://example.com/file[/].html";
-        const post = await generateMockPost(subplebbit.address, remotePlebbit, false, { link: invalidUrl });
+        const invalidUrl = "test.com"; // invalid because it has no protocol
+        const post = await generateMockPost(subplebbit.address, remotePlebbit, false);
+        await overrideCommentInstancePropsAndSign(post, { link: invalidUrl });
         expect(post.link).to.equal(invalidUrl);
         await publishWithExpectedResult(post, false, messages.ERR_POST_HAS_INVALID_LINK_FIELD);
     });
@@ -53,10 +58,10 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
     let plebbit, remotePlebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
-        remotePlebbit = await mockRemotePlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subplebbit = await createSubWithNoChallenge({}, plebbit);
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
     });
 
     after(async () => {
@@ -65,9 +70,10 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
 
     it(`Feature is updated correctly in props`, async () => {
         expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
         await subplebbit.edit({ features: { ...subplebbit.features, requirePostLinkIsMedia: true } });
         expect(subplebbit.features.requirePostLinkIsMedia).to.be.true;
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
         const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
         expect(remoteSub.features.requirePostLinkIsMedia).to.be.true;
     });

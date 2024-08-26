@@ -1,0 +1,30 @@
+{
+    "content": "Random post Content 63d527da-38b4-49a8-aed3-d8209965e50c",
+    "title": "Random post Title 349493b8-8a4a-4ec7-b20c-9f08ae3a1bf5",
+    "author": { "address": "12D3KooWDP65LKwKhWGnMcSaP7BxB1xSrGCCj7rp2FMcKC2YtNWd", "displayName": "Mock Author - 1723466076.045505" },
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "protocolVersion": "1.0.0",
+    "timestamp": 1723466075,
+    "signature": {
+        "type": "ed25519",
+        "signature": "8zKwT0ORzto3azyocLBfWN/TdIdZaEIsX1N/LHEkzz95ZQAX7XNh+gaJ6ySQYj4oPB6HLCBPmxocilDqrACpCA",
+        "publicKey": "NPUH3u2dlx9GFFCJdT5RlGFk6zW3FJq+s3QF+MKbd/I",
+        "signedPropertyNames": [
+            "flair",
+            "spoiler",
+            "content",
+            "title",
+            "link",
+            "linkWidth",
+            "linkHeight",
+            "linkHtmlTagName",
+            "parentCid",
+            "author",
+            "subplebbitAddress",
+            "protocolVersion",
+            "timestamp"
+        ]
+    },
+    "depth": 0,
+    "previousCid": "QmSM8Aec9LUMSrAUwXyZxtnvuFTMg5Vgxgm3AdCnSPys3y"
+}

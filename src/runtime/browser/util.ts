@@ -5,7 +5,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Logger from "@plebbit/plebbit-logger";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 
-const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
+const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {}; // ipfs api url -> Ipfs Client
 
 // Functions should not be called in browser
 export const getDefaultDataPath = () => undefined;

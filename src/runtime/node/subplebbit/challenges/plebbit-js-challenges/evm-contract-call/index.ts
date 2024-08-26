@@ -1,7 +1,8 @@
 import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
-import type { ChainTicker, DecryptedChallengeRequestMessageType } from "../../../../../../types.js";
-import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSettings } from "../../../../../../subplebbit/types.js";
+import type { ChainTicker } from "../../../../../../types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
+import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
@@ -68,7 +69,7 @@ const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: ChainTicker)
 };
 
 const verifyAuthorWalletAddress = async (props: {
-    publication: DecryptedChallengeRequestMessageType["publication"];
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"];
     chainTicker: string;
     condition: string;
     abi: any;
@@ -107,7 +108,7 @@ const verifyAuthorWalletAddress = async (props: {
     const valid = await viemClient.verifyMessage({
         address: <"0x${string}">authorWallet.address,
         message: JSON.stringify(messageToBeSigned),
-        signature: authorWallet.signature.signature
+        signature: <"0x${string">authorWallet.signature.signature
     });
     if (!valid) {
         const failedMsg = `The signature of the wallet is invalid`;
@@ -199,7 +200,7 @@ const verifyAuthorNftWalletAddress = async (props: Parameters<typeof verifyAutho
     const valid = await viemClient.verifyMessage({
         address: currentOwner,
         message: JSON.stringify(messageToBeSigned),
-        signature: nftAvatar.signature.signature
+        signature: <"0x${string">nftAvatar.signature.signature
     });
     if (!valid) {
         log.error(`The signature of the nft avatar is invalid`);
@@ -312,8 +313,8 @@ const validateWalletAddressWithCondition = async (props: {
 };
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number,
     subplebbit: LocalSubplebbit
 ): Promise<ChallengeResult> => {
@@ -346,7 +347,7 @@ const getChallenge = async (
     // If any of them pass, then the challenge pass
 
     // First try to validate author
-    const sharedProps = { plebbit: subplebbit.plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
+    const sharedProps = { plebbit: subplebbit._plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
 
     const walletFailureReason = await verifyAuthorWalletAddress(sharedProps);
     if (!walletFailureReason)
@@ -372,10 +373,10 @@ const getChallenge = async (
     return { success: false, error: errorString };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     let { chainTicker } = subplebbitChallengeSettings?.options || {};
 
-    const type = <Challenge["type"]>("chain/" + (chainTicker || "<chainTicker>"));
+    const type = <Challenge["type"]>("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };
 }
 

@@ -121,13 +121,18 @@ const setUpMockGateways = async () => {
     // Will return valid content for one cid and invalid content for another
     // The purpose is to test whether plebbit.fetchCid will throw if we retrieved the invalid content
 
-    http.createServer((req, res) => {
+    http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
         if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr")
             res.end("Hello plebs"); // Valid content
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
-        else res.end("Unknown CID");
+        else if (req.url.includes("/ipns")) {
+            const subAddress = req.url.split("/")[2];
+            const sub = await plebbit.getSubplebbit(subAddress);
+            res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
+            res.end(JSON.stringify(sub.toJSONIpfs()));
+        } else res.end(await plebbit.fetchCid(req.url));
     })
         .listen(13415, hostName)
         .on("error", (err) => {
@@ -217,6 +222,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordThirtyMinuteOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordThirtyMinuteOld.updatedAt = Math.round(Date.now() / 1000) - 30 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordThirtyMinuteOld.signature = await signSubplebbit(subplebbitRecordThirtyMinuteOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordThirtyMinuteOld));
     })
@@ -232,6 +238,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
@@ -247,6 +254,7 @@ const setUpMockGateways = async () => {
         const subplebbitRecordHourOld = await fetchLatestSubplebbitJson(); // very old Subplebbit ipns record from subplebbitAddress
         subplebbitRecordHourOld.updatedAt = Math.round(Date.now() / 1000) - 2 * 60 * 60; // make sure updatedAt is 30 minutes old
         subplebbitRecordHourOld.signature = await signSubplebbit(subplebbitRecordHourOld, signers[0]);
+        res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
 
         res.end(JSON.stringify(subplebbitRecordHourOld));
     })
@@ -281,10 +289,17 @@ const setUpMockGateways = async () => {
     if (process.env["USE_RPC"] === "1") {
         // run RPC server here
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
+        // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
-        console.log(`test server plebbit wss listening on port ${rpcPort}`);
+        // This server will fetch subs remotely
+
+        const remotePort = rpcPort + 1;
+        const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({ port: remotePort, authKey: rpcAuthKey });
+        plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server" + 2) });
+
+        console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
     }
 
     if (process.env["NO_SUBPLEBBITS"] !== "1") {

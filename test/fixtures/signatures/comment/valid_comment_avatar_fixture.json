@@ -1,26 +1,42 @@
 {
-    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-    "timestamp": 1677411606,
-    "signature": {
-        "signature": "sv6NT59jF6AbSVhcUTjEgAydmQAV48akAuHD5Pdh9ST8333/G3Y0iV7vzBgZZ3cASHCZjopbuzRhnE8WOtOnDA",
-        "publicKey": "rnXv4wh/fpRm6rEw+yX6wYfjRg7wU5lLpk1jwFrLJsg",
-        "type": "ed25519",
-        "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
-    },
+    "content": "Random 0.7662939840169205",
+    "title": "Random 0.6832396467533663",
     "author": {
-        "address": "12D3KooWMZPQsQdYtrakc4D1XtzGXwN1X3DBnAobcCjcPYYXTB6o",
+        "address": "12D3KooWJJcSwMHrFvsFL7YCNDLD95kBczEfkHpPNdxcjZwR2X2Y",
         "avatar": {
-            "address": "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
             "chainTicker": "matic",
+            "address": "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
             "id": "8",
+            "timestamp": 123456,
             "signature": {
                 "signature": "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
-                "signedPropertyNames": ["domainSeparator", "authorAddress", "tokenAddress", "tokenId"],
                 "type": "eip191"
             }
         }
     },
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
     "protocolVersion": "1.0.0",
-    "content": "Random 0.24964627912168003",
-    "title": "Random 0.7221212552569025"
+    "timestamp": 1723464788,
+    "signature": {
+        "signature": "jmr6ViKxS2wQexvVuaqrxZEAyRNrBfLkgSLlOvbHjogcTnzvoaMKWGYWiw+mSOj7e9rBTsE10mu00akamRpAAA",
+        "publicKey": "fhnnUqE9NCCtgcEfwSRNSk7KCbm2lzD1HGhzaol9n/k",
+        "type": "ed25519",
+        "signedPropertyNames": [
+            "flair",
+            "spoiler",
+            "content",
+            "title",
+            "link",
+            "linkWidth",
+            "linkHeight",
+            "linkHtmlTagName",
+            "parentCid",
+            "author",
+            "subplebbitAddress",
+            "protocolVersion",
+            "timestamp"
+        ]
+    },
+    "depth": 0,
+    "previousCid": "QmUrxBiaphUt3K6qDs2JspQJAgm34sKQaa5YaRmyAWXN4D"
 }

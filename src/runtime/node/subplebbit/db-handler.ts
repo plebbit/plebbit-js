@@ -1,4 +1,4 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, throwWithErrorCode, timestamp } from "../../../util.js";
 import knex, { Knex } from "knex";
 import path from "path";
 import assert from "assert";
@@ -6,16 +6,13 @@ import fs from "fs";
 import os from "os";
 import Keyv from "keyv";
 import Transaction = Knex.Transaction;
-import {
-    AuthorCommentEdit,
+import type {
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
     CommentsTableRow,
     CommentsTableRowInsert,
-    CommentUpdate,
     CommentUpdatesRow,
     CommentUpdatesTableRowInsert,
-    SubplebbitAuthor,
     VotesTableRow,
     VotesTableRowInsert
 } from "../../../types.js";
@@ -28,10 +25,15 @@ import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
+import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
+import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
+import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
+import { STORAGE_KEYS } from "../../../constants.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -55,7 +57,7 @@ export class DbHandler {
     }
 
     async initDbConfigIfNeeded() {
-        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+        if (!this._dbConfig) this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit.address, this._subplebbit._plebbit);
     }
 
     toJSON() {
@@ -70,21 +72,27 @@ export class DbHandler {
         );
         await this.initDbConfigIfNeeded();
         if (!this._knex) this._knex = knex(this._dbConfig);
-        if (!this._createdTables)
-            try {
-                await this.createTablesIfNeeded();
-            } catch (e) {
-                log.error(
-                    `Sub (${
-                        this._subplebbit.address
-                    }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
-                        env.DB_VERSION
-                    }). Error`,
-                    e
-                );
-                throw e;
-            }
         if (!this._keyv) this._keyv = new Keyv(`sqlite://${(<any>this._dbConfig.connection).filename}`);
+    }
+
+    async createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:db-handler:createOrMigrateTablesIfNeeded");
+        if (this._createdTables) return;
+
+        try {
+            await this._createOrMigrateTablesIfNeeded();
+        } catch (e) {
+            log.error(
+                `Sub (${
+                    this._subplebbit.address
+                }) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${
+                    env.DB_VERSION
+                }). Error`,
+                e
+            );
+            throw e;
+        }
+        hideClassPrivateProps(this);
     }
 
     getDbConfig(): Knex.Config {
@@ -188,6 +196,8 @@ export class DbHandler {
 
             table.boolean("spoiler");
 
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
+
             table.text("protocolVersion").notNullable();
 
             table.increments("id"); // Used for sorts
@@ -240,6 +250,8 @@ export class DbHandler {
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
+
             table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
         });
     }
@@ -268,6 +280,8 @@ export class DbHandler {
             table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
 
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+
+            table.json("extraProps").nullable();
             table.primary(["id", "commentCid"]);
         });
     }
@@ -276,8 +290,8 @@ export class DbHandler {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
 
-    async createTablesIfNeeded() {
-        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
+    async _createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:db-handler:createOrMigrateTablesIfNeeded");
 
         const currentDbVersion = await this.getDbVersion();
 
@@ -325,20 +339,36 @@ export class DbHandler {
         if (needToMigrate) {
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+            // we need to remove posts because it may include old incompatible comments
+            // LocalSubplebbit will automatically produce a new posts json
+            //@ts-expect-error
+            const internalState = await this._subplebbit._getDbInternalState(false);
+            if (internalState) {
+                const protocolVersion = internalState.protocolVersion || env.PROTOCOL_VERSION;
+                const _usingDefaultChallenge =
+                    "_usingDefaultChallenge" in internalState
+                        ? internalState._usingDefaultChallenge //@ts-expect-error
+                        : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
+                const cid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                //@ts-expect-error
+                await this._subplebbit._updateDbInternalState({ posts: undefined, cid, protocolVersion, _usingDefaultChallenge });
+            }
         }
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
+        if (needToMigrate) log("Done with migrating db to latest version", newDbVersion);
     }
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords: any[] = await this._knex(srcTable).select("*");
+        const commentsToMoveFromCommentsTable: CommentsTableRow[] = []; // They're moved away because they may have signature or schema problem, so we don't wanna include them in pages
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
+            let srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of remeda.keys.strict(srcRecord))
@@ -362,6 +392,32 @@ export class DbHandler {
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
                     srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
                 }
+
+                if (currentDbVersion <= 14 && srcTable === TABLES.COMMENTS) {
+                    // Need to move records with invalid schema out of the table
+                    try {
+                        CommentIpfsSchema.passthrough().parse(srcRecord);
+                    } catch (e) {
+                        // Has an invalid Comment Ipfs schema, should be moved somewhere else
+                        const commentRecord = <CommentsTableRow>srcRecord;
+                        log.error(
+                            `Comment (${commentRecord.cid}) in DB has an invalid schema, will be moved to key ${STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]} in keyv`
+                        );
+                        commentsToMoveFromCommentsTable.push(commentRecord);
+                    }
+                }
+            }
+
+            if (commentsToMoveFromCommentsTable.length > 0) {
+                const existingComments = await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]);
+                const newValue = Array.isArray(existingComments)
+                    ? [...existingComments, ...commentsToMoveFromCommentsTable]
+                    : commentsToMoveFromCommentsTable;
+                await this.keyvSet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA], newValue);
+
+                const cidsMapped = newValue.map((comment) => comment.cid);
+
+                srcRecordFiltered = srcRecordFiltered.filter((commentRecord) => !cidsMapped.includes(commentRecord.cid));
             }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
@@ -453,16 +509,28 @@ export class DbHandler {
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
-    ): Promise<{ comment: CommentsTableRow; update: CommentUpdatesRow }[]> {
+    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[]> {
         // protocolVersion, signature
-        const commentUpdateColumns: (keyof CommentUpdate)[] = [...CommentUpdateSignedPropertyNames, "protocolVersion", "signature"];
-        const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
-        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
+        const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
+
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape), "extraProps"];
+        const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
+
+        const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([
+            ...commentIpfsColumnSelects,
+            ...commentUpdateColumnSelects
+        ]);
 
         //@ts-expect-error
-        const comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[] = commentsRaw.map((commentRaw) => ({
-            comment: remeda.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+        const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[] = commentsRaw.map((commentRaw) => ({
+            comment: remeda.mapKeys(
+                // we need to exclude extraProps from pageIpfs.comments[0].comment
+                // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
+                (key, value) => key.replace("commentIpfs_", "")
+            ),
             update: remeda.mapKeys(
                 remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
                 (key, value) => key.replace("commentUpdate_", "")
@@ -631,7 +699,7 @@ export class DbHandler {
     }
 
     private async _queryCommentDownvote(cid: string, trx?: Transaction): Promise<number> {
-        const downvotes: number = <number>(
+        const downvotes = <number>(
             (await this._baseTransaction(trx)(TABLES.VOTES).where({ commentCid: cid, vote: -1 }).count())[0]["count(*)"]
         );
         return downvotes;
@@ -640,7 +708,7 @@ export class DbHandler {
     private async _queryCommentCounts(
         cid: string,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdate, "replyCount" | "upvoteCount" | "downvoteCount">> {
+    ): Promise<Pick<CommentUpdateType, "replyCount" | "upvoteCount" | "downvoteCount">> {
         const [replyCount, upvoteCount, downvoteCount] = await Promise.all([
             this.queryReplyCount(cid, trx),
             this._queryCommentUpvote(cid, trx),
@@ -650,11 +718,20 @@ export class DbHandler {
     }
 
     private async _queryAuthorEdit(cid: string, authorSignerAddress: string, trx?: Transaction): Promise<AuthorCommentEdit | undefined> {
+        const authorEditPubsubFields = <(keyof (AuthorCommentEdit & Pick<CommentEditsTableRow, "extraProps">))[]>[
+            ...remeda.keys.strict(AuthorCommentEditPubsubSchema.shape),
+            "extraProps"
+        ];
+
         const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-            .select(AUTHOR_EDIT_FIELDS)
+            .select(authorEditPubsubFields)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
+
+        if (authorEdit?.extraProps) {
+            delete authorEdit.extraProps; // parseDbResponses will include props under extraProps in authorEdit for us
+        }
 
         return authorEdit;
     }
@@ -662,7 +739,7 @@ export class DbHandler {
     private async _queryLatestModeratorReason(
         comment: Pick<CommentsTableRow, "cid">,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdate, "reason"> | undefined> {
+    ): Promise<Pick<CommentUpdateType, "reason"> | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("reason")
             .where("commentCid", comment.cid)
@@ -672,8 +749,8 @@ export class DbHandler {
             .first();
     }
 
-    async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed">> {
-        const res: Pick<CommentUpdate, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
+    async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
             {},
             ...(await Promise.all(
                 ["spoiler", "pinned", "locked", "removed"].map((field) =>
@@ -727,7 +804,7 @@ export class DbHandler {
     async queryCalculatedCommentUpdate(
         comment: Pick<CommentsTableRow, "cid" | "authorSignerAddress" | "timestamp">,
         trx?: Transaction
-    ): Promise<Omit<CommentUpdate, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
+    ): Promise<Omit<CommentUpdateType, "signature" | "updatedAt" | "replies" | "protocolVersion">> {
         const [
             authorSubplebbit,
             authorEdit,
@@ -856,7 +933,7 @@ export class DbHandler {
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
 
-        const oldPathString = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", oldDbName);
+        const oldPathString = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
@@ -865,7 +942,7 @@ export class DbHandler {
         //@ts-expect-error
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
-        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit.plebbit);
+        if (os.type() === "Windows_NT") await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit._plebbit);
         else await fs.promises.rm(oldPathString);
 
         this._dbConfig = {
@@ -883,8 +960,8 @@ export class DbHandler {
     async lockSubStart(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:local-subplebbit:lock:start");
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
 
         try {
             await lockfile.lock(subDbPath, {
@@ -906,8 +983,8 @@ export class DbHandler {
         const log = Logger("plebbit-js:local-subplebbit:unlock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath)) return;
 
         try {
@@ -920,8 +997,8 @@ export class DbHandler {
     }
 
     async isSubStartLocked(subAddress = this._subplebbit.address): Promise<boolean> {
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
         return isLocked;
     }
@@ -930,8 +1007,8 @@ export class DbHandler {
 
     async lockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:lockSubState");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -948,8 +1025,8 @@ export class DbHandler {
     async unlockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:unlockSubState");
 
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath)) return;
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
@@ -961,7 +1038,7 @@ export class DbHandler {
     // Misc functions
 
     subDbExists(subAddress = this._subplebbit.address) {
-        const dbPath = path.join(this._subplebbit.plebbit.dataPath!, "subplebbits", subAddress);
+        const dbPath = path.join(this._subplebbit._plebbit.dataPath!, "subplebbits", subAddress);
         return fs.existsSync(dbPath);
     }
 

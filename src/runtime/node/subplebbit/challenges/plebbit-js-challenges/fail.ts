@@ -1,7 +1,7 @@
 // the purpose of this challenge is to always fail, can be used with SubplebbitChallenge.exclude to whitelist users
 
-import { Challenge, ChallengeFile, SubplebbitChallengeSettings } from "../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
+import type { Challenge, ChallengeFile, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
     {
@@ -18,8 +18,8 @@ const type: Challenge["type"] = "text/plain";
 const description = "A challenge that automatically fails with a custom error message.";
 
 const getChallenge = async (
-    subplebbitChallengeSettings: SubplebbitChallengeSettings,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    subplebbitChallengeSettings: SubplebbitChallengeSetting,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ) => {
     // add a custom error message to display to the author
@@ -32,7 +32,7 @@ const getChallenge = async (
     };
 };
 
-function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSettings): ChallengeFile {
+function ChallengeFileFactory(subplebbitChallengeSettings: SubplebbitChallengeSetting): ChallengeFile {
     return { getChallenge, optionInputs, type, description };
 }
 

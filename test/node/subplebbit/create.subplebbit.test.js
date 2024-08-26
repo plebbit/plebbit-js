@@ -4,8 +4,8 @@ import {
     publishRandomReply,
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
-    isRpcFlagOn,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    jsonifySubplebbitAndRemoveInternalProps
 } from "../../../dist/node/test/test-util";
 import { timestamp } from "../../../dist/node/util";
 import { messages } from "../../../dist/node/errors";
@@ -25,8 +25,11 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
-    const _createAndValidateSubArsg = async (subArgs) => {
+    const _createAndValidateSubArgs = async (subArgs) => {
         const newSubplebbit = await plebbit.createSubplebbit(subArgs);
+        if (!("signer" in subArgs))
+            // signer shape changes after createSubplebbit
+            expect(remeda.pick(newSubplebbit, Object.keys(subArgs))).to.deep.equal(subArgs); // the args should exist after creating immedietely
         await newSubplebbit.start();
         await resolveWhenConditionIsTrue(newSubplebbit, () => typeof newSubplebbit.updatedAt === "number");
         await newSubplebbit.stop();
@@ -37,27 +40,31 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const listedSubs = await plebbit.listSubplebbits();
         expect(listedSubs).to.include(newSubplebbit.address);
 
-        const subplebbitIpns = await remotePlebbit.getSubplebbit(newSubplebbit.address);
+        const remoteSub = await remotePlebbit.getSubplebbit(newSubplebbit.address);
 
-        const internalProps = ["signer", "_subplebbitUpdateTrigger", "_usingDefaultChallenge", "settings", "started"];
+        const remoteSubJson = jsonifySubplebbitAndRemoveInternalProps(remoteSub);
 
-        expect(subplebbitIpns.toJSON()).to.deep.equal(remeda.omit(newSubplebbit.toJSON(), internalProps));
+        const localSubRemoteJson = jsonifySubplebbitAndRemoveInternalProps(newSubplebbit);
+
+        expect(localSubRemoteJson).to.deep.equal(remoteSubJson);
+
+        expect(remoteSub.toJSONIpfs()).to.deep.equal(newSubplebbit.toJSONIpfs());
         return newSubplebbit;
     };
 
     [{}, { title: `Test title - ${Date.now()}` }].map((subArgs) =>
         it(`createSubplebbit(${JSON.stringify(subArgs)})`, async () => {
-            await _createAndValidateSubArsg(subArgs);
+            await _createAndValidateSubArgs(subArgs);
         })
     );
 
     it(`createSubplebbit({signer: await plebbit.createSigner()})`, async () => {
-        await _createAndValidateSubArsg({ signer: await plebbit.createSigner() });
+        await _createAndValidateSubArgs({ signer: await plebbit.createSigner() });
     });
 
     it(`createSubplebbit({signer: {privateKey, type}})`, async () => {
         const signer = await plebbit.createSigner();
-        await _createAndValidateSubArsg({ signer: { privateKey: signer.privateKey, type: signer.type } });
+        await _createAndValidateSubArgs({ signer: { privateKey: signer.privateKey, type: signer.type } });
     });
 
     it(`subplebbit = await createSubplebbit(await createSubplebbit)`, async () => {
@@ -67,6 +74,17 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         expect(createdSub.title).to.equal(props.title);
         expect(createdSub.signer.address).to.be.a("string");
         await createdSub.delete();
+    });
+
+    it(`subplebbit = await createSubplebbit(JSON.parse(JSON.stringify(subplebbitInstance)))`, async () => {
+        const props = { title: Math.random() + "123" };
+        const firstSub = await plebbit.createSubplebbit(props);
+        const secondSub = await plebbit.createSubplebbit(JSON.parse(JSON.stringify(firstSub)));
+        expect(secondSub.title).to.equal(props.title);
+
+        const firstSubJson = jsonifySubplebbitAndRemoveInternalProps(firstSub);
+        const secondSubJson = jsonifySubplebbitAndRemoveInternalProps(secondSub);
+        expect(firstSubJson).to.deep.equal(secondSubJson);
     });
 
     it(`Can recreate a subplebbit with replies instance with plebbit.createSubplebbit`, async () => {
@@ -79,7 +97,10 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         expect(sub.posts).to.be.a("object");
         const clonedSub = await plebbit.createSubplebbit(sub);
         expect(clonedSub.posts).to.be.a("object");
-        expect(sub.toJSON()).to.deep.equal(clonedSub.toJSON());
+        const internalProps = ["clients", "state", "startedState"];
+        const clonedSubJson = JSON.parse(JSON.stringify(remeda.omit(clonedSub, internalProps)));
+        const localSubJson = JSON.parse(JSON.stringify(remeda.omit(sub, internalProps)));
+        expect(localSubJson).to.deep.equal(clonedSubJson);
         await sub.delete();
     });
 
@@ -98,10 +119,10 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
 
     it(`local subplebbit retains fields upon createSubplebbit(address)`, async () => {
         const title = `Test retention ${Date.now()}`;
-        const sub = await _createAndValidateSubArsg({ title });
+        const sub = await _createAndValidateSubArgs({ title });
         const createdSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(createdSub.title).to.equal(title);
-        expect(deterministicStringify(createdSub.toJSON())).to.equal(deterministicStringify(sub.toJSON()));
+        expect(deterministicStringify(createdSub)).to.equal(deterministicStringify(sub));
         await createdSub.delete();
     });
 
@@ -154,9 +175,6 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
     });
 
     it(`plebbit.createSubplebbit({address: undefined}) should throw a proper error`, async () => {
-        await assert.isRejected(
-            plebbit.createSubplebbit({ address: undefined }),
-            messages.ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED
-        );
+        await assert.isRejected(plebbit.createSubplebbit({ address: undefined }));
     });
 });

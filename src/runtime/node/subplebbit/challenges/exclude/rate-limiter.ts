@@ -1,7 +1,7 @@
 import QuickLRU from "quick-lru";
 import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
-import { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../types.js";
-import { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
+import type { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
 import { RateLimiter } from "limiter-es6-compat";
 type PublicationType = "post" | "reply" | "vote";
 // each author could have 20+ rate limiters each if the sub has

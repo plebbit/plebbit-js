@@ -1,3 +1,4 @@
+import { mockRemotePlebbit, describeSkipIfRpc } from "../../../dist/node/test/test-util.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
 import chai from "chai";
@@ -7,7 +8,6 @@ const { expect, assert } = chai;
 import * as remeda from "remeda";
 import { messages } from "../../../dist/node/errors.js";
 import { verifyCommentEdit, signCommentEdit } from "../../../dist/node/signer/signatures.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 import validCommentEditFixture from "../../fixtures/signatures/commentEdit/valid_comment_edit.json" assert { type: "json" };
 describe("Sign commentedit", async () => {
     let plebbit, subplebbit, editProps, editSignature;
@@ -23,12 +23,12 @@ describe("Sign commentedit", async () => {
             signer: signers[7],
             timestamp: timestamp()
         };
-        editSignature = await signCommentEdit(editProps, signers[7], plebbit);
+        editSignature = await signCommentEdit(editProps, plebbit);
     });
 
     it(`plebbit.createCommentEdit creates a valid CommentEdit`, async () => {
         const verification = await verifyCommentEdit(
-            { ...editProps, signature: editSignature },
+            remeda.omit({ ...editProps, signature: editSignature }, ["signer"]),
             plebbit.resolveAuthorAddresses,
             plebbit._clientsManager,
             false
@@ -48,9 +48,8 @@ describe("Sign commentedit", async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("Verify CommentEdit", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("Verify CommentEdit", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();

@@ -69,8 +69,9 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(postToVote.upvoteCount);
         const originalDownvote = remeda.clone(postToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.omit(previousVotes[0].toJSON(), ["signature"]),
-            signer: previousVotes[0]._signer,
+            commentCid: previousVotes[0].commentCid,
+            subplebbitAddress: previousVotes[0].subplebbitAddress,
+            signer: previousVotes[0].signer,
             vote: 1
         });
         await publishWithExpectedResult(vote, true);
@@ -88,8 +89,9 @@ describe(`Test Downvote`, async () => {
         const originalUpvote = remeda.clone(replyToVote.upvoteCount);
         const originalDownvote = remeda.clone(replyToVote.downvoteCount);
         const vote = await plebbit.createVote({
-            ...remeda.omit(previousVotes[1].toJSON(), ["signature"]),
-            signer: previousVotes[1]._signer,
+            commentCid: previousVotes[1].commentCid,
+            subplebbitAddress: previousVotes[1].subplebbitAddress,
+            signer: previousVotes[1].signer,
             vote: 1
         });
         await publishWithExpectedResult(vote, true);
@@ -103,10 +105,19 @@ describe(`Test Downvote`, async () => {
         expect(replyToVote.author.subplebbit.lastCommentCid).to.equal(replyToVote.cid);
     });
 
-    it("Vote.publish fails when Vote.commentCid is invalid ", async () => {
-        const vote = await generateMockVote({ ...postToVote.toJSON(), cid: "gibbrish" }, 1, plebbit, signers[0]);
-        await assert.isRejected(vote.publish(), messages.ERR_CID_IS_INVALID);
+    it("plebbit.createVote fails when commentCid is invalid ", async () => {
+        await assert.isRejected(
+            plebbit.createVote({
+                vote: previousVotes[1].vote,
+                subplebbitAddress: previousVotes[1].subplebbitAddress,
+                signer: previousVotes[1].signer,
+                commentCid: "gibbrish"
+            }),
+            messages.ERR_CID_IS_INVALID
+        );
     });
 
     it(`Subplebbits rejects votes with invalid commentCid`);
+
+    // TODO add a test for spreading Vote instance
 });

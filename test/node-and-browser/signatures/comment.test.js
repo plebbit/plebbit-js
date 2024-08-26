@@ -2,31 +2,46 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
+import { mockRemotePlebbit, describeSkipIfRpc, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import {
     signComment,
-    verifyComment,
     verifyCommentUpdate,
     signCommentUpdate,
-    signCommentEdit
+    signCommentEdit,
+    verifyCommentPubsubMessage,
+    verifyCommentIpfs
 } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 import signers from "../../fixtures/signers.js";
 import { timestamp } from "../../../dist/node/util.js";
-import { mockRemotePlebbit, isRpcFlagOn } from "../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
-import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment.json" assert { type: "json" };
+import validCommentFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
 import validCommentAvatarFixture from "../../fixtures/signatures/comment/valid_comment_avatar_fixture.json" assert { type: "json" };
 import validCommentAuthorAddressDomainFixture from "../../fixtures/signatures/comment/valid_comment_author_address_as_domain.json" assert { type: "json" };
 import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
-import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_commentUpdate.json" assert { type: "json" };
-import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment.json" assert { type: "json" };
+import validCommentUpdateWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_update.json" assert { type: "json" };
+import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment/commentUpdate_authorEdit/valid_comment_ipfs.json" assert { type: "json" };
 import { comment as fixtureComment } from "../../fixtures/publications.js";
 
 const fixtureSignature = {
     signature: "0ibxT1DhPIWzCUnnxq3GCnq7fsj41D/xvArlRmBPt4Gl0+sSGjwIF7Hl8Z7gLbWAg458Kr8oZ8ZDxWQTxtawCA",
     publicKey: "CFhuD55tmzZjWZ113tZbDw/AsuNDkgSdvCCbPeqiF10",
     type: "ed25519",
-    signedPropertyNames: ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+    signedPropertyNames: [
+        "flair",
+        "spoiler",
+        "content",
+        "title",
+        "link",
+        "linkWidth",
+        "linkHeight",
+        "linkHtmlTagName",
+        "parentCid",
+        "author",
+        "subplebbitAddress",
+        "protocolVersion",
+        "timestamp"
+    ]
 };
 
 describe("sign comment", async () => {
@@ -44,10 +59,10 @@ describe("sign comment", async () => {
             title: "Test post signature",
             content: "some content..."
         };
-        const signature = await signComment(comment, signer, plebbit);
+        const signature = await signComment({ ...comment, signer }, plebbit);
         expect(signature.publicKey).to.equal(signer.publicKey);
         const signedComment = { signature: signature, ...comment };
-        const verificaiton = await verifyComment(signedComment, plebbit.resolveAuthorAddresses);
+        const verificaiton = await verifyCommentPubsubMessage(signedComment, plebbit.resolveAuthorAddresses);
         expect(verificaiton).to.deep.equal({ valid: true });
         signedCommentClone = remeda.clone(signedComment);
     });
@@ -61,15 +76,15 @@ describe("sign comment", async () => {
             title: "Test post signature",
             content: "some content..."
         };
-        const signature = await signComment(comment, signer, plebbit);
+        const signature = await signComment({ ...comment, signer }, plebbit);
         const signedComment = { signature: signature, ...comment };
         expect(signedComment.signature.publicKey).to.be.equal(signers[1].publicKey, "Generated public key should be same as provided");
-        const verificaiton = await verifyComment(signedComment, plebbit.resolveAuthorAddresses);
+        const verificaiton = await verifyCommentPubsubMessage(signedComment, plebbit.resolveAuthorAddresses);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it("signComment author signature is correct", async () => {
-        const authorSignature = await signComment(fixtureComment, signers[1], plebbit);
+        const authorSignature = await signComment({ ...fixtureComment, signer: signers[1] }, plebbit);
         expect(authorSignature).to.exist;
         expect(authorSignature.signature).to.equal(fixtureSignature.signature);
         expect(authorSignature.publicKey).to.equal(fixtureSignature.publicKey);
@@ -81,20 +96,26 @@ describe("sign comment", async () => {
         const randomSigner = signers[3];
         // Trying to sign a publication with author.address !== randomSigner.address
         // should throw an error
-        await assert.isRejected(signComment(fixtureComment, randomSigner, plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+        await assert.isRejected(
+            signComment({ ...fixtureComment, signer: randomSigner }, plebbit),
+            messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER
+        );
     });
 
     it(`signComment throws with author.address not being an IPNS or domain`, async () => {
         const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = "gibbreish";
-        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER);
+        await assert.isRejected(
+            signComment({ ...cloneComment, signer: signers[7] }, plebbit),
+            messages.ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER
+        );
     });
     it(`signComment throws with author.address=undefined`, async () => {
         const cloneComment = remeda.clone(signedCommentClone);
         delete cloneComment["signature"];
         cloneComment.author.address = undefined;
-        await assert.isRejected(signComment(cloneComment, signers[7], plebbit), messages.ERR_AUTHOR_ADDRESS_UNDEFINED);
+        await assert.isRejected(signComment({ ...cloneComment, signer: signers[7] }, plebbit), messages.ERR_AUTHOR_ADDRESS_UNDEFINED);
     });
     it("can sign a comment with author.displayName = undefined", async () => {
         const signer = signers[4];
@@ -106,58 +127,56 @@ describe("sign comment", async () => {
             author: { address: signer.address },
             timestamp: 12345678
         };
-        const signature = await signComment(comment, signers[4], plebbit);
-        const res = await verifyComment({ ...comment, signature }, plebbit.resolveAuthorAddresses);
+        const signature = await signComment({ ...comment, signer: signers[4] }, plebbit);
+        const res = await verifyCommentPubsubMessage({ ...comment, signature }, plebbit.resolveAuthorAddresses);
         expect(res).to.deep.equal({ valid: true });
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe("verify Comment", async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc("verify Comment", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
     });
     it(`Valid signature fixture is validated correctly`, async () => {
         const fixtureWithSignature = { ...fixtureComment, signature: fixtureSignature };
-        const verification = await verifyComment(fixtureWithSignature, plebbit);
+        const verification = await verifyCommentPubsubMessage(fixtureWithSignature, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it("verifyComment failure with wrong signature", async () => {
+    it("verifyCommentPubsubMessage failure with wrong signature", async () => {
         const invalidSignature = remeda.clone(fixtureSignature);
-        invalidSignature.signedPropertyNames = invalidSignature.signedPropertyNames.slice(1); // Invalidate signature
+        invalidSignature.signature += "1";
 
         const wronglySignedPublication = { ...fixtureComment, signature: invalidSignature };
-        const verification = await verifyComment(wronglySignedPublication, plebbit);
+        const verification = await verifyCommentPubsubMessage(wronglySignedPublication, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`Valid Comment fixture from previous plebbit-js version is validated correctly`, async () => {
-
         const comment = remeda.clone(validCommentFixture);
 
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentIpfs(comment, plebbit);
         expect(verification).to.deep.equal({ valid: true });
     });
 
     it(`A comment with avatar fixture is validated correctly`, async () => {
         const comment = remeda.clone(validCommentAvatarFixture);
-        const verification = await verifyComment(comment, plebbit, true);
+        const verification = await verifyCommentIpfs(comment, plebbit, true);
         expect(verification).to.deep.equal({ valid: true });
     });
 
-    it(`verifyComment invalidates a comment with author.address not a domain or IPNS`, async () => {
+    it(`verifyCommentPubsubMessage invalidates a comment with author.address not a domain or IPNS`, async () => {
         const comment = remeda.clone({ ...fixtureComment, signature: fixtureSignature });
         comment.author.address = "gibbresish"; // Not a domain or IPNS
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentPubsubMessage(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58 });
     });
-    it("verifyComment invalidates a comment with author.address = undefined", async () => {
+    it("verifyCommentPubsubMessage invalidates a comment with author.address = undefined", async () => {
         const comment = remeda.clone({ ...fixtureComment, signature: fixtureSignature });
         comment.author.address = undefined; // Not a domain or IPNS
-        const verification = await verifyComment(comment, plebbit);
+        const verification = await verifyCommentPubsubMessage(comment, plebbit);
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_ADDRESS_UNDEFINED });
     });
 
@@ -167,10 +186,9 @@ describe("verify Comment", async () => {
     it(`can verify a comment whose flair have been changed by mod`);
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe(`Comment with author.address as domain`, async () => {
-    it(`verifyComment corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc(`Comment with author.address as domain`, async () => {
+    it(`verifyCommentPubsubMessage corrects author.address(domain) if it resolves to a different author (overrideAuthorAddressIfInvalid=true)`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? fixtureComment.author.address : authorAddress;
@@ -178,12 +196,17 @@ describe(`Comment with author.address as domain`, async () => {
         commentWithInvalidDomain.author.address = "testDomain.eth";
         const signedPublication = {
             ...commentWithInvalidDomain,
-            signature: await signComment(commentWithInvalidDomain, signers[1], tempPlebbit)
+            signature: await signComment({ ...commentWithInvalidDomain, signer: signers[1] }, tempPlebbit)
         };
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "testDomain.eth" ? signers[6].address : authorAddress; // testDomain.eth no longer points to the same author
 
-        const verificaiton = await verifyComment(signedPublication, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true);
+        const verificaiton = await verifyCommentPubsubMessage(
+            signedPublication,
+            tempPlebbit.resolveAuthorAddresses,
+            tempPlebbit._clientsManager,
+            true
+        );
         expect(verificaiton).to.deep.equal({ valid: true, derivedAddress: signers[1].address });
         expect(signedPublication.author.address).to.equal(fixtureComment.author.address); // It has been corrected to the original signer even though resolver is resolving to signers[6]
     });
@@ -193,7 +216,7 @@ describe(`Comment with author.address as domain`, async () => {
         tempPlebbit._clientsManager.resolveAuthorAddressIfNeeded = (authorAddress) =>
             authorAddress === "plebbit.eth" ? signers[7].address : authorAddress; // This would invalidate the fixture author address. Should be corrected
 
-        const verification = await verifyComment(comment, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, false);
+        const verification = await verifyCommentIpfs(comment, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, false);
 
         expect(verification).to.deep.equal({ valid: false, reason: messages.ERR_AUTHOR_NOT_MATCHING_SIGNATURE });
 
@@ -201,9 +224,8 @@ describe(`Comment with author.address as domain`, async () => {
     });
 });
 
-// prettier-ignore
-if (!isRpcFlagOn()) // Clients of RPC will trust the response of RPC and won't validate
-describe(`commentupdate`, async () => {
+// Clients of RPC will trust the response of RPC and won't validate
+describeSkipIfRpc(`commentupdate`, async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -216,7 +238,7 @@ describe(`commentupdate`, async () => {
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit.clientsManager,
+            subplebbit._clientsManager,
             subplebbit.address,
             comment
         );
@@ -225,7 +247,8 @@ describe(`commentupdate`, async () => {
 
     it(`Can validate live CommentUpdate`, async () => {
         const comment = await plebbit.getComment(subplebbit.lastPostCid);
-        await Promise.all([comment.update(), new Promise((resolve) => comment.once("update", resolve))]);
+        await comment.update();
+        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
         await comment.stop();
         // If a comment emits "update" that means the commentUpdate have been verified correctly
     });
@@ -236,7 +259,7 @@ describe(`commentupdate`, async () => {
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit.clientsManager,
+            subplebbit._clientsManager,
             subplebbit.address,
             comment
         );
@@ -250,7 +273,7 @@ describe(`commentupdate`, async () => {
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit.clientsManager,
+            subplebbit._clientsManager,
             subplebbit.address,
             comment
         );
@@ -261,14 +284,14 @@ describe(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
         ).to.deep.equal({ valid: true });
         update.edit.author.address = signers[7].address;
-        update.edit.signature = await signCommentEdit(update.edit, signers[7], plebbit);
+        update.edit.signature = await signCommentEdit({ ...update.edit, signer: signers[7] }, plebbit);
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit.clientsManager,
+            subplebbit._clientsManager,
             subplebbit.address,
             comment
         );
@@ -279,7 +302,7 @@ describe(`commentupdate`, async () => {
         const update = remeda.clone(validCommentUpdateWithAuthorEditFixture);
         const comment = { cid: update.cid, ...validCommentWithAuthorEditFixture };
         expect(
-            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit.clientsManager, subplebbit.address, comment)
+            await verifyCommentUpdate(update, plebbit.resolveAuthorAddresses, subplebbit._clientsManager, subplebbit.address, comment)
         ).to.deep.equal({ valid: true });
         update.edit.content += "12345"; // Invalidate signature
         update.signature = await signCommentUpdate(update, signers[6]); // A different signer than subplebbit and author
@@ -287,7 +310,7 @@ describe(`commentupdate`, async () => {
         const verification = await verifyCommentUpdate(
             update,
             plebbit.resolveAuthorAddresses,
-            subplebbit.clientsManager,
+            subplebbit._clientsManager,
             subplebbit.address,
             comment
         );

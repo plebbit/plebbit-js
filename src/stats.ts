@@ -66,9 +66,7 @@ export default class Stats {
                 ? "ipfsGateways"
                 : type === "pubsub-publish" || type === "pubsub-subscribe"
                   ? "pubsubClients"
-                  : type === "eth" || type === "avax" || type === "matic"
-                    ? "chainProviders"
-                    : undefined;
+                  : "chainProviders";
         assert(gatewayType, "Can't find the gateway type to sort");
         const gateways =
             gatewayType === "chainProviders"

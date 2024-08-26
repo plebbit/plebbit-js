@@ -1,7 +1,15 @@
-import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/util.js";
+import {
+    loadAllPages,
+    publishRandomPost,
+    findCommentInPage,
+    mockRemotePlebbit,
+    mockGatewayPlebbit,
+    mockPlebbit,
+    addStringToIpfs
+} from "../../dist/node/test/test-util.js";
+import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
-import { loadAllPages, publishRandomPost, findCommentInPage, mockRemotePlebbit } from "../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 
 let subplebbit;
@@ -63,26 +71,29 @@ const testCommentFields = (comment) => {
     expect(comment._signer).to.be.undefined;
 };
 
-const activeScore = async (comment) => {
-    if (Object.keys(comment.replies.pageCids).length === 0) return comment.timestamp;
+const activeScore = async (comment, plebbit) => {
+    if (!comment.replies) return comment.timestamp;
     let maxTimestamp = comment.timestamp;
 
     const updateMaxTimestamp = async (localComments) => {
         for (const localComment of localComments) {
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
-            if (Object.keys(localComment.replies.pageCids).length > 0) {
-                const childrenComments = await loadAllPages(localComment.replies.pageCids.new, localComment.replies);
+            if (localComment.replies) {
+                const commentInstance = await plebbit.createComment(localComment);
+                const childrenComments = await loadAllPages(localComment.replies.pageCids.new, commentInstance.replies);
                 await updateMaxTimestamp(childrenComments);
             }
         }
     };
-    const childrenComments = await loadAllPages(comment.replies.pageCids.new, comment.replies);
+
+    const commentInstance = await plebbit.createComment({ cid: comment.cid, subplebbitAddress: comment.subplebbitAddress });
+    const childrenComments = await loadAllPages(comment.replies.pageCids.new, commentInstance.replies);
 
     await updateMaxTimestamp(childrenComments);
     return maxTimestamp;
 };
 
-const testListOfSortedComments = async (sortedComments, sortName) => {
+const testListOfSortedComments = async (sortedComments, sortName, plebbit) => {
     const currentTimeframe = Object.keys(TIMEFRAMES_TO_SECONDS).filter((timeframe) =>
         sortName.toLowerCase().includes(timeframe.toLowerCase())
     )[0];
@@ -105,11 +116,11 @@ const testListOfSortedComments = async (sortedComments, sortName) => {
         const sort = { ...POSTS_SORT_TYPES, ...REPLIES_SORT_TYPES }[sortName];
         let scoreA, scoreB;
         if (sortName === "active") {
-            scoreA = await activeScore(sortedComments[j]);
-            scoreB = await activeScore(sortedComments[j + 1]);
+            scoreA = await activeScore(sortedComments[j], plebbit);
+            scoreB = await activeScore(sortedComments[j + 1], plebbit);
         } else {
-            scoreA = sort.score({ comment: sortedComments[j].toJSONIpfs(), update: sortedComments[j]._rawCommentUpdate });
-            scoreB = sort.score({ comment: sortedComments[j + 1].toJSONIpfs(), update: sortedComments[j + 1]._rawCommentUpdate });
+            scoreA = sort.score({ comment: sortedComments[j], update: sortedComments[j] });
+            scoreB = sort.score({ comment: sortedComments[j + 1], update: sortedComments[j + 1] });
         }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }
@@ -120,17 +131,18 @@ const testPostsSort = async (sortName) => {
 
     subCommentPages[sortName] = posts;
 
-    await testListOfSortedComments(posts, sortName);
+    await testListOfSortedComments(posts, sortName, subplebbit._plebbit);
     return posts;
 };
 
-const testRepliesSort = async (parentComments, replySortName) => {
+const testRepliesSort = async (parentComments, replySortName, plebbit) => {
     const commentsWithReplies = parentComments.filter((comment) => comment.replyCount > 0);
     for (const comment of commentsWithReplies) {
         expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
-        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], comment.replies);
-        await testListOfSortedComments(commentPages, replySortName);
-        await testRepliesSort(commentPages, replySortName);
+        const commentInstance = await plebbit.createComment(comment);
+        const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], commentInstance.replies);
+        await testListOfSortedComments(commentPages, replySortName, plebbit);
+        await testRepliesSort(commentPages, replySortName, plebbit);
     }
 };
 
@@ -176,7 +188,7 @@ describe("Test pages sorting", async () => {
                 for (const comment of pages[0]) {
                     const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
                     expect(otherPageComments.length).to.equal(pages.length);
-                    for (const otherPageComment of otherPageComments) expect(comment.toJSON()).to.deep.equal(otherPageComment.toJSON());
+                    for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
                 }
             }
         });
@@ -191,14 +203,54 @@ describe("Test pages sorting", async () => {
 
         it(`Stringified comment.replies still have all props`, async () => {
             for (const post of posts) {
-                if (Object.keys(post.replies.pages).length === 0) continue;
+                if (!post.replies) continue;
                 const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
                 for (const reply of stringifiedReplies) testCommentFields(reply);
             }
         });
 
         Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages under a comment are sorted correctly`, async () => await testRepliesSort(posts, sortName))
+            it(`${sortName} pages under a comment are sorted correctly`, async () =>
+                await testRepliesSort(posts, sortName, subplebbit._plebbit))
         );
+    });
+
+});
+
+describe(`getPage`, async () => {
+    it(`.getPage will throw if retrieved page is not equivalent to its CID - IPFS Gateway`, async () => {
+        const gatewayUrl = "http://localhost:13415"; // a gateway that's gonna respond with invalid content
+        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const invalidPageCid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with content that is not mapped to this cid
+        try {
+            await sub.posts.getPage(invalidPageCid);
+            expect.fail("Should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS");
+            expect(e.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
+        }
+    });
+    it(`.getPage will throw if retrieved page has an invalid signature - IPFS P2P`, async () => {
+        const plebbit = await mockPlebbit();
+
+        const sub = await plebbit.getSubplebbit(subplebbitAddress);
+
+        const pageIpfs = sub.posts.toJSONIpfs().pages.hot;
+        expect(pageIpfs).to.exist;
+
+        const invalidPageIpfs = JSON.parse(JSON.stringify(pageIpfs));
+        invalidPageIpfs.comments[0].comment.content += "invalidate signature";
+
+        const invalidPageCid = await addStringToIpfs(JSON.stringify(invalidPageIpfs));
+
+        try {
+            await sub.posts.getPage(invalidPageCid);
+            expect.fail("should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_PAGE_SIGNATURE_IS_INVALID");
+        }
     });
 });

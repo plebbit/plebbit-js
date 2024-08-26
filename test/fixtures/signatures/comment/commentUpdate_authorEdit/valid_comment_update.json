@@ -1,0 +1,70 @@
+{
+    "cid": "QmNbUtTjUqinbpQ4WVRtb3SmBa2yGi6yiaedMZaW9HkUhp",
+    "upvoteCount": 0,
+    "downvoteCount": 0,
+    "replyCount": 0,
+    "edit": {
+        "author": { "address": "12D3KooWGwFwg6ENVaYoWD86B22i9X1n2i4symJjkzDkfguzdhb1" },
+        "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+        "protocolVersion": "1.0.0",
+        "timestamp": 1723466501,
+        "commentCid": "QmNbUtTjUqinbpQ4WVRtb3SmBa2yGi6yiaedMZaW9HkUhp",
+        "reason": "To test double editing a comment",
+        "content": "Double edit test",
+        "signature": {
+            "type": "ed25519",
+            "signature": "1gFvwdLbzLej3cmH2gkQc/8tWoMM3GgR8/JlDcIUUospWw8/NEQzmIp8/3KQk+Bh+CxGbAT81RHXBB7H7Vw2AQ",
+            "publicKey": "acXVy2M8sho3Gtf3jglY07QxlRtVma+3MLPQlbLNEcQ",
+            "signedPropertyNames": [
+                "author",
+                "subplebbitAddress",
+                "protocolVersion",
+                "timestamp",
+                "commentCid",
+                "flair",
+                "spoiler",
+                "pinned",
+                "locked",
+                "removed",
+                "reason",
+                "commentAuthor",
+                "content",
+                "deleted"
+            ]
+        }
+    },
+    "updatedAt": 1723466503,
+    "author": {
+        "subplebbit": {
+            "postScore": 0,
+            "replyScore": 0,
+            "firstCommentTimestamp": 1723466493,
+            "lastCommentCid": "QmNbUtTjUqinbpQ4WVRtb3SmBa2yGi6yiaedMZaW9HkUhp"
+        }
+    },
+    "signature": {
+        "type": "ed25519",
+        "signature": "b3bsldMZRRRzV7lR+cVZ6AFTGlzEn/0+pU00hfmGFK3PlG9uWnbOFqSj9gEy5rl+GEaTJPhcxA/wBOj0kxFUAQ",
+        "publicKey": "tkPPciAVI7kfzmSHjazd0ekx8z9bCt9RlE5RnEpFRGo",
+        "signedPropertyNames": [
+            "cid",
+            "upvoteCount",
+            "downvoteCount",
+            "replyCount",
+            "edit",
+            "flair",
+            "spoiler",
+            "pinned",
+            "locked",
+            "removed",
+            "reason",
+            "updatedAt",
+            "author",
+            "lastChildCid",
+            "lastReplyTimestamp",
+            "protocolVersion",
+            "replies"
+        ]
+    },
+    "protocolVersion": "1.0.0"
+}

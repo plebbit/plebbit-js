@@ -1,10 +1,7 @@
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
+import { timestamp } from "../../../util.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import assert from "assert";
-import {
-    CommentIpfsWithCid,
-    CommentsTableRow,
-    CommentUpdatesRow,
+import type {
     PageIpfs,
     PagesTypeIpfs,
     PostSortName,
@@ -12,9 +9,11 @@ import {
     RepliesPagesTypeIpfs,
     ReplySortName,
     SortProps
-} from "../../../types.js";
+} from "../../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import type { CommentIpfsWithCidDefined } from "../../../publications/comment/types.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 
 export type PageOptions = {
     excludeRemovedComments: boolean;
@@ -33,27 +32,14 @@ export class SortHandler {
         this.subplebbit = subplebbit;
     }
 
-    private async commentChunksToPages(
-        chunks: { comment: CommentsTableRow; update: CommentUpdatesRow }[][],
-        sortName: PostSortName | ReplySortName
-    ): Promise<PageGenerationRes> {
+    private async commentChunksToPages(chunks: PageIpfs["comments"][], sortName: PostSortName | ReplySortName): Promise<PageGenerationRes> {
         assert(chunks.length > 0);
 
         const listOfPage: PageIpfs[] = new Array(chunks.length);
         const cids: string[] = new Array(chunks.length);
-        const chunksWithReplies: PageIpfs["comments"][] = await Promise.all(
-            chunks.map(async (chunk) => {
-                return await Promise.all(
-                    chunk.map(async (commentProps) => {
-                        const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
-                        return comment.toJSONPagesIpfs(commentProps.update);
-                    })
-                );
-            })
-        );
-        for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunksWithReplies[i] };
-            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+        for (let i = chunks.length - 1; i >= 0; i--) {
+            const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
+            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
@@ -61,7 +47,7 @@ export class SortHandler {
 
     // Resolves to sortedComments
     async sortComments(
-        comments: { comment: CommentsTableRow; update: CommentUpdatesRow }[],
+        comments: PageIpfs["comments"],
         sortName: PostSortName | ReplySortName,
         options: PageOptions
     ): Promise<PageGenerationRes | undefined> {
@@ -76,13 +62,10 @@ export class SortHandler {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.comment.cid] = await this.subplebbit.dbHandler.queryActiveScore(comment.comment);
+                activeScores[comment.comment.cid] = await this.subplebbit._dbHandler.queryActiveScore(comment.comment);
         }
 
-        const scoreSort = (
-            obj1: { comment: CommentsTableRow; update: CommentUpdatesRow },
-            obj2: { comment: CommentsTableRow; update: CommentUpdatesRow }
-        ) => {
+        const scoreSort = (obj1: PageIpfs["comments"][0], obj2: PageIpfs["comments"][0]) => {
             if (activeScores) {
                 // Make exception for active sorting because it has a different mechanism for sorting
                 return activeScores[obj2.comment.cid] - activeScores[obj1.comment.cid];
@@ -108,7 +91,7 @@ export class SortHandler {
 
         const res = await this.commentChunksToPages(commentsChunks, sortName);
 
-        const listOfPage = Object.values(res)[0].pages;
+        const listOfPage = Object.values(res)[0]!.pages;
 
         const expectedNumOfPages = Math.ceil(commentsSorted.length / options.pageSize);
         assert.equal(
@@ -125,8 +108,8 @@ export class SortHandler {
         if (filteredGeneratedPages.length === 0) return undefined;
         const mergedObject: PageGenerationRes = Object.assign({}, ...filteredGeneratedPages);
         return {
-            pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.pages[0] }))),
-            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages.cids[0] })))
+            pages: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.pages[0] }))),
+            pageCids: Object.assign({}, ...Object.entries(mergedObject).map(([sortName, pages]) => ({ [sortName]: pages!.cids[0] })))
         };
     }
 
@@ -139,7 +122,7 @@ export class SortHandler {
             pageSize: 50
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const rawPosts = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
 
         if (rawPosts.length === 0) return undefined;
 
@@ -151,7 +134,7 @@ export class SortHandler {
         return <PostsPagesTypeIpfs>this._generationResToPages(sortResults);
     }
 
-    async generateRepliesPages(comment: Pick<CommentIpfsWithCid, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
+    private async _generateCommentReplies(comment: Pick<CommentIpfsWithCidDefined, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
         const pageOptions: PageOptions = {
             excludeCommentsWithDifferentSubAddress: true,
             excludeDeletedComments: false,
@@ -160,7 +143,7 @@ export class SortHandler {
             pageSize: 50
         };
 
-        const rawReplies = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const rawReplies = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
         if (rawReplies.length === 0) return undefined;
 
         const sortResults: (PageGenerationRes | undefined)[] = [];
@@ -169,6 +152,27 @@ export class SortHandler {
             sortResults.push(await this.sortComments(rawReplies, sortName, pageOptions));
 
         return <RepliesPagesTypeIpfs>this._generationResToPages(sortResults);
+    }
+
+    async generateRepliesPages(comment: Pick<CommentIpfsWithCidDefined, "cid">): Promise<RepliesPagesTypeIpfs | undefined> {
+        const log = Logger("plebbit-js:sort-handler:generateRepliesPages");
+
+        const pages = await this._generateCommentReplies(comment);
+        // TODO assert here
+
+        return pages;
+    }
+
+    async generateSubplebbitPosts(): Promise<PostsPagesTypeIpfs | undefined> {
+        const pageOptions: PageOptions = {
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: true,
+            excludeRemovedComments: true,
+            parentCid: null,
+            pageSize: 50
+        };
+
+        return this._generateSubplebbitPosts(pageOptions);
     }
 
     toJSON() {

@@ -1,14 +1,30 @@
 {
+    "content": "Mock post - 1723465331806",
+    "title": "Mock post title",
+    "author": { "address": "plebbit.eth", "displayName": "Mock Author - 1723465331806" },
     "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-    "timestamp": 1677403446,
+    "protocolVersion": "1.0.0",
+    "timestamp": 1723465332,
     "signature": {
-        "signature": "PY8BdCZ3rR2Z+L2WnhrsvHr8+1OBXkMHZyV1A1aO7GHMqqfM0/yVjX2gz3NzWyHtl92MAMUnUPVzAMeaBcg5Bw",
+        "signature": "UDvg8TCl19MoeWIrep0LcHlFlLXsTaKEciJ41xsdZXVs8Jz5tgMPwzLbZEU7gJq7lo85c7AJz1L9/BwcWlrAAA",
         "publicKey": "fhnnUqE9NCCtgcEfwSRNSk7KCbm2lzD1HGhzaol9n/k",
         "type": "ed25519",
-        "signedPropertyNames": ["subplebbitAddress", "author", "timestamp", "content", "title", "link", "parentCid"]
+        "signedPropertyNames": [
+            "flair",
+            "spoiler",
+            "content",
+            "title",
+            "link",
+            "linkWidth",
+            "linkHeight",
+            "linkHtmlTagName",
+            "parentCid",
+            "author",
+            "subplebbitAddress",
+            "protocolVersion",
+            "timestamp"
+        ]
     },
-    "author": { "address": "plebbit.eth", "displayName": "Mock Author - 1677403445916" },
-    "protocolVersion": "1.0.0",
-    "content": "Mock post - 1677403445916",
-    "title": "Mock post title"
+    "depth": 0,
+    "previousCid": "QmRCzp6x9QTYAjhFuj3CgGgruknMqvSJb8oJ77GHecTkKb"
 }

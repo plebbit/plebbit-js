@@ -1,6 +1,10 @@
 import { RemoteSubplebbit } from "../../../../../subplebbit/remote-subplebbit.js";
 import { SubplebbitRole } from "../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageType } from "../../../../../types.js";
+import type {
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    CommentPubsubMessageWithSubplebbitAuthor
+} from "../../../../../pubsub-messages/types.js";
+import { VotePubsubMessageWithSubplebbitAuthor } from "../../../../../publications/vote/types.js";
 
 // e.g. secondsToGoBack = 60 would return the timestamp 1 minute ago
 const getTimestampSecondsAgo = (secondsToGoBack: number) => Math.round(Date.now() / 1000) - secondsToGoBack;
@@ -11,18 +15,22 @@ const testScore = (excludeScore: number | undefined, authorScore: number | undef
 const testFirstCommentTimestamp = (excludeTime: number | undefined, authorFirstCommentTimestamp: number | undefined) =>
     excludeTime === undefined || getTimestampSecondsAgo(excludeTime) >= (authorFirstCommentTimestamp || Infinity);
 
-const isVote = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const isVote = (
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]
+): publication is VotePubsubMessageWithSubplebbitAuthor =>
     Boolean("vote" in publication && typeof publication.vote === "number" && publication["commentCid"]);
-const isReply = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    Boolean("parentCid" in publication && !("commentCid" in publication));
-const isPost = (publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    Boolean(!("parentCid" in publication) && !("commentCid" in publication));
+const isReply = (
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]
+): publication is CommentPubsubMessageWithSubplebbitAuthor => Boolean("parentCid" in publication && !("commentCid" in publication));
+const isPost = (
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]
+): publication is CommentPubsubMessageWithSubplebbitAuthor => Boolean(!("parentCid" in publication) && !("commentCid" in publication));
 
 // boilerplate function to test if an exclude of a specific publication type passes
 const testType = (
     excludePublicationType: boolean | undefined,
-    publication: DecryptedChallengeRequestMessageType["publication"],
-    isType: (publication: DecryptedChallengeRequestMessageType["publication"]) => boolean
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    isType: (publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]) => boolean
 ) => {
     if (excludePublicationType === true) {
         if (isType(publication)) return true;
@@ -35,11 +43,13 @@ const testType = (
     // excludePublicationType is invalid, return true
     return true;
 };
-const testVote = (excludeVote: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const testVote = (excludeVote: boolean | undefined, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]) =>
     testType(excludeVote, publication, isVote);
-const testReply = (excludeReply: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
-    testType(excludeReply, publication, isReply);
-const testPost = (excludePost: boolean | undefined, publication: DecryptedChallengeRequestMessageType["publication"]) =>
+const testReply = (
+    excludeReply: boolean | undefined,
+    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]
+) => testType(excludeReply, publication, isReply);
+const testPost = (excludePost: boolean | undefined, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]) =>
     testType(excludePost, publication, isPost);
 const testRole = (excludeRole: SubplebbitRole["role"][], authorAddress: string, subplebbitRoles: RemoteSubplebbit["roles"]) => {
     if (excludeRole === undefined || subplebbitRoles === undefined) {

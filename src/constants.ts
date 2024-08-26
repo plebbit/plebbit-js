@@ -1,6 +1,6 @@
 import { LRUCache } from "lru-cache";
-import { ChainTicker, LRUStorageConstructor } from "./types.js";
-import { SubplebbitIpfsType } from "./subplebbit/types.js";
+import type { ChainTicker, LRUStorageConstructor } from "./types.js";
+import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { PublicClient as ViemClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
 import { Plebbit } from "./plebbit.js";
@@ -8,7 +8,8 @@ import Logger from "@plebbit/plebbit-logger";
 
 export enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT, // InternalSubplebbitType
-    PERSISTENT_DELETED_SUBPLEBBITS // These are basically sub db files that we're unable to remove for some reason on windows
+    PERSISTENT_DELETED_SUBPLEBBITS, // These are basically sub db files that we're unable to remove for some reason on windows
+    COMMENTS_WITH_INVALID_SCHEMA // Comments in DB with invalid Comment Ipfs schema and have been moved away from comments
 }
 
 // Configs for LRU storage
@@ -34,7 +35,7 @@ export const pageCidToSortTypesCache = new LRUCache<string, string[]>({ max: 500
 // Below will be the caches for promises of fetching or resolving
 export const domainResolverPromiseCache = new LRUCache<string, Promise<string | null>>({ ttl: 60 * 1000, max: 50 }); // cache key will be (address + txtRecordName + chain + chainproviderUrl) and value will be the promise of resolving through viem or ethers
 
-export const gatewayFetchPromiseCache = new LRUCache<string, Promise<string>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
+export const gatewayFetchPromiseCache = new LRUCache<string, Promise<{ resText: string; res: Response }>>({ max: 200 }); // cache key will be url and value will be text of the response. The reason for low ttl is because we ipns is published regularly
 
 export const p2pIpnsPromiseCache = new LRUCache<string, Promise<string | undefined>>({ max: 200 }); // cache key will be ipnsName and the result will be a promise of cid
 

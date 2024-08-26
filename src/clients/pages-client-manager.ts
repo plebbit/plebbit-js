@@ -1,14 +1,15 @@
 import assert from "assert";
-import { BasePages } from "../pages.js";
 import { BaseClientsManager, LoadType } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { PageIpfs, PostSortName, ReplySortName } from "../types.js";
+import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
 import * as remeda from "remeda";
 import { pageCidToSortTypesCache } from "../constants.js";
-import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
+import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, isIpfsCid, throwWithErrorCode } from "../util.js";
+import { BasePages } from "../pages/pages.js";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../pages/util.js";
+import { parseJsonWithPlebbitErrorIfFails, parsePageIpfsSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 
 export class BasePagesClientsManager extends BaseClientsManager {
     // pageClients.ipfsGateways['new']['https://ipfs.io']
@@ -159,10 +160,10 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
 
-    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined) {
+    private async _fetchPageWithIpfsP2P(pageCid: string, log: Logger, sortTypes: string[] | undefined): Promise<PageIpfs> {
         this.updateIpfsState("fetching-ipfs", sortTypes);
         try {
-            const page = <PageIpfs>JSON.parse(await this._fetchCidP2P(pageCid));
+            const page = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(pageCid)));
             this.updateIpfsState("stopped", sortTypes);
             return page;
         } catch (e) {
@@ -171,15 +172,22 @@ export class BasePagesClientsManager extends BaseClientsManager {
             throw e;
         }
     }
-    async fetchPage(pageCid: string): Promise<PageIpfs> {
-        if (!isIpfsCid(pageCid)) throw Error(`fetchPage: pageCid (${pageCid}) is not a valid CID`);
 
+    async _fetchPageFromGateways(pageCid: string): Promise<PageIpfs> {
+        // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
+        // we just need to validate the end result's schema
+        const res = await this.fetchFromMultipleGateways({ cid: pageCid }, "page-ipfs", async (_) => {});
+        const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
+
+        return pageIpfs;
+    }
+    async fetchPage(pageCid: string): Promise<PageIpfs> {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
         let page: PageIpfs;
         if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
-        else page = JSON.parse(await this.fetchFromMultipleGateways({ cid: pageCid }, "generic-ipfs"));
+        else page = await this._fetchPageFromGateways(pageCid);
 
         if (page.nextCid) this.updatePageCidsToSortTypesToIncludeSubsequent(page.nextCid, pageCid);
         return page;

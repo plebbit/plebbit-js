@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
-import { IpfsClient, NativeFunctions, PlebbitOptions } from "../../types.js";
+import type { InputPlebbitOptions, IpfsClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
@@ -22,19 +22,21 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { SubplebbitIpfsType } from "../../subplebbit/types.js";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 
 export const getDefaultSubplebbitDbConfig = async (
-    subplebbit: Pick<RemoteSubplebbit, "address"> & { plebbit: Pick<PlebbitOptions, "dataPath" | "noData"> }
+    subplebbitAddress: SubplebbitIpfsType["address"],
+    plebbit: Plebbit
 ): Promise<Knex.Config<any>> => {
     let filename: string;
-    if (subplebbit.plebbit.noData) filename = ":memory:";
+    if (plebbit.noData) filename = ":memory:";
     else {
-        assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
-        filename = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
+        assert(typeof plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
+        filename = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
         await fs.mkdir(path.dirname(filename), { recursive: true });
     }
 
@@ -54,16 +56,17 @@ export async function getThumbnailUrlOfLink(
     url: string,
     subplebbit: RemoteSubplebbit,
     proxyHttpUrl?: string
-): Promise<{ thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } | undefined> {
+): Promise<{ thumbnailUrl: string; thumbnailUrlWidth: number; thumbnailUrlHeight: number } | undefined> {
     const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
 
+    const userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
     //@ts-expect-error
-    const thumbnail: { thumbnailUrl: string; thumbnailWidth: number; thumbnailHeight: number } = {};
+    const thumbnail: { thumbnailUrl: string; thumbnailUrlWidth: number; thumbnailUrlHeight: number } = {};
     const options: OpenGraphScraperOptions & { agent?: { https: any; http: any } } = {
         url,
         fetchOptions: {
             headers: {
-                "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+                "user-agent": userAgent
             },
             //@ts-expect-error
             downloadLimit: 2000000
@@ -81,17 +84,16 @@ export async function getThumbnailUrlOfLink(
         if (res.error) return undefined;
         if (!res?.result?.ogImage) return undefined;
 
-        res.result.ogImage[0].url;
         thumbnail.thumbnailUrl = res.result.ogImage[0].url;
         assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
 
-        thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
-        thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
-        if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
+        thumbnail.thumbnailUrlHeight = Number(res.result.ogImage?.[0]?.height);
+        thumbnail.thumbnailUrlWidth = Number(res.result.ogImage?.[0]?.width);
+        if (thumbnail.thumbnailUrlHeight === 0 || isNaN(thumbnail.thumbnailUrlHeight)) {
             const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
             if (probedDimensions) {
-                thumbnail.thumbnailHeight = probedDimensions.height;
-                thumbnail.thumbnailWidth = probedDimensions.width;
+                thumbnail.thumbnailUrlHeight = probedDimensions.height;
+                thumbnail.thumbnailUrlWidth = probedDimensions.width;
             }
         }
         return thumbnail;

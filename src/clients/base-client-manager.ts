@@ -1,11 +1,19 @@
 import { Plebbit } from "../plebbit.js";
 import assert from "assert";
-import { delay, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
-import { PlebbitError } from "../plebbit-error.js";
+import {
+    FailedToFetchCommentIpfsFromGatewaysError,
+    FailedToFetchCommentUpdateFromGatewaysError,
+    FailedToFetchGenericIpfsFromGatewaysError,
+    FailedToFetchPageIpfsFromGatewaysError,
+    FailedToFetchSubplebbitFromGatewaysError,
+    PlebbitError
+} from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
-import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
+import type { PubsubMessage } from "../pubsub-messages/types";
+import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 import * as cborg from "cborg";
 import { domainResolverPromiseCache, gatewayFetchPromiseCache, p2pCidPromiseCache, p2pIpnsPromiseCache } from "../constants.js";
 import { sha256 } from "js-sha256";
@@ -17,10 +25,11 @@ import all from "it-all";
 import * as remeda from "remeda";
 import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import { CidPathSchema } from "../schema/schema.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
-export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
+export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 
 type GenericGatewayFetch = {
     [gatewayUrl: string]: {
@@ -50,6 +59,7 @@ export class BaseClientsManager {
         if (this._defaultPubsubProviderUrl) {
             for (const provider of remeda.keys.strict(plebbit.clients.pubsubClients)) this.providerSubscriptions[provider] = [];
         }
+        hideClassPrivateProps(this);
     }
 
     toJSON() {
@@ -86,11 +96,11 @@ export class BaseClientsManager {
                     log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err);
                 }
             });
-            await this._plebbit.stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
+            await this._plebbit._stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
             this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
             return;
         } catch (e) {
-            await this._plebbit.stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+            await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
             log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
             throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubProviderUrl, error: e });
         }
@@ -98,7 +108,7 @@ export class BaseClientsManager {
 
     async pubsubSubscribe(pubsubTopic: string, handler: PubsubSubscriptionHandler) {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
-        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-subscribe");
+        const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-subscribe");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
@@ -148,10 +158,10 @@ export class BaseClientsManager {
         try {
             await this._plebbit.clients.pubsubClients[pubsubProvider]._client.pubsub.publish(pubsubTopic, dataBinary);
             this.postPubsubPublishProviderSuccess(pubsubTopic, pubsubProvider);
-            this._plebbit.stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
+            this._plebbit._stats.recordGatewaySuccess(pubsubProvider, "pubsub-publish", Date.now() - timeBefore); // Awaiting this statement will bug out tests
         } catch (error) {
             this.postPubsubPublishProviderFailure(pubsubTopic, pubsubProvider, <PlebbitError>error);
-            await this._plebbit.stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
+            await this._plebbit._stats.recordGatewayFailure(pubsubProvider, "pubsub-publish");
             throwWithErrorCode("ERR_PUBSUB_FAILED_TO_PUBLISH", { pubsubTopic, pubsubProvider, error });
         }
     }
@@ -159,7 +169,7 @@ export class BaseClientsManager {
     async pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void> {
         if (this._plebbit.browserLibp2pJsPublish) await this._initializeLibp2pClientIfNeeded();
         const log = Logger("plebbit-js:plebbit:client-manager:pubsubPublish");
-        const providersSorted = await this._plebbit.stats.sortGatewaysAccordingToScore("pubsub-publish");
+        const providersSorted = await this._plebbit._stats.sortGatewaysAccordingToScore("pubsub-publish");
         const providerToError: Record<string, PlebbitError> = {};
 
         for (let i = 0; i < providersSorted.length; i++) {
@@ -180,7 +190,7 @@ export class BaseClientsManager {
 
     // Gateway methods
 
-    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<string> {
+    private async _fetchWithLimit(url: string, cache: RequestCache, signal: AbortSignal): Promise<{ resText: string; res: Response }> {
         // Node-fetch will take care of size limits through options.size, while browsers will process stream manually
         let res: Response;
         try {
@@ -192,7 +202,7 @@ export class BaseClientsManager {
             });
             if (res.status !== 200) throw Error("Failed to fetch");
             // If getReader is undefined that means node-fetch is used here. node-fetch processes options.size automatically
-            if (res?.body?.getReader === undefined) return await res.text();
+            if (res?.body?.getReader === undefined) return { resText: await res.text(), res };
         } catch (e) {
             if (e instanceof Error && e.message.includes("over limit"))
                 throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
@@ -226,7 +236,7 @@ export class BaseClientsManager {
                     throwWithErrorCode("ERR_OVER_DOWNLOAD_LIMIT", { url, downloadLimit: DOWNLOAD_LIMIT_BYTES });
                 totalBytesRead += value.length;
             }
-            return resText;
+            return { resText, res };
         }
 
         throw Error("should not reach this block in _fetchWithLimit");
@@ -240,69 +250,78 @@ export class BaseClientsManager {
 
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
 
-    private async _fetchFromGatewayAndVerifyIfNeeded(loadType: LoadType, url: string, abortController: AbortController, log: Logger) {
+    private async _fetchFromGatewayAndVerifyIfNeeded(
+        url: string,
+        abortController: AbortController,
+        isIpfsFile: boolean,
+        verifyCidWithContent: boolean,
+        log: Logger
+    ) {
         log.trace(`Fetching url (${url})`);
 
-        const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
-
-        const resText = await this._fetchWithLimit(url, isCid ? "force-cache" : "no-store", abortController.signal);
-        if (isCid) await this._verifyContentIsSameAsCid(resText, url.split("/ipfs/")[1]);
-        return resText;
+        const resObj = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
+        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resObj.resText, url.split("/ipfs/")[1]);
+        return resObj;
     }
     protected async _fetchWithGateway(
         gateway: string,
         path: string,
         loadType: LoadType,
-        abortController: AbortController
-    ): Promise<string | undefined | { error: PlebbitError }> {
+        abortController: AbortController,
+        validateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
+    ): Promise<{ res: Response; resText: string } | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
         const url = `${gateway}${path}`;
 
         const timeBefore = Date.now();
-        const isCid = loadType === "comment" || loadType === "generic-ipfs"; // If false, then IPNS
+        const isIpfsFile = path.startsWith("/ipfs/"); // If false, then IPNS
+        const shouldVerifyContentWithCid = isIpfsFile && loadType !== "comment-update"; // can't verify comment update because it's a long path, and not just a cid
 
         this.preFetchGateway(gateway, path, loadType);
         const cacheKey = url;
         let isUsingCache = true;
         try {
-            let resText: string;
-            if (gatewayFetchPromiseCache.has(cacheKey)) resText = <string>await gatewayFetchPromiseCache.get(cacheKey);
+            let resObj: { res: Response; resText: string };
+            if (gatewayFetchPromiseCache.has(cacheKey)) resObj = await gatewayFetchPromiseCache.get(cacheKey)!;
             else {
                 isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(loadType, url, abortController, log);
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(
+                    url,
+                    abortController,
+                    isIpfsFile,
+                    shouldVerifyContentWithCid,
+                    log
+                );
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
-                resText = await fetchPromise;
+                resObj = await fetchPromise;
                 if (loadType === "subplebbit") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
+            await validateGatewayResponse(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, path, loadType);
             if (!isUsingCache)
-                await this._plebbit.stats.recordGatewaySuccess(
-                    gateway,
-                    isCid || loadType === "comment-update" ? "cid" : "ipns",
-                    Date.now() - timeBefore
-                );
-            return resText;
+                await this._plebbit._stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
+            return resObj;
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
             if (e instanceof PlebbitError && e?.details?.fetchError?.includes("AbortError")) {
                 this.postFetchGatewayAborted(gateway, path, loadType);
-                return undefined;
+                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e }) };
             } else {
                 this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
-                if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(gateway, isCid ? "cid" : "ipns");
-                delete (<PlebbitError>e)["stack"];
+                if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
+                delete (<PlebbitError>e)!["stack"];
                 return { error: <PlebbitError>e };
             }
         }
     }
 
-    protected _firstResolve(promises: Promise<string | { error: PlebbitError }>[]) {
+    protected _firstResolve(promises: Promise<{ res: Response; resText: string } | { error: PlebbitError }>[]) {
         if (promises.length === 0) throw Error("No promises to find the first resolve");
-        return new Promise<{ res: string; i: number }>((resolve) =>
+        return new Promise<{ res: { res: Response; resText: string }; i: number }>((resolve) =>
             promises.forEach((promise, i) =>
                 promise.then((res) => {
-                    if (typeof res === "string") resolve({ res, i });
+                    if ("resText" in res) resolve({ res, i });
                 })
             )
         );
@@ -315,11 +334,15 @@ export class BaseClientsManager {
               ? 60 * 1000 // 1 min
               : loadType === "comment-update"
                 ? 2 * 60 * 1000 // 2min
-                : 30 * 1000; // 30s
+                : 30 * 1000; // 30s for page ipfs and generic ipfs
     }
 
-    async fetchFromMultipleGateways(loadOpts: { cid?: string; ipns?: string }, loadType: LoadType): Promise<string> {
-        assert(loadOpts.cid || loadOpts.ipns);
+    async fetchFromMultipleGateways(
+        loadOpts: { cid?: string; ipns?: string },
+        loadType: LoadType,
+        valiateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
+    ): Promise<{ resText: string; res: Response }> {
+        assert(loadOpts.cid || loadOpts.ipns, "You did not provide cid or ipns to load from gateways");
 
         const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
 
@@ -335,7 +358,7 @@ export class BaseClientsManager {
         const gatewaysSorted =
             remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
                 ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-                : await this._plebbit.stats.sortGatewaysAccordingToScore(type);
+                : await this._plebbit._stats.sortGatewaysAccordingToScore(type);
 
         const gatewayFetches: GenericGatewayFetch = {};
 
@@ -351,7 +374,7 @@ export class BaseClientsManager {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
-                promise: queueLimit(() => this._fetchWithGateway(gateway, path, loadType, abortController)),
+                promise: queueLimit(() => this._fetchWithGateway(gateway, path, loadType, abortController, valiateGatewayResponse)),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
         }
@@ -359,7 +382,7 @@ export class BaseClientsManager {
         const gatewayPromises = Object.values(gatewayFetches).map((fetching) => fetching.promise);
 
         //@ts-expect-error
-        const res: { res: string; i: number } | { value: { error: PlebbitError } }[] = await Promise.race([
+        const res: { res: { resText: string; res: Response }; i: number } | { value: { error: PlebbitError } }[] = await Promise.race([
             this._firstResolve(gatewayPromises),
             Promise.allSettled(gatewayPromises)
         ]);
@@ -368,8 +391,16 @@ export class BaseClientsManager {
             const gatewayToError: Record<string, PlebbitError> = {};
             for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
 
-            const errorCode = Object.values(gatewayToError)[0].code;
-            const combinedError = new PlebbitError(errorCode, { loadOpts, gatewayToError });
+            const combinedError =
+                loadType === "comment"
+                    ? new FailedToFetchCommentIpfsFromGatewaysError({ commentCid: loadOpts.cid!, gatewayToError })
+                    : loadType === "comment-update"
+                      ? new FailedToFetchCommentUpdateFromGatewaysError({ commentUpdatePath: path, gatewayToError })
+                      : loadType === "page-ipfs"
+                        ? new FailedToFetchPageIpfsFromGatewaysError({ pageCid: loadOpts.cid!, gatewayToError })
+                        : loadType === "subplebbit"
+                          ? new FailedToFetchSubplebbitFromGatewaysError({ ipnsName: loadOpts.ipns!, gatewayToError })
+                          : new FailedToFetchGenericIpfsFromGatewaysError({ cid: loadOpts.cid!, gatewayToError });
 
             throw combinedError;
         } else {
@@ -386,17 +417,16 @@ export class BaseClientsManager {
             let cid: string;
             if (p2pIpnsPromiseCache.has(ipnsName)) cid = <string>await p2pIpnsPromiseCache.get(ipnsName);
             else {
-                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName));
+                const cidPromise = last(ipfsClient._client.name.resolve(ipnsName)).then(CidPathSchema.parse); // make sure we're getting a CID
                 p2pIpnsPromiseCache.set(ipnsName, cidPromise);
-                cid = <string>await cidPromise;
+                cid = await cidPromise;
                 p2pIpnsPromiseCache.delete(ipnsName);
             }
-            if (typeof cid !== "string") throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName });
             return cid;
         } catch (error) {
             p2pIpnsPromiseCache.delete(ipnsName);
-            if (error instanceof PlebbitError && error?.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS") throw error;
-            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS", { ipnsName, error });
+            if (error instanceof PlebbitError && error.code === "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P") throw error;
+            else throwWithErrorCode("ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P", { ipnsName, error });
         }
         throw Error("Should not reach this block in resolveIpnsToCidP2P");
     }
@@ -529,13 +559,13 @@ export class BaseClientsManager {
                     chainproviderUrl
                 });
             this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
-            if (!isUsingCache) await this._plebbit.stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
         } catch (e) {
             domainResolverPromiseCache.delete(cacheKey);
             const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { error: e });
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
-            if (!isUsingCache) await this._plebbit.stats.recordGatewayFailure(chainproviderUrl, chain);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: parsedError };
         }
     }
@@ -574,7 +604,7 @@ export class BaseClientsManager {
             const providersSorted =
                 this._plebbit.clients.chainProviders[chain].urls.length <= concurrencyLimit
                     ? this._plebbit.clients.chainProviders[chain].urls
-                    : await this._plebbit.stats.sortGatewaysAccordingToScore(chain);
+                    : await this._plebbit._stats.sortGatewaysAccordingToScore(chain);
 
             try {
                 const providerPromises = providersSorted.map((providerUrl) =>

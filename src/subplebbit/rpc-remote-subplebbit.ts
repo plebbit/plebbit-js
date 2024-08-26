@@ -1,10 +1,12 @@
 import Logger from "@plebbit/plebbit-logger";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { InternalSubplebbitRpcType, SubplebbitIpfsType } from "./types.js";
+import type { RpcRemoteSubplebbitType } from "./types.js";
 import * as remeda from "remeda";
+import { PlebbitError } from "../plebbit-error.js";
+import { parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 
 export class RpcRemoteSubplebbit extends RemoteSubplebbit {
-    private _updateRpcSubscriptionId?: number;
+    private _updateRpcSubscriptionId?: number = undefined;
 
     protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]) {
         const currentRpcUrl = remeda.keys.strict(this.clients.plebbitRpcClients)[0];
@@ -14,10 +16,10 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         this.clients.plebbitRpcClients[currentRpcUrl].emit("statechange", newState);
     }
 
-    protected _updateRpcClientStateFromUpdatingState(updatingState: RemoteSubplebbit["updatingState"]) {
+    protected _updateRpcClientStateFromUpdatingState(updatingState: RpcRemoteSubplebbit["updatingState"]) {
         // We're deriving the the rpc state from updating state
 
-        const mapper: Record<RemoteSubplebbit["updatingState"], RemoteSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
+        const mapper: Record<RpcRemoteSubplebbit["updatingState"], RemoteSubplebbit["clients"]["plebbitRpcClients"][0]["state"][]> = {
             failed: ["stopped"],
             "fetching-ipfs": ["fetching-ipfs"],
             "fetching-ipns": ["fetching-ipns"],
@@ -27,11 +29,34 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             succeeded: ["stopped"]
         };
 
-        mapper[updatingState].forEach(this._setRpcClientState.bind(this));
+        const newRpcClientState = mapper[updatingState] || [updatingState]; // There may be a case where the rpc server transmits a new state that is not part of mapper
+        newRpcClientState.forEach(this._setRpcClientState.bind(this));
     }
 
-    protected async _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType) {
-        await this.initRemoteSubplebbitPropsNoMerge(rpcProps);
+    protected async _processUpdateEventFromRpcUpdate(args: any) {
+        // This function is to handle "update" event emitted after calling rpcRemoteSubplebbit.update()
+        // It's overidden in rpc-local-subplebbit
+        const log = Logger("plebbit-js:rpc-remote-subplebbit:_processUpdateEventFromRpcUpdate");
+        let updateRecord: RpcRemoteSubplebbitType;
+        try {
+            updateRecord = parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(args.params.result);
+        } catch (e) {
+            log.error("Failed to parse the schema of remote subplebbit sent by rpc", e);
+            this.emit("error", <PlebbitError>e);
+            throw e;
+        }
+
+        await this.initSubplebbitIpfsPropsNoMerge(updateRecord.subplebbit);
+        this.cid = updateRecord.cid;
+
+        this.emit("update", this);
+    }
+
+    private _handleUpdatingStateChangeFromRpcUpdate(args: any) {
+        const newUpdatingState: RpcRemoteSubplebbit["updatingState"] = args.params.result; // we're being optimistic that RPC server sent an appropiate updating state string
+
+        this._setUpdatingState(newUpdatingState);
+        this._updateRpcClientStateFromUpdatingState(newUpdatingState);
     }
 
     override async update() {
@@ -40,7 +65,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         try {
-            this._updateRpcSubscriptionId = await this.plebbit.plebbitRpcClient!.subplebbitUpdate(this.address);
+            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient!.subplebbitUpdate(this.address);
             this._setState("updating");
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
@@ -48,22 +73,13 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             this._setUpdatingState("failed");
             throw e;
         }
-        this.plebbit
+        this._plebbit
             .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
-            .on("update", async (updateProps) => {
-                log(`Received new subplebbitUpdate (${this.address}) from RPC (${this.plebbit.plebbitRpcClientsOptions![0]})`);
-                const rpcSubProps = <SubplebbitIpfsType | InternalSubplebbitRpcType>updateProps.params.result;
-                await this._handleRpcUpdateProps(rpcSubProps);
-                this.emit("update", this);
-            })
-            .on("updatingstatechange", (args) => {
-                const newUpdatingState = <RpcRemoteSubplebbit["updatingState"]>args.params.result;
-                this._setUpdatingState(newUpdatingState);
-                this._updateRpcClientStateFromUpdatingState(newUpdatingState);
-            })
-            .on("error", (args) => this.emit("error", args.params.result));
+            .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
+            .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
+            .on("error", (args) => this.emit("error", args.params.result)); // zod here
 
-        this.plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
+        this._plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
     override async stop() {
@@ -71,7 +87,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "updating") throw Error("User call rpcRemoteSubplebbit.stop() without updating first");
 
         if (!this._updateRpcSubscriptionId) throw Error("rpcRemoteSub.state is updating but no subscription id");
-        await this.plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+        await this._plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);

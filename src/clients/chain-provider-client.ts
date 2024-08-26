@@ -1,5 +1,6 @@
 import { TypedEmitter } from "tiny-typed-emitter";
-import { GenericClientEvents } from "../types.js";
+import type { GenericClientEvents } from "../types.js";
+import { hideClassPrivateProps } from "../util.js";
 
 type GenericChainproviderState = "stopped" | "resolving-subplebbit-address" | "resolving-author-address";
 export class GenericChainProviderClient extends TypedEmitter<GenericClientEvents<GenericChainproviderState>> {
@@ -7,5 +8,6 @@ export class GenericChainProviderClient extends TypedEmitter<GenericClientEvents
     constructor(state: GenericChainProviderClient["state"]) {
         super();
         this.state = state;
+        hideClassPrivateProps(this);
     }
 }
