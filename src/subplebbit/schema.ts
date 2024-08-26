@@ -289,3 +289,26 @@ export const CreateSubplebbitFunctionArgumentsSchema = CreateNewLocalSubplebbitU
 // plebbit.listSubplebbits()
 
 export const ListOfSubplebbitsSchema = SubplebbitAddressSchema.array();
+
+// Reserved fields
+
+// TODO should make the array of class props typed
+export const SubplebbitIpfsReservedFields = remeda.difference(
+    [
+        "cid",
+        "shortCid",
+        "shortAddress",
+        "shortSubplebbitAddress",
+        "deleted",
+        "signer",
+        "state",
+        "clients",
+        "startedState",
+        "settings",
+        "editable",
+        "publishingState",
+        "updatingState",
+        "started"
+    ],
+    remeda.keys.strict(SubplebbitIpfsSchema.shape)
+);

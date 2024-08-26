@@ -47,7 +47,7 @@ import {
     CommentUpdateSignedPropertyNames
 } from "../publications/comment/schema.js";
 import type { PageIpfs } from "../pages/types.js";
-import { SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
+import { SubplebbitIpfsReservedFields, SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
 import {
     ChallengeRequestMessageSignedPropertyNames,
     ChallengeMessageSignedPropertyNames,
@@ -403,6 +403,8 @@ export async function verifySubplebbit(
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
     if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(subplebbit, SubplebbitIpfsReservedFields))
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD };
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity) return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
     const cacheKey = sha256(
@@ -474,7 +476,7 @@ async function _getBinaryValidationResult(publication: PubsubMessage): Promise<V
     return { valid: true };
 }
 
-function _isThereReservedFieldInRecord(record: CommentUpdateType, reservedFields: string[]) {
+function _isThereReservedFieldInRecord(record: CommentUpdateType | SubplebbitIpfsType, reservedFields: string[]) {
     return remeda.intersection(Object.keys(record), reservedFields).length > 0;
 }
 

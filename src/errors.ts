@@ -87,6 +87,7 @@ export enum messages {
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
     ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD = "CommentUpdate record includes a reserved field",
     ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Subplebbit signature is invalid",
+    ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD = "The SubplebbitIpfs record includes a reserved field",
     ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN = "Failed to resolve the subplebbit domain address to use for verification",
     ERR_FAILED_TO_RESOLVE_AUTHOR_DOMAIN = "Failed to resolve the author domain address to use for verification",
     ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "SubplebbitIpfs record includes a field not included in signature.signedPropertyNames",
