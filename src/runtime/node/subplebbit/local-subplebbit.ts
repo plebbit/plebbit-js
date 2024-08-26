@@ -400,7 +400,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const updatedAt = timestamp() === this.updatedAt ? timestamp() + 1 : timestamp();
         const newIpns: Omit<SubplebbitIpfsType, "signature"> = {
             ...cleanUpBeforePublishing({
-                ...remeda.omit(this._toJSONBase(), ["signature"]),
+                ...remeda.omit(this._toJSONIpfsBaseNoPosts(), ["signature"]),
                 lastPostCid: latestPost?.cid,
                 lastCommentCid: latestComment?.cid,
                 statsCid,

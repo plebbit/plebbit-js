@@ -165,29 +165,9 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         this.posts._subplebbitAddress = this.address;
     }
 
-
-    protected _toJSONBase() {
-        return {
-            title: this.title,
-            description: this.description,
-            lastPostCid: this.lastPostCid,
-            lastCommentCid: this.lastCommentCid,
-            pubsubTopic: this.pubsubTopic,
-            address: this.address,
-            challenges: this.challenges,
-            statsCid: this.statsCid,
-            createdAt: this.createdAt,
-            updatedAt: this.updatedAt,
-            encryption: this.encryption,
-            roles: this.roles,
-            protocolVersion: this.protocolVersion,
-            signature: this.signature,
-            features: this.features,
-            suggested: this.suggested,
-            rules: this.rules,
-            flairs: this.flairs,
-            postUpdates: this.postUpdates
-        };
+    protected _toJSONIpfsBaseNoPosts() {
+        const subplebbitIpfsKeys = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["posts"]));
+        return remeda.pick(this, subplebbitIpfsKeys);
     }
 
     toJSONIpfs(): SubplebbitIpfsType {

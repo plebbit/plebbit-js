@@ -68,7 +68,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
     toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType {
         if (!this.settings) throw Error("Attempting to transmit InternalRpc record without defining settings");
         return {
-            ...this._toJSONBase(),
+            ...this._toJSONIpfsBaseNoPosts(),
             signer: this.signer,
             settings: this.settings,
             _usingDefaultChallenge: this._usingDefaultChallenge,
