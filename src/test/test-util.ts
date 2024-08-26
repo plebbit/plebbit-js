@@ -530,7 +530,6 @@ export async function waitTillCommentIsInParentPages(
     if (!pageCids || remeda.isEmpty(pageCids)) throw Error("Failed to retrieve pages");
 
     const commentKeys = remeda.keys.strict(remeda.omit(propsToCheckFor, ["signer"]));
-    
 
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {

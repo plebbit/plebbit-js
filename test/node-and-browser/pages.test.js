@@ -214,7 +214,6 @@ describe("Test pages sorting", async () => {
                 await testRepliesSort(posts, sortName, subplebbit._plebbit))
         );
     });
-
 });
 
 describe(`getPage`, async () => {

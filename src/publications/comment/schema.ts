@@ -197,7 +197,6 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
     remeda.keys.strict(CommentPubsubMessageSchema.shape)
 );
 
-
 export const CommentUpdateReservedFields = remeda.difference(
     CommentPubsubMessageReservedFields,
     remeda.keys.strict(CommentUpdateSchema.shape)

@@ -191,18 +191,18 @@ describe(`Start lock`, async () => {
     });
 
     itSkipIfRpc(`Subplebbit states are reset if subplebbit.start() throws`, async () => {
-            const sub = await createSubWithNoChallenge({}, plebbit);
+        const sub = await createSubWithNoChallenge({}, plebbit);
 
-            sub._repinCommentsIPFSIfNeeded = () => {
-                throw Error("Failing ipfs for some reason");
-            };
+        sub._repinCommentsIPFSIfNeeded = () => {
+            throw Error("Failing ipfs for some reason");
+        };
 
-            await assert.isRejected(sub.start());
+        await assert.isRejected(sub.start());
 
-            expect(sub.state).to.equal("stopped");
-            expect(sub.started).to.be.false;
-            expect(sub.startedState).to.equal("stopped");
-        });
+        expect(sub.state).to.equal("stopped");
+        expect(sub.started).to.be.false;
+        expect(sub.startedState).to.equal("stopped");
+    });
 
     itIfRpc(`rpcLocalSub.start() will receive started updates if there is another instance that's started`, async () => {
         const sub1 = await createSubWithNoChallenge({}, plebbit);

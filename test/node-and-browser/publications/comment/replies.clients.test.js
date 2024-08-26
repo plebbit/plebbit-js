@@ -117,7 +117,7 @@ describe(`comment.replies.clients`, async () => {
             const timeItTookInMs = Date.now() - timeBefore;
             expect(timeItTookInMs).to.be.lessThan(9000);
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
 
             expect(actualStates).to.deep.equal(expectedStates);
         });

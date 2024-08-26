@@ -26,13 +26,10 @@ describe("shouldExcludePublication", () => {
 
     it("postScore and replyScore", () => {
         const subplebbitChallenge = {
-            exclude: [
-                {postScore: 100},
-                {replyScore: 100}
-            ]
+            exclude: [{ postScore: 100 }, { replyScore: 100 }]
         };
         const authorScoreUndefined = {
-            author: {subplebbit: {}}
+            author: { subplebbit: {} }
         };
         const authorSubplebbitUndefined = {
             author: {}
@@ -40,28 +37,28 @@ describe("shouldExcludePublication", () => {
         const authorPostScoreLow = {
             author: {
                 subplebbit: {
-                    postScore: 99,
+                    postScore: 99
                 }
             }
         };
         const authorPostScoreHigh = {
             author: {
                 subplebbit: {
-                    postScore: 100,
+                    postScore: 100
                 }
             }
         };
         const authorReplyScoreLow = {
             author: {
                 subplebbit: {
-                    replyScore: 99,
+                    replyScore: 99
                 }
             }
         };
         const authorReplyScoreHigh = {
             author: {
                 subplebbit: {
-                    replyScore: 100,
+                    replyScore: 100
                 }
             }
         };
@@ -69,7 +66,7 @@ describe("shouldExcludePublication", () => {
             author: {
                 subplebbit: {
                     postScore: 100,
-                    replyScore: 100,
+                    replyScore: 100
                 }
             }
         };
@@ -77,7 +74,7 @@ describe("shouldExcludePublication", () => {
             author: {
                 subplebbit: {
                     postScore: 99,
-                    replyScore: 99,
+                    replyScore: 99
                 }
             }
         };
@@ -276,22 +273,20 @@ describe("shouldExcludePublication", () => {
 
     it("rateLimit and postScore", () => {
         const subplebbitChallenge = {
-            exclude: [
-                {postScore: 100, rateLimit: 1},
-            ]
+            exclude: [{ postScore: 100, rateLimit: 1 }]
         };
-        const address = getRandomAddress()
+        const address = getRandomAddress();
         const authorScoreUndefined = {
-            author: {address, subplebbit: {}}
+            author: { address, subplebbit: {} }
         };
         const authorSubplebbitUndefined = {
-            author: {address}
+            author: { address }
         };
         const authorPostScoreLow = {
             author: {
                 address,
                 subplebbit: {
-                    postScore: 99,
+                    postScore: 99
                 }
             }
         };
@@ -299,7 +294,7 @@ describe("shouldExcludePublication", () => {
             author: {
                 address,
                 subplebbit: {
-                    postScore: 100,
+                    postScore: 100
                 }
             }
         };
