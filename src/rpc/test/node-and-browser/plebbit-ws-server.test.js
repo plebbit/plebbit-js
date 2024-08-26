@@ -231,7 +231,7 @@ describe("plebbit-ws-server", () => {
         expect(unsubscribed).to.equal(true);
     });
 
-    it.only("publishComment", async () => {
+    it("publishComment", async () => {
         const createCommentOptions = {
             timestamp: 1000,
             content: "content",
