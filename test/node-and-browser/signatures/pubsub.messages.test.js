@@ -24,13 +24,13 @@ import validChallengeVerificationFixture from "../../fixtures/signatures/challen
 
 const mathCliSubplebbitAddress = signers[1].address;
 
-const parseMsgJson = (json) => {
+const parsePubsubMsgFixture = (json) => {
     // Convert stringified pubsub msg with buffers to regular pubsub msg with uint8Array for buffers
     const isBuffer = (obj) => Object.keys(obj).every((key) => /\d/.test(key));
     const parsed = {};
     for (const key of Object.keys(json)) {
         if (remeda.isPlainObject(json[key]) && isBuffer(json[key])) parsed[key] = Uint8Array.from(Object.values(json[key]));
-        else if (remeda.isPlainObject(json[key])) parsed[key] = parseMsgJson(json[key]);
+        else if (remeda.isPlainObject(json[key])) parsed[key] = parsePubsubMsgFixture(json[key]);
         else parsed[key] = json[key];
     }
     return parsed;
@@ -43,13 +43,13 @@ describeSkipIfRpc("challengerequest", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengerequest fixture from previous version can be validated`, async () => {
-        const request = parseMsgJson(remeda.clone(validChallengeRequestFixture));
+        const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
         const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`challenge request with challengeRequestId that is not derived from signer is invalidated`, async () => {
-        const request = parseMsgJson(remeda.clone(validChallengeRequestFixture));
+        const request = parsePubsubMsgFixture(remeda.clone(validChallengeRequestFixture));
         request.challengeRequestId[0] += 1; // Invalidate challengeRequestId
         const verificaiton = await verifyChallengeRequest(request, false);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
@@ -208,20 +208,20 @@ describeSkipIfRpc(`challengemessage`, async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengemessage fixture from previous version can be validated`, async () => {
-        const challenge = parseMsgJson(remeda.clone(validChallengeFixture));
+        const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`Invalid ChallengeMessage gets invalidated correctly`, async () => {
-        const challenge = parseMsgJson(remeda.clone(validChallengeFixture));
+        const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
         challenge.timestamp -= 1234; // Should invalidate signature
         const verificaiton = await verifyChallengeMessage(challenge, "12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
     });
 
     it(`challenge message signed by other than subplebbit.pubsubTopic is invalidated`, async () => {
-        const challenge = parseMsgJson(remeda.clone(validChallengeFixture));
+        const challenge = parsePubsubMsgFixture(remeda.clone(validChallengeFixture));
         const verificaiton = await verifyChallengeMessage(challenge, (await plebbit.createSigner()).address); // Random pubsub topic
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT });
     });
@@ -247,13 +247,13 @@ describeSkipIfRpc("challengeanswer", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeanswer fixture from previous version can be validated`, async () => {
-        const answer = parseMsgJson(remeda.clone(validChallengeAnswerFixture));
+        const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
 
     it(`challenge answer with challengeRequestId that is not derived from signer is invalidated`, async () => {
-        const answer = parseMsgJson(remeda.clone(validChallengeAnswerFixture));
+        const answer = parsePubsubMsgFixture(remeda.clone(validChallengeAnswerFixture));
         answer.challengeRequestId[0] += 1; // Invalidate challenge request id
         const verificaiton = await verifyChallengeAnswer(answer);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_CHALLENGE_REQUEST_ID_NOT_DERIVED_FROM_SIGNATURE });
@@ -404,7 +404,7 @@ describeSkipIfRpc("challengeverification", async () => {
         plebbit = await mockPlebbit();
     });
     it(`valid challengeverification fixture from previous version can be validated`, async () => {
-        const challengeVerification = parseMsgJson(remeda.clone(validChallengeVerificationFixture));
+        const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -418,7 +418,7 @@ describeSkipIfRpc("challengeverification", async () => {
         expect(verification).to.deep.equal({ valid: true });
     });
     it(`Invalid challengeverification gets invalidated correctly`, async () => {
-        const challengeVerification = parseMsgJson(remeda.clone(validChallengeVerificationFixture));
+        const challengeVerification = parsePubsubMsgFixture(remeda.clone(validChallengeVerificationFixture));
         challengeVerification.timestamp -= 1234; // Invalidate signature
         const verificaiton = await verifyChallengeVerification(challengeVerification, signers[0].address);
         expect(verificaiton).to.deep.equal({ valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID });
