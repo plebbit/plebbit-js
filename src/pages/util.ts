@@ -126,7 +126,7 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
             deleted: commentObj.update.edit?.deleted,
             replies: parsedPages,
             content: commentObj.update.edit?.content || commentObj.comment.content,
-            reason: commentObj.update.reason || commentObj.update.edit?.reason,
+            reason: commentObj.update.reason,
             spoiler:
                 ("spoiler" in commentObj.update && commentObj.update.spoiler) ||
                 (commentObj.update.edit && "spoiler" in commentObj.update.edit && commentObj.update.edit.spoiler) ||
