@@ -905,10 +905,12 @@ export function jsonifyCommentAndRemoveInstanceProps(comment: Comment) {
     return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
 }
 
-export const describeSkipIfRpc = isRpcFlagOn() ? globalThis["describe"]?.skip : globalThis["describe"];
+const skipFunction = (_: any) => {};
 
-export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : globalThis["describe"]?.skip;
+export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
 
-export const itSkipIfRpc = isRpcFlagOn() ? globalThis["it"]?.skip : globalThis["it"];
+export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : skipFunction;
 
-export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : globalThis["it"]?.skip;
+export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
+
+export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
