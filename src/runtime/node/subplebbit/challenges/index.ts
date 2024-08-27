@@ -28,12 +28,8 @@ import type {
 import { LocalSubplebbit } from "../local-subplebbit.js";
 import * as remeda from "remeda";
 import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
-import {
-    ChallengeFileFactorySchema,
-    ChallengeFileSchema,
-    SubplebbitChallengeSettingSchema,
-    ResultOfGetChallengeSchema
-} from "../../../../subplebbit/schema.js";
+import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
+import { PlebbitError } from "../../../../plebbit-error.js";
 
 type PendingChallenge = Challenge & { index: number };
 
@@ -104,42 +100,49 @@ const getPendingChallengesOrChallengeVerification = async (
         const challengeIndex = Number(i);
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
 
+        if (!subplebbitChallengeSettings.path && !plebbitJsChallenges[subplebbitChallengeSettings.name!])
+            throw Error("You have to provide either path or a stored plebbit-js challenge");
         // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
-        let challengeFile: ChallengeFile;
-        if (subplebbitChallengeSettings.path) {
-            try {
-                const ChallengeFileFactory = ChallengeFileFactorySchema.parse(require(subplebbitChallengeSettings.path));
-                validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
-                challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
-                validateChallengeFile(challengeFile, challengeIndex, subplebbit);
-            } catch (e) {
-                if (e instanceof Error)
-                    e.message = `failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
-                throw e;
-            }
-        }
-        // else, the challenge is included with plebbit-js
-        else if (subplebbitChallengeSettings.name) {
-            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(plebbitJsChallenges[subplebbitChallengeSettings.name]);
+        let ChallengeFileFactory: ChallengeFileFactory;
+
+        try {
+            ChallengeFileFactory = ChallengeFileFactorySchema.parse(
+                subplebbitChallengeSettings.path
+                    ? require(subplebbitChallengeSettings.path)
+                    : plebbitJsChallenges[subplebbitChallengeSettings.name!]
+            );
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
-            challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
-            validateChallengeFile(challengeFile, challengeIndex, subplebbit);
-        } else throw Error("Failed to set up challenge file instance");
+        } catch (e) {
+            throw new PlebbitError("ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY", {
+                path: subplebbitChallengeSettings.path,
+                subplebbitChallengeSettings,
+                error: e,
+                challengeIndex
+            });
+        }
+
+        const challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
+        validateChallengeFile(challengeFile, challengeIndex, subplebbit);
 
         let challengeOrChallengeResult: Challenge | ChallengeResult;
         try {
             // the getChallenge function could throw
-            challengeOrChallengeResult = ResultOfGetChallengeSchema.parse(
-                await challengeFile.getChallenge(subplebbitChallengeSettings, challengeRequestMessage, challengeIndex, subplebbit)
+            challengeOrChallengeResult = await challengeFile.getChallenge(
+                subplebbitChallengeSettings,
+                challengeRequestMessage,
+                challengeIndex,
+                subplebbit
             );
+            validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
         } catch (e) {
-            if (e instanceof Error) {
-                let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
-                e.message = `${errorMessage}: ${e.message}`;
-            }
-            throw e;
+            throw new PlebbitError("ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION", {
+                subplebbitChallengeSettings,
+                challengeName: subplebbitChallengeSettings.name || subplebbitChallengeSettings.path,
+                challengeRequestMessage,
+                challengeIndex: challengeIndex + 1,
+                error: e
+            });
         }
-        validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
         challengeOrChallengeResults.push(challengeOrChallengeResult);
     }
 
