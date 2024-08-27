@@ -1,6 +1,6 @@
 {
     "name": "@plebbit/plebbit-js",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "type": "module",
     "scripts": {
         "build": "npm run clean && run-s build:node build:browser",
