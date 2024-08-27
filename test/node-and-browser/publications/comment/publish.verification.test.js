@@ -201,32 +201,19 @@ describeSkipIfRpc("Posts with forbidden author fields are rejected", async () =>
     };
     Object.keys(forbiddenFieldsWithValue).map((forbiddenFieldName) =>
         it(`publication.author.${forbiddenFieldName} is rejected by sub`, async () => {
-            try {
-                await generateMockPost(subplebbitAddress, plebbit, false, {
-                    author: { [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
-                });
-                expect.fail("Should fail because these fields should not part be of CreateComment");
-            } catch (e) {
-                expect(e.name).to.equal("ZodError");
-                expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${forbiddenFieldName}'`);
-            }
-
             const signer = await plebbit.createSigner();
             const post = await plebbit.createComment({
                 subplebbitAddress,
                 title: "Nonsense" + Date.now(),
                 signer: signer
             });
-            const pubsubJsonPrior = post.toJSONPubsubMessagePublication();
-            const pubsubJsonAfterChange = cleanUpBeforePublishing({
-                ...pubsubJsonPrior,
-                author: { ...pubsubJsonPrior.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
-            });
-
-            pubsubJsonAfterChange.signature = await signComment({ ...pubsubJsonAfterChange, signer }, plebbit);
-            post.toJSONPubsubMessagePublication = () => pubsubJsonAfterChange;
-            post._validateSignature = async () => {}; // Disable signature validation before publishing
-            disableZodValidationOfPublication(post);
+            await setExtraPropOnCommentAndSign(
+                post,
+                {
+                    author: { ...post.author, [forbiddenFieldName]: forbiddenFieldsWithValue[forbiddenFieldName] }
+                },
+                true
+            );
             await publishWithExpectedResult(post, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
         })
     );
