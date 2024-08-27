@@ -13,8 +13,8 @@ import {
 } from "../schema/schema.js";
 import { PostsPagesIpfsSchema } from "../pages/schema.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
-import { DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema } from "../pubsub-messages/schema.js";
 import * as remeda from "remeda";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
@@ -165,9 +165,9 @@ export const ChallengeFileSchema = z
             .function()
             .args(
                 SubplebbitChallengeSettingSchema, // challenge settings
-                z.lazy(() => DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema), // challenge request to process
+                z.custom<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>(), // challenge request to process, no need to validate because extra props may be there
                 z.number().int().nonnegative(), // challenge index
-                z.custom<LocalSubplebbit>((data) => data instanceof LocalSubplebbit) // the local subplebbit instance
+                z.custom<LocalSubplebbit>() // the local subplebbit instance
             )
             .returns(z.promise(ResultOfGetChallengeSchema))
     })

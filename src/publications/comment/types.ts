@@ -74,3 +74,9 @@ export type CommentUpdatingState =
     | "fetching-subplebbit-ipfs"
     | "failed"
     | "succeeded";
+
+// Native types here
+
+export interface CommentPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessage {
+    author: AuthorTypeWithCommentUpdate;
+}

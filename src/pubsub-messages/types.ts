@@ -1,3 +1,6 @@
+import type { CommentEditPubsubMessageWithSubplebbitAuthor } from "../publications/comment-edit/types";
+import type { CommentPubsubMessageWithSubplebbitAuthor } from "../publications/comment/types";
+import type { VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
 import {
     ChallengeAnswerMessageSchema,
@@ -5,12 +8,10 @@ import {
     ChallengeMessageSchema,
     ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
-    CommentPubsubMessageWithSubplebbitAuthorSchema,
     DecryptedChallengeAnswerMessageSchema,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeMessageSchema,
     DecryptedChallengeRequestMessageSchema,
-    DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema,
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationMessageSchema,
@@ -26,12 +27,6 @@ export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessage
 export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
 
 export type DecryptedChallengeRequestMessageType = z.infer<typeof DecryptedChallengeRequestMessageSchema>;
-
-export type CommentPubsubMessageWithSubplebbitAuthor = z.infer<typeof CommentPubsubMessageWithSubplebbitAuthorSchema>;
-
-export type DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor = z.infer<
-    typeof DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema
->;
 
 // Challenge message here
 
@@ -57,6 +52,15 @@ export type ChallengeVerificationMessageType = z.infer<typeof ChallengeVerificat
 export type DecryptedChallengeVerification = z.infer<typeof DecryptedChallengeVerificationSchema>;
 
 export type DecryptedChallengeVerificationMessageType = z.infer<typeof DecryptedChallengeVerificationMessageSchema>;
+
+// Challenge verification native types
+
+export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
+    publication:
+        | VotePubsubMessageWithSubplebbitAuthor
+        | CommentPubsubMessageWithSubplebbitAuthor
+        | CommentEditPubsubMessageWithSubplebbitAuthor;
+}
 
 // Misc challenge pubsub message
 

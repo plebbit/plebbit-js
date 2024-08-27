@@ -11,8 +11,7 @@ import {
     ModeratorCommentEditOptionsSchema
 } from "./schema";
 import { CommentAuthorSchema } from "../../schema/schema";
-import { CommentEditPubsubMessageWithSubplebbitAuthorSchema } from "../../pubsub-messages/schema";
-import type { JsonOfClass } from "../../types";
+import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
 import { CommentEdit } from "./comment-edit";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
@@ -37,6 +36,8 @@ export type CommentEditPubsubMessage = z.infer<typeof CommentEditPubsubMessageSc
 
 export type CommentEditChallengeRequestToEncryptType = z.infer<typeof CommentEditChallengeRequestToEncryptSchema>;
 
-export type CommentEditPubsubMessageWithSubplebbitAuthor = z.infer<typeof CommentEditPubsubMessageWithSubplebbitAuthorSchema>;
-
 export type CommentEditTypeJson = JsonOfClass<CommentEdit>;
+
+export interface CommentEditPubsubMessageWithSubplebbitAuthor extends CommentEditPubsubMessage {
+    author: AuthorTypeWithCommentUpdate;
+}

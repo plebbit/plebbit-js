@@ -47,15 +47,7 @@ export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = Commen
 
 export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
     author: AuthorWithCommentUpdateSchema
-}).strict();
-
-export const CommentEditPubsubMessageWithSubplebbitAuthorSchema = CommentEditPubsubMessageSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).strict();
-
-export const CommentPubsubMessageWithSubplebbitAuthorSchema = CommentPubsubMessageSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).strict();
+}).passthrough();
 
 // Challenge Request message
 
@@ -74,12 +66,6 @@ export const DecryptedChallengeRequestSchema = z.object({
 });
 
 export const DecryptedChallengeRequestMessageSchema = ChallengeRequestMessageSchema.merge(DecryptedChallengeRequestSchema);
-
-export const DecryptedChallengeRequestMessageWithSubplebbitAuthorSchema = DecryptedChallengeRequestMessageSchema.extend({
-    publication: VotePubsubMessageWithSubplebbitAuthorSchema.or(CommentEditPubsubMessageWithSubplebbitAuthorSchema).or(
-        CommentPubsubMessageWithSubplebbitAuthorSchema
-    )
-}).strict();
 
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"])

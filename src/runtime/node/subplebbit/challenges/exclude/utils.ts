@@ -1,10 +1,8 @@
 import { RemoteSubplebbit } from "../../../../../subplebbit/remote-subplebbit.js";
-import { SubplebbitRole } from "../../../../../subplebbit/types.js";
-import type {
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    CommentPubsubMessageWithSubplebbitAuthor
-} from "../../../../../pubsub-messages/types.js";
-import { VotePubsubMessageWithSubplebbitAuthor } from "../../../../../publications/vote/types.js";
+import type { SubplebbitRole } from "../../../../../subplebbit/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
+import type { VotePubsubMessageWithSubplebbitAuthor } from "../../../../../publications/vote/types.js";
+import type { CommentPubsubMessageWithSubplebbitAuthor } from "../../../../../publications/comment/types.js";
 
 // e.g. secondsToGoBack = 60 would return the timestamp 1 minute ago
 const getTimestampSecondsAgo = (secondsToGoBack: number) => Math.round(Date.now() / 1000) - secondsToGoBack;
