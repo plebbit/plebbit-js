@@ -209,9 +209,7 @@ class PlebbitWsServer extends EventEmitter {
     async getComment(params: any): Promise<CommentIpfsType> {
         const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const comment = await this.plebbit.getComment(cid);
-        const commentIpfs = comment._rawCommentIpfs;
-        if (!commentIpfs) throw Error("Failed to get comment._rawCommentIpfs");
-        return commentIpfs;
+        return comment.toJSONIpfs();
     }
 
     async getSubplebbitPage(params: any) {
@@ -500,9 +498,7 @@ class PlebbitWsServer extends EventEmitter {
                 if (!commentUpdateRecord) throw Error("comment._rawCommentUpdate should be available if updatedAt is defined");
                 sendEvent("update", commentUpdateRecord);
             } else {
-                const commentIpfsRecord = comment._rawCommentIpfs;
-                if (!commentIpfsRecord)
-                    throw Error("comment._rawCommentIpfs should be available at the first update if updatedAt is not defined");
+                const commentIpfsRecord = comment.toJSONIpfs();
                 sendEvent("update", commentIpfsRecord);
             }
         });
