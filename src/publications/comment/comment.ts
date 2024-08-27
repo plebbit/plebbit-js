@@ -259,6 +259,7 @@ export class Comment extends Publication {
     }
 
     protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
+        const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
         if (!props) throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
         this._setOriginalFieldBeforeModifying(); // because we will be updating author
@@ -269,9 +270,9 @@ export class Comment extends Publication {
             removeUndefinedValuesRecursively({ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() })
         );
         const calculatedIpfsHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
-        if (calculatedIpfsHash !== props.cid)
-            throw Error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid. This is a critical error`);
-        this._initIpfsProps(commentIpfsRecreated);
+        if (calculatedIpfsHash !== props.cid) {
+            log.error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid`);
+        } else this._initIpfsProps(commentIpfsRecreated);
         this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
     }
 
