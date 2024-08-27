@@ -81,7 +81,8 @@ describe("Editing comment.content", async () => {
             expect(commentJson.content.startsWith("edit test")).to.be.true;
             expect(commentJson.edit.content.startsWith("edit test")).to.be.true;
             expect(commentJson.original.content).to.equal(originalContent);
-            expect(commentJson.reason.startsWith("To test editing content")).to.be.true;
+            expect(commentJson.edit.reason.startsWith("To test editing content")).to.be.true;
+            expect(commentJson.reason).to.be.undefined;
         }
     });
 
@@ -96,7 +97,8 @@ describe("Editing comment.content", async () => {
             expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.original.content).to.equal(originalContent);
-            expect(editedCommentInPage.reason.startsWith("To test editing content")).to.be.true;
+            expect(editedCommentInPage.reason).to.be.undefined;
+            expect(editedCommentInPage.edit.reason.startsWith("To test editing content")).to.be.true;
         }
     });
 
@@ -108,12 +110,14 @@ describe("Editing comment.content", async () => {
         for (const sub of [sub1, sub2, sub3]) {
             const subJson = JSON.parse(JSON.stringify(sub));
             const editedCommentInPage = subJson.posts.pages.hot.comments.find((comment) =>
-                comment.reason?.startsWith("To test editing content")
+                comment.edit?.reason?.startsWith("To test editing content")
             );
             expect(editedCommentInPage).to.be.a("object");
             expect(editedCommentInPage.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.edit.content.startsWith("edit test")).to.be.true;
             expect(editedCommentInPage.original.content.startsWith("original content")).to.be.true;
+            expect(editedCommentInPage.reason).to.be.undefined;
+            expect(editedCommentInPage.edit.reason.startsWith("To test editing content")).to.be.true;
         }
     });
 
