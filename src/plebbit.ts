@@ -63,7 +63,7 @@ import type {
     LocalCommentOptions
 } from "./publications/comment/types.js";
 import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
-import { AuthorAddressSchema, AuthorPubsubSchema, CidStringSchema, SubplebbitAddressSchema } from "./schema/schema.js";
+import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
@@ -279,9 +279,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign> {
         const finalOptions = remeda.clone(pubOptions);
         if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
-        if (finalOptions.author && "shortAddress" in finalOptions.author) {
-            log("Removed author.shortAddress before creating the signature");
-            delete finalOptions["author"]["shortAddress"];
+        if (finalOptions.author) {
+            // make sure reserved fields like subplebbit, shortAddress are removed
+            //@ts-expect-error
+            finalOptions.author = remeda.omit(finalOptions.author, AuthorReservedFields);
         }
         const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
         const filledSigner = await this.createSigner(finalOptions.signer);
