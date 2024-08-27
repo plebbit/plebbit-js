@@ -171,5 +171,15 @@ getRemotePlebbitConfigs().map((config) => {
             const commentLoaded = await plebbit.getComment(comment.cid);
             expect(commentLoaded.author.shortAddress).to.be.a("string").and.not.equal("12345");
         });
+
+        it(`Can create a new comment with author.subplebbit and publish it`, async () => {
+            // it should delete author.sublebbit before publishing however
+            const comment = await generateMockPost(subplebbitAddress, plebbit, false, { author: { subplebbit: { postScore: 100 } } });
+            expect(comment.author.subplebbit).to.be.undefined;
+            await publishWithExpectedResult(comment, true);
+
+            const commentLoaded = await plebbit.getComment(comment.cid);
+            expect(commentLoaded.author.subplebbit).to.be.undefined;
+        });
     });
 });
