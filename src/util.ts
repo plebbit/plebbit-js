@@ -5,6 +5,7 @@ import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import extName from "ext-name";
 import { CID } from "kubo-rpc-client";
 import * as Digest from "multiformats/hashes/digest";
+import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { IpfsClient } from "./types.js";
