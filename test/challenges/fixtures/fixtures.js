@@ -236,7 +236,7 @@ const excludeFriendlySubKarmaChallegeSubplebbit = {
                         subplebbit: {
                             addresses: ["friendly-sub.eth", "friendly-sub2.eth"],
                             postScore: 100,
-                            postReply: 100,
+                            replyScore: 100,
                             maxCommentCids: 3
                         }
                     }
@@ -517,7 +517,7 @@ results[excludeModsChallegeSubplebbit.title] = {
 
 // add mock plebbit to add the mock subplebbit instances
 for (const subplebbit of subplebbits) {
-    subplebbit.plebbit = createPlebbit();
+    subplebbit._plebbit = createPlebbit();
 }
 
 export { Plebbit, subplebbits, authors, subplebbitAuthors, challengeCommentCids, challengeAnswers, results };

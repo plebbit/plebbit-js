@@ -6,7 +6,23 @@ import {
     getSubplebbitChallengeFromSubplebbitChallengeSettings
 } from "../../dist/node/runtime/node/subplebbit/challenges/index";
 import { expect } from "chai";
+import * as remeda from "remeda";
 import { Plebbit, subplebbits, authors, subplebbitAuthors, challengeAnswers, challengeCommentCids, results } from "./fixtures/fixtures";
+
+import validChallengeRequestFixture from "../fixtures/signatures/challenges/valid_challenge_request.json" assert { type: "json" };
+import validCommentIpfsFixture from "../fixtures/signatures/comment/commentUpdate/valid_comment_ipfs.json" assert { type: "json" };
+
+const parsePubsubMsgFixture = (json) => {
+    // Convert stringified pubsub msg with buffers to regular pubsub msg with uint8Array for buffers
+    const isBuffer = (obj) => Object.keys(obj).every((key) => /\d/.test(key));
+    const parsed = {};
+    for (const key of Object.keys(json)) {
+        if (remeda.isPlainObject(json[key]) && isBuffer(json[key])) parsed[key] = Uint8Array.from(Object.values(json[key]));
+        else if (remeda.isPlainObject(json[key])) parsed[key] = parsePubsubMsgFixture(json[key]);
+        else parsed[key] = json[key];
+    }
+    return parsed;
+};
 
 // sometimes use random addresses because the rate limiter
 // is based on author addresses and doesn't reset between tests
@@ -45,8 +61,13 @@ describe("getPendingChallengesOrChallengeVerification", () => {
         it(subplebbit.title, async () => {
             for (const author of authors) {
                 // mock challenge request with mock publication
+                const requestFixture = parsePubsubMsgFixture(validChallengeRequestFixture);
                 const challengeRequestMessage = {
-                    publication: { author: { ...author, subplebbit: subplebbitAuthors[author.address]?.[subplebbit.title] } },
+                    ...requestFixture,
+                    publication: {
+                        ...validCommentIpfsFixture,
+                        author: { ...author, subplebbit: subplebbitAuthors[author.address]?.[subplebbit.title] }
+                    },
                     // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
                     challengeCommentCids: challengeCommentCids[author.address],
                     // define mock challenge answers in challenge request
@@ -111,7 +132,7 @@ describe("getChallengeVerification", () => {
     };
 
     before(async () => {
-        subplebbit.plebbit = await Plebbit();
+        subplebbit._plebbit = await Plebbit();
     });
 
     it("only 50% of challenges must succeed", async () => {
@@ -159,7 +180,7 @@ describe("getChallengeVerification", () => {
                     }
                 ]
             },
-            plebbit: await Plebbit()
+            _plebbit: await Plebbit()
         };
 
         // correct preanswered
@@ -221,7 +242,7 @@ describe("getChallengeVerification", () => {
                     }
                 ]
             },
-            plebbit: await Plebbit()
+            _plebbit: await Plebbit()
         };
 
         const challengeRequestMessage = {
@@ -257,7 +278,7 @@ describe("getChallengeVerification", () => {
                     }
                 ]
             },
-            plebbit: await Plebbit()
+            _plebbit: await Plebbit()
         };
 
         const challengeRequestMessage = {
