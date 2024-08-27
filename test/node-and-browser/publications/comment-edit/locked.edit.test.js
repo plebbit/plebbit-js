@@ -42,7 +42,7 @@ describe(`Locking posts`, async () => {
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
             locked: true,
-            signer: postToBeLocked._signer
+            signer: postToBeLocked.signer
         });
         await publishWithExpectedResult(lockedEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });
@@ -113,7 +113,7 @@ describe(`Locking posts`, async () => {
             commentCid: modPost.cid,
             locked: true,
             reason: "To lock a mod post",
-            signer: modPost._signer
+            signer: modPost.signer
         });
         await publishWithExpectedResult(lockedEdit, true);
     });

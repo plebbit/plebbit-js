@@ -44,7 +44,7 @@ describe(`Banning authors`, async () => {
 
     it(`Banned author can't publish`, async () => {
         const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
-            signer: commentToBeBanned._signer
+            signer: commentToBeBanned.signer
         });
         await publishWithExpectedResult(newCommentByBannedAuthor, false, messages.ERR_AUTHOR_IS_BANNED);
     });
@@ -70,7 +70,7 @@ describe(`Banning authors`, async () => {
         await new Promise((resolve) => setTimeout(resolve, (authorBanExpiresAt - timestamp()) * 1000.0 + 1000));
         expect(timestamp()).to.be.greaterThan(authorBanExpiresAt);
         const newCommentByBannedAuthor = await generateMockPost(commentToBeBanned.subplebbitAddress, plebbit, false, {
-            signer: commentToBeBanned._signer
+            signer: commentToBeBanned.signer
         });
         await publishWithExpectedResult(newCommentByBannedAuthor, true);
     });

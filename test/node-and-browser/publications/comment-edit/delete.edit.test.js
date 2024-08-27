@@ -64,7 +64,7 @@ describe("Deleting a post", async () => {
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
             deleted: true,
-            signer: postToDelete._signer,
+            signer: postToDelete.signer,
             reason: "To test delete for author"
         });
         await publishWithExpectedResult(deleteEdit, true);
@@ -124,7 +124,7 @@ describe("Deleting a post", async () => {
             subplebbitAddress: modPostToDelete.subplebbitAddress,
             commentCid: modPostToDelete.cid,
             deleted: true,
-            signer: modPostToDelete._signer,
+            signer: modPostToDelete.signer,
             reason: "For mod to test deleting their own post"
         });
         await publishWithExpectedResult(deleteEdit, true);
@@ -146,7 +146,7 @@ describe("Deleting a post", async () => {
             subplebbitAddress: postToDelete.subplebbitAddress,
             commentCid: postToDelete.cid,
             deleted: false,
-            signer: postToDelete._signer,
+            signer: postToDelete.signer,
             reason: "For author to test undelete their own post"
         });
         await publishWithExpectedResult(undeleteEdit, true);
@@ -167,7 +167,7 @@ describe("Deleting a post", async () => {
             subplebbitAddress: modPostToDelete.subplebbitAddress,
             commentCid: modPostToDelete.cid,
             deleted: false,
-            signer: modPostToDelete._signer,
+            signer: modPostToDelete.signer,
             reason: "For mod to test undeleting their own post"
         });
         await publishWithExpectedResult(undeleteEdit, true);
@@ -205,7 +205,7 @@ describe("Deleting a reply", async () => {
             subplebbitAddress: replyToDelete.subplebbitAddress,
             commentCid: replyToDelete.cid,
             deleted: true,
-            signer: replyToDelete._signer
+            signer: replyToDelete.signer
         });
         await publishWithExpectedResult(deleteEdit, true);
     });

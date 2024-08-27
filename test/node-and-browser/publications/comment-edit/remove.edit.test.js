@@ -98,7 +98,7 @@ describe(`Removing post`, async () => {
             commentCid: postToBeRemoved.cid,
             reason: "To remove a post" + Date.now(),
             removed: true,
-            signer: postToBeRemoved._signer
+            signer: postToBeRemoved.signer
         });
         await publishWithExpectedResult(removeEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });
@@ -255,7 +255,7 @@ describe(`Removing reply`, async () => {
             commentCid: replyToBeRemoved.cid,
             reason: "To unremove a reply by author" + Date.now(),
             removed: false,
-            signer: replyToBeRemoved._signer
+            signer: replyToBeRemoved.signer
         });
         await publishWithExpectedResult(unremoveEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });

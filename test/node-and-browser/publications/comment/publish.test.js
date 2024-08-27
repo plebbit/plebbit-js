@@ -171,7 +171,7 @@ describe("publishing comments", async () => {
     it.skip(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.author.displayName = null;
-        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post._signer, plebbit);
+        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
         await publishWithExpectedResult(post, true);
         expect(post.author.displayName).to.be.null;
         await waitTillCommentIsInParentPages(post, plebbit);
@@ -416,7 +416,7 @@ describe(`Publishing replies`, async () => {
         it(`Can publish comment with depth = ${depth}`, async () => {
             const parentComment = parents[depth - 1];
 
-            const reply = await publishRandomReply(parentComment, plebbit, { signer: post._signer }, false);
+            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
             expect(reply.depth).to.be.equal(depth);
 
             await waitTillCommentIsInParentPages(
