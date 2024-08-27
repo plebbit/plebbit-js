@@ -6,7 +6,8 @@ import {
     jsonifyCommentAndRemoveInstanceProps,
     loadAllPages,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    publishWithExpectedResult
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -159,6 +160,16 @@ getRemotePlebbitConfigs().map((config) => {
 
             const page = await postClone.replies.getPage(pageCid);
             expect(page.comments.length).to.be.equal(1);
+        });
+
+        it(`Can create a new comment with author.shortAddress and publish it`, async () => {
+            // it should delete author.shortAddress before publishing however
+            const comment = await generateMockPost(subplebbitAddress, plebbit, false, { author: { shortAddress: "12345" } });
+            expect(comment.author.shortAddress).to.be.a("string").and.not.equal("12345");
+            await publishWithExpectedResult(comment, true);
+
+            const commentLoaded = await plebbit.getComment(comment.cid);
+            expect(commentLoaded.author.shortAddress).to.be.a("string").and.not.equal("12345");
         });
     });
 });
