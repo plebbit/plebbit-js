@@ -82,7 +82,7 @@ export const ChallengeAnswerStringSchema = z.string(); // TODO add validation fo
 export const ChallengeAnswersSchema = ChallengeAnswerStringSchema.array().nonempty(); // for example ["1+1=2", "3+3=6"]
 export const CreatePublicationUserOptionsSchema = z.object({
     signer: CreateSignerSchema,
-    author: AuthorPubsubSchema.partial().optional(),
+    author: AuthorPubsubSchema.partial().passthrough().optional(),
     subplebbitAddress: SubplebbitAddressSchema,
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
