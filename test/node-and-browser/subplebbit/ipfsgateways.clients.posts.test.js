@@ -1,4 +1,4 @@
-import { describeSkipIfRpc, mockGatewayPlebbit } from "../../../dist/node/test/test-util";
+import { describeSkipIfRpc, mockGatewayPlebbit } from "../../../dist/node/test/test-util.js";
 
 import signers from "../../fixtures/signers.js";
 

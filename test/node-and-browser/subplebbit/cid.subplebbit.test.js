@@ -4,10 +4,10 @@ import {
     mockRemotePlebbitIpfsOnly,
     mockRpcRemotePlebbit,
     resolveWhenConditionIsTrue
-} from "../../../dist/node/test/test-util";
+} from "../../../dist/node/test/test-util.js";
 import chai from "chai";
 
-import signers from "../../fixtures/signers";
+import signers from "../../fixtures/signers.js";
 
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);

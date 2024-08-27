@@ -1,5 +1,5 @@
-import { describeIfRpc, mockPlebbit } from "../../../dist/node/test/test-util";
-import signers from "../../fixtures/signers";
+import { describeIfRpc, mockPlebbit } from "../../../dist/node/test/test-util.js";
+import signers from "../../fixtures/signers.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);

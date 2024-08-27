@@ -9,10 +9,10 @@ import {
     PlebbitTimestampSchema,
     PublicationBaseBeforeSigning,
     SignerWithAddressPublicKeySchema
-} from "../../schema/schema";
+} from "../../schema/schema.js";
 import * as remeda from "remeda";
-import { VoteSignedPropertyNamesUnion } from "../../signer/types";
-import { keysToOmitFromSignedPropertyNames } from "../../signer/constants";
+import type { VoteSignedPropertyNamesUnion } from "../../signer/types";
+import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
 export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
     commentCid: CidStringSchema,

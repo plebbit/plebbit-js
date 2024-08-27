@@ -1,4 +1,4 @@
-import { mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util";
+import { mockPlebbit, resolveWhenConditionIsTrue } from "../../../dist/node/test/test-util.js";
 import chai from "chai";
 
 import chaiAsPromised from "chai-as-promised";

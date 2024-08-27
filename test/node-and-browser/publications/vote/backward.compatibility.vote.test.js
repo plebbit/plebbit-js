@@ -6,7 +6,7 @@ import {
     publishRandomPost,
     publishWithExpectedResult,
     setExtraPropOnVoteAndSign
-} from "../../../../dist/node/test/test-util";
+} from "../../../../dist/node/test/test-util.js";
 
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";

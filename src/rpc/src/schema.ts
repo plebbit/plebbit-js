@@ -1,15 +1,15 @@
 import { z } from "zod";
 
-import { PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "../../schema";
-import { Server as HTTPServer } from "http";
-import { Server as HTTPSServer } from "https";
-import { ChallengeFileSchema } from "../../subplebbit/schema";
+import { PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "../../schema.js";
+import type { Server as HTTPServer } from "http";
+import type { Server as HTTPSServer } from "https";
+import { ChallengeFileSchema } from "../../subplebbit/schema.js";
 
 // Setting up WS
 
 const WsServerClassOptions = z.object({
     port: z.number().int().positive().optional(),
-    server: z.custom<HTTPServer | HTTPSServer>((data) => data instanceof HTTPServer || data instanceof HTTPServer).optional()
+    server: z.custom<HTTPServer | HTTPSServer>().optional()
 });
 
 export const CreatePlebbitWsServerOptionsSchema = z

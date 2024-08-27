@@ -8,7 +8,7 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
-import { describeSkipIfRpc, publishRandomPost, mockPlebbit, mockGatewayPlebbit } from "../../../dist/node/test/test-util";
+import { describeSkipIfRpc, publishRandomPost, mockPlebbit, mockGatewayPlebbit } from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js

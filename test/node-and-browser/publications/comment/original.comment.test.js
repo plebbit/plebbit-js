@@ -1,7 +1,7 @@
 import { expect } from "chai";
 
-import { getRemotePlebbitConfigs, publishRandomPost, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util";
-import signers from "../../../fixtures/signers";
+import { getRemotePlebbitConfigs, publishRandomPost, resolveWhenConditionIsTrue } from "../../../../dist/node/test/test-util.js";
+import signers from "../../../fixtures/signers.js";
 
 getRemotePlebbitConfigs().map((config) => {
     describe(`comment.original - ${config.name}`, async () => {

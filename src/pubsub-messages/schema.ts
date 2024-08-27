@@ -1,14 +1,20 @@
 import { z } from "zod";
-import { ChallengeAnswersSchema, CidStringSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema";
-import { VotePubsubMessageSchema } from "../publications/vote/schema";
-import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema";
+import {
+    ChallengeAnswersSchema,
+    CidStringSchema,
+    PlebbitTimestampSchema,
+    ProtocolVersionSchema,
+    UserAgentSchema
+} from "../schema/schema.js";
+import { VotePubsubMessageSchema } from "../publications/vote/schema.js";
+import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema.js";
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
     AuthorWithCommentUpdateSchema,
     CommentPubsubMessageSchema,
     CreateCommentOptionsSchema
-} from "../publications/comment/schema";
-import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema";
+} from "../publications/comment/schema.js";
+import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
 
 const AcceptedChallengeTypeSchema = z.string().min(1);

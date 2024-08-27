@@ -4,7 +4,6 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-import { messages } from "../../dist/node/errors.js";
 import { mockRemotePlebbit, describeSkipIfRpc } from "../../dist/node/test/test-util.js";
 
 describeSkipIfRpc("Test util functions", async () => {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
-import { parseIpfsRawOptionToIpfsOptions } from "./util";
+import { parseIpfsRawOptionToIpfsOptions } from "./util.js";
 
 // This file will have misc schemas, as well as Plebbit class schema
 

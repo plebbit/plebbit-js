@@ -18,6 +18,10 @@ export const listSubplebbits = () => {
     throw Error("listSubplebbits should not be called in browser");
 };
 
+export const importSignerIntoIpfsNode = () => {
+    throw Error("importSignerIntoIpfsNode should not be called in browser");
+};
+
 export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
     const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
     if (storedIpfsClients[cacheKey]) return storedIpfsClients[cacheKey];
