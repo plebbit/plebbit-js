@@ -5,7 +5,8 @@ import {
     mockRemotePlebbit,
     mockGatewayPlebbit,
     mockPlebbit,
-    addStringToIpfs
+    addStringToIpfs,
+    getRemotePlebbitConfigs
 } from "../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
 import { expect } from "chai";
@@ -146,73 +147,75 @@ const testRepliesSort = async (parentComments, replySortName, plebbit) => {
     }
 };
 
-describe("Test pages sorting", async () => {
-    let plebbit, newPost;
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-        newPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true); // After publishing this post the subplebbit should have all pages
-        subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-    });
-
-    describe("subplebbit.posts", async () => {
-        it(`Stringified subplebbit.posts still have all props`, async () => {
-            const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot;
-            for (const post of stringifedPosts.comments) {
-                testCommentFields(post);
-                if (post.replies) for (const reply of post.replies.pages.topAll.comments) testCommentFields(reply);
-            }
-        });
-        it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
-            for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
-                const postInPage = await findCommentInPage(newPost.cid, pageCid, subplebbit.posts);
-                expect(postInPage).to.exist;
-            }
-        });
-        it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
-        it(`All pageCids exists`, () => {
-            expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
-        });
-        Object.keys(POSTS_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages are sorted correctly`, async () => await testPostsSort(sortName))
-        );
-        it(`posts are the same within all pages`, async () => {
-            // We need to separate pages by timeframe
-
-            const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
-
-            for (const pagesGrouped of Object.values(pagesByTimeframe)) {
-                const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);
-                expect(pages.length).to.be.greaterThanOrEqual(2);
-                expect(pages.map((page) => page.length).every((val, i, arr) => val === arr[0])).to.be.true; // All pages are expected to have the same length
-
-                for (const comment of pages[0]) {
-                    const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
-                    expect(otherPageComments.length).to.equal(pages.length);
-                    for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
-                }
-            }
-        });
-    });
-
-    describe("comment.replies", async () => {
-        let posts;
+getRemotePlebbitConfigs().map((config) => {
+    describe(`Test pages sorting - ${config.name}`, async () => {
+        let plebbit, newPost;
         before(async () => {
-            posts = (await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)).comments;
-            expect(posts.length).to.be.greaterThan(0);
+            plebbit = await config.plebbitInstancePromise();
+            newPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true); // After publishing this post the subplebbit should have all pages
+            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 
-        it(`Stringified comment.replies still have all props`, async () => {
-            for (const post of posts) {
-                if (!post.replies) continue;
-                const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
-                for (const reply of stringifiedReplies) testCommentFields(reply);
-            }
+        describe("subplebbit.posts", async () => {
+            it(`Stringified subplebbit.posts still have all props`, async () => {
+                const stringifedPosts = JSON.parse(JSON.stringify(subplebbit)).posts.pages.hot;
+                for (const post of stringifedPosts.comments) {
+                    testCommentFields(post);
+                    if (post.replies) for (const reply of post.replies.pages.topAll.comments) testCommentFields(reply);
+                }
+            });
+            it(`Newly published post appears in all subplebbit.posts.pageCids`, async () => {
+                for (const pageCid of Object.values(subplebbit.posts.pageCids)) {
+                    const postInPage = await findCommentInPage(newPost.cid, pageCid, subplebbit.posts);
+                    expect(postInPage).to.exist;
+                }
+            });
+            it(`Hot page is pre-loaded`, () => expect(Object.keys(subplebbit.posts.pages)).to.deep.equal(["hot"]));
+            it(`All pageCids exists`, () => {
+                expect(Object.keys(subplebbit.posts.pageCids).sort()).to.deep.equal(Object.keys(POSTS_SORT_TYPES).sort());
+            });
+            Object.keys(POSTS_SORT_TYPES).map((sortName) =>
+                it(`${sortName} pages are sorted correctly`, async () => await testPostsSort(sortName))
+            );
+            it(`posts are the same within all pages`, async () => {
+                // We need to separate pages by timeframe
+
+                const pagesByTimeframe = remeda.groupBy(Object.entries(POSTS_SORT_TYPES), ([_, sort]) => sort.timeframe);
+
+                for (const pagesGrouped of Object.values(pagesByTimeframe)) {
+                    const pages = pagesGrouped.map(([sortName, _]) => subCommentPages[sortName]);
+                    expect(pages.length).to.be.greaterThanOrEqual(2);
+                    expect(pages.map((page) => page.length).every((val, i, arr) => val === arr[0])).to.be.true; // All pages are expected to have the same length
+
+                    for (const comment of pages[0]) {
+                        const otherPageComments = pages.map((page) => page.find((c) => c.cid === comment.cid));
+                        expect(otherPageComments.length).to.equal(pages.length);
+                        for (const otherPageComment of otherPageComments) expect(comment).to.deep.equal(otherPageComment);
+                    }
+                }
+            });
         });
 
-        Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
-            it(`${sortName} pages under a comment are sorted correctly`, async () =>
-                await testRepliesSort(posts, sortName, subplebbit._plebbit))
-        );
+        describe("comment.replies", async () => {
+            let posts;
+            before(async () => {
+                posts = (await subplebbit.posts.getPage(subplebbit.posts.pageCids.new)).comments;
+                expect(posts.length).to.be.greaterThan(0);
+            });
+
+            it(`Stringified comment.replies still have all props`, async () => {
+                for (const post of posts) {
+                    if (!post.replies) continue;
+                    const stringifiedReplies = JSON.parse(JSON.stringify(post.replies)).pages.topAll.comments;
+                    for (const reply of stringifiedReplies) testCommentFields(reply);
+                }
+            });
+
+            Object.keys(REPLIES_SORT_TYPES).map((sortName) =>
+                it(`${sortName} pages under a comment are sorted correctly`, async () =>
+                    await testRepliesSort(posts, sortName, subplebbit._plebbit))
+            );
+        });
     });
 });
 
