@@ -33,7 +33,6 @@ import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdateType } from "../publications/comment/types.js";
 import type { PageIpfs } from "../pages/types.js";
 import {
-    parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
     parseCommentUpdateSchemaWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails,

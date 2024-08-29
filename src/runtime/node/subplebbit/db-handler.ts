@@ -337,6 +337,7 @@ export class DbHandler {
         }
 
         if (needToMigrate) {
+            if (currentDbVersion <= 14) await this._purgeCommentsWithInvalidSchema();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
             // we need to remove posts because it may include old incompatible comments
@@ -364,7 +365,6 @@ export class DbHandler {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords: any[] = await this._knex(srcTable).select("*");
-        const commentsToMoveFromCommentsTable: CommentsTableRow[] = []; // They're moved away because they may have signature or schema problem, so we don't wanna include them in pages
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
@@ -392,32 +392,6 @@ export class DbHandler {
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
                     srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
                 }
-
-                if (currentDbVersion <= 14 && srcTable === TABLES.COMMENTS) {
-                    // Need to move records with invalid schema out of the table
-                    try {
-                        CommentIpfsSchema.passthrough().parse(srcRecord);
-                    } catch (e) {
-                        // Has an invalid Comment Ipfs schema, should be moved somewhere else
-                        const commentRecord = <CommentsTableRow>srcRecord;
-                        log.error(
-                            `Comment (${commentRecord.cid}) in DB has an invalid schema, will be moved to key ${STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]} in keyv`
-                        );
-                        commentsToMoveFromCommentsTable.push(commentRecord);
-                    }
-                }
-            }
-
-            if (commentsToMoveFromCommentsTable.length > 0) {
-                const existingComments = await this.keyvGet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA]);
-                const newValue = Array.isArray(existingComments)
-                    ? [...existingComments, ...commentsToMoveFromCommentsTable]
-                    : commentsToMoveFromCommentsTable;
-                await this.keyvSet(STORAGE_KEYS[STORAGE_KEYS.COMMENTS_WITH_INVALID_SCHEMA], newValue);
-
-                const cidsMapped = newValue.map((comment) => comment.cid);
-
-                srcRecordFiltered = srcRecordFiltered.filter((commentRecord) => !cidsMapped.includes(commentRecord.cid));
             }
 
             // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
@@ -425,6 +399,21 @@ export class DbHandler {
             for (const srcRecord of srcRecordFiltered) await this._knex(dstTable).insert(srcRecord);
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
+    }
+
+    private async _purgeCommentsWithInvalidSchema() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentsWithInvalidSchema");
+        for (const commentRecord of await this.queryAllCommentsOrderedByIdAsc()) {
+            // Need to purge records with invalid schema out of the table
+            try {
+                CommentIpfsSchema.strip().parse(commentRecord);
+            } catch (e) {
+                log.error(
+                    `Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged along with comment update, votes and children comments`
+                );
+                await this._deleteComment(commentRecord.cid);
+            }
+        }
     }
 
     async deleteVote(
@@ -915,20 +904,19 @@ export class DbHandler {
     async _deleteComment(cid: string) {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
 
-        await this.initDestroyedConnection();
         const commentToBeDeleted = await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).first();
         if (!commentToBeDeleted) throw Error("Comment to be deleted does not exist");
 
         await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
         await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid: cid }).del();
+
+        if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
+            await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();
 
         const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: commentToBeDeleted.cid });
         for (const child of children) await this._deleteComment(child.cid);
 
-        await this._knex.raw("PRAGMA foreign_keys = 0");
-        await this._baseTransaction()(TABLES.COMMENTS).where({ cid: commentToBeDeleted.cid }).del(); // Will throw if we do not disable foreign_keys constraint
-        await this._knex.raw("PRAGMA foreign_keys = 1");
+        await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
     }
     async changeDbFilename(oldDbName: string, newDbName: string) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
