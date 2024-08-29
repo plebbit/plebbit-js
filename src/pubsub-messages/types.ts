@@ -8,13 +8,9 @@ import {
     ChallengeMessageSchema,
     ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
-    DecryptedChallengeAnswerMessageSchema,
     DecryptedChallengeAnswerSchema,
-    DecryptedChallengeMessageSchema,
-    DecryptedChallengeRequestMessageSchema,
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
-    DecryptedChallengeVerificationMessageSchema,
     DecryptedChallengeVerificationSchema
 } from "./schema";
 
@@ -26,7 +22,7 @@ export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessage
 
 export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
 
-export type DecryptedChallengeRequestMessageType = z.infer<typeof DecryptedChallengeRequestMessageSchema>;
+export type DecryptedChallengeRequestMessageType = DecryptedChallengeRequest & ChallengeRequestMessageType;
 
 // Challenge message here
 
@@ -36,14 +32,14 @@ export type ChallengeMessageType = z.infer<typeof ChallengeMessageSchema>;
 
 export type DecryptedChallenge = z.infer<typeof DecryptedChallengeSchema>;
 
-export type DecryptedChallengeMessageType = z.infer<typeof DecryptedChallengeMessageSchema>;
+export type DecryptedChallengeMessageType = ChallengeMessageType & DecryptedChallenge;
 
 // Challenge answer here
 export type ChallengeAnswerMessageType = z.infer<typeof ChallengeAnswerMessageSchema>;
 
 export type DecryptedChallengeAnswer = z.infer<typeof DecryptedChallengeAnswerSchema>;
 
-export type DecryptedChallengeAnswerMessageType = z.infer<typeof DecryptedChallengeAnswerMessageSchema>;
+export type DecryptedChallengeAnswerMessageType = ChallengeAnswerMessageType & DecryptedChallengeAnswer;
 
 // challenge verification
 
@@ -51,7 +47,7 @@ export type ChallengeVerificationMessageType = z.infer<typeof ChallengeVerificat
 
 export type DecryptedChallengeVerification = z.infer<typeof DecryptedChallengeVerificationSchema>;
 
-export type DecryptedChallengeVerificationMessageType = z.infer<typeof DecryptedChallengeVerificationMessageSchema>;
+export type DecryptedChallengeVerificationMessageType = ChallengeVerificationMessageType & DecryptedChallengeVerification;
 
 // Challenge verification native types
 

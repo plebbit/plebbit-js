@@ -71,8 +71,6 @@ export const DecryptedChallengeRequestSchema = z.object({
     challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 });
 
-export const DecryptedChallengeRequestMessageSchema = ChallengeRequestMessageSchema.merge(DecryptedChallengeRequestSchema);
-
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"])
 );
@@ -96,9 +94,6 @@ export const DecryptedChallengeSchema = z
         challenges: ChallengeInChallengePubsubMessageSchema.array()
     })
     .strict();
-
-export const DecryptedChallengeMessageSchema = ChallengeMessageSchema.merge(DecryptedChallengeSchema).strict();
-
 export const ChallengeMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeMessageSchema.shape, ["signature"]));
 
 // Challenge answer
@@ -113,8 +108,6 @@ export const DecryptedChallengeAnswerSchema = z
         challengeAnswers: ChallengeAnswersSchema // for example ['2+2=4', '1+7=8']
     })
     .strict();
-
-export const DecryptedChallengeAnswerMessageSchema = ChallengeAnswerMessageSchema.merge(DecryptedChallengeAnswerSchema).strict();
 
 export const ChallengeAnswerMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeAnswerMessageSchema.shape, ["signature"]));
 
@@ -132,11 +125,7 @@ export const DecryptedChallengeVerificationSchema = z
     .object({
         publication: CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema.passthrough().optional()
     })
-    .passthrough();
-
-export const DecryptedChallengeVerificationMessageSchema = ChallengeVerificationMessageSchema.merge(
-    DecryptedChallengeVerificationSchema
-).strict();
+    .strict();
 
 export const ChallengeVerificationMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeVerificationMessageSchema.shape, ["signature"])
