@@ -288,17 +288,19 @@ describe(`comment.update() emits errors if needed`, async () => {
         const updatingStates = [];
         createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
 
-        let updateHasBeenEmittedWithCommentUpdate = false;
-        createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
-        await createdComment.update();
-
-        await new Promise((resolve) =>
+        const errorPromise = new Promise((resolve) =>
             createdComment.on("error", (err) => {
                 expect(err.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
                 errorsEmittedCount++;
                 resolve();
             })
         );
+
+        let updateHasBeenEmittedWithCommentUpdate = false;
+        createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
+        await createdComment.update();
+
+        await errorPromise;
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
 
@@ -362,9 +364,8 @@ describe(`comment.update() emits errors if needed`, async () => {
 
         let updateHasBeenEmittedWithCommentUpdate = false;
         createdComment.once("update", () => (updateHasBeenEmittedWithCommentUpdate = Boolean(createdComment.updatedAt)));
-        await createdComment.update();
 
-        await new Promise((resolve) =>
+        const errorPromise = new Promise((resolve) =>
             createdComment.on("error", (err) => {
                 expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS");
                 expect(err.details.gatewayToError[ipfsGatewayUrl].code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
@@ -372,6 +373,9 @@ describe(`comment.update() emits errors if needed`, async () => {
                 resolve();
             })
         );
+        await createdComment.update();
+
+        await errorPromise;
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 4 + 1));
 
