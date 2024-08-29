@@ -1,4 +1,5 @@
 import {
+    getRemotePlebbitConfigs,
     mockGatewayPlebbit,
     mockPlebbit,
     mockRemotePlebbitIpfsOnly,
@@ -15,18 +16,12 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
-const testConfigs = [
-    { name: "Ipfs P2P", plebbitInstance: mockRemotePlebbitIpfsOnly },
-    { name: "Ipfs Gateway", plebbitInstance: mockGatewayPlebbit },
-    { name: "RPC", plebbitInstance: mockRpcRemotePlebbit }
-];
-
-testConfigs.map((config) =>
+getRemotePlebbitConfigs().map((config) =>
     describe(`subplebbit.cid (Remote) - ${config.name}`, async () => {
         let plebbit;
 
         before(async () => {
-            plebbit = await config.plebbitInstance();
+            plebbit = await config.plebbitInstancePromise();
         });
 
         it(`subplebbit.cid is defined after first update event`, async () => {
