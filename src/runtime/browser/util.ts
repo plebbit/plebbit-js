@@ -4,6 +4,7 @@ import { default as browserNativeFunctions } from "./native-functions.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import Logger from "@plebbit/plebbit-logger";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import { throwWithErrorCode } from "../../util.js";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {}; // ipfs api url -> Ipfs Client
 
@@ -18,9 +19,29 @@ export const listSubplebbits = () => {
     throw Error("listSubplebbits should not be called in browser");
 };
 
-export const importSignerIntoIpfsNode = () => {
-    throw Error("importSignerIntoIpfsNode should not be called in browser");
-};
+export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: IpfsClient["_clientOptions"]) {
+    const data = new FormData();
+    if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
+    if (!ipfsKey || ipfsKey.constructor?.name !== "Uint8Array" || ipfsKey.byteLength <= 0)
+        throw Error("ipfsKey needs to be defined before importing key into IPFS node");
+
+    data.append("file", new Blob([ipfsKey]));
+    const nodeUrl = ipfsNode.url;
+    if (!nodeUrl) throw Error(`Can't figure out ipfs node URL from ipfsNode (${JSON.stringify(ipfsNode)}`);
+    const url = `${nodeUrl}/key/import?arg=${ipnsKeyName}&ipns-base=b58mh`;
+    const res = await fetch(url, {
+        method: "POST",
+        body: data,
+        headers: ipfsNode.headers
+    });
+
+    if (res.status !== 200)
+        throwWithErrorCode("ERR_FAILED_TO_IMPORT_IPFS_KEY", { url, status: res.status, statusText: res.statusText, ipnsKeyName });
+    const resJson: { Id: string; Name: string } = await res.json();
+
+    return { id: resJson.Id, name: resJson.Name };
+}
+
 
 export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
     const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));
