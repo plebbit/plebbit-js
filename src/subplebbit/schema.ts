@@ -90,7 +90,6 @@ export const ChallengeOptionInputSchema = z
 
 export const ChallengeResultSchema = z.object({ success: z.literal(true) }).or(z.object({ success: z.literal(false), error: z.string() }));
 
-
 export const ChallengeFromGetChallengeSchema = z
     .object({
         challenge: z.string(), // e.g. '2 + 2'
@@ -204,7 +203,7 @@ export const SubplebbitIpfsSchema = z
 export const SubplebbitSignedPropertyNames = remeda.keys.strict(remeda.omit(SubplebbitIpfsSchema.shape, ["signature"]));
 
 // This is object transmitted by RPC server to RPC client when it's fetching a remote subplebbit
-export const RpcRemoteSubplebbitSchema = z.object({
+export const RpcRemoteSubplebbitUpdateEventResultSchema = z.object({
     subplebbit: SubplebbitIpfsSchema.passthrough(),
     cid: CidStringSchema
 });

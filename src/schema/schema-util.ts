@@ -4,8 +4,8 @@ import { PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../publications/comment/schema.js";
 import type { CommentIpfsType, CommentUpdateType } from "../publications/comment/types.js";
 import { DecryptedChallengeSchema, DecryptedChallengeVerificationSchema } from "../pubsub-messages/schema.js";
-import { RpcRemoteSubplebbitSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
-import type { SubplebbitIpfsType } from "../subplebbit/types.js";
+import { RpcRemoteSubplebbitUpdateEventResultSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
+import type { RpcRemoteSubplebbitUpdateEventResultType, SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { DecryptedChallenge, DecryptedChallengeVerification } from "../pubsub-messages/types.js";
 import { throwWithErrorCode } from "../util.js";
 import { CidStringSchema } from "./schema.js";
@@ -19,74 +19,57 @@ export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     }
 }
 
-export function parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(subJson: any): SubplebbitIpfsType {
-    try {
-        return SubplebbitIpfsSchema.parse(subJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: e, subJson });
-    }
-}
-
-export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(subJson: any): SubplebbitIpfsType {
-    try {
-        return SubplebbitIpfsSchema.passthrough().parse(subJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: e, subJson });
-    }
+export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(subIpfs: any): SubplebbitIpfsType {
+    const parseRes = SubplebbitIpfsSchema.passthrough().safeParse(subIpfs);
+    if (!parseRes.success) throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: parseRes.error, subJson: subIpfs });
+    else return subIpfs;
 }
 
 export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: any): CommentIpfsType {
-    try {
-        return CommentIpfsSchema.passthrough().parse(commentIpfsJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: e, commentIpfsJson });
-    }
+    const parseRes = CommentIpfsSchema.passthrough().safeParse(commentIpfsJson);
+    if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: parseRes.error, commentIpfsJson });
+    else return <CommentIpfsType>commentIpfsJson;
 }
 
 export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(commentUpdateJson: any): CommentUpdateType {
-    try {
-        return CommentUpdateSchema.passthrough().parse(commentUpdateJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: e, commentUpdateJson });
-    }
+    const parseRes = CommentUpdateSchema.passthrough().safeParse(commentUpdateJson);
+    if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: parseRes.error, commentUpdateJson });
+    else return commentUpdateJson;
 }
 
 export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: any): PageIpfs {
-    try {
-        return PageIpfsSchema.parse(pageIpfsJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_PAGE_IPFS_SCHEMA", { zodError: e, pageIpfsJson });
-    }
+    const parseRes = PageIpfsSchema.safeParse(pageIpfsJson);
+    if (!parseRes.success) throw new PlebbitError("ERR_INVALID_PAGE_IPFS_SCHEMA", { zodError: parseRes.error, pageIpfsJson });
+    else return pageIpfsJson;
 }
 
 export function parseDecryptedChallengeWithPlebbitErrorIfItFails(decryptedChallengeJson: any): DecryptedChallenge {
-    try {
-        return DecryptedChallengeSchema.parse(decryptedChallengeJson);
-    } catch (e) {
-        throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: e, decryptedChallengeJson });
-    }
+    const parseRes = DecryptedChallengeSchema.passthrough().safeParse(decryptedChallengeJson);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: parseRes.error, decryptedChallengeJson });
+    else return decryptedChallengeJson;
 }
 
 export function parseDecryptedChallengeVerification(decryptedChallengeVerificationJson: any): DecryptedChallengeVerification {
-    try {
-        return DecryptedChallengeVerificationSchema.parse(decryptedChallengeVerificationJson);
-    } catch (e) {
+    const parseRes = DecryptedChallengeVerificationSchema.passthrough().safeParse(decryptedChallengeVerificationJson);
+    if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
-            zodError: e,
+            zodError: parseRes.error,
             decryptedChallengeVerificationJson
         });
-    }
+    else return decryptedChallengeVerificationJson;
 }
 
-export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(rpcRemoteSubplebbit: any) {
-    try {
-        return RpcRemoteSubplebbitSchema.strip().parse(rpcRemoteSubplebbit);
-    } catch (e) {
+export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(
+    rpcRemoteSubplebbit: RpcRemoteSubplebbitUpdateEventResultType
+) {
+    const parseRes = RpcRemoteSubplebbitUpdateEventResultSchema.strip().safeParse(rpcRemoteSubplebbit);
+    if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_RPC_REMOTE_SUBPLEBBIT_SCHEMA", {
-            zodError: e,
+            zodError: parseRes.error,
             rpcRemoteSubplebbit
         });
-    }
+    else return rpcRemoteSubplebbit;
 }
 
 export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
@@ -100,13 +83,12 @@ export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
     }
 }
 
-export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: any) {
-    try {
-        return RpcCommentUpdateResultSchema.parse(updateResult);
-    } catch (e) {
+export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: any): CommentIpfsType | CommentUpdateType {
+    const parseRes = RpcCommentUpdateResultSchema.safeParse(updateResult);
+    if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
-            zodError: e,
+            zodError: parseRes.error,
             updateResult
         });
-    }
+    else return updateResult;
 }
