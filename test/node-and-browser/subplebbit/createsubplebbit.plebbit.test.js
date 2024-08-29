@@ -108,8 +108,7 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
                 await plebbit.createSubplebbit({});
                 expect.fail("should fail");
             } catch (e) {
-                expect.fail("should complete this test later");
-                debugger;
+                expect(e.name).to.equal("ZodError");
             }
         });
 });
