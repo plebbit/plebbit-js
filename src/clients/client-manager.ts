@@ -10,6 +10,7 @@ import { FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchSubplebbitFro
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
     CommentIpfsGatewayClient,
     GenericIpfsGatewayClient,
@@ -283,14 +284,6 @@ export class ClientsManager extends BaseClientsManager {
         return subRes;
     }
 
-    private _parseCidFromResponse(res: Response) {
-        try {
-            return parseCidStringSchemaWithPlebbitErrorIfItFails(res.headers.get("x-ipfs-roots"));
-        } catch (e) {
-            throw new PlebbitError("ERR_FAILED_TO_PARSE_CID_FROM_IPNS_GATEWAY_RESPONSE", { res });
-        }
-    }
-
     private async _fetchSubplebbitFromGateways(ipnsName: string): Promise<ResultOfFetchingSubplebbit> {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
         const concurrencyLimit = 3;
@@ -323,7 +316,7 @@ export class ClientsManager extends BaseClientsManager {
                             throw errorWithinRecord;
                         } else {
                             gatewayFetches[gateway].subplebbitRecord = subIpfs;
-                            gatewayFetches[gateway].cid = this._parseCidFromResponse(gatewayRes.res);
+                            gatewayFetches[gateway].cid = await calculateIpfsHash(gatewayRes.resText);
                         }
                     })
                 ),
