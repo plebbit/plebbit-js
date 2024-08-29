@@ -20,17 +20,12 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
-// TODO need a separate file for testing extra props in CommentUpdate
-// TODO Need to test re-pinning of a comment ipfs with extra prop
-
 getRemotePlebbitConfigs().map((config) => {
-    let plebbit;
-
-    before(async () => {
-        plebbit = await config.plebbitInstancePromise();
-    });
-
     describe(`Comments with extra props - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
         describe(`Publishing comments with extra props - ${config.name}`, async () => {
             itSkipIfRpc(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
                 // Skip for rpc because it's gonna throw due to invalid signature
@@ -111,6 +106,10 @@ getRemotePlebbitConfigs().map((config) => {
     });
 
     describe(`Comments with extra props in author`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
         describe(`Publishing comment with extra props in author field - ${config.name}`, async () => {
             it(`Publishing with extra prop for author should fail if it's a reserved field`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);

@@ -17,23 +17,19 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 
 getRemotePlebbitConfigs().map((config) => {
-    let plebbit, post, subplebbit;
-
-    before(async () => {
-        plebbit = await config.plebbitInstancePromise();
-        subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
-
-        post = await publishRandomPost(subplebbit.address, plebbit);
-        await post.update();
-        await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
-        await post.stop();
-    });
-
-    // pageIpfs.comments[0].update
-    // PageJson.comments[0]
-
     describe(`Loading CommentUpdate with extra prop - ${config.name}`, async () => {
+        let plebbit, post, subplebbit;
         const extraProps = { extraPropUpdate: "1234" };
+
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
+
+            post = await publishRandomPost(subplebbit.address, plebbit);
+            await post.update();
+            await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
+            await post.stop();
+        });
 
         itSkipIfRpc(`Loading CommentUpdate whose extra props are not in signedPropertyNames should throw`, async () => {
             const invalidCommentUpdate = JSON.parse(JSON.stringify(post._rawCommentUpdate));
