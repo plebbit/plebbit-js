@@ -105,7 +105,7 @@ import type {
     CommentPubsubMessage,
     CommentUpdateType
 } from "../../../publications/comment/types.js";
-import { SubplebbitEditOptionsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
@@ -115,7 +115,7 @@ import {
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema
 } from "../../../pubsub-messages/schema.js";
-import { parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
+import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
     CommentPubsubMessageReservedFields,
@@ -459,23 +459,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _validateSubSchemaAndSignatureBeforePublishing(recordToPublishRaw: SubplebbitIpfsType) {
         const log = Logger("plebbit-js:local-subplebbit:_validateSubSchemaAndSignatureBeforePublishing");
 
-        let parsedRecord: SubplebbitIpfsType;
-        try {
-            parsedRecord = parseSubplebbitIpfsSchemaWithPlebbitErrorIfItFails(recordToPublishRaw);
-        } catch (e) {
-            const error = new PlebbitError("ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA", { invalidRecord: recordToPublishRaw, err: e });
+        const parseRes = SubplebbitIpfsSchema.safeParse(recordToPublishRaw);
+        if (!parseRes.success) {
+            const error = new PlebbitError("ERR_LOCAL_SUBPLEBIT_PRODUCED_INVALID_SCHEMA", {
+                invalidRecord: recordToPublishRaw,
+                err: parseRes.error
+            });
             log.error(`Local subplebbit (${this.address}) produced an invalid SubplebbitIpfs schema`, error);
             this.emit("error", error);
             throw error;
         }
 
         try {
-            const validation = await verifySubplebbit(parsedRecord, false, this._clientsManager, false, false);
+            const validation = await verifySubplebbit(recordToPublishRaw, false, this._clientsManager, false, false);
             if (!validation.valid) {
                 this._cidsToUnPin = [];
                 throwWithErrorCode("ERR_LOCAL_SUBPLEBBIT_PRODUCED_INVALID_SIGNATURE", {
                     validation,
-                    invalidRecord: parsedRecord
+                    invalidRecord: recordToPublishRaw
                 });
             }
         } catch (e) {
@@ -1439,8 +1440,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const unpinnedCommentsFromDb = await this._dbHandler.queryAllCommentsOrderedByIdAsc(); // we assume all comments are unpinned if latest comment is not pinned
 
         for (const unpinnedCommentRow of unpinnedCommentsFromDb) {
+            const baseProps = remeda.pick(unpinnedCommentRow, remeda.keys.strict(CommentIpfsSchema.shape));
             const commentIpfsJson = <CommentIpfsType>{
-                ...CommentIpfsSchema.strip().parse(unpinnedCommentRow),
+                ...baseProps,
                 ...unpinnedCommentRow.extraProps,
                 ipnsName: unpinnedCommentRow["ipnsName"], // Added for backward compatibility
                 postCid: unpinnedCommentRow.depth === 0 ? undefined : unpinnedCommentRow.postCid // need to remove post cid because it's not part of ipfs file if depth is 0

@@ -18,7 +18,7 @@ import {
     SubplebbitRoleSchema,
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema,
-    RpcRemoteSubplebbitSchema
+    RpcRemoteSubplebbitUpdateEventResultSchema
 } from "./schema.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
@@ -51,7 +51,7 @@ export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 
-export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitSchema>;
+export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
 
@@ -84,6 +84,10 @@ export type ChallengeFile = z.infer<typeof ChallengeFileSchema>;
 export type ChallengeFileFactory = z.infer<typeof ChallengeFileFactorySchema>;
 
 export type SubplebbitSettings = z.infer<typeof SubplebbitSettingsSchema>;
+
+// RPC update events
+
+export type RpcRemoteSubplebbitUpdateEventResultType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 
 // Subplebbit json here
 
