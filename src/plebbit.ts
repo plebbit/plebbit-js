@@ -89,6 +89,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     publishInterval: ParsedPlebbitOptions["publishInterval"];
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
+    userAgent: ParsedPlebbitOptions["userAgent"];
 
     // Only Plebbit instance has these props
     clients: {
@@ -137,6 +138,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
         this.noData = this.parsedPlebbitOptions.noData;
         this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
+        this.userAgent = this.parsedPlebbitOptions.userAgent;
 
         if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
 
