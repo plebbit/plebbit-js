@@ -251,6 +251,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._updateInstanceStateWithDbState(); // Load InternalSubplebbit from DB here
         if (!this.signer) throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         await this._updateStartedValue();
+        await this._setSubplebbitIpfsIfNeeded();
 
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
@@ -1730,7 +1731,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.initDestroyedConnection();
-            await this._setSubplebbitIpfsIfNeeded();
 
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
