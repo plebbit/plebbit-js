@@ -1,18 +1,29 @@
 import retry from "retry";
-import { parseRawPages, removeUndefinedValuesRecursively, shortifyCid, throwWithErrorCode } from "../../util.js";
+import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
-import { RepliesPages } from "../../pages.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import Logger from "@plebbit/plebbit-logger";
-import { verifyComment, verifyCommentUpdate } from "../../signer/signatures.js";
+import { verifyCommentPubsubMessage } from "../../signer/signatures.js";
 import assert from "assert";
-import { PlebbitError } from "../../plebbit-error.js";
+import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import * as remeda from "remeda";
+import { RepliesPages } from "../../pages/pages.js";
+import { parseRawPages } from "../../pages/util.js";
+import { CommentIpfsSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 export class Comment extends Publication {
     constructor(plebbit) {
         super(plebbit);
-        this._isUpdating = false;
+        // private
+        this._updateInterval = undefined;
+        this._rawCommentUpdate = undefined;
+        this._rawCommentIpfs = undefined;
+        this._loadingOperation = undefined;
+        this._updateRpcSubscriptionId = undefined;
+        this._pubsubMsgToPublish = undefined;
         this._setUpdatingState("stopped");
         // these functions might get separated from their `this` when used
         this.publish = this.publish.bind(this);
@@ -26,6 +37,7 @@ export class Comment extends Publication {
             pagesIpfs: undefined,
             parentCid: this.cid
         });
+        hideClassPrivateProps(this);
     }
     _initClients() {
         this._clientsManager = new CommentClientsManager(this);
@@ -33,8 +45,8 @@ export class Comment extends Publication {
     }
     _setOriginalFieldBeforeModifying() {
         // Need to make sure we have the props first
-        if (!this.original && this.protocolVersion)
-            this.original = removeUndefinedValuesRecursively(remeda.pick(this.toJSONPubsubMessagePublication(), ["author", "flair", "content", "protocolVersion"]));
+        if (!this.original)
+            this.original = OriginalCommentFieldsBeforeCommentUpdateSchema.parse(removeUndefinedValuesRecursively(this._rawCommentIpfs || this._pubsubMsgToPublish));
     }
     _initLocalProps(props) {
         super._initBaseLocalProps(props);
@@ -48,8 +60,30 @@ export class Comment extends Publication {
         this.timestamp = props.timestamp;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
+        const keysCasted = [...props.signature.signedPropertyNames, "signature"];
+        this._pubsubMsgToPublish = remeda.pick(props, keysCasted);
     }
     _initPubsubMessageProps(props) {
+        this._pubsubMsgToPublish = props;
+        this._initProps(props);
+    }
+    _initIpfsProps(props) {
+        const log = Logger("plebbit-js:comment:_initIpfsProps");
+        // we're loading remote CommentIpfs
+        this._rawCommentIpfs = props;
+        this._initProps(props);
+        const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentIpfsSchema.shape));
+        if (unknownProps.length > 0) {
+            log("Found unknown props on loaded CommentIpfs", unknownProps, "Will set them on the Comment instance");
+            Object.assign(this, remeda.pick(props, unknownProps));
+        }
+    }
+    _initChallengeRequestProps(props) {
+        super._initChallengeRequestChallengeProps(props);
+        this._initPubsubMessageProps(props.publication);
+    }
+    _initProps(props) {
+        // Initializing CommentPubsubMessage
         super._initBaseRemoteProps(props);
         this.content = props.content;
         this.flair = props.flair;
@@ -60,33 +94,33 @@ export class Comment extends Publication {
         this.spoiler = props.spoiler;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
+        // Initializing Comment Ipfs props
+        if ("depth" in props) {
+            this.depth = props.depth;
+            const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
+            if (!postCid)
+                throw Error("There is no way to set comment.postCid");
+            this.postCid = postCid;
+            this.previousCid = props.previousCid;
+            this.thumbnailUrl = props.thumbnailUrl;
+            this.thumbnailUrlHeight = props.thumbnailUrlHeight;
+            this.thumbnailUrlWidth = props.thumbnailUrlWidth;
+        }
     }
-    _initIpfsProps(props) {
-        // we're loading remote CommentIpfs
-        this._setOriginalFieldBeforeModifying();
-        this._initPubsubMessageProps(props);
-        this.depth = props.depth;
-        const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
-        if (!postCid)
-            throw Error("There is no way to set comment.postCid");
-        this.setPostCid(postCid);
-        this.setPreviousCid(props.previousCid);
-        this.thumbnailUrl = props.thumbnailUrl;
-        this.thumbnailUrlHeight = props.thumbnailUrlHeight;
-        this.thumbnailUrlWidth = props.thumbnailUrlWidth;
-    }
-    _initChallengeRequestProps(props) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initPubsubMessageProps(props.publication);
-    }
-    async _initCommentUpdate(props) {
+    _initCommentUpdate(props) {
+        const log = Logger("plebbit-js:comment:_initCommentUpdate");
         if ("depth" in props)
-            // CommentWithCommentUpdateJson
+            // CommentWithinPageJson
             this.original = props.original;
         else {
             // CommentUpdate
             this._setOriginalFieldBeforeModifying();
             this._rawCommentUpdate = props;
+            const unknownProps = remeda.difference(remeda.keys.strict(props), remeda.keys.strict(CommentUpdateSchema.shape));
+            if (unknownProps.length > 0) {
+                log("Found unknown props on CommentUpdate record", unknownProps, "Will set them on Comment instance");
+                Object.assign(this, remeda.pick(props, unknownProps));
+            }
         }
         this.upvoteCount = props.upvoteCount;
         this.downvoteCount = props.downvoteCount;
@@ -113,9 +147,9 @@ export class Comment extends Publication {
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
         this.lastChildCid = props.lastChildCid;
         this.lastReplyTimestamp = props.lastReplyTimestamp;
-        await this._updateRepliesPostsInstance(props.replies);
+        this._updateRepliesPostsInstance(props.replies);
     }
-    async _updateRepliesPostsInstance(newReplies) {
+    _updateRepliesPostsInstance(newReplies) {
         assert(this.cid, "Can't update comment.replies without comment.cid being defined");
         const log = Logger("plebbit-js:comment:_updateRepliesPostsInstanceIfNeeded");
         if (!newReplies) {
@@ -128,8 +162,8 @@ export class Comment extends Publication {
         else {
             const shouldUpdateReplies = !remeda.isDeepEqual(this.replies.pageCids, newReplies.pageCids);
             if (shouldUpdateReplies) {
-                log.trace(`Updating the props of commennt instance (${this.cid}) replies`);
-                const parsedPages = (await parseRawPages(newReplies, this._plebbit));
+                log.trace(`Updating the props of comment instance (${this.cid}) replies`);
+                const parsedPages = (parseRawPages(newReplies));
                 this.replies.updateProps({
                     ...parsedPages,
                     plebbit: this._plebbit,
@@ -140,144 +174,37 @@ export class Comment extends Publication {
             }
         }
     }
-    _updateLocalCommentPropsWithVerification(props) {
+    async _updateLocalCommentPropsWithVerification(props) {
+        const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
         if (!props)
             throw Error("Should not try to update comment instance with empty props");
         this.setCid(props.cid);
-        this._initIpfsProps(props);
+        this._setOriginalFieldBeforeModifying(); // because we will be updating author
+        // TODO we should avoid re-creating
+        const strippedOutProps = remeda.omit(props, ["cid"]); // fields that do not exist on CommentIpfs
+        if (strippedOutProps.depth === 0)
+            delete strippedOutProps["postCid"];
+        const commentIpfsRecreated = (removeUndefinedValuesRecursively({ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() }));
+        const calculatedIpfsHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
+        if (calculatedIpfsHash !== props.cid) {
+            log.error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid`);
+        }
+        else
+            this._initIpfsProps(commentIpfsRecreated);
+        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
     }
     getType() {
         return "comment";
     }
-    toJSON() {
-        const base = this.cid && this.author.subplebbit
-            ? this.toJSONAfterChallengeVerification()
-            : this.cid
-                ? this.toJSONCommentIpfsWithCid()
-                : this.toJSONPubsubMessagePublication();
-        return {
-            ...base,
-            ...(typeof this.updatedAt === "number"
-                ? {
-                    author: this.author.toJSON(),
-                    original: this.original,
-                    upvoteCount: this.upvoteCount,
-                    downvoteCount: this.downvoteCount,
-                    replyCount: this.replyCount,
-                    updatedAt: this.updatedAt,
-                    deleted: this.deleted,
-                    pinned: this.pinned,
-                    locked: this.locked,
-                    removed: this.removed,
-                    reason: this.reason,
-                    edit: this.edit,
-                    protocolVersion: this.protocolVersion,
-                    spoiler: this.spoiler,
-                    flair: this.flair,
-                    replies: this.replies?.toJSON(),
-                    lastChildCid: this.lastChildCid,
-                    lastReplyTimestamp: this.lastReplyTimestamp
-                }
-                : {}),
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            shortCid: this.shortCid,
-            author: this.author.toJSON()
-        };
-    }
-    toJSONCommentIpfsWithCid() {
-        assert(this.cid && this.postCid, "Need to defined cid and postCid before calling toJSONCommentIpfsWithCid");
-        return {
-            ...this.toJSONIpfs(),
-            author: this.author.toJSONIpfs(),
-            cid: this.cid,
-            postCid: this.postCid
-        };
-    }
-    toJSONPagesIpfs(commentUpdate) {
-        return {
-            comment: this.toJSONCommentIpfsWithCid(),
-            update: commentUpdate
-        };
-    }
     toJSONIpfs() {
-        if (typeof this.depth !== "number")
-            throw Error("comment.depth should be defined before calling toJSONIpfs");
-        return {
-            ...this.toJSONPubsubMessagePublication(),
-            previousCid: this.previousCid,
-            postCid: this.depth === 0 ? undefined : this.postCid,
-            depth: this.depth,
-            thumbnailUrl: this.thumbnailUrl,
-            thumbnailUrlWidth: this.thumbnailUrlWidth,
-            thumbnailUrlHeight: this.thumbnailUrlHeight
-        };
+        if (!this._rawCommentIpfs)
+            throw Error("comment._rawCommentIpfs has to be defined before calling toJSONIpfs()");
+        return this._rawCommentIpfs;
     }
     toJSONPubsubMessagePublication() {
-        return {
-            subplebbitAddress: this.subplebbitAddress,
-            timestamp: this.timestamp,
-            signature: this.signature,
-            author: this.author.toJSONIpfs(),
-            protocolVersion: this.protocolVersion,
-            content: this.content,
-            parentCid: this.parentCid,
-            flair: this.flair, // TODO should make sure it's initialized by author, not by mod
-            spoiler: this.spoiler, // TODO should make sure it's initalized by author, not by mod
-            link: this.link,
-            linkWidth: this.linkWidth,
-            linkHeight: this.linkHeight,
-            title: this.title,
-            linkHtmlTagName: this.linkHtmlTagName
-        };
-    }
-    toJSONAfterChallengeVerification() {
-        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONAfterChallengeVerification");
-        return { ...this.toJSONCommentIpfsWithCid(), author: this.author.toJSONAfterChallengeVerification() };
-    }
-    toJSONCommentsTableRowInsert(publicationHash, authorSignerAddress) {
-        assert(this.cid && this.postCid, "cid and postCid should be defined before calling toJSONCommentsTableRowInsert");
-        return {
-            ...this.toJSONIpfs(),
-            postCid: this.postCid,
-            cid: this.cid,
-            authorAddress: this.author.address,
-            challengeRequestPublicationSha256: publicationHash,
-            authorSignerAddress
-        };
-    }
-    toJSONCommentWithinPage() {
-        assert(typeof this.updatedAt === "number" &&
-            this.original &&
-            this.shortCid &&
-            typeof this.upvoteCount === "number" &&
-            typeof this.downvoteCount === "number" &&
-            typeof this.replyCount === "number", "updatedAt, original, shortCid, upvoteCount, downvoteCount, replyCount should be defined before calling toJSONMerged");
-        return {
-            ...this.toJSONCommentIpfsWithCid(),
-            author: this.author.toJSON(),
-            original: this.original,
-            upvoteCount: this.upvoteCount,
-            downvoteCount: this.downvoteCount,
-            replyCount: this.replyCount,
-            updatedAt: this.updatedAt,
-            deleted: this.deleted,
-            pinned: this.pinned,
-            locked: this.locked,
-            removed: this.removed,
-            reason: this.reason,
-            edit: this.edit,
-            protocolVersion: this.protocolVersion,
-            spoiler: this.spoiler,
-            flair: this.flair,
-            replies: this.replies?.toJSON(),
-            lastChildCid: this.lastChildCid,
-            lastReplyTimestamp: this.lastReplyTimestamp,
-            shortSubplebbitAddress: this.shortSubplebbitAddress,
-            shortCid: this.shortCid
-        };
-    }
-    setPostCid(newPostCid) {
-        this.postCid = newPostCid;
+        if (!this._pubsubMsgToPublish)
+            throw Error("comment._pubsubMsgToPublish should be defined before calling ");
+        return this._pubsubMsgToPublish;
     }
     setCid(newCid) {
         this.cid = newCid;
@@ -288,14 +215,22 @@ export class Comment extends Publication {
         super.setSubplebbitAddress(newSubplebbitAddress);
         this.replies._subplebbitAddress = newSubplebbitAddress;
     }
-    setPreviousCid(newPreviousCid) {
-        this.previousCid = newPreviousCid;
-    }
-    setDepth(newDepth) {
-        this.depth = newDepth;
-    }
-    setUpdatedAt(newUpdatedAt) {
-        this.updatedAt = newUpdatedAt;
+    _isCommentIpfsErrorRetriable(err) {
+        if (!(err instanceof PlebbitError))
+            return false; // If it's not a recognizable error, then we throw to notify the user
+        if (err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" ||
+            err.code === "ERR_INVALID_COMMENT_IPFS_SCHEMA" ||
+            err.code === "ERR_CALCULATED_CID_DOES_NOT_MATCH" ||
+            err.code === "ERR_INVALID_JSON")
+            return false; // These errors means there's a problem with the record itself, not the loading
+        if (err instanceof FailedToFetchCommentIpfsFromGatewaysError) {
+            // If all gateway errors are due to the ipfs record itself, then it's a non-retriable error
+            for (const gatewayError of Object.values(err.details.gatewayToError))
+                if (this._isCommentIpfsErrorRetriable(gatewayError))
+                    return true; // if there's at least one gateway whose error is not due to the record
+            return false; // if all gateways have issues with the record validity itself, then we stop fetching
+        }
+        return true;
     }
     async _retryLoadingCommentIpfs(cid, log) {
         return new Promise((resolve) => {
@@ -303,7 +238,7 @@ export class Comment extends Publication {
                 log.trace(`Retrying to load comment ipfs (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     this._setUpdatingState("fetching-ipfs");
-                    const res = await this._clientsManager.fetchCommentCid(cid);
+                    const res = await this._clientsManager.fetchAndVerifyCommentCid(cid);
                     this._setUpdatingState("succeeded");
                     resolve(res);
                 }
@@ -311,8 +246,11 @@ export class Comment extends Publication {
                     if (e instanceof PlebbitError && e.details)
                         e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`, e);
-                    this._loadingOperation.retry(e);
+                    log.error(`Error on loading comment ipfs (${this.cid}) for the ${curAttempt}th time`);
+                    if (this._isCommentIpfsErrorRetriable(e))
+                        this._loadingOperation.retry(e);
+                    else
+                        return resolve(e);
                 }
             });
         });
@@ -323,14 +261,20 @@ export class Comment extends Publication {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
                 try {
                     const update = await this._clientsManager.fetchCommentUpdate();
+                    this._setUpdatingState("succeeded");
                     resolve(update);
                 }
                 catch (e) {
+                    // fetchCommentUpdate could throw a non-retriable error
                     if (e instanceof PlebbitError && e.details)
                         e.details.commentCid = this.cid;
                     this._setUpdatingState("failed");
-                    log.error(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`, e);
-                    this._loadingOperation.retry(e);
+                    log.trace(`Error when loading CommentUpdate (${this.cid}) on the ${curAttempt}th attempt`);
+                    if (this._clientsManager._shouldWeFetchCommentUpdateFromNextTimestamp(e))
+                        // Should we emit an error event or keep retrying?
+                        this._loadingOperation.retry(e);
+                    else
+                        resolve(e);
                 }
             });
         });
@@ -338,53 +282,40 @@ export class Comment extends Publication {
     async updateOnce() {
         const log = Logger("plebbit-js:comment:update");
         this._loadingOperation = retry.operation({ forever: true, factor: 2 });
-        if (this.cid && typeof this.depth !== "number" && !this._rawCommentIpfs) {
+        if (this.cid && !this._rawCommentIpfs) {
             // User may have attempted to call plebbit.createComment({cid}).update
-            const newCommentIpfs = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
-            // Can potentially throw if resolver if not working
-            const commentIpfsValidation = await verifyComment(newCommentIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, true);
-            if (!commentIpfsValidation.valid) {
-                // This is a crticial error, it should stop the comment from updating
-                log.error(`The signature of CommentIpfs (${this.cid}) is invalid, this is a critical error and will stop the update loop`);
-                this._updateState("stopped");
+            const newCommentIpfsOrError = await this._retryLoadingCommentIpfs(this.cid, log); // Will keep retrying to load until comment.stop() is called
+            if (newCommentIpfsOrError instanceof Error) {
+                // This is a non-retriable error, it should stop the comment from updating
+                log.error(`Encountered a non retriable error while loading CommentIpfs (${this.cid}), will stop the update loop`, newCommentIpfsOrError.toString());
+                // We can't proceed with an invalid CommentIpfs, so we're stopping the update loop and emitting an error event for the user
                 await this._stopUpdateLoop();
                 this._setUpdatingState("failed");
-                this._rawCommentIpfs = undefined;
-                this.emit("error", new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", {
-                    invalidCommentIpfs: newCommentIpfs,
-                    commentIpfsValidation,
-                    cid: this.cid
-                }));
+                this._updateState("stopped");
+                this.emit("error", newCommentIpfsOrError);
                 return;
             }
-            log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
-            this._rawCommentIpfs = newCommentIpfs;
-            this._initIpfsProps(this._rawCommentIpfs);
-            this.emit("update", this);
-        }
-        const commentUpdate = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
-        if (commentUpdate && (this.updatedAt || 0) < commentUpdate.updatedAt) {
-            log(`Comment (${this.cid}) received a new CommentUpdate. Will verify signature`);
-            const commentInstance = remeda.pick(this.toJSONCommentIpfsWithCid(), ["cid", "signature"]);
-            // Can potentially throw if resolver if not working
-            const signatureValidity = await verifyCommentUpdate(commentUpdate, this._plebbit.resolveAuthorAddresses, this._clientsManager, this.subplebbitAddress, commentInstance, true);
-            if (!signatureValidity.valid) {
-                this._setUpdatingState("failed");
-                const err = new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
-                log.error(err.toString());
-                this.emit("error", err);
-                return;
+            else {
+                log(`Loaded the CommentIpfs props of cid (${this.cid}) correctly, updating the instance props`);
+                this._initIpfsProps(newCommentIpfsOrError);
+                this.emit("update", this);
             }
-            this._setUpdatingState("succeeded");
-            this._rawCommentUpdate = commentUpdate;
-            await this._initCommentUpdate(commentUpdate);
+        }
+        const commentUpdateOrError = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
+        if (commentUpdateOrError instanceof PlebbitError) {
+            // An error, either a signature or a schema problem
+            // We should emit an error, and keep retrying to load a different record
+            log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());
+            this.emit("error", commentUpdateOrError);
+            return;
+        }
+        else if (commentUpdateOrError && (this.updatedAt || 0) < commentUpdateOrError.updatedAt) {
+            log(`Comment (${this.cid}) received a new CommentUpdate`);
+            this._initCommentUpdate(commentUpdateOrError);
             this.emit("update", this);
         }
-        else if (commentUpdate) {
-            log.trace(`Comment (${this.cid}) has no new update`);
-            this._setUpdatingState("succeeded");
-            // await this._initCommentUpdate(commentUpdate); // Not sure if needed, will check later
-        }
+        else
+            log.trace(`Comment (${this.cid}) has no new CommentUpdate`);
     }
     _setUpdatingState(newState) {
         if (newState === this.updatingState)
@@ -401,7 +332,18 @@ export class Comment extends Publication {
     }
     _updateRpcClientStateFromUpdatingState(updatingState) {
         // We're deriving the the rpc state from publishing state
-        const rpcState = updatingState === "failed" || updatingState === "succeeded" ? "stopped" : updatingState;
+        const mapper = {
+            failed: "stopped",
+            succeeded: "stopped",
+            "fetching-ipfs": "fetching-ipfs",
+            "fetching-subplebbit-ipfs": "fetching-subplebbit-ipfs",
+            "fetching-subplebbit-ipns": "fetching-subplebbit-ipns",
+            "fetching-update-ipfs": "fetching-update-ipfs",
+            "resolving-author-address": "resolving-author-address",
+            "resolving-subplebbit-address": "resolving-subplebbit-address",
+            stopped: "stopped"
+        };
+        const rpcState = mapper[updatingState] || updatingState; // in case rpc server transmits unknown prop, just use it as is
         this._setRpcClientState(rpcState);
     }
     _isCriticalRpcError(err) {
@@ -409,63 +351,81 @@ export class Comment extends Publication {
         // Invalid signature of CommentIpfs
         return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
     }
+    _handleUpdateEventFromRpc(args) {
+        const log = Logger("plebbit-js:comment:_handleUpdateEventFromRpc");
+        let newUpdate;
+        try {
+            newUpdate = parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(args.params.result);
+        }
+        catch (e) {
+            log.error("Failed to parse the rpc update event of", this.cid, e);
+            this.emit("error", e);
+            throw e;
+        }
+        if ("subplebbitAddress" in newUpdate) {
+            log(`Received new CommentIpfs (${this.cid})`);
+            this._initIpfsProps(newUpdate);
+        }
+        else {
+            log(`Received new CommentUpdate (${this.cid})`);
+            this._initCommentUpdate(newUpdate);
+        }
+        this.emit("update", this);
+    }
+    _handleUpdatingStateChangeFromRpc(args) {
+        const updateState = args.params.result; // optimistic, rpc server could transmit an updating state that is not known to us
+        this._setUpdatingState(updateState);
+        this._updateRpcClientStateFromUpdatingState(updateState);
+    }
+    _handleStateChangeFromRpc(args) {
+        const log = Logger("plebbit-js:comment:_handleStateChangeFromRpc");
+        const commentState = args.params.result;
+        this._updateState(commentState);
+    }
+    async _handleErrorEventFromRpc(args) {
+        const err = args.params.result;
+        if (this._isCriticalRpcError(err)) {
+            this._setUpdatingState("failed");
+            this._updateState("stopped");
+            await this._stopUpdateLoop();
+        }
+        this.emit("error", err);
+    }
+    async _updateViaRpc() {
+        const log = Logger("plebbit-js:comment:update:_updateViaRpc");
+        const rpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
+        if (!rpcUrl)
+            throw Error("Failed to get rpc url");
+        if (!this.cid)
+            throw Error("Can't start updating comment without defining this.cid");
+        try {
+            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
+            this._updateState("updating");
+        }
+        catch (e) {
+            log.error("Failed to receive commentUpdate from RPC due to error", e);
+            this._updateState("stopped");
+            this._setUpdatingState("failed");
+            throw e;
+        }
+        this._updateState("updating");
+        this._plebbit
+            .plebbitRpcClient.getSubscription(this._updateRpcSubscriptionId)
+            .on("update", this._handleUpdateEventFromRpc.bind(this))
+            .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
+            .on("statechange", this._handleStateChangeFromRpc.bind(this))
+            .on("error", this._handleErrorEventFromRpc.bind(this));
+        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
+    }
     async update() {
         const log = Logger("plebbit-js:comment:update");
-        if (this._plebbit.plebbitRpcClient) {
-            const rpcUrl = this._plebbit.plebbitRpcClientsOptions[0];
-            if (!rpcUrl)
-                throw Error("Failed to get rpc url");
-            if (!this.cid)
-                throw Error("Can't start updating comment without defining this.cid");
-            try {
-                this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient.commentUpdate(this.cid);
-                this._updateState("updating");
-            }
-            catch (e) {
-                log.error("Failed to receive commentUpdate from RPC due to error", e);
-                this._updateState("stopped");
-                this._setUpdatingState("failed");
-                throw e;
-            }
-            this._plebbit.plebbitRpcClient
-                .getSubscription(this._updateRpcSubscriptionId)
-                .on("update", async (updateProps) => {
-                const newUpdate = updateProps.params.result;
-                if ("subplebbitAddress" in newUpdate) {
-                    log(`Received new CommentIpfs (${this.cid}) from RPC (${rpcUrl})`);
-                    this._rawCommentIpfs = remeda.omit(newUpdate, ["cid"]);
-                    this._initIpfsProps(this._rawCommentIpfs);
-                }
-                else {
-                    log(`Received new CommentUpdate (${this.cid}) from RPC (${rpcUrl})`);
-                    await this._initCommentUpdate(newUpdate);
-                }
-                this.emit("update", this);
-            })
-                .on("updatingstatechange", (args) => {
-                const updateState = args.params.result;
-                this._setUpdatingState(updateState);
-                this._updateRpcClientStateFromUpdatingState(updateState);
-            })
-                .on("statechange", (args) => this._updateState(args.params.result))
-                .on("error", async (args) => {
-                const err = args.params.result;
-                if (this._isCriticalRpcError(err)) {
-                    this._setUpdatingState("failed");
-                    this._updateState("stopped");
-                    await this._stopUpdateLoop();
-                }
-                this.emit("error", err);
-            });
-            this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._updateRpcSubscriptionId);
-            this._isUpdating = true;
-        }
-        if (this._isUpdating)
+        if (this.state === "updating")
             return; // Do nothing if it's already updating
-        this._isUpdating = true;
+        if (this._plebbit.plebbitRpcClient)
+            return this._updateViaRpc();
         this._updateState("updating");
         const updateLoop = (async () => {
-            if (this._isUpdating)
+            if (this.state === "updating")
                 this.updateOnce()
                     .catch((e) => log.error("Failed to update comment", e))
                     .finally(() => (this._updateInterval = setTimeout(updateLoop, this._plebbit.updateInterval)));
@@ -475,7 +435,6 @@ export class Comment extends Publication {
     async _stopUpdateLoop() {
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
-        this._isUpdating = false;
         if (this._updateRpcSubscriptionId) {
             await this._plebbit.plebbitRpcClient.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
@@ -486,11 +445,12 @@ export class Comment extends Publication {
         if (this.state === "publishing")
             await super.stop();
         this._setUpdatingState("stopped");
+        this._updateState("stopped");
         await this._stopUpdateLoop();
     }
     async _validateSignature() {
         const commentObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication())); // Stringify so it resembles messages from pubsub
-        const signatureValidity = await verifyComment(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentPubsubMessage(commentObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid)
             throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }

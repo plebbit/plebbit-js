@@ -1,7 +1,8 @@
 import { generatePrivateKey, getPublicKeyFromPrivateKey, getPlebbitAddressFromPrivateKey } from "./util.js";
-import { shortifyAddress } from "../util.js";
-export { verifyComment, verifySubplebbit, verifyVote } from "./signatures.js";
+import { hideClassPrivateProps, shortifyAddress } from "../util.js";
+export { verifyCommentIpfs, verifyCommentPubsubMessage, verifySubplebbit, verifyVote } from "./signatures.js";
 export { encryptEd25519AesGcm, decryptEd25519AesGcm, decryptEd25519AesGcmPublicKeyBuffer } from "./encryption.js";
+import { CreateSignerSchema } from "../schema/schema.js";
 export class Signer {
     constructor(props) {
         this.type = props.type;
@@ -16,6 +17,7 @@ export class Signer {
                 : props.ipfsKey
                     ? new Uint8Array(props.ipfsKey)
                     : undefined;
+        hideClassPrivateProps(this);
     }
 }
 export class SignerWithPublicKeyAddress extends Signer {
@@ -24,21 +26,21 @@ export class SignerWithPublicKeyAddress extends Signer {
         this.publicKey = props.publicKey;
     }
 }
-export const createSigner = async (createSignerOptions = {}) => {
-    let { privateKey, type: signerType } = createSignerOptions;
-    if (privateKey) {
-        if (signerType !== "ed25519")
-            throw Error("invalid signer createSignerOptions.type, not 'ed25519'");
+export const createSigner = async (createSignerOptions) => {
+    let privateKey;
+    let type;
+    if (!createSignerOptions) {
+        type = "ed25519";
+        privateKey = await generatePrivateKey();
     }
     else {
-        privateKey = await generatePrivateKey();
-        signerType = "ed25519";
+        const parsed = CreateSignerSchema.parse(createSignerOptions);
+        privateKey = parsed.privateKey;
+        type = parsed.type;
     }
-    if (typeof signerType !== "string")
-        throw Error("createSignerOptions does not include type");
     const [publicKey, address] = await Promise.all([getPublicKeyFromPrivateKey(privateKey), getPlebbitAddressFromPrivateKey(privateKey)]);
     return new SignerWithPublicKeyAddress({
-        type: signerType,
+        type,
         publicKey,
         address,
         privateKey

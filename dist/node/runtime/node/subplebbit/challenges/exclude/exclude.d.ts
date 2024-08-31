@@ -1,5 +1,5 @@
-import { Challenge, ChallengeResult, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
-import { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../types.js";
+import type { Challenge, ChallengeResult, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
 import { Plebbit } from "../../../../../plebbit.js";
 declare const shouldExcludePublication: (subplebbitChallenge: SubplebbitChallenge, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"], subplebbit: LocalSubplebbit) => boolean;

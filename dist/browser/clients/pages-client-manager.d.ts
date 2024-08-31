@@ -1,9 +1,9 @@
-import { BasePages } from "../pages.js";
 import { BaseClientsManager, LoadType } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { PageIpfs, PostSortName, ReplySortName } from "../types.js";
-import { PagesPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
+import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
+import { PagesPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
+import { BasePages } from "../pages/pages.js";
 export declare class BasePagesClientsManager extends BaseClientsManager {
     clients: {
         ipfsGateways: {
@@ -40,6 +40,7 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     updateRpcState(newState: PagesPlebbitRpcStateClient["state"], rpcUrl: string, sortTypes: string[] | undefined): void;
     private _fetchPageWithRpc;
     private _fetchPageWithIpfsP2P;
+    _fetchPageFromGateways(pageCid: string): Promise<PageIpfs>;
     fetchPage(pageCid: string): Promise<PageIpfs>;
 }
 export declare class RepliesPagesClientsManager extends BasePagesClientsManager {
@@ -54,7 +55,7 @@ export declare class RepliesPagesClientsManager extends BasePagesClientsManager 
             [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
-    protected getSortTypes(): ReplySortName[];
+    protected getSortTypes(): string[];
 }
 export declare class PostsPagesClientsManager extends BasePagesClientsManager {
     clients: {
@@ -68,5 +69,5 @@ export declare class PostsPagesClientsManager extends BasePagesClientsManager {
             [rpcUrl: string]: PagesPlebbitRpcStateClient;
         }>;
     };
-    protected getSortTypes(): PostSortName[];
+    protected getSortTypes(): string[];
 }

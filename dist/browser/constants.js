@@ -5,7 +5,8 @@ import Logger from "@plebbit/plebbit-logger";
 export var STORAGE_KEYS;
 (function (STORAGE_KEYS) {
     STORAGE_KEYS[STORAGE_KEYS["INTERNAL_SUBPLEBBIT"] = 0] = "INTERNAL_SUBPLEBBIT";
-    STORAGE_KEYS[STORAGE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 1] = "PERSISTENT_DELETED_SUBPLEBBITS"; // These are basically sub db files that we're unable to remove for some reason on windows
+    STORAGE_KEYS[STORAGE_KEYS["PERSISTENT_DELETED_SUBPLEBBITS"] = 1] = "PERSISTENT_DELETED_SUBPLEBBITS";
+    STORAGE_KEYS[STORAGE_KEYS["COMMENTS_WITH_INVALID_SCHEMA"] = 2] = "COMMENTS_WITH_INVALID_SCHEMA"; // Comments in DB with invalid Comment Ipfs schema and have been moved away from comments
 })(STORAGE_KEYS || (STORAGE_KEYS = {}));
 // Configs for LRU storage
 export const postTimestampConfig = {

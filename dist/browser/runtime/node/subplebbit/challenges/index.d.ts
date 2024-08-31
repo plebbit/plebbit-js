@@ -1,5 +1,5 @@
-import { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../types.js";
-import { Challenge, ChallengeFileFactory, SubplebbitChallenge, SubplebbitChallengeSettings } from "../../../../subplebbit/types.js";
+import type { ChallengeVerificationMessageType, DecryptedChallengeAnswer, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../pubsub-messages/types.js";
+import type { Challenge, ChallengeFileFactory, SubplebbitChallenge, SubplebbitChallengeSetting } from "../../../../subplebbit/types.js";
 import { LocalSubplebbit } from "../local-subplebbit.js";
 type PendingChallenge = Challenge & {
     index: number;
@@ -15,12 +15,11 @@ declare const getPendingChallengesOrChallengeVerification: (challengeRequestMess
     pendingChallenges: PendingChallenge[];
 }>;
 declare const getChallengeVerificationFromChallengeAnswers: (pendingChallenges: PendingChallenge[], challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"], subplebbit: LocalSubplebbit) => Promise<{
-    challengeSuccess: boolean;
-    challengeErrors: string[];
+    challengeSuccess: true;
 } | {
-    challengeSuccess: boolean;
-    challengeErrors?: undefined;
+    challengeSuccess: false;
+    challengeErrors: string[];
 }>;
 declare const getChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit, getChallengeAnswers: GetChallengeAnswers) => Promise<Pick<ChallengeVerificationMessageType, "challengeErrors" | "challengeSuccess">>;
-declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: SubplebbitChallengeSettings) => SubplebbitChallenge;
+declare const getSubplebbitChallengeFromSubplebbitChallengeSettings: (subplebbitChallengeSettings: SubplebbitChallengeSetting) => SubplebbitChallenge;
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };

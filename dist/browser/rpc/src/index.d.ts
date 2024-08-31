@@ -1,13 +1,13 @@
-/// <reference types="node" />
 import { Server as RpcWebsocketsServer } from "rpc-websockets";
 import { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { EventEmitter } from "events";
-import { PlebbitWsServerClassOptions, PlebbitWsServerOptions, JsonRpcSendNotificationOptions } from "./types.js";
+import type { PlebbitWsServerClassOptions, JsonRpcSendNotificationOptions, CreatePlebbitWsServerOptions, PlebbitWsServerSettingsSerialized } from "./types.js";
 import { Plebbit } from "../../plebbit.js";
-import { CommentIpfsWithCid, PlebbitWsServerSettingsSerialized } from "../../types.js";
 import WebSocket from "ws";
 import Publication from "../../publications/publication.js";
 import { LocalSubplebbit } from "../../runtime/browser/subplebbit/local-subplebbit.js";
+import type { CommentIpfsType } from "../../publications/comment/types.js";
+import type { RpcInternalSubplebbitRecordBeforeFirstUpdateType } from "../../subplebbit/types.js";
 declare class PlebbitWsServer extends EventEmitter {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
@@ -30,15 +30,15 @@ declare class PlebbitWsServer extends EventEmitter {
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions);
     rpcWebsocketsRegister(method: string, callback: Function): void;
     jsonRpcSendNotification({ method, result, subscription, event, connectionId }: JsonRpcSendNotificationOptions): void;
-    getComment(params: any): Promise<CommentIpfsWithCid>;
-    getSubplebbitPage(params: any): Promise<import("../../types.js").PageIpfs>;
-    getCommentPage(params: any): Promise<import("../../types.js").PageIpfs>;
-    createSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
+    getComment(params: any): Promise<CommentIpfsType>;
+    getSubplebbitPage(params: any): Promise<import("../../pages/types.js").PageIpfsManuallyDefined>;
+    getCommentPage(params: any): Promise<import("../../pages/types.js").PageIpfsManuallyDefined>;
+    createSubplebbit(params: any): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
     _setupStartedEvents(subplebbit: LocalSubplebbit, connectionId: string, subscriptionId: number): void;
     startSubplebbit(params: any, connectionId: string): Promise<number>;
     stopSubplebbit(params: any): Promise<boolean>;
     private _postStoppingOrDeleting;
-    editSubplebbit(params: any): Promise<import("../../subplebbit/types.js").InternalSubplebbitRpcType>;
+    editSubplebbit(params: any): Promise<RpcInternalSubplebbitRecordBeforeFirstUpdateType>;
     deleteSubplebbit(params: any): Promise<boolean>;
     listSubplebbits(params: any, connectionId: string): Promise<number>;
     fetchCid(params: any): Promise<string>;
@@ -55,7 +55,7 @@ declare class PlebbitWsServer extends EventEmitter {
     destroy(): Promise<void>;
 }
 declare const PlebbitRpc: {
-    PlebbitWsServer: ({ port, server, plebbitOptions, authKey }: PlebbitWsServerOptions) => Promise<PlebbitWsServer>;
+    PlebbitWsServer: (options: CreatePlebbitWsServerOptions) => Promise<PlebbitWsServer>;
     setPlebbitJs: typeof setPlebbitJs;
 };
 export default PlebbitRpc;

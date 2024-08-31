@@ -1,17 +1,20 @@
-import { getPostUpdateTimestampRange, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
+import { getPostUpdateTimestampRange, hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";
-import { verifySubplebbit } from "../signer/index.js";
+import { verifyCommentIpfs, verifySubplebbit } from "../signer/index.js";
 import * as remeda from "remeda";
-import { PlebbitError } from "../plebbit-error.js";
+import { FailedToFetchCommentUpdateFromGatewaysError, FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
 import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, SubplebbitIpfsClient } from "./ipfs-client.js";
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { GenericIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { BaseClientsManager } from "./base-client-manager.js";
 import { commentPostUpdatesParentsPathConfig, postTimestampConfig, subplebbitForPublishingCache } from "../constants.js";
-import { CommentPlebbitRpcStateClient, GenericPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./plebbit-rpc-state-client.js";
+import { CommentPlebbitRpcStateClient, GenericPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
+import { parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentUpdateSchemaWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails, parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { verifyCommentUpdate } from "../signer/signatures.js";
 export class ClientsManager extends BaseClientsManager {
     constructor(plebbit) {
         super(plebbit);
@@ -23,6 +26,7 @@ export class ClientsManager extends BaseClientsManager {
         this._initPubsubClients();
         this._initChainProviders();
         this._initPlebbitRpcClients();
+        hideClassPrivateProps(this);
     }
     _initIpfsGateways() {
         for (const gatewayUrl of remeda.keys.strict(this._plebbit.clients.ipfsGateways))
@@ -37,7 +41,6 @@ export class ClientsManager extends BaseClientsManager {
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new GenericPubsubClient("stopped") };
     }
     _initChainProviders() {
-        //@ts-expect-error
         this.clients.chainProviders = {};
         for (const [chain, chainProvider] of remeda.entries.strict(this._plebbit.chainProviders)) {
             this.clients.chainProviders[chain] = {};
@@ -55,7 +58,7 @@ export class ClientsManager extends BaseClientsManager {
             ? this._getStatePriorToResolvingSubplebbitIpns()
             : loadType === "comment-update"
                 ? "fetching-update-ipfs"
-                : loadType === "comment" || loadType === "generic-ipfs"
+                : loadType === "comment" || loadType === "generic-ipfs" || loadType === "page-ipfs"
                     ? "fetching-ipfs"
                     : undefined;
         assert(gatewayState, "unable to compute the new gateway state");
@@ -120,8 +123,10 @@ export class ClientsManager extends BaseClientsManager {
             throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl)
             return this._fetchCidP2P(cid);
-        else
-            return this.fetchFromMultipleGateways({ cid }, "generic-ipfs");
+        else {
+            const resObj = await this.fetchFromMultipleGateways({ cid }, "generic-ipfs", async () => { });
+            return resObj.resText;
+        }
     }
     // fetchSubplebbit should be here
     async _findErrorInSubplebbitRecord(subJson, ipnsNameOfSub) {
@@ -153,29 +158,52 @@ export class ClientsManager extends BaseClientsManager {
             throw Error("Failed to resolve subplebbit address to an IPNS name");
         return this._fetchSubplebbitIpns(ipnsName);
     }
+    async _fetchSubplebbitIpnsP2PAndVerify(ipnsName) {
+        this.preResolveSubplebbitIpnsP2P(ipnsName);
+        let subplebbitCid;
+        try {
+            subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName); // What if this fails
+        }
+        catch (e) {
+            this.postResolveSubplebbitIpnsP2PFailure(ipnsName, e);
+            throw e;
+        }
+        this.postResolveSubplebbitIpnsP2PSuccess(ipnsName, subplebbitCid);
+        let rawSubJsonString;
+        try {
+            rawSubJsonString = await this._fetchCidP2P(subplebbitCid);
+        }
+        catch (e) {
+            this.postFetchSubplebbitStringJsonP2PFailure(ipnsName, subplebbitCid, e);
+            throw e;
+        }
+        this.postFetchSubplebbitStringJsonP2PSuccess();
+        try {
+            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(rawSubJsonString));
+            const errInRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+            if (errInRecord)
+                throw errInRecord;
+            return { subplebbit: subIpfs, cid: subplebbitCid };
+        }
+        catch (e) {
+            this.postFetchSubplebbitInvalidRecord(rawSubJsonString, e); // should throw here
+            throw new Error("postFetchSubplebbitInvalidRecord should throw, but it did not");
+        }
+    }
     async _fetchSubplebbitIpns(ipnsName) {
         // This function should fetch SubplebbitIpfs, parse it and verify its signature
         // Then return SubplebbitIpfs
-        this.preResolveSubplebbitIpns(ipnsName);
-        let subJson;
-        if (this._defaultIpfsProviderUrl) {
-            this.preResolveSubplebbitIpnsP2P(ipnsName);
-            const subplebbitCid = await this.resolveIpnsToCidP2P(ipnsName);
-            this.postResolveSubplebbitIpnsP2P(ipnsName, subplebbitCid);
-            subJson = JSON.parse(await this._fetchCidP2P(subplebbitCid));
-            this.postFetchSubplebbitJsonP2P(subJson); // have not been verified yet
-        }
-        // States of gateways should be updated by fetchFromMultipleGateways
+        this.preFetchSubplebbitIpns(ipnsName);
+        let subRes;
+        if (this._defaultIpfsProviderUrl)
+            subRes = await this._fetchSubplebbitIpnsP2PAndVerify(ipnsName);
         else
-            subJson = await this._fetchSubplebbitFromGateways(ipnsName);
-        const subError = await this._findErrorInSubplebbitRecord(subJson, ipnsName);
-        if (subError) {
-            this.postFetchSubplebbitInvalidRecord(subJson, subError); // should throw here
-            throw subError; // in case we forgot to throw at postFetchSubplebbitInvalidRecord
-        }
-        this.postFetchSubplebbitJsonSuccess(subJson); // We successfully fetched the json
-        subplebbitForPublishingCache.set(subJson.address, remeda.pick(subJson, ["encryption", "pubsubTopic", "address"]));
-        return subJson;
+            subRes = await this._fetchSubplebbitFromGateways(ipnsName);
+        // States of gateways should be updated by fetchFromMultipleGateways
+        // Subplebbit records are verified within _fetchSubplebbitFromGateways
+        this.postFetchSubplebbitIpfsSuccess(subRes); // We successfully fetched and verified the SubplebbitIpfs
+        subplebbitForPublishingCache.set(subRes.subplebbit.address, remeda.pick(subRes.subplebbit, ["encryption", "pubsubTopic", "address"]));
+        return subRes;
     }
     async _fetchSubplebbitFromGateways(ipnsName) {
         const log = Logger("plebbit-js:subplebbit:fetchSubplebbitFromGateways");
@@ -186,13 +214,24 @@ export class ClientsManager extends BaseClientsManager {
         // Only sort if we have more than 3 gateways
         const gatewaysSorted = remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
             ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-            : await this._plebbit.stats.sortGatewaysAccordingToScore("ipns");
+            : await this._plebbit._stats.sortGatewaysAccordingToScore("ipns");
         const gatewayFetches = {};
         for (const gateway of gatewaysSorted) {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
-                promise: queueLimit(() => this._fetchWithGateway(gateway, path, "subplebbit", abortController)),
+                promise: queueLimit(() => this._fetchWithGateway(gateway, path, "subplebbit", abortController, async (gatewayRes) => {
+                    const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(gatewayRes.resText));
+                    const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+                    if (errorWithinRecord) {
+                        delete errorWithinRecord["stack"];
+                        throw errorWithinRecord;
+                    }
+                    else {
+                        gatewayFetches[gateway].subplebbitRecord = subIpfs;
+                        gatewayFetches[gateway].cid = await calculateIpfsHash(gatewayRes.resText);
+                    }
+                })),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
         }
@@ -220,58 +259,42 @@ export class ClientsManager extends BaseClientsManager {
                 // A very recent subplebbit, a good thing
                 // TODO reward this gateway
                 log(`Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record that's ${bestGatewayRecordAge}s old`);
-                return gatewayFetches[bestGatewayUrl].subplebbitRecord;
+                return { subplebbit: gatewayFetches[bestGatewayUrl].subplebbitRecord, cid: gatewayFetches[bestGatewayUrl].cid };
             }
             // We weren't able to find a very recent subplebbit record
             if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {
                 // we find the gateway with the max updatedAt
-                return gatewayFetches[bestGatewayUrl].subplebbitRecord;
+                return { subplebbit: gatewayFetches[bestGatewayUrl].subplebbitRecord, cid: gatewayFetches[bestGatewayUrl].cid };
             }
             else
                 return undefined;
         };
         const promisesToIterate = (Object.values(gatewayFetches).map((gatewayFetch) => gatewayFetch.promise));
+        // TODO need to handle verification of signature within subplebbit
         let suitableSubplebbit;
         try {
             suitableSubplebbit = await new Promise((resolve, reject) => promisesToIterate.map((gatewayPromise, i) => gatewayPromise
                 .then(async (res) => {
-                let error = remeda.isPlainObject(res) && res.error instanceof PlebbitError ? res.error : undefined;
-                const gatewayUrl = Object.keys(gatewayFetches)[i];
-                if (typeof res === "string") {
-                    try {
-                        Object.values(gatewayFetches)[i].subplebbitRecord = JSON.parse(res); // did not throw or abort
-                    }
-                    catch (e) {
-                        log.error(`Failed to parse the subplebbit json from gateway`, gatewayUrl, e);
-                        error = new PlebbitError("ERR_IPFS_GATEWAY_RESPONDED_WITH_INVALID_JSON", { error: e, response: res });
-                    }
-                }
-                if (error || res === undefined) {
-                    // The fetching failed, if res === undefined then it's because it was aborted
-                    // else then there's plebbitError
-                    Object.values(gatewayFetches)[i].error =
-                        error || new Error("Fetching from gateway has been aborted/timed out");
-                    delete Object.values(gatewayFetches)[i].error?.stack;
-                    log.trace(`Gateway`, gatewayUrl, "threw an error", Object.values(gatewayFetches)[i].error);
-                    const gatewaysWithError = remeda.keys
-                        .strict(gatewayFetches)
-                        .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
-                    if (gatewaysWithError.length === gatewaysSorted.length)
-                        // All gateways failed
-                        reject("All gateways failed to fetch subplebbit record " + ipnsName);
-                }
+                if ("error" in res)
+                    Object.values(gatewayFetches)[i].error = res.error;
+                const gatewaysWithError = remeda.keys
+                    .strict(gatewayFetches)
+                    .filter((gatewayUrl) => gatewayFetches[gatewayUrl].error);
+                if (gatewaysWithError.length === gatewaysSorted.length)
+                    // All gateways failed
+                    reject("All gateways failed to fetch subplebbit record " + ipnsName);
                 const recentSubplebbit = _findRecentSubplebbit();
                 if (recentSubplebbit) {
                     cleanUp();
                     resolve(recentSubplebbit);
                 }
             })
-                .catch((err) => log.error("Gateway", Object.keys(gatewayFetches)[i], "Has thrown an uncaught error, should not happen", err))));
+                .catch((err) => reject("One of the gateway promise requests thrown an error, should not happens:" + err))));
         }
         catch {
             cleanUp();
             const gatewayToError = remeda.mapValues(gatewayFetches, (gatewayFetch) => gatewayFetch.error);
-            const combinedError = new PlebbitError("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", { ipnsName, gatewayToError });
+            const combinedError = new FailedToFetchSubplebbitFromGatewaysError({ ipnsName, gatewayToError });
             delete combinedError.stack;
             throw combinedError;
         }
@@ -285,22 +308,33 @@ export class ClientsManager extends BaseClientsManager {
     _getSubplebbitAddressFromInstance() {
         throw Error("Should be implemented");
     }
-    postFetchSubplebbitInvalidRecord(subJson, subError) {
+    postFetchSubplebbitInvalidRecord(subRawJson, subError) {
         throw Error("Should be implemented");
     }
-    preResolveSubplebbitIpns(subIpnsName) {
+    preFetchSubplebbitIpns(subIpnsName) {
         throw Error("Should be implemented");
     }
     preResolveSubplebbitIpnsP2P(subIpnsName) {
         throw Error("Should be implemented");
     }
-    postResolveSubplebbitIpnsP2P(subIpnsName, subplebbitCid) {
+    postResolveSubplebbitIpnsP2PSuccess(subIpnsName, subplebbitCid) {
         throw Error("Should be implemented");
     }
-    postFetchSubplebbitJsonP2P(subJson) {
+    postResolveSubplebbitIpnsP2PFailure(subIpnsName, err) {
         throw Error("Should be implemented");
     }
-    postFetchSubplebbitJsonSuccess(subJson) {
+    // For IPFS P2P only
+    postFetchSubplebbitStringJsonP2PSuccess() {
+        // Prior to verifying, this is right after getting the raw string of SubplebbitIpfs json
+        throw Error("Should be implemented");
+    }
+    // For IPFS P2P only
+    postFetchSubplebbitStringJsonP2PFailure(subIpnsName, subplebbitCid, err) {
+        // We failed to fetch the cid of the subplebbit
+        throw Error("Should be implemented");
+    }
+    // This is for Gateway and P2P
+    postFetchSubplebbitIpfsSuccess(subRes) {
         throw Error("Should be implemented");
     }
 }
@@ -360,25 +394,34 @@ export class PublicationClientsManager extends ClientsManager {
     _getSubplebbitAddressFromInstance() {
         return this._publication.subplebbitAddress;
     }
-    postFetchSubplebbitInvalidRecord(subJson, subError) {
-        this._publication._updatePublishingState("failed");
-        this._publication.emit("error", subError);
-        throw subError;
-    }
-    preResolveSubplebbitIpns(subIpnsName) {
+    preFetchSubplebbitIpns(subIpnsName) {
         this._publication._updatePublishingState("fetching-subplebbit-ipns");
     }
     preResolveSubplebbitIpnsP2P(subIpnsName) {
         this.updateIpfsState("fetching-subplebbit-ipns");
     }
-    postResolveSubplebbitIpnsP2P(subIpnsName, subplebbitCid) {
+    postResolveSubplebbitIpnsP2PSuccess(subIpnsName, subplebbitCid) {
         this.updateIpfsState("fetching-subplebbit-ipfs");
         this._publication._updatePublishingState("fetching-subplebbit-ipfs");
     }
-    postFetchSubplebbitJsonP2P(subJson) {
+    postResolveSubplebbitIpnsP2PFailure(subIpnsName, err) {
+        this.updateIpfsState("stopped");
+        throw err;
+    }
+    postFetchSubplebbitStringJsonP2PSuccess() {
         this.updateIpfsState("stopped");
     }
-    postFetchSubplebbitJsonSuccess(subJson) { }
+    postFetchSubplebbitStringJsonP2PFailure(subIpnsName, subplebbitCid, err) {
+        this.updateIpfsState("stopped");
+        // No need to update publication.publishingState here because it's gonna be updated in publication.publish()
+        throw err;
+    }
+    postFetchSubplebbitIpfsSuccess(subJson) { }
+    postFetchSubplebbitInvalidRecord(subJson, subError) {
+        this._publication._updatePublishingState("failed");
+        this._publication.emit("error", subError);
+        throw subError;
+    }
 }
 export class CommentClientsManager extends PublicationClientsManager {
     constructor(comment) {
@@ -404,11 +447,11 @@ export class CommentClientsManager extends PublicationClientsManager {
                 this._comment._setUpdatingState("resolving-author-address"); // Resolving for CommentIpfs
         }
     }
-    _findCommentInSubplebbitPosts(subIpns, cid) {
+    _findCommentInSubplebbitPosts(subIpns, commentCidToLookFor) {
         if (!subIpns.posts?.pages?.hot)
             return undefined; // try to use preloaded pages if possible
         const findInCommentAndChildren = (comment) => {
-            if (comment.comment.cid === cid)
+            if (comment.comment.cid === commentCidToLookFor)
                 return comment.comment;
             if (!comment.update.replies?.pages?.topAll)
                 return undefined;
@@ -430,27 +473,31 @@ export class CommentClientsManager extends PublicationClientsManager {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
-            const commentContent = { cid: parentCid, ...JSON.parse(await this._fetchCidP2P(parentCid)) };
-            this.updateIpfsState("stopped");
-            return commentContent;
+            try {
+                return {
+                    cid: parentCid,
+                    ...parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid)))
+                };
+            }
+            finally {
+                this.updateIpfsState("stopped");
+            }
         }
         else {
-            const commentContent = {
-                cid: parentCid,
-                ...JSON.parse(await this.fetchFromMultipleGateways({ cid: parentCid }, "comment"))
-            };
-            return commentContent;
+            return { cid: parentCid, ...(await this.fetchAndVerifyCommentCid(parentCid)) };
         }
     }
     async _getParentsPath(subIpns) {
         const parentsPathCache = await this._plebbit._createStorageLRU(commentPostUpdatesParentsPathConfig);
-        const commentProps = this._comment.toJSONCommentIpfsWithCid();
-        const pathCache = await parentsPathCache.getItem(commentProps.cid);
+        const commentCid = this._comment.cid;
+        if (!commentCid)
+            throw Error("Can't retrieve parent path without defined comment.cid");
+        const pathCache = await parentsPathCache.getItem(commentCid);
         if (pathCache)
             return pathCache.split("/").reverse().join("/");
         const postTimestampCache = await this._plebbit._createStorageLRU(postTimestampConfig);
         if (this._comment.depth === 0)
-            await postTimestampCache.setItem(commentProps.cid, this._comment.timestamp);
+            await postTimestampCache.setItem(commentCid, this._comment.timestamp);
         let parentCid = this._comment.parentCid;
         let reversedPath = `${this._comment.cid}`; // Path will be reversed here, `nestedReplyCid/replyCid/postCid`
         while (parentCid) {
@@ -469,15 +516,114 @@ export class CommentClientsManager extends PublicationClientsManager {
                 parentCid = parent.parentCid;
             }
         }
-        await parentsPathCache.setItem(commentProps.cid, reversedPath);
+        await parentsPathCache.setItem(commentCid, reversedPath);
         const finalParentsPath = reversedPath.split("/").reverse().join("/"); // will be postCid/replyCid/nestedReplyCid
         return finalParentsPath;
     }
+    _calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath) {
+        return `${folderCid}/` + parentsPostUpdatePath + "/update";
+    }
+    async _fetchCommentUpdateIpfsP2P(subIpns, timestampRanges, parentsPostUpdatePath, log) {
+        const attemptedPaths = [];
+        for (const timestampRange of timestampRanges) {
+            const folderCid = subIpns.postUpdates[timestampRange];
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            attemptedPaths.push(path);
+            this.updateIpfsState("fetching-update-ipfs");
+            let res;
+            try {
+                res = await this._fetchCidP2P(path);
+            }
+            catch (e) {
+                log.trace(`Failed to fetch CommentUpdate from path (${path}) with IPFS P2P. Trying the next timestamp range`);
+                continue;
+            }
+            finally {
+                this.updateIpfsState("stopped");
+            }
+            const commentUpdate = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res));
+            await this._throwIfCommentUpdateHasInvalidSignature(commentUpdate);
+            return commentUpdate;
+        }
+        throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
+            timestampRanges,
+            attemptedPaths,
+            commentCid: this._comment.cid
+        });
+    }
+    _shouldWeFetchCommentUpdateFromNextTimestamp(err) {
+        // Is there a problem with the record itself, or is this an issue with fetching?
+        if (!(err instanceof PlebbitError))
+            return false; // If it's not a recognizable error, then we throw to notify the user
+        if (err.code === "ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID" ||
+            err.code === "ERR_INVALID_COMMENT_UPDATE_SCHEMA" ||
+            err.code === "ERR_INVALID_JSON")
+            return false; // These errors means there's a problem with the record itself, not the loading
+        if (err instanceof FailedToFetchCommentUpdateFromGatewaysError) {
+            // If all gateway errors are due to the record itself, then we throw an error and don't jump to the next timestamp
+            for (const gatewayError of Object.values(err.details.gatewayToError))
+                if (this._shouldWeFetchCommentUpdateFromNextTimestamp(gatewayError))
+                    return true; // if there's at least one gateway whose error is not due to the record
+            return false; // if all gateways have issues with the record validity itself, then we stop fetching
+        }
+        return true;
+    }
+    async _throwIfCommentUpdateHasInvalidSignature(commentUpdate) {
+        if (!this._comment.cid)
+            throw Error("Can't validate comment update when comment.cid is undefined");
+        const commentIpfsProps = { cid: this._comment.cid, signature: this._comment.signature };
+        const signatureValidity = await verifyCommentUpdate(commentUpdate, this._plebbit.resolveAuthorAddresses, this, this._comment.subplebbitAddress, commentIpfsProps, true);
+        if (!signatureValidity.valid) {
+            // TODO need to make sure comment.updatingState is set to failed
+            // TODO also need to make sure an error is emitted
+            throw new PlebbitError("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID", { signatureValidity, commentUpdate });
+        }
+    }
+    async _fetchCommentUpdateFromGateways(subIpns, timestampRanges, parentsPostUpdatePath, log) {
+        const attemptedPaths = [];
+        for (const timestampRange of timestampRanges) {
+            // We're validating schema and signature here for every gateway because it's not a regular cid whose content we can verify to match the cid
+            const folderCid = subIpns.postUpdates[timestampRange];
+            const path = this._calculatePathForCommentUpdate(folderCid, parentsPostUpdatePath);
+            attemptedPaths.push(path);
+            let commentUpdate;
+            try {
+                // Validate the Comment Update within the gateway fetching algo
+                // fetchFromMultipleGateways will throw if all gateways failed to load the record
+                await this.fetchFromMultipleGateways({ cid: path }, "comment-update", async (res) => {
+                    const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
+                    await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
+                    commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
+                });
+                if (!commentUpdate)
+                    throw Error("Failed to load comment update from gateways. This is a critical logic error");
+                return commentUpdate;
+            }
+            catch (e) {
+                // We need to find out if it's loading error, and if it is we just move on to the next timestamp range
+                // If it's a schema or signature error we should stop and throw
+                if (this._shouldWeFetchCommentUpdateFromNextTimestamp(e)) {
+                    log.trace(`Failed to fetch CommentUpdate from path (${path}) from gateways. Trying the next timestamp range`);
+                    continue;
+                }
+                else
+                    throw e;
+            }
+        }
+        throw new PlebbitError("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_ALL_POST_UPDATES_RANGES", {
+            timestampRanges,
+            attemptedPaths,
+            commentCid: this._comment.cid
+        });
+    }
     async fetchCommentUpdate() {
         const log = Logger("plebbit-js:comment:update");
-        const subIpns = await this.fetchSubplebbit(this._comment.subplebbitAddress);
+        const subIpns = (await this.fetchSubplebbit(this._comment.subplebbitAddress)).subplebbit;
         const parentsPostUpdatePath = await this._getParentsPath(subIpns);
-        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(this._comment.toJSONCommentIpfsWithCid().postCid);
+        const postCid = this._comment.postCid;
+        if (!postCid)
+            throw Error("comment.postCid needs to be defined to fetch comment update");
+        const postTimestamp = await (await this._plebbit._createStorageLRU(postTimestampConfig)).getItem(postCid);
         if (typeof postTimestamp !== "number")
             throw Error("Failed to fetch cached post timestamp");
         if (!subIpns.postUpdates)
@@ -485,66 +631,54 @@ export class CommentClientsManager extends PublicationClientsManager {
         const timestampRanges = getPostUpdateTimestampRange(subIpns.postUpdates, postTimestamp);
         if (timestampRanges.length === 0)
             throw Error("Post has no timestamp range bucket");
-        for (const timestampRange of timestampRanges) {
-            const folderCid = subIpns.postUpdates[timestampRange];
-            const path = `${folderCid}/` + parentsPostUpdatePath + "/update";
-            this._comment._setUpdatingState("fetching-update-ipfs");
-            if (this._defaultIpfsProviderUrl) {
-                this.updateIpfsState("fetching-update-ipfs");
-                try {
-                    const commentUpdate = JSON.parse(await this._fetchCidP2P(path));
-                    this.updateIpfsState("stopped");
-                    return commentUpdate;
-                }
-                catch (e) {
-                    // if does not exist, try the next timestamp range
-                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
-                }
-            }
-            else {
-                // States of gateways should be updated by fetchFromMultipleGateways
-                try {
-                    const update = JSON.parse(await this.fetchFromMultipleGateways({ cid: path }, "comment-update"));
-                    return update;
-                }
-                catch (e) {
-                    // if does not exist, try the next timestamp range
-                    log.error(`Failed to fetch CommentUpdate from path (${path}). Trying the next timestamp range`);
-                }
-            }
-        }
-        throw Error(`CommentUpdate of comment (${this._comment.cid}) does not exist on all timestamp ranges: ${timestampRanges}`);
+        this._comment._setUpdatingState("fetching-update-ipfs");
+        if (this._defaultIpfsProviderUrl)
+            return this._fetchCommentUpdateIpfsP2P(subIpns, timestampRanges, parentsPostUpdatePath, log);
+        else
+            return this._fetchCommentUpdateFromGateways(subIpns, timestampRanges, parentsPostUpdatePath, log);
     }
-    async fetchCommentCid(cid) {
-        if (this._defaultIpfsProviderUrl) {
-            this.updateIpfsState("fetching-ipfs");
-            const commentContent = JSON.parse(await this._fetchCidP2P(cid));
+    async _fetchRawCommentCidIpfsP2P(cid) {
+        this.updateIpfsState("fetching-ipfs");
+        let commentRawString;
+        try {
+            commentRawString = await this._fetchCidP2P(cid);
+        }
+        catch (e) {
+            throw e;
+        }
+        finally {
             this.updateIpfsState("stopped");
-            return commentContent;
         }
-        else {
-            const commentContent = JSON.parse(await this.fetchFromMultipleGateways({ cid }, "comment"));
-            return commentContent;
+        return commentRawString;
+    }
+    async _fetchCommentIpfsFromGateways(parentCid) {
+        // We only need to validate once, because with Comment Ipfs the fetchFromMultipleGateways already validates if the response is the same as its cid
+        const res = await this.fetchFromMultipleGateways({ cid: parentCid }, "comment", async (_) => { });
+        return res.resText;
+    }
+    async _throwIfCommentIpfsIsInvalid(commentIpfs) {
+        // Can potentially throw if resolver if not working
+        const commentIpfsValidation = await verifyCommentIpfs(commentIpfs, this._plebbit.resolveAuthorAddresses, this, true);
+        if (!commentIpfsValidation.valid)
+            throw new PlebbitError("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID", { commentIpfs, commentIpfsValidation });
+    }
+    // We're gonna fetch Comment Ipfs, and verify its signature and schema
+    async fetchAndVerifyCommentCid(cid) {
+        let commentRawString;
+        if (this._defaultIpfsProviderUrl) {
+            commentRawString = await this._fetchRawCommentCidIpfsP2P(cid);
         }
+        else
+            commentRawString = await this._fetchCommentIpfsFromGateways(cid);
+        const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(commentRawString)); // could throw if schema is invalid
+        await this._throwIfCommentIpfsIsInvalid(commentIpfs);
+        return commentIpfs;
     }
     updateIpfsState(newState) {
         super.updateIpfsState(newState);
     }
     _isPublishing() {
         return this._comment.state === "publishing";
-    }
-    postFetchSubplebbitInvalidRecord(subJson, subError) {
-        // are we updating or publishing?
-        if (this._isPublishing()) {
-            // we're publishing
-            this._comment._updatePublishingState("failed");
-        }
-        else {
-            // we're updating
-            this._comment._setUpdatingState("failed");
-        }
-        this._comment.emit("error", subError);
-        throw subError;
     }
     postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
         super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
@@ -564,7 +698,7 @@ export class CommentClientsManager extends PublicationClientsManager {
             throw error;
         }
     }
-    preResolveSubplebbitIpns(subIpnsName) {
+    preFetchSubplebbitIpns(subIpnsName) {
         if (this._isPublishing())
             this._comment._updatePublishingState("fetching-subplebbit-ipns");
         else
@@ -573,22 +707,56 @@ export class CommentClientsManager extends PublicationClientsManager {
     preResolveSubplebbitIpnsP2P(subIpnsName) {
         this.updateIpfsState("fetching-subplebbit-ipns");
     }
-    postResolveSubplebbitIpnsP2P(subIpnsName, subplebbitCid) {
+    postResolveSubplebbitIpnsP2PSuccess(subIpnsName, subplebbitCid) {
         this.updateIpfsState("fetching-subplebbit-ipfs");
         if (this._isPublishing())
             this._comment._updatePublishingState("fetching-subplebbit-ipfs");
         else
             this._comment._setUpdatingState("fetching-subplebbit-ipfs");
     }
-    postFetchSubplebbitJsonP2P(subJson) {
+    postResolveSubplebbitIpnsP2PFailure(subIpnsName, err) {
+        this.updateIpfsState("stopped");
+        if (this._isPublishing()) {
+            this._comment._updatePublishingState("failed");
+        }
+        else
+            this._comment._setUpdatingState("failed");
+        this._comment.emit("error", err);
+        throw err;
+    }
+    postFetchSubplebbitStringJsonP2PSuccess() {
+        // If we're updating, then no it shouldn't be stopped cause we're gonna load comment-update after
         if (this._isPublishing())
             this.updateIpfsState("stopped");
     }
-    postFetchSubplebbitJsonSuccess(subJson) { }
+    postFetchSubplebbitStringJsonP2PFailure(subIpnsName, subplebbitCid, err) {
+        return this.postResolveSubplebbitIpnsP2PFailure(subIpnsName, err);
+    }
+    postFetchSubplebbitIpfsSuccess(subJson) { }
+    postFetchSubplebbitInvalidRecord(subJson, subError) {
+        // are we updating or publishing?
+        if (this._isPublishing()) {
+            // we're publishing
+            this._comment._updatePublishingState("failed");
+        }
+        else {
+            // we're updating
+            this._comment._setUpdatingState("failed");
+        }
+        this._comment.emit("error", subError);
+        throw subError;
+    }
+    postFetchGatewaySuccess(gatewayUrl, path, loadType) {
+        // if we're fetching CommentUpdate, it shouldn't be "stopped" after fetching subplebbit-ipfs
+        if (loadType === "subplebbit" && !this._isPublishing())
+            return;
+        else
+            return super.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    }
 }
 export class SubplebbitClientsManager extends ClientsManager {
     constructor(subplebbit) {
-        super(subplebbit.plebbit);
+        super(subplebbit._plebbit);
         this._subplebbit = subplebbit;
     }
     _initIpfsClients() {
@@ -622,11 +790,6 @@ export class SubplebbitClientsManager extends ClientsManager {
     _getStatePriorToResolvingSubplebbitIpns() {
         return "fetching-ipns";
     }
-    postFetchSubplebbitInvalidRecord(subJson, subError) {
-        this._subplebbit._setUpdatingState("failed");
-        this._subplebbit.emit("error", subError);
-        throw subError;
-    }
     preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) {
         super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
         if (this._subplebbit.state === "updating" &&
@@ -651,21 +814,37 @@ export class SubplebbitClientsManager extends ClientsManager {
     _getSubplebbitAddressFromInstance() {
         return this._subplebbit.address;
     }
-    preResolveSubplebbitIpns(subIpnsName) {
+    preFetchSubplebbitIpns(subIpnsName) {
         this._subplebbit._setUpdatingState("fetching-ipns");
     }
     preResolveSubplebbitIpnsP2P(subIpnsName) {
         this.updateIpfsState("fetching-ipns");
     }
-    postResolveSubplebbitIpnsP2P(subIpnsName, subplebbitCid) {
+    postResolveSubplebbitIpnsP2PSuccess(subIpnsName, subplebbitCid) {
         this.updateIpfsState("fetching-ipfs");
         this._subplebbit._setUpdatingState("fetching-ipfs");
     }
-    postFetchSubplebbitJsonP2P(subJson) {
+    postResolveSubplebbitIpnsP2PFailure(subIpnsName, err) {
+        this.updateIpfsState("stopped");
+        this._subplebbit._setUpdatingState("failed");
+    }
+    postFetchSubplebbitStringJsonP2PSuccess() {
         this.updateIpfsState("stopped");
     }
-    postFetchSubplebbitJsonSuccess(subJson) {
+    postFetchSubplebbitStringJsonP2PFailure(subIpnsName, subplebbitCid, err) {
+        this.updateIpfsState("stopped");
+        this._subplebbit._setUpdatingState("failed");
+    }
+    // for both gateway and IPFS P2P
+    postFetchSubplebbitIpfsSuccess(subJson) {
         this._subplebbit._setUpdatingState("succeeded");
+    }
+    // if we're loading a SubplebbitIpfs through RemoteSubplebbit, and the record itself has a problem
+    // Could be invalid json or schema or signature
+    postFetchSubplebbitInvalidRecord(subJson, subError) {
+        this._subplebbit._setUpdatingState("failed");
+        this._subplebbit.emit("error", subError);
+        throw subError;
     }
 }
 //# sourceMappingURL=client-manager.js.map

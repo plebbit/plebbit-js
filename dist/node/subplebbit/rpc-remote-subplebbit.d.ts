@@ -1,10 +1,10 @@
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
-import type { SubplebbitIpfsType } from "./types.js";
 export declare class RpcRemoteSubplebbit extends RemoteSubplebbit {
     private _updateRpcSubscriptionId?;
     protected _setRpcClientState(newState: RemoteSubplebbit["clients"]["plebbitRpcClients"][""]["state"]): void;
-    protected _updateRpcClientStateFromUpdatingState(updatingState: RemoteSubplebbit["updatingState"]): void;
-    protected _handleRpcUpdateProps(rpcProps: SubplebbitIpfsType): Promise<void>;
+    protected _updateRpcClientStateFromUpdatingState(updatingState: RpcRemoteSubplebbit["updatingState"]): void;
+    protected _processUpdateEventFromRpcUpdate(args: any): Promise<void>;
+    private _handleUpdatingStateChangeFromRpcUpdate;
     update(): Promise<void>;
     stop(): Promise<void>;
 }

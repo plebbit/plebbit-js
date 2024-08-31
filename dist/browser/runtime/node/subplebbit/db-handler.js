@@ -1,4 +1,4 @@
-import { throwWithErrorCode, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
+import { hideClassPrivateProps, throwWithErrorCode, timestamp } from "../../../util.js";
 import knex from "knex";
 import path from "path";
 import assert from "assert";
@@ -11,9 +11,11 @@ import env from "../../../version.js";
 //@ts-expect-error
 import * as lockfile from "@plebbit/proper-lockfile";
 import { v4 as uuidV4 } from "uuid";
-import { AUTHOR_EDIT_FIELDS, CommentUpdateSignedPropertyNames } from "../../../signer/constants.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
+import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
+import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
+import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
@@ -28,7 +30,7 @@ export class DbHandler {
     }
     async initDbConfigIfNeeded() {
         if (!this._dbConfig)
-            this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit);
+            this._dbConfig = await getDefaultSubplebbitDbConfig(this._subplebbit.address, this._subplebbit._plebbit);
     }
     toJSON() {
         return undefined;
@@ -39,16 +41,21 @@ export class DbHandler {
         await this.initDbConfigIfNeeded();
         if (!this._knex)
             this._knex = knex(this._dbConfig);
-        if (!this._createdTables)
-            try {
-                await this.createTablesIfNeeded();
-            }
-            catch (e) {
-                log.error(`Sub (${this._subplebbit.address}) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${env.DB_VERSION}). Error`, e);
-                throw e;
-            }
         if (!this._keyv)
             this._keyv = new Keyv(`sqlite://${this._dbConfig.connection.filename}`);
+    }
+    async createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:subplebbit:db-handler:createOrMigrateTablesIfNeeded");
+        if (this._createdTables)
+            return;
+        try {
+            await this._createOrMigrateTablesIfNeeded();
+        }
+        catch (e) {
+            log.error(`Sub (${this._subplebbit.address}) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${env.DB_VERSION}). Error`, e);
+            throw e;
+        }
+        hideClassPrivateProps(this);
     }
     getDbConfig() {
         return this._dbConfig;
@@ -132,6 +139,7 @@ export class DbHandler {
             table.text("linkHtmlTagName").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler");
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
             table.text("protocolVersion").notNullable();
             table.increments("id"); // Used for sorts
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
@@ -175,6 +183,7 @@ export class DbHandler {
             table.json("signature").notNullable().unique();
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
             table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
         });
     }
@@ -200,14 +209,15 @@ export class DbHandler {
             table.json("commentAuthor").nullable();
             table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+            table.json("extraProps").nullable();
             table.primary(["id", "commentCid"]);
         });
     }
     async getDbVersion() {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
-    async createTablesIfNeeded() {
-        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded");
+    async _createOrMigrateTablesIfNeeded() {
+        const log = Logger("plebbit-js:db-handler:createOrMigrateTablesIfNeeded");
         const currentDbVersion = await this.getDbVersion();
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
@@ -243,12 +253,29 @@ export class DbHandler {
             }
         }
         if (needToMigrate) {
+            if (currentDbVersion <= 14)
+                await this._purgeCommentsWithInvalidSchema();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+            // we need to remove posts because it may include old incompatible comments
+            // LocalSubplebbit will automatically produce a new posts json
+            //@ts-expect-error
+            const internalState = await this._subplebbit._getDbInternalState(false);
+            if (internalState) {
+                const protocolVersion = internalState.protocolVersion || env.PROTOCOL_VERSION;
+                const _usingDefaultChallenge = "_usingDefaultChallenge" in internalState
+                    ? internalState._usingDefaultChallenge //@ts-expect-error
+                    : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
+                const cid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                //@ts-expect-error
+                await this._subplebbit._updateDbInternalState({ posts: undefined, cid, protocolVersion, _usingDefaultChallenge });
+            }
         }
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
+        if (needToMigrate)
+            log("Done with migrating db to latest version", newDbVersion);
     }
     async _copyTable(srcTable, dstTable, currentDbVersion) {
         const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
@@ -257,7 +284,7 @@ export class DbHandler {
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
             // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
+            let srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
             for (const srcRecord of srcRecordFiltered) {
                 for (const srcRecordKey of remeda.keys.strict(srcRecord))
@@ -288,6 +315,19 @@ export class DbHandler {
                 await this._knex(dstTable).insert(srcRecord);
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
+    }
+    async _purgeCommentsWithInvalidSchema() {
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentsWithInvalidSchema");
+        for (const commentRecord of await this.queryAllCommentsOrderedByIdAsc()) {
+            // Need to purge records with invalid schema out of the table
+            try {
+                CommentIpfsSchema.strip().parse(commentRecord);
+            }
+            catch (e) {
+                log.error(`Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged along with comment update, votes and children comments`);
+                await this._deleteComment(commentRecord.cid);
+            }
+        }
     }
     async deleteVote(authorSignerAddress, commentCid, trx) {
         await this._baseTransaction(trx)(TABLES.VOTES)
@@ -357,12 +397,20 @@ export class DbHandler {
     }
     async queryCommentsForPages(options, trx) {
         // protocolVersion, signature
-        const commentUpdateColumns = [...CommentUpdateSignedPropertyNames, "protocolVersion", "signature"];
-        const aliasSelect = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
-        const commentsRaw = await this._basePageQuery(options, trx).select([`${TABLES.COMMENTS}.*`, ...aliasSelect]);
+        const commentUpdateColumns = remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
+        const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape), "extraProps"];
+        const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
+        const commentsRaw = await this._basePageQuery(options, trx).select([
+            ...commentIpfsColumnSelects,
+            ...commentUpdateColumnSelects
+        ]);
         //@ts-expect-error
         const comments = commentsRaw.map((commentRaw) => ({
-            comment: remeda.pickBy(commentRaw, (value, key) => !key.startsWith("commentUpdate_")),
+            comment: remeda.mapKeys(
+            // we need to exclude extraProps from pageIpfs.comments[0].comment
+            // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
+            remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")), (key, value) => key.replace("commentIpfs_", "")),
             update: remeda.mapKeys(remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")), (key, value) => key.replace("commentUpdate_", ""))
         }));
         return comments;
@@ -508,11 +556,18 @@ export class DbHandler {
         return { replyCount, upvoteCount, downvoteCount };
     }
     async _queryAuthorEdit(cid, authorSignerAddress, trx) {
+        const authorEditPubsubFields = [
+            ...remeda.keys.strict(AuthorCommentEditPubsubSchema.shape),
+            "extraProps"
+        ];
         const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-            .select(AUTHOR_EDIT_FIELDS)
+            .select(authorEditPubsubFields)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
+        if (authorEdit?.extraProps) {
+            delete authorEdit.extraProps; // parseDbResponses will include props under extraProps in authorEdit for us
+        }
         return authorEdit;
     }
     async _queryLatestModeratorReason(comment, trx) {
@@ -644,23 +699,21 @@ export class DbHandler {
     // Only in edge cases where a comment is invalid or it's causing a problem
     async _deleteComment(cid) {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
-        await this.initDestroyedConnection();
         const commentToBeDeleted = await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).first();
         if (!commentToBeDeleted)
             throw Error("Comment to be deleted does not exist");
         await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
         await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
-        await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid: cid }).del();
+        if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
+            await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();
         const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: commentToBeDeleted.cid });
         for (const child of children)
             await this._deleteComment(child.cid);
-        await this._knex.raw("PRAGMA foreign_keys = 0");
-        await this._baseTransaction()(TABLES.COMMENTS).where({ cid: commentToBeDeleted.cid }).del(); // Will throw if we do not disable foreign_keys constraint
-        await this._knex.raw("PRAGMA foreign_keys = 1");
+        await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
     }
     async changeDbFilename(oldDbName, newDbName) {
         const log = Logger("plebbit-js:db-handler:changeDbFilename");
-        const oldPathString = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", oldDbName);
+        const oldPathString = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
         this._currentTrxs = {};
@@ -670,7 +723,7 @@ export class DbHandler {
         delete this["_keyv"];
         await fs.promises.cp(oldPathString, newPath);
         if (os.type() === "Windows_NT")
-            await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit.plebbit);
+            await deleteOldSubplebbitInWindows(oldPathString, this._subplebbit._plebbit);
         else
             await fs.promises.rm(oldPathString);
         this._dbConfig = {
@@ -686,8 +739,8 @@ export class DbHandler {
     // Start lock
     async lockSubStart(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:local-subplebbit:lock:start");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -707,8 +760,8 @@ export class DbHandler {
     async unlockSubStart(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:local-subplebbit:unlock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath) || !fs.existsSync(subDbPath))
             return;
         try {
@@ -721,16 +774,16 @@ export class DbHandler {
         }
     }
     async isSubStartLocked(subAddress = this._subplebbit.address) {
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         const isLocked = await lockfile.check(subDbPath, { lockfilePath, realpath: false, stale: 30000 });
         return isLocked;
     }
     // Subplebbit state lock
     async lockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:lockSubState");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         try {
             await lockfile.lock(subDbPath, {
                 lockfilePath,
@@ -746,8 +799,8 @@ export class DbHandler {
     }
     async unlockSubState(subAddress = this._subplebbit.address) {
         const log = Logger("plebbit-js:lock:unlockSubState");
-        const lockfilePath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
-        const subDbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
+        const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath))
             return;
         try {
@@ -760,7 +813,7 @@ export class DbHandler {
     }
     // Misc functions
     subDbExists(subAddress = this._subplebbit.address) {
-        const dbPath = path.join(this._subplebbit.plebbit.dataPath, "subplebbits", subAddress);
+        const dbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         return fs.existsSync(dbPath);
     }
     subAddress() {

@@ -4,18 +4,55 @@ import { toString as uint8ArrayToString } from "uint8arrays/to-string";
 export const clone = (obj) => JSON.parse(JSON.stringify(obj));
 const maxRandomInt = 281474976710655;
 export const generateSubscriptionId = () => randomInt(1, maxRandomInt);
-export const encodePubsubMsg = (pubsubMsg) => {
-    let encodedMsg = clone(pubsubMsg);
-    encodedMsg.challengeRequestId = uint8ArrayToString(pubsubMsg.challengeRequestId, "base58btc");
-    if (pubsubMsg.encrypted)
-        encodedMsg.encrypted = {
-            tag: uint8ArrayToString(pubsubMsg.encrypted?.tag, "base64"),
-            iv: uint8ArrayToString(pubsubMsg.encrypted?.iv, "base64"),
-            ciphertext: uint8ArrayToString(pubsubMsg.encrypted?.ciphertext, "base64"),
-            type: pubsubMsg.encrypted.type
-        };
-    encodedMsg.signature.publicKey = uint8ArrayToString(pubsubMsg.signature.publicKey, "base64");
-    encodedMsg.signature.signature = uint8ArrayToString(pubsubMsg.signature.signature, "base64");
-    return encodedMsg;
-};
+function _encodeChallengeRequestId(id) {
+    return uint8ArrayToString(id, "base58btc");
+}
+function _encodeEncrypted(encrypted) {
+    return {
+        tag: uint8ArrayToString(encrypted.tag, "base64"),
+        iv: uint8ArrayToString(encrypted.iv, "base64"),
+        ciphertext: uint8ArrayToString(encrypted.ciphertext, "base64"),
+        type: encrypted.type
+    };
+}
+function _encodeSignature(signature) {
+    return {
+        ...signature,
+        publicKey: uint8ArrayToString(signature.publicKey, "base64"),
+        signature: uint8ArrayToString(signature.signature, "base64")
+    };
+}
+export function encodeChallengeRequest(msg) {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+export function encodeChallengeMessage(msg) {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+export function encodeChallengeAnswerMessage(msg) {
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted: _encodeEncrypted(msg.encrypted),
+        signature: _encodeSignature(msg.signature)
+    };
+}
+export function encodeChallengeVerificationMessage(msg) {
+    const encrypted = msg.encrypted ? _encodeEncrypted(msg.encrypted) : undefined;
+    return {
+        ...msg,
+        challengeRequestId: _encodeChallengeRequestId(msg.challengeRequestId),
+        encrypted,
+        signature: _encodeSignature(msg.signature)
+    };
+}
 //# sourceMappingURL=utils.js.map

@@ -8,7 +8,7 @@ import { shortifyAddress, shortifyCid } from "./util.js";
 import { plebbitJsChallenges } from "./runtime/node/subplebbit/challenges/index.js";
 const Plebbit = async function Plebbit(plebbitOptions = {}) {
     const plebbit = new PlebbitClass.Plebbit(plebbitOptions);
-    await plebbit._init(plebbitOptions);
+    await plebbit._init();
     return plebbit;
 };
 Plebbit.setNativeFunctions = utilSetNativeFunctions;

@@ -1,15 +1,14 @@
-import { IpfsClient, NativeFunctions, PlebbitOptions } from "../../types.js";
+import type { IpfsClient, NativeFunctions } from "../../types.js";
 import { Knex } from "knex";
 import { Plebbit } from "../../plebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
+import { SubplebbitIpfsType } from "../../subplebbit/types.js";
 export declare const getDefaultDataPath: () => string;
-export declare const getDefaultSubplebbitDbConfig: (subplebbit: Pick<RemoteSubplebbit, "address"> & {
-    plebbit: Pick<PlebbitOptions, "dataPath" | "noData">;
-}) => Promise<Knex.Config<any>>;
+export declare const getDefaultSubplebbitDbConfig: (subplebbitAddress: SubplebbitIpfsType["address"], plebbit: Plebbit) => Promise<Knex.Config<any>>;
 export declare function getThumbnailUrlOfLink(url: string, subplebbit: RemoteSubplebbit, proxyHttpUrl?: string): Promise<{
     thumbnailUrl: string;
-    thumbnailWidth: number;
-    thumbnailHeight: number;
+    thumbnailUrlWidth: number;
+    thumbnailUrlHeight: number;
 } | undefined>;
 export declare const nativeFunctions: NativeFunctions;
 export declare const setNativeFunctions: (newNativeFunctions: Partial<NativeFunctions>) => void;

@@ -282,7 +282,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     // - NFT wallet address (if they have author.avatar set)
     // If any of them pass, then the challenge pass
     // First try to validate author
-    const sharedProps = { plebbit: subplebbit.plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
+    const sharedProps = { plebbit: subplebbit._plebbit, abi, condition, error, chainTicker, publication, contractAddress: address };
     const walletFailureReason = await verifyAuthorWalletAddress(sharedProps);
     if (!walletFailureReason)
         return {
@@ -306,7 +306,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
 };
 function ChallengeFileFactory(subplebbitChallengeSettings) {
     let { chainTicker } = subplebbitChallengeSettings?.options || {};
-    const type = ("chain/" + (chainTicker || "<chainTicker>"));
+    const type = ("chain/" + (chainTicker || "eth"));
     return { getChallenge, optionInputs, type, description };
 }
 export default ChallengeFileFactory;

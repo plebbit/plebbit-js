@@ -8,10 +8,14 @@ import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throw
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";
-import { ChallengeAnswerMessageSignedPropertyNames, ChallengeMessageSignedPropertyNames, ChallengeRequestMessageSignedPropertyNames, ChallengeVerificationMessageSignedPropertyNames, CommentEditSignedPropertyNames, CommentSignedPropertyNames, CommentUpdateSignedPropertyNames, SubplebbitSignedPropertyNames, VoteSignedPropertyNames } from "./constants.js";
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
+import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
+import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
+import { CommentSignedPropertyNames, CommentUpdateReservedFields, CommentUpdateSignedPropertyNames } from "../publications/comment/schema.js";
+import { SubplebbitIpfsReservedFields, SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
+import { ChallengeRequestMessageSignedPropertyNames, ChallengeMessageSignedPropertyNames, ChallengeAnswerMessageSignedPropertyNames, ChallengeVerificationMessageSignedPropertyNames } from "../pubsub-messages/schema.js";
 const cborgEncodeOptions = {
     typeEncoders: {
         undefined: () => {
@@ -58,7 +62,7 @@ async function _validateAuthorAddressBeforeSigning(author, signer, plebbit) {
             throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
     }
 }
-async function _signJson(signedPropertyNames, publication, signer, log) {
+export async function _signJson(signedPropertyNames, publication, signer, log) {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
     // we assume here that publication already has been cleaned
     //@ts-expect-error
@@ -72,7 +76,7 @@ async function _signJson(signedPropertyNames, publication, signer, log) {
         signedPropertyNames: signedPropertyNames
     };
 }
-async function _signPubsubMsg(signedPropertyNames, msg, signer, log) {
+export async function _signPubsubMsg(signedPropertyNames, msg, signer, log) {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
     // we assume here that pubsub msg already has been cleaned
     //@ts-expect-error
@@ -93,25 +97,25 @@ export function cleanUpBeforePublishing(msg) {
     // We may add other steps in the future
     return removeNullUndefinedEmptyObjectsValuesRecursively(msg);
 }
-export async function signComment(comment, signer, plebbit) {
+export async function signComment(comment, plebbit) {
     const log = Logger("plebbit-js:signatures:signComment");
-    await _validateAuthorAddressBeforeSigning(comment.author, signer, plebbit);
-    return _signJson(CommentSignedPropertyNames, comment, signer, log);
+    await _validateAuthorAddressBeforeSigning(comment.author, comment.signer, plebbit);
+    return _signJson(CommentSignedPropertyNames, comment, comment.signer, log);
 }
 export async function signCommentUpdate(update, signer) {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
 }
-export async function signVote(vote, signer, plebbit) {
+export async function signVote(vote, plebbit) {
     const log = Logger("plebbit-js:signatures:signVote");
-    await _validateAuthorAddressBeforeSigning(vote.author, signer, plebbit);
-    return _signJson(VoteSignedPropertyNames, vote, signer, log);
+    await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
+    return _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
 }
-export async function signCommentEdit(edit, signer, plebbit) {
+export async function signCommentEdit(edit, plebbit) {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
-    await _validateAuthorAddressBeforeSigning(edit.author, signer, plebbit);
-    return _signJson(CommentEditSignedPropertyNames, edit, signer, log);
+    await _validateAuthorAddressBeforeSigning(edit.author, edit.signer, plebbit);
+    return _signJson(CommentEditSignedPropertyNames, edit, edit.signer, log);
 }
 export async function signSubplebbit(subplebbit, signer) {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
@@ -188,8 +192,12 @@ const _verifyJsonSignature = async (publicationToBeVerified) => {
             propsToSign[propertyName] = publicationToBeVerified[propertyName];
         }
     }
-    const signatureIsValid = await verifyBufferEd25519(cborg.encode(propsToSign, cborgEncodeOptions), uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"), publicationToBeVerified.signature.publicKey);
-    return signatureIsValid;
+    try {
+        return await verifyBufferEd25519(cborg.encode(propsToSign, cborgEncodeOptions), uint8ArrayFromString(publicationToBeVerified.signature.signature, "base64"), publicationToBeVerified.signature.publicKey);
+    }
+    catch (e) {
+        return false;
+    }
 };
 // DO NOT MODIFY THIS FUNCTION, OTHERWISE YOU RISK BREAKING BACKWARD COMPATIBILITY
 const _verifyPubsubSignature = async (msg) => {
@@ -199,9 +207,13 @@ const _verifyPubsubSignature = async (msg) => {
         if (msg[propertyName] !== undefined && msg[propertyName] !== null)
             propsToSign[propertyName] = msg[propertyName];
     }
-    const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
-    const signatureIsValid = await verifyBufferEd25519(cborg.encode(propsToSign, cborgEncodeOptions), msg.signature.signature, publicKeyBase64);
-    return signatureIsValid;
+    try {
+        const publicKeyBase64 = uint8ArrayToString(msg.signature.publicKey, "base64");
+        return await verifyBufferEd25519(cborg.encode(propsToSign, cborgEncodeOptions), msg.signature.signature, publicKeyBase64);
+    }
+    catch (e) {
+        return false;
+    }
 };
 const _verifyPublicationWithAuthor = async (publicationJson, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) => {
     // Validate author
@@ -223,25 +235,46 @@ const _verifyPublicationWithAuthor = async (publicationJson, resolveAuthorAddres
     return res;
 };
 export async function verifyVote(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(vote))
+        return { valid: false, reason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const res = await _verifyPublicationWithAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
 }
 export async function verifyCommentEdit(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(edit))
+        return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
 }
-export async function verifyComment(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+export async function verifyCommentPubsubMessage(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(comment))
+        return { valid: false, reason: messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const validation = await _verifyPublicationWithAuthor(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!validation.valid)
         return validation;
     return validation;
 }
+export async function verifyCommentIpfs(comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    const keysCasted = comment.signature.signedPropertyNames;
+    return verifyCommentPubsubMessage(remeda.pick(comment, ["signature", ...keysCasted]), resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+}
+function _allFieldsOfRecordInSignedPropertyNames(record) {
+    const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
+    for (const field of fieldsOfRecord)
+        if (!record.signature.signedPropertyNames.includes(field))
+            return false;
+    return true;
+}
 export async function verifySubplebbit(subplebbit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid, resolveDomainSubAddress = true) {
     const log = Logger("plebbit-js:signatures:verifySubplebbit");
+    if (!_allFieldsOfRecordInSignedPropertyNames(subplebbit))
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(subplebbit, SubplebbitIpfsReservedFields))
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD };
     const signatureValidity = await _verifyJsonSignature(subplebbit);
     if (!signatureValidity)
         return { valid: false, reason: messages.ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID };
@@ -299,7 +332,14 @@ async function _getBinaryValidationResult(publication) {
         return { valid: false, reason: messages.ERR_SIGNATURE_IS_INVALID };
     return { valid: true };
 }
+function _isThereReservedFieldInRecord(record, reservedFields) {
+    return remeda.intersection(Object.keys(record), reservedFields).length > 0;
+}
 export async function verifyCommentUpdate(update, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment, overrideAuthorAddressIfInvalid, resolveDomainSubAddress = true) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(update))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
     const log = Logger("plebbit-js:signatures:verifyCommentUpdate");
     const jsonValidation = await _getJsonValidationResult(update);
     if (!jsonValidation.valid)
@@ -330,7 +370,7 @@ export async function verifyCommentUpdate(update, resolveAuthorAddresses, client
                 throw Error("Failed to find page cid of the page");
             const page = update.replies.pages[replyKey];
             if (!page)
-                throw Error("Faield to find page to verify within comment update");
+                throw Error("Failed to find page to verify within comment update");
             const validity = await verifyPage(pageCid, page, resolveAuthorAddresses, clientsManager, subplebbitAddress, comment.cid, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
             if (!validity.valid)
                 return validity;
@@ -372,6 +412,8 @@ async function _validateChallengeRequestId(msg) {
         return { valid: true };
 }
 export async function verifyChallengeRequest(request, validateTimestampRange) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(request))
+        return { valid: false, reason: messages.ERR_CHALLENGE_REQUEST_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const idValid = await _validateChallengeRequestId(request);
     if (!idValid.valid)
         return idValid;
@@ -380,6 +422,8 @@ export async function verifyChallengeRequest(request, validateTimestampRange) {
     return _getBinaryValidationResult(request);
 }
 export async function verifyChallengeMessage(challenge, pubsubTopic, validateTimestampRange) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(challenge))
+        return { valid: false, reason: messages.ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const msgSignerAddress = await getPlebbitAddressFromPublicKeyBuffer(challenge.signature.publicKey);
     if (msgSignerAddress !== pubsubTopic)
         return { valid: false, reason: messages.ERR_CHALLENGE_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
@@ -388,6 +432,8 @@ export async function verifyChallengeMessage(challenge, pubsubTopic, validateTim
     return _getBinaryValidationResult(challenge);
 }
 export async function verifyChallengeAnswer(answer, validateTimestampRange) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(answer))
+        return { valid: false, reason: messages.ERR_CHALLENGE_ANSWER_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const idValid = await _validateChallengeRequestId(answer);
     if (!idValid.valid)
         return idValid;
@@ -396,6 +442,8 @@ export async function verifyChallengeAnswer(answer, validateTimestampRange) {
     return _getBinaryValidationResult(answer);
 }
 export async function verifyChallengeVerification(verification, pubsubTopic, validateTimestampRange) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(verification))
+        return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const msgSignerAddress = await getPlebbitAddressFromPublicKeyBuffer(verification.signature.publicKey);
     if (msgSignerAddress !== pubsubTopic)
         return { valid: false, reason: messages.ERR_CHALLENGE_VERIFICATION_MSG_SIGNER_IS_NOT_SUBPLEBBIT };
@@ -414,10 +462,10 @@ export async function verifyPage(pageCid, page, resolveAuthorAddresses, clientsM
         if (parentCommentCid !== pageComment.comment.parentCid)
             return { valid: false, reason: messages.ERR_PARENT_CID_NOT_AS_EXPECTED };
         // it should not cache if there's overriding of author.address because we want calls to verify page to override it
-        const commentSignatureValidity = await verifyComment(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+        const commentSignatureValidity = await verifyCommentIpfs(pageComment.comment, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
         if (!commentSignatureValidity.valid)
             return commentSignatureValidity;
-        if (commentSignatureValidity.derivedAddress)
+        if ("derivedAddress" in commentSignatureValidity && commentSignatureValidity.derivedAddress)
             shouldCache = false;
         const commentUpdateSignatureValidity = await verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
         if (!commentUpdateSignatureValidity.valid)

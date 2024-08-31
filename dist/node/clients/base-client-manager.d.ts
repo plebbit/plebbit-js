@@ -1,7 +1,8 @@
 import { Plebbit } from "../plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { ChainTicker, PubsubMessage, PubsubSubscriptionHandler } from "../types.js";
-export type LoadType = "subplebbit" | "comment-update" | "comment" | "generic-ipfs";
+import type { PubsubMessage } from "../pubsub-messages/types";
+import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
+export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string;
@@ -27,20 +28,38 @@ export declare class BaseClientsManager {
     postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError): void;
     postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
     private _fetchFromGatewayAndVerifyIfNeeded;
-    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController): Promise<string | undefined | {
+    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController, validateGatewayResponse: (resObj: {
+        resText: string;
+        res: Response;
+    }) => Promise<void>): Promise<{
+        res: Response;
+        resText: string;
+    } | {
         error: PlebbitError;
     }>;
-    protected _firstResolve(promises: Promise<string | {
+    protected _firstResolve(promises: Promise<{
+        res: Response;
+        resText: string;
+    } | {
         error: PlebbitError;
     }>[]): Promise<{
-        res: string;
+        res: {
+            res: Response;
+            resText: string;
+        };
         i: number;
     }>;
     getGatewayTimeoutMs(loadType: LoadType): number;
     fetchFromMultipleGateways(loadOpts: {
         cid?: string;
         ipns?: string;
-    }, loadType: LoadType): Promise<string>;
+    }, loadType: LoadType, valiateGatewayResponse: (resObj: {
+        resText: string;
+        res: Response;
+    }) => Promise<void>): Promise<{
+        resText: string;
+        res: Response;
+    }>;
     resolveIpnsToCidP2P(ipnsName: string): Promise<string>;
     _fetchCidP2P(cid: string): Promise<string>;
     private _verifyContentIsSameAsCid;

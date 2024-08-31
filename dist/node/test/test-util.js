@@ -1,6 +1,6 @@
-import { TIMEFRAMES_TO_SECONDS, timestamp } from "../util.js";
-import { Comment } from "../publications/comment/comment.js";
 import PlebbitIndex from "../index.js";
+import { removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { Comment } from "../publications/comment/comment.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import assert from "assert";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
@@ -10,6 +10,12 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import { v4 as uuidV4 } from "uuid";
 import * as resolverClass from "../resolver.js";
+import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, _signPubsubMsg } from "../signer/signatures.js";
+import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
+import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
+import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
+import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
+import env from "../version.js";
 function generateRandomTimestamp(parentTimestamp) {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
     let randomTimestamp = -1;
@@ -25,21 +31,20 @@ export async function generateMockPost(subplebbitAddress, plebbit, randomTimesta
     const postTimestamp = (randomTimestamp && generateRandomTimestamp()) || timestamp();
     const postStartTestTime = Date.now() / 1000 + Math.random();
     const signer = postProps?.signer || (await plebbit.createSigner());
-    const post = await plebbit.createComment({
+    const baseProps = {
+        subplebbitAddress,
         author: { displayName: `Mock Author - ${postStartTestTime}` },
         title: `Mock Post - ${postStartTestTime}`,
         content: `Mock content - ${postStartTestTime}`,
         signer,
-        timestamp: postTimestamp,
-        subplebbitAddress,
-        ...postProps
-    });
+        timestamp: postTimestamp
+    };
+    const finalPostProps = remeda.mergeDeep(baseProps, postProps);
+    const post = await plebbit.createComment(finalPostProps);
     return post;
 }
 // TODO rework this
 export async function generateMockComment(parentPostOrComment, plebbit, randomTimestamp = false, commentProps = {}) {
-    if (!["Comment", "Post"].includes(parentPostOrComment.constructor.name))
-        throw Error("Need to have parentComment defined to generate mock comment");
     const commentTimestamp = (randomTimestamp && generateRandomTimestamp(parentPostOrComment.timestamp)) || timestamp();
     const commentTime = Date.now() / 1000 + Math.random();
     const signer = commentProps?.signer || (await plebbit.createSigner());
@@ -66,9 +71,6 @@ export async function generateMockVote(parentPostOrComment, vote, plebbit, signe
         commentCid: commentCid,
         vote: vote,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
-    });
-    voteObj.once("challenge", (challengeMsg) => {
-        voteObj.publishChallengeAnswers([]);
     });
     return voteObj;
 }
@@ -134,14 +136,16 @@ async function _populateSubplebbit(subplebbit, props) {
             [props.signers[3].address]: { role: "moderator" }
         }
     });
+    if (props.numOfPostsToPublish === 0)
+        return;
     await new Promise((resolve) => subplebbit.once("update", resolve));
-    const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit.plebbit); // If no comment[] is provided, we publish posts
+    const posts = await _publishPosts(subplebbit.address, props.numOfPostsToPublish, subplebbit._plebbit); // If no comment[] is provided, we publish posts
     console.log(`Have successfully published ${posts.length} posts`);
-    const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit.plebbit);
+    const replies = await _publishReplies(posts[0], props.numOfCommentsToPublish, subplebbit._plebbit);
     console.log(`Have sucessfully published ${replies.length} replies`);
-    const postVotes = await _publishVotes(posts, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const postVotes = await _publishVotes(posts, props.votesPerCommentToPublish, subplebbit._plebbit);
     console.log(`Have sucessfully published ${postVotes.length} votes on ${posts.length} posts`);
-    const repliesVotes = await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit.plebbit);
+    const repliesVotes = await _publishVotes(replies, props.votesPerCommentToPublish, subplebbit._plebbit);
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 export async function startOnlineSubplebbit() {
@@ -192,7 +196,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests() {
 }
 export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {
     const log = Logger("plebbit-js:test-util:mockPlebbit");
-    const mockEthResolver = `mockEthRpc${uuidV4()}.com`;
+    const mockEthResolver = `https://mockEthRpc${uuidV4()}.com`;
     const plebbit = await PlebbitIndex({
         ...mockDefaultOptionsForNodeAndBrowserTests(),
         resolveAuthorAddresses: true,
@@ -232,9 +236,12 @@ export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubS
     plebbit.on("error", () => { });
     return plebbit;
 }
+// name should be changed to mockBrowserPlebbit
 export async function mockRemotePlebbit(plebbitOptions) {
+    // Mock browser environment
     const plebbit = await mockPlebbit(plebbitOptions);
     plebbit._canCreateNewLocalSub = () => false;
+    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 export async function createOnlinePlebbit(plebbitOptions) {
@@ -252,10 +259,16 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions) {
         ...plebbitOptions
     });
     plebbit._canCreateNewLocalSub = () => false;
+    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 export async function mockRpcServerPlebbit(plebbitOptions) {
     const plebbit = await mockPlebbit(plebbitOptions);
+    return plebbit;
+}
+export async function mockRpcRemotePlebbit(plebbitOptions) {
+    // This instance will connect to an rpc server that has no local subs
+    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
     return plebbit;
 }
 export async function mockGatewayPlebbit(plebbitOptions) {
@@ -278,8 +291,9 @@ export async function publishRandomReply(parentComment, plebbit, commentProps, v
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
+    const commentIpfsProps = { ...reply.toJSONIpfs(), cid: reply.cid };
     if (verifyCommentPropsInParentPages)
-        await waitTillCommentIsInParentPages(reply.toJSONAfterChallengeVerification(), plebbit);
+        await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return reply;
 }
 export async function publishRandomPost(subplebbitAddress, plebbit, postProps, verifyCommentPropsInParentPages = true) {
@@ -289,8 +303,9 @@ export async function publishRandomPost(subplebbitAddress, plebbit, postProps, v
         ...postProps
     });
     await publishWithExpectedResult(post, true);
+    const commentIpfsProps = { ...post.toJSONIpfs(), cid: post.cid };
     if (verifyCommentPropsInParentPages)
-        await waitTillCommentIsInParentPages(post.toJSONAfterChallengeVerification(), plebbit);
+        await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return post;
 }
 export async function publishVote(commentCid, subplebbitAddress, vote, plebbit, voteProps) {
@@ -348,17 +363,16 @@ export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCh
         const instance = pagesInstance();
         const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
         if (repliesPageCid)
-            commentInPage = await findCommentInPage(comment.cid, repliesPageCid, pagesInstance());
+            commentInPage = await findCommentInPage(comment.cid, repliesPageCid, instance);
         return Boolean(commentInPage);
     };
     await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
     await parent.stop();
     if (!commentInPage)
         throw Error("Failed to find comment in page");
-    const pagesJson = parent instanceof Comment ? parent.replies.toJSON() : parent.posts.toJSON();
-    if (!pagesJson)
+    const pageCids = parent instanceof Comment ? parent.replies?.pageCids : parent.posts?.pageCids;
+    if (!pageCids || remeda.isEmpty(pageCids))
         throw Error("Failed to retrieve pages");
-    const pageCids = pagesJson.pageCids;
     const commentKeys = remeda.keys.strict(remeda.omit(propsToCheckFor, ["signer"]));
     if (checkInAllPages)
         for (const pageCid of Object.values(pageCids)) {
@@ -366,18 +380,19 @@ export async function waitTillCommentIsInParentPages(comment, plebbit, propsToCh
             if (!commentInPage)
                 throw Error("Failed to find comment in page");
             for (const commentKey of commentKeys) {
+                //@ts-expect-error
                 if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
                     throw Error(`commentInPage[${commentKey}] is incorrect`);
             }
         }
     else
-        for (const commentKey of commentKeys)
+        for (const commentKey of commentKeys) //@ts-expect-error
             if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
                 throw Error(`commentInPage[${commentKey}] is incorrect`);
 }
 export async function createSubWithNoChallenge(props, plebbit) {
     const sub = await plebbit.createSubplebbit(props);
-    await sub.edit({ settings: { challenges: undefined } }); // No challenge
+    await sub.edit({ settings: { challenges: [] } }); // No challenge
     return sub;
 }
 export async function generatePostToAnswerMathQuestion(props, plebbit) {
@@ -394,6 +409,9 @@ export function isRpcFlagOn() {
     const isRpcFlagOn = isPartOfProcessEnv;
     return isRpcFlagOn;
 }
+export function isRunningInBrowser() {
+    return Boolean(globalThis["window"]);
+}
 export async function resolveWhenConditionIsTrue(toUpdate, predicate) {
     // should add a timeout?
     if (!(await predicate()))
@@ -405,4 +423,218 @@ export async function resolveWhenConditionIsTrue(toUpdate, predicate) {
             });
         });
 }
+export async function disableZodValidationOfPublication(publication) {
+    publication._createRequestEncrypted = () => publication.toJSONPubsubMessage(); // skip the zod validation
+    //@ts-expect-error
+    publication._validateSignature = () => { };
+}
+export async function overrideCommentInstancePropsAndSign(comment, props) {
+    if (!comment.signer)
+        throw Error("Need comment.signer to overwrite the signature");
+    const pubsubPublication = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
+    for (const optionKey of remeda.keys.strict(props)) {
+        //@ts-expect-error
+        comment[optionKey] = pubsubPublication[optionKey] = props[optionKey];
+    }
+    comment.signature = pubsubPublication.signature = await signComment(removeUndefinedValuesRecursively({ ...comment.toJSONPubsubMessagePublication(), signer: comment.signer }), comment._plebbit);
+    comment.toJSONPubsubMessagePublication = () => pubsubPublication;
+    disableZodValidationOfPublication(comment);
+}
+export async function overrideCommentEditInstancePropsAndSign(commentEdit, props) {
+    if (!commentEdit.signer)
+        throw Error("Need commentEdit.signer to overwrite the signature");
+    //@ts-expect-error
+    for (const optionKey of Object.keys(props))
+        commentEdit[optionKey] = props[optionKey];
+    commentEdit.signature = await signCommentEdit(removeUndefinedValuesRecursively({ ...commentEdit.toJSONPubsubMessagePublication(), signer: commentEdit.signer }), commentEdit._plebbit);
+    disableZodValidationOfPublication(commentEdit);
+}
+export async function setExtraPropOnCommentAndSign(comment, extraProps, includeExtraPropInSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnVoteAndSign");
+    const publicationWithExtraProp = { ...comment.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson([...comment.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), comment.signer, log);
+    comment.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+    disableZodValidationOfPublication(comment);
+    Object.assign(comment, extraProps);
+}
+export async function setExtraPropOnVoteAndSign(vote, extraProps, includeExtraPropInSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnVoteAndSign");
+    const publicationWithExtraProp = { ...vote.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson([...vote.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), vote.signer, log);
+    vote.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+    disableZodValidationOfPublication(vote);
+    Object.assign(vote, extraProps);
+}
+export async function setExtraPropOnCommentEditAndSign(commentEdit, extraProps, includeExtraPropInSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnCommentEditAndSign");
+    const publicationWithExtraProp = { ...commentEdit.toJSONPubsubMessagePublication(), ...extraProps };
+    if (includeExtraPropInSignedPropertyNames)
+        publicationWithExtraProp.signature = await _signJson([...commentEdit.signature.signedPropertyNames, ...Object.keys(extraProps)], cleanUpBeforePublishing(publicationWithExtraProp), commentEdit.signer, log);
+    commentEdit.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+    disableZodValidationOfPublication(commentEdit);
+    Object.assign(commentEdit, extraProps);
+}
+export async function setExtraPropOnChallengeRequestAndSign(publication, extraProps, includeExtraPropsInRequestSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnChallengeRequestAndSign");
+    //@ts-expect-error
+    publication._signAndValidateChallengeRequestBeforePublishing = async (requestWithoutSignature, signer) => {
+        const signedPropertyNames = Object.keys(requestWithoutSignature);
+        if (includeExtraPropsInRequestSignedPropertyNames)
+            signedPropertyNames.push(...Object.keys(extraProps));
+        const requestWithExtraProps = { ...requestWithoutSignature, ...extraProps };
+        const signature = await _signPubsubMsg(signedPropertyNames, requestWithExtraProps, signer, log);
+        return { ...requestWithExtraProps, signature };
+    };
+}
+export async function publishChallengeAnswerMessageWithExtraProps(publication, challengeAnswers, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
+    // we're crafting a challenge answer from scratch here
+    const log = Logger("plebbit-js:test-util:setExtraPropsOnChallengeAnswerMessageAndSign");
+    //@ts-expect-error
+    const signer = publication._challengeIdToPubsubSigner[publication._challenge.challengeRequestId.toString()];
+    const encryptedChallengeAnswers = await encryptEd25519AesGcm(JSON.stringify({ challengeAnswers }), signer.privateKey, 
+    //@ts-expect-error
+    publication._subplebbit.encryption.publicKey);
+    const toSignAnswer = cleanUpBeforePublishing({
+        type: "CHALLENGEANSWER",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        encrypted: encryptedChallengeAnswers,
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignAnswer);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames)
+        signedPropertyNames.push(...Object.keys(extraProps));
+    Object.assign(toSignAnswer, extraProps);
+    //@ts-expect-error
+    const signature = await _signPubsubMsg(signedPropertyNames, toSignAnswer, signer, log);
+    //@ts-expect-error
+    await publishOverPubsub(publication._subplebbit.pubsubTopic, { ...toSignAnswer, signature });
+}
+export async function publishChallengeMessageWithExtraProps(publication, pubsubSigner, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:publishChallengeMessageWithExtraProps");
+    const encryptedChallenges = await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify({ challenges: [] }), pubsubSigner.privateKey, 
+    //@ts-expect-error
+    publication._publishedChallengeRequests[0].signature.publicKey);
+    const toSignChallenge = cleanUpBeforePublishing({
+        type: "CHALLENGE",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        encrypted: encryptedChallenges,
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignChallenge);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames)
+        signedPropertyNames.push(...Object.keys(extraProps));
+    Object.assign(toSignChallenge, extraProps);
+    const signature = await _signPubsubMsg(signedPropertyNames, toSignChallenge, pubsubSigner, log);
+    await publishOverPubsub(pubsubSigner.address, { ...toSignChallenge, signature });
+}
+export async function publishChallengeVerificationMessageWithExtraProps(publication, pubsubSigner, extraProps, includeExtraPropsInChallengeSignedPropertyNames) {
+    const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
+    const toSignChallengeVerification = cleanUpBeforePublishing({
+        type: "CHALLENGEVERIFICATION",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeSuccess: false,
+        challengeErrors: [],
+        reason: "Random reason",
+        userAgent: env.USER_AGENT,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp()
+    });
+    const signedPropertyNames = remeda.keys.strict(toSignChallengeVerification);
+    //@ts-expect-error
+    if (includeExtraPropsInChallengeSignedPropertyNames)
+        signedPropertyNames.push(...Object.keys(extraProps));
+    Object.assign(toSignChallengeVerification, extraProps);
+    const signature = await _signPubsubMsg(signedPropertyNames, toSignChallengeVerification, pubsubSigner, log);
+    await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
+}
+export async function addStringToIpfs(content) {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const cid = (await ipfsClient._client.add(content)).path;
+    return cid;
+}
+export async function publishOverPubsub(pubsubTopic, jsonToPublish) {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    await plebbit._clientsManager.pubsubPublish(pubsubTopic, jsonToPublish);
+}
+export function getRemotePlebbitConfigs() {
+    if (isRpcFlagOn())
+        return [{ name: "RPC Remote", plebbitInstancePromise: mockRpcRemotePlebbit }];
+    else
+        return [
+            { name: "IPFS gateway", plebbitInstancePromise: mockGatewayPlebbit },
+            { name: "IPFS P2P", plebbitInstancePromise: mockRemotePlebbitIpfsOnly }
+        ];
+}
+export async function createNewIpns() {
+    const plebbit = await mockRemotePlebbitIpfsOnly();
+    const ipfsClient = plebbit._clientsManager.getDefaultIpfs();
+    const signer = await plebbit.createSigner();
+    signer.ipfsKey = new Uint8Array(await getIpfsKeyFromPrivateKey(signer.privateKey));
+    await importSignerIntoIpfsNode(signer.address, signer.ipfsKey, {
+        url: plebbit.ipfsHttpClientsOptions[0].url.toString(),
+        headers: plebbit.ipfsHttpClientsOptions[0].headers
+    });
+    const publishToIpns = async (content) => {
+        const cid = await addStringToIpfs(content);
+        await ipfsClient._client.name.publish(cid, {
+            key: signer.address,
+            allowOffline: true
+        });
+    };
+    return {
+        signer,
+        publishToIpns,
+        plebbit
+    };
+}
+export async function publishSubplebbitRecordWithExtraProp(opts) {
+    const ipnsObj = await createNewIpns();
+    const actualSub = await ipnsObj.plebbit.getSubplebbit("12D3KooWANwdyPERMQaCgiMnTT1t3Lr4XLFbK1z4ptFVhW2ozg1z");
+    const subplebbitRecord = JSON.parse(JSON.stringify(actualSub.toJSONIpfs()));
+    subplebbitRecord.pubsubTopic = subplebbitRecord.address = ipnsObj.signer.address;
+    delete subplebbitRecord.posts;
+    Object.assign(subplebbitRecord, opts.extraProps);
+    const signedPropertyNames = subplebbitRecord.signature.signedPropertyNames;
+    if (opts.includeExtraPropInSignedPropertyNames)
+        signedPropertyNames.push("extraProp");
+    subplebbitRecord.signature = await _signJson(signedPropertyNames, subplebbitRecord, ipnsObj.signer, Logger("plebbit-js:test-util:publishSubplebbitRecordWithExtraProp"));
+    await ipnsObj.publishToIpns(JSON.stringify(subplebbitRecord));
+    return { subplebbitRecord, ipnsObj };
+}
+export function jsonifySubplebbitAndRemoveInternalProps(sub) {
+    const jsonfied = JSON.parse(JSON.stringify(sub));
+    delete jsonfied["posts"]["clients"];
+    return remeda.omit(jsonfied, ["startedState", "started", "signer", "settings", "editable", "clients", "updatingState", "state"]);
+}
+export function jsonifyLocalSubWithNoInternalProps(sub) {
+    const localJson = JSON.parse(JSON.stringify(sub));
+    //@ts-expect-error
+    delete localJson["posts"]["clients"];
+    return remeda.omit(localJson, ["startedState", "started", "clients", "state", "updatingState"]);
+}
+export function jsonifyCommentAndRemoveInstanceProps(comment) {
+    const jsonfied = cleanUpBeforePublishing(JSON.parse(JSON.stringify(comment)));
+    if ("replies" in jsonfied)
+        delete jsonfied["replies"]["clients"];
+    if ("replies" in jsonfied && remeda.isEmpty(jsonfied.replies))
+        delete jsonfied["replies"];
+    return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
+}
+const skipFunction = (_) => { };
+export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
+export const describeIfRpc = isRpcFlagOn() ? globalThis["describe"] : skipFunction;
+export const itSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["it"];
+export const itIfRpc = isRpcFlagOn() ? globalThis["it"] : skipFunction;
 //# sourceMappingURL=test-util.js.map

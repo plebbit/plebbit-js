@@ -1,6 +1,7 @@
-import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS, timestamp } from "../../../util.js";
+import { timestamp } from "../../../util.js";
 import assert from "assert";
 import * as remeda from "remeda";
+import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 export class SortHandler {
     constructor(subplebbit) {
         this.subplebbit = subplebbit;
@@ -9,15 +10,9 @@ export class SortHandler {
         assert(chunks.length > 0);
         const listOfPage = new Array(chunks.length);
         const cids = new Array(chunks.length);
-        const chunksWithReplies = await Promise.all(chunks.map(async (chunk) => {
-            return await Promise.all(chunk.map(async (commentProps) => {
-                const comment = await this.subplebbit.plebbit.createComment(commentProps.comment);
-                return comment.toJSONPagesIpfs(commentProps.update);
-            }));
-        }));
-        for (let i = chunksWithReplies.length - 1; i >= 0; i--) {
-            const pageIpfs = { nextCid: cids[i + 1], comments: chunksWithReplies[i] };
-            cids[i] = (await this.subplebbit.clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+        for (let i = chunks.length - 1; i >= 0; i--) {
+            const pageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
+            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
@@ -35,7 +30,7 @@ export class SortHandler {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.comment.cid] = await this.subplebbit.dbHandler.queryActiveScore(comment.comment);
+                activeScores[comment.comment.cid] = await this.subplebbit._dbHandler.queryActiveScore(comment.comment);
         }
         const scoreSort = (obj1, obj2) => {
             if (activeScores) {
@@ -81,7 +76,7 @@ export class SortHandler {
             pageSize: 50
         };
         // Sorting posts on a subplebbit level
-        const rawPosts = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const rawPosts = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
         if (rawPosts.length === 0)
             return undefined;
         const sortResults = [];
@@ -97,7 +92,7 @@ export class SortHandler {
             parentCid: comment.cid,
             pageSize: 50
         };
-        const rawReplies = await this.subplebbit.dbHandler.queryCommentsForPages(pageOptions);
+        const rawReplies = await this.subplebbit._dbHandler.queryCommentsForPages(pageOptions);
         if (rawReplies.length === 0)
             return undefined;
         const sortResults = [];

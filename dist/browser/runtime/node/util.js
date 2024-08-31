@@ -19,13 +19,13 @@ import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 const storedIpfsClients = {};
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
-export const getDefaultSubplebbitDbConfig = async (subplebbit) => {
+export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
     let filename;
-    if (subplebbit.plebbit.noData)
+    if (plebbit.noData)
         filename = ":memory:";
     else {
-        assert(typeof subplebbit.plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
-        filename = path.join(subplebbit.plebbit.dataPath, "subplebbits", subplebbit.address);
+        assert(typeof plebbit.dataPath === "string", "plebbit.dataPath need to be defined to get default subplebbit db config");
+        filename = path.join(plebbit.dataPath, "subplebbits", subplebbitAddress);
         await fs.mkdir(path.dirname(filename), { recursive: true });
     }
     return {
@@ -41,13 +41,14 @@ export const getDefaultSubplebbitDbConfig = async (subplebbit) => {
 // Should be moved to subplebbit.ts
 export async function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
     const log = Logger(`plebbit-js:subplebbit:getThumbnailUrlOfLink`);
+    const userAgent = "Googlebot/2.1 (+http://www.google.com/bot.html)";
     //@ts-expect-error
     const thumbnail = {};
     const options = {
         url,
         fetchOptions: {
             headers: {
-                "user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)"
+                "user-agent": userAgent
             },
             //@ts-expect-error
             downloadLimit: 2000000
@@ -64,16 +65,15 @@ export async function getThumbnailUrlOfLink(url, subplebbit, proxyHttpUrl) {
             return undefined;
         if (!res?.result?.ogImage)
             return undefined;
-        res.result.ogImage[0].url;
         thumbnail.thumbnailUrl = res.result.ogImage[0].url;
         assert(typeof thumbnail.thumbnailUrl === "string", "thumbnailUrl needs to be a string");
-        thumbnail.thumbnailHeight = Number(res.result.ogImage?.[0]?.height);
-        thumbnail.thumbnailWidth = Number(res.result.ogImage?.[0]?.width);
-        if (thumbnail.thumbnailHeight === 0 || isNaN(thumbnail.thumbnailHeight)) {
+        thumbnail.thumbnailUrlHeight = Number(res.result.ogImage?.[0]?.height);
+        thumbnail.thumbnailUrlWidth = Number(res.result.ogImage?.[0]?.width);
+        if (thumbnail.thumbnailUrlHeight === 0 || isNaN(thumbnail.thumbnailUrlHeight)) {
             const probedDimensions = await fetchDimensionsOfImage(thumbnail.thumbnailUrl, options["agent"]);
             if (probedDimensions) {
-                thumbnail.thumbnailHeight = probedDimensions.height;
-                thumbnail.thumbnailWidth = probedDimensions.width;
+                thumbnail.thumbnailUrlHeight = probedDimensions.height;
+                thumbnail.thumbnailUrlWidth = probedDimensions.width;
             }
         }
         return thumbnail;

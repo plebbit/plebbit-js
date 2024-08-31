@@ -6,6 +6,10 @@ import fail from "./plebbit-js-challenges/fail.js";
 import blacklist from "./plebbit-js-challenges/blacklist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
+import * as remeda from "remeda";
+import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
+import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
+import { PlebbitError } from "../../../../plebbit-error.js";
 const plebbitJsChallenges = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
@@ -52,46 +56,41 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     for (const i in subplebbit.settings.challenges) {
         const challengeIndex = Number(i);
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
+        if (!subplebbitChallengeSettings.path && !plebbitJsChallenges[subplebbitChallengeSettings.name])
+            throw Error("You have to provide either path or a stored plebbit-js challenge");
         // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
-        let challengeFile;
-        if (subplebbitChallengeSettings.path) {
-            try {
-                const ChallengeFileFactory = require(subplebbitChallengeSettings.path);
-                validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
-                challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-                validateChallengeFile(challengeFile, challengeIndex, subplebbit);
-            }
-            catch (e) {
-                if (e instanceof Error)
-                    e.message = `failed importing challenge with path '${subplebbitChallengeSettings.path}': ${e.message}`;
-                throw e;
-            }
-        }
-        // else, the challenge is included with plebbit-js
-        else if (subplebbitChallengeSettings.name) {
-            const ChallengeFileFactory = plebbitJsChallenges[subplebbitChallengeSettings.name];
-            if (!ChallengeFileFactory) {
-                throw Error(`plebbit-js challenge with name '${subplebbitChallengeSettings.name}' doesn't exist`);
-            }
+        let ChallengeFileFactory;
+        try {
+            ChallengeFileFactory = ChallengeFileFactorySchema.parse(subplebbitChallengeSettings.path
+                ? require(subplebbitChallengeSettings.path)
+                : plebbitJsChallenges[subplebbitChallengeSettings.name]);
             validateChallengeFileFactory(ChallengeFileFactory, challengeIndex, subplebbit);
-            challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-            validateChallengeFile(challengeFile, challengeIndex, subplebbit);
         }
-        else
-            throw Error("Failed to set up challenge file instance");
+        catch (e) {
+            throw new PlebbitError("ERR_FAILED_TO_IMPORT_CHALLENGE_FILE_FACTORY", {
+                path: subplebbitChallengeSettings.path,
+                subplebbitChallengeSettings,
+                error: e,
+                challengeIndex
+            });
+        }
+        const challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
+        validateChallengeFile(challengeFile, challengeIndex, subplebbit);
         let challengeOrChallengeResult;
         try {
             // the getChallenge function could throw
             challengeOrChallengeResult = await challengeFile.getChallenge(subplebbitChallengeSettings, challengeRequestMessage, challengeIndex, subplebbit);
+            validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
         }
         catch (e) {
-            if (e instanceof Error) {
-                let errorMessage = `invalid getChallenge response from subplebbit challenge '${subplebbitChallengeSettings.name || subplebbitChallengeSettings.path}' (challenge #${challengeIndex + 1})`;
-                e.message = `${errorMessage}: ${e.message}`;
-            }
-            throw e;
+            throw new PlebbitError("ERR_INVALID_RESULT_FROM_GET_CHALLENGE_FUNCTION", {
+                subplebbitChallengeSettings,
+                challengeName: subplebbitChallengeSettings.name || subplebbitChallengeSettings.path,
+                challengeRequestMessage,
+                challengeIndex: challengeIndex + 1,
+                error: e
+            });
         }
-        validateChallengeOrChallengeResult(challengeOrChallengeResult, challengeIndex, subplebbit);
         challengeOrChallengeResults.push(challengeOrChallengeResult);
     }
     // check failures and errors
@@ -107,7 +106,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
         if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage.publication, subplebbit)) {
             continue;
         }
-        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit.plebbit)) {
+        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit._plebbit)) {
             continue;
         }
         // exclude based on other challenges successes
@@ -151,7 +150,7 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
 const getChallengeVerificationFromChallengeAnswers = async (pendingChallenges, challengeAnswers, subplebbit) => {
     const verifyChallengePromises = [];
     for (const i in pendingChallenges) {
-        verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i]));
+        verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i])); // TODO double check if zod verifies output of a promise
     }
     const challengeResultsWithPendingIndexes = await Promise.all(verifyChallengePromises);
     // validate results
@@ -200,7 +199,7 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     if (!challengeRequestMessage) {
         throw Error(`getChallengeVerification invalid challengeRequestMessage argument '${challengeRequestMessage}'`);
     }
-    if (typeof subplebbit?.plebbit?.getComment !== "function") {
+    if (typeof subplebbit?._plebbit?.getComment !== "function") {
         throw Error(`getChallengeVerification invalid subplebbit argument '${subplebbit}' invalid subplebbit.plebbit instance`);
     }
     if (typeof getChallengeAnswers !== "function") {
@@ -218,7 +217,8 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     }
     // author still has some pending challenges to complete
     else {
-        const challengeAnswers = await getChallengeAnswers(res.pendingChallenges);
+        const rawAnswersFromPending = await getChallengeAnswers(res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"])));
+        const challengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(rawAnswersFromPending);
         challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
     }
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
@@ -227,21 +227,13 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
 };
 // get the data to be published publicly to subplebbit.challenges
 const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallengeSettings) => {
-    if (!subplebbitChallengeSettings) {
-        throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid subplebbitChallengeSettings argument '${subplebbitChallengeSettings}'`);
-    }
+    subplebbitChallengeSettings = SubplebbitChallengeSettingSchema.parse(subplebbitChallengeSettings);
     // if the challenge is an external file, fetch it and override the subplebbitChallengeSettings values
     let challengeFile = undefined;
     if (subplebbitChallengeSettings.path) {
         try {
-            const ChallengeFileFactory = require(subplebbitChallengeSettings.path);
-            if (typeof ChallengeFileFactory !== "function") {
-                throw Error(`invalid challenge file factory exported`);
-            }
-            challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-            if (typeof challengeFile?.getChallenge !== "function") {
-                throw Error(`invalid challenge file`);
-            }
+            const ChallengeFileFactory = ChallengeFileFactorySchema.parse(require(subplebbitChallengeSettings.path));
+            challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
         }
         catch (e) {
             if (e instanceof Error)
@@ -251,17 +243,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallen
     }
     // else, the challenge is included with plebbit-js
     else if (subplebbitChallengeSettings.name) {
-        const ChallengeFileFactory = plebbitJsChallenges[subplebbitChallengeSettings.name];
-        if (!ChallengeFileFactory) {
-            throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings plebbit-js challenge with name '${subplebbitChallengeSettings.name}' doesn't exist`);
-        }
-        if (typeof ChallengeFileFactory !== "function") {
-            throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid challenge file factory exported from subplebbit challenge '${subplebbitChallengeSettings.name}'`);
-        }
-        challengeFile = ChallengeFileFactory(subplebbitChallengeSettings);
-        if (typeof challengeFile?.getChallenge !== "function") {
-            throw Error(`getSubplebbitChallengeFromSubplebbitChallengeSettings invalid challenge file from subplebbit challenge '${subplebbitChallengeSettings.name}'`);
-        }
+        const ChallengeFileFactory = ChallengeFileFactorySchema.parse(plebbitJsChallenges[subplebbitChallengeSettings.name]);
+        challengeFile = ChallengeFileSchema.parse(ChallengeFileFactory(subplebbitChallengeSettings));
     }
     if (!challengeFile)
         throw Error("Failed to load challenge file");
