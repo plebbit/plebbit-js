@@ -4,6 +4,7 @@ import { PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "../../sche
 import type { Server as HTTPServer } from "http";
 import type { Server as HTTPSServer } from "https";
 import { ChallengeFileSchema } from "../../subplebbit/schema.js";
+import type { InputPlebbitOptions } from "../../types.js";
 
 // Setting up WS
 
@@ -14,7 +15,7 @@ const WsServerClassOptions = z.object({
 
 export const CreatePlebbitWsServerOptionsSchema = z
     .object({
-        plebbitOptions: PlebbitUserOptionsSchema.passthrough().optional(),
+        plebbitOptions: z.custom<InputPlebbitOptions>().optional(), // no need to validate here, will be validated with await Plebbit()
         authKey: z.string().optional()
     })
     .merge(WsServerClassOptions)
