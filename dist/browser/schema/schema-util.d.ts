@@ -184,7 +184,7 @@ export declare function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItF
     } & {
         [k: string]: unknown;
     };
-    cid: string;
+    updateCid: string;
 };
 export declare function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any): string;
 export declare function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: any): CommentIpfsType | CommentUpdateType;

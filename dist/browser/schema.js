@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { parseIpfsRawOptionToIpfsOptions } from "./util.js";
+import { UserAgentSchema } from "./schema/schema.js";
+import version from "./version.js";
 // This file will have misc schemas, as well as Plebbit class schema
 export const ChainTickerSchema = z.string().min(1);
 const LibraryChainProvider = z.enum(["viem", "ethers.js", "web3.js"]);
@@ -40,7 +42,8 @@ const PlebbitUserOptionBaseSchema = z.object({
     publishInterval: z.number().positive(), // in ms, the time to wait for subplebbit instances to publish updates. Default is 20s
     updateInterval: z.number().positive(), // in ms, the time to wait for comment/subplebbit instances to check for updates. Default is 1min
     noData: z.boolean(), // if true, dataPath is ignored, all database and cache data is saved in memory
-    browserLibp2pJsPublish: z.boolean() // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
+    browserLibp2pJsPublish: z.boolean(), // if true and on browser, it will bootstrap pubsub through libp2p instead of relying on pubsub providers
+    userAgent: UserAgentSchema
 });
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
@@ -53,7 +56,8 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
     updateInterval: PlebbitUserOptionBaseSchema.shape.updateInterval.default(60000),
     noData: PlebbitUserOptionBaseSchema.shape.noData.default(false),
-    browserLibp2pJsPublish: PlebbitUserOptionBaseSchema.shape.browserLibp2pJsPublish.default(false)
+    browserLibp2pJsPublish: PlebbitUserOptionBaseSchema.shape.browserLibp2pJsPublish.default(false),
+    userAgent: PlebbitUserOptionBaseSchema.shape.userAgent.default(version.USER_AGENT)
 }).strict();
 export const PlebbitParsedOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used to parse responses from rpc when calling getSettings

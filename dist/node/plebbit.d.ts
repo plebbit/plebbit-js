@@ -36,6 +36,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pars
     publishInterval: ParsedPlebbitOptions["publishInterval"];
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
+    userAgent: ParsedPlebbitOptions["userAgent"];
     clients: {
         ipfsGateways: {
             [ipfsGatewayUrl: string]: GatewayClient;

@@ -501,7 +501,7 @@ export async function publishChallengeAnswerMessageWithExtraProps(publication, c
         //@ts-expect-error
         challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
         encrypted: encryptedChallengeAnswers,
-        userAgent: env.USER_AGENT,
+        userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
         timestamp: timestamp()
     });
@@ -525,7 +525,7 @@ export async function publishChallengeMessageWithExtraProps(publication, pubsubS
         //@ts-expect-error
         challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
         encrypted: encryptedChallenges,
-        userAgent: env.USER_AGENT,
+        userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
         timestamp: timestamp()
     });
@@ -546,7 +546,7 @@ export async function publishChallengeVerificationMessageWithExtraProps(publicat
         challengeSuccess: false,
         challengeErrors: [],
         reason: "Random reason",
-        userAgent: env.USER_AGENT,
+        userAgent: publication._plebbit.userAgent,
         protocolVersion: env.PROTOCOL_VERSION,
         timestamp: timestamp()
     });

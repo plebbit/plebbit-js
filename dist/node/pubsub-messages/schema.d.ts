@@ -6590,8 +6590,8 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<z.objectUtil.ext
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -6609,8 +6609,8 @@ export declare const ChallengeRequestMessageSchema: z.ZodObject<z.objectUtil.ext
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -11486,7 +11486,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<{
     challengeAnswers?: [string, ...string[]] | undefined;
     challengeCommentCids?: string[] | undefined;
 }>;
-export declare const ChallengeRequestMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted" | "acceptedChallengeTypes")[];
+export declare const ChallengeRequestMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted" | "acceptedChallengeTypes")[];
 export declare const ChallengeInChallengePubsubMessageSchema: z.ZodObject<{
     challenge: z.ZodString;
     type: z.ZodLazy<z.ZodString>;
@@ -11549,8 +11549,8 @@ export declare const ChallengeMessageSchema: z.ZodObject<z.objectUtil.extendShap
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -11567,8 +11567,8 @@ export declare const ChallengeMessageSchema: z.ZodObject<z.objectUtil.extendShap
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -11603,7 +11603,7 @@ export declare const DecryptedChallengeSchema: z.ZodObject<{
         caseInsensitive?: boolean | undefined;
     }[];
 }>;
-export declare const ChallengeMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted")[];
+export declare const ChallengeMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted")[];
 export declare const ChallengeAnswerMessageSchema: z.ZodObject<z.objectUtil.extendShape<{
     challengeRequestId: z.ZodType<Uint8Array, z.ZodTypeDef, Uint8Array>;
     signature: z.ZodObject<{
@@ -11653,8 +11653,8 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<z.objectUtil.exte
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -11671,8 +11671,8 @@ export declare const ChallengeAnswerMessageSchema: z.ZodObject<z.objectUtil.exte
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     encrypted: {
         type: "ed25519-aes-gcm";
         ciphertext: Uint8Array;
@@ -11687,7 +11687,7 @@ export declare const DecryptedChallengeAnswerSchema: z.ZodObject<{
 }, {
     challengeAnswers: [string, ...string[]];
 }>;
-export declare const ChallengeAnswerMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted")[];
+export declare const ChallengeAnswerMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted")[];
 export declare const ChallengeVerificationMessageSchema: z.ZodObject<z.objectUtil.extendShape<{
     challengeRequestId: z.ZodType<Uint8Array, z.ZodTypeDef, Uint8Array>;
     signature: z.ZodObject<{
@@ -11740,8 +11740,8 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<z.objectUti
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     challengeSuccess: boolean;
     encrypted?: {
         type: "ed25519-aes-gcm";
@@ -11761,8 +11761,8 @@ export declare const ChallengeVerificationMessageSchema: z.ZodObject<z.objectUti
         signedPropertyNames: [string, ...string[]];
     };
     protocolVersion: string;
-    challengeRequestId: Uint8Array;
     userAgent: string;
+    challengeRequestId: Uint8Array;
     challengeSuccess: boolean;
     encrypted?: {
         type: "ed25519-aes-gcm";
@@ -19810,4 +19810,4 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }>, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
-export declare const ChallengeVerificationMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted" | "challengeSuccess" | "challengeErrors" | "reason")[];
+export declare const ChallengeVerificationMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "userAgent" | "challengeRequestId" | "encrypted" | "challengeSuccess" | "challengeErrors" | "reason")[];

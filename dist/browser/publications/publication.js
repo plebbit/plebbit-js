@@ -274,7 +274,7 @@ class Publication extends TypedEmitter {
             type: "CHALLENGEANSWER",
             challengeRequestId: this._challenge.challengeRequestId,
             encrypted: encryptedChallengeAnswers,
-            userAgent: env.USER_AGENT,
+            userAgent: this._plebbit.userAgent,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });
@@ -545,7 +545,7 @@ class Publication extends TypedEmitter {
             encrypted,
             challengeRequestId,
             acceptedChallengeTypes: options.acceptedChallengeTypes,
-            userAgent: env.USER_AGENT,
+            userAgent: this._plebbit.userAgent,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });

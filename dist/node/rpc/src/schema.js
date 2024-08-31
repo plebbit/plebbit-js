@@ -8,7 +8,7 @@ const WsServerClassOptions = z.object({
 });
 export const CreatePlebbitWsServerOptionsSchema = z
     .object({
-    plebbitOptions: PlebbitUserOptionsSchema.passthrough().optional(),
+    plebbitOptions: z.custom().optional(), // no need to validate here, will be validated with await Plebbit()
     authKey: z.string().optional()
 })
     .merge(WsServerClassOptions)

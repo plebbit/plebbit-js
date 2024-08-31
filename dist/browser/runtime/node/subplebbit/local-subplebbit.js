@@ -293,7 +293,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
         this._cidsToUnPin = [file.path];
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
-        this.cid = file.path;
+        this.updateCid = file.path;
         this._subplebbitUpdateTrigger = false;
         await this._updateDbInternalState(remeda.omit(this.toJSONInternalAfterFirstUpdate(), ["address"]));
         this._setStartedState("succeeded");
@@ -518,7 +518,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const toSignChallenge = cleanUpBeforePublishing({
             type: "CHALLENGE",
             protocolVersion: env.PROTOCOL_VERSION,
-            userAgent: env.USER_AGENT,
+            userAgent: this._plebbit.userAgent,
             challengeRequestId: request.challengeRequestId,
             encrypted: await encryptEd25519AesGcmPublicKeyBuffer(deterministicStringify(toEncryptChallenge), this.signer.privateKey, request.signature.publicKey),
             timestamp: timestamp()
@@ -545,7 +545,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             challengeSuccess: false,
             challengeErrors: result.challengeErrors,
             reason: result.reason,
-            userAgent: env.USER_AGENT,
+            userAgent: this._plebbit.userAgent,
             protocolVersion: env.PROTOCOL_VERSION,
             timestamp: timestamp()
         });
@@ -594,7 +594,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 reason: undefined,
                 encrypted,
                 challengeErrors: challengeResult.challengeErrors,
-                userAgent: env.USER_AGENT,
+                userAgent: this._plebbit.userAgent,
                 protocolVersion: env.PROTOCOL_VERSION,
                 timestamp: timestamp()
             });

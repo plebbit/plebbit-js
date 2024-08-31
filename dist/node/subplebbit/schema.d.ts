@@ -4271,7 +4271,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>, "many">>>;
     }, z.ZodTypeAny, "passthrough">>;
-    cid: z.ZodEffects<z.ZodString, string, string>;
+    updateCid: z.ZodEffects<z.ZodString, string, string>;
 }, "strip", z.ZodTypeAny, {
     subplebbit: {
         address: string;
@@ -4447,7 +4447,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     } & {
         [k: string]: unknown;
     };
-    cid: string;
+    updateCid: string;
 }, {
     subplebbit: {
         address: string;
@@ -4623,7 +4623,7 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     } & {
         [k: string]: unknown;
     };
-    cid: string;
+    updateCid: string;
 }>;
 export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     posts: z.ZodOptional<z.ZodOptional<z.ZodObject<{
@@ -5573,7 +5573,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
     }, {
         pageCids: Record<string, string>;
     }>]>;
-    cid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }>, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
@@ -5585,7 +5585,6 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectOutputType<{
@@ -5746,6 +5745,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }, {
     address: string;
     signature?: {
@@ -5757,7 +5757,6 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectInputType<{
@@ -5918,6 +5917,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }>;
 export declare const SubplebbitSettingsSchema: z.ZodObject<{
     fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
@@ -9206,7 +9206,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     }, {
         pageCids: Record<string, string>;
     }>]>;
-    cid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }>, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
@@ -9218,7 +9218,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectOutputType<{
@@ -9379,6 +9378,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }, {
     address: string;
     signature?: {
@@ -9390,7 +9390,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectInputType<{
@@ -9551,6 +9550,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }>, z.ZodObject<{
     posts: z.ZodOptional<z.ZodObject<{
         pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
@@ -11895,7 +11895,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     }, {
         pageCids: Record<string, string>;
     }>]>;
-    cid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }>, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
@@ -11907,7 +11907,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectOutputType<{
@@ -12068,6 +12067,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }, {
     address: string;
     signature?: {
@@ -12079,7 +12079,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectInputType<{
@@ -12240,6 +12239,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }>, z.ZodObject<{
     posts: z.ZodOptional<z.ZodObject<{
         pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;
@@ -15918,7 +15918,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     }, {
         pageCids: Record<string, string>;
     }>]>;
-    cid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+    updateCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
 }>, "strict", z.ZodTypeAny, {
     address: string;
     signature?: {
@@ -15930,7 +15930,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectOutputType<{
@@ -16091,6 +16090,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }, {
     address: string;
     signature?: {
@@ -16102,7 +16102,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
     description?: string | undefined;
-    cid?: string | undefined;
     pubsubTopic?: string | undefined;
     title?: string | undefined;
     challenges?: z.objectInputType<{
@@ -16263,6 +16262,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         textColor: z.ZodOptional<z.ZodString>;
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
+    updateCid?: string | undefined;
 }>, z.ZodObject<{
     posts: z.ZodOptional<z.ZodObject<{
         pages: z.ZodRecord<z.ZodUnion<[z.ZodEnum<["hot", "new", "topHour", "topDay", "topWeek", "topMonth", "topYear", "topAll", "controversialHour", "controversialDay", "controversialWeek", "controversialMonth", "controversialYear", "controversialAll", "active"]>, z.ZodString]>, z.ZodType<import("../pages/types.js").PageIpfsManuallyDefined, z.ZodTypeDef, import("../pages/types.js").PageIpfsManuallyDefined>>;

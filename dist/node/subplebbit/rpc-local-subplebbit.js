@@ -24,12 +24,12 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         hideClassPrivateProps(this);
     }
     toJSONInternalRpcAfterFirstUpdate() {
-        if (!this.cid)
+        if (!this.updateCid)
             throw Error("rpcLocalSubplebbit.cid should be defined before calling toJSONInternalRpcAfterFirstUpdate");
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONInternalRpcBeforeFirstUpdate(),
-            cid: this.cid
+            cid: this.updateCid
         };
     }
     toJSONInternalRpcBeforeFirstUpdate() {
@@ -59,7 +59,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         else
             await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
-        this.cid = newProps.cid;
+        this.updateCid = newProps.cid;
     }
     _setStartedState(newState) {
         if (newState === this.startedState)
