@@ -953,7 +953,7 @@ type SubplebbitGatewayFetch = {
     [gateway: string]: {
         abortController: AbortController;
         promise: Promise<any>;
-        cid?: SubplebbitJson["cid"];
+        cid?: SubplebbitJson["updateCid"];
         subplebbitRecord?: SubplebbitIpfsType;
         error?: PlebbitError;
         timeoutId: any;

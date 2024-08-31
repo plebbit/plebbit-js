@@ -441,7 +441,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this._cidsToUnPin = [file.path];
 
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
-        this.cid = file.path;
+        this.updateCid = file.path;
 
         this._subplebbitUpdateTrigger = false;
 

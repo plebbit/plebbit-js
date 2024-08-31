@@ -4,44 +4,44 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
-describe(`Subplebbit.cid`, async () => {
+describe(`Subplebbit.updateCid`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockPlebbit();
     });
-    it(`subplebbit.cid gets updated when local-subplebbit publishes a new record`, async () => {
+    it(`subplebbit.updateCid gets updated when local-subplebbit publishes a new record`, async () => {
         const sub = await plebbit.createSubplebbit({});
-        expect(sub.cid).to.be.undefined;
+        expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
-        expect(sub.cid).to.be.a("string");
+        expect(sub.updateCid).to.be.a("string");
 
         await sub.delete();
     });
-    it(`subplebbit.cid is defined when creating an instance of an existing local subplebbit`, async () => {
+    it(`subplebbit.updateCid is defined when creating an instance of an existing local subplebbit`, async () => {
         const sub = await plebbit.createSubplebbit({});
-        expect(sub.cid).to.be.undefined;
+        expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
-        expect(sub.cid).to.be.a("string");
+        expect(sub.updateCid).to.be.a("string");
 
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
-        expect(recreatedSub.cid).to.equal(sub.cid);
+        expect(recreatedSub.updateCid).to.equal(sub.updateCid);
 
         await sub.delete();
     });
 
-    it(`subplebbit.cid is part of subplebbit.toJSON()`, async () => {
+    it(`subplebbit.updateCid is part of subplebbit.toJSON()`, async () => {
         const sub = await plebbit.createSubplebbit({});
-        expect(sub.cid).to.be.undefined;
+        expect(sub.updateCid).to.be.undefined;
 
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number"); // wait until we publish a new record
 
         const subJson = JSON.parse(JSON.stringify(sub));
-        expect(subJson.cid).to.be.a("string");
+        expect(subJson.updateCid).to.be.a("string");
         await sub.delete();
     });
 });

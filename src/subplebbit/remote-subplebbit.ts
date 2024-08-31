@@ -52,7 +52,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     state!: SubplebbitState;
     updatingState!: SubplebbitUpdatingState;
     clients: SubplebbitClientsManager["clients"];
-    cid?: string;
+    updateCid?: string;
 
     // should be used internally
     _plebbit: Plebbit;
@@ -148,7 +148,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
         if (newProps.encryption) this.encryption = newProps.encryption;
         if (newProps.signature) this.signature = newProps.signature;
         await this._updateLocalPostsInstance(newProps.posts);
-        if ("cid" in newProps) this.cid = newProps.cid;
+        if ("updateCid" in newProps) this.updateCid = newProps.updateCid;
     }
 
     setAddress(newAddress: string) {
@@ -176,10 +176,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     }
 
     toJSONRpcRemote(): RpcRemoteSubplebbitType {
-        if (!this.cid) throw Error("subplebbit.cid should be defined before calling toJSONRpcRemote");
+        if (!this.updateCid) throw Error("subplebbit.cid should be defined before calling toJSONRpcRemote");
         return {
             subplebbit: this.toJSONIpfs(),
-            cid: this.cid
+            updateCid: this.updateCid
         };
     }
 
@@ -221,7 +221,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
                 log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
-                    this.cid = update.cid;
+                    this.updateCid = update.cid;
                     resolve(update.subplebbit);
                 } catch (e) {
                     this._setUpdatingState("failed");
