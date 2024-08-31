@@ -1705,6 +1705,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return this;
     }
 
+    private async _setSubplebbitIpfsIfNeeded() {
+        // A hack for old subplebbit states that don't define _rawSubplebbitIpfs
+        if (this.updatedAt && !this._rawSubplebbitIpfs) {
+            const internalState = await this._getDbInternalState();
+            if (!internalState) throw Error("Internal state should be defined if updatedAt is defined");
+            if (!("signature" in internalState)) throw Error("signature should be defined");
+            this._rawSubplebbitIpfs = <
+                SubplebbitIpfsType //@ts-expect-error
+            >remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature"]);
+        }
+    }
+
     override async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
 
@@ -1718,6 +1730,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.initDestroyedConnection();
+            await this._setSubplebbitIpfsIfNeeded();
 
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
