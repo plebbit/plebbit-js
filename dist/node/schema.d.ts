@@ -31,6 +31,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     updateInterval: z.ZodNumber;
     noData: z.ZodBoolean;
     browserLibp2pJsPublish: z.ZodBoolean;
+    userAgent: z.ZodString;
 }, {
     ipfsGatewayUrls: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     pubsubHttpClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("kubo-rpc-client").Options | import("@multiformats/multiaddr").Multiaddr | undefined, z.ZodTypeDef, string | URL | import("kubo-rpc-client").Options | import("@multiformats/multiaddr").Multiaddr | undefined>, "many">, import("kubo-rpc-client").Options[], (string | URL | import("kubo-rpc-client").Options | import("@multiformats/multiaddr").Multiaddr | undefined)[]>>>;
@@ -49,6 +50,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     updateInterval: z.ZodDefault<z.ZodNumber>;
     noData: z.ZodDefault<z.ZodBoolean>;
     browserLibp2pJsPublish: z.ZodDefault<z.ZodBoolean>;
+    userAgent: z.ZodDefault<z.ZodString>;
 }>, "strict", z.ZodTypeAny, {
     ipfsGatewayUrls: string[];
     pubsubHttpClientsOptions: import("kubo-rpc-client").Options[];
@@ -61,6 +63,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     updateInterval: number;
     noData: boolean;
     browserLibp2pJsPublish: boolean;
+    userAgent: string;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: string[] | undefined;
     dataPath?: string | undefined;
@@ -79,6 +82,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     updateInterval?: number | undefined;
     noData?: boolean | undefined;
     browserLibp2pJsPublish?: boolean | undefined;
+    userAgent?: string | undefined;
 }>;
 export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extendShape<{
     ipfsGatewayUrls: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
@@ -101,6 +105,7 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extend
     updateInterval: z.ZodNumber;
     noData: z.ZodBoolean;
     browserLibp2pJsPublish: z.ZodBoolean;
+    userAgent: z.ZodString;
 }, {
     ipfsHttpClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
     pubsubHttpClientsOptions: z.ZodOptional<z.ZodType<import("kubo-rpc-client").Options[], z.ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -114,6 +119,7 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extend
     updateInterval: number;
     noData: boolean;
     browserLibp2pJsPublish: boolean;
+    userAgent: string;
     ipfsGatewayUrls?: string[] | undefined;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     pubsubHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
@@ -129,6 +135,7 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extend
     updateInterval: number;
     noData: boolean;
     browserLibp2pJsPublish: boolean;
+    userAgent: string;
     ipfsGatewayUrls?: string[] | undefined;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     pubsubHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;

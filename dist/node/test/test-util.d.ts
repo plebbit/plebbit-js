@@ -105,7 +105,6 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     protocolVersion: import("../subplebbit/types.js").SubplebbitIpfsType["protocolVersion"];
     lastCommentCid?: import("../subplebbit/types.js").SubplebbitIpfsType["lastCommentCid"];
     description?: import("../subplebbit/types.js").SubplebbitIpfsType["description"];
-    cid?: string | undefined;
     pubsubTopic?: import("../subplebbit/types.js").SubplebbitIpfsType["pubsubTopic"];
     state: import("../subplebbit/types.js").SubplebbitState;
     clients: import("../clients/client-manager.js").SubplebbitClientsManager["clients"];
@@ -123,6 +122,7 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     features?: import("../subplebbit/types.js").SubplebbitIpfsType["features"];
     suggested?: import("../subplebbit/types.js").SubplebbitIpfsType["suggested"];
     flairs?: import("../subplebbit/types.js").SubplebbitIpfsType["flairs"];
+    updateCid?: string | undefined;
     updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
     started: boolean;
     startedState: import("../subplebbit/types.js").SubplebbitStartedState;

@@ -31,7 +31,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     state: SubplebbitState;
     updatingState: SubplebbitUpdatingState;
     clients: SubplebbitClientsManager["clients"];
-    cid?: string;
+    updateCid?: string;
     _plebbit: Plebbit;
     _ipnsLoadingOperation?: RetryOperation;
     _clientsManager: SubplebbitClientsManager;

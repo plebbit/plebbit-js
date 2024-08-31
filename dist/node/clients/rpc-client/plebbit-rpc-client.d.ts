@@ -66,6 +66,7 @@ export default class PlebbitRpcClient {
             updateInterval: import("zod").ZodNumber;
             noData: import("zod").ZodBoolean;
             browserLibp2pJsPublish: import("zod").ZodBoolean;
+            userAgent: import("zod").ZodString;
         }, {
             ipfsHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;
             pubsubHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -90,6 +91,7 @@ export default class PlebbitRpcClient {
             updateInterval: import("zod").ZodNumber;
             noData: import("zod").ZodBoolean;
             browserLibp2pJsPublish: import("zod").ZodBoolean;
+            userAgent: import("zod").ZodString;
         }, {
             ipfsHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;
             pubsubHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;
@@ -114,6 +116,7 @@ export default class PlebbitRpcClient {
             updateInterval: import("zod").ZodNumber;
             noData: import("zod").ZodBoolean;
             browserLibp2pJsPublish: import("zod").ZodBoolean;
+            userAgent: import("zod").ZodString;
         }, {
             ipfsHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;
             pubsubHttpClientsOptions: import("zod").ZodOptional<import("zod").ZodType<import("kubo-rpc-client").Options[], import("zod").ZodTypeDef, import("kubo-rpc-client").Options[]>>;

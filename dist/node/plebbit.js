@@ -57,6 +57,7 @@ export class Plebbit extends TypedEmitter {
         this.updateInterval = this.parsedPlebbitOptions.updateInterval;
         this.noData = this.parsedPlebbitOptions.noData;
         this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
+        this.userAgent = this.parsedPlebbitOptions.userAgent;
         if (this.plebbitRpcClientsOptions)
             this.plebbitRpcClient = new PlebbitRpcClient(this);
         //@ts-expect-error
