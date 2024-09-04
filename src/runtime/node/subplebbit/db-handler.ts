@@ -337,7 +337,7 @@ export class DbHandler {
         }
 
         if (needToMigrate) {
-            if (currentDbVersion <= 14) await this._purgeCommentsWithInvalidSchema();
+            if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
             // we need to remove posts because it may include old incompatible comments
@@ -401,7 +401,7 @@ export class DbHandler {
         log(`copied table ${srcTable} to table ${dstTable}`);
     }
 
-    private async _purgeCommentsWithInvalidSchema() {
+    private async _purgeCommentsWithInvalidSchemaOrSignature() {
         const log = Logger("plebbit-js:local-subplebbit:db-handler:_purgeCommentsWithInvalidSchema");
         for (const commentRecord of await this.queryAllCommentsOrderedByIdAsc()) {
             // Need to purge records with invalid schema out of the table
@@ -410,6 +410,26 @@ export class DbHandler {
             } catch (e) {
                 log.error(
                     `Comment (${commentRecord.cid}) in DB has an invalid schema, will be purged along with comment update, votes and children comments`
+                );
+                await this._deleteComment(commentRecord.cid);
+                continue;
+            }
+
+            // Purge comments with invalid signature
+
+            const validRes = await verifyCommentIpfs(
+                { ...commentRecord, ...commentRecord.extraProps },
+                false,
+                this._subplebbit._clientsManager,
+                false
+            );
+            if (!validRes.valid) {
+                log.error(
+                    `Comment`,
+                    commentRecord.cid,
+                    `in DB has invalid signature due to`,
+                    validRes.reason,
+                    `It will be purged along with its children commentUpdate, votes, comments`
                 );
                 await this._deleteComment(commentRecord.cid);
             }
@@ -904,16 +924,13 @@ export class DbHandler {
     async _deleteComment(cid: string) {
         // The issues with this function is that it leaves previousCid unmodified because it's part of comment ipfs file
 
-        const commentToBeDeleted = await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).first();
-        if (!commentToBeDeleted) throw Error("Comment to be deleted does not exist");
-
         await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
         await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
 
         if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
             await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();
 
-        const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: commentToBeDeleted.cid });
+        const children = await this._baseTransaction()(TABLES.COMMENTS).where({ parentCid: cid });
         for (const child of children) await this._deleteComment(child.cid);
 
         await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
