@@ -1283,11 +1283,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _writeCommentUpdateToIpfsFilePath(newCommentUpdate: CommentUpdateType, ipfsPath: string, oldIpfsPath?: string) {
+        const log = Logger("plebbit-js:local-subplebibt:_writeCommentUpdateToIpfsFilePath");
         // TODO need to exclude reply.replies here
         await this._clientsManager
             .getDefaultIpfs()
             ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
-        if (oldIpfsPath && oldIpfsPath !== ipfsPath) await this._clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
+        if (oldIpfsPath && oldIpfsPath !== ipfsPath)
+            try {
+                await this._clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
+            } catch (e) {
+                log.error(`Failed to remove old commentUpdate from MFS`, oldIpfsPath, e);
+            }
     }
 
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
@@ -1533,9 +1539,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 const newTimestampBucketPath = newPostIpfsPathWithoutUpdate.split("/").slice(0, 4).join("/");
                 await this._clientsManager.getDefaultIpfs()._client.files.mkdir(newTimestampBucketPath, { parents: true });
 
-                await this._clientsManager
-                    .getDefaultIpfs()
-                    ._client.files.mv(currentPostIpfsPathWithoutUpdate, newPostIpfsPathWithoutUpdate); // should move post and its children
+                try {
+                    await this._clientsManager
+                        .getDefaultIpfs()
+                        ._client.files.mv(currentPostIpfsPathWithoutUpdate, newPostIpfsPathWithoutUpdate); // should move post and its children
+                } catch (e) {
+                    // ipfs mv will throw an error because currentPostIpfsPathWithoutUpdate doesn't exist on the node
+                    log.error(`Failed to move commentUpdate from`, currentPostIpfsPathWithoutUpdate, `to`, newPostIpfsPath, "error", e);
+                    const commentRow = await this._dbHandler.queryComment(post.cid);
+                    if (!commentRow) throw Error("Can't publish a commentUpdate if comment row is not in DB");
+                    await this._updateComment(commentRow);
+                }
                 const commentUpdatesWithOutdatedIpfsPath = await this._dbHandler.queryCommentsUpdatesWithPostCid(post.cid);
                 for (const commentUpdate of commentUpdatesWithOutdatedIpfsPath) {
                     const newIpfsPath = this._calculatePostUpdatePathForExistingCommentUpdate(
