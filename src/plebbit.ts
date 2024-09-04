@@ -422,15 +422,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 const sub = new RpcLocalSubplebbit(this);
                 sub.setAddress(options.address);
                 // wait for one update here, and then stop
-                await sub.update();
                 const updatePromise = new Promise((resolve) => sub.once("update", resolve));
                 let error: PlebbitError | undefined;
                 const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
-                await Promise.race([
-                    updatePromise,
-                    errorPromise,
-                    new Promise((resolve) => typeof sub.createdAt === "number" && resolve(1)) // In case await sub.update() above got updated quickly
-                ]);
+                await sub.update();
+                await Promise.race([updatePromise, errorPromise]);
                 await sub.stop();
                 if (error) throw error;
 
