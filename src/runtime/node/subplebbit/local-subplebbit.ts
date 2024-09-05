@@ -424,9 +424,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        // If this._stopHasBeenCalled = false, then this is the last publish before stopping
+        // If this._stopHasBeenCalled = true, then this is the last publish before stopping
+        // if this._stopHasBeenCalled = false, it means we're gonna publish another update very soon, so the record should not live for long
         // TODO double check these values
-        const ttl = this._stopHasBeenCalled ? `${this._plebbit.publishInterval * 3}ms` : undefined;
+        const ttl = this._stopHasBeenCalled ? undefined : `${this._plebbit.publishInterval * 3}ms`;
         const lifetime = `24h`; // doesn't matter anyway, DHT drops all entries after 24h
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
