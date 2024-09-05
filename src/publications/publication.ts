@@ -45,9 +45,9 @@ import * as cborg from "cborg";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage } from "./comment-edit/types.js";
-import type { VoteChallengeRequestToEncryptType, VotePubsubMessage } from "./vote/types.js";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubsubMessage } from "./comment/types.js";
+import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessagePublication } from "./comment-edit/types.js";
+import type { VoteChallengeRequestToEncryptType, VotePubsubMessagePublication } from "./vote/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubsubMessagePublication } from "./comment/types.js";
 import {
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
@@ -147,7 +147,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this._initChallengeRequestChallengeProps(props);
     }
 
-    _initBaseRemoteProps(props: CommentIpfsType | CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage) {
+    _initBaseRemoteProps(
+        props: CommentIpfsType | CommentPubsubMessagePublication | VotePubsubMessagePublication | CommentEditPubsubMessagePublication
+    ) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signature = props.signature;

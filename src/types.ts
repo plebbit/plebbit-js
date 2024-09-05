@@ -14,9 +14,9 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentEditPubsubMessage, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
-import type { LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
-import type { CommentPubsubMessage, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentEditPubsubMessagePublication, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
+import type { LocalVoteOptions, VotePubsubMessagePublication } from "./publications/vote/types.js";
+import type { CommentPubsubMessagePublication, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
 import type {
@@ -43,7 +43,7 @@ export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
 export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdateSchema>;
 
-export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
+export type PublicationPubsubMessage = CommentPubsubMessagePublication | VotePubsubMessagePublication | CommentEditPubsubMessagePublication;
 
 // creating a new local publication
 export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;

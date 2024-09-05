@@ -3,15 +3,15 @@ import type { PublicationTypeName } from "../../types.js";
 import { Plebbit } from "../../plebbit.js";
 import { verifyVote } from "../../signer/index.js";
 import { hideClassPrivateProps, throwWithErrorCode } from "../../util.js";
-import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessage } from "./types.js";
+import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessagePublication } from "./types.js";
 import * as remeda from "remeda";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication {
-    commentCid!: VotePubsubMessage["commentCid"];
-    vote!: VotePubsubMessage["vote"]; // (upvote, cancel vote, downvote)
+    commentCid!: VotePubsubMessagePublication["commentCid"];
+    vote!: VotePubsubMessagePublication["vote"]; // (upvote, cancel vote, downvote)
 
-    private _pubsubMsgToPublish?: VotePubsubMessage = undefined;
+    private _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -26,11 +26,11 @@ class Vote extends Publication {
         this._initBaseLocalProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
-        const keysCasted = <(keyof VotePubsubMessage)[]>props.signature.signedPropertyNames;
+        const keysCasted = <(keyof VotePubsubMessagePublication)[]>props.signature.signedPropertyNames;
         this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
-    _initRemoteProps(props: VotePubsubMessage): void {
+    _initRemoteProps(props: VotePubsubMessagePublication): void {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
@@ -42,7 +42,7 @@ class Vote extends Publication {
         this._pubsubMsgToPublish = props.publication;
     }
 
-    override toJSONPubsubMessagePublication(): VotePubsubMessage {
+    override toJSONPubsubMessagePublication(): VotePubsubMessagePublication {
         if (!this._pubsubMsgToPublish) throw Error("Should define local props before calling toJSONPubsubMessagePublication");
         return this._pubsubMsgToPublish;
     }

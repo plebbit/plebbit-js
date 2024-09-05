@@ -88,21 +88,21 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
-import type { CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
+import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
 import {
     AuthorCommentEditPubsubSchema,
-    CommentEditPubsubMessageSchema,
-    CommentEditPubsubMessageWithFlexibleAuthorSchema,
+    CommentEditPubsubMessagePublicationSchema,
+    CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema,
     CommentEditReservedFields,
     ModeratorCommentEditPubsubSchema,
     uniqueAuthorFields,
     uniqueModFields
 } from "../../../publications/comment-edit/schema.js";
-import type { VotePubsubMessage } from "../../../publications/vote/types.js";
+import type { VotePubsubMessagePublication } from "../../../publications/vote/types.js";
 import type {
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
-    CommentPubsubMessage,
+    CommentPubsubMessagePublication,
     CommentUpdateType
 } from "../../../publications/comment/types.js";
 import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
@@ -119,10 +119,10 @@ import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js
 import {
     CommentIpfsSchema,
     CommentPubsubMessageReservedFields,
-    CommentPubsubMessageSchema,
+    CommentPubsubMessagePublicationSchema,
     CommentPubsubMessageWithFlexibleAuthorRefinementSchema
 } from "../../../publications/comment/schema.js";
-import { VotePubsubMessageSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
+import { VotePubsubMessagePublicationSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
 import { v4 as uuidV4 } from "uuid";
 import { AuthorReservedFields } from "../../../schema/schema.js";
 
@@ -499,11 +499,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async storeCommentEdit(
-        commentEditRaw: CommentEditPubsubMessage,
+        commentEditRaw: CommentEditPubsubMessagePublication,
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<undefined> {
         const log = Logger("plebbit-js:local-subplebbit:storeCommentEdit");
-        const strippedOutEditPublication = CommentEditPubsubMessageWithFlexibleAuthorSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
+        const strippedOutEditPublication = CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.strip().parse(commentEditRaw); // we strip out here so we don't store any extra props in commentedits table
         const commentToBeEdited = await this._dbHandler.queryComment(commentEditRaw.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
         if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
@@ -519,7 +519,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         const extraPropsInEdit = remeda.difference(
             remeda.keys.strict(commentEditRaw),
-            remeda.keys.strict(CommentEditPubsubMessageSchema.shape)
+            remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape)
         );
         if (extraPropsInEdit.length > 0) {
             log("Found extra props on CommentEdit", extraPropsInEdit, "Will be adding them to extraProps column");
@@ -530,7 +530,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, commentEditRaw);
     }
 
-    private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
+    private async storeVote(
+        newVoteProps: VotePubsubMessagePublication,
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+    ) {
         const log = Logger("plebbit-js:local-subplebbit:storeVote");
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVoteProps.signature.publicKey);
@@ -539,7 +542,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...remeda.pick(newVoteProps, ["vote", "commentCid", "protocolVersion", "timestamp"]),
             authorSignerAddress
         };
-        const extraPropsInVote = remeda.difference(remeda.keys.strict(newVoteProps), remeda.keys.strict(VotePubsubMessageSchema.shape));
+        const extraPropsInVote = remeda.difference(
+            remeda.keys.strict(newVoteProps),
+            remeda.keys.strict(VotePubsubMessagePublicationSchema.shape)
+        );
         if (extraPropsInVote.length > 0) {
             log("Found extra props on Vote", extraPropsInVote, "Will be adding them to extraProps column");
             voteTableRow.extraProps = remeda.pick(newVoteProps, extraPropsInVote);
@@ -550,15 +556,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         return undefined;
     }
 
-    private isPublicationVote(publication: DecryptedChallengeRequestMessageType["publication"]): publication is VotePubsubMessage {
+    private isPublicationVote(
+        publication: DecryptedChallengeRequestMessageType["publication"]
+    ): publication is VotePubsubMessagePublication {
         return "vote" in publication && typeof publication.vote === "number";
     }
 
-    private isPublicationComment(publication: DecryptedChallengeRequestMessageType["publication"]): publication is CommentPubsubMessage {
+    private isPublicationComment(
+        publication: DecryptedChallengeRequestMessageType["publication"]
+    ): publication is CommentPubsubMessagePublication {
         return !this.isPublicationVote(publication) && !this.isPublicationCommentEdit(publication);
     }
 
-    private isPublicationReply(publication: DecryptedChallengeRequestMessageType["publication"]): publication is CommentPubsubMessage {
+    private isPublicationReply(
+        publication: DecryptedChallengeRequestMessageType["publication"]
+    ): publication is CommentPubsubMessagePublication {
         return this.isPublicationComment(publication) && "parentCid" in publication && typeof publication.parentCid === "string";
     }
 
@@ -568,19 +580,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private isPublicationCommentEdit(
         publication: DecryptedChallengeRequestMessageType["publication"]
-    ): publication is CommentEditPubsubMessage {
+    ): publication is CommentEditPubsubMessagePublication {
         return !this.isPublicationVote(publication) && "commentCid" in publication && typeof publication.commentCid === "string";
     }
 
     private async _calculateLinkProps(
-        link: CommentPubsubMessage["link"]
+        link: CommentPubsubMessagePublication["link"]
     ): Promise<Pick<CommentIpfsType, "thumbnailUrl" | "thumbnailUrlWidth" | "thumbnailUrlHeight"> | undefined> {
         if (!link || !this.settings?.fetchThumbnailUrls) return undefined;
         return getThumbnailUrlOfLink(link, this, this.settings.fetchThumbnailUrlsProxyUrl);
     }
 
     private async _calculatePostProps(
-        comment: CommentPubsubMessage,
+        comment: CommentPubsubMessagePublication,
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<Pick<CommentIpfsType, "previousCid" | "depth">> {
         const trx = await this._dbHandler.createTransaction(challengeRequestId.toString());
@@ -590,7 +602,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _calculateReplyProps(
-        comment: CommentPubsubMessage,
+        comment: CommentPubsubMessagePublication,
         challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
     ): Promise<Pick<CommentIpfsType, "previousCid" | "depth" | "postCid">> {
         if (!comment.parentCid) throw Error("Reply has to have parentCid");
@@ -637,7 +649,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 authorSignerAddress
             };
 
-            const unknownProps = remeda.difference(remeda.keys.strict(publication), remeda.keys.strict(CommentPubsubMessageSchema.shape));
+            const unknownProps = remeda.difference(
+                remeda.keys.strict(publication),
+                remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
+            );
 
             if (unknownProps.length > 0) {
                 log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
@@ -862,15 +877,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessage) {
+    private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessagePublication) {
         return remeda.intersection(uniqueModFields, remeda.keys.strict(request)).length > 0;
     }
 
-    private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessage) {
+    private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessagePublication) {
         return remeda.intersection(uniqueAuthorFields, remeda.keys.strict(request)).length > 0;
     }
 
-    _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean) {
+    _isAuthorEdit(request: CommentEditPubsubMessagePublication, editHasBeenSignedByOriginalAuthor: boolean) {
         if (this._commentEditIncludesUniqueAuthorFields(request)) return true;
         if (this._commentEditIncludesUniqueModFields(request)) return false;
         // The request has fields that are used in both mod and author, namely [spoiler, flair]
@@ -971,7 +986,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const allowedEditFields =
                 isAuthorEdit && editSignedByOriginalAuthor ? authorEditPubsubFields : isEditorMod ? modEditPubsubFields : undefined;
             if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            const publicationEditFields = remeda.keys.strict(CommentEditPubsubMessageWithFlexibleAuthorSchema.strip().parse(publication)); // we strip here because we don't wanna include unknown props
+            const publicationEditFields = remeda.keys.strict(
+                CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.strip().parse(publication)
+            ); // we strip here because we don't wanna include unknown props
             for (const editField of publicationEditFields)
                 if (!allowedEditFields.includes(<any>editField)) {
                     log(
@@ -1006,12 +1023,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         // Parsing DecryptedChallengeRequest.publication here
-        let parsedPublication: VotePubsubMessage | CommentPubsubMessage | CommentEditPubsubMessage | undefined = undefined;
+        let parsedPublication:
+            | VotePubsubMessagePublication
+            | CommentPubsubMessagePublication
+            | CommentEditPubsubMessagePublication
+            | undefined = undefined;
 
         const publicationSchemasToParse = [
-            VotePubsubMessageSchema.passthrough(),
+            VotePubsubMessagePublicationSchema.passthrough(),
             CommentPubsubMessageWithFlexibleAuthorRefinementSchema,
-            CommentEditPubsubMessageWithFlexibleAuthorSchema.passthrough()
+            CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough()
         ];
 
         for (const schema of publicationSchemasToParse) {

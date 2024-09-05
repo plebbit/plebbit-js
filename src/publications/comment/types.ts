@@ -5,7 +5,7 @@ import {
     CommentIpfsWithCidDefinedSchema,
     CommentIpfsWithCidPostCidDefinedSchema,
     CommentOptionsToSignSchema,
-    CommentPubsubMessageSchema,
+    CommentPubsubMessagePublicationSchema,
     CommentUpdateNoRepliesSchema,
     CreateCommentOptionsSchema,
     LocalCommentSchema,
@@ -24,7 +24,7 @@ export type CreateCommentOptions = z.infer<typeof CreateCommentOptionsSchema>;
 
 export type CommentOptionsToSign = z.infer<typeof CommentOptionsToSignSchema>;
 
-export type CommentPubsubMessage = z.infer<typeof CommentPubsubMessageSchema>;
+export type CommentPubsubMessagePublication = z.infer<typeof CommentPubsubMessagePublicationSchema>;
 
 export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 
@@ -77,6 +77,6 @@ export type CommentUpdatingState =
 
 // Native types here
 
-export interface CommentPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessage {
+export interface CommentPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }

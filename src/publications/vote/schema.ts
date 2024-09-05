@@ -34,11 +34,11 @@ const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature", true
 );
 
 // Will be used by the sub when parsing request.publication
-export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions)
+export const VotePubsubMessagePublicationSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions)
     .merge(z.object({ author: LocalVoteOptionsAfterSigningSchema.shape.author.passthrough() }))
     .strict();
 
-export const VoteTablesRowSchema = VotePubsubMessageSchema.pick({
+export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
     commentCid: true,
     protocolVersion: true,
     timestamp: true,
@@ -59,12 +59,12 @@ export const VotePubsubReservedFields = remeda.difference(
         "signer",
         "clients"
     ],
-    remeda.keys.strict(VotePubsubMessageSchema.shape)
+    remeda.keys.strict(VotePubsubMessagePublicationSchema.shape)
 );
 
 export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: VotePubsubMessageSchema.passthrough()
+    publication: VotePubsubMessagePublicationSchema.passthrough()
 });
 
 export const CreateVoteFunctionArgumentSchema =
-    CreateVoteUserOptionsSchema.or(VotePubsubMessageSchema).or(VoteChallengeRequestToEncryptSchema);
+    CreateVoteUserOptionsSchema.or(VotePubsubMessagePublicationSchema).or(VoteChallengeRequestToEncryptSchema);

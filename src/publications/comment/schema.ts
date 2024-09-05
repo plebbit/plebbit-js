@@ -18,7 +18,7 @@ import * as remeda from "remeda";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 import { RepliesPagesIpfsSchema } from "../../pages/schema.js";
-import type { CommentPubsubMessage, CommentUpdateType } from "./types.js";
+import type { CommentPubsubMessagePublication, CommentUpdateType } from "./types.js";
 
 // Comment schemas here
 
@@ -68,9 +68,9 @@ const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature",
     remeda.mapToObj([...CommentSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
-export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
+export const CommentPubsubMessagePublicationSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
 
-export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessageSchema.merge(
+export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(
     z.object({ author: AuthorPubsubSchema.passthrough() })
 ).strict();
 
@@ -80,7 +80,7 @@ export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPub
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
 
-export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSchema.refine(
+export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePublicationSchema.refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
@@ -117,7 +117,7 @@ export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedS
 
 // Comment update schemas
 
-export const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.author
+export const AuthorWithCommentUpdateSchema = CommentPubsubMessagePublicationSchema.shape.author
     .extend({
         subplebbit: SubplebbitAuthorSchema.optional()
     })
@@ -149,12 +149,14 @@ export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
 
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
 
-type OverlapCommentPubsubAndCommentUpdate = (keyof CommentPubsubMessage & keyof Omit<CommentUpdateType, "signature">) | "content";
+type OverlapCommentPubsubAndCommentUpdate =
+    | (keyof CommentPubsubMessagePublication & keyof Omit<CommentUpdateType, "signature">)
+    | "content";
 
 const originalFields = <OverlapCommentPubsubAndCommentUpdate[]>(
     remeda
         .intersection(
-            remeda.keys.strict(CommentPubsubMessageSchema.shape),
+            remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape),
             remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]))
         )
         .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
@@ -191,7 +193,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         "publishingState",
         "updatingState"
     ]),
-    remeda.keys.strict(CommentPubsubMessageSchema.shape)
+    remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
 );
 
 export const CommentUpdateReservedFields = remeda.difference(

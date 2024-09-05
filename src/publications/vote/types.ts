@@ -4,7 +4,7 @@ import {
     LocalVoteOptionsAfterSigningSchema,
     VoteChallengeRequestToEncryptSchema,
     VoteOptionsToSignSchema,
-    VotePubsubMessageSchema
+    VotePubsubMessagePublicationSchema
 } from "./schema";
 import { VotePubsubMessageWithSubplebbitAuthorSchema } from "../../pubsub-messages/schema";
 import Vote from "./vote";
@@ -14,7 +14,7 @@ export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema
 
 export type VotePubsubMessageWithSubplebbitAuthor = z.infer<typeof VotePubsubMessageWithSubplebbitAuthorSchema>;
 
-export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
+export type VotePubsubMessagePublication = z.infer<typeof VotePubsubMessagePublicationSchema>;
 
 export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
 

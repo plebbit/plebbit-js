@@ -30,13 +30,13 @@ import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerifi
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
 import type { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
-import type { CommentEditOptionsToSign, CommentEditPubsubMessage } from "../publications/comment-edit/types.js";
-import type { VoteOptionsToSign, VotePubsubMessage } from "../publications/vote/types.js";
+import type { CommentEditOptionsToSign, CommentEditPubsubMessagePublication } from "../publications/comment-edit/types.js";
+import type { VoteOptionsToSign, VotePubsubMessagePublication } from "../publications/vote/types.js";
 import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
     CommentOptionsToSign,
-    CommentPubsubMessage,
+    CommentPubsubMessagePublication,
     CommentUpdateType
 } from "../publications/comment/types.js";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
@@ -218,7 +218,7 @@ type VerifyAuthorRes = { useDerivedAddress: false; reason?: string } | { useDeri
 
 // Verify functions
 const _verifyAuthor = async (
-    publicationJson: CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage,
+    publicationJson: CommentEditPubsubMessagePublication | VotePubsubMessagePublication | CommentPubsubMessagePublication,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager
 ): Promise<VerifyAuthorRes> => {
@@ -300,7 +300,7 @@ const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
 };
 
 const _verifyPublicationWithAuthor = async (
-    publicationJson: VotePubsubMessage | CommentPubsubMessage | CommentEditPubsubMessage,
+    publicationJson: VotePubsubMessagePublication | CommentPubsubMessagePublication | CommentEditPubsubMessagePublication,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
@@ -329,7 +329,7 @@ const _verifyPublicationWithAuthor = async (
 };
 
 export async function verifyVote(
-    vote: VotePubsubMessage,
+    vote: VotePubsubMessagePublication,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
@@ -343,7 +343,7 @@ export async function verifyVote(
 }
 
 export async function verifyCommentEdit(
-    edit: CommentEditPubsubMessage,
+    edit: CommentEditPubsubMessagePublication,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
@@ -357,7 +357,7 @@ export async function verifyCommentEdit(
 }
 
 export async function verifyCommentPubsubMessage(
-    comment: CommentPubsubMessage,
+    comment: CommentPubsubMessagePublication,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
@@ -376,7 +376,7 @@ export async function verifyCommentIpfs(
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
 ) {
-    const keysCasted = <(keyof CommentPubsubMessage)[]>comment.signature.signedPropertyNames;
+    const keysCasted = <(keyof CommentPubsubMessagePublication)[]>comment.signature.signedPropertyNames;
     return verifyCommentPubsubMessage(
         remeda.pick(comment, ["signature", ...keysCasted]),
         resolveAuthorAddresses,

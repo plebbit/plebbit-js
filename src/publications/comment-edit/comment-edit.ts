@@ -2,23 +2,23 @@ import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, LocalCommentEditOptions } from "./types.js";
+import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessagePublication, LocalCommentEditOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
 import * as remeda from "remeda";
 
 export class CommentEdit extends Publication {
-    commentCid!: CommentEditPubsubMessage["commentCid"];
-    content?: CommentEditPubsubMessage["content"];
-    reason?: CommentEditPubsubMessage["reason"];
-    deleted?: CommentEditPubsubMessage["deleted"];
-    flair?: CommentEditPubsubMessage["flair"];
-    spoiler?: CommentEditPubsubMessage["spoiler"];
-    pinned?: CommentEditPubsubMessage["pinned"];
-    locked?: CommentEditPubsubMessage["locked"];
-    removed?: CommentEditPubsubMessage["removed"];
-    commentAuthor?: CommentEditPubsubMessage["commentAuthor"];
+    commentCid!: CommentEditPubsubMessagePublication["commentCid"];
+    content?: CommentEditPubsubMessagePublication["content"];
+    reason?: CommentEditPubsubMessagePublication["reason"];
+    deleted?: CommentEditPubsubMessagePublication["deleted"];
+    flair?: CommentEditPubsubMessagePublication["flair"];
+    spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+    pinned?: CommentEditPubsubMessagePublication["pinned"];
+    locked?: CommentEditPubsubMessagePublication["locked"];
+    removed?: CommentEditPubsubMessagePublication["removed"];
+    commentAuthor?: CommentEditPubsubMessagePublication["commentAuthor"];
 
-    _pubsubMsgToPublish?: CommentEditPubsubMessage = undefined;
+    _pubsubMsgToPublish?: CommentEditPubsubMessagePublication = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -29,7 +29,7 @@ export class CommentEdit extends Publication {
         hideClassPrivateProps(this);
     }
 
-    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessage) {
+    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessagePublication) {
         this.commentCid = props.commentCid;
         this.content = props.content;
         this.reason = props.reason;
@@ -45,11 +45,11 @@ export class CommentEdit extends Publication {
     _initLocalProps(props: LocalCommentEditOptions) {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
-        const keysCasted = <(keyof CommentEditPubsubMessage)[]>props.signature.signedPropertyNames;
+        const keysCasted = <(keyof CommentEditPubsubMessagePublication)[]>props.signature.signedPropertyNames;
         this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
-    _initRemoteProps(props: CommentEditPubsubMessage): void {
+    _initRemoteProps(props: CommentEditPubsubMessagePublication): void {
         super._initBaseRemoteProps(props);
         this._initEditProps(props);
     }
@@ -60,7 +60,7 @@ export class CommentEdit extends Publication {
         this._pubsubMsgToPublish = props.publication;
     }
 
-    override toJSONPubsubMessagePublication(): CommentEditPubsubMessage {
+    override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {
         if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
         return this._pubsubMsgToPublish;
     }

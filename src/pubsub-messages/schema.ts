@@ -6,12 +6,12 @@ import {
     ProtocolVersionSchema,
     UserAgentSchema
 } from "../schema/schema.js";
-import { VotePubsubMessageSchema } from "../publications/vote/schema.js";
-import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema.js";
+import { VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
+import { CommentEditPubsubMessagePublicationSchema } from "../publications/comment-edit/schema.js";
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
     AuthorWithCommentUpdateSchema,
-    CommentPubsubMessageSchema,
+    CommentPubsubMessagePublicationSchema,
     CreateCommentOptionsSchema
 } from "../publications/comment/schema.js";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
@@ -51,7 +51,7 @@ export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = Commen
     author: AuthorWithCommentUpdateSchema
 }).strict();
 
-export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
+export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessagePublicationSchema.extend({
     author: AuthorWithCommentUpdateSchema
 }).passthrough();
 
@@ -66,7 +66,7 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
 export const DecryptedChallengeRequestSchema = z.object({
     // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
 
-    publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageSchema),
+    publication: VotePubsubMessagePublicationSchema.or(CommentEditPubsubMessagePublicationSchema).or(CommentPubsubMessagePublicationSchema),
     challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
     challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
 });

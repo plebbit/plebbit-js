@@ -54,7 +54,7 @@ import type {
 } from "./publications/comment-edit/types.js";
 import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
 import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "./publications/vote/types.js";
-import { CreateVoteFunctionArgumentSchema, VotePubsubMessageSchema } from "./publications/vote/schema.js";
+import { CreateVoteFunctionArgumentSchema, VotePubsubMessagePublicationSchema } from "./publications/vote/schema.js";
 import type {
     CommentJson,
     CommentOptionsToSign,

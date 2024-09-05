@@ -19,7 +19,7 @@ import type {
     CommentChallengeRequestToEncryptType,
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
-    CommentPubsubMessage,
+    CommentPubsubMessagePublication,
     CommentState,
     CommentUpdateType,
     CommentUpdatingState,
@@ -39,21 +39,21 @@ export class Comment extends Publication {
     override clients!: CommentClientsManager["clients"];
     override author!: AuthorWithOptionalCommentUpdateJson;
     // public (CommentType)
-    title?: CommentPubsubMessage["title"];
-    link?: CommentPubsubMessage["link"];
-    linkWidth?: CommentPubsubMessage["linkWidth"];
-    linkHeight?: CommentPubsubMessage["linkHeight"];
+    title?: CommentPubsubMessagePublication["title"];
+    link?: CommentPubsubMessagePublication["link"];
+    linkWidth?: CommentPubsubMessagePublication["linkWidth"];
+    linkHeight?: CommentPubsubMessagePublication["linkHeight"];
     thumbnailUrl?: CommentIpfsType["thumbnailUrl"];
     thumbnailUrlWidth?: CommentIpfsType["thumbnailUrlWidth"];
     thumbnailUrlHeight?: CommentIpfsType["thumbnailUrlHeight"];
     cid?: CommentIpfsWithCidPostCidDefined["cid"];
     parentCid?: CommentIpfsType["parentCid"];
-    content?: CommentPubsubMessage["content"];
+    content?: CommentPubsubMessagePublication["content"];
     // Props that get defined after challengeverification
     previousCid?: CommentIpfsType["previousCid"];
     depth?: CommentIpfsType["depth"];
     postCid?: CommentIpfsType["postCid"];
-    linkHtmlTagName?: CommentPubsubMessage["linkHtmlTagName"];
+    linkHtmlTagName?: CommentPubsubMessagePublication["linkHtmlTagName"];
 
     // CommentEdit and CommentUpdate props
     original?: CommentWithinPageJson["original"];
@@ -63,7 +63,7 @@ export class Comment extends Publication {
     updatedAt?: CommentUpdateType["updatedAt"];
     replies!: RepliesPages;
     edit?: CommentUpdateType["edit"];
-    flair?: CommentPubsubMessage["flair"];
+    flair?: CommentPubsubMessagePublication["flair"];
     deleted?: CommentWithinPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
     pinned?: CommentUpdateType["pinned"];
@@ -84,7 +84,7 @@ export class Comment extends Publication {
     private _loadingOperation?: RetryOperation = undefined;
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
-    _pubsubMsgToPublish?: CommentPubsubMessage = undefined;
+    _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -130,11 +130,11 @@ export class Comment extends Publication {
         this.timestamp = props.timestamp;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
-        const keysCasted = <(keyof CommentPubsubMessage)[]>[...props.signature.signedPropertyNames, "signature"];
+        const keysCasted = <(keyof CommentPubsubMessagePublication)[]>[...props.signature.signedPropertyNames, "signature"];
         this._pubsubMsgToPublish = remeda.pick(props, keysCasted);
     }
 
-    _initPubsubMessageProps(props: CommentPubsubMessage) {
+    _initPubsubMessageProps(props: CommentPubsubMessagePublication) {
         this._pubsubMsgToPublish = props;
         this._initProps(props);
     }
@@ -157,7 +157,7 @@ export class Comment extends Publication {
         this._initPubsubMessageProps(props.publication);
     }
 
-    _initProps(props: CommentIpfsType | CommentPubsubMessage) {
+    _initProps(props: CommentIpfsType | CommentPubsubMessagePublication) {
         // Initializing CommentPubsubMessage
         super._initBaseRemoteProps(props);
         this.content = props.content;
@@ -285,7 +285,7 @@ export class Comment extends Publication {
         return this._rawCommentIpfs;
     }
 
-    override toJSONPubsubMessagePublication(): CommentPubsubMessage {
+    override toJSONPubsubMessagePublication(): CommentPubsubMessagePublication {
         if (!this._pubsubMsgToPublish) throw Error("comment._pubsubMsgToPublish should be defined before calling ");
         return this._pubsubMsgToPublish;
     }

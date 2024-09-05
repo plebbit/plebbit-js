@@ -78,13 +78,13 @@ export const AuthorCommentEditPubsubPassthroughSchema = <z.ZodType<AuthorComment
 export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(
     remeda.omit(editPubsubPickOptions, uniqueAuthorFields)
 );
-export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
+export const CommentEditPubsubMessagePublicationSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
 
-export const CommentEditPubsubMessageWithFlexibleAuthorSchema = CommentEditPubsubMessageSchema.extend({
-    author: CommentEditPubsubMessageSchema.shape.author.passthrough()
+export const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema = CommentEditPubsubMessagePublicationSchema.extend({
+    author: CommentEditPubsubMessagePublicationSchema.shape.author.passthrough()
 }).strict();
 
-export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend({
+export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing, otherwise it's a mod
@@ -101,15 +101,15 @@ export const CommentEditReservedFields = remeda.difference(
         "signer",
         "clients"
     ],
-    remeda.keys.strict(CommentEditPubsubMessageSchema.shape)
+    remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape)
 );
 
 export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentEditPubsubMessageWithFlexibleAuthorSchema.passthrough()
+    publication: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough()
 });
 
 export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditAuthorPublicationSchema.or(
     CreateCommentEditModeratorPublicationSchema
 )
-    .or(CommentEditPubsubMessageSchema)
+    .or(CommentEditPubsubMessagePublicationSchema)
     .or(CommentEditChallengeRequestToEncryptSchema);
