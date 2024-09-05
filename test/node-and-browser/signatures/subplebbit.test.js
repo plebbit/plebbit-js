@@ -81,14 +81,15 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         });
     });
 
-    it(`subplebbit signature is valid if subplebbit.posts has a comment.authorAddress who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
+    it(`subplebbit signature is valid if subplebbit.posts has a comment.author.address who resolves to an invalid address (overrideAuthorAddressIfInvalid=true)`, async () => {
         // Publish a comment with ENS domain here
 
-        const subJson = remeda.clone(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
-        const commentWithEnsCid = subJson.posts.pages.hot.comments.find((comment) => comment.comment.author.address === "plebbit.eth")
-            .comment.cid;
+        const subIpfs = remeda.clone(validSubplebbitWithEnsCommentsFixture); // This json has only one comment with plebbit.eth
+        const commentWithEnsCid = subIpfs.posts.pages.hot.comments.find(
+            (commentPage) => commentPage.comment.author.address === "plebbit.eth"
+        ).comment.cid;
 
-        const getLatestComment = () => subJson.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
+        const getLatestComment = () => subIpfs.posts.pages.hot.comments.find((comment) => comment.comment.cid === commentWithEnsCid);
 
         const tempPlebbit = await mockRemotePlebbit();
 
@@ -97,7 +98,7 @@ describeSkipIfRpc("Verify subplebbit", async () => {
             authorAddress === "plebbit.eth" ? signers[7].address : originalResolveAuthor(authorAddress);
 
         expect(getLatestComment().comment.author.address).to.equal("plebbit.eth");
-        expect(await verifySubplebbit(subJson, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true)).to.deep.equal({
+        expect(await verifySubplebbit(subIpfs, tempPlebbit.resolveAuthorAddresses, tempPlebbit._clientsManager, true)).to.deep.equal({
             valid: true
         });
 

@@ -231,6 +231,20 @@ describeSkipIfRpc(`commentupdate`, async () => {
         plebbit = await mockRemotePlebbit();
         subplebbit = await plebbit.getSubplebbit(signers[0].address);
     });
+
+    it(`Can validate live CommentUpdate`, async () => {
+        const comment = await plebbit.getComment(subplebbit.lastPostCid);
+        await comment.update();
+        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
+        await comment.stop();
+        // If a comment emits "update" that means the commentUpdate have been verified correctly
+
+        const commentUpdateRecord = comment._rawCommentUpdate;
+        expect(
+            await verifyCommentUpdate(commentUpdateRecord, true, comment._clientsManager, comment.subplebbitAddress, comment, false, true)
+        ).to.deep.equal({ valid: true });
+    });
+
     it(`Fixture CommentUpdate can be signed by subplebbit and validated correctly`, async () => {
         const update = remeda.clone(validCommentUpdateFixture);
         const comment = { cid: update.cid, ...validCommentFixture };
@@ -243,14 +257,6 @@ describeSkipIfRpc(`commentupdate`, async () => {
             comment
         );
         expect(verification).to.deep.equal({ valid: true });
-    });
-
-    it(`Can validate live CommentUpdate`, async () => {
-        const comment = await plebbit.getComment(subplebbit.lastPostCid);
-        await comment.update();
-        await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
-        await comment.stop();
-        // If a comment emits "update" that means the commentUpdate have been verified correctly
     });
 
     it(`CommentUpdate from previous plebbit-js versions can be verified`, async () => {

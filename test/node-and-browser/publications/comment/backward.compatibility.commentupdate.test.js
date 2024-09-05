@@ -117,7 +117,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             pageIpfs.comments.push({
                 comment: { ...post._rawCommentIpfs, cid: post.cid, postCid: post.postCid },
-                update: commentUpdateWithExtraProps
+                commentUpdate: commentUpdateWithExtraProps
             });
 
             const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));

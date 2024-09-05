@@ -120,8 +120,8 @@ const testListOfSortedComments = async (sortedComments, sortName, plebbit) => {
             scoreA = await activeScore(sortedComments[j], plebbit);
             scoreB = await activeScore(sortedComments[j + 1], plebbit);
         } else {
-            scoreA = sort.score({ comment: sortedComments[j], update: sortedComments[j] });
-            scoreB = sort.score({ comment: sortedComments[j + 1], update: sortedComments[j + 1] });
+            scoreA = sort.score({ comment: sortedComments[j], commentUpdate: sortedComments[j] });
+            scoreB = sort.score({ comment: sortedComments[j + 1], commentUpdate: sortedComments[j + 1] });
         }
         expect(scoreA).to.be.greaterThanOrEqual(scoreB);
     }
