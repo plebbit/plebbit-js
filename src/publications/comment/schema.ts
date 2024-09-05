@@ -167,9 +167,6 @@ export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessa
 // Comment table here
 
 export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    authorAddress: AuthorPubsubSchema.shape.address,
-    challengeRequestPublicationSha256: z.string(),
-    ipnsName: z.string().optional(),
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,

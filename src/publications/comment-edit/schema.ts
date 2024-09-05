@@ -85,7 +85,6 @@ export const CommentEditPubsubMessageWithFlexibleAuthorSchema = CommentEditPubsu
 }).strict();
 
 export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend({
-    authorAddress: CommentEditPubsubMessageSchema.shape.author.shape.address,
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing, otherwise it's a mod

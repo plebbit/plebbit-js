@@ -38,8 +38,12 @@ export const VotePubsubMessageSchema = LocalVoteOptionsAfterSigningSchema.pick(v
     .merge(z.object({ author: LocalVoteOptionsAfterSigningSchema.shape.author.passthrough() }))
     .strict();
 
-export const VoteTablesRowSchema = VotePubsubMessageSchema.extend({
-    authorAddress: VotePubsubMessageSchema.shape.author.shape.address,
+export const VoteTablesRowSchema = VotePubsubMessageSchema.pick({
+    commentCid: true,
+    protocolVersion: true,
+    timestamp: true,
+    vote: true
+}).extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
     extraProps: z.object({}).passthrough().optional()

@@ -24,7 +24,6 @@ import env from "../../../version.js";
 import * as lockfile from "@plebbit/proper-lockfile";
 import { PageOptions } from "./sort-handler.js";
 import { SubplebbitStats } from "../../../subplebbit/types.js";
-import { v4 as uuidV4 } from "uuid";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
@@ -33,7 +32,7 @@ import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
-import { STORAGE_KEYS } from "../../../constants.js";
+import { verifyCommentIpfs } from "../../../signer/signatures.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -168,7 +167,6 @@ export class DbHandler {
     private async _createCommentsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("cid").notNullable().primary().unique();
-            table.text("authorAddress").notNullable();
             table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
             table.string("link").nullable();
@@ -183,18 +181,16 @@ export class DbHandler {
 
             table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
-            table.timestamp("timestamp").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.text("ipnsName").nullable(); // Kept for compatibility purposes, will not be used from db version 11 and onward
-            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
+            table.timestamp("timestamp").notNullable();
+            table.json("signature").notNullable(); // Will contain {signature, public key, type}
             table.text("title").nullable();
-            table.integer("depth").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.text("challengeRequestPublicationSha256").notNullable().unique();
+            table.integer("depth").notNullable();
 
             table.text("linkHtmlTagName").nullable();
 
             table.json("flair").nullable();
 
-            table.boolean("spoiler");
+            table.boolean("spoiler").nullable();
 
             table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
 
@@ -210,25 +206,25 @@ export class DbHandler {
             table.text("cid").notNullable().primary().unique().references("cid").inTable(TABLES.COMMENTS);
 
             table.json("edit").nullable();
-            table.integer("upvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
-            table.integer("downvoteCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.integer("upvoteCount").notNullable();
+            table.integer("downvoteCount").notNullable();
 
-            table.integer("replyCount").notNullable().checkBetween([0, Number.MAX_SAFE_INTEGER]);
+            table.integer("replyCount").notNullable();
             table.json("flair").nullable();
-            table.boolean("spoiler");
-            table.boolean("pinned");
-            table.boolean("locked");
-            table.boolean("removed");
-            table.text("reason");
+            table.boolean("spoiler").nullable();
+            table.boolean("pinned").nullable();
+            table.boolean("locked").nullable();
+            table.boolean("removed").nullable();
+            table.text("reason").nullable();
             table.timestamp("updatedAt").notNullable().checkPositive();
             table.text("protocolVersion").notNullable();
-            table.json("signature").notNullable().unique(); // Will contain {signature, public key, type}
+            table.json("signature").notNullable(); // Will contain {signature, public key, type}
             table.json("author").nullable();
             table.json("replies").nullable(); // TODO we should not be storing replies here, it takes too much storage
             table.text("lastChildCid").nullable().references("cid").inTable(TABLES.COMMENTS);
             table.timestamp("lastReplyTimestamp").nullable();
 
-            // Not part of CommentUpdate
+            // Not part of CommentUpdate, this is stored to keep track of where the CommentUpdate is in the ipfs node
             table.text("ipfsPath").notNullable().unique();
 
             // Columns with defaults
@@ -239,17 +235,11 @@ export class DbHandler {
     private async _createVotesTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-            table.text("authorAddress").notNullable();
             table.text("authorSignerAddress").notNullable();
-            table.json("author").notNullable();
-
             table.timestamp("timestamp").checkPositive().notNullable();
-            table.text("subplebbitAddress").notNullable();
-            table.integer("vote").checkBetween([-1, 1]).notNullable();
-            table.json("signature").notNullable().unique();
+            table.tinyint("vote").checkBetween([-1, 1]).notNullable();
             table.text("protocolVersion").notNullable();
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
-
             table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
 
             table.primary(["commentCid", "authorSignerAddress"]); // An author can't have multiple votes on a comment
@@ -259,10 +249,9 @@ export class DbHandler {
     private async _createCommentEditsTable(tableName: string) {
         await this._knex.schema.createTable(tableName, (table) => {
             table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS);
-            table.text("authorAddress").notNullable();
             table.text("authorSignerAddress").notNullable();
             table.json("author").notNullable();
-            table.json("signature").notNullable().unique();
+            table.json("signature").notNullable();
             table.text("protocolVersion").notNullable();
             table.increments("id"); // Used for sorts
 
@@ -340,6 +329,7 @@ export class DbHandler {
             if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
+            await this._knex.raw(`VACUUM;`); // make sure we're not using extra space
             // we need to remove posts because it may include old incompatible comments
             // LocalSubplebbit will automatically produce a new posts json
             //@ts-expect-error
@@ -367,19 +357,14 @@ export class DbHandler {
         const srcRecords: any[] = await this._knex(srcTable).select("*");
         if (srcRecords.length > 0) {
             log(`Attempting to copy ${srcRecords.length} ${srcTable}`);
-            // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
-            let srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             // Need to make sure that array fields are json strings
-            for (const srcRecord of srcRecordFiltered) {
+            for (const srcRecord of srcRecords) {
                 for (const srcRecordKey of remeda.keys.strict(srcRecord))
                     if (Array.isArray(srcRecord[srcRecordKey])) {
                         srcRecord[srcRecordKey] = JSON.stringify(srcRecord[srcRecordKey]);
                         assert(srcRecord[srcRecordKey] !== "[object Object]", "DB value shouldn't be [object Object]");
                     }
                 // Migration from version 10 to 11
-                if (currentDbVersion <= 10 && srcTable === TABLES.COMMENTS) {
-                    srcRecord["challengeRequestPublicationSha256"] = `random-place-holder-${uuidV4()}`; // We just need the copy to work. The new comments will have a correct hash
-                }
                 if (currentDbVersion <= 11 && srcTable === TABLES.COMMENT_EDITS) {
                     // Need to compute isAuthorEdit column
                     const editWithType = <Omit<CommentEditsTableRow, "isAuthorEdit">>srcRecord;
@@ -392,10 +377,14 @@ export class DbHandler {
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
                     srcRecord["authorSignerAddress"] = await getPlebbitAddressFromPublicKey(srcRecord["signature"]["publicKey"]);
                 }
+
+                if (srcTable === TABLES.COMMENTS && srcRecord["ipnsName"])
+                    srcRecord.extraProps = { ...srcRecord.extraProps, ipnsName: srcRecord.ipnsName };
             }
 
-            // Have to use a for loop because if I inserted them as a whole it throw a "UNIQUE constraint failed: comments6.signature"
-            // Probably can be fixed but not worth the time
+            // Remove fields that are not in dst table. Will prevent errors when migration from db version 2 to 3
+
+            const srcRecordFiltered = srcRecords.map((record) => remeda.pick(record, dstTableColumns));
             for (const srcRecord of srcRecordFiltered) await this._knex(dstTable).insert(srcRecord);
         }
         log(`copied table ${srcTable} to table ${dstTable}`);
@@ -586,8 +575,12 @@ export class DbHandler {
         return this._baseTransaction(trx)(TABLES.COMMENTS).whereIn("cid", cids);
     }
 
-    async queryCommentByRequestPublicationHash(publicationHash: string, trx?: Transaction) {
-        return this._baseTransaction(trx)(TABLES.COMMENTS).where("challengeRequestPublicationSha256", publicationHash).first();
+    async queryCommentBySignatureEncoded(signatureEncoded: string, trx?: Transaction) {
+        const comment = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .whereJsonPath("signature", "$.signature", "=", signatureEncoded)
+            .first();
+
+        return comment;
     }
 
     async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
@@ -1021,6 +1014,7 @@ export class DbHandler {
                 onCompromised: () => {}
             });
         } catch (e: unknown) {
+            log.error(`Error when attempting to lock sub state`, subAddress, e);
             if (e instanceof Error && e.message === "Lock file is already being held")
                 throwWithErrorCode("ERR_SUB_STATE_LOCKED", { subplebbitAddress: subAddress });
             // Not sure, do we need to throw error here
@@ -1036,6 +1030,7 @@ export class DbHandler {
         try {
             await lockfile.unlock(subDbPath, { lockfilePath });
         } catch (e: unknown) {
+            log.error(`Error when attempting to unlock sub state`, subAddress, e);
             if (e instanceof Error && "code" in e && e.code !== "ENOTACQUIRED") throw e;
         }
     }

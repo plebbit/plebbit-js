@@ -516,8 +516,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const editTableRow = <CommentEditsTableRow>{
             ...strippedOutEditPublication,
             isAuthorEdit,
-            authorSignerAddress,
-            authorAddress: strippedOutEditPublication.author.address
+            authorSignerAddress
         };
 
         const extraPropsInEdit = remeda.difference(
@@ -535,14 +534,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     private async storeVote(newVoteProps: VotePubsubMessage, challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]) {
         const log = Logger("plebbit-js:local-subplebbit:storeVote");
-        const strippedOutVotePublication = VotePubsubMessageSchema.strip().parse(newVoteProps); // we strip out here so we don't store any extra props in votes table
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(newVoteProps.signature.publicKey);
         await this._dbHandler.deleteVote(authorSignerAddress, newVoteProps.commentCid);
         const voteTableRow = <VotesTableRow>{
-            ...strippedOutVotePublication,
-            authorSignerAddress,
-            authorAddress: newVoteProps.author.address
+            ...remeda.pick(newVoteProps, ["vote", "commentCid", "protocolVersion", "timestamp"]),
+            authorSignerAddress
         };
         const extraPropsInVote = remeda.difference(remeda.keys.strict(newVoteProps), remeda.keys.strict(VotePubsubMessageSchema.shape));
         if (extraPropsInVote.length > 0) {
@@ -618,7 +615,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storePublicationIfValid");
 
         const publication = request.publication;
-        const publicationHash = sha256(deterministicStringify(publication));
         if (this.isPublicationVote(publication)) return this.storeVote(publication, request.challengeRequestId);
         else if (this.isPublicationCommentEdit(publication)) return this.storeCommentEdit(publication, request.challengeRequestId);
         else if (this.isPublicationComment(publication)) {
@@ -640,9 +636,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 ...strippedOutCommentIpfs,
                 cid: commentCid,
                 postCid,
-                authorAddress: commentIpfs.author.address,
-                authorSignerAddress,
-                challengeRequestPublicationSha256: publicationHash
+                authorSignerAddress
             };
 
             const unknownProps = remeda.difference(remeda.keys.strict(publication), remeda.keys.strict(CommentPubsubMessageSchema.shape));
@@ -949,18 +943,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (this.features?.requirePostLinkIsMedia && publication.link && !isLinkOfMedia(publication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
-            const publicationHash = sha256(deterministicStringify(publication));
-            const publicationInDb = await this._dbHandler.queryCommentByRequestPublicationHash(publicationHash);
+            const publicationInDb = await this._dbHandler.queryCommentBySignatureEncoded(publication.signature.signature);
             if (publicationInDb) return messages.ERR_DUPLICATE_COMMENT;
         }
 
         if (this.isPublicationVote(publication)) {
             if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(publication)).length > 0)
                 return messages.ERR_VOTE_HAS_RESERVED_FIELD;
-            const authorSignerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
-            const lastVote = await this._dbHandler.getStoredVoteOfAuthor(publication.commentCid, authorSignerAddress);
-            if (lastVote && publication.signature.publicKey !== lastVote.signature.publicKey)
-                return messages.UNAUTHORIZED_AUTHOR_ATTEMPTED_TO_CHANGE_VOTE;
         }
 
         if (this.isPublicationCommentEdit(publication)) {
@@ -1451,7 +1440,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentIpfsJson = <CommentIpfsType>{
                 ...baseProps,
                 ...unpinnedCommentRow.extraProps,
-                ipnsName: unpinnedCommentRow["ipnsName"], // Added for backward compatibility
                 postCid: unpinnedCommentRow.depth === 0 ? undefined : unpinnedCommentRow.postCid // need to remove post cid because it's not part of ipfs file if depth is 0
             };
             const commentIpfsContent = deterministicStringify(commentIpfsJson);
