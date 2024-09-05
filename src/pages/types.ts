@@ -7,7 +7,7 @@ import { PostsPages, RepliesPages } from "./pages";
 export type PageIpfs = z.infer<typeof PageIpfsSchema>;
 
 export interface PageIpfsManuallyDefined {
-    comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[];
+    comments: { comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }[];
     nextCid?: string;
 }
 
@@ -28,7 +28,7 @@ export interface RepliesPagesIpfsDefinedManuallyType {
 export type Timeframe = "HOUR" | "DAY" | "WEEK" | "MONTH" | "YEAR" | "ALL";
 
 export type SortProps = {
-    score: (comment: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }) => number;
+    score: (comment: { comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }) => number;
     timeframe?: Timeframe;
 };
 

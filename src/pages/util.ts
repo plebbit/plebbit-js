@@ -59,12 +59,12 @@ type CommentToSort = PageIpfs["comments"][0];
 
 export function hotScore(comment: CommentToSort) {
     assert(
-        typeof comment.update.downvoteCount === "number" &&
-            typeof comment.update.upvoteCount === "number" &&
+        typeof comment.commentUpdate.downvoteCount === "number" &&
+            typeof comment.commentUpdate.upvoteCount === "number" &&
             typeof comment.comment.timestamp === "number"
     );
 
-    let score = comment.update.upvoteCount - comment.update.downvoteCount;
+    let score = comment.commentUpdate.upvoteCount - comment.commentUpdate.downvoteCount;
     score++; // reddit initial upvotes is 1, plebbit is 0
     const order = Math.log10(Math.max(Math.abs(score), 1));
     const sign = score > 0 ? 1 : score < 0 ? -1 : 0;
@@ -73,22 +73,22 @@ export function hotScore(comment: CommentToSort) {
 }
 
 export function controversialScore(comment: CommentToSort) {
-    assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
+    assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
 
-    const upvoteCount = comment.update.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
-    if (comment.update.downvoteCount <= 0 || upvoteCount <= 0) return 0;
-    const magnitude = upvoteCount + comment.update.downvoteCount;
+    const upvoteCount = comment.commentUpdate.upvoteCount + 1; // reddit initial upvotes is 1, plebbit is 0
+    if (comment.commentUpdate.downvoteCount <= 0 || upvoteCount <= 0) return 0;
+    const magnitude = upvoteCount + comment.commentUpdate.downvoteCount;
     const balance =
-        upvoteCount > comment.update.downvoteCount
-            ? comment.update.downvoteCount / upvoteCount
-            : upvoteCount / comment.update.downvoteCount;
+        upvoteCount > comment.commentUpdate.downvoteCount
+            ? comment.commentUpdate.downvoteCount / upvoteCount
+            : upvoteCount / comment.commentUpdate.downvoteCount;
     return Math.pow(magnitude, balance);
 }
 
 export function topScore(comment: CommentToSort) {
-    assert(typeof comment.update.downvoteCount === "number" && typeof comment.update.upvoteCount === "number");
+    assert(typeof comment.commentUpdate.downvoteCount === "number" && typeof comment.commentUpdate.upvoteCount === "number");
 
-    return comment.update.upvoteCount - comment.update.downvoteCount;
+    return comment.commentUpdate.upvoteCount - comment.commentUpdate.downvoteCount;
 }
 
 export function newScore(comment: CommentToSort) {
@@ -106,32 +106,32 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
     const finalComments = pageIpfs.comments.map((commentObj) => {
         // This code below is duplicated in comment._initCommentUpdate
         // TODO move it to a shared function
-        const parsedPages = commentObj.update.replies ? parsePagesIpfs(commentObj.update.replies) : undefined;
+        const parsedPages = commentObj.commentUpdate.replies ? parsePagesIpfs(commentObj.commentUpdate.replies) : undefined;
         const finalJson: CommentWithinPageJson = {
             ...commentObj.comment,
-            ...commentObj.update,
+            ...commentObj.commentUpdate,
             signature: commentObj.comment.signature,
             author: {
                 ...commentObj.comment.author,
-                ...commentObj.update.author,
+                ...commentObj.commentUpdate.author,
                 shortAddress: shortifyAddress(commentObj.comment.author.address),
                 flair:
-                    commentObj.update?.author?.subplebbit?.flair ||
-                    commentObj.update?.edit?.author?.flair ||
+                    commentObj.commentUpdate?.author?.subplebbit?.flair ||
+                    commentObj.commentUpdate?.edit?.author?.flair ||
                     commentObj.comment.author.flair
             },
             shortCid: shortifyCid(commentObj.comment.cid),
             shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
             original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(commentObj.comment),
-            deleted: commentObj.update.edit?.deleted,
+            deleted: commentObj.commentUpdate.edit?.deleted,
             replies: parsedPages,
-            content: commentObj.update.edit?.content || commentObj.comment.content,
-            reason: commentObj.update.reason,
+            content: commentObj.commentUpdate.edit?.content || commentObj.comment.content,
+            reason: commentObj.commentUpdate.reason,
             spoiler:
-                ("spoiler" in commentObj.update && commentObj.update.spoiler) ||
-                (commentObj.update.edit && "spoiler" in commentObj.update.edit && commentObj.update.edit.spoiler) ||
+                ("spoiler" in commentObj.commentUpdate && commentObj.commentUpdate.spoiler) ||
+                (commentObj.commentUpdate.edit && "spoiler" in commentObj.commentUpdate.edit && commentObj.commentUpdate.edit.spoiler) ||
                 commentObj.comment.spoiler,
-            flair: commentObj.comment.flair || commentObj.update.edit?.flair
+            flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair
         };
         return finalJson;
     });
@@ -157,7 +157,7 @@ export function parseRawPages(
             pagesIpfs: undefined
         };
 
-    const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["update"]?.["cid"] === "string";
+    const isIpfs = typeof Object.values(pages.pages)[0]?.comments[0]?.["commentUpdate"]?.["cid"] === "string";
 
     if (isIpfs) {
         pages = <PagesTypeIpfs>pages;

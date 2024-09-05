@@ -7,7 +7,9 @@ import type { PageIpfsManuallyDefined } from "./types.js";
 
 export const PageIpfsSchema = <z.ZodType<PageIpfsManuallyDefined>>z.object({
     comments: z.lazy(() =>
-        z.object({ comment: CommentIpfsWithCidPostCidDefinedSchema.passthrough(), update: CommentUpdateSchema.passthrough() }).array()
+        z
+            .object({ comment: CommentIpfsWithCidPostCidDefinedSchema.passthrough(), commentUpdate: CommentUpdateSchema.passthrough() })
+            .array()
     ),
     nextCid: CidStringSchema.optional()
 });

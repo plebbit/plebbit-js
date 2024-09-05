@@ -676,7 +676,7 @@ export async function verifyPage(
         if (!commentSignatureValidity.valid) return commentSignatureValidity;
         if ("derivedAddress" in commentSignatureValidity && commentSignatureValidity.derivedAddress) shouldCache = false;
         const commentUpdateSignatureValidity = await verifyCommentUpdate(
-            pageComment.update,
+            pageComment.commentUpdate,
             resolveAuthorAddresses,
             clientsManager,
             subplebbitAddress,

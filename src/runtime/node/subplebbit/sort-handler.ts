@@ -75,9 +75,9 @@ export class SortHandler {
             return score2 - score1;
         };
 
-        const pinnedComments = comments.filter((obj) => obj.update.pinned === true).sort(scoreSort);
+        const pinnedComments = comments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
 
-        let unpinnedComments = comments.filter((obj) => !obj.update.pinned).sort(scoreSort);
+        let unpinnedComments = comments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
             const timestampLower: number = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);

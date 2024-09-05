@@ -507,7 +507,7 @@ export class DbHandler {
     async queryCommentsForPages(
         options: Omit<PageOptions, "pageSize">,
         trx?: Transaction
-    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[]> {
+    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }[]> {
         // protocolVersion, signature
 
         const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
@@ -522,18 +522,20 @@ export class DbHandler {
         ]);
 
         //@ts-expect-error
-        const comments: { comment: CommentIpfsWithCidPostCidDefined; update: CommentUpdateType }[] = commentsRaw.map((commentRaw) => ({
-            comment: remeda.mapKeys(
-                // we need to exclude extraProps from pageIpfs.comments[0].comment
-                // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
-                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
-                (key, value) => key.replace("commentIpfs_", "")
-            ),
-            update: remeda.mapKeys(
-                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
-                (key, value) => key.replace("commentUpdate_", "")
-            )
-        }));
+        const comments: { comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }[] = commentsRaw.map(
+            (commentRaw) => ({
+                comment: remeda.mapKeys(
+                    // we need to exclude extraProps from pageIpfs.comments[0].comment
+                    // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
+                    remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
+                    (key, value) => key.replace("commentIpfs_", "")
+                ),
+                commentUpdate: remeda.mapKeys(
+                    remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
+                    (key, value) => key.replace("commentUpdate_", "")
+                )
+            })
+        );
 
         return comments;
     }
