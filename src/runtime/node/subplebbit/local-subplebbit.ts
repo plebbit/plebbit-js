@@ -283,7 +283,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _getDbInternalState(
-        lock = true
+        lock: boolean
     ): Promise<InternalSubplebbitRecordAfterFirstUpdateType | InternalSubplebbitRecordBeforeFirstUpdateType | undefined> {
         if (!(await this._dbHandler.keyvHas(STORAGE_KEYS[STORAGE_KEYS.INTERNAL_SUBPLEBBIT]))) return undefined;
         if (lock) await this._dbHandler.lockSubState();
@@ -295,7 +295,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _updateInstanceStateWithDbState() {
-        const currentDbState = await this._getDbInternalState();
+        const currentDbState = await this._getDbInternalState(false);
         if (!currentDbState) throw Error("current db state should be defined before updating instance state with it");
 
         if ("updatedAt" in currentDbState)
@@ -359,10 +359,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
         const dbInstance = await this._getDbInternalState(true);
         if (!dbInstance) throw Error("Db instance should be defined prior to publishing a new IPNS");
-        this._subplebbitUpdateTrigger =
-            this._subplebbitUpdateTrigger ||
-            ("_subplebbitUpdateTrigger" in dbInstance && dbInstance._subplebbitUpdateTrigger) ||
-            lastPublishTooOld;
+        this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;
     }
 
     private async updateSubplebbitIpnsIfNeeded() {
@@ -1378,7 +1375,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const log = Logger("plebbit-js:local-subplebbit:_switchDbIfNeeded");
 
         // Will check if address has been changed, and if so connect to the new db with the new address
-        const internalState = await this._getDbInternalState(true);
+        const internalState = await this._getDbInternalState(false);
         if (!internalState) throw Error("Can't change address or db when there's no internal state in db");
         const listedSubs = await this._plebbit.listSubplebbits();
         const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
@@ -1693,7 +1690,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._updateDbInternalState(newProps);
         }
 
-        const latestState = await this._getDbInternalState(true);
+        const latestState = await this._getDbInternalState(false);
         if (!latestState) throw Error("Internal state in db should be defined prior to calling sub.edit()");
 
         if ("updatedAt" in latestState) await this.initInternalSubplebbitAfterFirstUpdateNoMerge(latestState);
@@ -1712,7 +1709,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private async _setSubplebbitIpfsIfNeeded() {
         // A hack for old subplebbit states that don't define _rawSubplebbitIpfs
         if (this.updatedAt && !this._rawSubplebbitIpfs) {
-            const internalState = await this._getDbInternalState();
+            const internalState = await this._getDbInternalState(false);
             if (!internalState) throw Error("Internal state should be defined if updatedAt is defined");
             if (!("signature" in internalState)) throw Error("signature should be defined");
             this._rawSubplebbitIpfs = <
