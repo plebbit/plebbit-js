@@ -85,7 +85,7 @@ const comment = await webSocketClient.call('getComment', [commentCid])
 console.log(comment)
 
 // get comment updates
-const subscriptionId = await webSocketClient.call('commentUpdate', [comment.cid])
+const subscriptionId = await webSocketClient.call('commentUpdateSubscribe', [comment.cid])
 new Subscription(subscriptionId).on('message', console.log)
 ```
 
@@ -95,29 +95,30 @@ new Subscription(subscriptionId).on('message', console.log)
 - `method: getCommentPage, params: [pageCid, commentCid]`
 - `method: getSubplebbitPage, params: [pageCid, subplebbitAddress]`
 - `method: createSubplebbit, params: [createSubplebbitOptions]`
-- `method: startSubplebbit, params: [address: string]`
 - `method: stopSubplebbit, params: [address: string]`
 - `method: editSubplebbit, params: [address: string, subplebbitEditOptions]`
 - `method: deleteSubplebbit, params: [address: string]`
-- `method: listSubplebbits, params: []`
-- `method: getDefaults, params: []`
 - `method: fetchCid, params: [cid: string]`
-- `method: getSettings, params: []`
 - `method: setSettings, params: [plebbitRpcSettings]`
+- (below not implemented yet, probably make them subscriptions only)
+- `method: getDefaults, params: []`
 - `method: getPeers, params: []`
 - `method: getStats, params: []`
 
 # JSON-RPC Pubsub Websocket API
 
-- [`method: commentUpdate, params: [cid: string]`](#commentupdate)
-- [`method: subplebbitUpdate, params: [address: string]`](#subplebbitupdate)
+- [`method: commentUpdateSubscribe, params: [cid: string]`](#commentupdate)
+- [`method: subplebbitUpdateSubscribe, params: [address: string]`](#subplebbitupdate)
 - [`method: publishComment, params: [comment]`](#publishcomment)
 - `method: publishVote, params: [vote]`
 - `method: publishCommentEdit, params: [commentEdit]`
 - `method: publishChallengeAnswers, params: [subscriptionId: number, challengeAnswers: string[]]`
+- `method: startSubplebbit, params: [address: string]`
+- `method: subplebbitsSubscribe, params: []`
+- `method: settingsSubscribe, params: []`
 - [`method: unsubscribe, params: [subscriptionId: number]`](#unsubscribe)
 
-## commentUpdate
+## commentUpdateSubscribe
 
 Subscribe to a comment update to receive notifications when the comment is updated, e.g. has a new reply
 
@@ -137,10 +138,9 @@ Subscribe to a comment update to receive notifications when the comment is updat
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "commentUpdate",
+  "method": "commentUpdateSubscribe",
   "params": [
-    "Qm...",
-    "12D3KooW..."
+    "Qm..."
   ]
 }
 ```
@@ -160,7 +160,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "commentUpdate",
+  "method": "commentUpdateSubscribe",
   "params": {
     "result": {
       "cid": "Qm...",
@@ -180,7 +180,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "commentUpdate",
+  "method": "commentUpdateSubscribe",
   "params": {
     "result": "fetching-ipfs",
     "event": "statechange",
@@ -189,7 +189,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 }
 ```
 
-## subplebbitUpdate
+## subplebbitUpdateSubscribe
 
 Subscribe to a subplebbit update to receive notifications when the subplebbit is updated, e.g. has a new post
 
@@ -209,7 +209,7 @@ Subscribe to a subplebbit update to receive notifications when the subplebbit is
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "subplebbitUpdate",
+  "method": "subplebbitUpdateSubscribe",
   "params": [
     "memes.eth"
   ]
@@ -231,7 +231,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "subplebbitUpdate",
+  "method": "subplebbitUpdateSubscribe",
   "params": {
     "result": {
       "title": "Memes",
@@ -249,7 +249,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "subplebbitUpdate",
+  "method": "subplebbitUpdateSubscribe",
   "params": {
     "result": "fetching-ipfs",
     "event": "statechange",
@@ -385,13 +385,13 @@ Unsubscribe from notifications
 { "jsonrpc": "2.0", "result": true, "id": 1 }
 ```
 
-## getSettings
+## settingsSubscribe
 
-Get the current plebbit rpc settings
+Subscribe to the plebbit rpc settings to receive notifications when they change
 
 ### Result:
 
-`<PlebbitRpcSettings>` - Current plebbit rpc settings
+`<number>` - Subscription id \(needed to unsubscribe\)
 
 ### Code sample:
 
@@ -399,7 +399,7 @@ Get the current plebbit rpc settings
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "getSettings",
+  "method": "settingsSubscribe",
   "params": []
 }
 ```
@@ -407,14 +407,74 @@ Get the current plebbit rpc settings
 ### Response:
 
 ```json
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Plebbit Events](https://github.com/plebbit/plebbit-js#plebbit-events)
+
+`settingschange` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "settingsSubscribe",
+  "params": {
+    "result": {
+      "plebbitOptions": {...},
+      "challenges": {
+        "challenge-name": {...}
+      }
+    },
+    "event": "settingschange",
+    "subscription": 23784
+  }
+}
+```
+
+## subplebbitsSubscribe
+
+Subscribe to the subplebbits list managed by the plebbit rpc to receive notifications when they change
+
+### Result:
+
+`<number>` - Subscription id \(needed to unsubscribe\)
+
+### Code sample:
+
+```json
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "result": {
-    "plebbitOptions": {...},
-    "challenges": {
-      "challenge-name": {...}
-    }
-  }, 
+  "method": "subplebbitsSubscribe",
+  "params": []
+}
+```
+
+### Response:
+
+```json
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Plebbit Events](https://github.com/plebbit/plebbit-js#plebbit-events)
+
+`subplebbitschange` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "subplebbitsSubscribe",
+  "params": {
+    "result": [
+      "memes.eth", 
+      "news.eth"
+    ]
+    "event": "subplebbitschange",
+    "subscription": 23784
+  }
 }
 ```
