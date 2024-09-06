@@ -48,20 +48,7 @@ Vote extends Publication {
   commentCid: string
   vote: 1 | -1 | 0 // 0 is needed to cancel a vote
 }
-ModeratorCommentEditOptions {
-  commentCid: string
-  flair?: Flair
-  spoiler?: boolean
-  pinned?: boolean
-  locked?: boolean
-  removed?: boolean
-  reason?: string
-  commentAuthor?: {
-    flair?: Flair
-    banExpiresAt?: number
-  }
-}
-AuthorCommentEditOptions {
+CommentEdit extends Publication {
   commentCid: string
   content?: string
   deleted?: boolean
@@ -69,10 +56,24 @@ AuthorCommentEditOptions {
   spoiler?: boolean
   reason?: string
 }
-AuthorCommentEdit extends AuthorCommentEditOptions, Publication {}
-ModeratorCommentEdit extends ModeratorCommentEditOptions, Publication {}
-CommentEdit extends AuthorCommentEdit, ModeratorCommentEdit {}
-SubplebbitEdit extends CreateSubplebbitOptions, Publication {}
+CommentModeration extends Publication {
+  commentCid: string
+  commentModeration: {
+    flair?: Flair
+    spoiler?: boolean
+    pinned?: boolean
+    locked?: boolean
+    removed?: boolean
+    reason?: string
+    author?: {
+      flair?: Flair
+      banExpiresAt?: number
+    }  
+  }
+}
+SubplebbitEdit extends Publication {
+  subplebbitEdit: CreateSubplebbitOptions
+}
 MultisubEdit extends CreateMultisubOptions, Publication {}
 CommentUpdate /* (IPFS file) */ {
   cid: string // cid of the comment, need it in signature to prevent attack
@@ -224,7 +225,7 @@ PageIpfs /* (IPFS file) */ {
 }
 PageIpfsComment {
   comment: Comment
-  update: CommentUpdate
+  commentUpdate: CommentUpdate
 }
 PostsSortType: 'hot' | 'new' | 'active' | 'topHour' | 'topDay' | 'topWeek' | 'topMonth' | 'topYear' | 'topAll' | 'controversialHour' | 'controversialDay' | 'controversialWeek' | 'controversialMonth' | 'controversialYear' | 'controversialAll'
 RepliesSortType: 'topAll' | 'new' | 'old' | 'controversialAll'
@@ -294,7 +295,11 @@ ChallengeRequestMessage extends PubsubMessage /* (sent by post author) */ {
   acceptedChallengeTypes: string[] // list of challenge types the client can do, for example cli clients or old clients won't do all types
   encrypted: Encrypted
   /* ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON {
-    publication: Publication
+    comment?: Comment
+    vote?: Vote
+    commentEdit?: CommentEdit
+    commentModeration?: CommentModeration
+    subplebbitEdit?: SubplebbitEdit
     challengeAnswers?: string[] // some challenges might be included in subplebbit.challenges and can be pre-answered
     challengeCommentCids?: string[] // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
   }
@@ -320,8 +325,8 @@ ChallengeVerificationMessage extends PubsubMessage /* (sent by subplebbit owner)
   reason?: string // reason for failed verification, for example post content is too long. could also be used for successful verification that bypass the challenge, for example because an author has good history
   encrypted: Encrypted
   /* ChallengeVerificationMessage.encrypted.ciphertext decrypts to JSON {
-    publication: Publication // must contain comment.cid when comment
-    signature: Signature // TODO: maybe include a signature from the sub owner eventually, need to define spec
+    comment?: Comment // must contain missing props from comment publication, like depth, postCid, etc
+    commentUpdate?: CommentUpdate // must contain commentUpdate.cid and commentUpdate.signature when publication is comment
   }
   plebbit-js should decrypt the encrypted fields when possible, and add `ChallengeVerificationMessage.publication` property for convenience (not part of the broadcasted pubsub message) */
 }
@@ -357,9 +362,11 @@ PubsubSignature {
   - [`plebbit.createSubplebbitEdit(createSubplebbitEditOptions)`](#plebbitcreatesubplebbiteditcreatesubplebbiteditoptions)
   - [`plebbit.createComment(createCommentOptions)`](#plebbitcreatecommentcreatecommentoptions)
   - [`plebbit.createCommentEdit(createCommentEditOptions)`](#plebbitcreatecommenteditcreatecommenteditoptions)
+  - [`plebbit.createCommentModeration(createCommentModerationOptions)`](#plebbitcreatecommentmoderationcreatecommentmoderationoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
-  - [`plebbit.listSubplebbits()`](#plebbitlistsubplebbits)
+  - [`plebbit.subplebbits`]
+  - [`plebbit.settings`]
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
   - `plebbit.fetchCid(cid)`
   - `plebbit.resolveAuthorAddress(address)`
@@ -369,6 +376,10 @@ PubsubSignature {
   - `Plebbit.setNativeFunctions(nativeFunctions)`
   - `Plebbit.nativeFunctions`
   - `Plebbit.challenges`
+- [Plebbit Events](#plebbit-events)
+  - [`subplebbitschange`](#subplebbitschange)
+  - [`settingschange`](#settingschange)
+  - `error`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
   - [`subplebbit.start()`](#subplebbitstart)
@@ -873,7 +884,7 @@ console.log(comment.replies.pages.topAll.comments[0].content) // prints 'My firs
 
 ### `plebbit.createCommentEdit(createCommentEditOptions)`
 
-> Create a `CommentEdit` instance, which can be used by authors to edit their own comments, or moderators to remove comments. A `CommentEdit` must still be published and go through a challenge handshake.
+> Create a `CommentEdit` instance, which can be used by authors to edit their own comments. A `CommentEdit` must still be published and go through a challenge handshake.
 
 #### Parameters
 
@@ -890,28 +901,15 @@ An object which may have the following keys:
 | subplebbitAddress | `string` | `Address` of the subplebbit |
 | commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
 | timestamp | `number` or `undefined` | Time of publishing in ms, `Math.round(Date.now() / 1000)` if undefined |
-| author | `Author` | Author of the `CommentEdit` publication, either original author or moderator. Not used to edit the `comment.author` property, only to authenticate the `CommentEdit` publication |
-| signer | `Signer` | Signer of the edit, either original author or mod |
-| content | `string` or `undefined` | (Only author) Edited content of the comment |
-| deleted | `boolean` or `undefined` | (Only author) Edited deleted status of the comment |
-| flair | `Flair` or `undefined` | (Author or mod) Edited flair of the comment |
-| spoiler | `boolean` or `undefined` | (Author or mod) Edited spoiler of the comment |
-| reason | `string` or `undefined` | (Author or mod) Reason of the edit |
-| pinned | `boolean` or `undefined` | (Only mod) Edited pinned status of the comment |
-| locked | `boolean` or `undefined` | (Only mod) Edited locked status of the comment |
-| removed | `boolean` or `undefined` | (Only mod) Edited removed status of the comment |
-| commentAuthor | `CommentAuthorEditOptions` or `undefined` | (Only mod) Edited author property of the comment |
+| author | `Author` | Author of the `CommentEdit` publication, must be original author. Not used to edit the `comment.author` property, only to authenticate the `CommentEdit` publication |
+| signer | `Signer` | Signer of the edit, must be original author |
+| content | `string` or `undefined` | Edited content of the comment |
+| deleted | `boolean` or `undefined` | Edited deleted status of the comment |
+| flair | `Flair` or `undefined` | Edited flair of the comment |
+| spoiler | `boolean` or `undefined` | Edited spoiler of the comment |
+| reason | `string` or `undefined` | Reason of the edit |
 | challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
 | challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
-
-##### CommentAuthorEditOptions
-
-An object which may have the following keys:
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| banExpiresAt | `number` or `undefined` | (Only mod) Comment author was banned for this comment |
-| flair | `Flair` or `undefined` | (Only mod) Edited flair of the comment author |
 
 #### Returns
 
@@ -929,6 +927,72 @@ commentEdit.on('challenge', async (challengeMessage, _commentEdit) => {
 })
 commentEdit.on('challengeverification', console.log)
 await commentEdit.publish()
+```
+
+### `plebbit.createCommentModeration(createCommentModerationOptions)`
+
+> Create a `CommentModeration` instance, which can be used by moderators to remove comments. A `CommentModeration` must still be published and go through a challenge handshake.
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| createCommentModerationOptions | `CreateCommentModerationOptions` | The comment moderation to create |
+
+##### CreateCommentModerationOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subplebbitAddress | `string` | `Address` of the subplebbit |
+| commentCid | `string` | The comment CID to be edited (don't use 'cid' because eventually CommentEdit.cid will exist) |
+| timestamp | `number` or `undefined` | Time of publishing in ms, `Math.round(Date.now() / 1000)` if undefined |
+| author | `Author` | Author of the `CommentModeration` publication, must be moderator. Not used to edit the `comment.author` property, only to authenticate the `CommentModeration` publication |
+| signer | `Signer` | Signer of the edit, must be moderator |
+| commentModeration | `CommentModerationOptions` | The comment moderation options |
+| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
+| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
+
+##### CommentModerationOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| flair | `Flair` or `undefined` | Edited flair of the comment |
+| spoiler | `boolean` or `undefined` | Edited spoiler of the comment |
+| reason | `string` or `undefined` | Reason of the edit |
+| pinned | `boolean` or `undefined` | Edited pinned status of the comment |
+| locked | `boolean` or `undefined` |Edited locked status of the comment |
+| removed | `boolean` or `undefined` | Edited removed status of the comment |
+| author | `CommentModerationAuthorOptions` or `undefined` | Edited author property of the comment |
+
+##### CommentModerationAuthorOptions
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| banExpiresAt | `number` or `undefined` | Comment author was banned for this comment |
+| flair | `Flair` or `undefined` | Edited flair of the comment author |
+
+#### Returns
+
+| Type | Description |
+| -------- | -------- |
+| `Promise<CommentModeration>` | A `CommentModeration` instance |
+
+#### Example
+
+```js
+const commentModeration = await plebbit.createCommentModeration(createCommentModerationOptions)
+commentModeration.on('challenge', async (challengeMessage, _commentModeration) => {
+  const challengeAnswers = await askUserForChallengeAnswers(challengeMessage.challenges)
+  _commentModeration.publishChallengeAnswers(challengeAnswers)
+})
+commentModeration.on('challengeverification', console.log)
+await commentModeration.publish()
 ```
 
 ### `plebbit.createVote(createVoteOptions)`
@@ -1041,10 +1105,33 @@ for (const address of subplebbitAddresses) {
 
 ```js
 const plebbitDefaults = await plebbit.getDefaults()
-const pAllMultisub = await plebbit.getMultisub(plebbitDefaults.multisubAddresses.all)
-const pAllSubplebbitAddresses = pAllMultisub.map(subplebbit => subplebbit.address)
-console.log(pAllSubplebbitAddresses)
+const allMultisub = await plebbit.getMultisub(plebbitDefaults.multisubAddresses.all)
+const allSubplebbitAddresses = allMultisub.map(subplebbit => subplebbit.address)
+console.log(allSubplebbitAddresses)
 ```
+
+## Plebbit Events
+The plebbit events.
+
+### `subplebbitschange`
+
+> `Plebbit.subplebbits` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `string[]` | The `Subplebbit.subplebbits` property |
+
+### `settingschange`
+
+> `Plebbit.settings` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `PlebbitRpcSettings` | The `Subplebbit.settings` property |
 
 ## Subplebbit API
 The subplebbit API for getting subplebbit updates, or creating, editing, running a subplebbit as an owner.
