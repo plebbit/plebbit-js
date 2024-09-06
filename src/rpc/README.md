@@ -112,6 +112,7 @@ new Subscription(subscriptionId).on('message', console.log)
 - [`method: publishComment, params: [comment]`](#publishcomment)
 - `method: publishVote, params: [vote]`
 - `method: publishCommentEdit, params: [commentEdit]`
+- `method: publishCommentModeration, params: [commentModeration]`
 - `method: publishChallengeAnswers, params: [subscriptionId: number, challengeAnswers: string[]]`
 - `method: startSubplebbit, params: [address: string]`
 - [`method: subplebbitsSubscribe, params: []`](#subplebbitssubscribe)
@@ -160,7 +161,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "commentUpdateSubscribe",
+  "method": "commentUpdateNotification",
   "params": {
     "result": {
       "cid": "Qm...",
@@ -180,7 +181,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "commentUpdateSubscribe",
+  "method": "commentUpdateNotification",
   "params": {
     "result": "fetching-ipfs",
     "event": "statechange",
@@ -231,7 +232,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "subplebbitUpdateSubscribe",
+  "method": "subplebbitUpdateNotification",
   "params": {
     "result": {
       "title": "Memes",
@@ -249,7 +250,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "subplebbitUpdateSubscribe",
+  "method": "subplebbitUpdateNotification",
   "params": {
     "result": "fetching-ipfs",
     "event": "statechange",
@@ -310,7 +311,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "publishComment",
+  "method": "publishCommentNotification",
   "params": {
     "result": {
       "type": "CHALLENGE",
@@ -330,7 +331,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "publishComment",
+  "method": "publishCommentNotification",
   "params": {
     "result": {
       "type": "CHALLENGEVERIFICATION",
@@ -388,7 +389,7 @@ The notification format is the same as seen in the plebbit-js [Plebbit Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "subplebbitsSubscribe",
+  "method": "subplebbitsNotification",
   "params": {
     "result": [
       "memes.eth", 
@@ -434,7 +435,7 @@ The notification format is the same as seen in the plebbit-js [Plebbit Events](h
 ```json
 {
   "jsonrpc": "2.0",
-  "method": "settingsSubscribe",
+  "method": "settingsNotification",
   "params": {
     "result": {
       "plebbitOptions": {...},
