@@ -107,15 +107,15 @@ new Subscription(subscriptionId).on('message', console.log)
 
 # JSON-RPC Pubsub Websocket API
 
-- [`method: commentUpdateSubscribe, params: [cid: string]`](#commentupdate)
-- [`method: subplebbitUpdateSubscribe, params: [address: string]`](#subplebbitupdate)
+- [`method: commentUpdateSubscribe, params: [cid: string]`](#commentupdatesubscribe)
+- [`method: subplebbitUpdateSubscribe, params: [address: string]`](#subplebbitupdatesubscribe)
 - [`method: publishComment, params: [comment]`](#publishcomment)
 - `method: publishVote, params: [vote]`
 - `method: publishCommentEdit, params: [commentEdit]`
 - `method: publishChallengeAnswers, params: [subscriptionId: number, challengeAnswers: string[]]`
 - `method: startSubplebbit, params: [address: string]`
-- `method: subplebbitsSubscribe, params: []`
-- `method: settingsSubscribe, params: []`
+- [`method: subplebbitsSubscribe, params: []`](#subplebbitssubscribe)
+- [`method: settingsSubscribe, params: []`](#settingssubscribe)
 - [`method: unsubscribe, params: [subscriptionId: number]`](#unsubscribe)
 
 ## commentUpdateSubscribe
@@ -354,19 +354,13 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 }
 ```
 
-## unsubscribe
+## subplebbitsSubscribe
 
-Unsubscribe from notifications
-
-### Parameters:
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| subscriptionId | `number` | id of the account subscription to cancel |
+Subscribe to the subplebbits list managed by the plebbit rpc to receive notifications when they change
 
 ### Result:
 
-`<bool>` - unsubscribe success message
+`<number>` - Subscription id \(needed to unsubscribe\)
 
 ### Code sample:
 
@@ -374,15 +368,36 @@ Unsubscribe from notifications
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "unsubscribe",
-  "params": [23784]
+  "method": "subplebbitsSubscribe",
+  "params": []
 }
 ```
 
 ### Response:
 
 ```json
-{ "jsonrpc": "2.0", "result": true, "id": 1 }
+{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
+```
+
+#### Notification Format:
+
+The notification format is the same as seen in the plebbit-js [Plebbit Events](https://github.com/plebbit/plebbit-js#plebbit-events)
+
+`subplebbitschange` event:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "subplebbitsSubscribe",
+  "params": {
+    "result": [
+      "memes.eth", 
+      "news.eth"
+    ]
+    "event": "subplebbitschange",
+    "subscription": 23784
+  }
+}
 ```
 
 ## settingsSubscribe
@@ -433,13 +448,19 @@ The notification format is the same as seen in the plebbit-js [Plebbit Events](h
 }
 ```
 
-## subplebbitsSubscribe
+## unsubscribe
 
-Subscribe to the subplebbits list managed by the plebbit rpc to receive notifications when they change
+Unsubscribe from notifications
+
+### Parameters:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| subscriptionId | `number` | id of the account subscription to cancel |
 
 ### Result:
 
-`<number>` - Subscription id \(needed to unsubscribe\)
+`<bool>` - unsubscribe success message
 
 ### Code sample:
 
@@ -447,34 +468,13 @@ Subscribe to the subplebbits list managed by the plebbit rpc to receive notifica
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "subplebbitsSubscribe",
-  "params": []
+  "method": "unsubscribe",
+  "params": [23784]
 }
 ```
 
 ### Response:
 
 ```json
-{ "jsonrpc": "2.0", "result": 23784, "id": 1 }
-```
-
-#### Notification Format:
-
-The notification format is the same as seen in the plebbit-js [Plebbit Events](https://github.com/plebbit/plebbit-js#plebbit-events)
-
-`subplebbitschange` event:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "subplebbitsSubscribe",
-  "params": {
-    "result": [
-      "memes.eth", 
-      "news.eth"
-    ]
-    "event": "subplebbitschange",
-    "subscription": 23784
-  }
-}
+{ "jsonrpc": "2.0", "result": true, "id": 1 }
 ```
