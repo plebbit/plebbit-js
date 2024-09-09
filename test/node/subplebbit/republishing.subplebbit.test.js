@@ -9,7 +9,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     describeSkipIfRpc,
     findCommentInPage,
-    waitTillCommentIsInParentPages
+    waitTillCommentIsInParentPages,
+    resolveWhenConditionIsTrue
 } from "../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -32,7 +33,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         remotePlebbit = await mockRemotePlebbitIpfsOnly();
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
-        await new Promise((resolve) => subBeforeMigration.once("update", resolve));
+        await resolveWhenConditionIsTrue(subBeforeMigration, () => typeof subBeforeMigration.updatedAt === "number");
         const post = await publishRandomPost(subBeforeMigration.address, plebbit, {}, true);
         await publishRandomReply(post, plebbit, {}, true);
         // publish a post with extra prop here
@@ -50,8 +51,9 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         plebbitDifferentIpfs = await mockPlebbit({ ipfsHttpClientsOptions: ["http://localhost:15004/api/v0"] }); // Different IPFS repo
 
         subAfterMigration = await createSubWithNoChallenge({ address: subBeforeMigration.address }, plebbitDifferentIpfs);
+        expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
-        await new Promise((resolve) => subAfterMigration.once("update", resolve));
+        await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt !== subBeforeMigration.updatedAt);
         await waitTillCommentIsInParentPages(postWithExtraProps, remotePlebbit);
     });
     it(`Subplebbit IPNS is republished`, async () => {
