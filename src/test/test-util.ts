@@ -466,8 +466,7 @@ export async function publishVote(
 export async function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string) {
     let receivedResponse: boolean = false;
 
-    await publication.publish();
-    await new Promise((resolve, reject) => {
+    const validateResponsePromise = new Promise((resolve, reject) => {
         setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 90000); // throw after 20 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
@@ -484,6 +483,9 @@ export async function publishWithExpectedResult(publication: Publication, expect
             } else resolve(1);
         });
     });
+
+    await publication.publish();
+    await validateResponsePromise;
 }
 
 export async function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages) {
