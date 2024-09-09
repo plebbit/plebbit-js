@@ -151,8 +151,8 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("getSettings", this.getSettings.bind(this));
         this.rpcWebsocketsRegister("setSettings", this.setSettings.bind(this));
         // JSON RPC pubsub methods
-        this.rpcWebsocketsRegister("commentUpdate", this.commentUpdate.bind(this));
-        this.rpcWebsocketsRegister("subplebbitUpdate", this.subplebbitUpdate.bind(this));
+        this.rpcWebsocketsRegister("commentUpdateSubscribe", this.commentUpdateSubscribe.bind(this));
+        this.rpcWebsocketsRegister("subplebbitUpdateSubscribe", this.subplebbitUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("publishComment", this.publishComment.bind(this));
         this.rpcWebsocketsRegister("publishVote", this.publishVote.bind(this));
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
@@ -450,12 +450,18 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
 
-    async commentUpdate(params: any, connectionId: string) {
+    async commentUpdateSubscribe(params: any, connectionId: string) {
         const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "commentUpdate", subscription: subscriptionId, event, result, connectionId });
+            this.jsonRpcSendNotification({
+                method: "commentUpdateNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
 
         const comment = await this.plebbit.createComment({ cid });
         comment.on("update", () => {
@@ -489,12 +495,18 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
-    async subplebbitUpdate(params: any, connectionId: string) {
+    async subplebbitUpdateSubscribe(params: any, connectionId: string) {
         const address = SubplebbitAddressSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "subplebbitUpdate", subscription: subscriptionId, event, result, connectionId });
+            this.jsonRpcSendNotification({
+                method: "subplebbitUpdateNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
 
         const isSubStarted = address in startedSubplebbits;
         const subplebbit = isSubStarted
@@ -561,7 +573,13 @@ class PlebbitWsServer extends EventEmitter {
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "publishComment", subscription: subscriptionId, event, result, connectionId });
+            this.jsonRpcSendNotification({
+                method: "publishCommentNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
 
         const comment = await this.plebbit.createComment(publishOptions);
         this.publishing[subscriptionId] = comment;
@@ -602,7 +620,7 @@ class PlebbitWsServer extends EventEmitter {
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "publishVote", subscription: subscriptionId, event, result, connectionId });
+            this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
 
         const vote = await this.plebbit.createVote(publishOptions);
         this.publishing[subscriptionId] = vote;
@@ -642,7 +660,13 @@ class PlebbitWsServer extends EventEmitter {
         const subscriptionId = generateSubscriptionId();
 
         const sendEvent = (event: string, result: any) =>
-            this.jsonRpcSendNotification({ method: "publishCommentEdit", subscription: subscriptionId, event, result, connectionId });
+            this.jsonRpcSendNotification({
+                method: "publishCommentEditNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
 
         const commentEdit = await this.plebbit.createCommentEdit(publishOptions);
         this.publishing[subscriptionId] = commentEdit;

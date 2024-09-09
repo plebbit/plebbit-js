@@ -254,9 +254,9 @@ export default class PlebbitRpcClient {
         if (res !== true) throw Error("Calling RPC function deleteSubplebbit should either return true or throw");
     }
 
-    async subplebbitUpdate(subplebbitAddress: string): Promise<number> {
+    async subplebbitUpdateSubscribe(subplebbitAddress: string): Promise<number> {
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("subplebbitUpdate", [parsedSubplebbitAddress]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("subplebbitUpdateSubscribe", [parsedSubplebbitAddress]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
@@ -279,9 +279,9 @@ export default class PlebbitRpcClient {
         return subscriptionId;
     }
 
-    async commentUpdate(commentCid: string) {
+    async commentUpdateSubscribe(commentCid: string) {
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdate", [parsedCid]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdateSubscribe", [parsedCid]));
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
