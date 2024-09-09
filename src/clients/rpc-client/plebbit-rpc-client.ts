@@ -47,8 +47,6 @@ export default class PlebbitRpcClient {
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
     private _openConnectionPromise?: Promise<any>;
-    private _listSubsSubscriptionId?: number;
-    private _lastListedSubs?: string[];
     constructor(plebbit: Plebbit) {
         assert(plebbit.plebbitRpcClientsOptions, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
         this._plebbit = plebbit;
@@ -151,9 +149,7 @@ export default class PlebbitRpcClient {
         } catch {}
 
         //@ts-expect-error
-        this._webSocketClient =
-            this._listSubsSubscriptionId =
-            this._lastListedSubs = //@ts-expect-error
+        this._webSocketClient = //@ts-expect-error
             this._subscriptionEvents = //@ts-expect-error
             this._pendingSubscriptionMsgs =
                 undefined;
@@ -171,7 +167,6 @@ export default class PlebbitRpcClient {
     async unsubscribe(subscriptionId: number) {
         await this._webSocketClient.call("unsubscribe", [subscriptionId]);
         if (this._subscriptionEvents[subscriptionId]) this._subscriptionEvents[subscriptionId].removeAllListeners();
-        if (subscriptionId === this._listSubsSubscriptionId) this._listSubsSubscriptionId = undefined;
         delete this._subscriptionEvents[subscriptionId];
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
@@ -307,19 +302,13 @@ export default class PlebbitRpcClient {
         return res;
     }
 
-    async listSubplebbits(): Promise<string[]> {
-        if (!this._listSubsSubscriptionId) {
-            this._lastListedSubs = undefined;
-            this._listSubsSubscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("listSubplebbits", []));
-            this._initSubscriptionEvent(this._listSubsSubscriptionId);
-            this.getSubscription(this._listSubsSubscriptionId).on("update", (newSubs) => {
-                this._lastListedSubs = ListOfSubplebbitsSchema.parse(newSubs.params.result);
-            });
-            this.emitAllPendingMessages(this._listSubsSubscriptionId); // rpc server already emitted update with latest subs
-        }
-        if (!Array.isArray(this._lastListedSubs)) throw Error("Plebbit RPC server did not emit an event of listSubplebbits");
-
-        return this._lastListedSubs;
+    async initalizeSubplebbitschangeEvent() {
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("subplebbitsSubscribe", []));
+        this._initSubscriptionEvent(subscriptionId);
+        this.getSubscription(subscriptionId).on("subplebbitschange", (res) => {
+            this._plebbit.emit("subplebbitschange", <string[]>res.params.result);
+        });
+        this.emitAllPendingMessages(subscriptionId);
     }
 
     async fetchCid(cid: string): Promise<string> {

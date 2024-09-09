@@ -29,8 +29,6 @@ import Publication from "../../publications/publication.js";
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
-import path from "path";
-import { watch as fsWatch } from "node:fs";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
@@ -71,8 +69,6 @@ class PlebbitWsServer extends EventEmitter {
     // store publishing publications so they can be used by publishChallengeAnswers
     publishing: { [subscriptionId: number]: Publication } = {};
     authKey: string | undefined;
-    private _listSubsSubscriptionIdToConnectionId: Record<string, string> = {};
-    private _lastListedSubs?: { subs: string[]; timestamp: number };
     private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
@@ -148,7 +144,7 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("stopSubplebbit", this.stopSubplebbit.bind(this));
         this.rpcWebsocketsRegister("editSubplebbit", this.editSubplebbit.bind(this));
         this.rpcWebsocketsRegister("deleteSubplebbit", this.deleteSubplebbit.bind(this));
-        this.rpcWebsocketsRegister("listSubplebbits", this.listSubplebbits.bind(this));
+        this.rpcWebsocketsRegister("subplebbitsSubscribe", this.subplebbitsSubscribe.bind(this));
 
         this.rpcWebsocketsRegister("fetchCid", this.fetchCid.bind(this));
         this.rpcWebsocketsRegister("resolveAuthorAddress", this.resolveAuthorAddress.bind(this));
@@ -287,7 +283,7 @@ class PlebbitWsServer extends EventEmitter {
     async startSubplebbit(params: any, connectionId: string) {
         const address = SubplebbitAddressSchema.parse(params[0]);
 
-        const localSubs = await this.plebbit.listSubplebbits();
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
 
@@ -319,7 +315,7 @@ class PlebbitWsServer extends EventEmitter {
     async stopSubplebbit(params: any) {
         const address = SubplebbitAddressSchema.parse(params[0]);
 
-        const localSubs = await this.plebbit.listSubplebbits();
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
         const isSubStarted = address in startedSubplebbits;
         if (!isSubStarted) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING", { subplebbitAddress: address });
@@ -354,7 +350,7 @@ class PlebbitWsServer extends EventEmitter {
         const replacedProps = replaceXWithY(params[1], null, undefined);
         const editSubplebbitOptions = SubplebbitEditOptionsSchema.parse(replacedProps);
 
-        const localSubs = await this.plebbit.listSubplebbits();
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit: LocalSubplebbit;
         if (startedSubplebbits[address] instanceof LocalSubplebbit) subplebbit = <LocalSubplebbit>startedSubplebbits[address];
@@ -372,7 +368,7 @@ class PlebbitWsServer extends EventEmitter {
     async deleteSubplebbit(params: any) {
         const address = SubplebbitAddressSchema.parse(params[0]);
 
-        const addresses = await this.plebbit.listSubplebbits();
+        const addresses = this.plebbit.subplebbits;
         if (!addresses.includes(address)) throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
 
         const isSubStarted = address in startedSubplebbits;
@@ -386,59 +382,28 @@ class PlebbitWsServer extends EventEmitter {
         return true;
     }
 
-    async listSubplebbits(params: any, connectionId: string) {
+    async subplebbitsSubscribe(params: any, connectionId: string) {
+        const subscriptionId = generateSubscriptionId();
         const sendEvent = (event: string, result: any) => {
-            for (const [subscriptionId, connectionId] of Object.entries(this._listSubsSubscriptionIdToConnectionId)) {
-                this.jsonRpcSendNotification({
-                    method: "listSubplebbits",
-                    subscription: Number(subscriptionId),
-                    event,
-                    result,
-                    connectionId: connectionId
-                });
-            }
-        };
-
-        const getListedSubsWithTimestamp = async () => {
-            return { subs: await this.plebbit.listSubplebbits(), timestamp: Date.now() };
-        };
-
-        const newSubscriptionId = generateSubscriptionId();
-        const watchNotConfigured = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 0;
-        if (watchNotConfigured) {
-            // First time listSubplebbits is called, need to set up everything
-            // set up fs watch here
-
-            await this.plebbit.listSubplebbits(); // Just to mkdir plebbitDataPath/subplebbits
-            const subsPath = path.join(this.plebbit.dataPath!, "subplebbits");
-            const watchAbortController = new AbortController();
-            fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
-                if (filename?.endsWith(".lock")) return; // we only care about subplebbits
-                const currentSubs = await getListedSubsWithTimestamp();
-                if (
-                    !this._lastListedSubs ||
-                    (currentSubs.timestamp > this._lastListedSubs.timestamp &&
-                        JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs))
-                ) {
-                    sendEvent("update", currentSubs.subs);
-                    this._lastListedSubs = currentSubs;
-                }
+            this.jsonRpcSendNotification({
+                method: "subplebbitsNotification",
+                subscription: Number(subscriptionId),
+                event,
+                result,
+                connectionId
             });
+        };
 
-            this.subscriptionCleanups[connectionId][newSubscriptionId] = () => {
-                this._lastListedSubs = undefined;
-                this._listSubsSubscriptionIdToConnectionId = {};
-                watchAbortController.abort();
-            };
-        }
+        const plebbitSubscribeEvent = (newSubs: string[]) => sendEvent("subplebbitschange", newSubs);
 
-        this._listSubsSubscriptionIdToConnectionId[newSubscriptionId] = connectionId;
+        this.plebbit.on("subplebbitschange", plebbitSubscribeEvent);
 
-        if (!this._lastListedSubs) this._lastListedSubs = await getListedSubsWithTimestamp();
+        this.subscriptionCleanups[connectionId][subscriptionId] = () =>
+            this.plebbit.removeListener("subplebbitschange", plebbitSubscribeEvent);
 
-        sendEvent("update", this._lastListedSubs.subs);
+        sendEvent("subplebbitschange", this.plebbit.subplebbits);
 
-        return newSubscriptionId;
+        return subscriptionId;
     }
 
     async fetchCid(params: any) {
@@ -458,6 +423,7 @@ class PlebbitWsServer extends EventEmitter {
 
     async setSettings(params: any) {
         const settings = SetNewSettingsPlebbitWsServerSchema.parse(params[0]);
+        await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
         this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
         this.plebbit.on("error", (error: any) => {
             this.emit("error", error);
@@ -733,16 +699,6 @@ class PlebbitWsServer extends EventEmitter {
 
     async unsubscribe(params: any, connectionId: string) {
         const subscriptionId = SubscriptionIdSchema.parse(params[0]);
-
-        if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
-            const noClientSubscribingToListSubs = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 1;
-            if (noClientSubscribingToListSubs)
-                // clean up fs watch only when there is no rpc client listening for listSubplebbits
-                this.subscriptionCleanups[connectionId][subscriptionId]();
-            delete this.subscriptionCleanups[connectionId][subscriptionId];
-            delete this._listSubsSubscriptionIdToConnectionId[subscriptionId];
-            return true;
-        }
 
         if (!this.subscriptionCleanups[connectionId][subscriptionId]) return true;
 

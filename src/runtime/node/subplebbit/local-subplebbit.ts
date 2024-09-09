@@ -63,7 +63,7 @@ import {
     verifyCommentEdit,
     verifyCommentUpdate
 } from "../../../signer/signatures.js";
-import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, moveSubplebbitDbToDeletedDirectory } from "../util.js";
+import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, listSubplebbits, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import {
     SignerWithPublicKeyAddress,
@@ -552,7 +552,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertVote(voteTableRow);
-        log(`inserted new vote for comment ${newVoteProps.commentCid}`, newVoteProps);
+        log(`inserted new vote for comment ${newVoteProps.commentCid}`, voteTableRow);
         return undefined;
     }
 
@@ -1398,7 +1398,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // Will check if address has been changed, and if so connect to the new db with the new address
         const internalState = await this._getDbInternalState(false);
         if (!internalState) throw Error("Can't change address or db when there's no internal state in db");
-        const listedSubs = await this._plebbit.listSubplebbits();
+        const listedSubs = await listSubplebbits(this._plebbit); // need to make sure this is the latest sub
         const dbIsOnOldName = !listedSubs.includes(internalState.address) && listedSubs.includes(this.signer.address);
 
         const currentDbAddress = dbIsOnOldName ? this.signer.address : this.address;

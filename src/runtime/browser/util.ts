@@ -19,6 +19,10 @@ export const listSubplebbits = () => {
     throw Error("listSubplebbits should not be called in browser");
 };
 
+export const monitorSubplebbitsDirectory = () => {
+    throw Error("monitorSubplebbitsDirectory should not be called in browser");
+};
+
 export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uint8Array, ipfsNode: IpfsClient["_clientOptions"]) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string") throw Error("ipnsKeyName needs to be defined before importing key into IPFS node");
@@ -41,7 +45,6 @@ export async function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: Uin
 
     return { id: resJson.Id, name: resJson.Name };
 }
-
 
 export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"] {
     const cacheKey = sha256(deterministicStringify(ipfsHttpClientOptions));

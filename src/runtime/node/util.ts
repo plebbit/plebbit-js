@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import { default as nodeNativeFunctions } from "./native-functions.js";
-import type { InputPlebbitOptions, IpfsClient, NativeFunctions } from "../../types.js";
+import type { IpfsClient, NativeFunctions } from "../../types.js";
 import path from "path";
 import assert from "assert";
 import { Knex } from "knex";
@@ -22,7 +22,9 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
-import { SubplebbitIpfsType } from "../../subplebbit/types.js";
+import type { SubplebbitIpfsType } from "../../subplebbit/types.js";
+import { watch as fsWatch } from "node:fs";
+import { mkdir } from "fs/promises";
 
 const storedIpfsClients: Record<string, ReturnType<typeof createIpfsClient>> = {};
 
@@ -261,4 +263,20 @@ export function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptio
     });
 
     return storedIpfsClients[cacheKey];
+}
+
+export async function monitorSubplebbitsDirectory(plebbit: Plebbit) {
+    const watchAbortController = new AbortController();
+    const subsPath = path.join(plebbit.dataPath!, "subplebbits");
+    await mkdir(subsPath, { recursive: true });
+
+    fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
+        if (filename?.endsWith(".lock")) return; // we only care about subplebbits
+        const currentSubs = await listSubplebbits(plebbit);
+        if (JSON.stringify(currentSubs) !== JSON.stringify(plebbit.subplebbits)) plebbit.emit("subplebbitschange", currentSubs);
+    });
+
+    plebbit.emit("subplebbitschange", await listSubplebbits(plebbit));
+
+    return watchAbortController;
 }

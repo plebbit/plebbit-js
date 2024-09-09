@@ -360,9 +360,8 @@ export async function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMoc
 // name should be changed to mockBrowserPlebbit
 export async function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
     // Mock browser environment
-    const plebbit = await mockPlebbit(plebbitOptions);
+    const plebbit = await mockPlebbit({ dataPath: undefined, ...plebbitOptions });
     plebbit._canCreateNewLocalSub = () => false;
-    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 
@@ -379,10 +378,10 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOpt
     const plebbit = await mockRemotePlebbit({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
+        dataPath: undefined,
         ...plebbitOptions
     });
     plebbit._canCreateNewLocalSub = () => false;
-    plebbit.listSubplebbits = async () => [];
     return plebbit;
 }
 
@@ -903,6 +902,10 @@ export function jsonifyCommentAndRemoveInstanceProps(comment: Comment) {
     if ("replies" in jsonfied) delete jsonfied["replies"]["clients"];
     if ("replies" in jsonfied && remeda.isEmpty(jsonfied.replies)) delete jsonfied["replies"];
     return remeda.omit(jsonfied, ["clients", "state", "updatingState", "state", "publishingState"]);
+}
+
+export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string) {
+    return plebbit._awaitSubplebbitsToIncludeSub(subAddress);
 }
 
 const skipFunction = (_: any) => {};

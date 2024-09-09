@@ -140,6 +140,7 @@ export interface PublicationEvents {
 
 export interface PlebbitEvents {
     error: (error: PlebbitError) => void;
+    subplebbitschange: (listOfSubplebbits: string[]) => void;
 }
 
 export interface GenericClientEvents<T extends string> {
