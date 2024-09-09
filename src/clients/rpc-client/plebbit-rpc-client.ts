@@ -114,12 +114,12 @@ export default class PlebbitRpcClient {
                     await this._init();
                     return await originalWebsocketCall(...args);
                 } catch (e) {
+                    const typedError = <PlebbitError | { code: number; message: string } | Error>e;
                     //e is an error json representation of PlebbitError
-                    if ("code" in <PlebbitError>e) {
-                        const actualPlebError = e as PlebbitError;
+                    if ("code" in typedError && typeof typedError.code === "string") {
+                        const actualPlebError = typedError as PlebbitError;
                         throw new PlebbitError(actualPlebError.code, actualPlebError.details);
-                    } else if ("message" in <Error>e) throw new Error((<Error>e).message);
-                    else throw e;
+                    } else throw new PlebbitError("ERR_GENERIC_RPC_CLIENT_CALL_ERROR", { error: typedError, args });
                 }
             };
         }
