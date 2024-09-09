@@ -96,7 +96,12 @@ class PlebbitWsServer extends EventEmitter {
 
                 // if isn't localhost and doesn't have auth, block access
                 if (!isLocalhost && !hasAuth) {
-                    log("Rejecting RPC connection request because there is no auth key");
+                    log(
+                        `Rejecting RPC connection request from`,
+                        requestOriginatorIp,
+                        `rejected because there is no auth key, url:`,
+                        req.url
+                    );
                     callback(false, 403, "You need to set the auth key to connect remotely");
                 } else callback(true);
             }
