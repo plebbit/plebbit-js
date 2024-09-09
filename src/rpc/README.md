@@ -176,7 +176,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
 }
 ```
 
-`statechange` event:
+`updatingstatechange` event:
 
 ```json
 {
@@ -184,7 +184,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
   "method": "commentUpdateNotification",
   "params": {
     "result": "fetching-ipfs",
-    "event": "statechange",
+    "event": "updatingstatechange",
     "subscription": 23784
   }
 }
@@ -245,7 +245,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
 }
 ```
 
-`statechange` event:
+`updatingstatechange` event:
 
 ```json
 {
@@ -253,7 +253,7 @@ The notification format is the same as seen in the plebbit-js [Subplebbit Events
   "method": "subplebbitUpdateNotification",
   "params": {
     "result": "fetching-ipfs",
-    "event": "statechange",
+    "event": "updatingstatechange",
     "subscription": 23784
   }
 }
