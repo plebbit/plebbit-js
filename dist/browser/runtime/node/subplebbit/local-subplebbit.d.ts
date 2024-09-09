@@ -91,6 +91,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     private _parseRolesToEdit;
     private _parseChallengesToEdit;
     edit(newSubplebbitOptions: SubplebbitEditOptions): Promise<this>;
+    private _setSubplebbitIpfsIfNeeded;
     start(): Promise<void>;
     private _updateOnce;
     update(): Promise<void>;

@@ -127,6 +127,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!this.signer)
             throwWithErrorCode("ERR_LOCAL_SUB_HAS_NO_SIGNER_IN_INTERNAL_STATE", { address: this.address });
         await this._updateStartedValue();
+        await this._setSubplebbitIpfsIfNeeded();
         await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
     }
     async _importSubplebbitSignerIntoIpfsIfNeeded() {
@@ -1306,6 +1307,17 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._dbHandler.destoryConnection(); // Need to destory connection so process wouldn't hang
         this.emit("update", this);
         return this;
+    }
+    async _setSubplebbitIpfsIfNeeded() {
+        // A hack for old subplebbit states that don't define _rawSubplebbitIpfs
+        if (this.updatedAt && !this._rawSubplebbitIpfs) {
+            const internalState = await this._getDbInternalState();
+            if (!internalState)
+                throw Error("Internal state should be defined if updatedAt is defined");
+            if (!("signature" in internalState))
+                throw Error("signature should be defined");
+            this._rawSubplebbitIpfs = remeda.pick(internalState, [...internalState.signature.signedPropertyNames, "signature"]);
+        }
     }
     async start() {
         const log = Logger("plebbit-js:local-subplebbit:start");
