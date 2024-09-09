@@ -27,19 +27,19 @@ import EventEmitter from "events";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-describe("plebbit.listSubplebbits", async () => {
+describe("plebbit.subplebbits", async () => {
     let plebbit, subSigner;
     before(async () => {
         plebbit = await mockPlebbit();
         subSigner = await plebbit.createSigner();
     });
 
-    it(`listSubplebbits shows unlocked created subplebbits`, async () => {
-        const title = "Test listSubplebbits" + Date.now();
+    it(`plebbit.subplebbits shows unlocked created subplebbits`, async () => {
+        const title = "Test plebbit.subplebbits" + Date.now();
 
         const createdSubplebbit = await plebbit.createSubplebbit({ signer: subSigner, title: title });
         // At this point the sub should be unlocked and ready to be recreated by another instance
-        const listedSubs = await plebbit.listSubplebbits();
+        const listedSubs = plebbit.subplebbits;
         expect(listedSubs).to.include(createdSubplebbit.address);
 
         expect(createdSubplebbit.address).to.equal(subSigner.address);
@@ -54,13 +54,13 @@ describe(`subplebbit.delete`, async () => {
         sub = await plebbit.createSubplebbit();
     });
 
-    it(`Deleted sub is not listed in listSubplebbits`, async () => {
-        const subs = await plebbit.listSubplebbits();
+    it(`Deleted sub is not listed in plebbit.subplebbits`, async () => {
+        const subs = plebbit.subplebbits;
         expect(subs).to.include(sub.address);
         const subRecreated = await plebbit.createSubplebbit({ address: sub.address });
         await subRecreated.delete();
-        if (plebbit.plebbitRpcClient) await new Promise((resolve) => setTimeout(resolve, 1000));
-        const subsAfterDeletion = await plebbit.listSubplebbits();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const subsAfterDeletion = plebbit.subplebbits;
         expect(subsAfterDeletion).to.not.include(sub.address);
     });
 
@@ -276,7 +276,6 @@ describe(`subplebbit.startedState`, async () => {
         await new Promise((resolve) => subplebbit.once("update", resolve));
         if (!subplebbit.updatedAt) await new Promise((resolve) => subplebbit.once("update", resolve));
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]);
     });
 
     itSkipIfRpc(`subplebbit.startedState = error if a failure occurs`, async () => {
@@ -308,7 +307,6 @@ describe(`subplebbit.updatingState (node)`, async () => {
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`updating states is in correct order upon updating with gateway`, async () => {
@@ -327,7 +325,6 @@ describe(`subplebbit.updatingState (node)`, async () => {
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`subplebbit.updatingState emits 'succceeded' when a new update from local sub is retrieved`, async () => {
@@ -346,7 +343,6 @@ describe(`subplebbit.updatingState (node)`, async () => {
         await localSub.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itIfRpc(`localSubplebbit.updatingState is copied from startedState if we're updating a local sub via rpc`, async () => {

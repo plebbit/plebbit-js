@@ -7,7 +7,13 @@ import signers from "../../fixtures/signers";
 import path from "path";
 import fs from "fs";
 import tempy from "tempy";
-import { mockPlebbit, generateMockPost, publishWithExpectedResult, describeSkipIfRpc } from "../../../dist/node/test/test-util";
+import {
+    mockPlebbit,
+    generateMockPost,
+    publishWithExpectedResult,
+    describeSkipIfRpc,
+    waitUntilPlebbitSubplebbitsIncludeSubAddress
+} from "../../../dist/node/test/test-util";
 
 import plebbitVersion from "../../../dist/node/version";
 
@@ -49,8 +55,8 @@ describeSkipIfRpc(`DB importing`, async () => {
         plebbit = await mockPlebbit(getTemporaryPlebbitOptions());
     });
 
-    it(`Subplebbit will show up in listSubplebbits if its db was copied to datapath/subplebbits`, async () => {
-        expect(await plebbit.listSubplebbits()).to.not.include(signers[0].address);
+    it(`Subplebbit will show up in plebbit.subplebbits if its db was copied to datapath/subplebbits`, async () => {
+        expect(plebbit.subplebbits).to.not.include(signers[0].address);
 
         const regularPlebbit = await mockPlebbit();
         const databaseToMigrate = {
@@ -58,8 +64,8 @@ describeSkipIfRpc(`DB importing`, async () => {
             path: path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address)
         };
         await copyDbToDataPath(databaseToMigrate, plebbit);
-        const listedSubs = await plebbit.listSubplebbits();
-        expect(listedSubs).to.include(databaseToMigrate.address);
+        await waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit, databaseToMigrate.address);
+        expect(plebbit.subplebbits).to.include(databaseToMigrate.address);
     });
 
     it(`Can import a subplebbit by copying its sql file to datapath/subplebbits`, async () => {
@@ -67,7 +73,8 @@ describeSkipIfRpc(`DB importing`, async () => {
         const tempPlebbit = await mockPlebbit(getTemporaryPlebbitOptions());
         const srcDbPath = path.join(regularPlebbit.dataPath, "subplebbits", signers[0].address);
         await fs.promises.cp(srcDbPath, path.join(tempPlebbit.dataPath, "subplebbits", signers[0].address));
-        // Should be included in tempPlebbit.listSubplebbits now
+        await waitUntilPlebbitSubplebbitsIncludeSubAddress(tempPlebbit, signers[0].address);
+        // Should be included in tempPlebbit.subplebbits now
         const subplebbit = await tempPlebbit.createSubplebbit({ address: signers[0].address });
         await subplebbit.edit({
             settings: { ...subplebbit.settings, challenges: [{ name: "question", options: { question: "1+1=?", answer: "2" } }] }
@@ -104,7 +111,10 @@ describeSkipIfRpc("DB Migration", () => {
             );
             await copyDbToDataPath(databaseInfo, plebbit);
 
+            await waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit, databaseInfo.address);
+
             const subplebbit = await plebbit.createSubplebbit({ address: databaseInfo.address });
+            expect(subplebbit.started).to.be.a("boolean"); // make sure it's creating a local sub instance
 
             await assert.isFulfilled(subplebbit.start());
 

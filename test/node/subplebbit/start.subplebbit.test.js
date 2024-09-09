@@ -274,7 +274,7 @@ describe(`Start lock`, async () => {
 
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
 
-        const localSubs = await plebbit.listSubplebbits();
+        const localSubs = plebbit.subplebbits;
         expect(localSubs).to.not.include(sub1.address);
 
         for (const sub of [sub1, sub2]) {

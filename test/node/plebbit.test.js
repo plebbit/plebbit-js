@@ -20,16 +20,13 @@ describe("plebbit", () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
-    it(`plebbit.listSubplebbits() lists subplebbits correctly`, async () => {
+    it(`plebbit.subplebbits updates after creating a new sub`, async () => {
         const plebbit = await mockPlebbit();
         const newSubplebbit = await plebbit.createSubplebbit({
             signer: await plebbit.createSigner()
         });
-        await newSubplebbit.start();
         // A new subplebbit should be created, and its SQLite db file be listed under plebbit.dataPath/subplebbits
-        const listedSubplebbits = await plebbit.listSubplebbits();
-        expect(listedSubplebbits).to.include(newSubplebbit.address);
-        await newSubplebbit.stop();
+        expect(plebbit.subplebbits).to.include(newSubplebbit.address);
 
         JSON.stringify(plebbit); // Will throw an error if circular json
     });

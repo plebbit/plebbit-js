@@ -37,7 +37,7 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         // Sub has finished its first sync loop, should have address now
         expect(newSubplebbit.address.startsWith("12D3")).to.be.true;
         expect(newSubplebbit.signer.address).to.equal(newSubplebbit.address);
-        const listedSubs = await plebbit.listSubplebbits();
+        const listedSubs = plebbit.subplebbits;
         expect(listedSubs).to.include(newSubplebbit.address);
 
         const remoteSub = await remotePlebbit.getSubplebbit(newSubplebbit.address);

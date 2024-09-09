@@ -67,7 +67,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -91,7 +91,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -115,7 +115,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -139,7 +139,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -195,7 +195,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -219,7 +219,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();
@@ -243,7 +243,7 @@ describe(`Setting up rpc server`, async () => {
 
         const sub = await clientPlebbit.createSubplebbit({});
         expect(sub.address).to.exist; // should be able to create a sub successfully over RPC
-        expect(await clientPlebbit.listSubplebbits()).to.include(sub.address);
+        expect(clientPlebbit.subplebbits).to.include(sub.address);
 
         await clientPlebbit.destroy();
         await rpcServer.destroy();

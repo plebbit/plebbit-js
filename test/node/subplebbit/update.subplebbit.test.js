@@ -21,10 +21,12 @@ describe(`subplebbit.update - Local subs`, async () => {
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
         const recreatedSub = await plebbit.createSubplebbit({ address: sub.address });
         expect(recreatedSub.state).to.equal("stopped");
+        expect(recreatedSub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
+
         const oldUpdatedAt = JSON.parse(JSON.stringify(recreatedSub.updatedAt));
         await recreatedSub.update();
         await publishRandomPost(recreatedSub.address, plebbit, {}, false);
-        await new Promise((resolve) => recreatedSub.once("update", resolve));
+        await resolveWhenConditionIsTrue(recreatedSub, () => recreatedSub.updatedAt !== oldUpdatedAt);
         expect(recreatedSub.updatedAt).to.be.greaterThan(oldUpdatedAt);
         await recreatedSub.stop();
         await sub.delete();
@@ -32,6 +34,7 @@ describe(`subplebbit.update - Local subs`, async () => {
 
     it(`A local subplebbit is not emitting updates unneccessarily (after first update)`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
+        expect(sub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
@@ -63,6 +66,7 @@ describe(`subplebbit.update - Local subs`, async () => {
 
     it(`A local subplebbit is not emitted updates unnecessarily (before first update)`, async () => {
         const sub = await createSubWithNoChallenge({}, plebbit);
+        expect(sub.started).to.be.a("boolean"); // make sure it's creating a local sub, not remote
 
         await sub.update();
 

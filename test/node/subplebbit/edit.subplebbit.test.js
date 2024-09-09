@@ -94,9 +94,9 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
         expect(subplebbit.address).to.equal(ethAddress);
     });
 
-    it(`plebbit.listSubplebbit includes the new ENS address, and not the old address`, async () => {
+    it(`plebbit.subplebbits includes the new ENS address, and not the old address`, async () => {
         await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2)); // wait until db has been renamed
-        const subs = await plebbit.listSubplebbits();
+        const subs = plebbit.subplebbits;
         expect(subs).to.include(ethAddress);
         expect(subs).to.not.include(subplebbit.signer.address);
     });
