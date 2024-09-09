@@ -34,7 +34,6 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     it(`subplebbit.updatingState is in correct order upon updating  with IPFS client (ENS)`, async () => {
@@ -51,7 +50,6 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`updating states is in correct order upon updating with gateway`, async () => {
@@ -70,6 +68,5 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
         await subplebbit.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 });

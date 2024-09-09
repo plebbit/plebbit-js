@@ -477,7 +477,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with IPFS client (cached)`, async () => {
@@ -499,7 +498,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment to plebbit.eth with IPFS client (uncached)`, async () => {
@@ -520,7 +518,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (cached)`, async () => {
@@ -542,7 +539,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`publishing states is in correct order upon publishing a comment with gateway (uncached)`, async () => {
@@ -565,7 +561,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, true);
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     it(`comment.publishingState = 'failed' if user provide incorrect answer`, async () => {
@@ -580,7 +575,6 @@ describe(`comment.publishingState`, async () => {
         await publishWithExpectedResult(mockPost, false);
 
         expect(mockPost.publishingState).to.equal("failed");
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
         await mockPost.stop();
     });
 

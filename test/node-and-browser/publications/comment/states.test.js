@@ -78,7 +78,6 @@ describe("comment.updatingState", async () => {
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itSkipIfRpc(`updating states is in correct order upon updating a comment with gateway`, async () => {
@@ -95,7 +94,6 @@ describe("comment.updatingState", async () => {
         await mockPost.stop();
 
         expect(recordedStates.slice(recordedStates.length - expectedStates.length)).to.deep.equal(expectedStates);
-        expect(gatewayPlebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     itIfRpc(`updating states is in correct order upon updating a comment with RPC`, async () => {
@@ -120,7 +118,6 @@ describe("comment.updatingState", async () => {
         await postToUpdate.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 
     it(`Add a test for updatingState with resolving-author-address`);

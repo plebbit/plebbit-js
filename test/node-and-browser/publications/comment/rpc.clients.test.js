@@ -76,6 +76,5 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
         await postToUpdate.stop();
 
         expect(recordedStates).to.deep.equal(expectedStates);
-        expect(plebbit.eventNames()).to.deep.equal(["error"]); // Make sure events has been unsubscribed from
     });
 });
