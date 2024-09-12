@@ -83,20 +83,15 @@ import {
 import * as cborg from "cborg";
 import assert from "assert";
 import env from "../../../version.js";
-import { sha256 } from "js-sha256";
 import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyFromPrivateKey } from "../../../signer/util.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 
 import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
 import {
-    AuthorCommentEditPubsubSchema,
     CommentEditPubsubMessagePublicationSchema,
     CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema,
-    CommentEditReservedFields,
-    ModeratorCommentEditPubsubSchema,
-    uniqueAuthorFields,
-    uniqueModFields
+    CommentEditReservedFields
 } from "../../../publications/comment-edit/schema.js";
 import type { VotePubsubMessagePublication } from "../../../publications/vote/types.js";
 import type {
@@ -125,6 +120,8 @@ import {
 import { VotePubsubMessagePublicationSchema, VotePubsubReservedFields } from "../../../publications/vote/schema.js";
 import { v4 as uuidV4 } from "uuid";
 import { AuthorReservedFields } from "../../../schema/schema.js";
+import { CommentModerationReservedFields } from "../../../publications/comment-moderation/schema.js";
+import type { CommentModerationPubsubMessagePublication } from "../../../publications/comment-moderation/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
@@ -508,12 +505,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (!commentToBeEdited) throw Error("The comment to edit doesn't exist"); // unlikely error to happen, but always a good idea to verify
         const editSignedByOriginalAuthor = commentEditRaw.signature.publicKey === commentToBeEdited.signature.publicKey;
 
-        const isAuthorEdit = this._isAuthorEdit(commentEditRaw, editSignedByOriginalAuthor);
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentEditRaw.signature.publicKey);
 
         const editTableRow = <CommentEditsTableRow>{
             ...strippedOutEditPublication,
-            isAuthorEdit,
+            isAuthorEdit: editSignedByOriginalAuthor,
             authorSignerAddress
         };
 
@@ -526,7 +522,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             editTableRow.extraProps = remeda.pick(commentEditRaw, extraPropsInEdit);
         }
 
-        await this._dbHandler.insertEdit(editTableRow);
+        await this._dbHandler.insertCommentEdit(editTableRow);
         log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, commentEditRaw);
     }
 
@@ -581,7 +577,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     private isPublicationCommentEdit(
         publication: DecryptedChallengeRequestMessageType["publication"]
     ): publication is CommentEditPubsubMessagePublication {
-        return !this.isPublicationVote(publication) && "commentCid" in publication && typeof publication.commentCid === "string";
+        return (
+            !this.isPublicationVote(publication) &&
+            "commentCid" in publication &&
+            typeof publication.commentCid === "string" &&
+            !("commentModeration" in publication)
+        );
+    }
+
+    private isPublicationCommentModeration(
+        publication: DecryptedChallengeRequestMessageType["publication"]
+    ): publication is CommentModerationPubsubMessagePublication {
+        return "commentCid" in publication && "commentModeration" in publication;
     }
 
     private async _calculateLinkProps(
@@ -877,22 +884,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
-    private _commentEditIncludesUniqueModFields(request: CommentEditPubsubMessagePublication) {
-        return remeda.intersection(uniqueModFields, remeda.keys.strict(request)).length > 0;
-    }
-
-    private _commentEditIncludesUniqueAuthorFields(request: CommentEditPubsubMessagePublication) {
-        return remeda.intersection(uniqueAuthorFields, remeda.keys.strict(request)).length > 0;
-    }
-
-    _isAuthorEdit(request: CommentEditPubsubMessagePublication, editHasBeenSignedByOriginalAuthor: boolean) {
-        if (this._commentEditIncludesUniqueAuthorFields(request)) return true;
-        if (this._commentEditIncludesUniqueModFields(request)) return false;
-        // The request has fields that are used in both mod and author, namely [spoiler, flair]
-        if (editHasBeenSignedByOriginalAuthor) return true;
-        return false;
-    }
-
     private async _checkPublicationValidity(
         request: DecryptedChallengeRequestMessageType,
         authorSubplebbit?: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]["author"]["subplebbit"]
@@ -965,43 +956,31 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_VOTE_HAS_RESERVED_FIELD;
         }
 
+        if (this.isPublicationCommentModeration(publication)) {
+            if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(publication)).length > 0)
+                return messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD;
+
+            
+            const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
+            const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
+
+            if (!isEditorMod) return messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR;
+
+            const commentToBeEdited = await this._dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
+            if (!commentToBeEdited) return messages.ERR_COMMENT_MODERATION_NO_COMMENT_TO_EDIT;
+
+            if (isEditorMod && publication.commentModeration.locked && commentToBeEdited.depth !== 0) return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
+        }
+
         if (this.isPublicationCommentEdit(publication)) {
             if (remeda.intersection(CommentEditReservedFields, remeda.keys.strict(publication)).length > 0)
                 return messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD;
 
             const commentToBeEdited = await this._dbHandler.queryComment(publication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
-            if (!commentToBeEdited) throw Error("Wasn't able to find the comment to edit");
+            if (!commentToBeEdited) return messages.ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT;
             const editSignedByOriginalAuthor = publication.signature.publicKey === commentToBeEdited.signature.publicKey;
-            const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
-            const isEditorMod = this.roles?.[publication.author.address] && modRoles.includes(this.roles[publication.author.address]?.role);
 
-            const editHasUniqueModFields = this._commentEditIncludesUniqueModFields(publication);
-            const isAuthorEdit = this._isAuthorEdit(publication, editSignedByOriginalAuthor);
-
-            if (isAuthorEdit && editHasUniqueModFields) return messages.ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS;
-
-            const authorEditPubsubFields = remeda.keys.strict(AuthorCommentEditPubsubSchema.shape);
-            const modEditPubsubFields = remeda.keys.strict(ModeratorCommentEditPubsubSchema.shape);
-
-            const allowedEditFields =
-                isAuthorEdit && editSignedByOriginalAuthor ? authorEditPubsubFields : isEditorMod ? modEditPubsubFields : undefined;
-            if (!allowedEditFields) return messages.ERR_UNAUTHORIZED_COMMENT_EDIT;
-            const publicationEditFields = remeda.keys.strict(
-                CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.strip().parse(publication)
-            ); // we strip here because we don't wanna include unknown props
-            for (const editField of publicationEditFields)
-                if (!allowedEditFields.includes(<any>editField)) {
-                    log(
-                        `The comment edit includes a field (${editField}) that is not part of the allowed fields (${allowedEditFields})`,
-                        `isAuthorEdit:${isAuthorEdit}`,
-                        `editHasUniqueModFields:${editHasUniqueModFields}`,
-                        `isEditorMod:${isEditorMod}`,
-                        `editSignedByOriginalAuthor:${editSignedByOriginalAuthor}`
-                    );
-                    return messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD;
-                }
-
-            if (isEditorMod && publication.locked && commentToBeEdited.depth !== 0) return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
+            if (!editSignedByOriginalAuthor) return messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR;
         }
 
         return undefined;
@@ -1529,6 +1508,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // TODO this function should be ran in a more efficient manner. It iterates through all posts in the database
         // At some point we should have a db query that looks for posts that need to move to a different bucket
         const log = Logger("plebbit-js:local-subplebbit:start:_adjustPostUpdatesBucketsIfNeeded");
+        // TODO we can optimize this by excluding posts in the last bucket
         const commentUpdateOfPosts = await this._dbHandler.queryCommentUpdatesOfPostsForBucketAdjustment();
         for (const post of commentUpdateOfPosts) {
             const currentTimestampBucketOfPost = Number(post.ipfsPath.split("/")[3]);

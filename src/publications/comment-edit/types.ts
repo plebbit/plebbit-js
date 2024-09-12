@@ -1,36 +1,28 @@
 import { z } from "zod";
 import {
     AuthorCommentEditOptionsSchema,
-    AuthorCommentEditPubsubSchema,
-    CommentEditAuthorOptionsToSignSchema,
+    CommentEditOptionsToSignSchema,
     CommentEditChallengeRequestToEncryptSchema,
-    CommentEditModeratorOptionsToSignSchema,
-    CommentEditPubsubMessagePublicationSchema,
     CreateCommentEditOptionsSchema,
     LocalCommentEditAfterSigningSchema,
-    ModeratorCommentEditOptionsSchema
+    CommentEditPubsubMessagePublicationSchema
 } from "./schema";
 import { CommentAuthorSchema } from "../../schema/schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
 import { CommentEdit } from "./comment-edit";
+import { CommentModerationsTableRowSchema } from "../comment-moderation/schema";
 
 export type LocalCommentEditOptions = z.infer<typeof LocalCommentEditAfterSigningSchema>;
 
-export type CommentEditOptionsToSign =
-    | z.infer<typeof CommentEditModeratorOptionsToSignSchema>
-    | z.infer<typeof CommentEditAuthorOptionsToSignSchema>;
+export type CommentEditOptionsToSign = z.infer<typeof CommentEditOptionsToSignSchema>;
 
 export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
 
 // CommentEdit section
 
-export type ModeratorCommentEditOptions = z.infer<typeof ModeratorCommentEditOptionsSchema>;
-
 export type AuthorCommentEditOptions = z.infer<typeof AuthorCommentEditOptionsSchema>;
 
 export type CreateCommentEditOptions = z.infer<typeof CreateCommentEditOptionsSchema>;
-
-export type AuthorCommentEdit = z.infer<typeof AuthorCommentEditPubsubSchema>;
 
 export type CommentEditPubsubMessagePublication = z.infer<typeof CommentEditPubsubMessagePublicationSchema>;
 
@@ -38,6 +30,8 @@ export type CommentEditChallengeRequestToEncryptType = z.infer<typeof CommentEdi
 
 export type CommentEditTypeJson = JsonOfClass<CommentEdit>;
 
-export interface CommentEditPubsubMessageWithSubplebbitAuthor extends CommentEditPubsubMessagePublication {
+export type CommentModerationTableRow = z.infer<typeof CommentModerationsTableRowSchema>;
+
+export interface CommentEditPubsubMessagePublicationWithSubplebbitAuthor extends CommentEditPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }

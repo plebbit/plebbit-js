@@ -9,6 +9,7 @@ import Transaction = Knex.Transaction;
 import type {
     CommentEditsTableRow,
     CommentEditsTableRowInsert,
+    CommentModerationsTableRowInsert,
     CommentsTableRow,
     CommentsTableRowInsert,
     CommentUpdatesRow,
@@ -27,17 +28,19 @@ import { SubplebbitStats } from "../../../subplebbit/types.js";
 import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
-import { AuthorCommentEditPubsubSchema } from "../../../publications/comment-edit/schema.js";
-import { AuthorCommentEdit } from "../../../publications/comment-edit/types.js";
+import { CommentEditPubsubMessagePublicationSchema, CommentEditsTableRowSchema } from "../../../publications/comment-edit/schema.js";
+import type { CommentEditPubsubMessagePublication, CommentModerationTableRow } from "../../../publications/comment-edit/types.js";
 import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
+import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
     COMMENT_UPDATES: "commentUpdates",
     VOTES: "votes",
+    COMMENT_MODERATIONS: "commentModerations",
     COMMENT_EDITS: "commentEdits"
 });
 
@@ -256,17 +259,31 @@ export class DbHandler {
             table.increments("id"); // Used for sorts
 
             table.timestamp("timestamp").checkPositive().notNullable();
-            table.text("subplebbitAddress").notNullable();
             table.text("content").nullable();
             table.text("reason").nullable();
             table.boolean("deleted").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
-            table.boolean("pinned").nullable();
-            table.boolean("locked").nullable();
-            table.boolean("removed").nullable();
-            table.json("commentAuthor").nullable();
-            table.boolean("isAuthorEdit").notNullable(); // If false, then it's a mod edit
+            table.boolean("isAuthorEdit").notNullable(); // if edit is signed by original author
+
+            table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
+
+            table.json("extraProps").nullable();
+            table.primary(["id", "commentCid"]);
+        });
+    }
+
+    private async _createCommentModerationsTable(tableName: string) {
+        await this._knex.schema.createTable(tableName, (table) => {
+            table.text("commentCid").notNullable().references("cid").inTable(TABLES.COMMENTS); // from commentModerationPublication.commentCid
+            table.json("author").notNullable(); // commentModerationPublication.author
+            table.json("signature").notNullable(); // from commentModerationPublication.signature
+            table.text("modSignerAddress").notNullable(); // calculated from commentModerationPublication.signatuer.publicKey
+            table.text("protocolVersion").notNullable(); // from commentModerationPublication.protocolVersion
+            table.increments("id"); // Used for sorts
+
+            table.timestamp("timestamp").checkPositive().notNullable(); // from commentModerationPublication.timestamp
+            table.json("commentModeration").notNullable(); // commentModerationPublication.commentModeration, should take extra props
 
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
 
@@ -303,6 +320,7 @@ export class DbHandler {
             this._createCommentsTable,
             this._createCommentUpdatesTable,
             this._createVotesTable,
+            this._createCommentModerationsTable,
             this._createCommentEditsTable
         ];
         const tables = Object.values(TABLES);
@@ -313,7 +331,11 @@ export class DbHandler {
             if (!tableExists) {
                 log(`Table ${tableName} does not exist. Will create schema`);
                 await createTableFunctions[i].bind(this)(tableName);
-            } else if (tableExists && needToMigrate) {
+            } else if (tableName === TABLES.COMMENT_EDITS && currentDbVersion < 17) {
+                // we need to migrate mod edits to commentModerations table
+                await this._moveCommentEditsToModAuthorTables();
+            }
+            if (tableExists && needToMigrate) {
                 // We need to update the schema of the currently existing table
                 log(`Migrating table ${tableName} to new schema`);
                 const tempTableName = `${tableName}${env.DB_VERSION}`;
@@ -327,6 +349,7 @@ export class DbHandler {
 
         if (needToMigrate) {
             if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
+            if (currentDbVersion <= 16) await this._moveCommentEditsToModAuthorTables();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
             await this._knex.raw(`VACUUM;`); // make sure we're not using extra space
@@ -340,9 +363,9 @@ export class DbHandler {
                     "_usingDefaultChallenge" in internalState
                         ? internalState._usingDefaultChallenge //@ts-expect-error
                         : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
-                const cid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                const updateCid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
                 //@ts-expect-error
-                await this._subplebbit._updateDbInternalState({ posts: undefined, cid, protocolVersion, _usingDefaultChallenge });
+                await this._subplebbit._updateDbInternalState({ posts: undefined, updateCid, protocolVersion, _usingDefaultChallenge });
             }
         }
         const newDbVersion = await this.getDbVersion();
@@ -371,7 +394,7 @@ export class DbHandler {
                     const commentToBeEdited = await this.queryComment(editWithType.commentCid);
                     if (!commentToBeEdited) throw Error("Failed to compute isAuthorEdit column");
                     const editHasBeenSignedByOriginalAuthor = editWithType.signature.publicKey === commentToBeEdited.signature.publicKey;
-                    srcRecord["isAuthorEdit"] = this._subplebbit._isAuthorEdit(editWithType, editHasBeenSignedByOriginalAuthor);
+                    srcRecord["isAuthorEdit"] = editHasBeenSignedByOriginalAuthor;
                 }
 
                 if (currentDbVersion <= 12 && srcRecord["authorAddress"]) {
@@ -425,6 +448,37 @@ export class DbHandler {
         }
     }
 
+    private async _moveCommentEditsToModAuthorTables() {
+        // Prior to db version 17, all comment edits, author and mod's were in the same table
+        // code below will split them to their separate tables
+        const modCommentEdits = await this._knex(TABLES.COMMENT_EDITS).where({ isAuthorEdit: false });
+        const commentModerationFields = remeda.keys.strict(ModeratorOptionsSchema.shape);
+
+        for (const modCommentEdit of modCommentEdits) {
+            const baseProps = remeda.pick(modCommentEdit, [
+                "extraProps",
+                "insertedAt",
+                "id",
+                "commentCid",
+                "author",
+                "signature",
+                "protocolVersion",
+                "timestamp"
+            ]);
+
+            const moderationRow = {
+                ...baseProps,
+                modSignerAddress: modCommentEdit.authorSignerAddress,
+                //@ts-expect-error
+                commentModeration: remeda.pick(modCommentEdit, commentModerationFields)
+            };
+            //@ts-expect-error
+            await this._knex(TABLES.COMMENT_MODERATIONS).insert(moderationRow);
+        }
+
+        await this._knex(TABLES.COMMENT_EDITS).where({ isAuthorEdit: false }).del();
+    }
+
     async deleteVote(
         authorSignerAddress: VotesTableRow["authorSignerAddress"],
         commentCid: VotesTableRow["commentCid"],
@@ -448,7 +502,11 @@ export class DbHandler {
         await this._baseTransaction(trx)(TABLES.COMMENT_UPDATES).insert(update).onConflict(["cid"]).merge();
     }
 
-    async insertEdit(edit: CommentEditsTableRowInsert, trx?: Transaction) {
+    async insertCommentModeration(moderation: CommentModerationsTableRowInsert, trx?: Transaction) {
+        await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS).insert(moderation);
+    }
+
+    async insertCommentEdit(edit: CommentEditsTableRowInsert, trx?: Transaction) {
         await this._baseTransaction(trx)(TABLES.COMMENT_EDITS).insert(edit);
     }
 
@@ -615,17 +673,20 @@ export class DbHandler {
             .select(`${TABLES.COMMENTS}.*`)
             .innerJoin(TABLES.COMMENT_UPDATES, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_UPDATES}.cid`)
             .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
+            .leftJoin(TABLES.COMMENT_MODERATIONS, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_MODERATIONS}.commentCid`)
             .leftJoin(TABLES.COMMENT_EDITS, `${TABLES.COMMENTS}.cid`, `${TABLES.COMMENT_EDITS}.commentCid`)
             .leftJoin({ childrenComments: TABLES.COMMENTS }, `${TABLES.COMMENTS}.cid`, `childrenComments.parentCid`)
             .max({
                 voteLastInsertedAt: `${TABLES.VOTES}.insertedAt`,
-                editLastInsertedAt: `${TABLES.COMMENT_EDITS}.insertedAt`,
+                commentEditLastInsertedAt: `${TABLES.COMMENT_EDITS}.insertedAt`,
+                modEditLastInsertedAt: `${TABLES.COMMENT_MODERATIONS}.insertedAt`,
                 childCommentLastInsertedAt: `childrenComments.insertedAt`,
                 lastUpdatedAt: `${TABLES.COMMENT_UPDATES}.updatedAt`
             })
             .groupBy(`${TABLES.COMMENTS}.cid`)
             .having(`voteLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
-            .orHaving(`editLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
+            .orHaving(`commentEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
+            .orHaving(`modEditLastInsertedAt`, ">=", lastUpdatedAtWithBuffer)
             .orHaving(`childCommentLastInsertedAt`, ">=", lastUpdatedAtWithBuffer);
 
         const comments = remeda.uniqueBy([...criteriaOne, ...criteriaTwoThree], (comment) => comment.cid);
@@ -721,33 +782,35 @@ export class DbHandler {
         return { replyCount, upvoteCount, downvoteCount };
     }
 
-    private async _queryAuthorEdit(cid: string, authorSignerAddress: string, trx?: Transaction): Promise<AuthorCommentEdit | undefined> {
-        const authorEditPubsubFields = <(keyof (AuthorCommentEdit & Pick<CommentEditsTableRow, "extraProps">))[]>[
-            ...remeda.keys.strict(AuthorCommentEditPubsubSchema.shape),
-            "extraProps"
-        ];
+    private async _queryLatestAuthorEdit(
+        cid: string,
+        authorSignerAddress: string,
+        trx?: Transaction
+    ): Promise<CommentEditPubsubMessagePublication | undefined> {
+        const commentEditPubsubFields = remeda.concat(
+            remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape),
+            remeda.keys.strict(remeda.pick(CommentEditsTableRowSchema.shape, ["extraProps"]))
+        );
 
-        const authorEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
-            .select(authorEditPubsubFields)
+        const latestCommentEdit = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+            .select(commentEditPubsubFields)
             .where({ commentCid: cid, authorSignerAddress, isAuthorEdit: true })
             .orderBy("id", "desc")
             .first();
 
-        if (authorEdit?.extraProps) {
-            delete authorEdit.extraProps; // parseDbResponses will include props under extraProps in authorEdit for us
-        }
+        if (latestCommentEdit?.extraProps) delete latestCommentEdit.extraProps; // parseDbResponses will include props under extraProps in authorEdit for us
 
-        return authorEdit;
+        return latestCommentEdit;
     }
 
     private async _queryLatestModeratorReason(
         comment: Pick<CommentsTableRow, "cid">,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdateType, "reason"> | undefined> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+    ): Promise<Pick<CommentModerationTableRow["commentModeration"], "reason"> | undefined> {
+        return this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+            .jsonExtract("commentModeration", "$.reason", "reason")
             .select("reason")
             .where("commentCid", comment.cid)
-            .where({ isAuthorEdit: false })
             .whereNotNull("reason")
             .orderBy("id", "desc")
             .first();
@@ -758,11 +821,11 @@ export class DbHandler {
             {},
             ...(await Promise.all(
                 ["spoiler", "pinned", "locked", "removed"].map((field) =>
-                    this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+                    this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+                        .jsonExtract("commentModeration", `$.${field}`, field)
                         .select(field)
                         .where("commentCid", cid)
                         .whereNotNull(field)
-                        .where("isAuthorEdit", false)
                         .orderBy("id", "desc")
                         .first()
                 )
@@ -774,6 +837,7 @@ export class DbHandler {
     async queryAuthorEditDeleted(cid: string, trx?: Transaction): Promise<Pick<CommentEditsTableRow, "deleted"> | undefined> {
         return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
             .select("deleted")
+            .where({ isAuthorEdit: true })
             .where("commentCid", cid)
             .whereNotNull("deleted")
             .orderBy("id", "desc")
@@ -783,12 +847,12 @@ export class DbHandler {
     private async _queryModCommentFlair(
         comment: Pick<CommentsTableRow, "cid">,
         trx?: Transaction
-    ): Promise<Pick<CommentEditsTableRow, "flair"> | undefined> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+    ): Promise<Pick<CommentModerationTableRow["commentModeration"], "flair"> | undefined> {
+        return this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+            .jsonExtract("commentModeration", "$.flair", "flair")
             .select("flair")
             .where("commentCid", comment.cid)
             .whereNotNull("flair")
-            .where({ isAuthorEdit: false })
             .orderBy("id", "desc")
             .first();
     }
@@ -819,7 +883,7 @@ export class DbHandler {
             lastChildAndLastReplyTimestamp
         ] = await Promise.all([
             this.querySubplebbitAuthor(comment.authorSignerAddress, trx),
-            this._queryAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
+            this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
             this._queryCommentCounts(comment.cid, trx),
             this._queryLatestModeratorReason(comment, trx),
             this.queryCommentFlags(comment.cid, trx),
@@ -855,11 +919,14 @@ export class DbHandler {
         authorSignerAddress: string,
         trx?: Knex.Transaction
     ): Promise<Pick<SubplebbitAuthor, "banExpiresAt" | "flair">> {
-        const authorComments: Pick<CommentsTableRow, "cid">[] = await this._baseTransaction(trx)(TABLES.COMMENTS)
+        const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .select("cid")
             .where("authorSignerAddress", authorSignerAddress);
         if (!Array.isArray(authorComments) || authorComments.length === 0) return {};
-        const commentAuthorEdits: Pick<CommentEditsTableRow, "commentAuthor">[] = await this._baseTransaction(trx)(TABLES.COMMENT_EDITS)
+        const modAuthorEdits: CommentModerationTableRow["commentModeration"]["author"][] = await this._baseTransaction(trx)(
+            TABLES.COMMENT_MODERATIONS
+        )
+            .jsonExtract("commentModeration", "$.author", "commentAuthor")
             .select("commentAuthor")
             .whereIn(
                 "commentCid",
@@ -867,8 +934,9 @@ export class DbHandler {
             )
             .whereNotNull("commentAuthor")
             .orderBy("id", "desc");
-        const banAuthor = commentAuthorEdits.find((edit) => typeof edit.commentAuthor?.banExpiresAt === "number")?.commentAuthor;
-        const authorFlairByMod = commentAuthorEdits.find((edit) => edit.commentAuthor?.flair)?.commentAuthor;
+        // Not 100% sure this will work
+        const banAuthor = modAuthorEdits.find((edit) => typeof edit?.banExpiresAt === "number");
+        const authorFlairByMod = modAuthorEdits.find((edit) => edit?.flair);
 
         return { ...banAuthor, ...authorFlairByMod };
     }
@@ -921,6 +989,7 @@ export class DbHandler {
 
         await this._baseTransaction()(TABLES.VOTES).where({ commentCid: cid }).del();
         await this._baseTransaction()(TABLES.COMMENT_EDITS).where({ commentCid: cid }).del();
+        await this._baseTransaction()(TABLES.COMMENT_MODERATIONS).where({ commentCid: cid }).del();
 
         if (await this._knex.schema.hasTable(TABLES.COMMENT_UPDATES))
             await this._baseTransaction()(TABLES.COMMENT_UPDATES).where({ cid }).del();

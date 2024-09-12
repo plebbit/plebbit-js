@@ -16,6 +16,8 @@ import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "..
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
 import { VoteSignedPropertyNames } from "../publications/vote/schema";
 import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema";
+import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema";
+import { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
@@ -50,6 +52,7 @@ export type SignatureTypes =
 // SignedPropertyNames union (different representation)
 export type CommentSignedPropertyNamesUnion = (typeof CommentSignedPropertyNames)[number];
 export type CommentEditSignedPropertyNamesUnion = (typeof CommentEditSignedPropertyNames)[number];
+export type CommentModerationSignedPropertyNamesUnion = (typeof CommentModerationSignedPropertyNames)[number];
 export type VoteSignedPropertyNamesUnion = (typeof VoteSignedPropertyNames)[number];
 export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSignedPropertyNames)[number];
 
@@ -58,6 +61,7 @@ export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSigned
 
 export type PublicationsToSign =
     | Omit<CommentEditPubsubMessagePublication, "signature">
+    | Omit<CommentModerationPubsubMessagePublication, "signature">
     | Omit<VotePubsubMessagePublication, "signature">
     | Omit<CommentPubsubMessagePublication, "signature">
     | Omit<CommentUpdateType, "signature">
@@ -73,6 +77,7 @@ export type PubsubMsgsToSign =
 // Verifying
 export type PublicationToVerify =
     | CommentEditPubsubMessagePublication
+    | CommentModerationPubsubMessagePublication
     | VotePubsubMessagePublication
     | CommentPubsubMessagePublication
     | SubplebbitIpfsType

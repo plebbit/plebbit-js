@@ -79,6 +79,14 @@ import {
 } from "./subplebbit/schema.js";
 import { PlebbitUserOptionsSchema } from "./schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "./schema/schema-util.js";
+import { CommentModeration } from "./publications/comment-moderation/comment-moderation.js";
+import type {
+    CommentModerationOptionsToSign,
+    CommentModerationTypeJson,
+    CreateCommentModerationOptions,
+    LocalCommentModerationAfterSigning
+} from "./publications/comment-moderation/types.js";
+import { CreateCommentModerationFunctionArgumentSchema } from "./publications/comment-moderation/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -298,14 +306,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     private async _initMissingFieldsOfPublicationBeforeSigning(
-        pubOptions: CreateCommentOptions | CreateCommentEditOptions | CreateVoteOptions,
+        pubOptions: CreateCommentOptions | CreateCommentEditOptions | CreateVoteOptions | CreateCommentModerationOptions,
         log: Logger
     ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign> {
         const finalOptions = remeda.clone(pubOptions);
         if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
         if (finalOptions.author) {
             // make sure reserved fields like subplebbit, shortAddress are removed
-            //@ts-expect-error
             finalOptions.author = remeda.omit(finalOptions.author, AuthorReservedFields);
         }
         const filledTimestamp = typeof finalOptions.timestamp !== "number" ? timestamp() : finalOptions.timestamp;
@@ -658,6 +665,42 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             editInstance._initLocalProps(signedEdit);
         }
         return editInstance;
+    }
+
+    async _createCommentModerationInstanceFromJsonfiedCommentModeration(jsonfied: CommentModerationTypeJson) {
+        const editInstance = new CommentModeration(this);
+        // we stringify here to remove functions and create a deep copy
+        Object.assign(
+            editInstance,
+            remeda.omit(<CommentModerationTypeJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"])
+        );
+
+        return editInstance;
+    }
+
+    async createCommentModeration(
+        options: z.infer<typeof CreateCommentModerationFunctionArgumentSchema> | CommentModerationTypeJson
+    ): Promise<CommentModeration> {
+        const log = Logger("plebbit-js:plebbit:createCommentEdit");
+        if ("clients" in options) return this._createCommentModerationInstanceFromJsonfiedCommentModeration(options);
+        const parsedOptions = CreateCommentModerationFunctionArgumentSchema.parse(options);
+        const modInstance = new CommentModeration(this);
+
+        if ("publication" in parsedOptions) modInstance._initChallengeRequestProps(parsedOptions);
+        else if ("signature" in parsedOptions)
+            modInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
+        else {
+            const finalOptions = <CommentModerationOptionsToSign>(
+                await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log)
+            );
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signedMod = <LocalCommentModerationAfterSigning>{
+                ...cleanedFinalOptions,
+                signature: await signCommentEdit(cleanedFinalOptions, this)
+            };
+            modInstance._initLocalProps(signedMod);
+        }
+        return modInstance;
     }
 
     createSigner(createSignerOptions?: CreateSignerOptions) {

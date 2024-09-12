@@ -1,20 +1,16 @@
 import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
-import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessagePublication, LocalCommentEditOptions } from "./types.js";
+import type { CommentModerationChallengeRequestToEncrypt, CommentModerationPubsubMessagePublication, LocalCommentModerationAfterSigning } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
 import * as remeda from "remeda";
+import { verifyCommentModeration } from "../../signer/signatures.js";
 
-export class CommentEdit extends Publication implements CommentEditPubsubMessagePublication {
-    commentCid!: CommentEditPubsubMessagePublication["commentCid"];
-    content?: CommentEditPubsubMessagePublication["content"];
-    reason?: CommentEditPubsubMessagePublication["reason"];
-    deleted?: CommentEditPubsubMessagePublication["deleted"];
-    flair?: CommentEditPubsubMessagePublication["flair"];
-    spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+export class CommentModeration extends Publication implements CommentModerationPubsubMessagePublication {
+    commentCid!: CommentModerationPubsubMessagePublication["commentCid"];
+    commentModeration!: CommentModerationPubsubMessagePublication["commentModeration"];
 
-    _pubsubMsgToPublish?: CommentEditPubsubMessagePublication = undefined;
+    _pubsubMsgToPublish?: CommentModerationPubsubMessagePublication = undefined;
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -25,45 +21,41 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
         hideClassPrivateProps(this);
     }
 
-    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessagePublication) {
+    _initEditProps(props: LocalCommentModerationAfterSigning | CommentModerationPubsubMessagePublication) {
         this.commentCid = props.commentCid;
-        this.content = props.content;
-        this.reason = props.reason;
-        this.deleted = props.deleted;
-        this.flair = props.flair;
-        this.spoiler = props.spoiler;
+        this.commentModeration = props.commentModeration;
     }
 
-    _initLocalProps(props: LocalCommentEditOptions) {
+    _initLocalProps(props: LocalCommentModerationAfterSigning) {
         super._initBaseLocalProps(props);
         this._initEditProps(props);
-        const keysCasted = <(keyof CommentEditPubsubMessagePublication)[]>props.signature.signedPropertyNames;
+        const keysCasted = <(keyof CommentModerationPubsubMessagePublication)[]>props.signature.signedPropertyNames;
         this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
     }
 
-    _initRemoteProps(props: CommentEditPubsubMessagePublication): void {
+    _initRemoteProps(props: CommentModerationPubsubMessagePublication): void {
         super._initBaseRemoteProps(props);
         this._initEditProps(props);
     }
 
-    _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
+    _initChallengeRequestProps(props: CommentModerationChallengeRequestToEncrypt) {
         super._initChallengeRequestChallengeProps(props);
         this._initRemoteProps(props.publication);
         this._pubsubMsgToPublish = props.publication;
     }
 
-    override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {
+    override toJSONPubsubMessagePublication(): CommentModerationPubsubMessagePublication {
         if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
         return this._pubsubMsgToPublish;
     }
 
     override getType(): PublicationTypeName {
-        return "commentedit";
+        return "commentmoderation";
     }
 
     private async _validateSignature() {
         const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));
-        const signatureValidity = await verifyCommentEdit(editObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
+        const signatureValidity = await verifyCommentModeration(editObj, this._plebbit.resolveAuthorAddresses, this._clientsManager, true); // If author domain is not resolving to signer, then don't throw an error
         if (!signatureValidity.valid) throwWithErrorCode("ERR_SIGNATURE_IS_INVALID", { signatureValidity });
     }
 

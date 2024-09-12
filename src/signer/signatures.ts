@@ -55,6 +55,7 @@ import {
     ChallengeVerificationMessageSignedPropertyNames
 } from "../pubsub-messages/schema.js";
 import type { PublicationPubsubMessage } from "../types.js";
+import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -352,6 +353,20 @@ export async function verifyCommentEdit(
         return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
     const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    if (!res.valid) return res;
+    return { valid: true };
+}
+
+export async function verifyCommentModeration(
+    moderation: CommentModerationPubsubMessagePublication,
+    resolveAuthorAddresses: boolean,
+    clientsManager: BaseClientsManager,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
+    if (!_allFieldsOfRecordInSignedPropertyNames(moderation))
+        return { valid: false, reason: messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+
+    const res = await _verifyPublicationWithAuthor(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }

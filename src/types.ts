@@ -14,7 +14,11 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentEditPubsubMessagePublication, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
+import type {
+    CommentEditPubsubMessagePublication,
+    CommentModerationTableRow,
+    LocalCommentEditOptions
+} from "./publications/comment-edit/types.js";
 import type { LocalVoteOptions, VotePubsubMessagePublication } from "./publications/vote/types.js";
 import type { CommentPubsubMessagePublication, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
@@ -58,7 +62,7 @@ export type AuthorPubsubJsonType = AuthorPubsubType & { shortAddress: string };
 
 export type AuthorWithOptionalCommentUpdateJson = AuthorTypeWithCommentUpdate & { shortAddress: string };
 
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
+export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate" | "commentmoderation";
 
 export type NativeFunctions = {
     fetch: typeof fetch;
@@ -88,7 +92,8 @@ export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 // Comment edits table
 
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {}
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt" | "id"> {}
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "insertedAt" | "id"> {}
 
 // Setting up the types of tables here so we can utilize auto completion in queries
 declare module "knex/types/tables" {
@@ -102,6 +107,7 @@ declare module "knex/types/tables" {
         >;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
+        commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
     }
 }
 

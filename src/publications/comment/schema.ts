@@ -12,7 +12,7 @@ import {
     SignerWithAddressPublicKeySchema,
     SubplebbitAuthorSchema
 } from "../../schema/schema.js";
-import { AuthorCommentEditPubsubPassthroughSchema, AuthorCommentEditPubsubSchema } from "../comment-edit/schema.js";
+import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../comment-edit/schema.js";
 import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
 import { messages } from "../../errors.js";
@@ -128,7 +128,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
     replyCount: z.number().nonnegative().int(),
-    edit: AuthorCommentEditPubsubPassthroughSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
+    edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
     flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
     pinned: z.boolean().optional(),

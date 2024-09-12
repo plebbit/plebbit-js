@@ -1,4 +1,4 @@
-import type { CommentEditPubsubMessageWithSubplebbitAuthor } from "../publications/comment-edit/types";
+import type { CommentEditPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-edit/types";
 import type { CommentPubsubMessageWithSubplebbitAuthor } from "../publications/comment/types";
 import type { VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
@@ -55,7 +55,7 @@ export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extend
     publication:
         | VotePubsubMessageWithSubplebbitAuthor
         | CommentPubsubMessageWithSubplebbitAuthor
-        | CommentEditPubsubMessageWithSubplebbitAuthor;
+        | CommentEditPubsubMessagePublicationWithSubplebbitAuthor;
 }
 
 // Misc challenge pubsub message
