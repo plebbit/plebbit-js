@@ -25,7 +25,7 @@ import { createSigner } from "./signer/index.js";
 import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "./version.js";
-import { cleanUpBeforePublishing, signComment, signCommentEdit, signVote } from "./signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signVote } from "./signer/signatures.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "./stats.js";
 import Storage from "./runtime/node/storage.js";
@@ -696,7 +696,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signedMod = <LocalCommentModerationAfterSigning>{
                 ...cleanedFinalOptions,
-                signature: await signCommentEdit(cleanedFinalOptions, this)
+                signature: await signCommentModeration(cleanedFinalOptions, this)
             };
             modInstance._initLocalProps(signedMod);
         }
