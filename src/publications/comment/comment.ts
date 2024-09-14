@@ -32,7 +32,7 @@ import { parseRawPages } from "../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 
-export class Comment extends Publication {
+export class Comment extends Publication implements CommentPubsubMessagePublication {
     // Only Comment props
     shortCid?: CommentWithinPageJson["shortCid"];
 
