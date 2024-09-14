@@ -259,7 +259,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const timeoutMs = this._clientsManager.getGatewayTimeoutMs("subplebbit");
         const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
         let updateError: PlebbitError | undefined;
-        subplebbit.on("error", (err) => (updateError = err));
+        const errorListener = (err: PlebbitError) => (updateError = err);
+        subplebbit.on("error", errorListener);
         try {
             await subplebbit.update();
             await pTimeout(updatePromise, {
@@ -273,7 +274,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             if (subplebbit?._ipnsLoadingOperation?.mainError()) throw subplebbit._ipnsLoadingOperation.mainError();
             throw Error("Timed out without error. Should not happen" + e);
         }
-        subplebbit.removeAllListeners("error");
+        subplebbit.removeListener("error", errorListener);
         await subplebbit.stop();
 
         return subplebbit;
