@@ -4,14 +4,18 @@ import QuickLRU from "quick-lru";
 import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
+import type {
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+} from "../../../../../pubsub-messages/types.js";
 import { Comment } from "../../../../../publications/comment/comment.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
 import { Plebbit } from "../../../../../plebbit.js";
 
 const shouldExcludePublication = (
     subplebbitChallenge: SubplebbitChallenge,
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     subplebbit: LocalSubplebbit
 ) => {
     if (!subplebbitChallenge) {
@@ -60,16 +64,16 @@ const shouldExcludePublication = (
         if (!testFirstCommentTimestamp(exclude.firstCommentTimestamp, author.subplebbit?.firstCommentTimestamp)) {
             shouldExclude = false;
         }
-        if (typeof exclude.post === "boolean" && !testPost(exclude.post, publication)) {
+        if (typeof exclude.post === "boolean" && !testPost(exclude.post, request)) {
             shouldExclude = false;
         }
-        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, publication)) {
+        if (typeof exclude.reply === "boolean" && !testReply(exclude.reply, request)) {
             shouldExclude = false;
         }
-        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, publication)) {
+        if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
             shouldExclude = false;
         }
-        if (!testRateLimit(exclude, publication)) {
+        if (!testRateLimit(exclude, request, publication)) {
             shouldExclude = false;
         }
         if (exclude.address && !exclude.address.includes(author.address)) {
@@ -141,6 +145,7 @@ const getCommentPending: Record<string, boolean> = {}; // cid -> boolean if it's
 const shouldExcludeChallengeCommentCids = async (
     subplebbitChallenge: SubplebbitChallenge,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     plebbit: Plebbit
 ) => {
     if (!subplebbitChallenge) {
@@ -153,7 +158,7 @@ const shouldExcludeChallengeCommentCids = async (
         throw Error(`shouldExcludeChallengeCommentCids invalid plebbit argument '${plebbit}'`);
     }
     const commentCids = challengeRequestMessage.challengeCommentCids;
-    const author = challengeRequestMessage.publication?.author;
+    const author = publication?.author;
     if (commentCids && !Array.isArray(commentCids)) {
         throw Error(`shouldExcludeChallengeCommentCids invalid commentCids argument '${commentCids}'`);
     }

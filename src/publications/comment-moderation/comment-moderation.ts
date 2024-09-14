@@ -50,7 +50,7 @@ export class CommentModeration extends Publication implements CommentModerationP
     }
 
     override getType(): PublicationTypeName {
-        return "commentmoderation";
+        return "commentModeration";
     }
 
     private async _validateSignature() {

@@ -55,7 +55,11 @@ import {
     ChallengeVerificationMessageSignedPropertyNames
 } from "../pubsub-messages/schema.js";
 import type { PublicationPubsubMessage } from "../types.js";
-import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
+import type {
+    CommentModerationOptionsToSign,
+    CommentModerationPubsubMessagePublication
+} from "../publications/comment-moderation/types.js";
+import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -182,6 +186,12 @@ export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: P
     return _signJson(<JsonSignature["signedPropertyNames"]>CommentEditSignedPropertyNames, edit, edit.signer, log);
 }
 
+export async function signCommentModeration(commentMod: CommentModerationOptionsToSign, plebbit: Plebbit) {
+    const log = Logger("plebbit-js:signatures:signCommentModeration");
+    await _validateAuthorAddressBeforeSigning(commentMod.author, commentMod.signer, plebbit);
+    return _signJson(<JsonSignature["signedPropertyNames"]>CommentModerationSignedPropertyNames, commentMod, commentMod.signer, log);
+}
+
 export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
     return _signJson(<JsonSignature["signedPropertyNames"]>SubplebbitSignedPropertyNames, subplebbit, signer, log);
@@ -219,7 +229,7 @@ type VerifyAuthorRes = { useDerivedAddress: false; reason?: string } | { useDeri
 
 // Verify functions
 const _verifyAuthor = async (
-    publicationJson: CommentEditPubsubMessagePublication | VotePubsubMessagePublication | CommentPubsubMessagePublication,
+    publicationJson: PublicationPubsubMessage,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager
 ): Promise<VerifyAuthorRes> => {
@@ -301,7 +311,7 @@ const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
 };
 
 const _verifyPublicationWithAuthor = async (
-    publicationJson: VotePubsubMessagePublication | CommentPubsubMessagePublication | CommentEditPubsubMessagePublication,
+    publicationJson: PublicationPubsubMessage,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean

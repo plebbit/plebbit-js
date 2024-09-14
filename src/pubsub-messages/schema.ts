@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
     ChallengeAnswersSchema,
-    CidStringSchema,
+    ChallengeRequestToEncryptBaseSchema,
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
     UserAgentSchema
@@ -11,11 +11,11 @@ import { CommentEditPubsubMessagePublicationSchema } from "../publications/comme
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
     AuthorWithCommentUpdateSchema,
-    CommentPubsubMessagePublicationSchema,
-    CreateCommentOptionsSchema
+    CommentPubsubMessagePublicationSchema
 } from "../publications/comment/schema.js";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
+import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
 
 const AcceptedChallengeTypeSchema = z.string().min(1);
 export const PubsubMessageSignatureSchema = z
@@ -51,10 +51,6 @@ export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = Commen
     author: AuthorWithCommentUpdateSchema
 }).strict();
 
-export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessagePublicationSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).passthrough();
-
 // Challenge Request message
 
 export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
@@ -63,13 +59,15 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
     acceptedChallengeTypes: AcceptedChallengeTypeSchema.array().optional()
 }).strict();
 
-export const DecryptedChallengeRequestSchema = z.object({
-    // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
-
-    publication: VotePubsubMessagePublicationSchema.or(CommentEditPubsubMessagePublicationSchema).or(CommentPubsubMessagePublicationSchema),
-    challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
-    challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+export const DecryptedChallengeRequestPublicationSchema = z.object({
+    comment: CommentPubsubMessagePublicationSchema.passthrough().optional(),
+    vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
+    commentEdit: CommentEditPubsubMessagePublicationSchema.passthrough().optional(),
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional()
 });
+
+// ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
+export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(ChallengeRequestToEncryptBaseSchema);
 
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"])

@@ -1,6 +1,7 @@
 import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
+    DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeVerificationMessageType,
     EncodedDecryptedChallengeAnswerMessageType,
@@ -39,7 +40,7 @@ function _decodeSignature(
 
 export function decodeRpcChallengeRequestPubsubMsg(
     msg: EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-): DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor {
+): DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor | DecryptedChallengeRequestMessageType {
     return {
         ...msg,
         challengeRequestId: _decodeChallengeRequestId(msg.challengeRequestId),

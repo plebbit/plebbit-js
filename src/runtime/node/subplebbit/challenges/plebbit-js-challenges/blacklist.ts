@@ -1,5 +1,6 @@
 import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
+import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
 const optionInputs = [
     {
@@ -32,7 +33,8 @@ const getChallenge = async (
     const blacklist = subplebbitChallengeSettings?.options?.blacklist?.split(",");
     const blacklistSet = new Set(blacklist);
 
-    if (blacklistSet.has(challengeRequestMessage.publication?.author?.address)) {
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
+    if (blacklistSet.has(publication?.author?.address)) {
         return {
             success: false,
             error: error || `You're blacklisted.`

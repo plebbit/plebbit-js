@@ -1,5 +1,5 @@
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageType } from "../../../../../pubsub-messages/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
     {
@@ -37,7 +37,7 @@ const getChallengeString = (minNumber: number, maxNumber: number, operators: ("*
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<Challenge> => {
     const difficultyString = subplebbitChallengeSettings?.options?.difficulty || "1";

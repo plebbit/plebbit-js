@@ -1,5 +1,10 @@
 import type { CommentEditPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-edit/types";
-import type { CommentPubsubMessageWithSubplebbitAuthor } from "../publications/comment/types";
+import type { CommentModerationPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-moderation/types";
+import type {
+    CommentPubsubMessageWithSubplebbitAuthor,
+    PostPubsubMessageWithSubplebbitAuthor,
+    ReplyPubsubMessageWithSubplebbitAuthor
+} from "../publications/comment/types";
 import type { VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
 import {
@@ -9,6 +14,7 @@ import {
     ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
     DecryptedChallengeAnswerSchema,
+    DecryptedChallengeRequestPublicationSchema,
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema,
     DecryptedChallengeVerificationSchema
@@ -20,9 +26,41 @@ import { z } from "zod";
 
 export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessageSchema>;
 
+export type DecryptedChallengeRequestPublication = z.infer<typeof DecryptedChallengeRequestPublicationSchema>;
 export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
 
 export type DecryptedChallengeRequestMessageType = DecryptedChallengeRequest & ChallengeRequestMessageType;
+
+export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+    extends Omit<DecryptedChallengeRequestMessageType, "comment" | "vote" | "commentEdit" | "commentModeration"> {
+    vote?: VotePubsubMessageWithSubplebbitAuthor;
+    comment?: CommentPubsubMessageWithSubplebbitAuthor;
+    commentEdit?: CommentEditPubsubMessagePublicationWithSubplebbitAuthor;
+    commentModeration?: CommentModerationPubsubMessagePublicationWithSubplebbitAuthor;
+}
+
+export type PublicationFromDecryptedChallengeRequest = NonNullable<
+    | DecryptedChallengeRequestMessageType["vote"]
+    | DecryptedChallengeRequestMessageType["comment"]
+    | DecryptedChallengeRequestMessageType["commentEdit"]
+    | DecryptedChallengeRequestMessageType["commentModeration"]
+>;
+
+export type PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest = NonNullable<
+    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["vote"]
+    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["comment"]
+    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["commentEdit"]
+    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["commentModeration"]
+>;
+
+export interface DecryptedChallengeRequestMessageWithReplySubplebbitAuthor
+    extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor {
+    comment: ReplyPubsubMessageWithSubplebbitAuthor;
+}
+
+export interface DecryptedChallengeRequestMessageWithPostSubplebbitAuthor extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor {
+    comment: PostPubsubMessageWithSubplebbitAuthor;
+}
 
 // Challenge message here
 
@@ -50,13 +88,6 @@ export type DecryptedChallengeVerification = z.infer<typeof DecryptedChallengeVe
 export type DecryptedChallengeVerificationMessageType = ChallengeVerificationMessageType & DecryptedChallengeVerification;
 
 // Challenge verification native types
-
-export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends DecryptedChallengeRequestMessageType {
-    publication:
-        | VotePubsubMessageWithSubplebbitAuthor
-        | CommentPubsubMessageWithSubplebbitAuthor
-        | CommentEditPubsubMessagePublicationWithSubplebbitAuthor;
-}
 
 // Misc challenge pubsub message
 
@@ -91,8 +122,8 @@ export interface EncodedDecryptedChallengeRequestMessageType
 }
 
 export interface EncodedDecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-    extends Omit<EncodedDecryptedChallengeRequestMessageType, "publication">,
-        Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, "publication"> {}
+    extends Omit<EncodedDecryptedChallengeRequestMessageType, keyof DecryptedChallengeRequestPublication>,
+        Pick<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, keyof DecryptedChallengeRequestPublication> {}
 
 export interface EncodedDecryptedChallengeMessageType
     extends Omit<DecryptedChallengeMessageType, "challengeRequestId" | "encrypted" | "signature">,

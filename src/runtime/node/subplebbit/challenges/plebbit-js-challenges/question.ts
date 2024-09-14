@@ -1,5 +1,5 @@
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
-import type { DecryptedChallengeRequestMessageType } from "../../../../../pubsub-messages/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
 const optionInputs = [
     {
@@ -25,7 +25,7 @@ const description = `Ask a question, like 'What is the password?'`;
 
 const getChallenge = async (
     subplebbitChallengeSettings: SubplebbitChallengeSetting,
-    challengeRequestMessage: DecryptedChallengeRequestMessageType,
+    challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeIndex: number
 ): Promise<Challenge | ChallengeResult> => {
     if (!subplebbitChallengeSettings?.options?.question) throw Error("No option question");

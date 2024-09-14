@@ -590,15 +590,13 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
 }
 
 export async function disableZodValidationOfPublication(publication: Publication) {
-    publication._createRequestEncrypted = () => publication.toJSONPubsubMessage(); // skip the zod validation
-
     //@ts-expect-error
     publication._validateSignature = () => {};
 }
 
 export async function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions) {
     if (!comment.signer) throw Error("Need comment.signer to overwrite the signature");
-    const pubsubPublication = JSON.parse(JSON.stringify(comment.toJSONPubsubMessagePublication()));
+    const pubsubPublication = remeda.clone(comment.toJSONPubsubMessagePublication());
 
     for (const optionKey of remeda.keys.strict(props)) {
         //@ts-expect-error
@@ -634,7 +632,7 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
     const publicationWithExtraProp = { ...comment.toJSONPubsubMessagePublication(), ...extraProps };
     if (includeExtraPropInSignedPropertyNames)
         publicationWithExtraProp.signature = await _signJson(
-            [...comment.signature.signedPropertyNames, ...Object.keys(extraProps)],
+            [...comment.signature.signedPropertyNames, ...remeda.keys.strict(extraProps)],
             cleanUpBeforePublishing(publicationWithExtraProp),
             comment.signer!,
             log

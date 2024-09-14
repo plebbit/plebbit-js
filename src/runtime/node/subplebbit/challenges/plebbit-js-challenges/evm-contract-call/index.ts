@@ -1,13 +1,16 @@
 import { LocalSubplebbit } from "../../../local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js";
 import type { ChainTicker } from "../../../../../../types.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
+import type {
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+} from "../../../../../../pubsub-messages/types.js";
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../../subplebbit/types.js";
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
 import type { Plebbit } from "../../../../../../plebbit.js";
-import { isStringDomain } from "../../../../../../util.js";
+import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
 const optionInputs = [
@@ -69,7 +72,7 @@ const _getChainProviderWithSafety = (plebbit: Plebbit, chainTicker: ChainTicker)
 };
 
 const verifyAuthorWalletAddress = async (props: {
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"];
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest;
     chainTicker: string;
     condition: string;
     abi: any;
@@ -338,8 +341,7 @@ const getChallenge = async (
 
     const doesConditionStartWithSupportedOperator = supportedConditionOperators.find((operator) => condition.startsWith(operator));
     if (!doesConditionStartWithSupportedOperator) throw Error(`Condition uses unsupported comparison operator`);
-    const publication = challengeRequestMessage.publication;
-
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     // Run the contract call and validate condition, by this order:
     // - author wallet address (if they have author.wallets set)
     // - ENS author address (if they have author.address as an ENS name)

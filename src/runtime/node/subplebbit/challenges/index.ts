@@ -30,6 +30,7 @@ import * as remeda from "remeda";
 import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
+import { derivePublicationFromChallengeRequest } from "../../../../util.js";
 
 type PendingChallenge = Challenge & { index: number };
 
@@ -150,6 +151,7 @@ const getPendingChallengesOrChallengeVerification = async (
     let challengeFailureCount = 0;
     let pendingChallenges: PendingChallenge[] = [];
     const challengeErrors: string[] = new Array(challengeOrChallengeResults.length);
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
@@ -158,10 +160,10 @@ const getPendingChallengesOrChallengeVerification = async (
         const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
 
         // exclude author from challenge based on the subplebbit minimum karma settings
-        if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage.publication, subplebbit)) {
+        if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, publication, subplebbit)) {
             continue;
         }
-        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit._plebbit)) {
+        if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, publication, subplebbit._plebbit)) {
             continue;
         }
 
@@ -299,7 +301,7 @@ const getChallengeVerification = async (
     }
 
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
-    addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage.publication, challengeVerification.challengeSuccess);
+    addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
 
     return challengeVerification;
 };

@@ -15,7 +15,8 @@ import type {
     EncodedDecryptedChallengeAnswerMessageType,
     EncodedDecryptedChallengeMessageType,
     EncodedDecryptedChallengeRequestMessageType,
-    EncodedDecryptedChallengeVerificationMessageType
+    EncodedDecryptedChallengeVerificationMessageType,
+    PublicationFromDecryptedChallengeRequest
 } from "../pubsub-messages/types.js";
 import type {
     AuthorPubsubJsonType,
@@ -74,10 +75,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
     clients!: PublicationClientsManager["clients"];
 
-    subplebbitAddress!: DecryptedChallengeRequestMessageType["publication"]["subplebbitAddress"];
+    subplebbitAddress!: PublicationFromDecryptedChallengeRequest["subplebbitAddress"];
     shortSubplebbitAddress!: string;
-    timestamp!: DecryptedChallengeRequestMessageType["publication"]["timestamp"];
-    signature!: DecryptedChallengeRequestMessageType["publication"]["signature"];
+    timestamp!: PublicationFromDecryptedChallengeRequest["timestamp"];
+    signature!: PublicationFromDecryptedChallengeRequest["signature"];
     signer?: LocalPublicationProps["signer"];
     author!: AuthorPubsubJsonType;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
@@ -88,7 +89,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
     // private
-    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing, TODO should change it to _subplebbit
+    private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
     private _challengeAnswer?: DecryptedChallengeAnswerMessageType = undefined;
     private _publishedChallengeRequests?: DecryptedChallengeRequestMessageType[] = undefined;
     private _challengeIdToPubsubSigner: Record<string, Signer> = {};
@@ -171,9 +172,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     // TODO change this to toJSONPubsubMessageToEncrypt
-    toJSONPubsubMessage(): DecryptedChallengeRequest {
+    toJSONPubsubRequestToEncrypt(): DecryptedChallengeRequest {
         return {
-            publication: this.toJSONPubsubMessagePublication(),
+            [this.getType()]: this.toJSONPubsubMessagePublication,
             challengeAnswers: this.challengeAnswers,
             challengeCommentCids: this.challengeCommentCids
         };
@@ -604,7 +605,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private _handleIncomingChallengeRequestFromRpc(args: any) {
         const encodedRequest: EncodedDecryptedChallengeRequestMessageType = args.params.result;
-        const request = decodeRpcChallengeRequestPubsubMsg(encodedRequest);
+        const request = <DecryptedChallengeRequestMessageType>decodeRpcChallengeRequestPubsubMsg(encodedRequest);
         if (!this._publishedChallengeRequests) this._publishedChallengeRequests = [request];
         else this._publishedChallengeRequests.push(request);
         this.emit("challengerequest", request);
@@ -654,14 +655,19 @@ class Publication extends TypedEmitter<PublicationEvents> {
             // PlebbitRpcClient will take care of zod parsing for us
             this._rpcPublishSubscriptionId =
                 this.getType() === "comment"
-                    ? await this._plebbit.plebbitRpcClient.publishComment(<CommentChallengeRequestToEncryptType>this.toJSONPubsubMessage())
-                    : this.getType() === "commentedit"
+                    ? await this._plebbit.plebbitRpcClient.publishComment(
+                          <CommentChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
+                      )
+                    : this.getType() === "commentEdit"
                       ? await this._plebbit.plebbitRpcClient.publishCommentEdit(
-                            <CommentEditChallengeRequestToEncryptType>this.toJSONPubsubMessage()
+                            <CommentEditChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
                         )
                       : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(<VoteChallengeRequestToEncryptType>this.toJSONPubsubMessage())
+                        ? await this._plebbit.plebbitRpcClient.publishVote(
+                              <VoteChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
+                          )
                         : undefined;
+                        // TODO should handle commentModeration here
             if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));
@@ -681,10 +687,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
         this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;
-    }
-
-    _createRequestEncrypted() {
-        return this.toJSONPubsubMessage();
     }
 
     private async _signAndValidateChallengeRequestBeforePublishing(
@@ -724,7 +726,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const pubsubMessageSigner = await this._plebbit.createSigner();
 
-        const pubsubMsgToEncrypt = this._createRequestEncrypted();
+        const pubsubMsgToEncrypt = this.toJSONPubsubRequestToEncrypt();
         const encrypted = await encryptEd25519AesGcm(
             JSON.stringify(pubsubMsgToEncrypt),
             pubsubMessageSigner.privateKey,

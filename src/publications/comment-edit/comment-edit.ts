@@ -58,7 +58,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     }
 
     override getType(): PublicationTypeName {
-        return "commentedit";
+        return "commentEdit";
     }
 
     private async _validateSignature() {

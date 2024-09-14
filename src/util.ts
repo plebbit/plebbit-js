@@ -10,6 +10,14 @@ import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
 import type { IpfsClient } from "./types.js";
 import type { create as CreateKuboRpcClient } from "kubo-rpc-client";
+import type {
+    DecryptedChallengeRequestMessageType,
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeRequestMessageWithPostSubplebbitAuthor,
+    DecryptedChallengeRequestMessageWithReplySubplebbitAuthor,
+    PublicationFromDecryptedChallengeRequest,
+    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+} from "./pubsub-messages/types.js";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -246,4 +254,24 @@ export function hideClassPrivateProps(_this: any) {
     for (const propertyName in _this) {
         if (propertyName.startsWith("_")) Object.defineProperty(_this, propertyName, { enumerable: false });
     }
+}
+
+export function derivePublicationFromChallengeRequest(
+    request: DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+): PublicationFromDecryptedChallengeRequest | PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest {
+    const pub = request.vote || request.comment || request.commentEdit || request.commentModeration;
+    if (!pub) throw Error("Failed to find publication on request");
+    return pub;
+}
+
+export function isRequestPubsubPublicationOfReply(
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+): request is DecryptedChallengeRequestMessageWithReplySubplebbitAuthor {
+    return Boolean(request.comment && request.comment.parentCid);
+}
+
+export function isRequestPubsubPublicationOfPost(
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+): request is DecryptedChallengeRequestMessageWithPostSubplebbitAuthor {
+    return Boolean(request.comment && !request.comment.parentCid);
 }

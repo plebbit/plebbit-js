@@ -80,3 +80,11 @@ export type CommentUpdatingState =
 export interface CommentPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }
+
+export interface PostPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessageWithSubplebbitAuthor {
+    parentCid: undefined;
+}
+
+export interface ReplyPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessageWithSubplebbitAuthor {
+    parentCid: string;
+}

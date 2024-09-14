@@ -6,7 +6,6 @@ import type {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType
 } from "../pubsub-messages/types";
-import type { PublicationTypeName } from "../types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
 
 import type { CommentEditPubsubMessagePublication } from "../publications/comment-edit/types";
@@ -40,13 +39,6 @@ export type Encrypted = z.infer<typeof EncryptedSchema>;
 // Signature
 
 export type PubsubSignature = z.infer<typeof PubsubMessageSignatureSchema>;
-
-export type SignatureTypes =
-    | PublicationTypeName
-    | "challengerequestmessage"
-    | "challengemessage"
-    | "challengeanswermessage"
-    | "challengeverificationmessage";
 
 // ---------------------------
 // SignedPropertyNames union (different representation)

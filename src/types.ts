@@ -14,13 +14,9 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type {
-    CommentEditPubsubMessagePublication,
-    CommentModerationTableRow,
-    LocalCommentEditOptions
-} from "./publications/comment-edit/types.js";
-import type { LocalVoteOptions, VotePubsubMessagePublication } from "./publications/vote/types.js";
-import type { CommentPubsubMessagePublication, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentModerationTableRow, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
+import type { LocalVoteOptions } from "./publications/vote/types.js";
+import type { CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
 import type {
@@ -28,6 +24,7 @@ import type {
     DecryptedChallengeMessageType,
     DecryptedChallengeRequestMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    DecryptedChallengeRequestPublication,
     DecryptedChallengeVerificationMessageType
 } from "./pubsub-messages/types.js";
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
@@ -47,7 +44,7 @@ export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
 export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdateSchema>;
 
-export type PublicationPubsubMessage = CommentPubsubMessagePublication | VotePubsubMessagePublication | CommentEditPubsubMessagePublication;
+export type PublicationPubsubMessage = NonNullable<DecryptedChallengeRequestPublication[keyof DecryptedChallengeRequestPublication]>;
 
 // creating a new local publication
 export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;
@@ -62,7 +59,7 @@ export type AuthorPubsubJsonType = AuthorPubsubType & { shortAddress: string };
 
 export type AuthorWithOptionalCommentUpdateJson = AuthorTypeWithCommentUpdate & { shortAddress: string };
 
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate" | "commentmoderation";
+export type PublicationTypeName = keyof DecryptedChallengeRequestPublication; // Publications published by authors over pubsub, not subplebbits
 
 export type NativeFunctions = {
     fetch: typeof fetch;
@@ -147,6 +144,7 @@ export interface PublicationEvents {
 export interface PlebbitEvents {
     error: (error: PlebbitError) => void;
     subplebbitschange: (listOfSubplebbits: string[]) => void;
+    settingschange: (newSettings: ParsedPlebbitOptions) => void;
 }
 
 export interface GenericClientEvents<T extends string> {

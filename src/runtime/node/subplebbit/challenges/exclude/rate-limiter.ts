@@ -1,8 +1,16 @@
 import QuickLRU from "quick-lru";
 import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
-import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
+import type {
+    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+} from "../../../../../pubsub-messages/types.js";
 import type { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
 import { RateLimiter } from "limiter-es6-compat";
+import {
+    derivePublicationFromChallengeRequest,
+    isRequestPubsubPublicationOfPost,
+    isRequestPubsubPublicationOfReply
+} from "../../../../../util.js";
 type PublicationType = "post" | "reply" | "vote";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
@@ -10,14 +18,14 @@ const rateLimiters = new QuickLRU<string, RateLimiter>({ maxSize: 50000 });
 
 const getRateLimiterName = (
     exclude: Exclude,
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"]
 ) => `${publication.author.address}-${exclude.rateLimit}-${publicationType}-${challengeSuccess}`;
 
 const getOrCreateRateLimiter = (
     exclude: Exclude,
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"]
 ) => {
@@ -35,7 +43,7 @@ const getOrCreateRateLimiter = (
 
 const addFilteredRateLimiter = (
     exclude: Exclude,
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     publicationType: PublicationType,
     challengeSuccess: ChallengeResult["success"],
     filteredRateLimiters: Record<string, RateLimiter>
@@ -50,32 +58,37 @@ const addFilteredRateLimiter = (
 
 const getRateLimitersToTest = (
     exclude: Exclude,
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     challengeSuccess: ChallengeResult["success"]
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
-    if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
+    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
-    if (testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
+    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
-    if (testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
+    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;
 };
 
-const testRateLimit = (exclude: Exclude, publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"]) => {
+const testRateLimit = (
+    exclude: Exclude,
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+) => {
     if (
         exclude?.rateLimit === undefined ||
-        (exclude.post === true && !isPost(publication)) ||
-        (exclude.reply === true && !isReply(publication)) ||
-        (exclude.vote === true && !isVote(publication)) ||
-        (exclude.post === false && isPost(publication)) ||
-        (exclude.reply === false && isReply(publication)) ||
-        (exclude.vote === false && isVote(publication))
+        (exclude.post === true && !isPost(request)) ||
+        (exclude.reply === true && !isReply(request)) ||
+        (exclude.vote === true && !isVote(request)) ||
+        (exclude.post === false && isPost(request)) ||
+        (exclude.reply === false && isReply(request)) ||
+        (exclude.vote === false && isVote(request))
     ) {
         // early exit based on exclude type and publication type
         return true;
@@ -88,7 +101,7 @@ const testRateLimit = (exclude: Exclude, publication: DecryptedChallengeRequestM
     }
 
     // check all the rate limiters that match the exclude and publication type
-    const rateLimiters = getRateLimitersToTest(exclude, publication, challengeSuccess);
+    const rateLimiters = getRateLimitersToTest(exclude, request, publication, challengeSuccess);
     // if any of the matching rate limiter is out of tokens, test failed
     for (const rateLimiter of Object.values(rateLimiters)) {
         const tokensRemaining = rateLimiter.getTokensRemaining();
@@ -100,7 +113,8 @@ const testRateLimit = (exclude: Exclude, publication: DecryptedChallengeRequestM
 
 const getRateLimitersToAddTo = (
     excludeArray: Exclude[],
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
+    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     challengeSuccess: ChallengeResult["success"]
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
@@ -109,13 +123,13 @@ const getRateLimitersToAddTo = (
         if (exclude?.rateLimit === undefined) {
             continue;
         }
-        if (isPost(publication)) {
+        if (isRequestPubsubPublicationOfPost(request)) {
             addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
         }
-        if (isReply(publication)) {
+        if (isRequestPubsubPublicationOfReply(request)) {
             addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
         }
-        if (isVote(publication)) {
+        if (request.vote) {
             addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
         }
     }
@@ -124,7 +138,7 @@ const getRateLimitersToAddTo = (
 
 const addToRateLimiter = (
     subplebbitChallenges: SubplebbitChallenge[],
-    publication: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["publication"],
+    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeSuccess: ChallengeResult["success"]
 ) => {
     if (!subplebbitChallenges) {
@@ -134,9 +148,7 @@ const addToRateLimiter = (
     if (!Array.isArray(subplebbitChallenges)) {
         throw Error(`addToRateLimiter invalid argument subplebbitChallenges '${subplebbitChallenges}' not an array`);
     }
-    if (typeof publication?.author?.address !== "string") {
-        throw Error(`addToRateLimiter invalid argument publication '${publication}'`);
-    }
+
     if (typeof challengeSuccess !== "boolean") {
         throw Error(`addToRateLimiter invalid argument challengeSuccess '${challengeSuccess}' not a boolean`);
     }
@@ -154,7 +166,8 @@ const addToRateLimiter = (
         return;
     }
 
-    const rateLimiters = getRateLimitersToAddTo(excludeArray, publication, challengeSuccess);
+    const publication = <PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest>derivePublicationFromChallengeRequest(request);
+    const rateLimiters = getRateLimitersToAddTo(excludeArray, request, publication, challengeSuccess);
     for (const rateLimiter of Object.values(rateLimiters)) {
         rateLimiter.tryRemoveTokens(1);
     }

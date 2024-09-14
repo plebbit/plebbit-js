@@ -7,9 +7,9 @@ import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMes
 import * as remeda from "remeda";
 
 // vote.signer is inherited from Publication
-class Vote extends Publication {
+class Vote extends Publication implements VotePubsubMessagePublication {
     commentCid!: VotePubsubMessagePublication["commentCid"];
-    vote!: VotePubsubMessagePublication["vote"]; // (upvote, cancel vote, downvote)
+    vote!: VotePubsubMessagePublication["vote"]; // (upvote = 1, cancel vote = 0, downvote = -1)
 
     private _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
 
