@@ -14,21 +14,17 @@ import type {
     RpcLocalSubplebbitUpdateResultType
 } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
-import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
-import type { CommentChallengeRequestToEncryptType } from "../../publications/comment/types.js";
 import type { PageIpfs } from "../../pages/types.js";
 import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
 import { PageIpfsSchema } from "../../pages/schema.js";
 import {
     CreateNewLocalSubplebbitUserOptionsSchema,
-    ListOfSubplebbitsSchema,
     SubplebbitEditOptionsSchema
 } from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
-import type { DecryptedChallengeAnswer } from "../../pubsub-messages/types.js";
-import { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
+import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
 import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
 import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
 import { PlebbitWsServerSettingsSerializedSchema, SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
@@ -37,6 +33,7 @@ import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
+import { CommentModerationChallengeRequestToEncryptSchema } from "../../publications/comment-moderation/schema.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -256,24 +253,32 @@ export default class PlebbitRpcClient {
 
     async subplebbitUpdateSubscribe(subplebbitAddress: string): Promise<number> {
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("subplebbitUpdateSubscribe", [parsedSubplebbitAddress]));
+        const subscriptionId = SubscriptionIdSchema.parse(
+            await this._webSocketClient.call("subplebbitUpdateSubscribe", [parsedSubplebbitAddress])
+        );
         this._initSubscriptionEvent(subscriptionId);
         return subscriptionId;
     }
 
-    async publishComment(commentProps: CommentChallengeRequestToEncryptType) {
+    async publishComment(commentProps: DecryptedChallengeRequest) {
         const parsedProps = CommentChallengeRequestToEncryptSchema.parse(commentProps);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [parsedProps]));
         return subscriptionId;
     }
 
-    async publishCommentEdit(commentEditProps: CommentEditChallengeRequestToEncryptType) {
+    async publishCommentEdit(commentEditProps: DecryptedChallengeRequest) {
         const parsedProps = CommentEditChallengeRequestToEncryptSchema.parse(commentEditProps);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [parsedProps]));
         return subscriptionId;
     }
 
-    async publishVote(voteProps: VoteChallengeRequestToEncryptType) {
+    async publishCommentModeration(commentModProps: DecryptedChallengeRequest) {
+        const parsedProps = CommentModerationChallengeRequestToEncryptSchema.parse(commentModProps);
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentModeration", [parsedProps]));
+        return subscriptionId;
+    }
+
+    async publishVote(voteProps: DecryptedChallengeRequest) {
         const parsedProps = VoteChallengeRequestToEncryptSchema.parse(voteProps);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [parsedProps]));
         return subscriptionId;

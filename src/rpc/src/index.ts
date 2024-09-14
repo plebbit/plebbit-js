@@ -47,6 +47,7 @@ import type {
     RpcRemoteSubplebbitType
 } from "../../subplebbit/types.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import { CommentModerationChallengeRequestToEncryptSchema } from "../../publications/comment-moderation/schema.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -161,6 +162,7 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("publishComment", this.publishComment.bind(this));
         this.rpcWebsocketsRegister("publishVote", this.publishVote.bind(this));
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
+        this.rpcWebsocketsRegister("publishCommentModeration", this.publishCommentModeration.bind(this));
         this.rpcWebsocketsRegister("publishChallengeAnswers", this.publishChallengeAnswers.bind(this));
         this.rpcWebsocketsRegister("unsubscribe", this.unsubscribe.bind(this));
 
@@ -698,6 +700,52 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             await commentEdit.publish();
+        } catch (e) {
+            this.subscriptionCleanups[connectionId][subscriptionId]();
+            throw e;
+        }
+
+        return subscriptionId;
+    }
+
+    async publishCommentModeration(params: any, connectionId: string) {
+        const publishOptions = CommentModerationChallengeRequestToEncryptSchema.parse(params[0]);
+        const subscriptionId = generateSubscriptionId();
+
+        const sendEvent = (event: string, result: any) =>
+            this.jsonRpcSendNotification({
+                method: "publishCommentModerationNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
+
+        const commentMod = await this.plebbit.createCommentModeration(publishOptions);
+        this.publishing[subscriptionId] = commentMod;
+        commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        commentMod.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        commentMod.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
+        commentMod.on("challengeverification", (challengeVerification) =>
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
+        );
+        commentMod.on("publishingstatechange", () => sendEvent("publishingstatechange", commentMod.publishingState));
+        commentMod.on("error", (error) => sendEvent("error", error));
+
+        // cleanup function
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this.publishing[subscriptionId];
+            commentMod.stop().catch((error: any) => log.error("publishCommentModeration stop error", { error, params }));
+            commentMod.removeAllListeners("challengerequest");
+            commentMod.removeAllListeners("challenge");
+            commentMod.removeAllListeners("challengeanswer");
+            commentMod.removeAllListeners("challengeverification");
+            commentMod.removeAllListeners("publishingstatechange");
+        };
+
+        // if fail, cleanup
+        try {
+            await commentMod.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
             throw e;

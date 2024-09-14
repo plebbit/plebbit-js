@@ -46,9 +46,9 @@ import * as cborg from "cborg";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessagePublication } from "./comment-edit/types.js";
-import type { VoteChallengeRequestToEncryptType, VotePubsubMessagePublication } from "./vote/types.js";
-import type { CommentChallengeRequestToEncryptType, CommentIpfsType, CommentPubsubMessagePublication } from "./comment/types.js";
+import type { CommentEditPubsubMessagePublication } from "./comment-edit/types.js";
+import type { VotePubsubMessagePublication } from "./vote/types.js";
+import type { CommentIpfsType, CommentPubsubMessagePublication } from "./comment/types.js";
 import {
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
@@ -70,6 +70,7 @@ import {
 } from "../clients/rpc-client/decode-rpc-response-util.js";
 import { PublicationPublishingState, PublicationState } from "./types.js";
 import type { SignerType } from "../signer/types.js";
+import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 
 class Publication extends TypedEmitter<PublicationEvents> {
     // Only publication props
@@ -651,23 +652,16 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         if (!this._plebbit.plebbitRpcClient) throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
         this._updateState("publishing");
+
+        const pubNameToPublishFunction: Record<PublicationTypeName, PlebbitRpcClient["publishComment"]> = {
+            comment: this._plebbit.plebbitRpcClient.publishComment,
+            vote: this._plebbit.plebbitRpcClient.publishVote,
+            commentEdit: this._plebbit.plebbitRpcClient.publishCommentEdit,
+            commentModeration: this._plebbit.plebbitRpcClient.publishCommentModeration
+        };
         try {
             // PlebbitRpcClient will take care of zod parsing for us
-            this._rpcPublishSubscriptionId =
-                this.getType() === "comment"
-                    ? await this._plebbit.plebbitRpcClient.publishComment(
-                          <CommentChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
-                      )
-                    : this.getType() === "commentEdit"
-                      ? await this._plebbit.plebbitRpcClient.publishCommentEdit(
-                            <CommentEditChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
-                        )
-                      : this.getType() === "vote"
-                        ? await this._plebbit.plebbitRpcClient.publishVote(
-                              <VoteChallengeRequestToEncryptType>this.toJSONPubsubRequestToEncrypt()
-                          )
-                        : undefined;
-                        // TODO should handle commentModeration here
+            this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()](this.toJSONPubsubRequestToEncrypt());
             if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));
@@ -684,7 +678,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .on("challengeverification", this._handleIncomingChallengeVerificationFromRpc.bind(this))
             .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
             .on("statechange", this._handleIncomingStateFromRpc.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result)); // zod here
+            .on("error", (args) => this.emit("error", args.params.result));
         this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;
     }
