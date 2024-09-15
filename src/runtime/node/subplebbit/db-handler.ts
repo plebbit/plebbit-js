@@ -925,22 +925,26 @@ export class DbHandler {
             .select("cid")
             .where("authorSignerAddress", authorSignerAddress);
         if (!Array.isArray(authorComments) || authorComments.length === 0) return {};
-        const modAuthorEdits: CommentModerationTableRow["commentModeration"]["author"][] = await this._baseTransaction(trx)(
-            TABLES.COMMENT_MODERATIONS
-        )
-            .jsonExtract("commentModeration", "$.author", "commentAuthor")
-            .select("commentAuthor")
+        //@ts-expect-error
+        const modAuthorEdits = <{ commentAuthor: CommentModerationTableRow["commentModeration"]["author"] }[]>await this._baseTransaction(
+            trx
+        )(TABLES.COMMENT_MODERATIONS)
+            .jsonExtract("commentModeration", "$.author", "commentAuthor", true)
             .whereIn(
                 "commentCid",
                 authorComments.map((c) => c.cid)
             )
             .whereNotNull("commentAuthor")
             .orderBy("id", "desc");
-        // Not 100% sure this will work
-        const banAuthor = modAuthorEdits.find((edit) => typeof edit?.banExpiresAt === "number");
-        const authorFlairByMod = modAuthorEdits.find((edit) => edit?.flair);
 
-        return { ...banAuthor, ...authorFlairByMod };
+        const banAuthor = modAuthorEdits.find(
+            (commentAuthor) => typeof commentAuthor?.commentAuthor?.banExpiresAt === "number"
+        )?.commentAuthor;
+        const authorFlairByMod = modAuthorEdits.find((commentAuthor) => commentAuthor?.commentAuthor?.flair)?.commentAuthor;
+
+        const agreggateAuthor = <Pick<SubplebbitAuthor, "banExpiresAt" | "flair">>{ ...banAuthor, ...authorFlairByMod };
+
+        return agreggateAuthor;
     }
 
     async querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined> {
