@@ -847,17 +847,16 @@ export class DbHandler {
             .first();
     }
 
-    private async _queryModCommentFlair(
-        comment: Pick<CommentsTableRow, "cid">,
-        trx?: Transaction
-    ): Promise<Pick<CommentModerationTableRow["commentModeration"], "flair"> | undefined> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-            .jsonExtract("commentModeration", "$.flair", "flair")
-            .select("flair")
-            .where("commentCid", comment.cid)
-            .whereNotNull("flair")
-            .orderBy("id", "desc")
-            .first();
+    private async _queryModCommentFlair(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction) {
+        const res = <Required<Pick<CommentModerationTableRow["commentModeration"], "flair">> | undefined>(
+            await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+                .jsonExtract("commentModeration", "$.flair", "flair", true)
+                .where("commentCid", comment.cid)
+                .whereNotNull("flair")
+                .orderBy("id", "desc")
+                .first()
+        );
+        return res;
     }
 
     private async _queryLastChildCidAndLastReplyTimestamp(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction) {

@@ -919,7 +919,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const parent = await this._dbHandler.queryComment(parentCid);
             if (!parent) return messages.ERR_PUBLICATION_PARENT_DOES_NOT_EXIST_IN_SUB;
 
-            const parentFlags = await this._dbHandler.queryCommentFlags(parentCid);
+            const parentFlags = await this._dbHandler.queryCommentFlagsSetByMod(parentCid);
 
             if (parentFlags.removed && !request.commentModeration)
                 // not allowed to vote or reply under removed comments
@@ -929,7 +929,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             if (isParentDeletedQueryRes?.deleted && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_PARENT_HAS_BEEN_DELETED; // not allowed to vote or reply under deleted comments
 
-            const postFlags = await this._dbHandler.queryCommentFlags(parent.postCid);
+            const postFlags = await this._dbHandler.queryCommentFlagsSetByMod(parent.postCid);
 
             if (postFlags.removed && !request.commentModeration) return messages.ERR_SUB_PUBLICATION_POST_HAS_BEEN_REMOVED;
 
