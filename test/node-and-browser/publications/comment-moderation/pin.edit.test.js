@@ -27,10 +27,10 @@ const removeAllPins = async (allComments, plebbit) => {
             .filter((comment) => comment.pinned)
             .map(async (comment) =>
                 publishWithExpectedResult(
-                    await plebbit.createCommentEdit({
+                    await plebbit.createCommentModeration({
                         subplebbitAddress: comment.subplebbitAddress,
                         commentCid: comment.cid,
-                        pinned: false,
+                        commentModeration: { pinned: false },
                         signer: roles[2].signer
                     }),
                     true
@@ -69,32 +69,29 @@ describe(`Pinning posts`, async () => {
     });
 
     it(`Author can't pin their own post`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            reason: "To pin a post",
-            pinned: true,
+            commentModeration: { reason: "To pin a post", pinned: true },
             signer: postToPin.signer
         });
-        await publishWithExpectedResult(pinEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
+        await publishWithExpectedResult(pinEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
     it(`Regular author can't pin another author comment`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            reason: "To pin a post",
-            pinned: true,
+            commentModeration: { reason: "To pin a post", pinned: true },
             signer: await plebbit.createSigner()
         });
-        await publishWithExpectedResult(pinEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+        await publishWithExpectedResult(pinEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
 
     it(`Mod can pin a post`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToPin.subplebbitAddress,
             commentCid: postToPin.cid,
-            reason: "To pin a post",
-            pinned: true,
+            commentModeration: { reason: "To pin a post", pinned: true },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(pinEdit, true);
@@ -132,11 +129,10 @@ describe(`Pinning posts`, async () => {
     });
 
     it(`Mod can pin another post`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: secondPostToPin.subplebbitAddress,
             commentCid: secondPostToPin.cid,
-            reason: "To pin the second post",
-            pinned: true,
+            commentModeration: { reason: "To pin the second post", pinned: true },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(pinEdit, true);
@@ -180,11 +176,10 @@ describe(`Pinning posts`, async () => {
     });
 
     it(`Mod can unpin a post`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: secondPostToPin.subplebbitAddress,
             commentCid: secondPostToPin.cid,
-            reason: "To unpin the second post",
-            pinned: false,
+            commentModeration: { reason: "To unpin the second post", pinned: false },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(pinEdit, true);
@@ -270,11 +265,10 @@ describe(`Pinning replies`, async () => {
     after(async () => post.stop());
 
     it(`Mod can pin reply`, async () => {
-        const pinEdit = await plebbit.createCommentEdit({
+        const pinEdit = await plebbit.createCommentModeration({
             subplebbitAddress: replyToPin.subplebbitAddress,
             commentCid: replyToPin.cid,
-            reason: "To pin the reply",
-            pinned: true,
+            commentModeration: { reason: "To pin the reply", pinned: true },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(pinEdit, true);

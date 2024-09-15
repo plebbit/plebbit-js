@@ -33,11 +33,10 @@ describe(`Removing post`, async () => {
     });
 
     it(`Mod can mark an author post as removed`, async () => {
-        const removeEdit = await plebbit.createCommentEdit({
+        const removeEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            reason: "To remove a post",
-            removed: true,
+            commentModeration: { reason: "To remove a post", removed: true },
             signer: roles[2].signer // Mod role
         });
         await publishWithExpectedResult(removeEdit, true);
@@ -93,22 +92,20 @@ describe(`Removing post`, async () => {
 
     it(`Author of post can't remove it`, async () => {
         const postToBeRemoved = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        const removeEdit = await plebbit.createCommentEdit({
+        const removeEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToBeRemoved.subplebbitAddress,
             commentCid: postToBeRemoved.cid,
-            reason: "To remove a post" + Date.now(),
-            removed: true,
+            commentModeration: { reason: "To remove a post" + Date.now(), removed: true },
             signer: postToBeRemoved.signer
         });
-        await publishWithExpectedResult(removeEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
+        await publishWithExpectedResult(removeEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
 
     it(`Mod can unremove a post`, async () => {
-        const unremoveEdit = await plebbit.createCommentEdit({
+        const unremoveEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToRemove.subplebbitAddress,
             commentCid: postToRemove.cid,
-            reason: "To unremove a post",
-            removed: false,
+            commentModeration: { reason: "To unremove a post", removed: false },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unremoveEdit, true);
@@ -158,11 +155,10 @@ describe(`Mods removing their own posts`, async () => {
     });
 
     it(`Mods can remove their own posts`, async () => {
-        const removeEdit = await plebbit.createCommentEdit({
+        const removeEdit = await plebbit.createCommentModeration({
             subplebbitAddress: modPost.subplebbitAddress,
             commentCid: modPost.cid,
-            reason: "For mods to remove their own post",
-            removed: true,
+            commentModeration: { reason: "For mods to remove their own post", removed: true },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(removeEdit, true);
@@ -194,11 +190,10 @@ describe(`Removing reply`, async () => {
     });
 
     it(`Mod can remove a reply`, async () => {
-        const removeEdit = await plebbit.createCommentEdit({
+        const removeEdit = await plebbit.createCommentModeration({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            reason: "To remove a reply",
-            removed: true,
+            commentModeration: { reason: "To remove a reply", removed: true },
             signer: roles[2].signer // Mod role
         });
         await publishWithExpectedResult(removeEdit, true);
@@ -250,21 +245,19 @@ describe(`Removing reply`, async () => {
     });
 
     it(`Author can't unremove a reply`, async () => {
-        const unremoveEdit = await plebbit.createCommentEdit({
+        const unremoveEdit = await plebbit.createCommentModeration({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            reason: "To unremove a reply by author" + Date.now(),
-            removed: false,
+            commentModeration: { reason: "To unremove a reply by author" + Date.now(), removed: false },
             signer: replyToBeRemoved.signer
         });
         await publishWithExpectedResult(unremoveEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
     });
     it("Mod can unremove a reply", async () => {
-        const unremoveEdit = await plebbit.createCommentEdit({
+        const unremoveEdit = await plebbit.createCommentModeration({
             subplebbitAddress: replyToBeRemoved.subplebbitAddress,
             commentCid: replyToBeRemoved.cid,
-            reason: "To unremove a reply",
-            removed: false,
+            commentModeration: { reason: "To unremove a reply", removed: false },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unremoveEdit, true);
