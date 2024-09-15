@@ -18,13 +18,14 @@ const roles = [
 ];
 
 describe(`Banning authors`, async () => {
-    let plebbit, commentToBeBanned, authorBanExpiresAt;
+    let plebbit, commentToBeBanned, authorBanExpiresAt, reasonOfBan;
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
         commentToBeBanned = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
         await commentToBeBanned.update();
         authorBanExpiresAt = timestamp() + 10; // Ban stays for 10 seconds
+        reasonOfBan = "Just so " + Date.now();
     });
 
     after(async () => {
@@ -32,14 +33,17 @@ describe(`Banning authors`, async () => {
     });
 
     it(`Mod can ban an author for a comment`, async () => {
-        const banCommentEdit = await plebbit.createCommentEdit({
+        const banCommentMod = await plebbit.createCommentModeration({
             subplebbitAddress: commentToBeBanned.subplebbitAddress,
             commentCid: commentToBeBanned.cid,
-            commentAuthor: { banExpiresAt: authorBanExpiresAt },
+            commentModeration: {
+                author: { banExpiresAt: authorBanExpiresAt },
+                reason: reasonOfBan
+            },
             signer: roles[2].signer
         });
-        expect(banCommentEdit.commentAuthor.banExpiresAt).to.equal(authorBanExpiresAt);
-        await publishWithExpectedResult(banCommentEdit, true);
+        expect(banCommentMod.commentModeration.author.banExpiresAt).to.equal(authorBanExpiresAt);
+        await publishWithExpectedResult(banCommentMod, true);
     });
 
     it(`Banned author can't publish`, async () => {
@@ -52,18 +56,19 @@ describe(`Banning authors`, async () => {
     it(`A new CommentUpdate with comment.author.banExpiresAt is published`, async () => {
         await resolveWhenConditionIsTrue(commentToBeBanned, () => typeof commentToBeBanned.author.subplebbit?.banExpiresAt === "number");
         expect(commentToBeBanned.author.subplebbit.banExpiresAt).to.equals(authorBanExpiresAt);
+        expect(commentToBeBanned.reason).to.equal(reasonOfBan);
     });
 
     it(`Regular author can't ban another author`, async () => {
         const tryToBanComment = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
 
-        const banCommentEdit = await plebbit.createCommentEdit({
+        const banCommentEdit = await plebbit.createCommentModeration({
             subplebbitAddress: tryToBanComment.subplebbitAddress,
             commentCid: tryToBanComment.cid,
-            commentAuthor: { banExpiresAt: authorBanExpiresAt + 1000 },
+            commentModeration: { author: { banExpiresAt: authorBanExpiresAt + 1000 } },
             signer: await plebbit.createSigner()
         });
-        await publishWithExpectedResult(banCommentEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+        await publishWithExpectedResult(banCommentEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
 
     it(`Banned author can publish after authorBanExpiresAt ends`, async () => {

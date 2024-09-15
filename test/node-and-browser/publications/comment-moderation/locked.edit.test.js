@@ -38,41 +38,40 @@ describe(`Locking posts`, async () => {
         await sub.stop();
     });
     it(`Author can't lock their own post`, async () => {
-        const lockedEdit = await plebbit.createCommentEdit({
+        const lockedEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
-            locked: true,
+            commentModeration: { locked: true },
             signer: postToBeLocked.signer
         });
-        await publishWithExpectedResult(lockedEdit, false, messages.ERR_SUB_COMMENT_EDIT_AUTHOR_INVALID_FIELD);
+        await publishWithExpectedResult(lockedEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
     it(`Regular author can't lock another author comment`, async () => {
-        const lockedEdit = await plebbit.createCommentEdit({
+        const lockedEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
-            locked: true,
+            commentModeration: { locked: true },
             signer: await plebbit.createSigner()
         });
-        await publishWithExpectedResult(lockedEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+        await publishWithExpectedResult(lockedEdit, false, messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR);
     });
 
     it(`Mod Can't lock a reply`, async () => {
         // This is prior to locking the post
-        const lockedEdit = await plebbit.createCommentEdit({
+        const lockedEdit = await plebbit.createCommentModeration({
             subplebbitAddress: replyUnderPostToBeLocked.subplebbitAddress,
             commentCid: replyUnderPostToBeLocked.cid,
-            locked: true,
+            commentModeration: { locked: true },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(lockedEdit, false, messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY);
     });
 
     it(`Mod can lock an author post`, async () => {
-        const lockedEdit = await plebbit.createCommentEdit({
+        const lockedEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
-            locked: true,
-            reason: "To lock an author post",
+            commentModeration: { locked: true, reason: "To lock an author post" },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(lockedEdit, true);
@@ -108,11 +107,10 @@ describe(`Locking posts`, async () => {
     });
 
     it(`Mod can lock their own post`, async () => {
-        const lockedEdit = await plebbit.createCommentEdit({
+        const lockedEdit = await plebbit.createCommentModeration({
             subplebbitAddress: modPost.subplebbitAddress,
             commentCid: modPost.cid,
-            locked: true,
-            reason: "To lock a mod post",
+            commentModeration: { locked: true, reason: "To lock a mod post" },
             signer: modPost.signer
         });
         await publishWithExpectedResult(lockedEdit, true);
@@ -148,11 +146,10 @@ describe(`Locking posts`, async () => {
     });
 
     it(`Mod can unlock a post`, async () => {
-        const unlockEdit = await plebbit.createCommentEdit({
+        const unlockEdit = await plebbit.createCommentModeration({
             subplebbitAddress: postToBeLocked.subplebbitAddress,
             commentCid: postToBeLocked.cid,
-            locked: false,
-            reason: "To unlock an author post",
+            commentModeration: { locked: false, reason: "To unlock an author post" },
             signer: roles[2].signer
         });
         await publishWithExpectedResult(unlockEdit, true);
