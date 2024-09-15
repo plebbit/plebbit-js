@@ -175,7 +175,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     // TODO change this to toJSONPubsubMessageToEncrypt
     toJSONPubsubRequestToEncrypt(): DecryptedChallengeRequest {
         return {
-            [this.getType()]: this.toJSONPubsubMessagePublication,
+            [this.getType()]: this.toJSONPubsubMessagePublication(),
             challengeAnswers: this.challengeAnswers,
             challengeCommentCids: this.challengeCommentCids
         };
