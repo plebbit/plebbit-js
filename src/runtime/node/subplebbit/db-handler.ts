@@ -817,14 +817,16 @@ export class DbHandler {
         return res;
     }
 
-    async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
+    async queryCommentFlagsSetByMod(
+        cid: string,
+        trx?: Transaction
+    ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
         const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
             {},
             ...(await Promise.all(
                 ["spoiler", "pinned", "locked", "removed"].map((field) =>
                     this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-                        .jsonExtract("commentModeration", `$.${field}`, field)
-                        .select(field)
+                        .jsonExtract("commentModeration", `$.${field}`, field, true)
                         .where("commentCid", cid)
                         .whereNotNull(field)
                         .orderBy("id", "desc")
@@ -887,7 +889,7 @@ export class DbHandler {
             this._queryLatestAuthorEdit(comment.cid, comment.authorSignerAddress, trx),
             this._queryCommentCounts(comment.cid, trx),
             this._queryLatestModeratorReason(comment, trx),
-            this.queryCommentFlags(comment.cid, trx),
+            this.queryCommentFlagsSetByMod(comment.cid, trx),
             this._queryModCommentFlair(comment, trx),
             this._queryLastChildCidAndLastReplyTimestamp(comment, trx)
         ]);
