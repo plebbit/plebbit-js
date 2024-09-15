@@ -34,7 +34,7 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
             spoiler: true,
             signer: await plebbit.createSigner()
         });
-        await publishWithExpectedResult(spoilerEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+        await publishWithExpectedResult(spoilerEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
     });
 
     it(`Author can mark their own comment as spoiler`, async () => {
@@ -109,62 +109,6 @@ describe(`Authors can mark their own comment as spoiler`, async () => {
         expect(authorPost.reason).to.be.undefined;
 
         expect(authorPost.spoiler).to.be.false;
-    });
-});
-
-describe(`Mods marking an author comment as spoiler`, async () => {
-    let plebbit, randomPost;
-
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-        randomPost = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
-        randomPost.update();
-    });
-
-    after(async () => {
-        await randomPost.stop();
-    });
-
-    it(`Mod can mark an author comment as spoiler`, async () => {
-        const modSpoilerEdit = await plebbit.createCommentEdit({
-            subplebbitAddress: randomPost.subplebbitAddress,
-            commentCid: randomPost.cid,
-            spoiler: true,
-            signer: roles[2].signer,
-            reason: "Mod marking an author comment as spoiler"
-        });
-        await publishWithExpectedResult(modSpoilerEdit, true);
-    });
-
-    it(`A new CommentUpdate is published with spoiler=true`, async () => {
-        await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === true);
-        expect(randomPost._rawCommentUpdate.reason).to.equal("Mod marking an author comment as spoiler");
-        expect(randomPost._rawCommentUpdate.spoiler).to.be.true;
-        expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
-
-        expect(randomPost.reason).to.equal("Mod marking an author comment as spoiler");
-        expect(randomPost.spoiler).to.be.true;
-    });
-
-    it(`Mod can mark unspoiler author comment `, async () => {
-        const unspoilerEdit = await plebbit.createCommentEdit({
-            subplebbitAddress: randomPost.subplebbitAddress,
-            commentCid: randomPost.cid,
-            spoiler: false,
-            signer: roles[2].signer,
-            reason: "Mod unspoilering an author comment"
-        });
-        await publishWithExpectedResult(unspoilerEdit, true);
-    });
-
-    it(`A new CommentUpdate is published with spoiler=false`, async () => {
-        await resolveWhenConditionIsTrue(randomPost, () => randomPost.spoiler === false);
-        expect(randomPost._rawCommentUpdate.reason).to.equal("Mod unspoilering an author comment");
-        expect(randomPost._rawCommentUpdate.spoiler).to.be.false;
-        expect(randomPost._rawCommentUpdate.edit).to.be.undefined;
-
-        expect(randomPost.reason).to.equal("Mod unspoilering an author comment");
-        expect(randomPost.spoiler).to.be.false;
     });
 });
 
