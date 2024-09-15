@@ -40,7 +40,7 @@ describe("Editing comment.content", async () => {
             content: editedText,
             signer: signers[7] // different than the signer of the original comment
         });
-        await publishWithExpectedResult(commentEdit, false, messages.ERR_UNAUTHORIZED_COMMENT_EDIT);
+        await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
     });
 
     it("Original Author can edit content", async function () {
@@ -178,7 +178,7 @@ describe("Editing comment.content", async () => {
                 content: editedText,
                 signer: roleTest.signer
             });
-            await publishWithExpectedResult(commentEdit, false, messages.ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD);
+            await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_CAN_NOT_EDIT_COMMENT_IF_NOT_ORIGINAL_AUTHOR);
         })
     );
 });
