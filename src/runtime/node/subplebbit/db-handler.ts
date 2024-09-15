@@ -256,6 +256,7 @@ export class DbHandler {
             table.json("author").notNullable();
             table.json("signature").notNullable();
             table.text("protocolVersion").notNullable();
+            table.text("subplebbitAddress").notNullable();
             table.increments("id"); // Used for sorts
 
             table.timestamp("timestamp").checkPositive().notNullable();
@@ -281,6 +282,7 @@ export class DbHandler {
             table.text("modSignerAddress").notNullable(); // calculated from commentModerationPublication.signatuer.publicKey
             table.text("protocolVersion").notNullable(); // from commentModerationPublication.protocolVersion
             table.increments("id"); // Used for sorts
+            table.text("subplebbitAddress").notNullable();
 
             table.timestamp("timestamp").checkPositive().notNullable(); // from commentModerationPublication.timestamp
             table.json("commentModeration").notNullable(); // commentModerationPublication.commentModeration, should take extra props
