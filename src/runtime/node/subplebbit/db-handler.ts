@@ -805,17 +805,16 @@ export class DbHandler {
         return latestCommentEdit;
     }
 
-    private async _queryLatestModeratorReason(
-        comment: Pick<CommentsTableRow, "cid">,
-        trx?: Transaction
-    ): Promise<Pick<CommentModerationTableRow["commentModeration"], "reason"> | undefined> {
-        return this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
-            .jsonExtract("commentModeration", "$.reason", "reason")
-            .select("reason")
-            .where("commentCid", comment.cid)
-            .whereNotNull("reason")
-            .orderBy("id", "desc")
-            .first();
+    private async _queryLatestModeratorReason(comment: Pick<CommentsTableRow, "cid">, trx?: Transaction) {
+        const res = <Required<Pick<CommentModerationTableRow["commentModeration"], "reason">> | undefined>(
+            await this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+                .jsonExtract("commentModeration", "$.reason", "reason", true)
+                .where("commentCid", comment.cid)
+                .whereNotNull("reason")
+                .orderBy("id", "desc")
+                .first()
+        );
+        return res;
     }
 
     async queryCommentFlags(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
