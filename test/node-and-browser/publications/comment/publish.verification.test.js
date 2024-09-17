@@ -132,9 +132,9 @@ describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async ()
         await publishWithExpectedResult(mockPost, false, "zxc");
     });
 
-    it(`Subs respond with error if an author submits a publication with invalid json`, async () => {
+    it(`Subs respond with error if an author submits an encrypted field with invalid json`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
-        post.toJSONPubsubMessage = () => "<html>dwad";
+        post.toJSONPubsubRequestToEncrypt = () => "<html>dwad"; // Publication will encrypt this invalid json
         post._validateSignature = async () => {}; // Disable signature validation before publishing
 
         disableZodValidationOfPublication(post);

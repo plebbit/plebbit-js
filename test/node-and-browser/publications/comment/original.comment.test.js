@@ -28,18 +28,18 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`comment.original from comment.update() after CommentUpdate`, async () => {
-            const cid = (await plebbit.getSubplebbit(signers[0].address)).posts.pages.hot.comments[0].cid;
+            const originalComment = await publishRandomPost(signers[0].address, plebbit);
+            const cid = originalComment.cid;
             const comment = await plebbit.createComment({ cid });
             await comment.update();
             await resolveWhenConditionIsTrue(comment, () => typeof comment.updatedAt === "number");
-            expect(comment.original.author.address).to.equal(comment.author.address);
+            expect(comment.original.author.address).to.equal(originalComment.author.address);
             expect(comment.original.author.subplebbit).to.be.undefined;
-            expect(comment.original.content).to.equal(comment.content);
+            expect(comment.original.content).to.equal(originalComment.content);
             expect(comment.original.protocolVersion).to.be.a("string");
             expect(comment.original.signature).to.be.undefined;
 
             await comment.stop();
         });
-        // describe(`comment.original from comment in pages`);
     });
 });

@@ -38,7 +38,7 @@ getRemotePlebbitConfigs().map((config) => {
                     false,
                     messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
                 );
-                expect(post._publishedChallengeRequests[0].publication.extraProp).to.equal(extraProps.extraProp);
+                expect(post._publishedChallengeRequests[0].comment.extraProp).to.equal(extraProps.extraProp);
             });
 
             it(`A CommentPubsub with an extra field as a reserved field name will be rejected`, async () => {
@@ -47,7 +47,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await setExtraPropOnCommentAndSign(post, extraProps, true);
 
                 await publishWithExpectedResult(post, false, messages.ERR_COMMENT_HAS_RESERVED_FIELD);
-                expect(post._publishedChallengeRequests[0].publication.cid).to.equal(extraProps.cid);
+                expect(post._publishedChallengeRequests[0].comment.cid).to.equal(extraProps.cid);
             });
 
             it(`A CommentPubsub with an extra field included in signature.signedPropertyNames will be accepted`, async () => {
@@ -58,8 +58,8 @@ getRemotePlebbitConfigs().map((config) => {
                 let challengeVerification;
                 post.once("challengeverification", (_verification) => (challengeVerification = _verification));
                 await publishWithExpectedResult(post, true);
-                expect(post._publishedChallengeRequests[0].publication.extraProp).to.equal(extraProps.extraProp);
-                expect(challengeVerification.publication.extraProp).to.equal(extraProps.extraProp);
+                expect(post._publishedChallengeRequests[0].comment.extraProp).to.equal(extraProps.extraProp);
+                expect(challengeVerification.comment.extraProp).to.equal(extraProps.extraProp);
                 expect(post.extraProp).to.equal(extraProps.extraProp);
             });
         });
@@ -116,7 +116,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await setExtraPropOnCommentAndSign(post, { author: { ...post._pubsubMsgToPublish.author, subplebbit: "random" } }, true);
 
                 await publishWithExpectedResult(post, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
-                expect(post._publishedChallengeRequests[0].publication.author.subplebbit).to.equal("random");
+                expect(post._publishedChallengeRequests[0].comment.author.subplebbit).to.equal("random");
             });
             it(`Publishing with extra prop for author should succeed`, async () => {
                 const post = await generateMockPost(subplebbitAddress, plebbit);
@@ -124,7 +124,7 @@ getRemotePlebbitConfigs().map((config) => {
                 await setExtraPropOnCommentAndSign(post, { author: { ...post._pubsubMsgToPublish.author, ...extraProps } }, true);
 
                 await publishWithExpectedResult(post, true);
-                expect(post._publishedChallengeRequests[0].publication.author.extraProp).to.equal(extraProps.extraProp);
+                expect(post._publishedChallengeRequests[0].comment.author.extraProp).to.equal(extraProps.extraProp);
                 expect(post.author.extraProp).to.equal(extraProps.extraProp);
             });
         });

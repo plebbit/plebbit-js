@@ -8,7 +8,9 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 const mathCliSubplebbitAddress = signers[1].address;
 
 const getExpectedSignedPropertyNames = (msg) =>
-    remeda.keys.strict(remeda.omit(msg, ["signature", "publication", "challenges", "challengeAnswers", "challengeCommentCids"])).sort();
+    remeda.keys
+        .strict(remeda.omit(msg, ["signature", "comment", "commentUpdate", "challenges", "challengeAnswers", "challengeCommentCids"]))
+        .sort();
 
 describe("Validate props of publication Pubsub messages", async () => {
     let plebbit;
@@ -21,7 +23,7 @@ describe("Validate props of publication Pubsub messages", async () => {
 
         comment.publish();
         const request = await new Promise((resolve) => comment.once("challengerequest", resolve));
-        expect(deterministicStringify(request.publication)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
+        expect(deterministicStringify(request.comment)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
         expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(request.challengeRequestId.length).to.equal(38);
         expect(request.type).to.equal("CHALLENGEREQUEST");
@@ -116,6 +118,9 @@ describe("Validate props of publication Pubsub messages", async () => {
         expect(challengeVerifcation.challengeSuccess).to.be.false;
         expect(challengeVerifcation.encrypted).to.be.undefined;
         expect(challengeVerifcation.publication).to.be.undefined;
+        expect(challengeVerifcation.comment).to.be.undefined;
+        expect(challengeVerifcation.commentUpdate).to.be.undefined;
+
         expect(challengeVerifcation.reason).to.be.undefined;
         expect(challengeVerifcation.protocolVersion).to.be.a("string");
         expect(challengeVerifcation.signature).to.be.a("object");
@@ -146,8 +151,10 @@ describe("Validate props of publication Pubsub messages", async () => {
         expect(challengeVerifcation.encrypted.iv.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.encrypted.tag.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.encrypted.type).to.equal("ed25519-aes-gcm");
-        expect(challengeVerifcation.publication).to.be.a("object");
-        expect(challengeVerifcation.publication.author.subplebbit).to.be.a("object");
+        expect(challengeVerifcation.publication).to.be.undefined;
+        expect(challengeVerifcation.comment).to.be.a("object");
+        expect(challengeVerifcation.commentUpdate).to.be.a("object");
+        expect(challengeVerifcation.commentUpdate.author.subplebbit).to.be.a("object");
         expect(challengeVerifcation.reason).to.be.undefined;
         expect(challengeVerifcation.protocolVersion).to.be.a("string");
         expect(challengeVerifcation.signature).to.be.a("object");

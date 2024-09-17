@@ -155,7 +155,10 @@ describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, 
             const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
             expect(challengeVerification.challengeSuccess).to.be.true;
             expect(challengeVerification.reason).to.be.undefined;
-            expect(challengeVerification.publication).to.be.a("object");
+            expect(challengeVerification.publication).to.be.undefined;
+            expect(challengeVerification.comment).to.be.a("object");
+            expect(challengeVerification.commentUpdate).to.be.a("object");
+
             await post.stop();
         });
     });

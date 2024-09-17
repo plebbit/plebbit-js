@@ -32,7 +32,7 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         const challengeRequestPromise = new Promise((resolve) => subplebbit.once("challengerequest", resolve));
         await comment.publish();
         const request = await challengeRequestPromise;
-        expect(deterministicStringify(request.publication)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
+        expect(deterministicStringify(request.comment)).to.equal(deterministicStringify(comment.toJSONPubsubMessagePublication()));
         expect(request.challengeRequestId.constructor.name).to.equal("Uint8Array");
         expect(request.challengeRequestId.length).to.equal(38);
         expect(request.type).to.equal("CHALLENGEREQUEST");
@@ -178,8 +178,10 @@ describe("Validate props of subplebbit Pubsub messages", async () => {
         expect(challengeVerifcation.encrypted.iv.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.encrypted.tag.constructor.name).to.equal("Uint8Array");
         expect(challengeVerifcation.encrypted.type).to.equal("ed25519-aes-gcm");
-        expect(challengeVerifcation.publication).to.be.a("object");
-        expect(challengeVerifcation.publication.author.subplebbit).to.be.a("object");
+        expect(challengeVerifcation.publication).to.be.undefined;
+        expect(challengeVerifcation.comment).to.be.a("object");
+        expect(challengeVerifcation.commentUpdate).to.be.a("object");
+        expect(challengeVerifcation.commentUpdate.author.subplebbit).to.be.a("object");
         expect(challengeVerifcation.reason).to.be.undefined;
         expect(challengeVerifcation.protocolVersion).to.be.a("string");
         expect(challengeVerifcation.signature).to.be.a("object");
