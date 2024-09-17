@@ -684,6 +684,28 @@ export async function setExtraPropOnCommentEditAndSign(
     Object.assign(commentEdit, extraProps);
 }
 
+export async function setExtraPropOnCommentModerationAndSign(
+    commentModeration: CommentEdit,
+    extraProps: any,
+    includeExtraPropInSignedPropertyNames: boolean
+) {
+    const log = Logger("plebbit-js:test-util:setExtraPropOnCommentModerationAndSign");
+
+    let newPubsubPublicationWithExtraProp = commentModeration.toJSONPubsubMessagePublication();
+    newPubsubPublicationWithExtraProp = remeda.mergeDeep(newPubsubPublicationWithExtraProp, extraProps);
+    if (includeExtraPropInSignedPropertyNames)
+        newPubsubPublicationWithExtraProp.signature = await _signJson(
+            [...commentModeration.signature.signedPropertyNames, ...Object.keys(extraProps)],
+            cleanUpBeforePublishing(newPubsubPublicationWithExtraProp),
+            commentModeration.signer!,
+            log
+        );
+    commentModeration.toJSONPubsubMessagePublication = () => newPubsubPublicationWithExtraProp;
+
+    disableZodValidationOfPublication(commentModeration);
+
+    Object.assign(commentModeration, newPubsubPublicationWithExtraProp);
+}
 export async function setExtraPropOnChallengeRequestAndSign(
     publication: Publication,
     extraProps: Object,
