@@ -316,6 +316,8 @@ export class DbHandler {
             );
 
             await this._knex.schema.dropTableIfExists(TABLES.COMMENT_UPDATES); // To trigger an update
+            if (currentDbVersion <= 16 && (await this._knex.schema.hasTable(TABLES.COMMENT_EDITS)))
+                await this._moveCommentEditsToModAuthorTables();
         }
 
         const createTableFunctions = [
@@ -333,11 +335,7 @@ export class DbHandler {
             if (!tableExists) {
                 log(`Table ${tableName} does not exist. Will create schema`);
                 await createTableFunctions[i].bind(this)(tableName);
-            } else if (tableName === TABLES.COMMENT_EDITS && currentDbVersion < 17) {
-                // we need to migrate mod edits to commentModerations table
-                await this._moveCommentEditsToModAuthorTables();
-            }
-            if (tableExists && needToMigrate) {
+            } else if (tableExists && needToMigrate) {
                 // We need to update the schema of the currently existing table
                 log(`Migrating table ${tableName} to new schema`);
                 const tempTableName = `${tableName}${env.DB_VERSION}`;
@@ -351,7 +349,6 @@ export class DbHandler {
 
         if (needToMigrate) {
             if (currentDbVersion <= 15) await this._purgeCommentsWithInvalidSchemaOrSignature();
-            if (currentDbVersion <= 16) await this._moveCommentEditsToModAuthorTables();
             await this._knex.raw("PRAGMA foreign_keys = ON");
             await this._knex.raw(`PRAGMA user_version = ${env.DB_VERSION}`);
             await this._knex.raw(`VACUUM;`); // make sure we're not using extra space
@@ -453,14 +450,25 @@ export class DbHandler {
     private async _moveCommentEditsToModAuthorTables() {
         // Prior to db version 17, all comment edits, author and mod's were in the same table
         // code below will split them to their separate tables
-        const modCommentEdits = await this._knex(TABLES.COMMENT_EDITS).where({ isAuthorEdit: false });
+        await this._createCommentModerationsTable(TABLES.COMMENT_MODERATIONS);
+        const allCommentEdits = await this._knex(TABLES.COMMENT_EDITS);
         const commentModerationFields = remeda.keys.strict(ModeratorOptionsSchema.shape);
+        const modEditsIds: number[] = [];
+        for (const commentEdit of allCommentEdits) {
+            const commentToBeEdited = await this.queryComment(commentEdit.commentCid);
+            if (!commentToBeEdited) throw Error("Failed to compute isAuthorEdit column");
+            const editHasBeenSignedByOriginalAuthor = commentEdit.signature.publicKey === commentToBeEdited.signature.publicKey;
+            if (editHasBeenSignedByOriginalAuthor) continue;
 
-        for (const modCommentEdit of modCommentEdits) {
-            const baseProps = remeda.pick(modCommentEdit, [
+            const modSignerAddress = await getPlebbitAddressFromPublicKey(commentEdit.signature.publicKey);
+
+            // We're only interested in mod edits
+
+            const baseProps = remeda.pick(commentEdit, [
                 "extraProps",
                 "insertedAt",
                 "id",
+                "subplebbitAddress",
                 "commentCid",
                 "author",
                 "signature",
@@ -470,15 +478,22 @@ export class DbHandler {
 
             const moderationRow = {
                 ...baseProps,
-                modSignerAddress: modCommentEdit.authorSignerAddress,
+                modSignerAddress,
                 //@ts-expect-error
-                commentModeration: remeda.pick(modCommentEdit, commentModerationFields)
+                commentModeration: { ...remeda.pick(commentEdit, commentModerationFields), author: commentEdit.commentAuthor }
             };
-            //@ts-expect-error
             await this._knex(TABLES.COMMENT_MODERATIONS).insert(moderationRow);
+            modEditsIds.push(commentEdit.id);
         }
 
-        await this._knex(TABLES.COMMENT_EDITS).where({ isAuthorEdit: false }).del();
+        const removedRows = await this._knex(TABLES.COMMENT_EDITS)
+            .whereIn("id", modEditsIds)
+            .orWhereNotNull("removed")
+            .orWhereNotNull("pinned")
+            .orWhereNotNull("locked")
+            .orWhereNotNull("commentAuthor")
+            .del();
+        console.log(removedRows);
     }
 
     async deleteVote(
