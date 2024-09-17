@@ -62,7 +62,7 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
 export const DecryptedChallengeRequestPublicationSchema = z.object({
     comment: CommentPubsubMessagePublicationSchema.passthrough().optional(),
     vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
-    commentEdit: CommentEditPubsubMessagePublicationSchema.passthrough().optional(),
+    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough().optional(),
     commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional()
 });
 
