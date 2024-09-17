@@ -1027,7 +1027,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 request.challengeRequestId
             );
 
-            throw new PlebbitError("ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING", { decryptedJson });
+            throw new PlebbitError("ERR_REQUEST_ENCRYPTED_HAS_INVALID_SCHEMA_AFTER_DECRYPTING", {
+                decryptedJson,
+                schemaError: parseRes.error
+            });
         }
 
         return decryptedJson;
