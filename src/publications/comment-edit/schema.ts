@@ -59,7 +59,7 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSch
 }).strict();
 
 export const CommentEditReservedFields = remeda.difference(
-    [
+    remeda.unique([
         ...remeda.keys.strict(CommentEditsTableRowSchema.shape),
         ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
         "shortCommentCid",
@@ -68,7 +68,7 @@ export const CommentEditReservedFields = remeda.difference(
         "publishingState",
         "signer",
         "clients"
-    ],
+    ]),
     remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape)
 );
 
