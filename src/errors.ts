@@ -155,7 +155,7 @@ export enum messages {
     ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR = "CommentModerationPubsubMessagePublication signer is not a mod at this subplebbit",
 
     // Comment Edit errors
-    ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
+    ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
     ERR_SUB_COMMENT_EDIT_UNAUTHORIZED_FIELD = "CommentEdit includes a field that cannot be used",
     ERR_PUBLISHING_EDIT_WITH_BOTH_MOD_AND_AUTHOR_FIELDS = "CommentEdit can't have both author and mod fields. Please publish a separate request for author and mod",
 

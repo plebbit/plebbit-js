@@ -893,6 +893,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
     }
 
+    private async _isModerator(commentModerationPublication: CommentModerationPubsubMessagePublication): Promise<boolean> {
+        if (!this.roles) return false;
+        // is the author of CommentModeration a moderator?
+        const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
+        const signerAddress = await getPlebbitAddressFromPublicKey(commentModerationPublication.signature.publicKey);
+        if (modRoles.includes(this.roles[signerAddress]?.role)) return true;
+
+        if (this._plebbit.resolveAuthorAddresses) {
+            const resolvedSignerAddress = await this._plebbit.resolveAuthorAddress(commentModerationPublication.author.address);
+            if (resolvedSignerAddress !== signerAddress) return false;
+            if (modRoles.includes(this.roles[commentModerationPublication.author.address]?.role)) return true;
+            if (modRoles.includes(this.roles[resolvedSignerAddress]?.role)) return true;
+        }
+        return false;
+    }
+
     private async _checkPublicationValidity(
         request: DecryptedChallengeRequestMessageType,
         publication: PublicationFromDecryptedChallengeRequest,
@@ -965,18 +981,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(commentModerationPublication)).length > 0)
                 return messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD;
 
-            const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
-            const isEditorMod =
-                this.roles?.[commentModerationPublication.author.address] &&
-                modRoles.includes(this.roles[commentModerationPublication.author.address]?.role);
+            const isAuthorMod = await this._isModerator(commentModerationPublication);
 
-            if (!isEditorMod) return messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR;
+            if (!isAuthorMod) return messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR;
 
             const commentToBeEdited = await this._dbHandler.queryComment(commentModerationPublication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
             if (!commentToBeEdited) return messages.ERR_COMMENT_MODERATION_NO_COMMENT_TO_EDIT;
 
-            if (isEditorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
-                return messages.ERR_SUB_COMMENT_EDIT_CAN_NOT_LOCK_REPLY;
+            if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
+                return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
         } else if (request.commentEdit) {
             const commentEditPublication = request.commentEdit;
             if (remeda.intersection(CommentEditReservedFields, remeda.keys.strict(commentEditPublication)).length > 0)
@@ -1075,7 +1088,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         } catch (e) {
             log.error(
                 "Signature of challengerequest.publication is invalid, emitting an error event and aborting the challenge exchange",
-                String(e)
+                e
             );
             this.emit("challengerequest", decryptedRequestWithSubplebbitAuthor);
             return;
