@@ -26,6 +26,8 @@ import * as remeda from "remeda";
 import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
+import { CID } from "kubo-rpc-client";
+import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -42,6 +44,23 @@ type GenericGatewayFetch = {
 };
 
 type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | null };
+
+export type OptionsToLoadFromGateway = { recordIpfsType: "ipfs" | "ipns"; root: string; path?: string; recordPlebbitType: LoadType };
+
+const createUrlFromPathResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
+    return `${gateway}/${opts.recordIpfsType}/${opts.root}/${opts.path ?? ""}`;
+};
+
+const createUrlFromSubdomainResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
+    const gatewayUrl = new URL(gateway);
+    let root: string;
+    if (opts.recordIpfsType === "ipfs") root = CID.parse(opts.root).toV1().toString();
+    else root = convertBase58IpnsNameToBase36Cid(opts.root);
+
+    return `${gatewayUrl.protocol}//${root}.${opts.recordIpfsType}.${gatewayUrl.host}/${opts.path ?? ""}`;
+};
+
+const GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION: Record<string, boolean> = {};
 
 export class BaseClientsManager {
     // Class that has all function but without clients field for maximum interopability
@@ -242,42 +261,62 @@ export class BaseClientsManager {
         throw Error("should not reach this block in _fetchWithLimit");
     }
 
-    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType) {}
+    preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {}
+    postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError) {}
+    postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway, error: PlebbitError) {}
 
-    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {}
+    postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {}
 
     private async _fetchFromGatewayAndVerifyIfNeeded(
         url: string,
+        loadOpts: OptionsToLoadFromGateway,
         abortController: AbortController,
-        isIpfsFile: boolean,
-        verifyCidWithContent: boolean,
         log: Logger
     ) {
         log.trace(`Fetching url (${url})`);
 
-        const resObj = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
-        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resObj.resText, url.split("/ipfs/")[1]);
+        const resObj = await this._fetchWithLimit(
+            url,
+            loadOpts.recordIpfsType === "ipfs" ? "force-cache" : "no-store",
+            abortController.signal
+        );
+        const verifyCidWithContent = loadOpts.recordIpfsType === "ipfs" && !loadOpts.path;
+        if (verifyCidWithContent) await this._verifyContentIsSameAsCid(resObj.resText, loadOpts.root);
         return resObj;
+    }
+
+    private async _handleIfGatewayRedirectsToSubdomainResolution(
+        gateway: string,
+        loadOpts: OptionsToLoadFromGateway,
+        res: Response,
+        log: Logger
+    ) {
+        if (GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway]) return; // already handled, no need to do anything
+        if (!res.redirected) return; // if it doesn't redirect to subdomain gateway then the gateway doesn't support subdomain resolution
+        const resUrl = new URL(res.url);
+        if (resUrl.hostname.includes(`.${loadOpts.recordIpfsType}.`)) {
+            log(`Gateway`, gateway, "supports subdomain resolution. Switching url formulation to subdomain resolution");
+            GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway] = true;
+        }
     }
     protected async _fetchWithGateway(
         gateway: string,
-        path: string,
-        loadType: LoadType,
+        loadOpts: OptionsToLoadFromGateway,
         abortController: AbortController,
         validateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
     ): Promise<{ res: Response; resText: string } | { error: PlebbitError }> {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
-        const url = `${gateway}${path}`;
+
+        const url = GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway]
+            ? createUrlFromSubdomainResolution(gateway, loadOpts)
+            : createUrlFromPathResolution(gateway, loadOpts);
 
         const timeBefore = Date.now();
-        const isIpfsFile = path.startsWith("/ipfs/"); // If false, then IPNS
-        const shouldVerifyContentWithCid = isIpfsFile && loadType !== "comment-update"; // can't verify comment update because it's a long path, and not just a cid
+        const isIpfsFile = loadOpts.recordIpfsType === "ipfs";
 
-        this.preFetchGateway(gateway, path, loadType);
+        this.preFetchGateway(gateway, loadOpts);
         const cacheKey = url;
         let isUsingCache = true;
         try {
@@ -285,30 +324,26 @@ export class BaseClientsManager {
             if (gatewayFetchPromiseCache.has(cacheKey)) resObj = await gatewayFetchPromiseCache.get(cacheKey)!;
             else {
                 isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(
-                    url,
-                    abortController,
-                    isIpfsFile,
-                    shouldVerifyContentWithCid,
-                    log
-                );
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(url, loadOpts, abortController, log);
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
                 resObj = await fetchPromise;
-                if (loadType === "subplebbit") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
+                if (loadOpts.recordIpfsType === "ipns") gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
+            // TODO should check if redirect here
             await validateGatewayResponse(resObj); // should throw if there's an issue
-            this.postFetchGatewaySuccess(gateway, path, loadType);
+            this.postFetchGatewaySuccess(gateway, loadOpts);
             if (!isUsingCache)
                 await this._plebbit._stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
+            await this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         } catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
 
             if (e instanceof PlebbitError && e?.details?.fetchError?.includes("AbortError")) {
-                this.postFetchGatewayAborted(gateway, path, loadType);
-                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e }) };
+                this.postFetchGatewayAborted(gateway, loadOpts);
+                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e, loadOpts }) };
             } else {
-                this.postFetchGatewayFailure(gateway, path, loadType, <PlebbitError>e);
+                this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
                 if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
                 delete (<PlebbitError>e)!["stack"];
                 return { error: <PlebbitError>e };
@@ -338,18 +373,11 @@ export class BaseClientsManager {
     }
 
     async fetchFromMultipleGateways(
-        loadOpts: { cid?: string; ipns?: string },
-        loadType: LoadType,
+        loadOpts: OptionsToLoadFromGateway,
         valiateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
     ): Promise<{ resText: string; res: Response }> {
-        assert(loadOpts.cid || loadOpts.ipns, "You did not provide cid or ipns to load from gateways");
-
-        const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
-
-        const type = loadOpts.cid ? "cid" : "ipns";
-
-        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadType);
-
+        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadOpts.recordPlebbitType);
+        const type = loadOpts.recordIpfsType === "ipfs" ? "cid" : "ipns";
         const concurrencyLimit = 3;
 
         const queueLimit = pLimit(concurrencyLimit);
@@ -374,7 +402,7 @@ export class BaseClientsManager {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
-                promise: queueLimit(() => this._fetchWithGateway(gateway, path, loadType, abortController, valiateGatewayResponse)),
+                promise: queueLimit(() => this._fetchWithGateway(gateway, loadOpts, abortController, valiateGatewayResponse)),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
         }
@@ -392,15 +420,15 @@ export class BaseClientsManager {
             for (let i = 0; i < res.length; i++) if (res[i]["value"]) gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
 
             const combinedError =
-                loadType === "comment"
-                    ? new FailedToFetchCommentIpfsFromGatewaysError({ commentCid: loadOpts.cid!, gatewayToError })
-                    : loadType === "comment-update"
-                      ? new FailedToFetchCommentUpdateFromGatewaysError({ commentUpdatePath: path, gatewayToError })
-                      : loadType === "page-ipfs"
-                        ? new FailedToFetchPageIpfsFromGatewaysError({ pageCid: loadOpts.cid!, gatewayToError })
-                        : loadType === "subplebbit"
-                          ? new FailedToFetchSubplebbitFromGatewaysError({ ipnsName: loadOpts.ipns!, gatewayToError })
-                          : new FailedToFetchGenericIpfsFromGatewaysError({ cid: loadOpts.cid!, gatewayToError });
+                loadOpts.recordPlebbitType === "comment"
+                    ? new FailedToFetchCommentIpfsFromGatewaysError({ commentCid: loadOpts.root, gatewayToError, loadOpts })
+                    : loadOpts.recordPlebbitType === "comment-update"
+                      ? new FailedToFetchCommentUpdateFromGatewaysError({ gatewayToError, loadOpts })
+                      : loadOpts.recordPlebbitType === "page-ipfs"
+                        ? new FailedToFetchPageIpfsFromGatewaysError({ pageCid: loadOpts.root, gatewayToError, loadOpts })
+                        : loadOpts.recordPlebbitType === "subplebbit"
+                          ? new FailedToFetchSubplebbitFromGatewaysError({ ipnsName: loadOpts.root, gatewayToError, loadOpts })
+                          : new FailedToFetchGenericIpfsFromGatewaysError({ cid: loadOpts.root, gatewayToError, loadOpts });
 
             throw combinedError;
         } else {

@@ -18,7 +18,7 @@ import {
     SubplebbitIpfsGatewayClient
 } from "./ipfs-gateway-client.js";
 
-import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
 import { commentPostUpdatesParentsPathConfig, postTimestampConfig, subplebbitForPublishingCache } from "../constants.js";
 import {
     CommentPlebbitRpcStateClient,
@@ -95,29 +95,31 @@ export class ClientsManager extends BaseClientsManager {
 
     // Overriding functions from base client manager here
 
-    override preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
+    override preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void {
         const gatewayState =
-            loadType === "subplebbit"
+            loadOpts.recordPlebbitType === "subplebbit"
                 ? this._getStatePriorToResolvingSubplebbitIpns()
-                : loadType === "comment-update"
+                : loadOpts.recordPlebbitType === "comment-update"
                   ? "fetching-update-ipfs"
-                  : loadType === "comment" || loadType === "generic-ipfs" || loadType === "page-ipfs"
+                  : loadOpts.recordPlebbitType === "comment" ||
+                      loadOpts.recordPlebbitType === "generic-ipfs" ||
+                      loadOpts.recordPlebbitType === "page-ipfs"
                     ? "fetching-ipfs"
                     : undefined;
         assert(gatewayState, "unable to compute the new gateway state");
         this.updateGatewayState(gatewayState, gatewayUrl);
     }
 
-    override postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
+    override postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
         this.updateGatewayState("stopped", gatewayUrl);
     }
 
-    override postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
+    override postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
         this.updateGatewayState("stopped", gatewayUrl);
     }
 
-    override postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType) {
-        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    override postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
+        this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
 
     override preResolveTextRecord(
@@ -188,7 +190,10 @@ export class ClientsManager extends BaseClientsManager {
         if (!isIpfsCid(finalCid)) throwWithErrorCode("ERR_CID_IS_INVALID", { cid });
         if (this._defaultIpfsProviderUrl) return this._fetchCidP2P(cid);
         else {
-            const resObj = await this.fetchFromMultipleGateways({ cid }, "generic-ipfs", async () => {});
+            const resObj = await this.fetchFromMultipleGateways(
+                { root: cid, recordIpfsType: "ipfs", recordPlebbitType: "generic-ipfs" },
+                async () => {}
+            );
             return resObj.resText;
         }
     }
@@ -288,8 +293,6 @@ export class ClientsManager extends BaseClientsManager {
         const concurrencyLimit = 3;
         const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs("subplebbit");
 
-        const path = `/ipns/${ipnsName}`;
-
         const queueLimit = pLimit(concurrencyLimit);
 
         // Only sort if we have more than 3 gateways
@@ -305,19 +308,24 @@ export class ClientsManager extends BaseClientsManager {
             gatewayFetches[gateway] = {
                 abortController,
                 promise: queueLimit(() =>
-                    this._fetchWithGateway(gateway, path, "subplebbit", abortController, async (gatewayRes) => {
-                        const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
-                            parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
-                        );
-                        const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
-                        if (errorWithinRecord) {
-                            delete errorWithinRecord["stack"];
-                            throw errorWithinRecord;
-                        } else {
-                            gatewayFetches[gateway].subplebbitRecord = subIpfs;
-                            gatewayFetches[gateway].cid = await calculateIpfsHash(gatewayRes.resText);
+                    this._fetchWithGateway(
+                        gateway,
+                        { recordIpfsType: "ipns", root: ipnsName, recordPlebbitType: "subplebbit" },
+                        abortController,
+                        async (gatewayRes) => {
+                            const subIpfs = parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+                                parseJsonWithPlebbitErrorIfFails(gatewayRes.resText)
+                            );
+                            const errorWithinRecord = await this._findErrorInSubplebbitRecord(subIpfs, ipnsName);
+                            if (errorWithinRecord) {
+                                delete errorWithinRecord["stack"];
+                                throw errorWithinRecord;
+                            } else {
+                                gatewayFetches[gateway].subplebbitRecord = subIpfs;
+                                gatewayFetches[gateway].cid = await calculateIpfsHash(gatewayRes.resText);
+                            }
                         }
-                    })
+                    )
                 ),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
@@ -781,13 +789,21 @@ export class CommentClientsManager extends PublicationClientsManager {
             try {
                 // Validate the Comment Update within the gateway fetching algo
                 // fetchFromMultipleGateways will throw if all gateways failed to load the record
-                await this.fetchFromMultipleGateways({ cid: path }, "comment-update", async (res) => {
-                    const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
-                        parseJsonWithPlebbitErrorIfFails(res.resText)
-                    );
-                    await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
-                    commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
-                });
+                await this.fetchFromMultipleGateways(
+                    {
+                        recordIpfsType: "ipfs",
+                        root: folderCid,
+                        path: path.replace(`${folderCid}/`, ""),
+                        recordPlebbitType: "comment-update"
+                    },
+                    async (res) => {
+                        const commentUpdateBeforeSignature = parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
+                            parseJsonWithPlebbitErrorIfFails(res.resText)
+                        );
+                        await this._throwIfCommentUpdateHasInvalidSignature(commentUpdateBeforeSignature);
+                        commentUpdate = commentUpdateBeforeSignature; // at this point, we know the gateway has provided a valid comment update and we can use it
+                    }
+                );
                 if (!commentUpdate) throw Error("Failed to load comment update from gateways. This is a critical logic error");
                 return commentUpdate;
             } catch (e) {
@@ -840,7 +856,10 @@ export class CommentClientsManager extends PublicationClientsManager {
     private async _fetchCommentIpfsFromGateways(parentCid: string): Promise<string> {
         // We only need to validate once, because with Comment Ipfs the fetchFromMultipleGateways already validates if the response is the same as its cid
 
-        const res = await this.fetchFromMultipleGateways({ cid: parentCid }, "comment", async (_) => {});
+        const res = await this.fetchFromMultipleGateways(
+            { recordIpfsType: "ipfs", recordPlebbitType: "comment", root: parentCid },
+            async (_) => {}
+        );
         return res.resText;
     }
 
@@ -942,10 +961,10 @@ export class CommentClientsManager extends PublicationClientsManager {
         throw subError;
     }
 
-    override postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
+    override postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
         // if we're fetching CommentUpdate, it shouldn't be "stopped" after fetching subplebbit-ipfs
-        if (loadType === "subplebbit" && !this._isPublishing()) return;
-        else return super.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+        if (loadOpts.recordPlebbitType === "subplebbit" && !this._isPublishing()) return;
+        else return super.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
 }
 

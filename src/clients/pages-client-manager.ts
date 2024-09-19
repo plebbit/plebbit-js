@@ -1,5 +1,5 @@
 import assert from "assert";
-import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
@@ -71,26 +71,26 @@ export class BasePagesClientsManager extends BaseClientsManager {
 
     // Override methods from BaseClientsManager here
 
-    override preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void {
-        const cid = path.split("/")[2];
+    override preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void {
+        const cid = loadOpts.root;
         const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
 
-    override postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType) {
-        const cid = path.split("/")[2];
+    override postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
+        const cid = loadOpts.root;
         const sortTypes = pageCidToSortTypesCache.get(cid);
 
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
 
-    override postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType) {
-        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    override postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway) {
+        this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
 
-    override postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void {
-        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    override postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void {
+        this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
 
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]) {
@@ -176,7 +176,10 @@ export class BasePagesClientsManager extends BaseClientsManager {
     async _fetchPageFromGateways(pageCid: string): Promise<PageIpfs> {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
-        const res = await this.fetchFromMultipleGateways({ cid: pageCid }, "page-ipfs", async (_) => {});
+        const res = await this.fetchFromMultipleGateways(
+            { root: pageCid, recordIpfsType: "ipfs", recordPlebbitType: "page-ipfs" },
+            async (_) => {}
+        );
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
 
         return pageIpfs;

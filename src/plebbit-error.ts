@@ -28,7 +28,7 @@ export class PlebbitError extends CustomError {
 }
 
 export class FailedToFetchSubplebbitFromGatewaysError extends PlebbitError {
-    override details: { ipnsName: string; gatewayToError: Record<string, PlebbitError> }; // gatewayToError is a mapping of gateway url to its error
+    override details: { ipnsName: string; gatewayToError: Record<string, PlebbitError> } & { [key: string]: any }; // gatewayToError is a mapping of gateway url to its error
 
     constructor(details: FailedToFetchSubplebbitFromGatewaysError["details"]) {
         super("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", details);
@@ -37,7 +37,7 @@ export class FailedToFetchSubplebbitFromGatewaysError extends PlebbitError {
 }
 
 export class FailedToFetchCommentIpfsFromGatewaysError extends PlebbitError {
-    override details: { commentCid: string; gatewayToError: Record<string, PlebbitError> }; // gatewayToError is a mapping of gateway url to its error
+    override details: { commentCid: string; gatewayToError: Record<string, PlebbitError> } & { [key: string]: any }; // gatewayToError is a mapping of gateway url to its error
 
     constructor(details: FailedToFetchCommentIpfsFromGatewaysError["details"]) {
         super("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS", details);
@@ -46,7 +46,7 @@ export class FailedToFetchCommentIpfsFromGatewaysError extends PlebbitError {
 }
 
 export class FailedToFetchCommentUpdateFromGatewaysError extends PlebbitError {
-    override details: { commentUpdatePath: string; gatewayToError: Record<string, PlebbitError> }; // gatewayToError is a mapping of gateway url to its error
+    override details: { gatewayToError: Record<string, PlebbitError> } & { [key: string]: any }; // gatewayToError is a mapping of gateway url to its error
 
     constructor(details: FailedToFetchCommentUpdateFromGatewaysError["details"]) {
         super("ERR_FAILED_TO_FETCH_COMMENT_UPDATE_FROM_GATEWAYS", details);
@@ -55,7 +55,7 @@ export class FailedToFetchCommentUpdateFromGatewaysError extends PlebbitError {
 }
 
 export class FailedToFetchPageIpfsFromGatewaysError extends PlebbitError {
-    override details: { pageCid: string; gatewayToError: Record<string, PlebbitError> }; // gatewayToError is a mapping of gateway url to its error
+    override details: { pageCid: string; gatewayToError: Record<string, PlebbitError> } & { [key: string]: any }; // gatewayToError is a mapping of gateway url to its error
 
     constructor(details: FailedToFetchPageIpfsFromGatewaysError["details"]) {
         super("ERR_FAILED_TO_FETCH_PAGE_IPFS_FROM_GATEWAYS", details);
@@ -64,7 +64,7 @@ export class FailedToFetchPageIpfsFromGatewaysError extends PlebbitError {
 }
 
 export class FailedToFetchGenericIpfsFromGatewaysError extends PlebbitError {
-    override details: { cid: string; gatewayToError: Record<string, PlebbitError> }; // gatewayToError is a mapping of gateway url to its error
+    override details: { cid: string; gatewayToError: Record<string, PlebbitError> } & { [key: string]: any }; // gatewayToError is a mapping of gateway url to its error
 
     constructor(details: FailedToFetchGenericIpfsFromGatewaysError["details"]) {
         super("ERR_FAILED_TO_FETCH_GENERIC_IPFS_FROM_GATEWAYS", details);

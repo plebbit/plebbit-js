@@ -5,6 +5,9 @@ import PeerId from "peer-id";
 import * as ed from "@noble/ed25519";
 import { fromString as uint8ArrayFromString } from "uint8arrays/from-string";
 import { toString as uint8ArrayToString } from "uint8arrays/to-string";
+import { CID } from "multiformats/cid";
+import { bases } from "multiformats/basics";
+import Logger from "@plebbit/plebbit-logger";
 
 export const generatePrivateKey = async (): Promise<string> => {
     const privateKeyBuffer = ed.utils.randomPrivateKey();
@@ -119,4 +122,22 @@ export const getPeerIdFromPublicKeyBuffer = async (publicKeyBuffer: Uint8Array) 
     const ed25519PublicKeyInstance = new Ed25519PublicKey(publicKeyBuffer);
     const peerId = await PeerId.createFromPubKey(_makeSureBytesAreUint8Array(ed25519PublicKeyInstance.bytes));
     return peerId;
+};
+
+export const convertBase58IpnsNameToBase36Cid = (ipnsName: string): string => {
+    const log = Logger("plebbit-js:signer:util:convertBase58IpnsNameToBase32");
+    let peerId: PeerId;
+    try {
+        peerId = PeerId.createFromB58String(ipnsName);
+    } catch (error) {
+        log.error("Error creating peer id from ipns name:", error);
+        throw error;
+    }
+
+    try {
+        return CID.parse(peerId.toString()).toString(bases.base36);
+    } catch (e) {
+        log.error(`Failed to convert peer id to CIDv1base36`, e);
+        throw e;
+    }
 };
