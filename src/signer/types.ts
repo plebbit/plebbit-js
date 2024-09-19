@@ -16,7 +16,7 @@ import { CommentEditSignedPropertyNames } from "../publications/comment-edit/sch
 import { VoteSignedPropertyNames } from "../publications/vote/schema";
 import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema";
 import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema";
-import { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types";
+import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types";
 
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 
