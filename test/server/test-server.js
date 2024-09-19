@@ -277,8 +277,7 @@ const setUpMockGateways = async () => {
         ".test-ipfs-pubsub",
         ".test-ipfs-pubsub2"
     ];
-
-    await Promise.all(dirsToDelete.map((dirPath) => fs.promises.rm(path.join(process.cwd(), dirPath), { recursive: true, force: true })));
+    for (const dir of dirsToDelete) await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });
 
     await startIpfsNodes();
 
