@@ -77,7 +77,7 @@ export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
         return CidStringSchema.parse(cidString);
     } catch (e) {
         throw new PlebbitError("ERR_INVALID_CID_STRING_SCHEMA", {
-            zodError: cidString,
+            zodError: e,
             cidString
         });
     }
