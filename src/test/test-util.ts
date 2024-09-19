@@ -930,6 +930,10 @@ export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Pleb
     return plebbit._awaitSubplebbitsToIncludeSub(subAddress);
 }
 
+export function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean {
+    return !plebbit.plebbitRpcClient && Object.keys(plebbit.clients.ipfsClients).length === 0;
+}
+
 const skipFunction = (_: any) => {};
 
 export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
