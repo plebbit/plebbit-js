@@ -74,7 +74,7 @@ export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessage
     z.object({ author: AuthorPubsubSchema.passthrough() })
 ).strict();
 
-// This is used by the subplebbit when parsing request.publication
+// This is used by the subplebbit when parsing request.comment
 export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.passthrough().refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE

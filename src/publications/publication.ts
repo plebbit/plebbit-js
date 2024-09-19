@@ -278,7 +278,12 @@ class Publication extends TypedEmitter<PublicationEvents> {
         let decryptedChallengeVerification: DecryptedChallengeVerification | undefined;
         if (msg.challengeSuccess) {
             this._updatePublishingState("succeeded");
-            log(`Challenge (${msg.challengeRequestId}) has passed`);
+            log(
+                `Received a challengeverification with challengeSuccess=true`,
+                "for publication",
+                this.getType(),
+                "Attempting to decrypt if verification.encrypted is there"
+            );
             if (msg.encrypted) {
                 let decryptedRawString: string;
 
@@ -289,8 +294,11 @@ class Publication extends TypedEmitter<PublicationEvents> {
                         this._subplebbit!.encryption.publicKey
                     );
                 } catch (e) {
-                    const plebbitError = new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", { decryptErr: e });
-                    log.error("could not decrypt challengeverification.encrypted", plebbitError.toString());
+                    const plebbitError = new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
+                        decryptErr: e,
+                        challenegVerificationMsg: msg
+                    });
+                    log.error("could not decrypt challengeverification.encrypted", plebbitError);
                     this.emit("error", plebbitError);
                     return;
                 }
@@ -300,7 +308,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 try {
                     decryptedJson = await parseJsonWithPlebbitErrorIfFails(decryptedRawString);
                 } catch (e) {
-                    log.error("could not parse decrypted challengeverification.encrypted as a json", String(e));
+                    log.error("could not parse decrypted challengeverification.encrypted as a json", e);
                     this.emit("error", <PlebbitError>e);
                     return;
                 }
@@ -308,7 +316,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 try {
                     decryptedChallengeVerification = parseDecryptedChallengeVerification(decryptedJson);
                 } catch (e) {
-                    log.error("could not parse challengeverification.encrypted due to invalid schema", String(e));
+                    log.error("could not parse challengeverification.encrypted due to invalid schema", e);
                     this.emit("error", <PlebbitError>e);
                     return;
                 }
@@ -320,8 +328,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
             }
         } else {
             this._updatePublishingState("failed");
-            log(
-                `Challenge ${msg.challengeRequestId} has failed to pass. Challenge errors = ${msg.challengeErrors}, reason = '${msg.reason}'`
+            log.error(
+                `Challenge exchange with publication`,
+                this.getType(),
+                `has failed to pass`,
+                "Challenge errors",
+                msg.challengeErrors,
+                `reason`,
+                msg.reason
             );
         }
 
@@ -742,12 +756,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
         const challengeRequest = await this._signAndValidateChallengeRequestBeforePublishing(toSignMsg, pubsubMessageSigner);
         log(
-            `Attempting to publish ${this.getType()} with challenge id (${
-                challengeRequest.challengeRequestId
-            }) to pubsub topic (${this._pubsubTopicWithfallback()}) with provider (${
-                this._pubsubProviders[this._currentPubsubProviderIndex]
-            }): `,
-            this.toJSONPubsubMessagePublication()
+            "Attempting to publish",
+            this.getType(),
+            "to pubsub topic",
+            this._pubsubTopicWithfallback(),
+            "with provider",
+            this._pubsubProviders[this._currentPubsubProviderIndex],
+            "request.encrypted=",
+            this.toJSONPubsubRequestToEncrypt()
         );
 
         while (this._currentPubsubProviderIndex < this._pubsubProviders.length) {
@@ -780,7 +796,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                         pubsubTopic: this._pubsubTopicWithfallback()
                         // TODO should include errors
                     });
-                    log.error(String(allAttemptsFailedError));
+                    log.error("All attempts to publish", this.getType(), "has failed", allAttemptsFailedError);
                     this.emit("error", allAttemptsFailedError);
                     throw allAttemptsFailedError;
                 } else if (this._currentPubsubProviderIndex === this._pubsubProviders.length) return;
@@ -798,9 +814,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
             this._updatePublishingState("waiting-challenge");
 
             log(
-                `Sent a challenge request (${challengeRequest.challengeRequestId}) with provider (${
-                    this._pubsubProviders[this._currentPubsubProviderIndex]
-                })`
+                `Published a challenge request of publication`,
+                this.getType(),
+                "with provider",
+                this._pubsubProviders[this._currentPubsubProviderIndex]
             );
             this.emit("challengerequest", decryptedRequest);
             break;
@@ -812,7 +829,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             if (!this._receivedChallengeFromSub && !this._receivedChallengeVerification) {
                 if (this._isAllAttemptsExhausted()) {
                     // plebbit-js tried all providers and still no response is received
-                    log.error(`Failed to receive any response for publication`);
+                    log.error(`Failed to receive any response for publication`, this.getType());
                     await this._postSucessOrFailurePublishing();
                     this._updatePublishingState("failed");
                     const error = new PlebbitError("ERR_PUBSUB_DID_NOT_RECEIVE_RESPONSE_AFTER_PUBLISHING_CHALLENGE_REQUEST", {

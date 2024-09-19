@@ -532,7 +532,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertCommentEdit(editTableRow);
-        log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, commentEditRaw);
+        log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, remeda.omit(commentEditRaw, ["signature"]));
     }
 
     private async storeCommentModeration(
@@ -561,7 +561,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertCommentModeration(modTableRow);
-        log(`Inserted new Comment Edit for comment (${modTableRow.commentCid})`, modTableRow);
+        log(`Inserted new CommentModeration for comment (${modTableRow.commentCid})`, remeda.omit(modTableRow, ["signature"]));
     }
 
     private async storeVote(
@@ -1257,14 +1257,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             try {
                 await this.handleChallengeRequest(parsedPubsubMsg);
             } catch (e) {
-                log.error(`Failed to process challenge request message received at (${timeReceived})`, (<Error>e).toString());
+                log.error(`Failed to process challenge request message received at (${timeReceived})`, e);
                 await this._dbHandler.rollbackTransaction(parsedPubsubMsg.challengeRequestId.toString());
             }
         } else if (parsedPubsubMsg.type === "CHALLENGEANSWER") {
             try {
                 await this.handleChallengeAnswer(parsedPubsubMsg);
             } catch (e) {
-                log.error(`Failed to process challenge answer message received at (${timeReceived})`, (<Error>e).toString());
+                log.error(`Failed to process challenge answer message received at (${timeReceived})`, e);
                 await this._dbHandler.rollbackTransaction(parsedPubsubMsg.challengeRequestId.toString());
             }
         }
