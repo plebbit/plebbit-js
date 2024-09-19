@@ -16,6 +16,28 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
+const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid) => {
+    if (postToUpdate.clients.ipfsClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
+    else {
+        // it's gateway tests
+        const originalFetch = postToUpdate._clientsManager.fetchFromMultipleGateways.bind(postToUpdate._clientsManager);
+
+        postToUpdate._clientsManager.fetchFromMultipleGateways = (loadOpts, validateGatewayResponse) => {
+            if (loadOpts.recordPlebbitType === "comment-update")
+                return originalFetch(
+                    {
+                        recordIpfsType: "ipfs",
+                        root: commentUpdateCid,
+                        path: "/",
+                        recordPlebbitType: "comment-update"
+                    },
+                    validateGatewayResponse
+                );
+            else return originalFetch(loadOpts, validateGatewayResponse);
+        };
+    }
+};
+
 getRemotePlebbitConfigs().map((config) => {
     describe(`Loading CommentUpdate with extra prop - ${config.name}`, async () => {
         let plebbit, post, subplebbit;
@@ -38,8 +60,8 @@ getRemotePlebbitConfigs().map((config) => {
             const invalidCommentUpdateCid = await addStringToIpfs(JSON.stringify(invalidCommentUpdate));
 
             const postToUpdate = await plebbit.getComment(post.cid);
-            postToUpdate._clientsManager._calculatePathForCommentUpdate = () => invalidCommentUpdateCid;
 
+            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, invalidCommentUpdateCid);
             // should emit an error because we did not include extraProp in signedPropertyNames
 
             let error;
@@ -83,7 +105,7 @@ getRemotePlebbitConfigs().map((config) => {
             const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
 
             const postToUpdate = await plebbit.getComment(post.cid);
-            postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateWithExtraPropsCid;
+            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
 
             await postToUpdate.update();
 
