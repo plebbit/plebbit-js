@@ -697,6 +697,17 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return;
     }
 
+    private async _signAndValidateChallengeRequestBeforePublishing(
+        toSignMsg: Omit<ChallengeRequestMessageType, "signature">,
+        pubsubSigner: SignerType
+    ): Promise<ChallengeRequestMessageType> {
+        // No validation for now, we might add in the future
+        return {
+            ...toSignMsg,
+            signature: await signChallengeRequest(toSignMsg, pubsubSigner)
+        };
+    }
+
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
@@ -744,10 +755,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             timestamp: timestamp()
         });
 
-        const challengeRequest = <ChallengeRequestMessageType>{
-            ...toSignMsg,
-            signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
-        };
+        const challengeRequest = await this._signAndValidateChallengeRequestBeforePublishing(toSignMsg, pubsubMessageSigner);
         log(
             "Attempting to publish",
             this.getType(),
