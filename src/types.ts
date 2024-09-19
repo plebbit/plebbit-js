@@ -130,7 +130,7 @@ export interface PublicationEvents {
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void; // Should we include the updated publication instance here? not sure
-    error: (error: PlebbitError) => void;
+    error: (error: PlebbitError | Error) => void;
 
     // State changes
     publishingstatechange: (newState: Publication["publishingState"]) => void;
@@ -142,7 +142,7 @@ export interface PublicationEvents {
 }
 
 export interface PlebbitEvents {
-    error: (error: PlebbitError) => void;
+    error: (error: PlebbitError | Error) => void;
     subplebbitschange: (listOfSubplebbits: string[]) => void;
     settingschange: (newSettings: ParsedPlebbitOptions) => void;
 }

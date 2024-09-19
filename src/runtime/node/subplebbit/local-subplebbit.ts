@@ -43,7 +43,8 @@ import type {
     DecryptedChallengeVerificationMessageType,
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
-    PublicationFromDecryptedChallengeRequest
+    PublicationFromDecryptedChallengeRequest,
+    DecryptedChallengeVerification
 } from "../../../pubsub-messages/types.js";
 
 import type {
@@ -60,6 +61,7 @@ import {
     signChallengeMessage,
     signChallengeVerification,
     signCommentUpdate,
+    signCommentUpdateForChallengeVerification,
     signSubplebbit,
     verifyChallengeAnswer,
     verifyChallengeRequest,
@@ -635,80 +637,84 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         };
     }
 
-    private async storePublication(request: DecryptedChallengeRequestMessageType): Promise<CommentIpfsWithCidPostCidDefined | undefined> {
-        const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storePublicationIfValid");
+    private async storeComment(
+        commentPubsub: CommentPubsubMessagePublication,
+        request: DecryptedChallengeRequestMessageType
+    ): Promise<{ comment: CommentIpfsType; cid: CommentUpdateType["cid"] }> {
+        const log = Logger("plebbit-js:local-subplebbit:handleChallengeExchange:storeComment");
 
+        const commentIpfs = <CommentIpfsType>{
+            ...commentPubsub,
+            ...(await this._calculateLinkProps(commentPubsub.link)),
+            ...(this.isPublicationPost(commentPubsub) && (await this._calculatePostProps(commentPubsub, request.challengeRequestId))),
+            ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
+        };
+
+        const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentIpfs));
+
+        const commentCid = file.path;
+        const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
+
+        const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
+        const commentRow = <CommentsTableRow>{
+            ...strippedOutCommentIpfs,
+            cid: commentCid,
+            postCid,
+            authorSignerAddress
+        };
+
+        const unknownProps = remeda.difference(
+            remeda.keys.strict(commentPubsub),
+            remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
+        );
+
+        if (unknownProps.length > 0) {
+            log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
+            commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
+        }
+        const trxForInsert = await this._dbHandler.createTransaction(request.challengeRequestId.toString());
+        try {
+            // This would throw for extra props
+            await this._dbHandler.insertComment(commentRow, trxForInsert);
+            // Everything below here is for verification purposes
+            // The goal here is to find out if storing comment props in DB causes them to change in any way
+            const commentInDb = await this._dbHandler.queryComment(commentRow.cid, trxForInsert);
+            if (!commentInDb) throw Error("Failed to query the comment we just inserted");
+            // The line below will fail with extra props
+
+            const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
+            const validity = await verifyCommentIpfs(
+                removeUndefinedValuesRecursively(commentIpfsRecreated),
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+            if (!validity.valid)
+                throw Error(
+                    "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
+                );
+            const calculatedHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
+            if (calculatedHash !== commentInDb.cid) throw Error("There is a problem with db processing comment rows, the cids don't match");
+        } catch (e) {
+            log.error(`Failed to insert post to db due to error, rolling back on inserting the comment. This is a critical error`, e);
+            await this._dbHandler.rollbackTransaction(request.challengeRequestId.toString());
+            throw e;
+        }
+
+        await this._dbHandler.commitTransaction(request.challengeRequestId.toString());
+
+        log(`New comment with cid ${commentRow.cid} has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
+
+        return { comment: commentIpfs, cid: commentCid };
+    }
+
+    private async storePublication(request: DecryptedChallengeRequestMessageType) {
         if (request.vote) return this.storeVote(request.vote, request.challengeRequestId);
         else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
         else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
-        else if (request.comment) {
-            const commentPubsub = request.comment;
-            const commentIpfs = <CommentIpfsType>{
-                ...commentPubsub,
-                ...(await this._calculateLinkProps(commentPubsub.link)),
-                ...(this.isPublicationPost(commentPubsub) && (await this._calculatePostProps(commentPubsub, request.challengeRequestId))),
-                ...(this.isPublicationReply(commentPubsub) && (await this._calculateReplyProps(commentPubsub, request.challengeRequestId)))
-            };
-
-            const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(commentIpfs));
-
-            const commentCid = file.path;
-            const postCid = commentIpfs.postCid || commentCid; // if postCid is not defined, then we're adding a post to IPFS, so its own cid is the postCid
-            const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentPubsub.signature.publicKey);
-
-            const strippedOutCommentIpfs = CommentIpfsSchema.strip().parse(commentIpfs); // remove unknown props
-            const commentRow = <CommentsTableRow>{
-                ...strippedOutCommentIpfs,
-                cid: commentCid,
-                postCid,
-                authorSignerAddress
-            };
-
-            const unknownProps = remeda.difference(
-                remeda.keys.strict(commentPubsub),
-                remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape)
-            );
-
-            if (unknownProps.length > 0) {
-                log("Found extra props on Comment", unknownProps, "Will be adding them to extraProps column");
-                commentRow.extraProps = remeda.pick(commentPubsub, unknownProps);
-            }
-            const trxForInsert = await this._dbHandler.createTransaction(request.challengeRequestId.toString());
-            try {
-                // This would throw for extra props
-                await this._dbHandler.insertComment(commentRow, trxForInsert);
-                // Everything below here is for verification purposes
-                // The goal here is to find out if storing comment props in DB causes them to change in any way
-                const commentInDb = await this._dbHandler.queryComment(commentRow.cid, trxForInsert);
-                if (!commentInDb) throw Error("Failed to query the comment we just inserted");
-                // The line below will fail with extra props
-
-                const commentIpfsRecreated = <CommentIpfsType>remeda.pick(commentInDb, remeda.keys.strict(commentIpfs));
-                const validity = await verifyCommentIpfs(
-                    removeUndefinedValuesRecursively(commentIpfsRecreated),
-                    this._plebbit.resolveAuthorAddresses,
-                    this._clientsManager,
-                    false
-                );
-                if (!validity.valid)
-                    throw Error(
-                        "There is a problem with how query rows are processed in DB, which is causing an invalid signature. This is a critical Error"
-                    );
-                const calculatedHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
-                if (calculatedHash !== commentInDb.cid)
-                    throw Error("There is a problem with db processing comment rows, the cids don't match");
-            } catch (e) {
-                log.error(`Failed to insert post to db due to error, rolling back on inserting the comment. This is a critical error`, e);
-                await this._dbHandler.rollbackTransaction(request.challengeRequestId.toString());
-                throw e;
-            }
-
-            await this._dbHandler.commitTransaction(request.challengeRequestId.toString());
-
-            log(`New comment with cid ${commentRow.cid}  and depth (${commentRow.depth}) has been inserted into DB`);
-
-            return { ...commentIpfs, cid: commentCid, postCid };
-        }
+        else if (request.comment) return this.storeComment(request.comment, request);
+        else throw Error("Don't know how to store this publication");
     }
 
     private async _decryptOrRespondWithFailure(request: ChallengeRequestMessageType | ChallengeAnswerMessageType): Promise<string> {
@@ -816,12 +822,40 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
-        this.emit("challengeverification", {
-            ...challengeVerification,
-            publication: undefined
-        });
+        this.emit("challengeverification", challengeVerification);
         this._ongoingChallengeExchanges.delete(challengeRequestId.toString());
         this._cleanUpChallengeAnswerPromise(challengeRequestId.toString());
+    }
+
+    private async _storePublicationAndEncryptForChallengeVerification(
+        request: DecryptedChallengeRequestMessageType
+    ): Promise<(DecryptedChallengeVerification & Required<Pick<DecryptedChallengeVerificationMessageType, "encrypted">>) | undefined> {
+        const commentAfterAddingToIpfs = await this.storePublication(request);
+        if (!commentAfterAddingToIpfs) return undefined;
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(commentAfterAddingToIpfs.comment.signature.publicKey);
+        const authorSubplebbit = await this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
+
+        const commentUpdateOfVerificationNoSignature = <Omit<DecryptedChallengeVerification["commentUpdate"], "signature">>(
+            cleanUpBeforePublishing({
+                author: { subplebbit: authorSubplebbit },
+                cid: commentAfterAddingToIpfs.cid,
+                protocolVersion: env.PROTOCOL_VERSION
+            })
+        );
+        const commentUpdate = <DecryptedChallengeVerification["commentUpdate"]>{
+            ...commentUpdateOfVerificationNoSignature,
+            signature: await signCommentUpdateForChallengeVerification(commentUpdateOfVerificationNoSignature, this.signer)
+        };
+
+        const toEncrypt = <DecryptedChallengeVerification>{ comment: commentAfterAddingToIpfs.comment, commentUpdate };
+
+        const encrypted = await encryptEd25519AesGcmPublicKeyBuffer(
+            deterministicStringify(toEncrypt),
+            this.signer.privateKey,
+            request.signature.publicKey
+        );
+
+        return { ...toEncrypt, encrypted };
     }
 
     private async _publishChallengeVerification(
@@ -836,34 +870,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 `(${request.challengeRequestId.toString()}): `,
                 `Will attempt to publish challengeVerification with challengeSuccess=true`
             );
-            const publicationNoSubplebbitAuthor = await this.storePublication(request);
-
-            let publication: DecryptedChallengeVerificationMessageType["publication"];
-            if (remeda.isPlainObject(publicationNoSubplebbitAuthor)) {
-                const authorSignerAddress = await getPlebbitAddressFromPublicKey(publicationNoSubplebbitAuthor.signature.publicKey);
-                const subplebbitAuthor = await this._dbHandler.querySubplebbitAuthor(authorSignerAddress);
-                publication = subplebbitAuthor
-                    ? {
-                          ...publicationNoSubplebbitAuthor,
-                          author: { ...publicationNoSubplebbitAuthor.author, subplebbit: subplebbitAuthor }
-                      }
-                    : publicationNoSubplebbitAuthor;
-            }
-            // could contain "publication" or "reason"
-            const encrypted = remeda.isPlainObject(publication)
-                ? await encryptEd25519AesGcmPublicKeyBuffer(
-                      <string>deterministicStringify({ publication }),
-                      this.signer.privateKey,
-                      request.signature.publicKey
-                  )
-                : undefined;
+            const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request);
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
                 type: "CHALLENGEVERIFICATION",
                 challengeRequestId: request.challengeRequestId,
                 challengeSuccess: true,
                 reason: undefined,
-                encrypted,
+                encrypted: toEncrypt?.encrypted, // could be undefined
                 challengeErrors: challengeResult.challengeErrors,
                 userAgent: this._plebbit.userAgent,
                 protocolVersion: env.PROTOCOL_VERSION,
@@ -880,15 +894,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
             this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
 
-            const objectToEmit = <DecryptedChallengeVerificationMessageType>{ ...challengeVerification, publication };
+            const objectToEmit = <DecryptedChallengeVerificationMessageType>{ ...challengeVerification, ...toEncrypt };
             this.emit("challengeverification", objectToEmit);
             this._ongoingChallengeExchanges.delete(request.challengeRequestId.toString());
             this._cleanUpChallengeAnswerPromise(request.challengeRequestId.toString());
             log(
                 `Published ${challengeVerification.type} over pubsub:`,
-                removeNullUndefinedEmptyObjectsValuesRecursively(
-                    remeda.pick(objectToEmit, ["publication", "challengeSuccess", "reason", "challengeErrors", "timestamp"])
-                )
+                remeda.omit(objectToEmit, ["signature", "encrypted", "challengeRequestId"])
             );
         }
     }

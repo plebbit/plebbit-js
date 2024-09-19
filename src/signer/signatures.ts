@@ -19,6 +19,7 @@ import type {
     ChallengeMessageType,
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
+    DecryptedChallengeVerification,
     PubsubMessage
 } from "../pubsub-messages/types";
 import Logger from "@plebbit/plebbit-logger";
@@ -52,7 +53,8 @@ import {
     ChallengeRequestMessageSignedPropertyNames,
     ChallengeMessageSignedPropertyNames,
     ChallengeAnswerMessageSignedPropertyNames,
-    ChallengeVerificationMessageSignedPropertyNames
+    ChallengeVerificationMessageSignedPropertyNames,
+    CommentUpdateForChallengeVerificationSignedPropertyNames
 } from "../pubsub-messages/schema.js";
 import type { PublicationPubsubMessage } from "../types.js";
 import type {
@@ -113,7 +115,7 @@ async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign[
 
 export async function _signJson(
     signedPropertyNames: JsonSignature["signedPropertyNames"],
-    publication: PublicationsToSign,
+    publication: Object,
     signer: SignerType,
     log: Logger
 ): Promise<JsonSignature> {
@@ -154,7 +156,7 @@ export async function _signPubsubMsg(
     };
 }
 
-export function cleanUpBeforePublishing<T extends PublicationsToSign | PubsubMsgsToSign | PageIpfs>(msg: T): T {
+export function cleanUpBeforePublishing<T>(msg: T): T {
     // removing values that are undefined/null recursively
     //  removing values that are empty objects recursively, like subplebbit.roles.name: {} or subplebbit.posts: {}
     // We may add other steps in the future
@@ -172,6 +174,15 @@ export async function signCommentUpdate(update: Omit<CommentUpdateType, "signatu
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
     return _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateSignedPropertyNames, update, signer, log);
+}
+
+export async function signCommentUpdateForChallengeVerification(
+    update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">,
+    signer: SignerType
+) {
+    const log = Logger("plebbit-js:signatures:signCommentUpdateForChallengeVerification");
+    // Not sure, should we validate update.authorEdit here?
+    return _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateForChallengeVerificationSignedPropertyNames, update, signer, log);
 }
 
 export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit) {

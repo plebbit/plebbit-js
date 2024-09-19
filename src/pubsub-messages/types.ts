@@ -85,7 +85,7 @@ export type ChallengeVerificationMessageType = z.infer<typeof ChallengeVerificat
 
 export type DecryptedChallengeVerification = z.infer<typeof DecryptedChallengeVerificationSchema>;
 
-export type DecryptedChallengeVerificationMessageType = ChallengeVerificationMessageType & DecryptedChallengeVerification;
+export type DecryptedChallengeVerificationMessageType = ChallengeVerificationMessageType & Partial<DecryptedChallengeVerification>;
 
 // Challenge verification native types
 

@@ -1,10 +1,8 @@
 import retry, { RetryOperation } from "retry";
 import { hideClassPrivateProps, removeUndefinedValuesRecursively, shortifyAddress, shortifyCid, throwWithErrorCode } from "../../util.js";
 import Publication from "../publication.js";
-import type { DecryptedChallengeVerificationMessageType } from "../../pubsub-messages/types.js";
+import type { DecryptedChallengeVerification } from "../../pubsub-messages/types.js";
 import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from "../../types.js";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -258,22 +256,15 @@ export class Comment extends Publication implements CommentPubsubMessagePublicat
         }
     }
 
-    protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerificationMessageType["publication"]) {
+    protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerification) {
         const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
-        if (!props) throw Error("Should not try to update comment instance with empty props");
-        this.setCid(props.cid);
-        this._setOriginalFieldBeforeModifying(); // because we will be updating author
-        // TODO we should avoid re-creating
-        const strippedOutProps = <CommentIpfsType>remeda.omit(props, ["cid"]); // fields that do not exist on CommentIpfs
-        if (strippedOutProps.depth === 0) delete strippedOutProps["postCid"];
-        const commentIpfsRecreated = <CommentIpfsType>(
-            removeUndefinedValuesRecursively({ ...strippedOutProps, ...this.toJSONPubsubMessagePublication() })
-        );
-        const calculatedIpfsHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
-        if (calculatedIpfsHash !== props.cid) {
-            log.error(`The Comment (${props.cid}) has recreated a CommentIpfs that's not matching the cid`);
-        } else this._initIpfsProps(commentIpfsRecreated);
-        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
+        log("Received update props from subplebbit after succcessful challenge exchange", props);
+        this._setOriginalFieldBeforeModifying();
+        this.setCid(props.commentUpdate.cid);
+        this._initIpfsProps(props.comment);
+
+        if (props.commentUpdate.author) Object.assign(this.author, props.commentUpdate.author);
+        this.protocolVersion = props.commentUpdate.protocolVersion;
     }
 
     override getType(): PublicationTypeName {
@@ -341,7 +332,7 @@ export class Comment extends Publication implements CommentPubsubMessagePublicat
         });
     }
 
-    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdateType | PlebbitError> {
+    private async _retryLoadingCommentUpdate(log: Logger): Promise<CommentUpdateType | PlebbitError | Error> {
         return new Promise((resolve) => {
             this._loadingOperation!.attempt(async (curAttempt) => {
                 log.trace(`Retrying to load CommentUpdate (${this.cid}) for the ${curAttempt}th time`);
@@ -391,7 +382,7 @@ export class Comment extends Publication implements CommentPubsubMessagePublicat
 
         const commentUpdateOrError = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
-        if (commentUpdateOrError instanceof PlebbitError) {
+        if (commentUpdateOrError instanceof Error) {
             // An error, either a signature or a schema problem
             // We should emit an error, and keep retrying to load a different record
             log.error(`Encountered an error while trying to load CommentUpdate of (${this.cid})`, commentUpdateOrError.toString());

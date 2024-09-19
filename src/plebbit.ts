@@ -292,7 +292,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         comment._retryLoadingCommentUpdate = () => {};
         await comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
-        let error: PlebbitError | undefined;
+        let error: PlebbitError | Error | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
         await Promise.race([updatePromise, errorPromise]);
         await comment.stop();

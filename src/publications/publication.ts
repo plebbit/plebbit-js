@@ -159,7 +159,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.protocolVersion = props.protocolVersion;
     }
 
-    protected async _updateLocalCommentPropsWithVerification(publication: DecryptedChallengeVerificationMessageType["publication"]) {
+    protected async _updateLocalCommentPropsWithVerification(decryptedVerification: DecryptedChallengeVerification) {
         throw Error("should be handled in comment, not publication");
     }
 
@@ -183,8 +183,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
         this._receivedChallengeVerification = true;
-        if (verification.publication) await this._updateLocalCommentPropsWithVerification(verification.publication);
-        this.emit("challengeverification", verification, this instanceof Comment && verification.publication ? this : undefined);
+        if (verification.comment) await this._updateLocalCommentPropsWithVerification(<DecryptedChallengeVerification>verification);
+        this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
     }
@@ -321,9 +321,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
                     return;
                 }
 
-                if (decryptedChallengeVerification.publication) {
-                    await this._updateLocalCommentPropsWithVerification(decryptedChallengeVerification.publication);
-                    log("Updated the props of this instance with challengeVerification.publication");
+                if (decryptedChallengeVerification.comment) {
+                    await this._updateLocalCommentPropsWithVerification(decryptedChallengeVerification);
+                    log("Updated the props of this instance with challengeverification.encrypted");
                 }
             }
         } else {
@@ -343,7 +343,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.emit(
             "challengeverification",
             { ...msg, ...decryptedChallengeVerification },
-            this instanceof Comment && decryptedChallengeVerification?.publication ? this : undefined
+            this instanceof Comment && decryptedChallengeVerification ? this : undefined
         );
     }
 
@@ -697,16 +697,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
         return;
     }
 
-    private async _signAndValidateChallengeRequestBeforePublishing(
-        requestWithoutSignature: Omit<ChallengeRequestMessageType, "signature">,
-        pubsubMsgSigner: SignerType
-    ): Promise<ChallengeRequestMessageType> {
-        return ChallengeRequestMessageSchema.parse({
-            ...requestWithoutSignature,
-            signature: await signChallengeRequest(requestWithoutSignature, pubsubMsgSigner)
-        });
-    }
-
     async publish() {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
@@ -754,7 +744,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
             timestamp: timestamp()
         });
 
-        const challengeRequest = await this._signAndValidateChallengeRequestBeforePublishing(toSignMsg, pubsubMessageSigner);
+        const challengeRequest = <ChallengeRequestMessageType>{
+            ...toSignMsg,
+            signature: await signChallengeRequest(toSignMsg, pubsubMessageSigner)
+        };
         log(
             "Attempting to publish",
             this.getType(),
