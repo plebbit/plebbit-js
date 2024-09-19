@@ -184,5 +184,35 @@ getRemotePlebbitConfigs().map((config) => {
             await new Promise((resolve) => subplebbit.once("update", resolve));
             await subplebbit.stop();
         });
+
+        it(`subplebbit.update() emits an error if subplebbit record is over 1mb`, async () => {
+            const twoMbObject = { testString: "x".repeat(2 * 1024 * 1024) }; //2mb
+
+            const ipnsObj = await createNewIpns();
+
+            await ipnsObj.publishToIpns(JSON.stringify(twoMbObject));
+
+            const tempSubplebbit = await plebbit.createSubplebbit({ address: ipnsObj.signer.address });
+
+            let retries = 0;
+            await tempSubplebbit.update();
+            await new Promise((resolve) => {
+                tempSubplebbit.on("error", (err) => {
+                    if (isPlebbitFetchingUsingGateways(plebbit)) {
+                        // we're using gateways to fetch
+                        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS");
+                        for (const gatewayUrl of Object.keys(tempSubplebbit.clients.ipfsGateways)) {
+                            expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                        }
+                    } else {
+                        expect(err.code).to.equal("ERR_OVER_DOWNLOAD_LIMIT");
+                    }
+                    retries++;
+                    if (retries === 3) resolve();
+                });
+            });
+
+            await tempSubplebbit.stop();
+        });
     });
 });
