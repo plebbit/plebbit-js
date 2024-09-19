@@ -7,11 +7,11 @@ import {
     UserAgentSchema
 } from "../schema/schema.js";
 import { VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
-import { CommentEditPubsubMessagePublicationSchema } from "../publications/comment-edit/schema.js";
+import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../publications/comment-edit/schema.js";
 import {
     CommentIpfsWithCidPostCidDefinedSchema,
     AuthorWithCommentUpdateSchema,
-    CommentPubsubMessagePublicationSchema
+    CommentPubsubMessageWithFlexibleAuthorRefinementSchema
 } from "../publications/comment/schema.js";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
@@ -60,7 +60,7 @@ export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
 }).strict();
 
 export const DecryptedChallengeRequestPublicationSchema = z.object({
-    comment: CommentPubsubMessagePublicationSchema.passthrough().optional(),
+    comment: CommentPubsubMessageWithFlexibleAuthorRefinementSchema.optional(),
     vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
     commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough().optional(),
     commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional()
