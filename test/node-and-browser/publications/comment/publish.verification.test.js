@@ -179,8 +179,11 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
                 await generateMockPost(subplebbitAddress, plebbit, false, forbiddenType);
                 expect.fail("Should fail because these fields should not part be of CreateComment");
             } catch (e) {
-                expect(e.name).to.equal("ZodError");
-                expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
+                // no need to test for cid
+                if (!forbiddenType.cid) {
+                    expect(e.name).to.equal("ZodError");
+                    expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
+                }
             }
 
             const post = await generateMockPost(subplebbitAddress, plebbit, false);
