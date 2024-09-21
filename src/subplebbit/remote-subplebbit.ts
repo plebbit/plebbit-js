@@ -23,7 +23,7 @@ import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 
-export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
+export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitIpfsType, "posts"> {
     // public
     title?: SubplebbitIpfsType["title"];
     description?: SubplebbitIpfsType["description"];
