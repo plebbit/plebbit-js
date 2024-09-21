@@ -62,13 +62,16 @@ export class SortHandler {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.comment.cid] = await this.subplebbit._dbHandler.queryActiveScore(comment.comment);
+                activeScores[comment.commentUpdate.cid] = await this.subplebbit._dbHandler.queryActiveScore({
+                    cid: comment.commentUpdate.cid,
+                    timestamp: comment.comment.timestamp
+                });
         }
 
         const scoreSort = (obj1: PageIpfs["comments"][0], obj2: PageIpfs["comments"][0]) => {
             if (activeScores) {
                 // Make exception for active sorting because it has a different mechanism for sorting
-                return activeScores[obj2.comment.cid] - activeScores[obj1.comment.cid];
+                return activeScores[obj2.commentUpdate.cid] - activeScores[obj1.commentUpdate.cid];
             }
             const score1 = sortProps.score(obj1);
             const score2 = sortProps.score(obj2);

@@ -102,7 +102,6 @@ import {
 import type { VotePubsubMessagePublication } from "../../../publications/vote/types.js";
 import type {
     CommentIpfsType,
-    CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessagePublication,
     CommentUpdateType,
     PostPubsubMessageWithSubplebbitAuthor,

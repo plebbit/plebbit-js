@@ -107,6 +107,8 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
         // This code below is duplicated in comment._initCommentUpdate
         // TODO move it to a shared function
         const parsedPages = commentObj.commentUpdate.replies ? parsePagesIpfs(commentObj.commentUpdate.replies) : undefined;
+        const postCid = commentObj.comment.postCid ?? (commentObj.comment.depth === 0 ? commentObj.commentUpdate.cid : undefined);
+        if (!postCid) throw Error("Failed to infer postCid from pageIpfs.comments.comment");
         const finalJson: CommentWithinPageJson = {
             ...commentObj.comment,
             ...commentObj.commentUpdate,
@@ -120,7 +122,7 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
                     commentObj.commentUpdate?.edit?.author?.flair ||
                     commentObj.comment.author.flair
             },
-            shortCid: shortifyCid(commentObj.comment.cid),
+            shortCid: shortifyCid(commentObj.commentUpdate.cid),
             shortSubplebbitAddress: shortifyAddress(commentObj.comment.subplebbitAddress),
             original: OriginalCommentFieldsBeforeCommentUpdateSchema.parse(commentObj.comment),
             deleted: commentObj.commentUpdate.edit?.deleted,
@@ -131,7 +133,8 @@ export function parsePageIpfs(pageIpfs: PageIpfs): PageTypeJson {
                 ("spoiler" in commentObj.commentUpdate && commentObj.commentUpdate.spoiler) ||
                 (commentObj.commentUpdate.edit && "spoiler" in commentObj.commentUpdate.edit && commentObj.commentUpdate.edit.spoiler) ||
                 commentObj.comment.spoiler,
-            flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair
+            flair: commentObj.comment.flair || commentObj.commentUpdate.edit?.flair,
+            postCid
         };
         return finalJson;
     });

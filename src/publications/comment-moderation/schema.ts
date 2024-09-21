@@ -80,9 +80,9 @@ export const CommentModerationReservedFields = remeda.difference(
 );
 
 export const CommentModerationChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentModerationPubsubMessagePublicationSchema.passthrough()
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough()
 });
 
 export const CreateCommentModerationFunctionArgumentSchema = CreateCommentModerationOptionsSchema.or(
     CommentModerationPubsubMessagePublicationSchema
-).or(CommentModerationChallengeRequestToEncryptSchema);
+);

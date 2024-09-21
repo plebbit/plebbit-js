@@ -48,8 +48,8 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
 
     _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.publication);
-        this._pubsubMsgToPublish = props.publication;
+        this._initRemoteProps(props.commentEdit);
+        this._pubsubMsgToPublish = props.commentEdit;
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {

@@ -716,7 +716,7 @@ export async function verifyPage(
             resolveAuthorAddresses,
             clientsManager,
             subplebbitAddress,
-            pageComment.comment,
+            { signature: pageComment.comment.signature, cid: pageComment.commentUpdate.cid },
             overrideAuthorAddressIfInvalid,
             resolveDomainSubAddress
         );

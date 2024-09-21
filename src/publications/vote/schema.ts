@@ -63,8 +63,7 @@ export const VotePubsubReservedFields = remeda.difference(
 );
 
 export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: VotePubsubMessagePublicationSchema.passthrough()
+    vote: VotePubsubMessagePublicationSchema.passthrough()
 });
 
-export const CreateVoteFunctionArgumentSchema =
-    CreateVoteUserOptionsSchema.or(VotePubsubMessagePublicationSchema).or(VoteChallengeRequestToEncryptSchema);
+export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessagePublicationSchema);

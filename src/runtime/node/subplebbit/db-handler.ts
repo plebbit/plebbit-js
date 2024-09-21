@@ -30,11 +30,12 @@ import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { CommentEditPubsubMessagePublicationSchema, CommentEditsTableRowSchema } from "../../../publications/comment-edit/schema.js";
 import type { CommentEditPubsubMessagePublication, CommentModerationTableRow } from "../../../publications/comment-edit/types.js";
-import type { CommentIpfsWithCidPostCidDefined, CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
+import type { CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
-import { CommentIpfsSchema, CommentIpfsWithCidPostCidDefinedSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
+import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
+import type { PageIpfs } from "../../../pages/types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -558,7 +559,9 @@ export class DbHandler {
         };
         const children = await this.queryCommentsForPages(options, trx);
 
-        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.comment.cid, trx))));
+        return (
+            children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.commentUpdate.cid, trx))))
+        );
     }
 
     async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
@@ -579,16 +582,13 @@ export class DbHandler {
         return maxTimestamp;
     }
 
-    async queryCommentsForPages(
-        options: Omit<PageOptions, "pageSize">,
-        trx?: Transaction
-    ): Promise<{ comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }[]> {
+    async queryCommentsForPages(options: Omit<PageOptions, "pageSize">, trx?: Transaction): Promise<PageIpfs["comments"]> {
         // protocolVersion, signature
 
         const commentUpdateColumns = <(keyof CommentUpdateType)[]>remeda.keys.strict(CommentUpdateSchema.shape); // TODO query extra props here as well
         const commentUpdateColumnSelects = commentUpdateColumns.map((col) => `${TABLES.COMMENT_UPDATES}.${col} AS commentUpdate_${col}`);
 
-        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsWithCidPostCidDefinedSchema.shape), "extraProps"];
+        const commentIpfsColumns = [...remeda.keys.strict(CommentIpfsSchema.shape), "extraProps"];
         const commentIpfsColumnSelects = commentIpfsColumns.map((col) => `${TABLES.COMMENTS}.${col} AS commentIpfs_${col}`);
 
         const commentsRaw: CommentsTableRow[] = await this._basePageQuery(options, trx).select([
@@ -597,20 +597,18 @@ export class DbHandler {
         ]);
 
         //@ts-expect-error
-        const comments: { comment: CommentIpfsWithCidPostCidDefined; commentUpdate: CommentUpdateType }[] = commentsRaw.map(
-            (commentRaw) => ({
-                comment: remeda.mapKeys(
-                    // we need to exclude extraProps from pageIpfs.comments[0].comment
-                    // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
-                    remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
-                    (key, value) => key.replace("commentIpfs_", "")
-                ),
-                commentUpdate: remeda.mapKeys(
-                    remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
-                    (key, value) => key.replace("commentUpdate_", "")
-                )
-            })
-        );
+        const comments: PageIpfs["comments"] = commentsRaw.map((commentRaw) => ({
+            comment: remeda.mapKeys(
+                // we need to exclude extraProps from pageIpfs.comments[0].comment
+                // parseDbResponses should automatically include the spread of commentTableRow.extraProps in the object
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentIpfs_") && !key.endsWith("extraProps")),
+                (key, value) => key.replace("commentIpfs_", "")
+            ),
+            commentUpdate: remeda.mapKeys(
+                remeda.pickBy(commentRaw, (value, key) => key.startsWith("commentUpdate_")),
+                (key, value) => key.replace("commentUpdate_", "")
+            )
+        }));
 
         return comments;
     }

@@ -9,8 +9,6 @@ import {
 import { VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
 import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../publications/comment-edit/schema.js";
 import {
-    CommentIpfsWithCidPostCidDefinedSchema,
-    AuthorWithCommentUpdateSchema,
     CommentIpfsSchema,
     CommentUpdateSchema,
     CommentPubsubMessageWithFlexibleAuthorRefinementSchema
@@ -48,10 +46,6 @@ export const EncryptedSchema = z
     .strict();
 
 // publication with subplebbit author that are added by subplebbit when they respond to publication, or emit an event
-
-export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).strict();
 
 // Challenge Request message
 

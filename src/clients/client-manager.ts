@@ -30,7 +30,7 @@ import type { SubplebbitIpfsType, SubplebbitJson } from "../subplebbit/types.js"
 import Logger from "@plebbit/plebbit-logger";
 import pLimit from "p-limit";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
-import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdateType } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentUpdateType } from "../publications/comment/types.js";
 import type { PageIpfs } from "../pages/types.js";
 import {
     parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
@@ -629,8 +629,8 @@ export class CommentClientsManager extends PublicationClientsManager {
 
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string) {
         if (!subIpns.posts?.pages?.hot) return undefined; // try to use preloaded pages if possible
-        const findInCommentAndChildren = (pageComment: PageIpfs["comments"][0]): PageIpfs["comments"][0]["comment"] | undefined => {
-            if (pageComment.comment.cid === commentCidToLookFor) return pageComment.comment;
+        const findInCommentAndChildren = (pageComment: PageIpfs["comments"][0]): PageIpfs["comments"][number] | undefined => {
+            if (pageComment.commentUpdate.cid === commentCidToLookFor) return pageComment;
             if (!pageComment.commentUpdate.replies?.pages?.topAll) return undefined;
             for (const childComment of pageComment.commentUpdate.replies.pages.topAll.comments) {
                 const commentInChild = findInCommentAndChildren(childComment);
@@ -645,20 +645,25 @@ export class CommentClientsManager extends PublicationClientsManager {
         return undefined;
     }
 
-    async _fetchParentCommentForCommentUpdate(parentCid: string): Promise<CommentIpfsWithCidDefined> {
+    async _fetchParentCommentForCommentUpdate(
+        parentCid: string
+    ): Promise<{ comment: CommentIpfsType; commentUpdate: Pick<CommentUpdateType, "cid"> }> {
         if (this._defaultIpfsProviderUrl) {
             this.updateIpfsState("fetching-update-ipfs");
             this._comment._setUpdatingState("fetching-update-ipfs");
             try {
+                const commentIpfs = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
+                    parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid))
+                );
                 return {
-                    cid: parentCid,
-                    ...parseCommentIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(await this._fetchCidP2P(parentCid)))
+                    comment: commentIpfs,
+                    commentUpdate: { cid: parentCid }
                 };
             } finally {
                 this.updateIpfsState("stopped");
             }
         } else {
-            return { cid: parentCid, ...(await this.fetchAndVerifyCommentCid(parentCid)) };
+            return { commentUpdate: { cid: parentCid }, comment: await this.fetchAndVerifyCommentCid(parentCid) };
         }
     }
 
@@ -681,13 +686,14 @@ export class CommentClientsManager extends PublicationClientsManager {
                 reversedPath += "/" + parentPathCache;
                 break;
             } else {
-                const parent =
+                const parentInPageIpfs =
                     this._findCommentInSubplebbitPosts(subIpns, parentCid) || (await this._fetchParentCommentForCommentUpdate(parentCid));
 
-                if (parent.depth === 0) await postTimestampCache.setItem(parent.cid, parent.timestamp);
+                if (parentInPageIpfs.comment.depth === 0)
+                    await postTimestampCache.setItem(parentInPageIpfs.commentUpdate.cid, parentInPageIpfs.comment.timestamp);
 
                 reversedPath += `/${parentCid}`;
-                parentCid = parent.parentCid;
+                parentCid = parentInPageIpfs.comment.parentCid;
             }
         }
 

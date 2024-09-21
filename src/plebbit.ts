@@ -396,8 +396,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             if (Object.keys(parsedOptions).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
         }
 
-        if ("publication" in parsedOptions) commentInstance._initChallengeRequestProps(parsedOptions);
-        else if ("depth" in parsedOptions) {
+        if ("depth" in parsedOptions) {
             // Options is CommentIpfs
             commentInstance._initIpfsProps(parsedOptions);
         } else if ("signature" in parsedOptions) {
@@ -620,8 +619,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const parsedOptions = CreateVoteFunctionArgumentSchema.parse(options);
         const voteInstance = new Vote(this);
 
-        if ("publication" in parsedOptions) voteInstance._initChallengeRequestProps(parsedOptions);
-        else if ("signature" in parsedOptions) {
+        if ("signature" in parsedOptions) {
             voteInstance._initRemoteProps(parsedOptions);
         } else {
             const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
@@ -653,8 +651,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const parsedOptions = CreateCommentEditFunctionArgumentSchema.parse(options);
         const editInstance = new CommentEdit(this);
 
-        if ("publication" in parsedOptions) editInstance._initChallengeRequestProps(parsedOptions);
-        else if ("signature" in parsedOptions)
+        if ("signature" in parsedOptions)
             editInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
         else {
             const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
@@ -687,8 +684,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const parsedOptions = CreateCommentModerationFunctionArgumentSchema.parse(options);
         const modInstance = new CommentModeration(this);
 
-        if ("publication" in parsedOptions) modInstance._initChallengeRequestProps(parsedOptions);
-        else if ("signature" in parsedOptions)
+        if ("signature" in parsedOptions)
             modInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
         else {
             const finalOptions = <CommentModerationOptionsToSign>(

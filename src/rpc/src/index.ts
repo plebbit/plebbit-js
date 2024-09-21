@@ -588,7 +588,8 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const comment = await this.plebbit.createComment(publishOptions);
+        const comment = await this.plebbit.createComment(publishOptions.comment);
+        comment._initChallengeRequestProps(publishOptions);
         this.publishing[subscriptionId] = comment;
         comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -629,7 +630,8 @@ class PlebbitWsServer extends EventEmitter {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
 
-        const vote = await this.plebbit.createVote(publishOptions);
+        const vote = await this.plebbit.createVote(publishOptions.vote);
+        vote._initChallengeRequestProps(publishOptions);
         this.publishing[subscriptionId] = vote;
         vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -675,7 +677,8 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentEdit = await this.plebbit.createCommentEdit(publishOptions);
+        const commentEdit = await this.plebbit.createCommentEdit(publishOptions.commentEdit);
+        commentEdit._initChallengeRequestProps(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
         commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -721,7 +724,9 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentMod = await this.plebbit.createCommentModeration(publishOptions);
+        const commentMod = await this.plebbit.createCommentModeration(publishOptions.commentModeration);
+        commentMod._initChallengeRequestProps(publishOptions);
+
         this.publishing[subscriptionId] = commentMod;
         commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         commentMod.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));

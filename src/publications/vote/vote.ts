@@ -38,8 +38,8 @@ class Vote extends Publication implements VotePubsubMessagePublication {
 
     _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.publication);
-        this._pubsubMsgToPublish = props.publication;
+        this._initRemoteProps(props.vote);
+        this._pubsubMsgToPublish = props.vote;
     }
 
     override toJSONPubsubMessagePublication(): VotePubsubMessagePublication {

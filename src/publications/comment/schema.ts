@@ -86,7 +86,7 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePubl
 );
 
 export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
+    comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
 }).strict();
 
 // Remote comments
@@ -106,14 +106,6 @@ export const CommentIpfsWithRefinmentSchema = CommentIpfsSchema.refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
-
-export const CommentIpfsWithCidDefinedSchema = CommentIpfsSchema.extend({
-    cid: CidStringSchema
-}).strict();
-
-export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedSchema.extend({
-    postCid: CidStringSchema
-}).strict();
 
 // Comment update schemas
 
@@ -168,7 +160,9 @@ export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessa
 
 // Comment table here
 
-export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
+export const CommentsTableRowSchema = CommentIpfsSchema.extend({
+    cid: CidStringSchema,
+    postCid: CidStringSchema,
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
@@ -204,9 +198,6 @@ export const CommentUpdateReservedFields = remeda.difference(
 // Plebbit.createComment here
 
 export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentIpfsWithRefinmentSchema)
-    .or(CommentIpfsWithCidDefinedSchema)
-    .or(CommentIpfsWithCidPostCidDefinedSchema)
     .or(CommentPubsubMessageWithRefinementSchema)
-    .or(CommentChallengeRequestToEncryptSchema)
-    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
-    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));
+    .or(CommentUpdateSchema.pick({ cid: true }))
+    .or(z.object({ subplebbitAddress: CommentPubsubMessagePublicationSchema.shape.subplebbitAddress, cid: CommentUpdateSchema.shape.cid }));

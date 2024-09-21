@@ -152,7 +152,7 @@ export class Comment extends Publication implements CommentPubsubMessagePublicat
 
     _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
         super._initChallengeRequestChallengeProps(props);
-        this._initPubsubMessageProps(props.publication);
+        this._initPubsubMessageProps(props.comment);
     }
 
     _initProps(props: CommentIpfsType | CommentPubsubMessagePublication) {

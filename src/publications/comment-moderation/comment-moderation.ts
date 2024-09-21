@@ -1,7 +1,11 @@
 import { Plebbit } from "../../plebbit.js";
 import Publication from "../publication.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type { CommentModerationChallengeRequestToEncrypt, CommentModerationPubsubMessagePublication, LocalCommentModerationAfterSigning } from "./types.js";
+import type {
+    CommentModerationChallengeRequestToEncrypt,
+    CommentModerationPubsubMessagePublication,
+    LocalCommentModerationAfterSigning
+} from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
 import * as remeda from "remeda";
 import { verifyCommentModeration } from "../../signer/signatures.js";
@@ -40,8 +44,8 @@ export class CommentModeration extends Publication implements CommentModerationP
 
     _initChallengeRequestProps(props: CommentModerationChallengeRequestToEncrypt) {
         super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.publication);
-        this._pubsubMsgToPublish = props.publication;
+        this._initRemoteProps(props.commentModeration);
+        this._pubsubMsgToPublish = props.commentModeration;
     }
 
     override toJSONPubsubMessagePublication(): CommentModerationPubsubMessagePublication {

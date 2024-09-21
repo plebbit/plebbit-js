@@ -2,8 +2,6 @@ import { z } from "zod";
 import {
     CommentChallengeRequestToEncryptSchema,
     CommentIpfsSchema,
-    CommentIpfsWithCidDefinedSchema,
-    CommentIpfsWithCidPostCidDefinedSchema,
     CommentOptionsToSignSchema,
     CommentPubsubMessagePublicationSchema,
     CommentUpdateNoRepliesSchema,
@@ -34,10 +32,6 @@ export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
 
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
-export type CommentIpfsWithCidDefined = z.infer<typeof CommentIpfsWithCidDefinedSchema>;
-
-export type CommentIpfsWithCidPostCidDefined = z.infer<typeof CommentIpfsWithCidPostCidDefinedSchema>;
-
 export type CommentChallengeRequestToEncryptType = z.infer<typeof CommentChallengeRequestToEncryptSchema>;
 
 export type RpcCommentUpdateResultType = z.infer<typeof RpcCommentUpdateResultSchema>;
@@ -49,6 +43,14 @@ type CommentOriginalField = z.infer<typeof OriginalCommentFieldsBeforeCommentUpd
 export type CommentJson = JsonOfClass<Comment>;
 
 type AuthorWithShortSubplebbitAddress = AuthorTypeWithCommentUpdate & { shortAddress: string };
+
+export interface CommentIpfsWithCidDefined extends CommentIpfsType {
+    cid: string;
+}
+
+export interface CommentIpfsWithCidPostCidDefined extends CommentIpfsWithCidDefined {
+    postCid: string;
+}
 
 // subplebbit.posts.pages.hot.comments[0] will have this shape
 export interface CommentWithinPageJson extends CommentIpfsWithCidPostCidDefined, Omit<CommentUpdateType, "replies"> {
