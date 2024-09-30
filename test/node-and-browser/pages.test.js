@@ -2,7 +2,6 @@ import {
     loadAllPages,
     publishRandomPost,
     findCommentInPage,
-    mockRemotePlebbit,
     mockGatewayPlebbit,
     mockPlebbit,
     addStringToIpfs,
@@ -12,6 +11,9 @@ import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../
 import { expect } from "chai";
 import signers from "../fixtures/signers.js";
 import * as remeda from "remeda";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 let subplebbit;
 const subCommentPages = {};
@@ -139,7 +141,7 @@ const testPostsSort = async (sortName) => {
 const testRepliesSort = async (parentComments, replySortName, plebbit) => {
     const commentsWithReplies = parentComments.filter((comment) => comment.replyCount > 0);
     for (const comment of commentsWithReplies) {
-        expect(Object.keys(comment.replies.pageCids)).to.deep.equal(Object.keys(REPLIES_SORT_TYPES));
+        expect(Object.keys(comment.replies.pageCids).sort()).to.deep.equal(Object.keys(REPLIES_SORT_TYPES).sort());
         const commentInstance = await plebbit.createComment(comment);
         const commentPages = await loadAllPages(comment.replies.pageCids[replySortName], commentInstance.replies);
         await testListOfSortedComments(commentPages, replySortName, plebbit);
@@ -194,6 +196,19 @@ getRemotePlebbitConfigs().map((config) => {
                     }
                 }
             });
+
+            it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+                const pageCids = Object.values(subplebbit.posts.pageCids);
+
+                for (const pageCid of pageCids) {
+                    const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
+
+                    for (const commentInPageIpfs of pageIpfs.comments) {
+                        const calculatedCid = await calculateIpfsHash(deterministicStringify(commentInPageIpfs.comment));
+                        expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
+                    }
+                }
+            });
         });
 
         describe("comment.replies", async () => {
@@ -215,6 +230,22 @@ getRemotePlebbitConfigs().map((config) => {
                 it(`${sortName} pages under a comment are sorted correctly`, async () =>
                     await testRepliesSort(posts, sortName, subplebbit._plebbit))
             );
+
+            it(`The PageIpfs.comments.comment always correspond to PageIpfs.comment.commentUpdate.cid`, async () => {
+                for (const post of posts) {
+                    if (!post.replies) continue;
+                    const pageCids = Object.values(post.replies.pageCids);
+
+                    for (const pageCid of pageCids) {
+                        const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
+
+                        for (const commentInPageIpfs of pageIpfs.comments) {
+                            const calculatedCid = await calculateIpfsHash(deterministicStringify(commentInPageIpfs.comment));
+                            expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
+                        }
+                    }
+                }
+            });
         });
     });
 });
