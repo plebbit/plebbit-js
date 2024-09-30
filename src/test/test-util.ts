@@ -608,7 +608,7 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
         comment._plebbit
     );
 
-    comment.toJSONPubsubMessagePublication = () => pubsubPublication;
+    comment._pubsubMsgToPublish = pubsubPublication;
 
     disableZodValidationOfPublication(comment);
 }
@@ -637,7 +637,8 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
             comment.signer!,
             log
         );
-    comment.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+
+    comment._pubsubMsgToPublish = publicationWithExtraProp;
 
     disableZodValidationOfPublication(comment);
 
@@ -655,7 +656,8 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
             vote.signer!,
             log
         );
-    vote.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+    //@ts-expect-error
+    vote._pubsubMsgToPublish = publicationWithExtraProp;
 
     disableZodValidationOfPublication(vote);
 
@@ -677,7 +679,7 @@ export async function setExtraPropOnCommentEditAndSign(
             commentEdit.signer!,
             log
         );
-    commentEdit.toJSONPubsubMessagePublication = () => publicationWithExtraProp;
+    commentEdit._pubsubMsgToPublish = publicationWithExtraProp;
 
     disableZodValidationOfPublication(commentEdit);
 
@@ -700,7 +702,7 @@ export async function setExtraPropOnCommentModerationAndSign(
             commentModeration.signer!,
             log
         );
-    commentModeration.toJSONPubsubMessagePublication = () => newPubsubPublicationWithExtraProp;
+    commentModeration._pubsubMsgToPublish = newPubsubPublicationWithExtraProp;
 
     disableZodValidationOfPublication(commentModeration);
 
