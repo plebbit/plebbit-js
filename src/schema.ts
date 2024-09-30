@@ -62,7 +62,7 @@ const PlebbitUserOptionBaseSchema = z.object({
 
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
-    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://cloudflare-ipfs.com", "https://ipfs.io"]),
+    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://dweb.link", "https://ipfs.io"]),
     pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),
