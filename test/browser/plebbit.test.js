@@ -7,7 +7,7 @@ describe("plebbit", () => {
     it("Plebbit() has default plebbit options", async () => {
         // RPC exception
         const plebbit = await Plebbit();
-        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://cloudflare-ipfs.com", "https://ipfs.io"].sort());
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"].sort());
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
 
         // no dataPath in brower
