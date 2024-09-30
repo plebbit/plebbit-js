@@ -7,12 +7,15 @@ import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from ".
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
 import { Plebbit } from "../../plebbit.js";
-import { verifyCommentPubsubMessage } from "../../signer/signatures.js";
+import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForChallengeVerification } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import * as remeda from "remeda";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+
 import type {
     CommentChallengeRequestToEncryptType,
     CommentIpfsType,
@@ -259,15 +262,82 @@ export class Comment
         }
     }
 
-    protected override async _updateLocalCommentPropsWithVerification(props: DecryptedChallengeVerification) {
-        const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
-        log("Received update props from subplebbit after succcessful challenge exchange", props);
-        this._setOriginalFieldBeforeModifying();
-        this.setCid(props.commentUpdate.cid);
-        this._initIpfsProps(props.comment);
+    private async _verifyChallengeVerificationCommentProps(
+        decryptedVerification: DecryptedChallengeVerification
+    ): Promise<PlebbitError | undefined> {
+        const log = Logger("plebbit-js:comment:publish:_verifyChallengeVerificationCommentProps");
 
-        if (props.commentUpdate.author) Object.assign(this.author, props.commentUpdate.author);
-        this.protocolVersion = props.commentUpdate.protocolVersion;
+        if (!this._pubsubMsgToPublish) throw Error("comment._pubsubMsgToPublish should be defined at this point");
+        // verify that the sub did not change any props that we published
+        const pubsubMsgFromCommentIpfs = remeda.pick(decryptedVerification.comment, remeda.keys.strict(this._pubsubMsgToPublish));
+
+        if (!remeda.isDeepEqual(pubsubMsgFromCommentIpfs, this._pubsubMsgToPublish)) {
+            const error = new PlebbitError("ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS", {
+                pubsubMsgFromSub: pubsubMsgFromCommentIpfs,
+                originalPubsubMsg: this._pubsubMsgToPublish
+            });
+            log.error(error);
+            this.emit("error", error);
+            return error;
+        }
+
+        const commentIpfsValidity = await verifyCommentIpfs(
+            decryptedVerification.comment,
+            this._plebbit.resolveAuthorAddresses,
+            this._clientsManager,
+            false
+        );
+        if (!commentIpfsValidity.valid) {
+            const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT", {
+                reason: commentIpfsValidity.reason,
+                decryptedChallengeVerification: decryptedVerification
+            });
+            log.error(error);
+            this.emit("error", error);
+            return error;
+        }
+        const commentUpdateValidity = await verifyCommentUpdateForChallengeVerification(decryptedVerification.commentUpdate);
+        if (!commentUpdateValidity.valid) {
+            const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE", {
+                reason: commentUpdateValidity.reason,
+                decryptedChallengeVerification: decryptedVerification
+            });
+            log.error(error);
+            this.emit("error", error);
+            return error;
+        }
+
+        const calculatedCid = await calculateIpfsHash(deterministicStringify(decryptedVerification.comment));
+        if (calculatedCid !== decryptedVerification.commentUpdate.cid) {
+            const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID", {
+                cidSentBySub: decryptedVerification.commentUpdate.cid,
+                calculatedCid,
+                decryptedChallengeVerification: decryptedVerification
+            });
+            log.error(error);
+            this.emit("error", error);
+            return error;
+        }
+    }
+
+    protected override async _updateLocalCommentPropsWithVerification(decryptedVerification: DecryptedChallengeVerification) {
+        // We're gonna update Comment instance with DecryptedChallengeVerification.{comment, commentUpdate}
+        const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
+        log("Received update props from subplebbit after succcessful challenge exchange", decryptedVerification);
+
+        if (!this._plebbit.plebbitRpcClient) {
+            // no need to validate if RPC
+            const errorInVerificationProps = await this._verifyChallengeVerificationCommentProps(decryptedVerification);
+            if (errorInVerificationProps) throw errorInVerificationProps;
+        }
+        this._setOriginalFieldBeforeModifying();
+        this.setCid(decryptedVerification.commentUpdate.cid);
+        this._initIpfsProps(decryptedVerification.comment);
+
+        if (decryptedVerification.commentUpdate.author) Object.assign(this.author, decryptedVerification.commentUpdate.author);
+        this.protocolVersion = decryptedVerification.commentUpdate.protocolVersion;
+        // TODO how to handle extra props in verification.commentUpdate?
+        // TODO should the author add their own comment to IPFS?
     }
 
     override getType(): PublicationTypeName {

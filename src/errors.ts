@@ -100,6 +100,10 @@ export enum messages {
     ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengePubsubMessage includes a field that's not part of signature.signedPropertyNames",
     ERR_CHALLENGE_ANSWER_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeAnswerPubsubMessage includes a field that's not part of signature.signedPropertyNames",
     ERR_CHALLENGE_VERIFICATION_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeVerificationPubsubMessage includes a field that's not part of signature.signedPropertyNames",
+    ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS = "The sub changed CommentPubsubMessagePublication props in decryptedChallengeVerification.comment",
+    ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT = "The subplebbit sent an invalid decryptedChallengeVerification.comment",
+    ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE = "The subplebbit sent an invalid decryptedChallengeVerification.commentUpdate",
+    ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID = "The sub sent decryptedChallengeVerification with commentUpdate.cid that does not correspond to commentIpfs",
 
     // getPage errors
     ERR_COMMENT_IN_PAGE_BELONG_TO_DIFFERENT_SUB = "Comment in page should be under the same subplebbit",

@@ -10,8 +10,8 @@ import { VotePubsubMessagePublicationSchema } from "../publications/vote/schema.
 import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../publications/comment-edit/schema.js";
 import {
     CommentIpfsSchema,
-    CommentUpdateSchema,
-    CommentPubsubMessageWithFlexibleAuthorRefinementSchema
+    CommentPubsubMessageWithFlexibleAuthorRefinementSchema,
+    CommentUpdateForChallengeVerificationSchema
 } from "../publications/comment/schema.js";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
@@ -115,23 +115,13 @@ export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend
     encrypted: EncryptedSchema.optional() // Will decrypt to DecryptedChallengeVerificationSchema
 }).strict();
 
-const CommentUpdateForChallengeVerification = CommentUpdateSchema.pick({
-    author: true,
-    cid: true,
-    signature: true,
-    protocolVersion: true
-}).strict();
-
 export const DecryptedChallengeVerificationSchema = z
     .object({
         comment: CommentIpfsSchema.passthrough(),
-        commentUpdate: CommentUpdateForChallengeVerification.passthrough()
+        commentUpdate: CommentUpdateForChallengeVerificationSchema.passthrough()
     })
     .strict();
 
-export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(
-    remeda.omit(CommentUpdateForChallengeVerification.shape, ["signature"])
-);
 export const ChallengeVerificationMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeVerificationMessageSchema.shape, ["signature"])
 );

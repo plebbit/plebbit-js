@@ -10,7 +10,11 @@ import type { SubplebbitIpfsType } from "../subplebbit/types";
 
 import type { CommentEditPubsubMessagePublication } from "../publications/comment-edit/types";
 import type { VotePubsubMessagePublication } from "../publications/vote/types";
-import type { CommentPubsubMessagePublication, CommentUpdateType, CreateCommentOptions } from "../publications/comment/types";
+import type {
+    CommentPubsubMessagePublication,
+    CommentUpdateForChallengeVerification,
+    CommentUpdateType
+} from "../publications/comment/types";
 import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
 import { VoteSignedPropertyNames } from "../publications/vote/schema";
@@ -73,4 +77,5 @@ export type PublicationToVerify =
     | VotePubsubMessagePublication
     | CommentPubsubMessagePublication
     | SubplebbitIpfsType
-    | CommentUpdateType;
+    | CommentUpdateType
+    | CommentUpdateForChallengeVerification;

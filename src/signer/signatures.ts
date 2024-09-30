@@ -38,12 +38,14 @@ import type {
     CommentIpfsWithCidDefined,
     CommentOptionsToSign,
     CommentPubsubMessagePublication,
+    CommentUpdateForChallengeVerification,
     CommentUpdateType
 } from "../publications/comment/types.js";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
 import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
 import {
     CommentSignedPropertyNames,
+    CommentUpdateForChallengeVerificationSignedPropertyNames,
     CommentUpdateReservedFields,
     CommentUpdateSignedPropertyNames
 } from "../publications/comment/schema.js";
@@ -53,8 +55,7 @@ import {
     ChallengeRequestMessageSignedPropertyNames,
     ChallengeMessageSignedPropertyNames,
     ChallengeAnswerMessageSignedPropertyNames,
-    ChallengeVerificationMessageSignedPropertyNames,
-    CommentUpdateForChallengeVerificationSignedPropertyNames
+    ChallengeVerificationMessageSignedPropertyNames
 } from "../pubsub-messages/schema.js";
 import type { PublicationPubsubMessage } from "../types.js";
 import type {
@@ -422,7 +423,7 @@ export async function verifyCommentIpfs(
 }
 
 function _allFieldsOfRecordInSignedPropertyNames(
-    record: PublicationPubsubMessage | SubplebbitIpfsType | PubsubMessage | CommentUpdateType
+    record: PublicationPubsubMessage | SubplebbitIpfsType | PubsubMessage | CommentUpdateType | CommentUpdateForChallengeVerification
 ): boolean {
     const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
     for (const field of fieldsOfRecord) if (!record.signature.signedPropertyNames.includes(field)) return false;
@@ -512,7 +513,10 @@ async function _getBinaryValidationResult(publication: PubsubMessage): Promise<V
     return { valid: true };
 }
 
-function _isThereReservedFieldInRecord(record: CommentUpdateType | SubplebbitIpfsType, reservedFields: string[]) {
+function _isThereReservedFieldInRecord(
+    record: CommentUpdateType | SubplebbitIpfsType | CommentUpdateForChallengeVerification,
+    reservedFields: string[]
+) {
     return remeda.intersection(Object.keys(record), reservedFields).length > 0;
 }
 
@@ -597,6 +601,21 @@ export async function verifyCommentUpdate(
     }
 
     commentUpdateVerificationCache.set(cacheKey, true);
+
+    return { valid: true };
+}
+
+export async function verifyCommentUpdateForChallengeVerification(
+    update: CommentUpdateForChallengeVerification
+): Promise<ValidationResult> {
+    if (!_allFieldsOfRecordInSignedPropertyNames(update))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
+
+    // Validate signature
+    const jsonValidation = await _getJsonValidationResult(update);
+    if (!jsonValidation.valid) return jsonValidation;
 
     return { valid: true };
 }

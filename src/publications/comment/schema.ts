@@ -141,6 +141,17 @@ export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
 
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
 
+export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.pick({
+    author: true,
+    cid: true,
+    signature: true,
+    protocolVersion: true
+}).strict();
+
+export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(
+    remeda.omit(CommentUpdateForChallengeVerificationSchema.shape, ["signature"])
+);
+
 type OverlapCommentPubsubAndCommentUpdate =
     | (keyof CommentPubsubMessagePublication & keyof Omit<CommentUpdateType, "signature">)
     | "content";

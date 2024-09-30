@@ -4,6 +4,7 @@ import {
     CommentIpfsSchema,
     CommentOptionsToSignSchema,
     CommentPubsubMessagePublicationSchema,
+    CommentUpdateForChallengeVerificationSchema,
     CommentUpdateNoRepliesSchema,
     CreateCommentOptionsSchema,
     LocalCommentSchema,
@@ -29,6 +30,8 @@ export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
 export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
     replies?: RepliesPagesIpfsDefinedManuallyType;
 };
+
+export type CommentUpdateForChallengeVerification = z.infer<typeof CommentUpdateForChallengeVerificationSchema>;
 
 export type CommentIpfsType = z.infer<typeof CommentIpfsSchema>;
 
