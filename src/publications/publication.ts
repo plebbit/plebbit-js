@@ -278,12 +278,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         let decryptedChallengeVerification: DecryptedChallengeVerification | undefined;
         if (msg.challengeSuccess) {
             this._updatePublishingState("succeeded");
-            log(
-                `Received a challengeverification with challengeSuccess=true`,
-                "for publication",
-                this.getType(),
-                "Attempting to decrypt if verification.encrypted is there"
-            );
+            log(`Received a challengeverification with challengeSuccess=true`, "for publication", this.getType());
             if (msg.encrypted) {
                 let decryptedRawString: string;
 

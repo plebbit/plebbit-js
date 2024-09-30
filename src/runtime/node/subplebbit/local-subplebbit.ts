@@ -533,7 +533,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertCommentEdit(editTableRow);
-        log(`Inserted new Comment Edit for comment (${commentEditRaw.commentCid})`, remeda.omit(commentEditRaw, ["signature"]));
+        log(`Inserted new Comment Edit in DB`, remeda.omit(commentEditRaw, ["signature"]));
     }
 
     private async storeCommentModeration(
@@ -562,7 +562,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertCommentModeration(modTableRow);
-        log(`Inserted new CommentModeration for comment (${modTableRow.commentCid})`, remeda.omit(modTableRow, ["signature"]));
+        log(`Inserted new CommentModeration in DB`, remeda.omit(modTableRow, ["signature"]));
     }
 
     private async storeVote(
@@ -587,7 +587,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         await this._dbHandler.insertVote(voteTableRow);
-        log(`inserted new vote for comment ${newVoteProps.commentCid}`, voteTableRow);
+        log(`inserted new vote in DB`, voteTableRow);
         return undefined;
     }
 
@@ -703,7 +703,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this._dbHandler.commitTransaction(request.challengeRequestId.toString());
 
-        log(`New comment with cid ${commentRow.cid} has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
+        log(`New comment with has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
 
         return { comment: commentIpfs, cid: commentCid };
     }
