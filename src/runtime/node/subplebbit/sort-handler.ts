@@ -13,6 +13,8 @@ import type {
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
 import type { CommentIpfsWithCidDefined } from "../../../publications/comment/types.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
+
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 
 export type PageOptions = {
@@ -39,7 +41,7 @@ export class SortHandler {
         const cids: string[] = new Array(chunks.length);
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs: PageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
-            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };

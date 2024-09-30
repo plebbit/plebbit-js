@@ -596,6 +596,11 @@ export class DbHandler {
             ...commentUpdateColumnSelects
         ]);
 
+        // this one liner below is a hack to make sure pageIpfs.comments.comment always correspond to commentUpdate.cid
+        // postCid is not part of CommentIpfs when depth = 0, because it is the post
+        //@ts-expect-error
+        for (const commentRaw of commentsRaw) if (commentRaw["commentIpfs_depth"] === 0) delete commentRaw["commentIpfs_postCid"];
+
         //@ts-expect-error
         const comments: PageIpfs["comments"] = commentsRaw.map((commentRaw) => ({
             comment: remeda.mapKeys(
