@@ -671,7 +671,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
         };
         try {
             // PlebbitRpcClient will take care of zod parsing for us
-            this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()](this.toJSONPubsubRequestToEncrypt());
+            this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()].bind(this._plebbit.plebbitRpcClient)(
+                this.toJSONPubsubRequestToEncrypt()
+            );
             if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
         } catch (e) {
             log.error("Failed to publish to RPC due to error", String(e));
