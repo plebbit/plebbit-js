@@ -703,7 +703,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
         await this._dbHandler.commitTransaction(request.challengeRequestId.toString());
 
-        log(`New comment with has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
+        log(`New comment has been inserted into DB`, remeda.omit(commentRow, ["signature"]));
 
         return { comment: commentIpfs, cid: commentCid };
     }
