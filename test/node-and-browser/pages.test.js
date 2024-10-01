@@ -13,8 +13,6 @@ import signers from "../fixtures/signers.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
-import { stringify as deterministicStringify } from "safe-stable-stringify";
-
 let subplebbit;
 const subCommentPages = {};
 const subplebbitAddress = signers[0].address;
@@ -204,7 +202,7 @@ getRemotePlebbitConfigs().map((config) => {
                     const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
 
                     for (const commentInPageIpfs of pageIpfs.comments) {
-                        const calculatedCid = await calculateIpfsHash(deterministicStringify(commentInPageIpfs.comment));
+                        const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
                         expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
                     }
                 }
@@ -240,7 +238,7 @@ getRemotePlebbitConfigs().map((config) => {
                         const pageIpfs = JSON.parse(await plebbit.fetchCid(pageCid)); // will have PageIpfs type
 
                         for (const commentInPageIpfs of pageIpfs.comments) {
-                            const calculatedCid = await calculateIpfsHash(deterministicStringify(commentInPageIpfs.comment));
+                            const calculatedCid = await calculateIpfsHash(JSON.stringify(commentInPageIpfs.comment));
                             expect(calculatedCid).to.equal(commentInPageIpfs.commentUpdate.cid);
                         }
                     }

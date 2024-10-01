@@ -13,7 +13,6 @@ import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../p
 import { CommentClientsManager } from "../../clients/client-manager.js";
 import { messages } from "../../errors.js";
 import * as remeda from "remeda";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import type {
@@ -307,7 +306,7 @@ export class Comment
             return error;
         }
 
-        const calculatedCid = await calculateIpfsHash(deterministicStringify(decryptedVerification.comment));
+        const calculatedCid = await calculateIpfsHash(JSON.stringify(decryptedVerification.comment));
         if (calculatedCid !== decryptedVerification.commentUpdate.cid) {
             const error = new PlebbitError("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_CID", {
                 cidSentBySub: decryptedVerification.commentUpdate.cid,
