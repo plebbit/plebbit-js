@@ -5,16 +5,21 @@ import {
     setExtraPropOnChallengeRequestAndSign,
     describeSkipIfRpc,
     getRemotePlebbitConfigs,
+    publishChallengeVerificationMessageWithEncryption,
     publishChallengeMessageWithExtraProps,
     publishChallengeAnswerMessageWithExtraProps,
     publishChallengeVerificationMessageWithExtraProps,
     mockPlebbit
 } from "../../../dist/node/test/test-util.js";
+import validCommentUpdateFixture from "../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
+import * as remeda from "remeda";
 
 import { _signJson, _signPubsubMsg } from "../../../dist/node/signer/signatures.js";
 import { messages } from "../../../dist/node/errors.js";
 const mathCliSubplebbitAddress = signers[1].address;
 
+// TODO make these tests work with RPC clients
 describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, async () => {
     let plebbit;
 
@@ -217,6 +222,48 @@ describeSkipIfRpc(`Publishing  and receiving pubsub messages with extra props`, 
             expect(emittedChallengeVerification.extraProp).to.equal(extraProps.extraProp);
 
             await post.stop();
+        });
+
+        it(`A challenge verification message with extra prop in challengeVerification.encrypted will be accepted`, async () => {
+            const pubsubSigner = await plebbit.createSigner();
+            const post = await generateMockPost(signers[0].address, plebbit);
+
+            post._getSubplebbitCache = () => ({
+                address: post.subplebbitAddress,
+                pubsubTopic: pubsubSigner.address,
+                encryption: {
+                    type: "ed25519-aes-gcm",
+                    publicKey: pubsubSigner.publicKey
+                }
+            });
+
+            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+
+            const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
+            commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));
+
+            const extraPropsInEncrypted = { extraProp: 1234 };
+
+            commentUpdate.signature = await _signJson(
+                remeda.keys.strict(remeda.omit(commentUpdate, ["signature"])),
+                commentUpdate,
+                pubsubSigner
+            );
+
+            await post.publish();
+
+            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+                commentUpdate,
+                comment: mockCommentIpfs,
+                ...extraPropsInEncrypted
+            });
+
+            // verification.encrypted should decrypt to {comment, commentUpdate, extraProp}
+
+            const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+
+            await post.stop();
+            expect(challengeVerification.extraProp).to.equal(extraPropsInEncrypted.extraProp);
         });
     });
 });
