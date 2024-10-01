@@ -29,7 +29,12 @@ import type {
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
 import { parseRawPages } from "../../pages/util.js";
-import { CommentIpfsSchema, CommentUpdateSchema, OriginalCommentFieldsBeforeCommentUpdateSchema } from "./schema.js";
+import {
+    CommentIpfsSchema,
+    CommentUpdateForChallengeVerificationSchema,
+    CommentUpdateSchema,
+    OriginalCommentFieldsBeforeCommentUpdateSchema
+} from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 
 export class Comment
@@ -330,16 +335,9 @@ export class Comment
             throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
     }
 
-    protected override async _updateLocalCommentPropsWithVerification(decryptedVerification: DecryptedChallengeVerification) {
-        // We're gonna update Comment instance with DecryptedChallengeVerification.{comment, commentUpdate}
-        const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
-        log("Received update props from subplebbit after succcessful challenge exchange", decryptedVerification);
+    private _updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification: DecryptedChallengeVerification) {
+        const log = Logger("plebbit-js:comment:publish:_updateCommentPropsFromDecryptedChallengeVerification");
 
-        if (!this._plebbit.plebbitRpcClient) {
-            // no need to validate if RPC
-            const errorInVerificationProps = await this._verifyChallengeVerificationCommentProps(decryptedVerification);
-            if (errorInVerificationProps) throw errorInVerificationProps;
-        }
         this._setOriginalFieldBeforeModifying();
         this.setCid(decryptedVerification.commentUpdate.cid);
         this._initIpfsProps(decryptedVerification.comment);
@@ -347,13 +345,40 @@ export class Comment
         if (decryptedVerification.commentUpdate.author) Object.assign(this.author, decryptedVerification.commentUpdate.author);
         this.protocolVersion = decryptedVerification.commentUpdate.protocolVersion;
 
+        // handle extra props here
+        const unknownProps = remeda.difference(
+            remeda.keys.strict(decryptedVerification.commentUpdate),
+            remeda.keys.strict(CommentUpdateForChallengeVerificationSchema.shape)
+        );
+        if (unknownProps.length > 0) {
+            log("Found unknown props on decryptedVerification.commentUpdate record", unknownProps, "Will set them on Comment instance");
+            Object.assign(this, remeda.pick(decryptedVerification.commentUpdate, unknownProps));
+        }
+    }
+
+    protected override async _verifyDecryptedChallengeVerificationAndUpdateCommentProps(
+        decryptedVerification: DecryptedChallengeVerification
+    ) {
+        // We're gonna update Comment instance with DecryptedChallengeVerification.{comment, commentUpdate}
+        const log = Logger("plebbit-js:comment:publish:_verifyDecryptedChallengeVerificationAndUpdateCommentProps");
+        log(
+            "Received update props from subplebbit after succcessful challenge exchange. Will attempt to validate if not connected to RPC",
+            decryptedVerification
+        );
+
+        if (!this._plebbit.plebbitRpcClient) {
+            // no need to validate if RPC
+            const errorInVerificationProps = await this._verifyChallengeVerificationCommentProps(decryptedVerification);
+            if (errorInVerificationProps) throw errorInVerificationProps;
+        }
+
+        this._updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification);
+
         // Add the comment to IPFS network in the background
         if (this._clientsManager._defaultIpfsProviderUrl)
             this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification)
                 .then(() => log("Added the file of comment ipfs", this.cid, "to IPFS network successfully"))
                 .catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));
-
-        // TODO how to handle extra props in verification.commentUpdate?
     }
 
     override getType(): PublicationTypeName {

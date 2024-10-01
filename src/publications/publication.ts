@@ -159,7 +159,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.protocolVersion = props.protocolVersion;
     }
 
-    protected async _updateLocalCommentPropsWithVerification(decryptedVerification: DecryptedChallengeVerification) {
+    protected async _verifyDecryptedChallengeVerificationAndUpdateCommentProps(decryptedVerification: DecryptedChallengeVerification) {
         throw Error("should be handled in comment, not publication");
     }
 
@@ -183,7 +183,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
 
     private async _handleRpcChallengeVerification(verification: DecryptedChallengeVerificationMessageType) {
         this._receivedChallengeVerification = true;
-        if (verification.comment) await this._updateLocalCommentPropsWithVerification(<DecryptedChallengeVerification>verification);
+        if (verification.comment)
+            await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(<DecryptedChallengeVerification>verification);
         this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
         if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
@@ -270,7 +271,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 reason: signatureValidation.reason
             });
             this._updatePublishingState("failed");
-            log.error("Publication received a challenge verification with invalid signature", error.toString());
+            log.error("Publication received a challenge verification with invalid signature", error);
             this.emit("error", error);
             return;
         }
@@ -317,7 +318,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
                 }
 
                 if (decryptedChallengeVerification.comment) {
-                    await this._updateLocalCommentPropsWithVerification(decryptedChallengeVerification);
+                    await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(decryptedChallengeVerification);
                     log("Updated the props of this instance with challengeverification.encrypted");
                 }
             }
