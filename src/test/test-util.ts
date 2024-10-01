@@ -26,7 +26,15 @@ import type {
     CommentJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { signComment, _signJson, signCommentEdit, cleanUpBeforePublishing, signVote, _signPubsubMsg } from "../signer/signatures.js";
+import {
+    signComment,
+    _signJson,
+    signCommentEdit,
+    cleanUpBeforePublishing,
+    signVote,
+    _signPubsubMsg,
+    signChallengeVerification
+} from "../signer/signatures.js";
 import { BasePages } from "../pages/pages.js";
 import { TIMEFRAMES_TO_SECONDS } from "../pages/util.js";
 import { importSignerIntoIpfsNode } from "../runtime/node/util.js";
@@ -835,6 +843,39 @@ export async function publishChallengeVerificationMessageWithExtraProps(
         pubsubSigner,
         log
     );
+
+    await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
+}
+
+export async function publishChallengeVerificationMessageWithEncryption(
+    publication: Publication,
+    pubsubSigner: SignerType,
+    toEncrypt: Object,
+    verificationProps?: Partial<ChallengeVerificationMessageType>
+) {
+    const log = Logger("plebbit-js:test-util:publishChallengeVerificationMessageWithExtraProps");
+
+    const toSignChallengeVerification: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
+        type: "CHALLENGEVERIFICATION",
+        //@ts-expect-error
+        challengeRequestId: publication._publishedChallengeRequests[0].challengeRequestId,
+        challengeSuccess: true,
+        userAgent: publication._plebbit.userAgent,
+        protocolVersion: env.PROTOCOL_VERSION,
+        timestamp: timestamp(),
+        ...verificationProps
+    });
+
+    const encrypted = await encryptEd25519AesGcm(
+        JSON.stringify(toEncrypt),
+        pubsubSigner.privateKey,
+        //@ts-expect-error
+        publication._challengeIdToPubsubSigner[publication._publishedChallengeRequests[0].challengeRequestId.toString()].publicKey!
+    );
+
+    toSignChallengeVerification.encrypted = encrypted;
+
+    const signature = await signChallengeVerification(toSignChallengeVerification, pubsubSigner);
 
     await publishOverPubsub(pubsubSigner.address, { ...toSignChallengeVerification, signature });
 }

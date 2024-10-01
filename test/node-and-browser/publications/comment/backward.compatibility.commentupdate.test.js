@@ -4,12 +4,17 @@ import {
     addStringToIpfs,
     resolveWhenConditionIsTrue,
     publishRandomPost,
+    generateMockPost,
+    publishChallengeVerificationMessageWithEncryption,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { messages } from "../../../../dist/node/errors.js";
 import { _signJson } from "../../../../dist/node/signer/signatures.js";
+import validCommentUpdateFixture from "../../../fixtures/signatures/comment/commentUpdate/valid_comment_update.json" assert { type: "json" };
+import * as remeda from "remeda";
+import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
@@ -155,6 +160,85 @@ getRemotePlebbitConfigs().map((config) => {
                 await plebbit.createComment(await plebbit.createComment(commentInPageJson))
             ];
             for (const shape of shapes) expect(shape.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
+        });
+    });
+
+    describe(`Extra props in decryptedChallengeVerification.commentUpdate - ${config.name}`, async () => {
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
+        it(`Extra props in decryptedVerification.commentUpdate should fail if they're not part of commentUpdate.signature.signedPropertyNames`, async () => {
+            const pubsubSigner = await plebbit.createSigner();
+            const post = await generateMockPost(signers[0].address, plebbit);
+
+            post._getSubplebbitCache = () => ({
+                address: post.subplebbitAddress,
+                pubsubTopic: pubsubSigner.address,
+                encryption: {
+                    type: "ed25519-aes-gcm",
+                    publicKey: pubsubSigner.publicKey
+                }
+            });
+
+            const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
+            const extraProps = { extraProp: 1234 };
+
+            Object.assign(commentUpdate, extraProps);
+
+            await post.publish();
+
+            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+                commentUpdate,
+                comment: { ...post._pubsubMsgToPublish, depth: 0 }
+            });
+
+            const error = await new Promise((resolve) => post.once("error", resolve));
+
+            expect(error.code).to.equal("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE");
+            expect(error.details.reason).to.equal(messages["ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES"]);
+            await post.stop();
+        });
+        it(`Extra props in decryptedVerification.commentUpdate should be accepted if they're part of commentUpdate.signature.signedPropertyNames`, async () => {
+            const pubsubSigner = await plebbit.createSigner();
+            const post = await generateMockPost(signers[0].address, plebbit);
+
+            post._getSubplebbitCache = () => ({
+                address: post.subplebbitAddress,
+                pubsubTopic: pubsubSigner.address,
+                encryption: {
+                    type: "ed25519-aes-gcm",
+                    publicKey: pubsubSigner.publicKey
+                }
+            });
+
+            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+
+            const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
+            commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));
+
+            const extraProps = { extraProp: 1234 };
+
+            Object.assign(commentUpdate, extraProps);
+
+            commentUpdate.signature = await _signJson(
+                remeda.keys.strict(remeda.omit(commentUpdate, ["signature"])),
+                commentUpdate,
+                pubsubSigner
+            );
+
+            await post.publish();
+
+            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+                commentUpdate,
+                comment: mockCommentIpfs
+            });
+
+            const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+            await post.stop();
+            expect(challengeVerification.commentUpdate.extraProp).to.equal(extraProps.extraProp);
+
+            expect(post.extraProp).to.equal(extraProps.extraProp);
         });
     });
 });
