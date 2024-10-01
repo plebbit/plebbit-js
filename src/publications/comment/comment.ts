@@ -319,6 +319,17 @@ export class Comment
         }
     }
 
+    private async _addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification: DecryptedChallengeVerification) {
+        // Will add and pin our own comment to IPFS
+        // only if we're connected to kubo
+
+        if (!this._rawCommentIpfs) throw Error("_rawCommentIpfs should be defined after challenge verification");
+        const ipfsClient = this._clientsManager.getDefaultIpfs();
+        const addRes = await ipfsClient._client.add(JSON.stringify(this._rawCommentIpfs), { pin: true });
+        if (addRes.path !== decryptedVerification.commentUpdate.cid)
+            throw Error("Added CommentIpfs to IPFS but we got a different cid, should not happen");
+    }
+
     protected override async _updateLocalCommentPropsWithVerification(decryptedVerification: DecryptedChallengeVerification) {
         // We're gonna update Comment instance with DecryptedChallengeVerification.{comment, commentUpdate}
         const log = Logger("plebbit-js:comment:publish:_updateLocalCommentPropsWithVerification");
@@ -335,8 +346,14 @@ export class Comment
 
         if (decryptedVerification.commentUpdate.author) Object.assign(this.author, decryptedVerification.commentUpdate.author);
         this.protocolVersion = decryptedVerification.commentUpdate.protocolVersion;
+
+        // Add the comment to IPFS network in the background
+        if (this._clientsManager._defaultIpfsProviderUrl)
+            this._addOwnCommentToIpfsIfConnectedToIpfsClient(decryptedVerification)
+                .then(() => log("Added the file of comment ipfs", this.cid, "to IPFS network successfully"))
+                .catch((err) => log.error(`Failed to add the file of comment ipfs`, this.cid, "to ipfs network due to error", err));
+
         // TODO how to handle extra props in verification.commentUpdate?
-        // TODO should the author add their own comment to IPFS?
     }
 
     override getType(): PublicationTypeName {
