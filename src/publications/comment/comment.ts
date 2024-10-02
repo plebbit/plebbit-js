@@ -226,7 +226,7 @@ export class Comment
                 : typeof props.edit?.spoiler === "boolean"
                   ? props.edit?.spoiler
                   : this.spoiler;
-        this.author.subplebbit = props.author?.subplebbit;
+        if (props.author) Object.assign(this.author, props.author);
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;
         this.author.flair = props.author?.subplebbit?.flair || props.edit?.author?.flair || this.author?.flair;
