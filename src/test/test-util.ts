@@ -597,7 +597,7 @@ export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predica
         });
 }
 
-export async function disableZodValidationOfPublication(publication: Publication) {
+export async function disableValidationOfSignatureBeforePublishing(publication: Publication) {
     //@ts-expect-error
     publication._validateSignature = () => {};
 }
@@ -618,7 +618,7 @@ export async function overrideCommentInstancePropsAndSign(comment: Comment, prop
 
     comment._pubsubMsgToPublish = pubsubPublication;
 
-    disableZodValidationOfPublication(comment);
+    disableValidationOfSignatureBeforePublishing(comment);
 }
 
 export async function overrideCommentEditInstancePropsAndSign(commentEdit: CommentEdit, props: CreateCommentEditOptions) {
@@ -631,7 +631,7 @@ export async function overrideCommentEditInstancePropsAndSign(commentEdit: Comme
         commentEdit._plebbit
     );
 
-    disableZodValidationOfPublication(commentEdit);
+    disableValidationOfSignatureBeforePublishing(commentEdit);
 }
 
 export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
@@ -648,7 +648,7 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
 
     comment._pubsubMsgToPublish = publicationWithExtraProp;
 
-    disableZodValidationOfPublication(comment);
+    disableValidationOfSignatureBeforePublishing(comment);
 
     Object.assign(comment, extraProps);
 }
@@ -667,7 +667,7 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
     //@ts-expect-error
     vote._pubsubMsgToPublish = publicationWithExtraProp;
 
-    disableZodValidationOfPublication(vote);
+    disableValidationOfSignatureBeforePublishing(vote);
 
     Object.assign(vote, extraProps);
 }
@@ -689,7 +689,7 @@ export async function setExtraPropOnCommentEditAndSign(
         );
     commentEdit._pubsubMsgToPublish = publicationWithExtraProp;
 
-    disableZodValidationOfPublication(commentEdit);
+    disableValidationOfSignatureBeforePublishing(commentEdit);
 
     Object.assign(commentEdit, extraProps);
 }
@@ -712,7 +712,7 @@ export async function setExtraPropOnCommentModerationAndSign(
         );
     commentModeration._pubsubMsgToPublish = newPubsubPublicationWithExtraProp;
 
-    disableZodValidationOfPublication(commentModeration);
+    disableValidationOfSignatureBeforePublishing(commentModeration);
 
     Object.assign(commentModeration, newPubsubPublicationWithExtraProp);
 }
@@ -975,6 +975,24 @@ export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Pleb
 
 export function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean {
     return !plebbit.plebbitRpcClient && Object.keys(plebbit.clients.ipfsClients).length === 0;
+}
+
+export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
+    const functionsToBind = [
+        "_createCommentModerationInstanceFromPublishCommentModerationParams",
+        "_createCommentEditInstanceFromPublishCommentEditParams",
+        "_createVoteInstanceFromPublishVoteParams",
+        "_createCommentInstanceFromPublishCommentParams"
+    ];
+
+    for (const funcBind of functionsToBind) {
+        const originalFunc = plebbitWs[funcBind].bind(plebbitWs);
+        plebbitWs[funcBind] = (...args: any[]) => {
+            const pubInstance = originalFunc(...args);
+            disableValidationOfSignatureBeforePublishing(pubInstance);
+            return pubInstance;
+        };
+    }
 }
 
 const skipFunction = (_: any) => {};

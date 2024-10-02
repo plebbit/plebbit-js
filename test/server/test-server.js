@@ -2,7 +2,12 @@
 // that can be used during node and browser tests
 import { path as getIpfsPath } from "kubo";
 import { execSync, exec } from "child_process";
-import { startSubplebbits, mockRpcServerPlebbit, mockGatewayPlebbit } from "../../dist/node/test/test-util.js";
+import {
+    startSubplebbits,
+    mockRpcServerPlebbit,
+    mockGatewayPlebbit,
+    mockRpcWsToSkipSignatureValidation
+} from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
 
 import PlebbitWsServer from "../../rpc";
@@ -290,12 +295,15 @@ const setUpMockGateways = async () => {
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
         // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
+        mockRpcWsToSkipSignatureValidation(plebbitWebSocketServer);
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
 
         // This server will fetch subs remotely
 
         const remotePort = rpcPort + 1;
         const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({ port: remotePort, authKey: rpcAuthKey });
+        mockRpcWsToSkipSignatureValidation(plebbitWebSocketRemoteServer);
+
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server" + 2) });
 
         console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
