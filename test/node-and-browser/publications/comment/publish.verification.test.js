@@ -103,8 +103,8 @@ describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async ()
             });
             expect.fail("Should fail if link, content and title are defined");
         } catch (e) {
-            expect(e.name).to.equal("ZodError");
-            expect(e.issues[0].message).to.equal(messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
+            expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
+            expect(e.details.zodError.issues[0].message).to.equal(messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
         }
 
         const mockPost = await generateMockPost(subplebbitAddress, plebbit); // regular post with everything defined
@@ -181,8 +181,8 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
             } catch (e) {
                 // no need to test for cid
                 if (!forbiddenType.cid) {
-                    expect(e.name).to.equal("ZodError");
-                    expect(e.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
+                    expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
+                    expect(e.details.zodError.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
                 }
             }
 

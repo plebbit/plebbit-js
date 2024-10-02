@@ -14,9 +14,7 @@ const subplebbitSigner = signers[0];
 describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit();
-        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
-            ["https://dweb.link", "https://ipfs.io"].sort()
-        );
+        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"].sort());
         expect(Object.keys(defaultPlebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(defaultPlebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
         expect(defaultPlebbit.pubsubHttpClientsOptions.headers?.authorization).to.be.undefined;

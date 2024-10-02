@@ -9,7 +9,6 @@ import {
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
 const subplebbitAddress = signers[0].address;
 

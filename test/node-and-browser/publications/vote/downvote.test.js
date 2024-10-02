@@ -106,15 +106,18 @@ describe(`Test Downvote`, async () => {
     });
 
     it("plebbit.createVote fails when commentCid is invalid ", async () => {
-        await assert.isRejected(
-            plebbit.createVote({
+        try {
+            await plebbit.createVote({
                 vote: previousVotes[1].vote,
                 subplebbitAddress: previousVotes[1].subplebbitAddress,
                 signer: previousVotes[1].signer,
                 commentCid: "gibbrish"
-            }),
-            messages.ERR_CID_IS_INVALID
-        );
+            });
+            expect.fail("should fail");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA");
+            expect(e.details.zodError.issues[0].message).to.equal("CID is invalid");
+        }
     });
 
     it(`Subplebbits rejects votes with invalid commentCid`);
