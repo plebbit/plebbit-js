@@ -130,6 +130,37 @@ getRemotePlebbitConfigs().map((config) => {
             for (const shape of shapes) expect(shape.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
 
+        itSkipIfRpc(`Can load CommentUpdate with extra props in commentUpdate.author`, async () => {
+            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            Object.assign(commentUpdateWithExtraProps.author, extraProps);
+
+            commentUpdateWithExtraProps.signature = await _signJson(
+                commentUpdateWithExtraProps.signature.signedPropertyNames,
+                commentUpdateWithExtraProps,
+                signers[0]
+            );
+
+            const commentUpdateWithExtraPropsCid = await addStringToIpfs(JSON.stringify(commentUpdateWithExtraProps));
+
+            const postToUpdate = await plebbit.getComment(post.cid);
+            mockPostToFetchSpecificCommentUpdateCid(postToUpdate, commentUpdateWithExtraPropsCid);
+
+            await postToUpdate.update();
+
+            await resolveWhenConditionIsTrue(postToUpdate, () => typeof postToUpdate.updatedAt === "number");
+
+            await postToUpdate.stop();
+
+            const shapes = [
+                postToUpdate,
+                postToUpdate._rawCommentUpdate,
+                await plebbit.createComment(postToUpdate),
+                await plebbit.createComment(JSON.parse(JSON.stringify(postToUpdate)))
+            ];
+
+            for (const commentShape of shapes) expect(commentShape.author.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
+        });
+
         it(`Can load pages with CommentUpdate that has extra props in them`, async () => {
             const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
             Object.assign(commentUpdateWithExtraProps, extraProps);
@@ -143,7 +174,7 @@ getRemotePlebbitConfigs().map((config) => {
             const pageIpfs = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new));
 
             pageIpfs.comments.push({
-                comment: { ...post._rawCommentIpfs, cid: post.cid, postCid: post.postCid },
+                comment: post._rawCommentIpfs,
                 commentUpdate: commentUpdateWithExtraProps
             });
 
@@ -160,6 +191,38 @@ getRemotePlebbitConfigs().map((config) => {
                 await plebbit.createComment(await plebbit.createComment(commentInPageJson))
             ];
             for (const shape of shapes) expect(shape.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
+        });
+
+        it(`Can load pages with CommentUpdate that has extra props in commentUpdate.author`, async () => {
+            const commentUpdateWithExtraProps = JSON.parse(JSON.stringify(post._rawCommentUpdate));
+            Object.assign(commentUpdateWithExtraProps.author, extraProps);
+
+            commentUpdateWithExtraProps.signature = await _signJson(
+                commentUpdateWithExtraProps.signature.signedPropertyNames,
+                commentUpdateWithExtraProps,
+                signers[0]
+            );
+
+            const pageIpfs = JSON.parse(await plebbit.fetchCid(subplebbit.posts.pageCids.new));
+
+            pageIpfs.comments.push({
+                comment: post._rawCommentIpfs,
+                commentUpdate: commentUpdateWithExtraProps
+            });
+
+            const pageIpfsCid = await addStringToIpfs(JSON.stringify(pageIpfs));
+
+            const fetchedPage = await subplebbit.posts.getPage(pageIpfsCid); // If this succeeds, it means signature has been verified and everything
+
+            const commentInPageJson = fetchedPage.comments[fetchedPage.comments.length - 1];
+
+            const shapes = [
+                commentInPageJson,
+                JSON.parse(JSON.stringify(commentInPageJson)),
+                await plebbit.createComment(commentInPageJson),
+                await plebbit.createComment(await plebbit.createComment(commentInPageJson))
+            ];
+            for (const shape of shapes) expect(shape.author.extraPropUpdate).to.equal(extraProps.extraPropUpdate);
         });
     });
 
@@ -239,6 +302,48 @@ getRemotePlebbitConfigs().map((config) => {
             expect(challengeVerification.commentUpdate.extraProp).to.equal(extraProps.extraProp);
 
             expect(post.extraProp).to.equal(extraProps.extraProp);
+        });
+
+        it(`Extra props in decryptedVerification.commentUpdate.author should be accepted`, async () => {
+            const pubsubSigner = await plebbit.createSigner();
+            const post = await generateMockPost(signers[0].address, plebbit);
+
+            post._getSubplebbitCache = () => ({
+                address: post.subplebbitAddress,
+                pubsubTopic: pubsubSigner.address,
+                encryption: {
+                    type: "ed25519-aes-gcm",
+                    publicKey: pubsubSigner.publicKey
+                }
+            });
+
+            const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
+
+            const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
+            commentUpdate.cid = await calculateIpfsHash(JSON.stringify(mockCommentIpfs));
+
+            const extraProps = { extraProp: 1234 };
+
+            Object.assign(commentUpdate.author, extraProps);
+
+            commentUpdate.signature = await _signJson(
+                remeda.keys.strict(remeda.omit(commentUpdate, ["signature"])),
+                commentUpdate,
+                pubsubSigner
+            );
+
+            await post.publish();
+
+            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+                commentUpdate,
+                comment: mockCommentIpfs
+            });
+
+            const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+            await post.stop();
+            expect(challengeVerification.commentUpdate.author.extraProp).to.equal(extraProps.extraProp);
+
+            expect(post.author.extraProp).to.equal(extraProps.extraProp);
         });
     });
 });
