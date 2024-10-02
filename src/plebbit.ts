@@ -67,18 +67,26 @@ import type {
     CreateCommentOptions,
     LocalCommentOptions
 } from "./publications/comment/types.js";
-import { CreateCommentFunctionArguments } from "./publications/comment/schema.js";
+import { CreateCommentFunctionArgumentsSchema } from "./publications/comment/schema.js";
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "./schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema,
-    CreateNewLocalSubplebbitParsedOptionsSchema,
     PubsubTopicSchema,
     SubplebbitIpfsSchema
 } from "./subplebbit/schema.js";
-import { PlebbitUserOptionsSchema } from "./schema.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "./schema/schema-util.js";
+import {
+    parseCidStringSchemaWithPlebbitErrorIfItFails,
+    parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails,
+    parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
+    parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails
+} from "./schema/schema-util.js";
 import { CommentModeration } from "./publications/comment-moderation/comment-moderation.js";
 import type {
     CommentModerationOptionsToSign,
@@ -115,7 +123,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     };
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
     _clientsManager!: ClientsManager;
-    private _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
+    _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
     _stats!: Stats;
     _storage!: StorageInterface;
     private _subplebbitFsWatchAbort?: AbortController;
@@ -127,7 +135,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     constructor(options: InputPlebbitOptions) {
         super();
         this._userPlebbitOptions = options;
-        this.parsedPlebbitOptions = PlebbitUserOptionsSchema.parse(options);
+        this.parsedPlebbitOptions = parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(options);
 
         // initializing fields
 
@@ -242,6 +250,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         hideClassPrivateProps(this);
 
         if (this.plebbitRpcClient)
+            // TODO need to subscribe for both subplebbitschange and settingschange
             this.subplebbits = []; // will subscribe to subplebbitschange in plebbit-rpc-client when we actually attempt to call RPC
         else if (this._canCreateNewLocalSub() && this.dataPath) {
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
@@ -381,14 +390,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async createComment(
-        options: z.infer<typeof CreateCommentFunctionArguments> | CommentJson | Comment | CommentWithinPageJson
+        options: z.infer<typeof CreateCommentFunctionArgumentsSchema> | CommentJson | Comment | CommentWithinPageJson
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
         if (options instanceof Comment) return this._createCommentInstanceFromAnotherCommentInstance(options);
         else if ("clients" in options) return this._createCommentInstanceFromJsonfiedCommentInstance(options);
         else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options);
-        const parsedOptions = CreateCommentFunctionArguments.parse(options);
+        const parsedOptions = parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails(options);
 
         const commentInstance = new Comment(this);
         if ("cid" in parsedOptions) {
@@ -531,8 +540,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             return subplebbit;
         } else if ("signer" in options) {
             // This is a new sub
-
-            const parsedOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>options);
+            const parsedOptions = <CreateNewLocalSubplebbitParsedOptions>options;
             await subplebbit.initNewLocalSubPropsNoMerge(parsedOptions); // We're initializing a new local sub props here
             await subplebbit._createNewLocalSubDb();
             log.trace(`Created a new local subplebbit (${subplebbit.address}) with props:`);
@@ -557,14 +565,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const log = Logger("plebbit-js:plebbit:createSubplebbit");
         if (options instanceof RemoteSubplebbit) return options; // not sure why somebody would call createSubplebbit with an instance, will probably change later
         if ("clients" in options) return this._createSubInstanceFromJsonifiedSub(<SubplebbitJson>options);
-        const parsedOptions = CreateSubplebbitFunctionArgumentsSchema.parse(options);
+        const parsedOptions = parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(options);
         log.trace("Received options: ", parsedOptions);
 
         if ("address" in parsedOptions && parsedOptions?.address && doesDomainAddressHaveCapitalLetter(parsedOptions.address))
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...parsedOptions });
 
         if (this.plebbitRpcClient) {
-            const parsedRpcOptions = CreateRpcSubplebbitFunctionArgumentSchema.parse(options);
+            const parsedRpcOptions = parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
             return this._createSubplebbitRpc(parsedRpcOptions);
         }
 
@@ -574,7 +582,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
         if (!canCreateLocalSub) {
-            const parsedRemoteOptions = CreateRemoteSubplebbitFunctionArgumentSchema.parse(options);
+            const parsedRemoteOptions = parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
             return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
         }
 
@@ -584,23 +592,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             const isSubLocal = localSubs.includes(parsedOptions.address);
             if (isSubLocal) return this._createLocalSub({ address: parsedOptions.address });
             else {
-                const parsedRemoteOptions = CreateRemoteSubplebbitFunctionArgumentSchema.parse(options);
+                const parsedRemoteOptions = parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
                 return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
             }
         } else if (!("address" in parsedOptions) && !("signer" in parsedOptions)) {
             // no address, no signer, create signer and assign address to signer.address
             const signer = await this.createSigner();
-            const localOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse({ ...parsedOptions, signer, address: signer.address });
+            const localOptions = <CreateNewLocalSubplebbitParsedOptions>{ ...parsedOptions, signer, address: signer.address };
             log(`Did not provide CreateSubplebbitOptions.signer, generated random signer with address (${localOptions.address})`);
 
             return this._createLocalSub(localOptions);
         } else if (!("address" in parsedOptions) && "signer" in parsedOptions) {
             const signer = await this.createSigner(parsedOptions.signer);
-            const localOptions = CreateNewLocalSubplebbitParsedOptionsSchema.parse(<CreateNewLocalSubplebbitParsedOptions>{
+            const localOptions = <CreateNewLocalSubplebbitParsedOptions>{
                 ...parsedOptions,
                 address: signer.address,
                 signer
-            });
+            };
             return this._createLocalSub(localOptions);
         } else if ("address" in parsedOptions && "signer" in parsedOptions) return this._createLocalSub(parsedOptions);
         else throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { parsedOptions });
@@ -616,7 +624,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema> | VoteJson): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
         if ("clients" in options) return this._createVoteInstanceFromJsonfiedVote(options);
-        const parsedOptions = CreateVoteFunctionArgumentSchema.parse(options);
+        const parsedOptions = parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const voteInstance = new Vote(this);
 
         if ("signature" in parsedOptions) {
@@ -648,7 +656,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     async createCommentEdit(options: z.infer<typeof CreateCommentEditFunctionArgumentSchema> | CommentEditTypeJson): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         if ("clients" in options) return this._createCommentEditInstanceFromJsonfiedCommentEdit(options);
-        const parsedOptions = CreateCommentEditFunctionArgumentSchema.parse(options);
+        const parsedOptions = parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const editInstance = new CommentEdit(this);
 
         if ("signature" in parsedOptions)
@@ -681,7 +689,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     ): Promise<CommentModeration> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         if ("clients" in options) return this._createCommentModerationInstanceFromJsonfiedCommentModeration(options);
-        const parsedOptions = CreateCommentModerationFunctionArgumentSchema.parse(options);
+        const parsedOptions = parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const modInstance = new CommentModeration(this);
 
         if ("signature" in parsedOptions)

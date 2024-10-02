@@ -15,25 +15,16 @@ import type {
 } from "../../subplebbit/types.js";
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
 import type { PageIpfs } from "../../pages/types.js";
-import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
-import { PageIpfsSchema } from "../../pages/schema.js";
-import {
-    CreateNewLocalSubplebbitUserOptionsSchema,
-    SubplebbitEditOptionsSchema
-} from "../../subplebbit/schema.js";
 import { SubscriptionIdSchema } from "./schema.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
-import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
-import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
-import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
-import { PlebbitWsServerSettingsSerializedSchema, SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
-import { SetNewSettingsPlebbitWsServer } from "../../rpc/src/types.js";
+import type { PlebbitWsServerSettingsSerialized, SetNewSettingsPlebbitWsServer } from "../../rpc/src/types.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
-    parseCommentIpfsSchemaWithPlebbitErrorIfItFails
+    parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
+    parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
-import { CommentModerationChallengeRequestToEncryptSchema } from "../../publications/comment-moderation/schema.js";
+import { ZodError } from "zod";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -187,7 +178,7 @@ export default class PlebbitRpcClient {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = PageIpfsSchema.parse(
+        const pageIpfs = <PageIpfs>(
             await this._webSocketClient.call("getCommentPage", [parsedPageCid, parsedCommentCid, parsedSubplebbitAddress])
         );
         return pageIpfs;
@@ -196,17 +187,14 @@ export default class PlebbitRpcClient {
     async getSubplebbitPage(pageCid: string, subplebbitAddress: string): Promise<PageIpfs> {
         const parsedPageCid = parseCidStringSchemaWithPlebbitErrorIfItFails(pageCid);
         const parsedSubplebbitAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const pageIpfs = PageIpfsSchema.parse(
-            await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress])
-        );
+        const pageIpfs = <PageIpfs>await this._webSocketClient.call("getSubplebbitPage", [parsedPageCid, parsedSubplebbitAddress]);
         return pageIpfs;
     }
 
     async createSubplebbit(createSubplebbitOptions: CreateNewLocalSubplebbitUserOptions): Promise<RpcLocalSubplebbit> {
         // This is gonna create a new local sub. Not an instance of an existing sub
-        const parsedCreateSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(createSubplebbitOptions);
         const subProps = <RpcInternalSubplebbitRecordBeforeFirstUpdateType>(
-            await this._webSocketClient.call("createSubplebbit", [parsedCreateSubplebbitOptions])
+            await this._webSocketClient.call("createSubplebbit", [createSubplebbitOptions])
         );
         const subplebbit = new RpcLocalSubplebbit(this._plebbit); // We're not using plebbit.createSubplebbit because it might try to create a local sub, we need to make sure this sub can't do any native functions
         await subplebbit.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subProps);
@@ -237,8 +225,7 @@ export default class PlebbitRpcClient {
         subplebbitEditOptions: SubplebbitEditOptions
     ): Promise<RpcLocalSubplebbitUpdateResultType> {
         const parsedAddress = SubplebbitAddressSchema.parse(subplebbitAddress);
-        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(subplebbitEditOptions);
-        const propsAfterReplacing = replaceXWithY(parsedEditOptions, undefined, null);
+        const propsAfterReplacing = replaceXWithY(subplebbitEditOptions, undefined, null);
         const rawRes = <RpcLocalSubplebbitUpdateResultType>(
             await this._webSocketClient.call("editSubplebbit", [parsedAddress, propsAfterReplacing])
         );
@@ -261,26 +248,22 @@ export default class PlebbitRpcClient {
     }
 
     async publishComment(commentProps: DecryptedChallengeRequest) {
-        const parsedProps = CommentChallengeRequestToEncryptSchema.parse(commentProps);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [parsedProps]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishComment", [commentProps]));
         return subscriptionId;
     }
 
     async publishCommentEdit(commentEditProps: DecryptedChallengeRequest) {
-        const parsedProps = CommentEditChallengeRequestToEncryptSchema.parse(commentEditProps);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [parsedProps]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentEdit", [commentEditProps]));
         return subscriptionId;
     }
 
     async publishCommentModeration(commentModProps: DecryptedChallengeRequest) {
-        const parsedProps = CommentModerationChallengeRequestToEncryptSchema.parse(commentModProps);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentModeration", [parsedProps]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishCommentModeration", [commentModProps]));
         return subscriptionId;
     }
 
     async publishVote(voteProps: DecryptedChallengeRequest) {
-        const parsedProps = VoteChallengeRequestToEncryptSchema.parse(voteProps);
-        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [parsedProps]));
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [voteProps]));
         return subscriptionId;
     }
 
@@ -293,8 +276,7 @@ export default class PlebbitRpcClient {
 
     async publishChallengeAnswers(subscriptionId: number, challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"]) {
         const parsedId = SubscriptionIdSchema.parse(subscriptionId);
-        const parsedChallengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(challengeAnswers);
-        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [parsedId, parsedChallengeAnswers]);
+        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [parsedId, challengeAnswers]);
         if (res !== true) throw Error("RPC function publishChallengeAnswers should either return true or throw");
         return res;
     }
@@ -324,14 +306,14 @@ export default class PlebbitRpcClient {
     }
 
     async setSettings(settings: SetNewSettingsPlebbitWsServer) {
-        const parsedSettings = SetNewSettingsPlebbitWsServerSchema.parse(settings);
+        const parsedSettings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(settings);
         const res = <boolean>await this._webSocketClient.call("setSettings", [parsedSettings]);
         if (res !== true) throw Error("result of setSettings should be true");
         return res;
     }
 
     async getSettings() {
-        const res = PlebbitWsServerSettingsSerializedSchema.passthrough().parse(await this._webSocketClient.call("getSettings", []));
+        const res = <PlebbitWsServerSettingsSerialized>await this._webSocketClient.call("getSettings", []);
         return res;
     }
 

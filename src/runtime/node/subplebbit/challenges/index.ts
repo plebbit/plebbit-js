@@ -27,14 +27,13 @@ import type {
 } from "../../../../subplebbit/types.js";
 import { LocalSubplebbit } from "../local-subplebbit.js";
 import * as remeda from "remeda";
-import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
 import { derivePublicationFromChallengeRequest } from "../../../../util.js";
 
 type PendingChallenge = Challenge & { index: number };
 
-export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<string[]>;
+export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<DecryptedChallengeAnswer["challengeAnswers"]>;
 
 const plebbitJsChallenges: Record<string, ChallengeFileFactory> = {
     "text-math": textMath,
@@ -293,10 +292,9 @@ const getChallengeVerification = async (
     }
     // author still has some pending challenges to complete
     else {
-        const rawAnswersFromPending = await getChallengeAnswers(
+        const challengeAnswers = await getChallengeAnswers(
             res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"]))
         );
-        const challengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(rawAnswersFromPending);
         challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
     }
 

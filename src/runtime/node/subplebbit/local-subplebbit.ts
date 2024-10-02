@@ -22,7 +22,6 @@ import {
     hideClassPrivateProps,
     isLinkOfMedia,
     isStringDomain,
-    removeNullUndefinedEmptyObjectsValuesRecursively,
     removeUndefinedValuesRecursively,
     throwWithErrorCode,
     timestamp
@@ -44,7 +43,8 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     PublicationFromDecryptedChallengeRequest,
-    DecryptedChallengeVerification
+    DecryptedChallengeVerification,
+    DecryptedChallengeAnswer
 } from "../../../pubsub-messages/types.js";
 
 import type {
@@ -107,18 +107,21 @@ import type {
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
 } from "../../../publications/comment/types.js";
-import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
 import {
     ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
     ChallengeRequestMessageSchema,
     ChallengeVerificationMessageSchema,
-    DecryptedChallengeAnswerSchema,
     DecryptedChallengeRequestPublicationSchema,
     DecryptedChallengeRequestSchema,
     DecryptedChallengeSchema
 } from "../../../pubsub-messages/schema.js";
-import { parseJsonWithPlebbitErrorIfFails } from "../../../schema/schema-util.js";
+import {
+    parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
+    parseJsonWithPlebbitErrorIfFails,
+    parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails
+} from "../../../schema/schema-util.js";
 import {
     CommentIpfsSchema,
     CommentPubsubMessageReservedFields,
@@ -147,8 +150,11 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
 
     // These caches below will be used to facilitate challenges exchange with authors, they will expire after 10 minutes
     // Most of the time they will be delete and cleaned up automatically
-    private _challengeAnswerPromises!: LRUCache<string, Promise<string[]>>;
-    private _challengeAnswerResolveReject!: LRUCache<string, { resolve: (answers: string[]) => void; reject: (error: Error) => void }>;
+    private _challengeAnswerPromises!: LRUCache<string, Promise<DecryptedChallengeAnswer["challengeAnswers"]>>;
+    private _challengeAnswerResolveReject!: LRUCache<
+        string,
+        { resolve: (answers: DecryptedChallengeAnswer["challengeAnswers"]) => void; reject: (error: Error) => void }
+    >;
     private _ongoingChallengeExchanges!: LRUCache<string, boolean>;
 
     private _cidsToUnPin!: string[];
@@ -758,7 +764,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ) {
         const log = Logger("plebbit-js:local-subplebbit:_publishChallenges");
-        const toEncryptChallenge = DecryptedChallengeSchema.parse(<DecryptedChallenge>{ challenges });
+        const toEncryptChallenge = <DecryptedChallenge>{ challenges };
         const toSignChallenge: Omit<ChallengeMessageType, "signature"> = cleanUpBeforePublishing({
             type: "CHALLENGE",
             protocolVersion: env.PROTOCOL_VERSION,
@@ -772,10 +778,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             timestamp: timestamp()
         });
 
-        const challengeMessage = ChallengeMessageSchema.parse({
+        const challengeMessage = <ChallengeMessageType>{
             ...toSignChallenge,
             signature: await signChallengeMessage(toSignChallenge, this.signer)
-        });
+        };
 
         this._clientsManager.updatePubsubState("publishing-challenge", undefined);
 
@@ -810,10 +816,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             timestamp: timestamp()
         });
 
-        const challengeVerification = ChallengeVerificationMessageSchema.parse({
+        const challengeVerification = <ChallengeVerificationMessageType>{
             ...toSignVerification,
             signature: await signChallengeVerification(toSignVerification, this.signer)
-        });
+        };
 
         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
         log(`(${challengeRequestId}): `, `Will publish ${challengeVerification.type} over pubsub:`, toSignVerification);
@@ -1123,7 +1129,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             // step 1. subplebbit publishes challenge pubsub message with `challenges` provided in argument of `getChallengeAnswers`
             // step 2. subplebbit waits for challenge answer pubsub message with `challengeAnswers` and then returns `challengeAnswers`
             await this._publishChallenges(challenges, decryptedRequestWithSubplebbitAuthor);
-            const challengeAnswerPromise = new Promise<string[]>((resolve, reject) =>
+            const challengeAnswerPromise = new Promise<DecryptedChallengeAnswer["challengeAnswers"]>((resolve, reject) =>
                 this._challengeAnswerResolveReject.set(answerPromiseKey, { resolve, reject })
             );
             this._challengeAnswerPromises.set(answerPromiseKey, challengeAnswerPromise);
@@ -1172,7 +1178,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
 
         try {
-            return DecryptedChallengeAnswerSchema.parse(parsedJson);
+            return parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(parsedJson);
         } catch (e) {
             await this._publishFailedChallengeVerification(
                 { reason: messages.ERR_CHALLENGE_ANSWER_IS_INVALID_SCHEMA },
@@ -1641,14 +1647,14 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         this.protocolVersion = env.PROTOCOL_VERSION;
         if (!this.signer?.address) throwWithErrorCode("ERR_SUB_SIGNER_NOT_DEFINED");
         if (!this._challengeAnswerPromises)
-            this._challengeAnswerPromises = new LRUCache<string, Promise<string[]>>({
+            this._challengeAnswerPromises = new LRUCache<string, Promise<DecryptedChallengeAnswer["challengeAnswers"]>>({
                 max: 1000,
                 ttl: 600000
             });
         if (!this._challengeAnswerResolveReject)
             this._challengeAnswerResolveReject = new LRUCache<
                 string,
-                { resolve: (answers: string[]) => void; reject: (error: Error) => void }
+                { resolve: (answers: DecryptedChallengeAnswer["challengeAnswers"]) => void; reject: (error: Error) => void }
             >({
                 max: 1000,
                 ttl: 600000
@@ -1680,7 +1686,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const log = Logger("plebbit-js:local-subplebbit:edit");
 
-        const parsedEditOptions = SubplebbitEditOptionsSchema.parse(newSubplebbitOptions);
+        const parsedEditOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(newSubplebbitOptions);
 
         const newInternalProps = <
             Pick<

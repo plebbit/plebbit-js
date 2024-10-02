@@ -6,6 +6,7 @@ import type {
     ChallengeRequestMessageType,
     ChallengeVerificationMessageType,
     DecryptedChallenge,
+    DecryptedChallengeAnswer,
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,
     DecryptedChallengeRequest,
@@ -50,13 +51,13 @@ import type { CommentEditPubsubMessagePublication } from "./comment-edit/types.j
 import type { VotePubsubMessagePublication } from "./vote/types.js";
 import type { CommentIpfsType, CommentPubsubMessagePublication } from "./comment/types.js";
 import {
+    parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseDecryptedChallengeVerification,
     parseDecryptedChallengeWithPlebbitErrorIfItFails,
     parseJsonWithPlebbitErrorIfFails
 } from "../schema/schema-util.js";
 import {
     ChallengeRequestMessageSchema,
-    DecryptedChallengeAnswerSchema,
     ChallengeAnswerMessageSchema,
     ChallengeMessageSchema,
     ChallengeVerificationMessageSchema
@@ -397,7 +398,9 @@ class Publication extends TypedEmitter<PublicationEvents> {
     async publishChallengeAnswers(challengeAnswers: DecryptedChallengeAnswerMessageType["challengeAnswers"]) {
         const log = Logger("plebbit-js:publication:publishChallengeAnswers");
 
-        const toEncryptAnswers = DecryptedChallengeAnswerSchema.parse({ challengeAnswers: challengeAnswers });
+        const toEncryptAnswers = parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(<DecryptedChallengeAnswer>{
+            challengeAnswers: challengeAnswers
+        });
         if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
         if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
