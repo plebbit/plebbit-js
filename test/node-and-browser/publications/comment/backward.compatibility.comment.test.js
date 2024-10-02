@@ -4,10 +4,8 @@ import {
     setExtraPropOnCommentAndSign,
     getRemotePlebbitConfigs,
     publishWithExpectedResult,
-    addStringToIpfs,
     findCommentInPage,
     waitTillCommentIsInParentPages,
-    itSkipIfRpc,
     resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
@@ -27,7 +25,7 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
         describe(`Publishing comments with extra props - ${config.name}`, async () => {
-            itSkipIfRpc(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
+            it(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
                 // Skip for rpc because it's gonna throw due to invalid signature
                 const post = await generateMockPost(subplebbitAddress, plebbit);
                 const extraProps = { extraProp: "1234" };

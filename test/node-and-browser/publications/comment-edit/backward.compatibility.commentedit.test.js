@@ -1,6 +1,5 @@
 import {
     getRemotePlebbitConfigs,
-    itSkipIfRpc,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
@@ -35,26 +34,23 @@ getRemotePlebbitConfigs().map((config) => {
             await commentToEdit.stop();
         });
 
-        itSkipIfRpc(
-            `Publishing commentEdit.extraProp should fail if it's not included in commentEdit.signature.signedPropertyNames`,
-            async () => {
-                // Skipped for rpc because it will generate an invalid signature, which will be thrown in rpc server
-                const commentEdit = await plebbit.createCommentEdit({
-                    commentCid: commentToEdit.cid,
-                    subplebbitAddress: commentToEdit.subplebbitAddress,
-                    content: "Radn" + Math.random(),
-                    signer: commentToEdit.signer
-                });
-                await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
+        it(`Publishing commentEdit.extraProp should fail if it's not included in commentEdit.signature.signedPropertyNames`, async () => {
+            // Skipped for rpc because it will generate an invalid signature, which will be thrown in rpc server
+            const commentEdit = await plebbit.createCommentEdit({
+                commentCid: commentToEdit.cid,
+                subplebbitAddress: commentToEdit.subplebbitAddress,
+                content: "Radn" + Math.random(),
+                signer: commentToEdit.signer
+            });
+            await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
 
-                await publishWithExpectedResult(
-                    commentEdit,
-                    false,
-                    messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-                );
-                expect(commentEdit._publishedChallengeRequests[0].commentEdit.extraProp).to.equal("1234");
-            }
-        );
+            await publishWithExpectedResult(
+                commentEdit,
+                false,
+                messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+            );
+            expect(commentEdit._publishedChallengeRequests[0].commentEdit.extraProp).to.equal("1234");
+        });
 
         it(`publishing commentEdit.extraProp should succeed as an author edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
             const commentEdit = await plebbit.createCommentEdit({

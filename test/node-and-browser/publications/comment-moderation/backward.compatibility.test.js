@@ -1,7 +1,5 @@
 import {
     getRemotePlebbitConfigs,
-    itSkipIfRpc,
-    mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     resolveWhenConditionIsTrue,
@@ -36,26 +34,23 @@ getRemotePlebbitConfigs().map((config) => {
             await commentToMod.stop();
         });
 
-        itSkipIfRpc(
-            `Publishing commentModeration.extraProp should fail if it's not included in commentModeration.signature.signedPropertyNames`,
-            async () => {
-                // Skipped for rpc because it will generate an invalid signature, which will be thrown in rpc server
-                const commentModeration = await plebbit.createCommentModeration({
-                    commentCid: commentToMod.cid,
-                    subplebbitAddress: commentToMod.subplebbitAddress,
-                    commentModeration: { removed: true },
-                    signer: roles[0].signer
-                });
-                await setExtraPropOnCommentModerationAndSign(commentModeration, { extraProp: "1234" }, false);
+        it(`Publishing commentModeration.extraProp should fail if it's not included in commentModeration.signature.signedPropertyNames`, async () => {
+            // Skipped for rpc because it will generate an invalid signature, which will be thrown in rpc server
+            const commentModeration = await plebbit.createCommentModeration({
+                commentCid: commentToMod.cid,
+                subplebbitAddress: commentToMod.subplebbitAddress,
+                commentModeration: { removed: true },
+                signer: roles[0].signer
+            });
+            await setExtraPropOnCommentModerationAndSign(commentModeration, { extraProp: "1234" }, false);
 
-                await publishWithExpectedResult(
-                    commentModeration,
-                    false,
-                    messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
-                );
-                expect(commentModeration._publishedChallengeRequests[0].commentModeration.extraProp).to.equal("1234");
-            }
-        );
+            await publishWithExpectedResult(
+                commentModeration,
+                false,
+                messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
+            );
+            expect(commentModeration._publishedChallengeRequests[0].commentModeration.extraProp).to.equal("1234");
+        });
 
         it(`publishing commentModeration.extraProp should succeed if it's included in commentModeration.signature.signedPropertyNames`, async () => {
             const commentModeration = await plebbit.createCommentModeration({

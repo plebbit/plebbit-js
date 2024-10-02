@@ -1,8 +1,6 @@
 import {
     generateMockVote,
     getRemotePlebbitConfigs,
-    itSkipIfRpc,
-    mockPlebbit,
     publishRandomPost,
     publishWithExpectedResult,
     setExtraPropOnVoteAndSign
@@ -29,7 +27,7 @@ getRemotePlebbitConfigs().map((config) => {
             commentToVoteOn = await publishRandomPost(signers[0].address, plebbit, {}, false);
         });
 
-        itSkipIfRpc(`Publishing vote.extraProp should fail if it's not included in vote.signature.signedPropertyNames`, async () => {
+        it(`Publishing vote.extraProp should fail if it's not included in vote.signature.signedPropertyNames`, async () => {
             // We skip with RPC because rpc server will check if signature is valid before publishing
             // If signature is invalid, like in this test, it will throw before publishing
             const vote = await generateMockVote(commentToVoteOn, 1, plebbit);
