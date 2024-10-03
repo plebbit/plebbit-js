@@ -276,6 +276,7 @@ const setUpMockGateways = async () => {
         ".plebbit",
         ".plebbit2",
         ".plebbit-rpc-server",
+        ".plebbit-rpc-server-remote",
         ".test-ipfs-offline",
         ".test-ipfs-offline2",
         ".test-ipfs-online",
@@ -295,16 +296,20 @@ const setUpMockGateways = async () => {
         delete process.env["USE_RPC"]; // So rest of code is not being ran with RPC on
         // This server will create subs and interact with them
         const plebbitWebSocketServer = await PlebbitWsServer.PlebbitWsServer({ port: rpcPort, authKey: rpcAuthKey });
-        mockRpcWsToSkipSignatureValidation(plebbitWebSocketServer);
         plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server") });
+        mockRpcWsToSkipSignatureValidation(plebbitWebSocketServer);
 
         // This server will fetch subs remotely
 
         const remotePort = rpcPort + 1;
-        const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({ port: remotePort, authKey: rpcAuthKey });
+        const plebbitWebSocketRemoteServer = await PlebbitWsServer.PlebbitWsServer({
+            port: remotePort,
+            authKey: rpcAuthKey
+        });
+        plebbitWebSocketRemoteServer.plebbit = await mockRpcServerPlebbit({
+            dataPath: path.join(process.cwd(), ".plebbit-rpc-server-remote")
+        });
         mockRpcWsToSkipSignatureValidation(plebbitWebSocketRemoteServer);
-
-        plebbitWebSocketServer.plebbit = await mockRpcServerPlebbit({ dataPath: path.join(process.cwd(), ".plebbit-rpc-server" + 2) });
 
         console.log(`test server plebbit wss listening on port ${rpcPort} and ${remotePort}`);
     }
