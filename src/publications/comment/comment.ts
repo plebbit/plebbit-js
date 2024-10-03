@@ -178,7 +178,7 @@ export class Comment
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
         // Initializing Comment Ipfs props
-        if ("depth" in props) {
+        if ("depth" in props && typeof props.depth === "number") {
             this.depth = props.depth;
             const postCid = props.postCid ? props.postCid : this.cid && this.depth === 0 ? this.cid : undefined;
             if (!postCid) throw Error("There is no way to set comment.postCid");
@@ -406,7 +406,7 @@ export class Comment
         this.replies._subplebbitAddress = newSubplebbitAddress;
     }
 
-    private _isCommentIpfsErrorRetriable(err: PlebbitError) {
+    private _isCommentIpfsErrorRetriable(err: PlebbitError | Error): boolean {
         if (!(err instanceof PlebbitError)) return false; // If it's not a recognizable error, then we throw to notify the user
         if (
             err.code === "ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID" ||
