@@ -17,6 +17,13 @@ describe("plebbit", () => {
     });
 });
 
+describe(`Plebbit.subplebbits in browser`, async () => {
+    it(`plebbit.subplebbits = [] in browser`, async () => {
+        const plebbit = await Plebbit();
+        expect(plebbit.subplebbits).to.deep.equal([]);
+    });
+});
+
 describe(`Plebbit.challenges`, async () => {
     it(`Plebbit.challenges = {} in browser environments`, async () => {
         expect(Plebbit.challenges).to.deep.equal({});
