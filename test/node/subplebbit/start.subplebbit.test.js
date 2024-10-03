@@ -6,7 +6,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     itSkipIfRpc,
     itIfRpc,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    mockRpcServerPlebbit
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 import path from "path";
@@ -117,8 +118,7 @@ describe(`Start lock`, async () => {
     before(async () => {
         plebbit = await mockPlebbit();
         if (plebbit.plebbitRpcClient) {
-            const rpcSettings = await plebbit.plebbitRpcClient.getSettings();
-            dataPath = rpcSettings.plebbitOptions.dataPath;
+            dataPath = path.join(process.env.PWD, ".plebbit-rpc-server");
         } else dataPath = plebbit.dataPath;
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
@@ -128,6 +128,7 @@ describe(`Start lock`, async () => {
     });
 
     itSkipIfRpc(`subplebbit.start throws if sub is started by another Subplebbit instance`, async () => {
+        // The reason why we skip it for RPC because RPC client can instantiate multiple Subplebbit instances to retrieve events from RPC server
         const subplebbit = await plebbit.createSubplebbit();
         await subplebbit.start();
         expect(subplebbit.state).to.equal("started");
@@ -151,16 +152,20 @@ describe(`Start lock`, async () => {
     it(`Can start subplebbit as soon as start lock is unlocked`, async () => {
         const subSigner = await plebbit.createSigner();
         const lockPath = path.join(dataPath, "subplebbits", `${subSigner.address}.start.lock`);
+        expect(fs.existsSync(lockPath)).to.be.false;
         const sub = await plebbit.createSubplebbit({ signer: subSigner });
         await sub.start();
-        sub.stop();
-        await new Promise((resolve) =>
+        expect(fs.existsSync(lockPath)).to.be.true;
+        const lockFileRemovedPromise = new Promise((resolve) =>
             fs.watchFile(lockPath, (curr, prev) => {
                 if (!fs.existsSync(lockPath)) resolve();
             })
         );
+        await Promise.all([sub.stop(), lockFileRemovedPromise]);
+        expect(fs.existsSync(lockPath)).to.be.false;
+
         await assert.isFulfilled(sub.start());
-        await sub.stop();
+        await sub.delete();
     });
 
     itSkipIfRpc(
