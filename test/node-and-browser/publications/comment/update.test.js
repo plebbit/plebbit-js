@@ -1,6 +1,5 @@
 import signers from "../../../fixtures/signers.js";
 import {
-    mockRemotePlebbit,
     publishRandomPost,
     publishRandomReply,
     mockRemotePlebbitIpfsOnly,
@@ -8,7 +7,9 @@ import {
     mockGatewayPlebbit,
     addStringToIpfs,
     resolveWhenConditionIsTrue,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    mockPlebbit,
+    describeSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import { messages } from "../../../../dist/node/errors.js";
 import chai from "chai";
@@ -25,7 +26,7 @@ getRemotePlebbitConfigs().map((config) => {
     describe(`comment.update - ${config.name}`, async () => {
         let plebbit;
         before(async () => {
-            plebbit = await mockRemotePlebbit();
+            plebbit = await config.plebbitInstancePromise();
         });
 
         it(`plebbit.createComment({cid}).update() fetches comment ipfs and update correctly when cid is the cid of a post`, async () => {
@@ -182,83 +183,96 @@ const addInvalidJsonToIpfs = async () => {
     return addStringToIpfs("<html>something</html>");
 };
 
-describe(`comment.update() emits errors if needed`, async () => {
-    let invalidCommentIpfsCid;
-    let commentUpdateWithInvalidSignatureJson;
-    let cidOfInvalidJson;
-    let cidOfCommentIpfsWithInvalidSchema;
-    let plebbit;
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-        invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
-        commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature();
-        cidOfInvalidJson = await addInvalidJsonToIpfs();
-        cidOfCommentIpfsWithInvalidSchema = await addCommentIpfsWithInvalidSchemaToIpfs();
-    });
+getRemotePlebbitConfigs().map((config) => {
+    describe(`comment.update() emits errors for issues with CommentIpfs record - ${config.name}`, async () => {
+        let invalidCommentIpfsCid;
+        let cidOfInvalidJson;
+        let cidOfCommentIpfsWithInvalidSchema;
+        let plebbit;
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            invalidCommentIpfsCid = await addCommentIpfsWithInvalidSignatureToIpfs();
+            cidOfInvalidJson = await addInvalidJsonToIpfs();
+            cidOfCommentIpfsWithInvalidSchema = await addCommentIpfsWithInvalidSchemaToIpfs();
+        });
 
-    it(`plebbit.createComment({cid}).update() emits error and stops updating if signature of CommentIpfs is invalid - IPFS P2P OR RPC`, async () => {
-        // A critical error, so it shouldn't keep on updating
-
-        const createdComment = await plebbit.createComment({ cid: invalidCommentIpfsCid });
-
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        let updateHasBeenEmitted = false;
-        createdComment.once("update", () => (updateHasBeenEmitted = true));
-        await createdComment.update();
-
-        await new Promise((resolve) =>
-            createdComment.once("error", (err) => {
-                expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
-                resolve();
-            })
-        );
-
-        // should stop updating by itself because of the critical error
-
-        expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
-        expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-        expect(updateHasBeenEmitted).to.be.false;
-    });
-
-    itSkipIfRpc(
-        `plebbit.createComment({cid}).update() emits error and stops updating if signature of CommentIpfs is invalid - IPFS Gateways`,
-        async () => {
+        it(`plebbit.createComment({cid}).update() emits error and stops updating if signature of CommentIpfs is invalid - IPFS P2P OR RPC`, async () => {
             // A critical error, so it shouldn't keep on updating
-
-            const plebbit = await mockGatewayPlebbit();
 
             const createdComment = await plebbit.createComment({ cid: invalidCommentIpfsCid });
 
-            const ipfsGatewayStates = [];
             const updatingStates = [];
             createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-            const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
-            createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
             let updateHasBeenEmitted = false;
             createdComment.once("update", () => (updateHasBeenEmitted = true));
             await createdComment.update();
 
-            await new Promise((resolve) =>
-                createdComment.once("error", (err) => {
-                    expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
-                    resolve();
-                })
-            );
+            const err = await new Promise((resolve) => createdComment.once("error", resolve));
+            expect(err.code).to.equal("ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID");
 
             // should stop updating by itself because of the critical error
 
+            expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
             expect(createdComment.state).to.equal("stopped");
             expect(createdComment.updatingState).to.equal("failed");
             expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-            expect(ipfsGatewayStates).to.deep.equal(["fetching-ipfs", "stopped"]);
             expect(updateHasBeenEmitted).to.be.false;
-        }
-    );
+        });
 
-    itSkipIfRpc(`comment.update() emit an error if CommentUpdate signature is invalid - IPFS P2P`, async () => {
+        it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json`, async () => {
+            const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
+
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            await createdComment.update();
+
+            const error = await new Promise((resolve) => createdComment.once("error", resolve));
+            expect(error.code).to.equal("ERR_INVALID_JSON");
+
+            await new Promise((resolve) => setTimeout(resolve, 500)); // wait until RPC transmits other states
+            // should stop updating by itself because of the critical error
+
+            expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatingState).to.equal("failed");
+            expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+            expect(updateHasBeenEmitted).to.be.false;
+        });
+
+        it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema`, async () => {
+            const createdComment = await plebbit.createComment({ cid: cidOfCommentIpfsWithInvalidSchema });
+
+            const updatingStates = [];
+            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
+            let updateHasBeenEmitted = false;
+            createdComment.once("update", () => (updateHasBeenEmitted = true));
+            await createdComment.update();
+
+            const err = await new Promise((resolve) => createdComment.once("error", resolve));
+            expect(err.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
+
+            // should stop updating by itself because of the critical error
+
+            expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
+            expect(createdComment.state).to.equal("stopped");
+            expect(createdComment.updatingState).to.equal("failed");
+            expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
+            expect(updateHasBeenEmitted).to.be.false;
+        });
+    });
+});
+
+describeSkipIfRpc(`comment.update() emits errors for issues with CommentUpdate record if needed`, async () => {
+    let commentUpdateWithInvalidSignatureJson;
+    let plebbit;
+    before(async () => {
+        plebbit = await mockPlebbit();
+        commentUpdateWithInvalidSignatureJson = await createCommentUpdateWithInvalidSignature();
+    });
+
+    it(`comment.update() emit an error if CommentUpdate signature is invalid - IPFS P2P`, async () => {
         // Should emit an error as well as continue the update loop
 
         const createdComment = await plebbit.createComment({
@@ -331,7 +345,7 @@ describe(`comment.update() emits errors if needed`, async () => {
         expect(updatingStates).to.deep.equal(expectedUpdateStates);
     });
 
-    itSkipIfRpc("comment.update() emit an error if CommentUpdate signature is invalid - IPFS Gateways", async () => {
+    it("comment.update() emit an error if CommentUpdate signature is invalid - IPFS Gateways", async () => {
         // Should emit an error and keep on updating
         const plebbit = await mockGatewayPlebbit();
         const createdComment = await plebbit.createComment({
@@ -406,68 +420,12 @@ describe(`comment.update() emits errors if needed`, async () => {
 
         expect(ipfsGatewayStates).to.deep.equal(expectedIpfsGatewayStates);
     });
-    itSkipIfRpc(
-        `comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`,
-        async () => {
-            const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID
-            const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
+    it(`comment.update() emit an error and stops updating loop if gateway responded with a CommentIpfs that's not derived from its CID - IPFS Gateway`, async () => {
+        const gatewayUrl = "http://localhost:13415"; // This gateway responds with content that is not equivalent to its CID
+        const plebbit = await mockGatewayPlebbit({ ipfsGatewayUrls: [gatewayUrl] });
 
-            const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
-            const createdComment = await plebbit.createComment({ cid });
-
-            const ipfsGatewayStates = [];
-            const updatingStates = [];
-            createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-            const ipfsGatewayUrl = Object.keys(createdComment.clients.ipfsGateways)[0];
-            createdComment.clients.ipfsGateways[ipfsGatewayUrl].on("statechange", (state) => ipfsGatewayStates.push(state));
-            let updateHasBeenEmitted = false;
-            createdComment.once("update", () => (updateHasBeenEmitted = true));
-            await createdComment.update();
-
-            await new Promise((resolve) =>
-                createdComment.once("error", (err) => {
-                    expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
-                    expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
-                    resolve();
-                })
-            );
-
-            // should stop updating by itself because of the critical error
-
-            expect(createdComment.state).to.equal("stopped");
-            expect(createdComment.updatingState).to.equal("failed");
-            expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-            expect(ipfsGatewayStates).to.deep.equal(["fetching-ipfs", "stopped"]);
-            expect(updateHasBeenEmitted).to.be.false;
-        }
-    );
-
-    it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json - IPFS P2P OR RPC`, async () => {
-        const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
-
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        let updateHasBeenEmitted = false;
-        createdComment.once("update", () => (updateHasBeenEmitted = true));
-        await createdComment.update();
-
-        const error = await new Promise((resolve) => createdComment.once("error", resolve));
-        expect(error.code).to.equal("ERR_INVALID_JSON");
-
-        await new Promise((resolve) => setTimeout(resolve, 500)); // wait until RPC transmits other states
-        // should stop updating by itself because of the critical error
-
-        expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
-        expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-        expect(updateHasBeenEmitted).to.be.false;
-    });
-
-    itSkipIfRpc(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid json - IPFS Gateways`, async () => {
-        const plebbit = await mockGatewayPlebbit();
-
-        const createdComment = await plebbit.createComment({ cid: cidOfInvalidJson });
+        const cid = "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"; // Gateway will respond with random content for this cid
+        const createdComment = await plebbit.createComment({ cid });
 
         const ipfsGatewayStates = [];
         const updatingStates = [];
@@ -478,8 +436,9 @@ describe(`comment.update() emits errors if needed`, async () => {
         createdComment.once("update", () => (updateHasBeenEmitted = true));
         await createdComment.update();
 
-        const error = await new Promise((resolve) => createdComment.once("error", resolve));
-        expect(error.code).to.equal("ERR_INVALID_JSON");
+        const err = await new Promise((resolve) => createdComment.once("error", resolve));
+        expect(err.code).to.equal("ERR_FAILED_TO_FETCH_COMMENT_IPFS_FROM_GATEWAYS");
+        expect(err.details.gatewayToError[gatewayUrl].code).to.equal("ERR_CALCULATED_CID_DOES_NOT_MATCH");
 
         // should stop updating by itself because of the critical error
 
@@ -490,51 +449,7 @@ describe(`comment.update() emits errors if needed`, async () => {
         expect(updateHasBeenEmitted).to.be.false;
     });
 
-    it(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema - IPFS P2P OR RPC`, async () => {
-        const createdComment = await plebbit.createComment({ cid: cidOfCommentIpfsWithInvalidSchema });
-
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        let updateHasBeenEmitted = false;
-        createdComment.once("update", () => (updateHasBeenEmitted = true));
-        await createdComment.update();
-
-        const err = await new Promise((resolve) => createdComment.once("error", resolve));
-        expect(err.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
-
-        // should stop updating by itself because of the critical error
-
-        expect(createdComment.depth).to.be.undefined; // Make sure it did not use the props from the invalid CommentIpfs
-        expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-        expect(updateHasBeenEmitted).to.be.false;
-    });
-
-    itSkipIfRpc(`comment.update() emits error and stops updating loop if CommentIpfs is an invalid schema - IPFS Gateways`, async () => {
-        const plebbit = await mockGatewayPlebbit();
-
-        const createdComment = await plebbit.createComment({ cid: cidOfCommentIpfsWithInvalidSchema });
-
-        const updatingStates = [];
-        createdComment.on("updatingstatechange", () => updatingStates.push(createdComment.updatingState));
-        let updateHasBeenEmitted = false;
-        createdComment.once("update", () => (updateHasBeenEmitted = true));
-        await createdComment.update();
-
-        const err = await new Promise((resolve) => createdComment.once("error", resolve));
-        expect(err.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
-
-        // should stop updating by itself because of the critical error
-
-        expect(createdComment.depth).to.be.undefined; // Should not use any props from the invalid schema
-        expect(createdComment.state).to.equal("stopped");
-        expect(createdComment.updatingState).to.equal("failed");
-        expect(updatingStates).to.deep.equal(["fetching-ipfs", "failed"]);
-        expect(updateHasBeenEmitted).to.be.false;
-    });
-
-    itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid json - IPFS P2P`, async () => {
+    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS P2P`, async () => {
         // Should emit an error and keep on updating
         const createdComment = await plebbit.createComment({
             cid: commentUpdateWithInvalidSignatureJson.cid
@@ -603,7 +518,7 @@ describe(`comment.update() emits errors if needed`, async () => {
         ];
         expect(updatingStates).to.deep.equal(expectedUpdateStates);
     });
-    itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid json - IPFS Gateway`, async () => {
+    it(`comment.update() emits error if CommentUpdate is an invalid json - IPFS Gateway`, async () => {
         // Should emit an error and keep on updating
         const plebbit = await mockGatewayPlebbit();
         const createdComment = await plebbit.createComment({
@@ -678,7 +593,7 @@ describe(`comment.update() emits errors if needed`, async () => {
         expect(ipfsGatewayStates).to.deep.equal(expectedIpfsGatewayStates);
     });
 
-    itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS P2P`, async () => {
+    it(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS P2P`, async () => {
         // Should emit an error and keep on updating
         const createdComment = await plebbit.createComment({
             cid: commentUpdateWithInvalidSignatureJson.cid
@@ -747,7 +662,7 @@ describe(`comment.update() emits errors if needed`, async () => {
         ];
         expect(updatingStates).to.deep.equal(expectedUpdateStates);
     });
-    itSkipIfRpc(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS Gateways`, async () => {
+    it(`comment.update() emits error if CommentUpdate is an invalid schema - IPFS Gateways`, async () => {
         // Should emit an error and keep on updating
         const plebbit = await mockGatewayPlebbit();
         const createdComment = await plebbit.createComment({
