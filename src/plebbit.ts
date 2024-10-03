@@ -181,7 +181,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this._initChainProviders();
 
         if (!this.noData && !this.plebbitRpcClientsOptions)
-            this.dataPath = this.parsedPlebbitOptions.dataPath = this.parsedPlebbitOptions.dataPath || getDefaultDataPath();
+            this.dataPath = this.parsedPlebbitOptions.dataPath =
+                "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
     }
 
     private _initIpfsClientsIfNeeded() {
