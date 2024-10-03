@@ -20,7 +20,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(post.original.signature).to.be.undefined;
         });
 
-        it(`comment.original from plebbit.getComment()`, async () => {
+        it(`comment.original from plebbit.getComment() should be undefined`, async () => {
             const cid = (await plebbit.getSubplebbit(signers[0].address)).posts.pages.hot.comments[0].cid;
             const comment = await plebbit.getComment(cid);
 
