@@ -369,7 +369,7 @@ export class Comment
         if (!this._plebbit.plebbitRpcClient) {
             // no need to validate if RPC
             const errorInVerificationProps = await this._verifyChallengeVerificationCommentProps(decryptedVerification);
-            if (errorInVerificationProps) throw errorInVerificationProps;
+            if (errorInVerificationProps) return;
         }
 
         this._updateCommentPropsFromDecryptedChallengeVerification(decryptedVerification);
