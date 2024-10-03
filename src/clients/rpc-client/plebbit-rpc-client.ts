@@ -281,7 +281,7 @@ export default class PlebbitRpcClient {
 
     async publishChallengeAnswers(subscriptionId: number, challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"]) {
         const parsedId = SubscriptionIdSchema.parse(subscriptionId);
-        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [parsedId, challengeAnswers]);
+        const res = <boolean>await this._webSocketClient.call("publishChallengeAnswers", [parsedId, { challengeAnswers }]);
         if (res !== true) throw Error("RPC function publishChallengeAnswers should either return true or throw");
         return res;
     }
