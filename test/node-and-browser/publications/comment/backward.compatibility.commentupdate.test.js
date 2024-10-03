@@ -21,6 +21,8 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
+const subWithNoResponseSigner = signers[4]; // this sub will never respond via pubsub
+
 const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid) => {
     if (postToUpdate.clients.ipfsClients) postToUpdate._clientsManager._calculatePathForCommentUpdate = () => commentUpdateCid;
     else {
@@ -232,48 +234,30 @@ getRemotePlebbitConfigs().map((config) => {
             plebbit = await config.plebbitInstancePromise();
         });
         it(`Extra props in decryptedVerification.commentUpdate should fail if they're not part of commentUpdate.signature.signedPropertyNames`, async () => {
-            const pubsubSigner = await plebbit.createSigner();
-            const post = await generateMockPost(signers[0].address, plebbit);
-
-            post._getSubplebbitCache = () => ({
-                address: post.subplebbitAddress,
-                pubsubTopic: pubsubSigner.address,
-                encryption: {
-                    type: "ed25519-aes-gcm",
-                    publicKey: pubsubSigner.publicKey
-                }
-            });
+            const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 
             const commentUpdate = JSON.parse(JSON.stringify(validCommentUpdateFixture));
             const extraProps = { extraProp: 1234 };
 
             Object.assign(commentUpdate, extraProps);
 
+            const errorPromise = new Promise((resolve) => post.once("error", resolve));
+
             await post.publish();
 
-            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+            await publishChallengeVerificationMessageWithEncryption(post, subWithNoResponseSigner, {
                 commentUpdate,
                 comment: { ...post._pubsubMsgToPublish, depth: 0 }
             });
 
-            const error = await new Promise((resolve) => post.once("error", resolve));
+            const error = await errorPromise;
 
             expect(error.code).to.equal("ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE");
             expect(error.details.reason).to.equal(messages["ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES"]);
             await post.stop();
         });
         it(`Extra props in decryptedVerification.commentUpdate should be accepted if they're part of commentUpdate.signature.signedPropertyNames`, async () => {
-            const pubsubSigner = await plebbit.createSigner();
-            const post = await generateMockPost(signers[0].address, plebbit);
-
-            post._getSubplebbitCache = () => ({
-                address: post.subplebbitAddress,
-                pubsubTopic: pubsubSigner.address,
-                encryption: {
-                    type: "ed25519-aes-gcm",
-                    publicKey: pubsubSigner.publicKey
-                }
-            });
+            const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 
             const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
 
@@ -287,17 +271,19 @@ getRemotePlebbitConfigs().map((config) => {
             commentUpdate.signature = await _signJson(
                 remeda.keys.strict(remeda.omit(commentUpdate, ["signature"])),
                 commentUpdate,
-                pubsubSigner
+                subWithNoResponseSigner
             );
 
             await post.publish();
 
-            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+            const verificationPromise = new Promise((resolve) => post.once("challengeverification", resolve));
+
+            await publishChallengeVerificationMessageWithEncryption(post, subWithNoResponseSigner, {
                 commentUpdate,
                 comment: mockCommentIpfs
             });
 
-            const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+            const challengeVerification = await verificationPromise;
             await post.stop();
             expect(challengeVerification.commentUpdate.extraProp).to.equal(extraProps.extraProp);
 
@@ -305,17 +291,7 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Extra props in decryptedVerification.commentUpdate.author should be accepted`, async () => {
-            const pubsubSigner = await plebbit.createSigner();
-            const post = await generateMockPost(signers[0].address, plebbit);
-
-            post._getSubplebbitCache = () => ({
-                address: post.subplebbitAddress,
-                pubsubTopic: pubsubSigner.address,
-                encryption: {
-                    type: "ed25519-aes-gcm",
-                    publicKey: pubsubSigner.publicKey
-                }
-            });
+            const post = await generateMockPost(subWithNoResponseSigner.address, plebbit);
 
             const mockCommentIpfs = { ...post._pubsubMsgToPublish, depth: 0 };
 
@@ -329,17 +305,19 @@ getRemotePlebbitConfigs().map((config) => {
             commentUpdate.signature = await _signJson(
                 remeda.keys.strict(remeda.omit(commentUpdate, ["signature"])),
                 commentUpdate,
-                pubsubSigner
+                subWithNoResponseSigner
             );
+
+            const verificationPromise = new Promise((resolve) => post.once("challengeverification", resolve));
 
             await post.publish();
 
-            await publishChallengeVerificationMessageWithEncryption(post, pubsubSigner, {
+            await publishChallengeVerificationMessageWithEncryption(post, subWithNoResponseSigner, {
                 commentUpdate,
                 comment: mockCommentIpfs
             });
 
-            const challengeVerification = await new Promise((resolve) => post.once("challengeverification", resolve));
+            const challengeVerification = await verificationPromise;
             await post.stop();
             expect(challengeVerification.commentUpdate.author.extraProp).to.equal(extraProps.extraProp);
 

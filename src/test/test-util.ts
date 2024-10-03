@@ -247,12 +247,14 @@ async function _populateSubplebbit(
     console.log(`Have successfully published ${repliesVotes.length} votes on ${replies.length} replies`);
 }
 
+// Sub label -> address
 type TestServerSubs = {
     // string will be the address
     onlineSub?: string;
     ensSub: string;
     mainSub: string;
     mathSub: string;
+    NoPubsubResponseSub: string;
 };
 
 export async function startOnlineSubplebbit() {
@@ -300,7 +302,19 @@ export async function startSubplebbits(props: {
     if (props.startOnlineSub) onlineSub = await startOnlineSubplebbit();
     console.log("All subplebbits and ipfs nodes have been started. You are ready to run the tests");
 
-    return { onlineSub: onlineSub?.address, mathSub: mathSub.address, ensSub: ensSub.address, mainSub: mainSub.address };
+    const subWithNoResponse = await createSubWithNoChallenge({ signer: props.signers[4] }, plebbit);
+    await subWithNoResponse.start();
+
+    await new Promise((resolve) => subWithNoResponse.once("update", resolve));
+    await subWithNoResponse.stop();
+
+    return {
+        onlineSub: onlineSub?.address,
+        mathSub: mathSub.address,
+        ensSub: ensSub.address,
+        mainSub: mainSub.address,
+        NoPubsubResponseSub: subWithNoResponse.address
+    };
 }
 
 export async function fetchTestServerSubs() {
@@ -866,12 +880,9 @@ export async function publishChallengeVerificationMessageWithEncryption(
         ...verificationProps
     });
 
-    const encrypted = await encryptEd25519AesGcm(
-        JSON.stringify(toEncrypt),
-        pubsubSigner.privateKey,
-        //@ts-expect-error
-        publication._challengeIdToPubsubSigner[publication._publishedChallengeRequests[0].challengeRequestId.toString()].publicKey!
-    );
+    //@ts-expect-error
+    const publicKey = Buffer.from(publication._publishedChallengeRequests[0].signature.publicKey).toString("base64");
+    const encrypted = await encryptEd25519AesGcm(JSON.stringify(toEncrypt), pubsubSigner.privateKey, publicKey);
 
     toSignChallengeVerification.encrypted = encrypted;
 

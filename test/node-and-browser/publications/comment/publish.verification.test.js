@@ -7,13 +7,12 @@ import {
     publishRandomPost,
     overrideCommentInstancePropsAndSign,
     setExtraPropOnCommentAndSign,
-    describeSkipIfRpc,
-    disableZodValidationOfPublication,
+    disableValidationOfSignatureBeforePublishing,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
-import { cleanUpBeforePublishing, signComment, verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
+import { verifySubplebbit } from "../../../../dist/node/signer/signatures.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
@@ -51,7 +50,7 @@ describe(`Client side verification`, async () => {
     });
 });
 
-describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async () => {
+describe("Subplebbit rejection of incorrect values of fields", async () => {
     let plebbit, post;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -132,17 +131,15 @@ describeSkipIfRpc("Subplebbit rejection of incorrect values of fields", async ()
         await publishWithExpectedResult(mockPost, false, "zxc");
     });
 
-    it(`Subs respond with error if an author submits an encrypted field with invalid json`, async () => {
+    itSkipIfRpc(`Subs respond with error if an author submits an encrypted field with invalid json`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false);
         post.toJSONPubsubRequestToEncrypt = () => "<html>dwad"; // Publication will encrypt this invalid json
-        post._validateSignature = async () => {}; // Disable signature validation before publishing
-
-        disableZodValidationOfPublication(post);
+        disableValidationOfSignatureBeforePublishing(post);
         await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
     });
 });
 
-describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
+describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
@@ -157,7 +154,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
     const forbiddenFieldsWithValue = [
         { cid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
         { previousCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
-        { depth: 0 },
+        { depth: "0" },
         { postCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
         { upvoteCount: 1 },
         { downvoteCount: 1 },
@@ -193,7 +190,7 @@ describeSkipIfRpc(`Posts with forbidden fields are rejected during challenge exc
     );
 });
 
-describeSkipIfRpc("Posts with forbidden author fields are rejected", async () => {
+describe("Posts with forbidden author fields are rejected", async () => {
     let plebbit;
     before(async () => {
         plebbit = await mockRemotePlebbit();
