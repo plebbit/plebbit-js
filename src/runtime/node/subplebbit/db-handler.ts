@@ -371,7 +371,11 @@ export class DbHandler {
         const newDbVersion = await this.getDbVersion();
         assert.equal(newDbVersion, env.DB_VERSION);
         this._createdTables = true;
-        if (needToMigrate) log("Done with migrating db to latest version", newDbVersion);
+        if (needToMigrate)
+            log(
+                `Created/migrated the tables to the latest (${newDbVersion}) version and saved to path`, //@ts-expect-error
+                this._dbConfig.connection!.filename
+            );
     }
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
