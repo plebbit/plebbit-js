@@ -428,7 +428,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     _canCreateNewLocalSub(): boolean {
         const isNode = typeof process?.versions?.node !== "undefined";
-        return isNode;
+        return isNode && Boolean(this.dataPath);
     }
 
     private async _setSubplebbitIpfsOnInstanceIfPossible(
