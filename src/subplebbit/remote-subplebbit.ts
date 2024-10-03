@@ -253,9 +253,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
             await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError);
-            log(`Remote Subplebbit received a new update. Will emit an update event`);
+            log(
+                `Remote Subplebbit`,
+                this.address,
+                `received a new update. Will emit an update event with updatedAt`,
+                loadedSubIpfsOrError.updatedAt
+            );
             this.emit("update", this);
-        } else log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
+        } else log.trace("Remote subplebbit loaded a SubplebbitIpfsType with no new information");
     }
 
     async update() {
