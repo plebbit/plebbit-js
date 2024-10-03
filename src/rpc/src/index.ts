@@ -53,6 +53,13 @@ import {
     parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
+import { Comment } from "../../publications/comment/comment.js";
+import Vote from "../../publications/vote/vote.js";
+import { CommentEdit } from "../../publications/comment-edit/comment-edit.js";
+import { CommentModeration } from "../../publications/comment-moderation/comment-moderation.js";
+import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
+import type { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
+import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -494,6 +501,7 @@ class PlebbitWsServer extends EventEmitter {
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             comment.removeAllListeners("update");
             comment.removeAllListeners("updatingstatechange");
+            comment.removeAllListeners("statechange");
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
 
@@ -580,6 +588,12 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private _createCommentInstanceFromPublishCommentParams(params: CommentChallengeRequestToEncryptType) {
+        const comment = new Comment(this.plebbit);
+        comment._initChallengeRequestProps(params);
+        return comment;
+    }
+
     async publishComment(params: any, connectionId: string) {
         const publishOptions = parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
 
@@ -594,8 +608,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const comment = await this.plebbit.createComment(publishOptions.comment);
-        comment._initChallengeRequestProps(publishOptions);
+        const comment = this._createCommentInstanceFromPublishCommentParams(publishOptions);
         this.publishing[subscriptionId] = comment;
         comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -604,6 +617,7 @@ class PlebbitWsServer extends EventEmitter {
             sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
         );
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
+        comment.on("statechange", () => sendEvent("statechange", comment.state));
         comment.on("error", (error) => sendEvent("error", error));
 
         // cleanup function
@@ -613,6 +627,7 @@ class PlebbitWsServer extends EventEmitter {
             comment.removeAllListeners("challengerequest");
             comment.removeAllListeners("challengeverification");
             comment.removeAllListeners("publishingstatechange");
+            comment.removeAllListeners("statechange");
             delete this.publishing[subscriptionId];
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
         };
@@ -628,6 +643,11 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
+        const vote = new Vote(this.plebbit);
+        vote._initChallengeRequestProps(params);
+        return vote;
+    }
     async publishVote(params: any, connectionId: string) {
         const publishOptions = parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
 
@@ -636,8 +656,7 @@ class PlebbitWsServer extends EventEmitter {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
 
-        const vote = await this.plebbit.createVote(publishOptions.vote);
-        vote._initChallengeRequestProps(publishOptions);
+        const vote = this._createVoteInstanceFromPublishVoteParams(publishOptions);
         this.publishing[subscriptionId] = vote;
         vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -670,6 +689,12 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
+        const commentEdit = new CommentEdit(this.plebbit);
+        commentEdit._initChallengeRequestProps(params);
+        return commentEdit;
+    }
+
     async publishCommentEdit(params: any, connectionId: string) {
         const publishOptions = parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
@@ -683,8 +708,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentEdit = await this.plebbit.createCommentEdit(publishOptions.commentEdit);
-        commentEdit._initChallengeRequestProps(publishOptions);
+        const commentEdit = this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
         commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -717,6 +741,12 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
+        const commentModeration = new CommentModeration(this.plebbit);
+        commentModeration._initChallengeRequestProps(params);
+        return commentModeration;
+    }
+
     async publishCommentModeration(params: any, connectionId: string) {
         const publishOptions = parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
@@ -730,8 +760,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentMod = await this.plebbit.createCommentModeration(publishOptions.commentModeration);
-        commentMod._initChallengeRequestProps(publishOptions);
+        const commentMod = this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
 
         this.publishing[subscriptionId] = commentMod;
         commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
