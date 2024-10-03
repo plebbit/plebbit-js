@@ -100,12 +100,17 @@ export default class PlebbitRpcClient {
                     await this._init();
                     return await originalWebsocketCall(...args);
                 } catch (e) {
-                    const typedError = <PlebbitError | { code: number; message: string } | Error>e;
+                    const typedError = <PlebbitError | { code: number; message: string } | Error | ZodError>e;
                     //e is an error json representation of PlebbitError
                     if ("code" in typedError && typeof typedError.code === "string") {
                         const actualPlebError = typedError as PlebbitError;
-                        throw new PlebbitError(actualPlebError.code, actualPlebError.details);
-                    } else throw new PlebbitError("ERR_GENERIC_RPC_CLIENT_CALL_ERROR", { error: typedError, args });
+                        throw new PlebbitError(actualPlebError.code, { ...actualPlebError.details, rpcArgs: args });
+                    } else if ("name" in typedError && typedError["name"] === "ZodError")
+                        throw new PlebbitError("ERR_GENERIC_RPC_INVALID_SCHEMA", {
+                            zodError: typedError,
+                            rpcArgs: args
+                        });
+                    else throw new PlebbitError("ERR_GENERIC_RPC_CLIENT_CALL_ERROR", { error: typedError, rpcArgs: args });
                 }
             };
         }
