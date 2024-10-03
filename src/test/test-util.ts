@@ -403,7 +403,6 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOpt
         dataPath: undefined,
         ...plebbitOptions
     });
-    plebbit._canCreateNewLocalSub = () => false;
     return plebbit;
 }
 
@@ -414,7 +413,7 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
 
 export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
     // This instance will connect to an rpc server that has no local subs
-    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39652"], ...plebbitOptions });
+    const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
     return plebbit;
 }
 
