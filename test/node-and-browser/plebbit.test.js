@@ -71,6 +71,11 @@ describe("Plebbit options", async () => {
         JSON.stringify(plebbit); // Will throw an error if circular json
     });
 
+    it(`Plebbit({dataPath: undefined}) sets plebbit.dataPath to undefined`, async () => {
+        const plebbit = await Plebbit({ dataPath: undefined });
+        expect(plebbit.dataPath).to.be.undefined;
+    });
+
     itIfRpc("Error is thrown if RPC is down", async () => {
         const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39650"] }); // Already has RPC config
         // plebbit.subplebbits will take 20s to timeout and throw this error

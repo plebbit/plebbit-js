@@ -20,6 +20,7 @@ const subplebbitAddress = signers[0].address;
 // TODO add a test where you load all posts using lastPostCid and compare them with pages
 
 const testCommentFields = (comment) => {
+    if (!comment.link && !comment.content && !comment.title) expect.fail("Comment should either have link, content or title defined");
     expect(comment.author.address).to.be.a("string");
     expect(comment.cid).to.be.a("string");
     expect(comment.shortCid).to.be.a("string");
