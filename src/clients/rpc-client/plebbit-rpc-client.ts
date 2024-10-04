@@ -172,10 +172,9 @@ export default class PlebbitRpcClient {
         delete this._pendingSubscriptionMsgs[subscriptionId];
     }
 
-    async getComment(commentCid: string): Promise<Comment> {
-        const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
+    async getComment(parsedCommentCid: string): Promise<CommentIpfsType> {
         const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [parsedCommentCid]);
-        return this._plebbit.createComment({ cid: parsedCommentCid, ...commentProps });
+        return commentProps;
     }
 
     async getCommentPage(pageCid: string, commentCid: string, subplebbitAddress: string): Promise<PageIpfs> {

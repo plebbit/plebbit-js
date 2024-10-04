@@ -56,6 +56,13 @@ export class PlebbitWithRpcClient extends Plebbit {
         await this.plebbitRpcClient.destroy();
     }
 
+    override async getComment(commentCid: string) {
+        const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
+
+        const commentIpfs = await this.plebbitRpcClient.getComment(parsedCommentCid);
+        return this.createComment({ ...commentIpfs, cid: parsedCommentCid });
+    }
+
     override async createSubplebbit(
         options: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema> | RpcRemoteSubplebbitJson | RpcLocalSubplebbitJson = {}
     ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {

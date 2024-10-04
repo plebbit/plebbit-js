@@ -61,6 +61,8 @@ import { CreateCommentEditFunctionArgumentSchema } from "../publications/comment
 import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "../publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "../publications/vote/schema.js";
 import type {
+    CommentIpfsType,
+    CommentIpfsWithCidDefined,
     CommentJson,
     CommentOptionsToSign,
     CommentWithinPageJson,
@@ -390,7 +392,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async createComment(
-        options: z.infer<typeof CreateCommentFunctionArgumentsSchema> | CommentJson | Comment | CommentWithinPageJson
+        options:
+            | z.infer<typeof CreateCommentFunctionArgumentsSchema>
+            | CommentJson
+            | Comment
+            | CommentWithinPageJson
+            | CommentIpfsWithCidDefined
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
@@ -406,8 +413,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
 
         if ("depth" in parsedOptions) {
-            // Options is CommentIpfs
-            commentInstance._initIpfsProps(parsedOptions);
+            // Options is CommentIpfs | CommentIpfsWithCidDefined
+            //@ts-expect-error
+            const commentIpfs: CommentIpfsType = remeda.omit(parsedOptions, ["cid"]); // make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
+            commentInstance._initIpfsProps(commentIpfs);
         } else if ("signature" in parsedOptions) {
             // parsedOptions is CommentPubsubMessage
             commentInstance._initPubsubMessageProps(parsedOptions);
