@@ -23,7 +23,7 @@ import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
 
-export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<SubplebbitIpfsType, "posts"> {
+export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
     // public
     title?: SubplebbitIpfsType["title"];
     description?: SubplebbitIpfsType["description"];
@@ -32,20 +32,19 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     lastCommentCid?: SubplebbitIpfsType["lastCommentCid"];
     posts: PostsPages;
     pubsubTopic?: SubplebbitIpfsType["pubsubTopic"];
-    stats?: SubplebbitStats;
     features?: SubplebbitIpfsType["features"];
     suggested?: SubplebbitIpfsType["suggested"];
     flairs?: SubplebbitIpfsType["flairs"];
     address!: SubplebbitIpfsType["address"];
     shortAddress!: string;
-    statsCid!: SubplebbitIpfsType["statsCid"];
-    createdAt!: SubplebbitIpfsType["createdAt"];
-    updatedAt!: SubplebbitIpfsType["updatedAt"];
-    encryption!: SubplebbitIpfsType["encryption"];
-    protocolVersion!: SubplebbitIpfsType["protocolVersion"];
-    signature!: SubplebbitIpfsType["signature"];
+    statsCid?: SubplebbitIpfsType["statsCid"];
+    createdAt?: SubplebbitIpfsType["createdAt"];
+    updatedAt?: SubplebbitIpfsType["updatedAt"];
+    encryption?: SubplebbitIpfsType["encryption"];
+    protocolVersion?: SubplebbitIpfsType["protocolVersion"];
+    signature?: SubplebbitIpfsType["signature"];
     rules?: SubplebbitIpfsType["rules"];
-    challenges!: SubplebbitIpfsType["challenges"];
+    challenges?: SubplebbitIpfsType["challenges"];
     postUpdates?: SubplebbitIpfsType["postUpdates"];
 
     // Only for Subplebbit instance
@@ -133,7 +132,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        if (newProps.protocolVersion) this.protocolVersion = newProps.protocolVersion;
+        this.protocolVersion = newProps.protocolVersion;
 
         this.roles = newProps.roles;
         this.features = newProps.features;
@@ -141,14 +140,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
         this.postUpdates = newProps.postUpdates;
-        if (Array.isArray(newProps.challenges)) this.challenges = newProps.challenges;
-        if (newProps.statsCid) this.statsCid = newProps.statsCid;
-        if (typeof newProps.createdAt === "number") this.createdAt = newProps.createdAt;
-        if (typeof newProps.updatedAt === "number") this.updatedAt = newProps.updatedAt;
-        if (newProps.encryption) this.encryption = newProps.encryption;
-        if (newProps.signature) this.signature = newProps.signature;
+        this.challenges = newProps.challenges;
+        this.statsCid = newProps.statsCid;
+        this.createdAt = newProps.createdAt;
+        this.updatedAt = newProps.updatedAt;
+        this.encryption = newProps.encryption;
+        this.signature = newProps.signature;
+        this.updateCid = newProps.updateCid;
         await this._updateLocalPostsInstance(newProps.posts);
-        if ("updateCid" in newProps) this.updateCid = newProps.updateCid;
     }
 
     setAddress(newAddress: string) {

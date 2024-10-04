@@ -25,6 +25,7 @@ import {
     parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
 import { ZodError } from "zod";
+import type { CommentIpfsType } from "../../publications/comment/types.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -173,9 +174,7 @@ export default class PlebbitRpcClient {
 
     async getComment(commentCid: string): Promise<Comment> {
         const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
-        const commentProps = parseCommentIpfsSchemaWithPlebbitErrorIfItFails(
-            await this._webSocketClient.call("getComment", [parsedCommentCid])
-        );
+        const commentProps = <CommentIpfsType>await this._webSocketClient.call("getComment", [parsedCommentCid]);
         return this._plebbit.createComment({ cid: parsedCommentCid, ...commentProps });
     }
 
@@ -286,8 +285,7 @@ export default class PlebbitRpcClient {
         return res;
     }
 
-    async resolveAuthorAddress(authorAddress: string) {
-        const parsedAuthorAddress = AuthorAddressSchema.parse(authorAddress);
+    async resolveAuthorAddress(parsedAuthorAddress: string) {
         const res = <string | null>await this._webSocketClient.call("resolveAuthorAddress", [parsedAuthorAddress]);
         if (typeof res !== "string" && res !== null)
             throw Error("RPC function resolveAuthorAddress should either respond with string or null");
@@ -303,8 +301,7 @@ export default class PlebbitRpcClient {
         this.emitAllPendingMessages(subscriptionId);
     }
 
-    async fetchCid(cid: string): Promise<string> {
-        const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
+    async fetchCid(parsedCid: string): Promise<string> {
         const res = <string>await this._webSocketClient.call("fetchCid", [parsedCid]);
         if (typeof res !== "string") throw Error("RPC function fetchCid did not respond with string");
         return res;

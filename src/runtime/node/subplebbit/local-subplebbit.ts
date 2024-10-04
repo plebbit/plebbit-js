@@ -137,7 +137,7 @@ import {
 import type { CommentModerationPubsubMessagePublication } from "../../../publications/comment-moderation/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
-export class LocalSubplebbit extends RpcLocalSubplebbit {
+export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
     override signer!: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets = [86400, 604800, 2592000, 3153600000]; // 1 day, 1 week, 1 month, 100 years. Expecting to be sorted from smallest to largest
 
@@ -369,7 +369,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
 
     private async _calculateLatestUpdateTrigger() {
-        const lastPublishTooOld = this.updatedAt < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
+        const lastPublishTooOld = (this.updatedAt || 0) < timestamp() - 60 * 15; // Publish a subplebbit record every 15 minutes at least
         const dbInstance = await this._getDbInternalState(true);
         if (!dbInstance) throw Error("Db instance should be defined prior to publishing a new IPNS");
         this._subplebbitUpdateTrigger = this._subplebbitUpdateTrigger || dbInstance._subplebbitUpdateTrigger || lastPublishTooOld;

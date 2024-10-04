@@ -31,16 +31,22 @@ import type {
 import { hideClassPrivateProps } from "../util.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
-export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
+export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcInternalSubplebbitRecordBeforeFirstUpdateType {
     started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
     startedState!: SubplebbitStartedState;
     signer!: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
-    settings?: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
+    settings!: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
+
+    // mandating props
+    override challenges!: RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    override encryption!: RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
+    override createdAt!: RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
+    override protocolVersion!: RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
 
     // Private stuff
     private _startRpcSubscriptionId?: z.infer<typeof SubscriptionIdSchema> = undefined;
-    protected _usingDefaultChallenge!: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
+    _usingDefaultChallenge!: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
