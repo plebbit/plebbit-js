@@ -3,7 +3,7 @@ import {
     listSubplebbits as nodeListSubplebbits,
     createIpfsClient,
     monitorSubplebbitsDirectory
-} from "./runtime/node/util.js";
+} from "../runtime/node/util.js";
 import type {
     StorageInterface,
     ChainProvider,
@@ -17,22 +17,22 @@ import type {
     PubsubSubscriptionHandler,
     InputPlebbitOptions,
     AuthorPubsubType
-} from "./types.js";
-import { Comment } from "./publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "./util.js";
-import Vote from "./publications/vote/vote.js";
-import { createSigner } from "./signer/index.js";
-import { CommentEdit } from "./publications/comment-edit/comment-edit.js";
+} from "../types.js";
+import { Comment } from "../publications/comment/comment.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import Vote from "../publications/vote/vote.js";
+import { createSigner } from "../signer/index.js";
+import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
-import env from "./version.js";
-import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signVote } from "./signer/signatures.js";
+import env from "../version.js";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signVote } from "../signer/signatures.js";
 import { TypedEmitter } from "tiny-typed-emitter";
-import Stats from "./stats.js";
-import Storage from "./runtime/node/storage.js";
-import { ClientsManager } from "./clients/client-manager.js";
-import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
-import { PlebbitError } from "./plebbit-error.js";
-import { GenericPlebbitRpcStateClient } from "./clients/rpc-client/plebbit-rpc-state-client.js";
+import Stats from "../stats.js";
+import Storage from "../runtime/node/storage.js";
+import { ClientsManager } from "../clients/client-manager.js";
+import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
+import { PlebbitError } from "../plebbit-error.js";
+import { GenericPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
 import type {
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
@@ -41,41 +41,41 @@ import type {
     SubplebbitIpfsType,
     RemoteSubplebbitJson,
     RpcRemoteSubplebbitJson
-} from "./subplebbit/types.js";
-import LRUStorage from "./runtime/node/lru-storage.js";
-import { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
-import { RpcRemoteSubplebbit } from "./subplebbit/rpc-remote-subplebbit.js";
-import { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
-import { LocalSubplebbit } from "./runtime/node/subplebbit/local-subplebbit.js";
+} from "../subplebbit/types.js";
+import LRUStorage from "../runtime/node/lru-storage.js";
+import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
+import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { z } from "zod";
-import type { CreateSignerOptions } from "./signer/types.js";
+import type { CreateSignerOptions } from "../signer/types.js";
 import type {
     CommentEditOptionsToSign,
     CommentEditTypeJson,
     CreateCommentEditOptions,
     LocalCommentEditOptions
-} from "./publications/comment-edit/types.js";
-import { CreateCommentEditFunctionArgumentSchema } from "./publications/comment-edit/schema.js";
-import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "./publications/vote/types.js";
-import { CreateVoteFunctionArgumentSchema } from "./publications/vote/schema.js";
+} from "../publications/comment-edit/types.js";
+import { CreateCommentEditFunctionArgumentSchema } from "../publications/comment-edit/schema.js";
+import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "../publications/vote/types.js";
+import { CreateVoteFunctionArgumentSchema } from "../publications/vote/schema.js";
 import type {
     CommentJson,
     CommentOptionsToSign,
     CommentWithinPageJson,
     CreateCommentOptions,
     LocalCommentOptions
-} from "./publications/comment/types.js";
-import { CreateCommentFunctionArgumentsSchema } from "./publications/comment/schema.js";
-import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "./schema/schema.js";
+} from "../publications/comment/types.js";
+import { CreateCommentFunctionArgumentsSchema } from "../publications/comment/schema.js";
+import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
     CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema,
     PubsubTopicSchema,
     SubplebbitIpfsSchema
-} from "./subplebbit/schema.js";
+} from "../subplebbit/schema.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails,
@@ -86,15 +86,15 @@ import {
     parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
     parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails
-} from "./schema/schema-util.js";
-import { CommentModeration } from "./publications/comment-moderation/comment-moderation.js";
+} from "../schema/schema-util.js";
+import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type {
     CommentModerationOptionsToSign,
     CommentModerationTypeJson,
     CreateCommentModerationOptions,
     LocalCommentModerationAfterSigning
-} from "./publications/comment-moderation/types.js";
-import { CreateCommentModerationFunctionArgumentSchema } from "./publications/comment-moderation/schema.js";
+} from "../publications/comment-moderation/types.js";
+import { CreateCommentModerationFunctionArgumentSchema } from "../publications/comment-moderation/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -239,6 +239,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async _init() {
+        const log = Logger("plebbit-js:plebbit:_init");
         // Init storage
         this._storage = new Storage({ dataPath: this.dataPath, noData: this.noData });
         await this._storage.init();
@@ -250,10 +251,13 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         hideClassPrivateProps(this);
 
-        if (this.plebbitRpcClient)
+        if (this.plebbitRpcClient) {
             // TODO need to subscribe for both subplebbitschange and settingschange
             this.subplebbits = []; // will subscribe to subplebbitschange in plebbit-rpc-client when we actually attempt to call RPC
-        else if (this._canCreateNewLocalSub() && this.dataPath) {
+            const retryOperation = this.plebbitRpcClient
+                .initalizeSubplebbitschangeEvent()
+                .catch((err) => log.error("Failed to initialize RPC subplebbitschange event", err));
+        } else if (this._canCreateNewLocalSub() && this.dataPath) {
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
             await this._waitForSubplebbitsToBeDefined();
         } else {

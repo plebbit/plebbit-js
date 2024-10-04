@@ -3,7 +3,7 @@ import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesP
 import { verifyPage } from "../signer/signatures.js";
 import assert from "assert";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";

@@ -1,5 +1,5 @@
 import Publication from "../publications/publication.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
 import { getPostUpdateTimestampRange, hideClassPrivateProps, isIpfsCid, isIpfsPath, throwWithErrorCode, timestamp } from "../util.js";
 import assert from "assert";

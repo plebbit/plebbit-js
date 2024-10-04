@@ -17,7 +17,7 @@ import type {
     CreatePlebbitWsServerOptions,
     PlebbitWsServerSettingsSerialized
 } from "./types.js";
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import type {
     DecryptedChallengeAnswerMessageType,
     DecryptedChallengeMessageType,

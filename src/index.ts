@@ -1,6 +1,6 @@
 import polyfill from "./runtime/node/polyfill.js";
 polyfill();
-import * as PlebbitClass from "./plebbit.js";
+import * as PlebbitClass from "./plebbit/plebbit.js";
 import type { InputPlebbitOptions } from "./types.js";
 import { setNativeFunctions as utilSetNativeFunctions } from "./runtime/node/util.js";
 import nodeNativeFunctions from "./runtime/node/native-functions.js";

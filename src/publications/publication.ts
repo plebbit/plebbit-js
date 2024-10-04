@@ -29,7 +29,7 @@ import type {
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import {
     cleanUpBeforePublishing,
     signChallengeAnswer,

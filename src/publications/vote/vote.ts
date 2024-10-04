@@ -1,6 +1,6 @@
 import Publication from "../publication.js";
 import type { PublicationTypeName } from "../../types.js";
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import { verifyVote } from "../../signer/index.js";
 import { hideClassPrivateProps, throwWithErrorCode } from "../../util.js";
 import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessagePublication } from "./types.js";

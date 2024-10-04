@@ -11,7 +11,7 @@ import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import { z } from "zod";
 import { messages } from "../errors.js";
 import * as remeda from "remeda";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 
 import { SubplebbitEditOptionsSchema, SubplebbitIpfsSchema } from "./schema.js";

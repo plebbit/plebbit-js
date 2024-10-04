@@ -1,6 +1,6 @@
 import localForage from "localforage";
 import { StorageInterface } from "../../types.js";
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import { v4 as uuidV4 } from "uuid";
 
 // Storage is for long term items, no eviction based on ttl or anything like that

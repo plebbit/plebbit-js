@@ -10,7 +10,7 @@ import type {
 } from "../../../../../pubsub-messages/types.js";
 import { Comment } from "../../../../../publications/comment/comment.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
-import { Plebbit } from "../../../../../plebbit.js";
+import { Plebbit } from "../../../../../plebbit/plebbit.js";
 
 const shouldExcludePublication = (
     subplebbitChallenge: SubplebbitChallenge,

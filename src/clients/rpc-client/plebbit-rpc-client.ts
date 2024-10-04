@@ -1,7 +1,7 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Client as WebSocketClient } from "rpc-websockets";
 import { Comment } from "../../publications/comment/comment.js";
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
 import EventEmitter from "events";

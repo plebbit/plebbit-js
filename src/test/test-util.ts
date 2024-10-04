@@ -1,7 +1,7 @@
 import PlebbitIndex from "../index.js";
 import { removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import { Comment } from "../publications/comment/comment.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import Vote from "../publications/vote/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { InputPlebbitOptions } from "../types.js";

@@ -1,4 +1,4 @@
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import {
     CreatePlebbitWsServerOptionsSchema,
     SetNewSettingsPlebbitWsServerSchema,

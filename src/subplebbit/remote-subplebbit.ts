@@ -1,5 +1,5 @@
 import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress } from "../util.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 
 import type { SubplebbitEvents } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";

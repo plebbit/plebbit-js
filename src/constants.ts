@@ -3,7 +3,7 @@ import type { ChainTicker, LRUStorageConstructor } from "./types.js";
 import type { SubplebbitIpfsType } from "./subplebbit/types.js";
 import { PublicClient as ViemClient, createPublicClient, http } from "viem";
 import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
-import { Plebbit } from "./plebbit.js";
+import { Plebbit } from "./plebbit/plebbit.js";
 import Logger from "@plebbit/plebbit-logger";
 
 export enum STORAGE_KEYS {

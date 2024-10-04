@@ -6,7 +6,7 @@ import type { AuthorWithOptionalCommentUpdateJson, PublicationTypeName } from ".
 
 import type { RepliesPagesTypeIpfs } from "../../pages/types.js";
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForChallengeVerification } from "../../signer/signatures.js";
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
@@ -542,10 +542,10 @@ export class Comment
         this._setRpcClientState(rpcState);
     }
 
-    private _isCriticalRpcError(err: Error | PlebbitError) {
+    private _isRetriableRpcError(err: Error | PlebbitError) {
         // Critical Errors for now are:
         // Invalid signature of CommentIpfs
-        return err.message === messages["ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID"];
+        return this._isCommentIpfsErrorRetriable(err);
     }
 
     private _handleUpdateEventFromRpc(args: any) {
@@ -576,15 +576,16 @@ export class Comment
     }
 
     private _handleStateChangeFromRpc(args: any) {
-        const log = Logger("plebbit-js:comment:_handleStateChangeFromRpc");
-
         const commentState: Comment["state"] = args.params.result;
         this._updateState(commentState);
     }
 
     private async _handleErrorEventFromRpc(args: any) {
+        const log = Logger("plebbit-js:comment:update:_handleErrorEventFromRpc");
         const err = <PlebbitError>args.params.result;
-        if (this._isCriticalRpcError(err)) {
+        log("Received 'error' event from RPC", err);
+        if (!this._isRetriableRpcError(err)) {
+            log.error("The RPC transmitted a non retriable error", "for comment", this.cid, "will clean up the subscription", err);
             this._setUpdatingState("failed");
             this._updateState("stopped");
             await this._stopUpdateLoop();

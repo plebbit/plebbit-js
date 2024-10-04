@@ -1,4 +1,4 @@
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import { StorageInterface } from "../../types.js";
 import path from "path";
 import fs from "fs";

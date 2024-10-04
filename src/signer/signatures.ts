@@ -12,7 +12,7 @@ import * as ed from "@noble/ed25519";
 
 import PeerId from "peer-id";
 import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throwWithErrorCode, timestamp } from "../util.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 
 import type {
     ChallengeAnswerMessageType,

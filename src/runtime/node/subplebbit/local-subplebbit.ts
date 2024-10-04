@@ -1,5 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "../../../plebbit.js";
+import { Plebbit } from "../../../plebbit/plebbit.js";
 import type {
     Challenge,
     CreateNewLocalSubplebbitParsedOptions,

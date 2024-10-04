@@ -1,4 +1,4 @@
-import { Plebbit } from "./plebbit.js";
+import { Plebbit } from "./plebbit/plebbit.js";
 import { ChainTicker } from "./types.js";
 import assert from "assert";
 import Logger from "@plebbit/plebbit-logger";

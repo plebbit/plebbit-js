@@ -9,7 +9,7 @@ import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSett
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
-import type { Plebbit } from "../../../../../../plebbit.js";
+import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
 import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
