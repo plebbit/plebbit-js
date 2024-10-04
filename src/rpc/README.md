@@ -291,7 +291,8 @@ Publish a comment and subscribe to receive notifications of the challenge pubsub
         "type": "ed25519",
         "signedPropertyNames": ["title", "content", "author"]
       }
-    }
+    },
+    "challengeAnswers": ["some answer"]
   }]
 }
 ```
@@ -314,13 +315,11 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
   "method": "publishCommentNotification",
   "params": {
     "result": {
-      "challenges": {
-        "type": "CHALLENGE",
-        "challenges": [
-          {"type": "text/plain", "challenge": "2+2"},
-          {"type": "text/plain", "challenge": "5+5"}
-        ]
-        }
+      "type": "CHALLENGE",
+      "challenges": [
+        {"type": "text/plain", "challenge": "2+2"},
+        {"type": "text/plain", "challenge": "5+5"}
+      ]
     },
     "event": "challenge",
     "subscription": 23784
