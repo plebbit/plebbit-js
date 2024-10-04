@@ -7,9 +7,12 @@ import nodeNativeFunctions from "./runtime/node/native-functions.js";
 import browserNativeFunctions from "./runtime/browser/native-functions.js";
 import { shortifyAddress, shortifyCid } from "./util.js";
 import { plebbitJsChallenges } from "./runtime/node/subplebbit/challenges/index.js";
+import { PlebbitWithRpcClient } from "./plebbit/plebbit-with-rpc-client.js";
 
 const Plebbit = async function Plebbit(plebbitOptions: InputPlebbitOptions = {}): Promise<PlebbitClass.Plebbit> {
-    const plebbit = new PlebbitClass.Plebbit(plebbitOptions);
+    const plebbit = plebbitOptions.plebbitRpcClientsOptions
+        ? new PlebbitWithRpcClient(plebbitOptions)
+        : new PlebbitClass.Plebbit(plebbitOptions);
     await plebbit._init();
     return plebbit;
 };

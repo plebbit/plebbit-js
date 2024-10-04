@@ -71,7 +71,6 @@ import { CreateCommentFunctionArgumentsSchema } from "../publications/comment/sc
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
-    CreateRpcSubplebbitFunctionArgumentSchema,
     CreateSubplebbitFunctionArgumentsSchema,
     PubsubTopicSchema,
     SubplebbitIpfsSchema
@@ -82,7 +81,6 @@ import {
     parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails,
     parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
-    parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
     parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails
@@ -249,20 +247,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
 
-        hideClassPrivateProps(this);
-
-        if (this.plebbitRpcClient) {
-            // TODO need to subscribe for both subplebbitschange and settingschange
-            this.subplebbits = []; // will subscribe to subplebbitschange in plebbit-rpc-client when we actually attempt to call RPC
-            const retryOperation = this.plebbitRpcClient
-                .initalizeSubplebbitschangeEvent()
-                .catch((err) => log.error("Failed to initialize RPC subplebbitschange event", err));
-        } else if (this._canCreateNewLocalSub() && this.dataPath) {
+        // TODO plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
+        if (this._canCreateNewLocalSub() && !this.plebbitRpcClient) {
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
             await this._waitForSubplebbitsToBeDefined();
         } else {
             this.subplebbits = []; // subplebbits = [] on browser
         }
+
+        hideClassPrivateProps(this);
     }
 
     async getSubplebbit(subplebbitAddress: z.infer<typeof SubplebbitAddressSchema>) {
@@ -437,7 +430,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return isNode && Boolean(this.dataPath);
     }
 
-    private async _setSubplebbitIpfsOnInstanceIfPossible(
+    protected async _setSubplebbitIpfsOnInstanceIfPossible(
         subplebbit: RpcRemoteSubplebbit | RemoteSubplebbit,
         options: CreateRemoteSubplebbitOptions | SubplebbitIpfsType | RemoteSubplebbitJson | RpcRemoteSubplebbitJson
     ) {
@@ -453,11 +446,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         }
     }
 
-    private async _waitForSubplebbitsToBeDefined() {
+    protected async _waitForSubplebbitsToBeDefined() {
         // we're just wait until this.subplebbits is either defined, or subplebbitschange is emitted
-
-        if (!this._subplebbitschangeEventHasbeenEmitted && this.plebbitRpcClient)
-            await this.plebbitRpcClient.initalizeSubplebbitschangeEvent();
 
         if (!this._subplebbitschangeEventHasbeenEmitted) await new Promise((resolve) => this.once("subplebbitschange", resolve));
         if (!Array.isArray(this.subplebbits)) throw Error("plebbit.subplebbits should be defined after subplebbitschange event");
@@ -472,47 +462,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 })
             );
         }
-    }
-
-    private async _createSubplebbitRpc(
-        options: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>
-    ): Promise<RpcLocalSubplebbit | RpcRemoteSubplebbit> {
-        const log = Logger("plebbit-js:plebbit:createSubplebbit");
-        log.trace("Received subplebbit options to create a subplebbit instance over RPC:", options);
-        await this._waitForSubplebbitsToBeDefined();
-
-        if ("address" in options && typeof options.address === "string") {
-            const rpcSubs = this.subplebbits; // should probably be replaced with a direct call for subs
-            const isSubRpcLocal = rpcSubs.includes(options.address);
-            // Should actually create an instance here, instead of calling getSubplebbit
-            if (isSubRpcLocal) {
-                const sub = new RpcLocalSubplebbit(this);
-                sub.setAddress(options.address);
-                // wait for one update here, and then stop
-                const updatePromise = new Promise((resolve) => sub.once("update", resolve));
-                let error: PlebbitError | undefined;
-                const errorPromise = new Promise((resolve) => sub.once("error", (err) => resolve((error = err))));
-                await sub.update();
-                await Promise.race([updatePromise, errorPromise]);
-                await sub.stop();
-                if (error) throw error;
-
-                return sub;
-            } else {
-                log.trace("Creating a remote RPC subplebbit instance with address", options.address);
-                const remoteSub = new RpcRemoteSubplebbit(this);
-                await this._setSubplebbitIpfsOnInstanceIfPossible(remoteSub, options);
-
-                return remoteSub;
-            }
-        } else if (!("address" in options)) {
-            // We're creating a new local sub
-            const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(options);
-            log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, JSON.parse(JSON.stringify(newLocalSub)));
-            newLocalSub.emit("update", newLocalSub);
-            await this._awaitSubplebbitsToIncludeSub(newLocalSub.address);
-            return newLocalSub;
-        } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
 
     private async _createRemoteSubplebbitInstance(options: z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema>) {
@@ -561,8 +510,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // jsonfied = JSON.parse(JSON.stringify(subplebbitInstance))
         // should probably exclude internal and instance-exclusive props like states
 
-        if (this.plebbitRpcClient) return this._createSubplebbitRpc(jsonfied);
-        else if ("startedState" in jsonfied) return this._createLocalSub(jsonfied);
+        if ("startedState" in jsonfied) return this._createLocalSub(jsonfied);
         else return this._createRemoteSubplebbitInstance(jsonfied);
     }
 
@@ -578,10 +526,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if ("address" in parsedOptions && parsedOptions?.address && doesDomainAddressHaveCapitalLetter(parsedOptions.address))
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { ...parsedOptions });
 
-        if (this.plebbitRpcClient) {
-            const parsedRpcOptions = parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
-            return this._createSubplebbitRpc(parsedRpcOptions);
-        }
+        // Creating a subplebbit when we're connected to RPC will be handled in plebbit-with-rpc-client
+        // Code below is for NodeJS and browser using IPFS-P2P/gateway
 
         const canCreateLocalSub = this._canCreateNewLocalSub();
 
@@ -589,6 +535,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             throw new PlebbitError("ERR_CAN_NOT_CREATE_A_SUB", { plebbitOptions: this._userPlebbitOptions });
 
         if (!canCreateLocalSub) {
+            // we're either on browser or on NodeJS with no dataPath
             const parsedRemoteOptions = parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
             return this._createRemoteSubplebbitInstance(parsedRemoteOptions);
         }
@@ -720,9 +667,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async fetchCid(cid: string): Promise<string> {
+        // plebbit-with-rpc-client will handle if user is connected to rpc client
+
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        if (this.plebbitRpcClient) return this.plebbitRpcClient.fetchCid(parsedCid);
-        else return this._clientsManager.fetchCid(parsedCid);
+        return this._clientsManager.fetchCid(parsedCid);
     }
 
     // Used to pre-subscribe so publishing on pubsub would be faster
@@ -742,6 +690,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async resolveAuthorAddress(authorAddress: string) {
+        // TODO rewrite this
         const parsedAddress = AuthorAddressSchema.parse(authorAddress);
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedAddress);
         return resolved;
@@ -757,13 +706,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async rpcCall(method: string, params: any[]): Promise<any> {
-        if (!this.plebbitRpcClient) throw Error("Can't call rpcCall without having a rpc connection");
-        return this.plebbitRpcClient.rpcCall(method, params);
+        throw Error("Can't call rpcCall without having a rpc connection");
     }
 
     async destroy() {
         // Clean up connections
-        if (this.plebbitRpcClient) await this.plebbitRpcClient.destroy();
         if (this._subplebbitFsWatchAbort) this._subplebbitFsWatchAbort.abort();
         await this._storage.destroy();
         await Promise.all(Object.values(this._storageLRUs).map((storage) => storage.destroy()));
