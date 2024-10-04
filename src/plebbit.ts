@@ -296,21 +296,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const comment = await this.createComment({ cid: parsedCid });
 
         // The reason why we override this function is because we don't want update() to load the IPNS
+        // we only want to load the comment ipfs
         //@ts-expect-error
         const originalLoadMethod = comment._retryLoadingCommentUpdate.bind(comment);
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = () => {};
-        await comment.update();
         const updatePromise = new Promise((resolve) => comment.once("update", resolve));
         let error: PlebbitError | Error | undefined;
         const errorPromise = new Promise((resolve) => comment.once("error", (err) => resolve((error = err))));
+
+        await comment.update();
         await Promise.race([updatePromise, errorPromise]);
         await comment.stop();
         //@ts-expect-error
         comment._retryLoadingCommentUpdate = originalLoadMethod;
 
         if (error) {
-            log.error(`Failed to load comment (${parsedCid}) due to error: ${error}`);
+            log.error(`Failed to load comment (${parsedCid}) due to error`, error);
             throw error;
         }
         return comment;
