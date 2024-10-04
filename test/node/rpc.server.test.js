@@ -1,5 +1,5 @@
 import PlebbitWsServer from "../../dist/node/rpc/src/index";
-import { mockPlebbit } from "../../dist/node/test/test-util";
+import { describeSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import os from "os";
@@ -19,12 +19,13 @@ const getLanIpV4Address = () => {
     return undefined;
 };
 
-describe(`Setting up rpc server`, async () => {
+describeSkipIfRpc(`Setting up rpc server`, async () => {
     let plebbit;
 
     const lanAddress = getLanIpV4Address(); // LAN address (non-internal)
     before(async () => {
         plebbit = await mockPlebbit();
+        expect(plebbit.dataPath).to.be.a("string");
         expect(lanAddress).to.be.a("string");
     });
     it(`Rpc server throws is rpc port is already taken`, async () => {
@@ -33,7 +34,7 @@ describe(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -57,7 +58,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -81,7 +82,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -105,7 +106,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -129,7 +130,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -153,7 +154,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -183,7 +184,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -209,7 +210,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
@@ -233,7 +234,7 @@ describe(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
-                dataPath: plebbit.plebbitDataPath
+                dataPath: plebbit.dataPath
             }
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
