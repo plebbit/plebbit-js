@@ -591,7 +591,17 @@ export class BaseClientsManager {
             return resolvedTextRecord;
         } catch (e) {
             domainResolverPromiseCache.delete(cacheKey);
-            const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { error: e });
+            const parsedError =
+                e instanceof PlebbitError
+                    ? e
+                    : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", {
+                          error: e,
+                          address,
+                          txtRecordName,
+                          chain,
+                          chainproviderUrl,
+                          chainId
+                      });
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
             if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: parsedError };
