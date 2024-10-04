@@ -146,8 +146,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this.updatedAt = newProps.updatedAt;
         this.encryption = newProps.encryption;
         this.signature = newProps.signature;
-        this.updateCid = newProps.updateCid;
         await this._updateLocalPostsInstance(newProps.posts);
+
+        // Exclusive Instance props
+        if (newProps.updateCid) this.updateCid = newProps.updateCid;
     }
 
     setAddress(newAddress: string) {
@@ -175,7 +177,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     toJSONRpcRemote(): RpcRemoteSubplebbitType {
-        if (!this.updateCid) throw Error("subplebbit.cid should be defined before calling toJSONRpcRemote");
+        if (!this.updateCid) throw Error("subplebbit.updateCid should be defined before calling toJSONRpcRemote");
         return {
             subplebbit: this.toJSONIpfs(),
             updateCid: this.updateCid
