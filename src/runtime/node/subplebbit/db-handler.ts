@@ -692,7 +692,7 @@ export class DbHandler {
     async queryCommentsToBeUpdated(trx?: Transaction): Promise<CommentsTableRow[]> {
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
-        // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit OR
+        // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
         // 3 - Comments that new votes, CommentEdit or other comments were published under them
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
