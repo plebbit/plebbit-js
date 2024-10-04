@@ -47,6 +47,7 @@ import {
     CreateCommentEditFunctionArgumentSchema
 } from "../publications/comment-edit/schema.js";
 import { PlebbitUserOptionsSchema } from "../schema.js";
+import { z } from "zod";
 
 export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     try {
@@ -56,38 +57,46 @@ export function parseJsonWithPlebbitErrorIfFails(x: string): any {
     }
 }
 
-export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(subIpfs: any): SubplebbitIpfsType {
+export function parseSubplebbitIpfsSchemaPassthroughWithPlebbitErrorIfItFails(
+    subIpfs: z.infer<typeof SubplebbitIpfsSchema>
+): SubplebbitIpfsType {
     const parseRes = SubplebbitIpfsSchema.passthrough().safeParse(subIpfs);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA", { zodError: parseRes.error, subJson: subIpfs });
     else return subIpfs;
 }
 
-export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: any): CommentIpfsType {
+export function parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfsJson: z.infer<typeof CommentIpfsSchema>): CommentIpfsType {
     const parseRes = CommentIpfsSchema.passthrough().safeParse(commentIpfsJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_IPFS_SCHEMA", { zodError: parseRes.error, commentIpfsJson });
     else return <CommentIpfsType>commentIpfsJson;
 }
 
-export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(commentUpdateJson: any): CommentUpdateType {
+export function parseCommentUpdateSchemaWithPlebbitErrorIfItFails(
+    commentUpdateJson: z.infer<typeof CommentUpdateSchema>
+): CommentUpdateType {
     const parseRes = CommentUpdateSchema.passthrough().safeParse(commentUpdateJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_COMMENT_UPDATE_SCHEMA", { zodError: parseRes.error, commentUpdateJson });
     else return commentUpdateJson;
 }
 
-export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: any): PageIpfs {
+export function parsePageIpfsSchemaWithPlebbitErrorIfItFails(pageIpfsJson: z.infer<typeof PageIpfsSchema>): PageIpfs {
     const parseRes = PageIpfsSchema.safeParse(pageIpfsJson);
     if (!parseRes.success) throw new PlebbitError("ERR_INVALID_PAGE_IPFS_SCHEMA", { zodError: parseRes.error, pageIpfsJson });
     else return pageIpfsJson;
 }
 
-export function parseDecryptedChallengeWithPlebbitErrorIfItFails(decryptedChallengeJson: any): DecryptedChallenge {
+export function parseDecryptedChallengeWithPlebbitErrorIfItFails(
+    decryptedChallengeJson: z.infer<typeof DecryptedChallengeSchema>
+): DecryptedChallenge {
     const parseRes = DecryptedChallengeSchema.passthrough().safeParse(decryptedChallengeJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_DECRYPTED_SCHEMA", { zodError: parseRes.error, decryptedChallengeJson });
     else return decryptedChallengeJson;
 }
 
-export function parseDecryptedChallengeVerification(decryptedChallengeVerificationJson: any): DecryptedChallengeVerification {
+export function parseDecryptedChallengeVerification(
+    decryptedChallengeVerificationJson: z.infer<typeof DecryptedChallengeVerificationSchema>
+): DecryptedChallengeVerification {
     const parseRes = DecryptedChallengeVerificationSchema.passthrough().safeParse(decryptedChallengeVerificationJson);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_VERIFICATION_DECRYPTED_SCHEMA", {
@@ -109,7 +118,7 @@ export function parseRpcRemoteSubplebbitUpdateEventWithPlebbitErrorIfItFails(
     else return rpcRemoteSubplebbit;
 }
 
-export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
+export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: z.infer<typeof CidStringSchema>) {
     try {
         return CidStringSchema.parse(cidString);
     } catch (e) {
@@ -120,7 +129,9 @@ export function parseCidStringSchemaWithPlebbitErrorIfItFails(cidString: any) {
     }
 }
 
-export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult: any): CommentIpfsType | CommentUpdateType {
+export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(
+    updateResult: z.infer<typeof RpcCommentUpdateResultSchema>
+): CommentIpfsType | CommentUpdateType {
     const parseRes = RpcCommentUpdateResultSchema.safeParse(updateResult);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_RPC_COMMENT_UPDATE_SCHEMA", {
@@ -130,7 +141,9 @@ export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult
     else return updateResult;
 }
 
-export function parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(decryptedChallengeAnswers: any): DecryptedChallengeAnswer {
+export function parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(
+    decryptedChallengeAnswers: z.infer<typeof DecryptedChallengeAnswerSchema>
+): DecryptedChallengeAnswer {
     const parseRes = DecryptedChallengeAnswerSchema.safeParse(decryptedChallengeAnswers);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CHALLENGE_ANSWERS", {
@@ -140,7 +153,9 @@ export function parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(decrypted
     else return decryptedChallengeAnswers;
 }
 
-export function parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails(options: any): CreatePlebbitWsServerOptions {
+export function parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails(
+    options: z.infer<typeof CreatePlebbitWsServerOptionsSchema>
+): CreatePlebbitWsServerOptions {
     const parseRes = CreatePlebbitWsServerOptionsSchema.safeParse(options);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA", {
@@ -151,7 +166,7 @@ export function parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails
 }
 
 export function parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
-    toEncrypt: any
+    toEncrypt: z.infer<typeof CommentModerationChallengeRequestToEncryptSchema>
 ): CommentModerationChallengeRequestToEncrypt {
     const parseRes = CommentModerationChallengeRequestToEncryptSchema.safeParse(toEncrypt);
     if (!parseRes.success)
@@ -162,7 +177,9 @@ export function parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbit
     else return toEncrypt;
 }
 
-export function parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(editOptions: any): SubplebbitEditOptions {
+export function parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(
+    editOptions: z.infer<typeof SubplebbitEditOptionsSchema>
+): SubplebbitEditOptions {
     const parseRes = SubplebbitEditOptionsSchema.safeParse(editOptions);
     if (!parseRes.success)
         throw new PlebbitError("ERR_SUBPLEBBIT_EDIT_OPTIONS_SCHEMA", {
@@ -172,7 +189,9 @@ export function parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(editOp
     else return editOptions;
 }
 
-export function parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(toEncrypt: any): CommentChallengeRequestToEncryptType {
+export function parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
+    toEncrypt: z.infer<typeof CommentChallengeRequestToEncryptSchema>
+): CommentChallengeRequestToEncryptType {
     const parseRes = CommentChallengeRequestToEncryptSchema.safeParse(toEncrypt);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_COMMENT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
@@ -182,7 +201,9 @@ export function parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItF
     else return toEncrypt;
 }
 
-export function parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(toEncrypt: any): VoteChallengeRequestToEncryptType {
+export function parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
+    toEncrypt: z.infer<typeof VoteChallengeRequestToEncryptSchema>
+): VoteChallengeRequestToEncryptType {
     const parseRes = VoteChallengeRequestToEncryptSchema.safeParse(toEncrypt);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_VOTE_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
@@ -193,7 +214,7 @@ export function parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFail
 }
 
 export function parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(
-    toEncrypt: any
+    toEncrypt: z.infer<typeof CommentEditChallengeRequestToEncryptSchema>
 ): CommentEditChallengeRequestToEncryptType {
     const parseRes = CommentEditChallengeRequestToEncryptSchema.safeParse(toEncrypt);
     if (!parseRes.success)
@@ -204,7 +225,9 @@ export function parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorI
     else return toEncrypt;
 }
 
-export function parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails(options: any): CreateNewLocalSubplebbitUserOptions {
+export function parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails(
+    options: z.infer<typeof CreateNewLocalSubplebbitUserOptionsSchema>
+): CreateNewLocalSubplebbitUserOptions {
     const parseRes = CreateNewLocalSubplebbitUserOptionsSchema.safeParse(options);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_NEW_LOCAL_SUB_USER_OPTIONS", {
@@ -214,7 +237,9 @@ export function parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIf
     else return options;
 }
 
-export function parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(settings: any): SetNewSettingsPlebbitWsServer {
+export function parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(
+    settings: z.infer<typeof SetNewSettingsPlebbitWsServerSchema>
+): SetNewSettingsPlebbitWsServer {
     const parseRes = SetNewSettingsPlebbitWsServerSchema.safeParse(settings);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_NEW_WS_SERVER_SETTINGS_SCHEMA", {
@@ -224,7 +249,7 @@ export function parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFail
     else return settings;
 }
 
-export function parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails(args: z.infer<typeof CreateCommentFunctionArgumentsSchema>) {
     const parseRes = CreateCommentFunctionArgumentsSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA", {
@@ -234,7 +259,9 @@ export function parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails(arg
     else return args;
 }
 
-export function parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails(
+    args: z.infer<typeof CreateCommentModerationFunctionArgumentSchema>
+) {
     const parseRes = CreateCommentModerationFunctionArgumentSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_COMMENT_MODERATION_ARGS_SCHEMA", {
@@ -244,7 +271,9 @@ export function parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErr
     else return args;
 }
 
-export function parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(
+    args: any
+): z.infer<typeof CreateRemoteSubplebbitFunctionArgumentSchema> {
     const parseRes = CreateRemoteSubplebbitFunctionArgumentSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA", {
@@ -254,7 +283,7 @@ export function parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErro
     else return args;
 }
 
-export function parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateVoteFunctionArgumentSchema>) {
     const parseRes = CreateVoteFunctionArgumentSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_VOTE_ARGS_SCHEMA", {
@@ -264,7 +293,9 @@ export function parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails(a
     else return args;
 }
 
-export function parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails(
+    args: z.infer<typeof CreateCommentEditFunctionArgumentSchema>
+) {
     const parseRes = CreateCommentEditFunctionArgumentSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_COMMENT_EDIT_ARGS_SCHEMA", {
@@ -274,7 +305,9 @@ export function parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfIt
     else return args;
 }
 
-export function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(
+    args: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema>
+) {
     const parseRes = CreateSubplebbitFunctionArgumentsSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_SUBPLEBBIT_ARGS_SCHEMA", {
@@ -295,7 +328,9 @@ export function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(args: any
     else return parseRes.data;
 }
 
-export function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(args: any) {
+export function parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails(
+    args: z.infer<typeof CreateRpcSubplebbitFunctionArgumentSchema>
+) {
     const parseRes = CreateRpcSubplebbitFunctionArgumentSchema.safeParse(args);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA", {
