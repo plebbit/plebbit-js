@@ -306,7 +306,17 @@ export class DbHandler {
 
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
+        //@ts-expect-error
+        const dbPath = <string>this._dbConfig.connection.filename;
+        let backupDbPath: string | undefined;
+        const dbExistsAlready = fs.existsSync(dbPath);
         if (needToMigrate) {
+            if (dbExistsAlready) {
+                await this.destoryConnection();
+                backupDbPath = dbPath + `.backup-migration.${currentDbVersion}.${timestamp()}`;
+                await fs.promises.cp(dbPath, backupDbPath);
+                await this.initDestroyedConnection();
+            }
             await this._knex.raw("PRAGMA foreign_keys = OFF");
 
             // Remove unneeded tables
@@ -376,6 +386,7 @@ export class DbHandler {
                 `Created/migrated the tables to the latest (${newDbVersion}) version and saved to path`, //@ts-expect-error
                 this._dbConfig.connection!.filename
             );
+        if (backupDbPath) await fs.promises.rm(backupDbPath);
     }
 
     private async _copyTable(srcTable: string, dstTable: string, currentDbVersion: number) {
