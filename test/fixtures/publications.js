@@ -5,6 +5,7 @@ const comment = {
     author: { address: signers[1].address },
     timestamp: 1600000000,
     parentCid: "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGyx",
+    postCid: "QmbSiusGgY4Uk5LdAe91bzLkBzidyKyKHRKwhXPDz7gGyx",
     content: "some content... "
 };
 // test large content
