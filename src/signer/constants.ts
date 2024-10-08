@@ -1,7 +1,8 @@
 // Signer section
 
-export const keysToOmitFromSignedPropertyNames = <["signer", "challengeCommentCids", "challengeAnswers"]>[
+import type { CreatePublicationOptions } from "../types";
+
+export const keysToOmitFromSignedPropertyNames = <(keyof Pick<CreatePublicationOptions, "signer" | "pubsubMessage">)[]>[
     "signer",
-    "challengeCommentCids",
-    "challengeAnswers"
+    "pubsubMessage"
 ];

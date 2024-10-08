@@ -21,10 +21,9 @@ import type {
 } from "../pubsub-messages/types.js";
 import type {
     AuthorPubsubJsonType,
+    CreatePublicationOptions,
     IpfsHttpClientPubsubMessage,
-    LocalPublicationProps,
     PublicationEvents,
-    PublicationPubsubMessage,
     PublicationTypeName
 } from "../types.js";
 import Logger from "@plebbit/plebbit-logger";
@@ -47,9 +46,7 @@ import * as cborg from "cborg";
 import * as remeda from "remeda";
 import { subplebbitForPublishingCache } from "../constants.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import type { CommentEditPubsubMessagePublication } from "./comment-edit/types.js";
-import type { VotePubsubMessagePublication } from "./vote/types.js";
-import type { CommentIpfsType, CommentPubsubMessagePublication } from "./comment/types.js";
+import type { CommentIpfsType } from "./comment/types.js";
 import {
     parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseDecryptedChallengeVerification,
@@ -80,8 +77,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
     subplebbitAddress!: PublicationFromDecryptedChallengeRequest["subplebbitAddress"];
     shortSubplebbitAddress!: string;
     timestamp!: PublicationFromDecryptedChallengeRequest["timestamp"];
-    signature!: PublicationFromDecryptedChallengeRequest["signature"];
-    signer?: LocalPublicationProps["signer"];
+    signature!: PublicationFromDecryptedChallengeRequest["signature"] | CommentIpfsType["signature"];
+    signer?: SignerType;
     author!: AuthorPubsubJsonType;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
@@ -104,6 +101,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
     private _rpcPublishSubscriptionId?: number = undefined;
+    private _pubsubFieldsToIncludeInRequest?: CreatePublicationOptions["pubsubMessage"];
     _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
@@ -135,24 +133,13 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
-    _initChallengeRequestChallengeProps(props: Pick<LocalPublicationProps, "challengeAnswers" | "challengeCommentCids">) {
+    _initChallengeRequestChallengeProps(props: NonNullable<CreatePublicationOptions["pubsubMessage"]>) {
+        this._pubsubFieldsToIncludeInRequest = props;
         this.challengeAnswers = props.challengeAnswers;
         this.challengeCommentCids = props.challengeCommentCids;
     }
 
-    _initBaseLocalProps(props: LocalPublicationProps) {
-        this.setSubplebbitAddress(props.subplebbitAddress);
-        this.timestamp = props.timestamp;
-        this.signer = props.signer;
-        this.signature = props.signature;
-        this.author = { ...props.author, shortAddress: shortifyAddress(props.author.address) };
-        this.protocolVersion = props.protocolVersion;
-        this._initChallengeRequestChallengeProps(props);
-    }
-
-    _initBaseRemoteProps(
-        props: CommentIpfsType | CommentPubsubMessagePublication | VotePubsubMessagePublication | CommentEditPubsubMessagePublication
-    ) {
+    _initBaseRemoteProps(props: CommentIpfsType | PublicationFromDecryptedChallengeRequest) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
         this.signature = props.signature;
@@ -169,16 +156,14 @@ class Publication extends TypedEmitter<PublicationEvents> {
     }
 
     // This is the publication that user publishes over pubsub
-    toJSONPubsubMessagePublication(): PublicationPubsubMessage {
+    toJSONPubsubMessagePublication(): PublicationFromDecryptedChallengeRequest {
         throw Error("Should be overridden");
     }
 
-    // TODO change this to toJSONPubsubMessageToEncrypt
     toJSONPubsubRequestToEncrypt(): DecryptedChallengeRequest {
         return {
             [this.getType()]: this.toJSONPubsubMessagePublication(),
-            challengeAnswers: this.challengeAnswers,
-            challengeCommentCids: this.challengeCommentCids
+            ...this._pubsubFieldsToIncludeInRequest
         };
     }
 

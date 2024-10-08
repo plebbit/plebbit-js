@@ -590,7 +590,7 @@ class PlebbitWsServer extends EventEmitter {
 
     private _createCommentInstanceFromPublishCommentParams(params: CommentChallengeRequestToEncryptType) {
         const comment = new Comment(this.plebbit);
-        comment._initChallengeRequestProps(params);
+        comment._initLocalProps(params);
         return comment;
     }
 
@@ -643,9 +643,9 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
-    private _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
-        const vote = new Vote(this.plebbit);
-        vote._initChallengeRequestProps(params);
+    private async _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
+        const vote = await this.plebbit.createVote(params.vote);
+        vote._initLocalProps(params);
         return vote;
     }
     async publishVote(params: any, connectionId: string) {
@@ -656,7 +656,7 @@ class PlebbitWsServer extends EventEmitter {
         const sendEvent = (event: string, result: any) =>
             this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
 
-        const vote = this._createVoteInstanceFromPublishVoteParams(publishOptions);
+        const vote = await this._createVoteInstanceFromPublishVoteParams(publishOptions);
         this.publishing[subscriptionId] = vote;
         vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -691,7 +691,7 @@ class PlebbitWsServer extends EventEmitter {
 
     private _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
         const commentEdit = new CommentEdit(this.plebbit);
-        commentEdit._initChallengeRequestProps(params);
+        commentEdit._initLocalProps(params);
         return commentEdit;
     }
 
@@ -743,7 +743,7 @@ class PlebbitWsServer extends EventEmitter {
 
     private _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
         const commentModeration = new CommentModeration(this.plebbit);
-        commentModeration._initChallengeRequestProps(params);
+        commentModeration._initLocalProps(params);
         return commentModeration;
     }
 

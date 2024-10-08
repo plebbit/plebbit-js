@@ -53,21 +53,21 @@ import { z } from "zod";
 import type { CreateSignerOptions } from "../signer/types.js";
 import type {
     CommentEditOptionsToSign,
+    CommentEditPubsubMessagePublication,
     CommentEditTypeJson,
-    CreateCommentEditOptions,
-    LocalCommentEditOptions
+    CreateCommentEditOptions
 } from "../publications/comment-edit/types.js";
 import { CreateCommentEditFunctionArgumentSchema } from "../publications/comment-edit/schema.js";
-import type { CreateVoteOptions, LocalVoteOptions, VoteJson, VoteOptionsToSign } from "../publications/vote/types.js";
+import type { CreateVoteOptions, VoteJson, VoteOptionsToSign, VotePubsubMessagePublication } from "../publications/vote/types.js";
 import { CreateVoteFunctionArgumentSchema } from "../publications/vote/schema.js";
 import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
     CommentJson,
     CommentOptionsToSign,
+    CommentPubsubMessagePublication,
     CommentWithinPageJson,
-    CreateCommentOptions,
-    LocalCommentOptions
+    CreateCommentOptions
 } from "../publications/comment/types.js";
 import { CreateCommentFunctionArgumentsSchema } from "../publications/comment/schema.js";
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
@@ -90,9 +90,9 @@ import {
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type {
     CommentModerationOptionsToSign,
+    CommentModerationPubsubMessagePublication,
     CommentModerationTypeJson,
-    CreateCommentModerationOptions,
-    LocalCommentModerationAfterSigning
+    CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
 import { CreateCommentModerationFunctionArgumentSchema } from "../publications/comment-moderation/schema.js";
 
@@ -424,8 +424,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             // we're creating a new comment to sign and publish here
             const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
-            const signedComment = <LocalCommentOptions>{ ...cleanedFieldsFilled, signature: await signComment(cleanedFieldsFilled, this) };
-            commentInstance._initLocalProps(signedComment);
+            const signature = await signComment(cleanedFieldsFilled, this);
+            const signedComment = <CommentPubsubMessagePublication>{
+                ...remeda.pick(cleanedFieldsFilled, signature.signedPropertyNames),
+                signature
+            };
+            commentInstance._initLocalProps({ ...parsedOptions, ...cleanedFieldsFilled, comment: signedComment });
         } else if ("subplebbitAddress" in parsedOptions) commentInstance.setSubplebbitAddress(parsedOptions.subplebbitAddress);
         else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
@@ -595,12 +599,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         } else {
             const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signedVote: LocalVoteOptions = {
-                ...cleanedFinalOptions,
-                signature: await signVote(cleanedFinalOptions, this)
+            const signature = await signVote(cleanedFinalOptions, this);
+            const signedVote: VotePubsubMessagePublication = {
+                ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
+                signature
             };
-
-            voteInstance._initLocalProps(signedVote);
+            voteInstance._initLocalProps({ ...parsedOptions, ...finalOptions, vote: signedVote });
         }
         return voteInstance;
     }
@@ -623,15 +627,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const editInstance = new CommentEdit(this);
 
         if ("signature" in parsedOptions)
-            editInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
+            editInstance._initPubsubPublicationProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
         else {
             const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signedEdit = <LocalCommentEditOptions>{
-                ...cleanedFinalOptions,
-                signature: await signCommentEdit(cleanedFinalOptions, this)
+            const signature = await signCommentEdit(cleanedFinalOptions, this);
+            const signedEdit = <CommentEditPubsubMessagePublication>{
+                ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
+                signature
             };
-            editInstance._initLocalProps(signedEdit);
+            editInstance._initLocalProps({ ...parsedOptions, ...cleanedFinalOptions, commentEdit: signedEdit });
         }
         return editInstance;
     }
@@ -656,17 +661,18 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const modInstance = new CommentModeration(this);
 
         if ("signature" in parsedOptions)
-            modInstance._initRemoteProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
+            modInstance._initPubsubPublication(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
         else {
             const finalOptions = <CommentModerationOptionsToSign>(
                 await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log)
             );
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
-            const signedMod = <LocalCommentModerationAfterSigning>{
-                ...cleanedFinalOptions,
-                signature: await signCommentModeration(cleanedFinalOptions, this)
+            const signature = await signCommentModeration(cleanedFinalOptions, this);
+            const signedMod = <CommentModerationPubsubMessagePublication>{
+                ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
+                signature
             };
-            modInstance._initLocalProps(signedMod);
+            modInstance._initLocalProps({ ...parsedOptions, ...cleanedFinalOptions, commentModeration: signedMod });
         }
         return modInstance;
     }

@@ -51,6 +51,8 @@ import type {
 } from "../pubsub-messages/types.js";
 import { encryptEd25519AesGcm, encryptEd25519AesGcmPublicKeyBuffer } from "../signer/encryption.js";
 import env from "../version.js";
+import type { CommentModerationPubsubMessagePublication } from "../publications/comment-moderation/types.js";
+import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 
 function generateRandomTimestamp(parentTimestamp?: number): number {
     const [lowerLimit, upperLimit] = [typeof parentTimestamp === "number" && parentTimestamp > 2 ? parentTimestamp : 2, timestamp()];
@@ -708,14 +710,15 @@ export async function setExtraPropOnCommentEditAndSign(
 }
 
 export async function setExtraPropOnCommentModerationAndSign(
-    commentModeration: CommentEdit,
+    commentModeration: CommentModeration,
     extraProps: any,
     includeExtraPropInSignedPropertyNames: boolean
 ) {
     const log = Logger("plebbit-js:test-util:setExtraPropOnCommentModerationAndSign");
 
-    let newPubsubPublicationWithExtraProp = commentModeration.toJSONPubsubMessagePublication();
-    newPubsubPublicationWithExtraProp = remeda.mergeDeep(newPubsubPublicationWithExtraProp, extraProps);
+    const newPubsubPublicationWithExtraProp = <CommentModerationPubsubMessagePublication>(
+        remeda.mergeDeep(commentModeration.toJSONPubsubMessagePublication(), extraProps)
+    );
     if (includeExtraPropInSignedPropertyNames)
         newPubsubPublicationWithExtraProp.signature = await _signJson(
             [...commentModeration.signature.signedPropertyNames, ...Object.keys(extraProps)],
@@ -778,7 +781,6 @@ export async function publishChallengeAnswerMessageWithExtraProps(
 
     Object.assign(toSignAnswer, extraProps);
 
-    //@ts-expect-error
     const signature = await _signPubsubMsg(signedPropertyNames, toSignAnswer, signer, log);
 
     //@ts-expect-error

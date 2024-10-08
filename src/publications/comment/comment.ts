@@ -11,12 +11,10 @@ import { verifyCommentIpfs, verifyCommentPubsubMessage, verifyCommentUpdateForCh
 import assert from "assert";
 import { FailedToFetchCommentIpfsFromGatewaysError, PlebbitError } from "../../plebbit-error.js";
 import { CommentClientsManager } from "../../clients/client-manager.js";
-import { messages } from "../../errors.js";
 import * as remeda from "remeda";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 
 import type {
-    CommentChallengeRequestToEncryptType,
     CommentIpfsType,
     CommentIpfsWithCidPostCidDefined,
     CommentPubsubMessagePublication,
@@ -24,7 +22,7 @@ import type {
     CommentUpdateType,
     CommentUpdatingState,
     CommentWithinPageJson,
-    LocalCommentOptions,
+    CreateCommentOptions,
     RpcCommentUpdateResultType
 } from "./types.js";
 import { RepliesPages } from "../../pages/pages.js";
@@ -36,6 +34,7 @@ import {
     OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
 import { parseRpcCommentUpdateEventWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import type { SignerType } from "../../signer/types.js";
 
 export class Comment
     extends Publication
@@ -81,6 +80,7 @@ export class Comment
     lastChildCid?: CommentUpdateType["lastChildCid"];
     lastReplyTimestamp?: CommentUpdateType["lastReplyTimestamp"];
 
+    override signature!: CommentPubsubMessagePublication["signature"];
     // updating states
     override state!: CommentState;
     updatingState!: CommentUpdatingState;
@@ -126,20 +126,14 @@ export class Comment
             );
     }
 
-    _initLocalProps(props: LocalCommentOptions) {
-        super._initBaseLocalProps(props);
-        this.content = props.content;
-        this.flair = props.flair;
-        this.link = props.link;
-        this.linkHeight = props.linkHeight;
-        this.linkWidth = props.linkWidth;
-        this.parentCid = props.parentCid;
-        this.spoiler = props.spoiler;
-        this.timestamp = props.timestamp;
-        this.title = props.title;
-        this.linkHtmlTagName = props.linkHtmlTagName;
-        const keysCasted = <(keyof CommentPubsubMessagePublication)[]>[...props.signature.signedPropertyNames, "signature"];
-        this._pubsubMsgToPublish = remeda.pick(props, keysCasted);
+    _initLocalProps(props: {
+        comment: CommentPubsubMessagePublication;
+        signer?: SignerType;
+        pubsubMessage?: CreateCommentOptions["pubsubMessage"];
+    }) {
+        this._initPubsubMessageProps(props.comment);
+        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.signer = props.signer;
     }
 
     _initPubsubMessageProps(props: CommentPubsubMessagePublication) {
@@ -158,11 +152,6 @@ export class Comment
             log("Found unknown props on loaded CommentIpfs", unknownProps, "Will set them on the Comment instance");
             Object.assign(this, remeda.pick(props, unknownProps));
         }
-    }
-
-    _initChallengeRequestProps(props: CommentChallengeRequestToEncryptType) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initPubsubMessageProps(props.comment);
     }
 
     _initProps(props: CommentIpfsType | CommentPubsubMessagePublication) {

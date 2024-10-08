@@ -1,18 +1,30 @@
-import type { CommentEditPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-edit/types";
-import type { CommentModerationPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-moderation/types";
 import type {
+    CommentEditPubsubMessagePublication,
+    CommentEditPubsubMessagePublicationWithSubplebbitAuthor
+} from "../publications/comment-edit/types";
+import type {
+    CommentModerationPubsubMessagePublication,
+    CommentModerationPubsubMessagePublicationWithSubplebbitAuthor
+} from "../publications/comment-moderation/types";
+import type {
+    CommentPubsubMessagePublication,
     CommentPubsubMessageWithSubplebbitAuthor,
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
 } from "../publications/comment/types";
-import type { VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
+import type { VotePubsubMessagePublication, VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
+import type { AuthorTypeWithCommentUpdate } from "../types";
 import {
     ChallengeAnswerMessageSchema,
+    ChallengeAnswerMessageSignedPropertyNames,
     ChallengeInChallengePubsubMessageSchema,
     ChallengeMessageSchema,
+    ChallengeMessageSignedPropertyNames,
     ChallengeRequestMessageSchema,
+    ChallengeRequestMessageSignedPropertyNames,
     ChallengeVerificationMessageSchema,
+    ChallengeVerificationMessageSignedPropertyNames,
     DecryptedChallengeAnswerSchema,
     DecryptedChallengeRequestPublicationSchema,
     DecryptedChallengeRequestSchema,
@@ -40,18 +52,15 @@ export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
 }
 
 export type PublicationFromDecryptedChallengeRequest = NonNullable<
-    | DecryptedChallengeRequestMessageType["vote"]
-    | DecryptedChallengeRequestMessageType["comment"]
-    | DecryptedChallengeRequestMessageType["commentEdit"]
-    | DecryptedChallengeRequestMessageType["commentModeration"]
+    | VotePubsubMessagePublication
+    | CommentPubsubMessagePublication
+    | CommentEditPubsubMessagePublication
+    | CommentModerationPubsubMessagePublication
 >;
 
-export type PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest = NonNullable<
-    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["vote"]
-    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["comment"]
-    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["commentEdit"]
-    | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor["commentModeration"]
->;
+export type PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest = PublicationFromDecryptedChallengeRequest & {
+    author: AuthorTypeWithCommentUpdate;
+};
 
 export interface DecryptedChallengeRequestMessageWithReplySubplebbitAuthor
     extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor {
@@ -141,4 +150,22 @@ export interface EncodedDecryptedChallengeVerificationMessageType
     extends Omit<DecryptedChallengeVerificationMessageType, "challengeRequestId" | "encrypted" | "signature">,
         BaseEncodedPubsubMessage {
     encrypted?: EncryptedEncoded; // all base64 strings
+}
+
+// Signatures here
+
+export interface ChallengeRequestMessageSignature extends PubsubSignature {
+    signedPropertyNames: typeof ChallengeRequestMessageSignedPropertyNames;
+}
+
+export interface ChallengeMessageSignature extends PubsubSignature {
+    signedPropertyNames: typeof ChallengeMessageSignedPropertyNames;
+}
+
+export interface ChallengeAnswerMessageSignature extends PubsubSignature {
+    signedPropertyNames: typeof ChallengeAnswerMessageSignedPropertyNames;
+}
+
+export interface ChallengeVerificationMessageSignature extends PubsubSignature {
+    signedPropertyNames: typeof ChallengeVerificationMessageSignedPropertyNames;
 }

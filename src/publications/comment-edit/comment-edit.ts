@@ -2,9 +2,10 @@ import { Plebbit } from "../../plebbit/plebbit.js";
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessagePublication, LocalCommentEditOptions } from "./types.js";
+import type { CommentEditPubsubMessagePublication, CreateCommentEditOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
 import * as remeda from "remeda";
+import { SignerType } from "../../signer/types.js";
 
 export class CommentEdit extends Publication implements CommentEditPubsubMessagePublication {
     commentCid!: CommentEditPubsubMessagePublication["commentCid"];
@@ -13,6 +14,8 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     deleted?: CommentEditPubsubMessagePublication["deleted"];
     flair?: CommentEditPubsubMessagePublication["flair"];
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+
+    override signature!: CommentEditPubsubMessagePublication["signature"];
 
     _pubsubMsgToPublish?: CommentEditPubsubMessagePublication = undefined;
 
@@ -25,31 +28,25 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
         hideClassPrivateProps(this);
     }
 
-    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessagePublication) {
+    _initLocalProps(props: {
+        commentEdit: CommentEditPubsubMessagePublication;
+        signer?: SignerType;
+        pubsubMessage?: CreateCommentEditOptions["pubsubMessage"];
+    }) {
+        this._initPubsubPublicationProps(props.commentEdit);
+        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.signer = props.signer;
+    }
+
+    _initPubsubPublicationProps(props: CommentEditPubsubMessagePublication): void {
+        this._pubsubMsgToPublish = props;
+        super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;
         this.flair = props.flair;
         this.spoiler = props.spoiler;
-    }
-
-    _initLocalProps(props: LocalCommentEditOptions) {
-        super._initBaseLocalProps(props);
-        this._initEditProps(props);
-        const keysCasted = <(keyof CommentEditPubsubMessagePublication)[]>props.signature.signedPropertyNames;
-        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
-    }
-
-    _initRemoteProps(props: CommentEditPubsubMessagePublication): void {
-        super._initBaseRemoteProps(props);
-        this._initEditProps(props);
-    }
-
-    _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.commentEdit);
-        this._pubsubMsgToPublish = props.commentEdit;
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {

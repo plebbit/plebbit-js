@@ -3,13 +3,15 @@ import type { PublicationTypeName } from "../../types.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import { verifyVote } from "../../signer/index.js";
 import { hideClassPrivateProps, throwWithErrorCode } from "../../util.js";
-import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessagePublication } from "./types.js";
+import type { CreateVoteOptions, VotePubsubMessagePublication } from "./types.js";
 import * as remeda from "remeda";
+import type { SignerType } from "../../signer/types.js";
 
 // vote.signer is inherited from Publication
 class Vote extends Publication implements VotePubsubMessagePublication {
     commentCid!: VotePubsubMessagePublication["commentCid"];
     vote!: VotePubsubMessagePublication["vote"]; // (upvote = 1, cancel vote = 0, downvote = -1)
+    override signature!: VotePubsubMessagePublication["signature"];
 
     private _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
 
@@ -22,24 +24,21 @@ class Vote extends Publication implements VotePubsubMessagePublication {
         hideClassPrivateProps(this);
     }
 
-    _initLocalProps(props: LocalVoteOptions): void {
-        this._initBaseLocalProps(props);
-        this.commentCid = props.commentCid;
-        this.vote = props.vote;
-        const keysCasted = <(keyof VotePubsubMessagePublication)[]>props.signature.signedPropertyNames;
-        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
+    _initLocalProps(props: {
+        vote: VotePubsubMessagePublication;
+        signer?: SignerType;
+        pubsubMessage?: CreateVoteOptions["pubsubMessage"];
+    }): void {
+        this._initRemoteProps(props.vote);
+        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.signer = props.signer;
     }
 
     _initRemoteProps(props: VotePubsubMessagePublication): void {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
-    }
-
-    _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.vote);
-        this._pubsubMsgToPublish = props.vote;
+        this._pubsubMsgToPublish = props;
     }
 
     override toJSONPubsubMessagePublication(): VotePubsubMessagePublication {

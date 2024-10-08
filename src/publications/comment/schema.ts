@@ -2,7 +2,6 @@ import { z } from "zod";
 import {
     FlairSchema,
     AuthorPubsubSchema,
-    ChallengeRequestToEncryptBaseSchema,
     CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
@@ -13,7 +12,6 @@ import {
     SubplebbitAuthorSchema
 } from "../../schema/schema.js";
 import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../comment-edit/schema.js";
-import type { CommentSignedPropertyNamesUnion } from "../../signer/types";
 import * as remeda from "remeda";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
@@ -52,23 +50,20 @@ export const CreateCommentOptionsWithRefinementSchema = CreateCommentOptionsSche
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
 
-export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning);
-
 // Below is what's used to initialize a local publication to be published
-
-export const LocalCommentSchema = CommentOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
-    ChallengeRequestToEncryptBaseSchema
-);
 
 export const CommentSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 
-const commentPubsubKeys = <Record<CommentSignedPropertyNamesUnion | "signature", true>>(
+const commentPubsubKeys = <Record<(typeof CommentSignedPropertyNames)[number] | "signature", true>>(
     remeda.mapToObj([...CommentSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
-export const CommentPubsubMessagePublicationSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
+export const CommentPubsubMessagePublicationSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning)
+    .extend({ signature: JsonSignatureSchema })
+    .pick(commentPubsubKeys)
+    .strict();
 
 export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(
     z.object({ author: AuthorPubsubSchema.passthrough() })
@@ -85,9 +80,12 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePubl
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 );
 
-export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
-}).strict();
+export const CommentChallengeRequestToEncryptSchema = z
+    .object({
+        comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
+    })
+    .merge(CreateCommentOptionsSchema.pick({ pubsubMessage: true }))
+    .strict();
 
 // Remote comments
 
@@ -186,7 +184,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
     remeda.unique([
         ...remeda.keys.strict(CommentIpfsSchema.shape),
         ...remeda.keys.strict(CommentsTableRowSchema.shape),
-        ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
+        ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
         ...CommentUpdateSignedPropertyNames,
         "original",
         "shortCid",

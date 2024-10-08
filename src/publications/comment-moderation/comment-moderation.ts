@@ -1,18 +1,15 @@
 import { Plebbit } from "../../plebbit/plebbit.js";
 import Publication from "../publication.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import type {
-    CommentModerationChallengeRequestToEncrypt,
-    CommentModerationPubsubMessagePublication,
-    LocalCommentModerationAfterSigning
-} from "./types.js";
+import type { CommentModerationPubsubMessagePublication, CreateCommentModerationOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
-import * as remeda from "remeda";
 import { verifyCommentModeration } from "../../signer/signatures.js";
+import type { SignerType } from "../../signer/types.js";
 
 export class CommentModeration extends Publication implements CommentModerationPubsubMessagePublication {
     commentCid!: CommentModerationPubsubMessagePublication["commentCid"];
     commentModeration!: CommentModerationPubsubMessagePublication["commentModeration"];
+    override signature!: CommentModerationPubsubMessagePublication["signature"];
 
     _pubsubMsgToPublish?: CommentModerationPubsubMessagePublication = undefined;
 
@@ -25,27 +22,22 @@ export class CommentModeration extends Publication implements CommentModerationP
         hideClassPrivateProps(this);
     }
 
-    _initEditProps(props: LocalCommentModerationAfterSigning | CommentModerationPubsubMessagePublication) {
-        this.commentCid = props.commentCid;
-        this.commentModeration = props.commentModeration;
+    _initLocalProps(props: {
+        commentModeration: CommentModerationPubsubMessagePublication;
+        signer?: SignerType;
+        pubsubMessage?: CreateCommentModerationOptions["pubsubMessage"];
+    }) {
+        this._initPubsubPublication(props.commentModeration);
+
+        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.signer = props.signer;
     }
 
-    _initLocalProps(props: LocalCommentModerationAfterSigning) {
-        super._initBaseLocalProps(props);
-        this._initEditProps(props);
-        const keysCasted = <(keyof CommentModerationPubsubMessagePublication)[]>props.signature.signedPropertyNames;
-        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
-    }
-
-    _initRemoteProps(props: CommentModerationPubsubMessagePublication): void {
-        super._initBaseRemoteProps(props);
-        this._initEditProps(props);
-    }
-
-    _initChallengeRequestProps(props: CommentModerationChallengeRequestToEncrypt) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.commentModeration);
-        this._pubsubMsgToPublish = props.commentModeration;
+    _initPubsubPublication(pubsubMsgPub: CommentModerationPubsubMessagePublication) {
+        super._initBaseRemoteProps(pubsubMsgPub);
+        this.commentCid = pubsubMsgPub.commentCid;
+        this.commentModeration = pubsubMsgPub.commentModeration;
+        this._pubsubMsgToPublish = pubsubMsgPub;
     }
 
     override toJSONPubsubMessagePublication(): CommentModerationPubsubMessagePublication {

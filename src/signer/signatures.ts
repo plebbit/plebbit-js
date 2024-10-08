@@ -15,30 +15,42 @@ import { isStringDomain, removeNullUndefinedEmptyObjectsValuesRecursively, throw
 import { Plebbit } from "../plebbit/plebbit.js";
 
 import type {
+    ChallengeAnswerMessageSignature,
     ChallengeAnswerMessageType,
+    ChallengeMessageSignature,
     ChallengeMessageType,
+    ChallengeRequestMessageSignature,
     ChallengeRequestMessageType,
+    ChallengeVerificationMessageSignature,
     ChallengeVerificationMessageType,
     DecryptedChallengeVerification,
+    PublicationFromDecryptedChallengeRequest,
     PubsubMessage
 } from "../pubsub-messages/types";
 import Logger from "@plebbit/plebbit-logger";
 import { messages } from "../errors.js";
 import assert from "assert";
 import { BaseClientsManager } from "../clients/base-client-manager.js";
-import type { SubplebbitIpfsType } from "../subplebbit/types.js";
+import type { SubplebbitIpfsType, SubplebbitSignature } from "../subplebbit/types.js";
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
-import type { JsonSignature, PublicationToVerify, PublicationsToSign, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
-import type { CommentEditOptionsToSign, CommentEditPubsubMessagePublication } from "../publications/comment-edit/types.js";
-import type { VoteOptionsToSign, VotePubsubMessagePublication } from "../publications/vote/types.js";
+import type { JsonSignature, PublicationToVerify, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
+import type {
+    CommentEditOptionsToSign,
+    CommentEditPubsubMessagePublication,
+    CommentEditSignature
+} from "../publications/comment-edit/types.js";
+import type { VoteOptionsToSign, VotePubsubMessagePublication, VoteSignature } from "../publications/vote/types.js";
 import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
     CommentOptionsToSign,
     CommentPubsubMessagePublication,
+    CommentPubsubMessagPublicationSignature,
     CommentUpdateForChallengeVerification,
+    CommentUpdateForChallengeVerificationSignature,
+    CommentUpdateSignature,
     CommentUpdateType
 } from "../publications/comment/types.js";
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
@@ -57,10 +69,10 @@ import {
     ChallengeAnswerMessageSignedPropertyNames,
     ChallengeVerificationMessageSignedPropertyNames
 } from "../pubsub-messages/schema.js";
-import type { PublicationPubsubMessage } from "../types.js";
 import type {
     CommentModerationOptionsToSign,
-    CommentModerationPubsubMessagePublication
+    CommentModerationPubsubMessagePublication,
+    CommentModerationSignature
 } from "../publications/comment-moderation/types.js";
 import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema.js";
 
@@ -165,75 +177,110 @@ export function cleanUpBeforePublishing<T>(msg: T): T {
     return removeNullUndefinedEmptyObjectsValuesRecursively(msg);
 }
 
-export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbit) {
+export async function signComment(comment: CommentOptionsToSign, plebbit: Plebbit): Promise<CommentPubsubMessagPublicationSignature> {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorAddressBeforeSigning(comment.author, comment.signer, plebbit);
-    return _signJson(<JsonSignature["signedPropertyNames"]>CommentSignedPropertyNames, comment, comment.signer, log);
+    return <CommentPubsubMessagPublicationSignature>(
+        await _signJson(<JsonSignature["signedPropertyNames"]>CommentSignedPropertyNames, comment, comment.signer, log)
+    );
 }
 
-export async function signCommentUpdate(update: Omit<CommentUpdateType, "signature">, signer: SignerType) {
+export async function signCommentUpdate(update: Omit<CommentUpdateType, "signature">, signer: SignerType): Promise<CommentUpdateSignature> {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
-    return _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateSignedPropertyNames, update, signer, log);
+    return <CommentUpdateSignature>(
+        await _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateSignedPropertyNames, update, signer, log)
+    );
 }
 
 export async function signCommentUpdateForChallengeVerification(
     update: Omit<DecryptedChallengeVerification["commentUpdate"], "signature">,
     signer: SignerType
-) {
+): Promise<CommentUpdateForChallengeVerificationSignature> {
     const log = Logger("plebbit-js:signatures:signCommentUpdateForChallengeVerification");
     // Not sure, should we validate update.authorEdit here?
-    return _signJson(<JsonSignature["signedPropertyNames"]>CommentUpdateForChallengeVerificationSignedPropertyNames, update, signer, log);
+    return <CommentUpdateForChallengeVerificationSignature>(
+        await _signJson(CommentUpdateForChallengeVerificationSignedPropertyNames, update, signer, log)
+    );
 }
 
-export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit) {
+export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit): Promise<VoteSignature> {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
-    return _signJson(<JsonSignature["signedPropertyNames"]>VoteSignedPropertyNames, vote, vote.signer, log);
+    return <VoteSignature>await _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
 }
 
-export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit) {
+export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit): Promise<CommentEditSignature> {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorAddressBeforeSigning(edit.author, edit.signer, plebbit);
-    return _signJson(<JsonSignature["signedPropertyNames"]>CommentEditSignedPropertyNames, edit, edit.signer, log);
+    return <CommentEditSignature>(
+        await _signJson(<JsonSignature["signedPropertyNames"]>CommentEditSignedPropertyNames, edit, edit.signer, log)
+    );
 }
 
-export async function signCommentModeration(commentMod: CommentModerationOptionsToSign, plebbit: Plebbit) {
+export async function signCommentModeration(
+    commentMod: CommentModerationOptionsToSign,
+    plebbit: Plebbit
+): Promise<CommentModerationSignature> {
     const log = Logger("plebbit-js:signatures:signCommentModeration");
     await _validateAuthorAddressBeforeSigning(commentMod.author, commentMod.signer, plebbit);
-    return _signJson(<JsonSignature["signedPropertyNames"]>CommentModerationSignedPropertyNames, commentMod, commentMod.signer, log);
+    return <CommentModerationSignature>await _signJson(CommentModerationSignedPropertyNames, commentMod, commentMod.signer, log);
 }
 
-export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType) {
+export async function signSubplebbit(subplebbit: Omit<SubplebbitIpfsType, "signature">, signer: SignerType): Promise<SubplebbitSignature> {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
-    return _signJson(<JsonSignature["signedPropertyNames"]>SubplebbitSignedPropertyNames, subplebbit, signer, log);
+    return <SubplebbitSignature>(
+        await _signJson(<JsonSignature["signedPropertyNames"]>SubplebbitSignedPropertyNames, subplebbit, signer, log)
+    );
 }
 
-export async function signChallengeRequest(request: Omit<ChallengeRequestMessageType, "signature">, signer: SignerType) {
+export async function signChallengeRequest(
+    request: Omit<ChallengeRequestMessageType, "signature">,
+    signer: SignerType
+): Promise<ChallengeRequestMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeRequestMessageSignedPropertyNames, request, signer, log);
+    return <ChallengeRequestMessageSignature>(
+        await _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeRequestMessageSignedPropertyNames, request, signer, log)
+    );
 }
 
-export async function signChallengeMessage(challengeMessage: Omit<ChallengeMessageType, "signature">, signer: SignerType) {
+export async function signChallengeMessage(
+    challengeMessage: Omit<ChallengeMessageType, "signature">,
+    signer: SignerType
+): Promise<ChallengeMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
+    return <ChallengeMessageSignature>(
+        await _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeMessageSignedPropertyNames, challengeMessage, signer, log)
+    );
 }
 
-export async function signChallengeAnswer(challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">, signer: SignerType) {
+export async function signChallengeAnswer(
+    challengeAnswer: Omit<ChallengeAnswerMessageType, "signature">,
+    signer: SignerType
+): Promise<ChallengeAnswerMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    return _signPubsubMsg(<PubsubSignature["signedPropertyNames"]>ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
+    return <ChallengeAnswerMessageSignature>(
+        await _signPubsubMsg(
+            <PubsubSignature["signedPropertyNames"]>ChallengeAnswerMessageSignedPropertyNames,
+            challengeAnswer,
+            signer,
+            log
+        )
+    );
 }
 
 export async function signChallengeVerification(
     challengeVerification: Omit<ChallengeVerificationMessageType, "signature">,
     signer: SignerType
-) {
+): Promise<ChallengeVerificationMessageSignature> {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    return _signPubsubMsg(
-        <PubsubSignature["signedPropertyNames"]>ChallengeVerificationMessageSignedPropertyNames,
-        challengeVerification,
-        signer,
-        log
+    return <ChallengeVerificationMessageSignature>(
+        await _signPubsubMsg(
+            <PubsubSignature["signedPropertyNames"]>ChallengeVerificationMessageSignedPropertyNames,
+            challengeVerification,
+            signer,
+            log
+        )
     );
 }
 
@@ -241,7 +288,7 @@ type VerifyAuthorRes = { useDerivedAddress: false; reason?: string } | { useDeri
 
 // Verify functions
 const _verifyAuthor = async (
-    publicationJson: PublicationPubsubMessage,
+    publicationJson: PublicationFromDecryptedChallengeRequest,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager
 ): Promise<VerifyAuthorRes> => {
@@ -323,7 +370,7 @@ const _verifyPubsubSignature = async (msg: PubsubMessage): Promise<boolean> => {
 };
 
 const _verifyPublicationWithAuthor = async (
-    publicationJson: PublicationPubsubMessage,
+    publicationJson: PublicationFromDecryptedChallengeRequest,
     resolveAuthorAddresses: boolean,
     clientsManager: BaseClientsManager,
     overrideAuthorAddressIfInvalid: boolean
@@ -423,7 +470,12 @@ export async function verifyCommentIpfs(
 }
 
 function _allFieldsOfRecordInSignedPropertyNames(
-    record: PublicationPubsubMessage | SubplebbitIpfsType | PubsubMessage | CommentUpdateType | CommentUpdateForChallengeVerification
+    record:
+        | PublicationFromDecryptedChallengeRequest
+        | SubplebbitIpfsType
+        | PubsubMessage
+        | CommentUpdateType
+        | CommentUpdateForChallengeVerification
 ): boolean {
     const fieldsOfRecord = remeda.keys.strict(remeda.omit(record, ["signature"]));
     for (const field of fieldsOfRecord) if (!record.signature.signedPropertyNames.includes(field)) return false;

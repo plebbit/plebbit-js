@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
     ChallengeAnswersSchema,
-    ChallengeRequestToEncryptBaseSchema,
+    CreatePublicationUserOptionsSchema,
     PlebbitTimestampSchema,
     ProtocolVersionSchema,
     UserAgentSchema
@@ -23,7 +23,7 @@ export const PubsubMessageSignatureSchema = z
         signature: z.instanceof(Uint8Array), // (byte string in cbor)
         publicKey: z.instanceof(Uint8Array), // (byte string in cbor) 32 bytes
         type: z.enum(["ed25519"]),
-        signedPropertyNames: z.string().array().nonempty()
+        signedPropertyNames: z.string().array()
     })
     .strict();
 
@@ -63,7 +63,9 @@ export const DecryptedChallengeRequestPublicationSchema = z.object({
 });
 
 // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
-export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(ChallengeRequestToEncryptBaseSchema);
+export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(
+    CreatePublicationUserOptionsSchema.shape.pubsubMessage.unwrap()
+);
 
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(
     remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"])

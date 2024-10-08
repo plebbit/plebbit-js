@@ -941,7 +941,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (remeda.intersection(remeda.keys.strict(publication.author), AuthorReservedFields).length > 0)
             return messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD;
 
-        if (publication.commentCid || publication.parentCid) {
+        if ("commentCid" in publication || "parentCid" in publication) {
             // vote or reply or commentEdit or commentModeration
             // not post though
             //@ts-expect-error

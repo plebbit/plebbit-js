@@ -86,15 +86,20 @@ export const CreatePublicationUserOptionsSchema = z.object({
     subplebbitAddress: SubplebbitAddressSchema,
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
-    challengeAnswers: ChallengeAnswersSchema.optional(),
-    challengeCommentCids: CidStringSchema.array().optional()
+    // pubsubMessage field will contain fields to be added to request.encrypted
+    pubsubMessage: z
+        .object({
+            challengeAnswers: ChallengeAnswersSchema.optional(),
+            challengeCommentCids: CidStringSchema.array().optional()
+        })
+        .optional()
 });
 
 export const JsonSignatureSchema = z.object({
     type: z.enum(["ed25519", "eip191"]),
     signature: z.string(), // No need to validate here, it will be validated in verify signature function
     publicKey: z.string(),
-    signedPropertyNames: z.string().array().nonempty()
+    signedPropertyNames: z.string().array()
 });
 
 // Common stuff here
@@ -125,12 +130,3 @@ export const AuthorReservedFields = remeda.difference(
     [...remeda.keys.strict(AuthorWithOptionalCommentUpdateSchema.shape), "shortAddress"],
     remeda.keys.strict(AuthorPubsubSchema.shape)
 );
-
-// Challenge requests and pubsub here
-
-// Should be extended to add publication, which should be defined with every type (vote, comment, edit)
-
-export const ChallengeRequestToEncryptBaseSchema = CreatePublicationUserOptionsSchema.pick({
-    challengeAnswers: true,
-    challengeCommentCids: true
-});

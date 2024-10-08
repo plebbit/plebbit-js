@@ -14,9 +14,8 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentModerationTableRow, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
-import type { LocalVoteOptions } from "./publications/vote/types.js";
-import type { CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentModerationTableRow } from "./publications/comment-edit/types.js";
+import type { CommentUpdateType } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
 import type {
@@ -38,13 +37,9 @@ export type ChainProvider = z.infer<typeof ChainProviderSchema>;
 export type InputPlebbitOptions = z.input<typeof PlebbitUserOptionsSchema>;
 export type ParsedPlebbitOptions = z.output<typeof PlebbitParsedOptionsSchema>;
 
-export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
-
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 
 export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdateSchema>;
-
-export type PublicationPubsubMessage = NonNullable<DecryptedChallengeRequestPublication[keyof DecryptedChallengeRequestPublication]>;
 
 // creating a new local publication
 export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;

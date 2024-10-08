@@ -2,12 +2,13 @@ import { z } from "zod";
 import {
     CommentChallengeRequestToEncryptSchema,
     CommentIpfsSchema,
-    CommentOptionsToSignSchema,
     CommentPubsubMessagePublicationSchema,
+    CommentSignedPropertyNames,
     CommentUpdateForChallengeVerificationSchema,
+    CommentUpdateForChallengeVerificationSignedPropertyNames,
     CommentUpdateNoRepliesSchema,
+    CommentUpdateSignedPropertyNames,
     CreateCommentOptionsSchema,
-    LocalCommentSchema,
     OriginalCommentFieldsBeforeCommentUpdateSchema
 } from "./schema.js";
 import { SubplebbitAuthorSchema } from "../../schema/schema.js";
@@ -16,16 +17,17 @@ import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types.js";
 import { Comment } from "./comment.js";
 import type { RepliesPagesIpfsDefinedManuallyType, RepliesPagesTypeJson } from "../../pages/types.js";
 import type { PublicationState } from "../types.js";
+import type { JsonSignature, SignerType } from "../../signer/types.js";
 
 export type SubplebbitAuthor = z.infer<typeof SubplebbitAuthorSchema>;
 
 export type CreateCommentOptions = z.infer<typeof CreateCommentOptionsSchema>;
 
-export type CommentOptionsToSign = z.infer<typeof CommentOptionsToSignSchema>;
-
 export type CommentPubsubMessagePublication = z.infer<typeof CommentPubsubMessagePublicationSchema>;
 
-export type LocalCommentOptions = z.infer<typeof LocalCommentSchema>;
+export interface CommentOptionsToSign extends Omit<CommentPubsubMessagePublication, "signature"> {
+    signer: SignerType;
+}
 
 export type CommentUpdateType = z.infer<typeof CommentUpdateNoRepliesSchema> & {
     replies?: RepliesPagesIpfsDefinedManuallyType;
@@ -92,4 +94,18 @@ export interface PostPubsubMessageWithSubplebbitAuthor extends CommentPubsubMess
 
 export interface ReplyPubsubMessageWithSubplebbitAuthor extends CommentPubsubMessageWithSubplebbitAuthor {
     parentCid: string;
+}
+
+// Signatures here
+
+export interface CommentPubsubMessagPublicationSignature extends JsonSignature {
+    signedPropertyNames: typeof CommentSignedPropertyNames;
+}
+
+export interface CommentUpdateForChallengeVerificationSignature extends JsonSignature {
+    signedPropertyNames: typeof CommentUpdateForChallengeVerificationSignedPropertyNames;
+}
+
+export interface CommentUpdateSignature extends JsonSignature {
+    signedPropertyNames: typeof CommentUpdateSignedPropertyNames;
 }

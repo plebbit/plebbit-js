@@ -1,8 +1,6 @@
 import { z } from "zod";
 import {
-    ChallengeRequestToEncryptBaseSchema,
     CidStringSchema,
-    CommentAuthorSchema,
     CreatePublicationUserOptionsSchema,
     FlairSchema,
     JsonSignatureSchema,
@@ -13,12 +11,7 @@ import {
 } from "../../schema/schema";
 import * as remeda from "remeda";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants";
-import { CommentModerationSignedPropertyNamesUnion } from "../../signer/types";
 
-// // I have to explicitly include the cast here, it may be fixed in the future
-// export const uniqueModFields = <["pinned", "locked", "removed", "commentAuthor"]>(
-//     remeda.difference(remeda.keys.strict(ModeratorOptionsSchema.shape), remeda.keys.strict(AuthorCommentEditOptionsSchema.shape))
-// );
 export const ModeratorOptionsSchema = z
     .object({
         flair: FlairSchema.optional(),
@@ -36,25 +29,23 @@ export const CreateCommentModerationOptionsSchema = CreatePublicationUserOptions
     commentCid: CidStringSchema
 }).strict();
 
-export const CommentModerationOptionsToSignSchema = CreateCommentModerationOptionsSchema.merge(PublicationBaseBeforeSigning);
-
-export const LocalCommentModerationAfterSigningSchema = CommentModerationOptionsToSignSchema.extend({
-    signature: JsonSignatureSchema
-}).merge(ChallengeRequestToEncryptBaseSchema);
-
 // ChallengeRequest.publication
 
 export const CommentModerationSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateCommentModerationOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 
-const commentModerationPickOptions = <Record<CommentModerationSignedPropertyNamesUnion | "signature", true>>(
+const commentModerationPickOptions = <Record<(typeof CommentModerationSignedPropertyNames)[number] | "signature", true>>(
     remeda.mapToObj([...CommentModerationSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
 // Will be used by the sub when parsing request.publication
-export const CommentModerationPubsubMessagePublicationSchema = LocalCommentModerationAfterSigningSchema.pick(commentModerationPickOptions)
-    .merge(z.object({ author: LocalCommentModerationAfterSigningSchema.shape.author.passthrough() }))
+export const CommentModerationPubsubMessagePublicationSchema = CreateCommentModerationOptionsSchema.merge(PublicationBaseBeforeSigning)
+    .extend({
+        signature: JsonSignatureSchema,
+        author: PublicationBaseBeforeSigning.shape.author.passthrough()
+    })
+    .pick(commentModerationPickOptions)
     .strict();
 
 export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePublicationSchema.extend({
@@ -64,11 +55,16 @@ export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePu
     extraProps: z.object({}).passthrough().optional()
 });
 
+export const CommentModerationChallengeRequestToEncryptSchema = z
+    .object({
+        commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough()
+    })
+    .merge(CreateCommentModerationOptionsSchema.pick({pubsubMessage: true}));
+
 export const CommentModerationReservedFields = remeda.difference(
     [
         ...remeda.keys.strict(CommentModerationsTableRowSchema.shape),
-        ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
-        ...remeda.keys.strict(LocalCommentModerationAfterSigningSchema.shape),
+        ...remeda.keys.strict(CommentModerationChallengeRequestToEncryptSchema.shape),
         "shortSubplebbitAddress",
         "shortCommentCid",
         "state",
@@ -78,10 +74,6 @@ export const CommentModerationReservedFields = remeda.difference(
     ],
     remeda.keys.strict(CommentModerationPubsubMessagePublicationSchema.shape)
 );
-
-export const CommentModerationChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough()
-});
 
 export const CreateCommentModerationFunctionArgumentSchema = CreateCommentModerationOptionsSchema.or(
     CommentModerationPubsubMessagePublicationSchema

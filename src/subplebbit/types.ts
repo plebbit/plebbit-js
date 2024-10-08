@@ -18,13 +18,15 @@ import {
     SubplebbitRoleSchema,
     SubplebbitSettingsSchema,
     SubplebbitSuggestedSchema,
-    RpcRemoteSubplebbitUpdateEventResultSchema
+    RpcRemoteSubplebbitUpdateEventResultSchema,
+    SubplebbitSignedPropertyNames
 } from "./schema.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import type { JsonOfClass } from "../types.js";
+import type { JsonSignature } from "../signer/types.js";
 
 export type SubplebbitStats = {
     hourActiveUserCount: number;
@@ -54,6 +56,10 @@ export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
+
+export interface SubplebbitSignature extends JsonSignature {
+    signedPropertyNames: typeof SubplebbitSignedPropertyNames;
+}
 
 export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 

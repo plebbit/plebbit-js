@@ -2,7 +2,6 @@
 
 import { z } from "zod";
 import {
-    ChallengeRequestToEncryptBaseSchema,
     CidStringSchema,
     CreatePublicationUserOptionsSchema,
     JsonSignatureSchema,
@@ -11,7 +10,6 @@ import {
     SignerWithAddressPublicKeySchema
 } from "../../schema/schema.js";
 import * as remeda from "remeda";
-import type { VoteSignedPropertyNamesUnion } from "../../signer/types";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
 export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.extend({
@@ -19,23 +17,18 @@ export const CreateVoteUserOptionsSchema = CreatePublicationUserOptionsSchema.ex
     vote: z.union([z.literal(1), z.literal(0), z.literal(-1)])
 }).strict();
 
-export const VoteOptionsToSignSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning);
-
-export const LocalVoteOptionsAfterSigningSchema = VoteOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(
-    ChallengeRequestToEncryptBaseSchema
-);
-
 export const VoteSignedPropertyNames = remeda.keys.strict(
     remeda.omit(CreateVoteUserOptionsSchema.shape, keysToOmitFromSignedPropertyNames)
 );
 
-const votePickOptions = <Record<VoteSignedPropertyNamesUnion | "signature", true>>(
+const votePickOptions = <Record<(typeof VoteSignedPropertyNames)[number] | "signature", true>>(
     remeda.mapToObj([...VoteSignedPropertyNames, "signature"], (x) => [x, true])
 );
 
 // Will be used by the sub when parsing request.publication
-export const VotePubsubMessagePublicationSchema = LocalVoteOptionsAfterSigningSchema.pick(votePickOptions)
-    .merge(z.object({ author: LocalVoteOptionsAfterSigningSchema.shape.author.passthrough() }))
+export const VotePubsubMessagePublicationSchema = CreateVoteUserOptionsSchema.merge(PublicationBaseBeforeSigning)
+    .extend({ signature: JsonSignatureSchema, author: PublicationBaseBeforeSigning.shape.author.passthrough() })
+    .pick(votePickOptions)
     .strict();
 
 export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
@@ -49,10 +42,14 @@ export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
     extraProps: z.object({}).passthrough().optional()
 });
 
+export const VoteChallengeRequestToEncryptSchema = CreateVoteUserOptionsSchema.pick({ pubsubMessage: true }).extend({
+    vote: VotePubsubMessagePublicationSchema.passthrough()
+});
+
 export const VotePubsubReservedFields = remeda.difference(
     [
         ...remeda.keys.strict(VoteTablesRowSchema.shape),
-        ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
+        ...remeda.keys.strict(VoteChallengeRequestToEncryptSchema.shape),
         "shortSubplebbitAddress",
         "state",
         "publishingState",
@@ -61,9 +58,5 @@ export const VotePubsubReservedFields = remeda.difference(
     ],
     remeda.keys.strict(VotePubsubMessagePublicationSchema.shape)
 );
-
-export const VoteChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    vote: VotePubsubMessagePublicationSchema.passthrough()
-});
 
 export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessagePublicationSchema);
