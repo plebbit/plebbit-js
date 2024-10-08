@@ -987,6 +987,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (this.features?.requirePostLinkIsMedia && commentPublication.link && !isLinkOfMedia(commentPublication.link))
                 return messages.ERR_POST_LINK_IS_NOT_OF_MEDIA;
 
+            if (commentPublication.parentCid && !commentPublication.postCid) return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
+
             const commentInDb = await this._dbHandler.queryCommentBySignatureEncoded(commentPublication.signature.signature);
             if (commentInDb) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {

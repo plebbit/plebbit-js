@@ -107,6 +107,7 @@ export async function generateMockComment(
         signer: signer,
         content: `Mock comment - ${commentTime}`,
         parentCid: parentPostOrComment.cid,
+        postCid: parentPostOrComment.postCid,
         subplebbitAddress: parentPostOrComment.subplebbitAddress,
         timestamp: commentTimestamp,
         ...commentProps
@@ -122,15 +123,15 @@ export async function generateMockVote(
     signer?: SignerType
 ): Promise<Vote> {
     const voteTime = Date.now() / 1000;
-    const commentCid = parentPostOrComment.cid || parentPostOrComment.postCid;
+    const commentCid = parentPostOrComment.cid;
     if (typeof commentCid !== "string") throw Error(`generateMockVote: commentCid (${commentCid}) is not a valid CID`);
 
     signer = signer || (await plebbit.createSigner());
     const voteObj = await plebbit.createVote({
         author: { displayName: `Mock Author - ${voteTime}` },
         signer: signer,
-        commentCid: <string>commentCid,
-        vote: vote,
+        commentCid,
+        vote,
         subplebbitAddress: parentPostOrComment.subplebbitAddress
     });
 

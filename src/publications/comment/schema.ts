@@ -39,7 +39,8 @@ export const CreateCommentOptionsSchema = z
         linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
         linkHeight: z.number().positive().optional(),
         linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
-        parentCid: CidStringSchema.optional() // The parent comment CID
+        parentCid: CidStringSchema.optional(), // The parent comment CID
+        postCid: CidStringSchema.optional() // the post cid, required if the comment is reply
     })
     .merge(CreatePublicationUserOptionsSchema)
     .strict();
@@ -48,7 +49,7 @@ export const CreateCommentOptionsSchema = z
 export const CreateCommentOptionsWithRefinementSchema = CreateCommentOptionsSchema.refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
-);
+).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
 
 // Below is what's used to initialize a local publication to be published
 
@@ -78,7 +79,7 @@ export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPub
 export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePublicationSchema.refine(
     (arg) => arg.link || arg.content || arg.title,
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
-);
+).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
 
 export const CommentChallengeRequestToEncryptSchema = z
     .object({
@@ -92,7 +93,6 @@ export const CommentChallengeRequestToEncryptSchema = z
 // These are the props added by the subplebbit before adding the comment to ipfs
 export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.extend({
     depth: z.number().nonnegative().int(),
-    postCid: CidStringSchema.optional(),
     thumbnailUrl: z.string().url().optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
     thumbnailUrlHeight: z.number().positive().optional(),
