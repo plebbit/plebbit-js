@@ -326,7 +326,10 @@ export async function fetchTestServerSubs() {
     return resWithType;
 }
 
-export function mockDefaultOptionsForNodeAndBrowserTests() {
+export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
+    InputPlebbitOptions,
+    "plebbitRpcClientsOptions" | "ipfsHttpClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions"
+> {
     const shouldUseRPC = isRpcFlagOn();
 
     if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
@@ -433,7 +436,7 @@ export async function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions) {
 }
 
 export async function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitOptions) {
-    return mockGatewayPlebbit({ ipfsGatewayUrls: [], ...plebbitOptions });
+    return mockGatewayPlebbit({ ipfsGatewayUrls: undefined, ...plebbitOptions });
 }
 
 export async function publishRandomReply(

@@ -190,7 +190,7 @@ export function isLinkValid(link: string): boolean {
 
 export function isLinkOfMedia(link: string): boolean {
     if (!link) return false;
-    let mime;
+    let mime: string | undefined;
     try {
         mime = extName(new URL(link).pathname.toLowerCase().replace("/", ""))[0]?.mime;
     } catch (e) {

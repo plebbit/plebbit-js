@@ -38,17 +38,17 @@ const defaultChainProviders = {
     }
 };
 
-const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array().transform((options) =>
-    options.map(parseIpfsRawOptionToIpfsOptions)
-);
+const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array()
+    .nonempty()
+    .transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
 
 const ParsedIpfsHttpClientOptionsSchema = z.custom<z.output<typeof TransformIpfsHttpClientOptionsSchema>>();
 
 const PlebbitUserOptionBaseSchema = z.object({
-    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
+    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
     ipfsHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
     pubsubHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
-    plebbitRpcClientsOptions: RpcUrlSchema.array().optional(),
+    plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),
     chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
     resolveAuthorAddresses: z.boolean(),

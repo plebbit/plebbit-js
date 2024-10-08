@@ -238,8 +238,8 @@ export function parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIf
 }
 
 export function parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(
-    settings: z.infer<typeof SetNewSettingsPlebbitWsServerSchema>
-): SetNewSettingsPlebbitWsServer {
+    settings: z.input<typeof SetNewSettingsPlebbitWsServerSchema>
+): z.input<typeof SetNewSettingsPlebbitWsServerSchema> {
     const parseRes = SetNewSettingsPlebbitWsServerSchema.safeParse(settings);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_NEW_WS_SERVER_SETTINGS_SCHEMA", {

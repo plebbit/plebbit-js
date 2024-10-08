@@ -1,6 +1,5 @@
 import Logger from "@plebbit/plebbit-logger";
 import { Client as WebSocketClient } from "rpc-websockets";
-import { Comment } from "../../publications/comment/comment.js";
 import { Plebbit } from "../../plebbit/plebbit.js";
 import assert from "assert";
 import { PlebbitError } from "../../plebbit-error.js";
@@ -16,16 +15,17 @@ import type {
 import { RpcLocalSubplebbit } from "../../subplebbit/rpc-local-subplebbit.js";
 import type { PageIpfs } from "../../pages/types.js";
 import { SubscriptionIdSchema } from "./schema.js";
-import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
+import { SubplebbitAddressSchema } from "../../schema/schema.js";
 import type { DecryptedChallengeAnswer, DecryptedChallengeRequest } from "../../pubsub-messages/types.js";
-import type { PlebbitWsServerSettingsSerialized, SetNewSettingsPlebbitWsServer } from "../../rpc/src/types.js";
+import type { PlebbitWsServerSettingsSerialized } from "../../rpc/src/types.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
-    parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
     parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
 import { ZodError } from "zod";
 import type { CommentIpfsType } from "../../publications/comment/types.js";
+import { SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
+import * as z from "zod";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
@@ -306,7 +306,7 @@ export default class PlebbitRpcClient {
         return res;
     }
 
-    async setSettings(settings: SetNewSettingsPlebbitWsServer) {
+    async setSettings(settings: z.input<typeof SetNewSettingsPlebbitWsServerSchema>) {
         const parsedSettings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(settings);
         const res = <boolean>await this._webSocketClient.call("setSettings", [parsedSettings]);
         if (res !== true) throw Error("result of setSettings should be true");
