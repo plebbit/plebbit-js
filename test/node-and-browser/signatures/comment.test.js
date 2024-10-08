@@ -24,7 +24,7 @@ import validCommentWithAuthorEditFixture from "../../fixtures/signatures/comment
 import { comment as fixtureComment } from "../../fixtures/publications.js";
 
 const fixtureSignature = {
-    signature: "0ibxT1DhPIWzCUnnxq3GCnq7fsj41D/xvArlRmBPt4Gl0+sSGjwIF7Hl8Z7gLbWAg458Kr8oZ8ZDxWQTxtawCA",
+    signature: "RTBNJ8bEnvEENOAxzk3pqxc9I3a0M9H7qlXsL5yu2frEEbJKqf789eFVnmyccmB99hyBb1Hyw5Soqma+RIxIAw",
     publicKey: "CFhuD55tmzZjWZ113tZbDw/AsuNDkgSdvCCbPeqiF10",
     type: "ed25519",
     signedPropertyNames: [
@@ -37,6 +37,7 @@ const fixtureSignature = {
         "linkHeight",
         "linkHtmlTagName",
         "parentCid",
+        "postCid",
         "author",
         "subplebbitAddress",
         "protocolVersion",

@@ -83,7 +83,7 @@ getRemotePlebbitConfigs().map((config) => {
             const localComment = await publishRandomPost(
                 subplebbitAddress,
                 plebbit,
-                { challengeAnswers: ["1234"], challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"] },
+                { pubsubMessage: { challengeAnswers: ["1234"], challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"] } },
                 false
             );
             const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));

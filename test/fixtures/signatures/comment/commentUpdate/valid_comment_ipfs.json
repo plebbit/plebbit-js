@@ -1,14 +1,12 @@
 {
-    "content": "Random post Content 63d527da-38b4-49a8-aed3-d8209965e50c",
-    "title": "Random post Title 349493b8-8a4a-4ec7-b20c-9f08ae3a1bf5",
-    "author": { "address": "12D3KooWDP65LKwKhWGnMcSaP7BxB1xSrGCCj7rp2FMcKC2YtNWd", "displayName": "Mock Author - 1723466076.045505" },
-    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "author": { "address": "12D3KooWLjZGiL8t2FyNZc21EMKw1SLR7U6khv4RW9sEFKD4aFXJ", "displayName": "Mock Author - 1728396705.2567477" },
+    "content": "Random post Content 4dff7ed1-c7e8-408a-aa67-0735ba20d1c1",
+    "depth": 0,
+    "previousCid": "QmeaD98zCjbs3h9GSCMixCGxMSJC3vUgW2i9pZoJpwkN7u",
     "protocolVersion": "1.0.0",
-    "timestamp": 1723466075,
     "signature": {
-        "type": "ed25519",
-        "signature": "8zKwT0ORzto3azyocLBfWN/TdIdZaEIsX1N/LHEkzz95ZQAX7XNh+gaJ6ySQYj4oPB6HLCBPmxocilDqrACpCA",
-        "publicKey": "NPUH3u2dlx9GFFCJdT5RlGFk6zW3FJq+s3QF+MKbd/I",
+        "publicKey": "ojU0zK7ZudZomVjSQPir7/ZT1u0G7J0IvlqbSx7s1S0",
+        "signature": "gwJxMTDNb5dV+pA5ztgseaQYxRF18AaqvMal45K7yV6YBHpahLmDN1rVyjXK4ZWeOYH8V90FaMDwolfGtOD6Cg",
         "signedPropertyNames": [
             "flair",
             "spoiler",
@@ -19,12 +17,15 @@
             "linkHeight",
             "linkHtmlTagName",
             "parentCid",
+            "postCid",
             "author",
             "subplebbitAddress",
             "protocolVersion",
             "timestamp"
-        ]
+        ],
+        "type": "ed25519"
     },
-    "depth": 0,
-    "previousCid": "QmSM8Aec9LUMSrAUwXyZxtnvuFTMg5Vgxgm3AdCnSPys3y"
+    "subplebbitAddress": "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
+    "timestamp": 1728396704,
+    "title": "Random post Title 1298bca6-e1c8-449a-aeb3-eedaa27119d9"
 }

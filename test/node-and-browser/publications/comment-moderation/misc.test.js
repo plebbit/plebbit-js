@@ -52,8 +52,7 @@ describe("plebbit.createCommentModeration misc", async () => {
 
     it(`(commentMod: CommentModeration) === await plebbit.createCommentModeration(commentMod)`, async () => {
         const props = {
-            challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"],
-            challengeAnswers: ["1234"],
+            pubsubMessage: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["test123"] },
             subplebbitAddress: subplebbitAddress,
             commentCid: commentToModCid,
             commentModeration: { locked: true, reason: "editReason" + Date.now() },
@@ -66,8 +65,8 @@ describe("plebbit.createCommentModeration misc", async () => {
             expect(curMod.commentCid).to.equal(props.commentCid);
             expect(curMod.commentModeration).to.deep.equal(props.commentModeration);
             expect(curMod.author.address).to.deep.equal(props.signer.address);
-            expect(curMod.challengeAnswers).to.deep.equal(props.challengeAnswers);
-            expect(curMod.challengeCommentCids).to.deep.equal(props.challengeCommentCids);
+            expect(curMod.challengeAnswers).to.deep.equal(props.pubsubMessage.challengeAnswers);
+            expect(curMod.challengeCommentCids).to.deep.equal(props.pubsubMessage.challengeCommentCids);
         });
 
         const localModJson = JSON.parse(JSON.stringify(localMod));

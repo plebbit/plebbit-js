@@ -64,6 +64,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
     it("Subplebbit reject a comment under a non existent parent", async () => {
         const comment = await plebbit.createComment({
             parentCid: "QmV8Q8tWqbLTPYdrvSXHjXgrgWUR1fZ9Ctj56ETPi58FDY", // random cid that's not related to this sub,
+            postCid: "QmV8Q8tWqbLTPYdrvSXHjXgrgWUR1fZ9Ctj56ETPi58FDY",
             signer: remeda.sample(signers, 1)[0],
             content: `Random Content` + Date.now(),
             subplebbitAddress
@@ -137,6 +138,21 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
         disableValidationOfSignatureBeforePublishing(post);
         await publishWithExpectedResult(post, false, messages.ERR_REQUEST_PUBLICATION_HAS_INVALID_SCHEMA);
     });
+
+    it(`Subs respond with error if you attempt to publish a reply without postCid defined`, async () => {
+        try {
+            await generateMockComment(post, plebbit, false, { postCid: undefined });
+            expect.fail("Should fail to create a reply without postCid defined");
+        } catch (e) {
+            expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
+            expect(e.details.zodError.issues[0].message).to.equal(messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
+        }
+        const reply = await generateMockComment(post, plebbit, false);
+        await setExtraPropOnCommentAndSign(reply, { postCid: undefined }, true);
+        expect(reply.postCid).to.be.undefined;
+        await publishWithExpectedResult(reply, messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
+        expect(reply._publishedChallengeRequests[0].comment.postCid).to.be.undefined;
+    });
 });
 
 describe(`Posts with forbidden fields are rejected during challenge exchange`, async () => {
@@ -155,7 +171,6 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
         { cid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
         { previousCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
         { depth: "0" },
-        { postCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" },
         { upvoteCount: 1 },
         { downvoteCount: 1 },
         { replyCount: 1 },

@@ -52,8 +52,7 @@ describe("plebbit.createCommentEdit", async () => {
 
     it(`(edit: CommentEdit) === await plebbit.createCommentEdit(edit)`, async () => {
         const props = {
-            challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"],
-            challengeAnswers: ["1234"],
+            pubsubMessage: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["1234"] },
             subplebbitAddress: subplebbitAddress,
             commentCid: commentToEditCid,
             reason: "editReason" + Date.now(),
@@ -68,8 +67,8 @@ describe("plebbit.createCommentEdit", async () => {
             expect(curEdit.reason).to.equal(props.reason);
             expect(curEdit.content).to.equal(props.content);
             expect(curEdit.author.address).to.deep.equal(props.signer.address);
-            expect(curEdit.challengeAnswers).to.deep.equal(props.challengeAnswers);
-            expect(curEdit.challengeCommentCids).to.deep.equal(props.challengeCommentCids);
+            expect(curEdit.challengeAnswers).to.deep.equal(props.pubsubMessage.challengeAnswers);
+            expect(curEdit.challengeCommentCids).to.deep.equal(props.pubsubMessage.challengeCommentCids);
         });
 
         const localEditJson = JSON.parse(JSON.stringify(localEdit));
