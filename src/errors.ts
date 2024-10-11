@@ -39,6 +39,7 @@ export enum messages {
     ERR_INVALID_JSON = "The loaded file is not the expected json",
     ERR_INVALID_COMMENT_IPFS_SCHEMA = "The schema of Comment ipfs file is invalid",
     ERR_REPLY_HAS_NOT_DEFINED_POST_CID = "User attempted to create a reply without defining postCid",
+    ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY = "User's reply has reply.postCid that is not the post of the reply",
     ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA = "The loaded Subplebbit record has an invalid schema",
     ERR_INVALID_COMMENT_UPDATE_SCHEMA = "The schema of Comment Update is invalid",
     ERR_INVALID_PAGE_IPFS_SCHEMA = "The schema of Page ipfs file is invalid",

@@ -989,6 +989,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (commentPublication.parentCid && !commentPublication.postCid) return messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID;
 
+            if (commentPublication.parentCid) {
+                // query parents, and make sure commentPublication.postCid is the final parent
+                const parentsOfComment = await this._dbHandler.queryParents({ parentCid: commentPublication.parentCid });
+                if (parentsOfComment[parentsOfComment.length - 1].cid !== commentPublication.postCid)
+                    return messages.ERR_REPLY_POST_CID_IS_NOT_PARENT_OF_REPLY;
+            }
+
             const commentInDb = await this._dbHandler.queryCommentBySignatureEncoded(commentPublication.signature.signature);
             if (commentInDb) return messages.ERR_DUPLICATE_COMMENT;
         } else if (request.vote) {
