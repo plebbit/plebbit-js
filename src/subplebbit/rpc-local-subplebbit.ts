@@ -32,11 +32,11 @@ import { hideClassPrivateProps } from "../util.js";
 
 // This class is for subs that are running and publishing, over RPC. Can be used for both browser and node
 export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcInternalSubplebbitRecordBeforeFirstUpdateType {
-    started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
-    startedState!: SubplebbitStartedState;
-    signer!: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
-    settings!: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
-    editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
+    override started: boolean; // Is the sub started and running? This is not specific to this instance, and applies to all instances of sub with this address
+    override startedState!: SubplebbitStartedState;
+    override signer!: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
+    override settings!: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
+    override editable!: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
 
     // mandating props
     override challenges!: RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
@@ -195,7 +195,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         this._setRpcClientState("waiting-challenge-requests");
     }
 
-    async start() {
+    override async start() {
         const log = Logger("plebbit-js:rpc-local-subplebbit:start");
         // we can't start the same instance multiple times
         if (typeof this._startRpcSubscriptionId === "number")
@@ -250,7 +250,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         } else throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
 
-    async edit(newSubplebbitOptions: SubplebbitEditOptions) {
+    override async edit(newSubplebbitOptions: SubplebbitEditOptions) {
         const subPropsAfterEdit = await this._plebbit.plebbitRpcClient!.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit) await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterEdit);
@@ -263,7 +263,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         else return super.update();
     }
 
-    async delete() {
+    override async delete() {
         // Make sure to stop updating or starting first
         if (this.state === "started" || this.state === "updating") await this.stop();
 

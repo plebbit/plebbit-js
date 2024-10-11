@@ -15,13 +15,18 @@ import type {
     RpcRemoteSubplebbitType,
     SubplebbitJson,
     SubplebbitUpdatingState,
-    SubplebbitState
+    SubplebbitState,
+    SubplebbitStartedState,
+    SubplebbitSettings,
+    RpcInternalSubplebbitRecordAfterFirstUpdateType,
+    SubplebbitEditOptions
 } from "./types.js";
 import * as remeda from "remeda";
 import { PostsPages } from "../pages/pages.js";
 import type { PostsPagesTypeIpfs } from "../pages/types.js";
 import { parseRawPages } from "../pages/util.js";
 import { SubplebbitIpfsSchema } from "./schema.js";
+import { SignerWithPublicKeyAddress } from "../signer/index.js";
 
 export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
     // public
@@ -46,6 +51,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     rules?: SubplebbitIpfsType["rules"];
     challenges?: SubplebbitIpfsType["challenges"];
     postUpdates?: SubplebbitIpfsType["postUpdates"];
+
+    // to be overridden by local subplebbit classes
+    startedState?: "stopped" | SubplebbitStartedState;
+    started?: boolean;
+    signer?: SignerWithPublicKeyAddress | RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
+    settings?: SubplebbitSettings;
+    editable?: Pick<RemoteSubplebbit, keyof SubplebbitEditOptions>;
 
     // Only for Subplebbit instance
     state!: SubplebbitState;
@@ -290,5 +302,19 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
 
         this._setUpdatingState("stopped");
         this._setState("stopped");
+    }
+
+    // functions to be overridden in local subplebbit classes
+
+    async edit(options: any): Promise<any> {
+        throw Error("Can't edit a remote subplebbit");
+    }
+
+    async delete(options: any) {
+        throw Error("Can't delete a remote subplebbit");
+    }
+
+    async start(options: any) {
+        throw Error("Can't start a remote subplebbit");
     }
 }
