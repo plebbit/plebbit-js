@@ -3,24 +3,14 @@ import {
     generateMockPost,
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
-    generatePostToAnswerMathQuestion,
     publishRandomPost,
-    describeSkipIfRpc,
     resolveWhenConditionIsTrue,
     itSkipIfRpc
 } from "../../../../dist/node/test/test-util";
-import { stringify as deterministicStringify } from "safe-stable-stringify";
 
-import signers from "../../../fixtures/signers";
-import Sinon from "sinon";
-import * as util from "../../../../dist/node/constants";
 import chai from "chai";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import chaiAsPromised from "chai-as-promised";
-import * as chains from "viem/chains"; // This will increase bundle size, should only import needed chains
-import { v4 as uuidV4 } from "uuid";
 
-import { createPublicClient, http } from "viem";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
@@ -105,9 +95,9 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].type).to.equal("text/plain");
         }
 
-        const mockPost = await generateMockPost(subplebbit.address, plebbit, false, { challengeAnswers: ["2"] });
+        const mockPost = await generateMockPost(subplebbit.address, plebbit, false, { challengeRequest: { challengeAnswers: ["2"] } });
 
-        expect(mockPost.challengeAnswers).to.deep.equal(["2"]);
+        expect(mockPost.challengeRequest.challengeAnswers).to.deep.equal(["2"]);
 
         let receivedChallenge = false;
         mockPost.once("challenge", (msg) => {
