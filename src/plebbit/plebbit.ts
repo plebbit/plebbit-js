@@ -800,7 +800,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async resolveAuthorAddress(authorAddress: string) {
-        // TODO rewrite this
         const parsedAddress = AuthorAddressSchema.parse(authorAddress);
         const resolved = await this._clientsManager.resolveAuthorAddressIfNeeded(parsedAddress);
         return resolved;
