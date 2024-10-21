@@ -32,7 +32,7 @@ import { RemoteSubplebbit } from "../../subplebbit/remote-subplebbit.js";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import type { IncomingMessage } from "http";
-import type { CommentIpfsType } from "../../publications/comment/types.js";
+import type { CommentChallengeRequestToEncryptType, CommentIpfsType } from "../../publications/comment/types.js";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
 import type {
@@ -588,9 +588,9 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
-    private _createCommentInstanceFromPublishCommentParams(params: CommentChallengeRequestToEncryptType) {
-        const comment = new Comment(this.plebbit);
-        comment._initLocalProps(params);
+    private async _createCommentInstanceFromPublishCommentParams(params: CommentChallengeRequestToEncryptType) {
+        const comment = await this.plebbit.createComment(params.comment);
+        comment.challengeRequest = remeda.omit(params, ["comment"]);
         return comment;
     }
 
@@ -608,7 +608,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const comment = this._createCommentInstanceFromPublishCommentParams(publishOptions);
+        const comment = await this._createCommentInstanceFromPublishCommentParams(publishOptions);
         this.publishing[subscriptionId] = comment;
         comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -645,7 +645,7 @@ class PlebbitWsServer extends EventEmitter {
 
     private async _createVoteInstanceFromPublishVoteParams(params: VoteChallengeRequestToEncryptType) {
         const vote = await this.plebbit.createVote(params.vote);
-        vote._initLocalProps(params);
+        vote.challengeRequest = remeda.omit(params, ["vote"]);
         return vote;
     }
     async publishVote(params: any, connectionId: string) {
@@ -689,9 +689,9 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
-    private _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
-        const commentEdit = new CommentEdit(this.plebbit);
-        commentEdit._initLocalProps(params);
+    private async _createCommentEditInstanceFromPublishCommentEditParams(params: CommentEditChallengeRequestToEncryptType) {
+        const commentEdit = await this.plebbit.createCommentEdit(params.commentEdit);
+        commentEdit.challengeRequest = remeda.omit(params, ["commentEdit"]);
         return commentEdit;
     }
 
@@ -708,7 +708,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentEdit = this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
+        const commentEdit = await this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
         commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -741,9 +741,9 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
-    private _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
-        const commentModeration = new CommentModeration(this.plebbit);
-        commentModeration._initLocalProps(params);
+    private async _createCommentModerationInstanceFromPublishCommentModerationParams(params: CommentModerationChallengeRequestToEncrypt) {
+        const commentModeration = await this.plebbit.createCommentModeration(params.commentModeration);
+        commentModeration.challengeRequest = remeda.omit(params, ["commentModeration"]);
         return commentModeration;
     }
 
@@ -760,7 +760,7 @@ class PlebbitWsServer extends EventEmitter {
                 connectionId
             });
 
-        const commentMod = this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
+        const commentMod = await this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
 
         this.publishing[subscriptionId] = commentMod;
         commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
