@@ -698,9 +698,8 @@ export class BaseClientsManager {
     }
 
     async resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null> {
-        if (!isStringDomain(authorAddress)) return authorAddress;
-        else if (this._plebbit.plebbitRpcClient) return this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress);
-        else return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
+        if (!isStringDomain(authorAddress)) throw new PlebbitError("ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58", { authorAddress });
+        return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
     }
 
     // Misc functions
