@@ -678,7 +678,7 @@ export class DbHandler {
         return comment;
     }
 
-    async queryParents(rootComment: Pick<CommentsTableRow, "cid" | "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
+    async queryParents(rootComment: Pick<CommentsTableRow, "parentCid">, trx?: Transaction): Promise<CommentsTableRow[]> {
         const parents: CommentsTableRow[] = [];
         let curParentCid = rootComment.parentCid;
         while (curParentCid) {
@@ -693,7 +693,7 @@ export class DbHandler {
         // Criteria:
         // 1 - Comment has no row in commentUpdates (has never published CommentUpdate) OR
         // 2 - commentUpdate.updatedAt is less or equal to max of insertedAt of child votes, comments or commentEdit or CommentModeration OR
-        // 3 - Comments that new votes, CommentEdit or other comments were published under them
+        // 3 - Comments that new votes, CommentEdit, commentModeration or other comments were published under them
 
         // After retrieving all comments with any of criteria above, also add their parents to the list to update
         // Also for each comment, add the previous comments of its author to update them too

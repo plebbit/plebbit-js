@@ -87,7 +87,7 @@ export const CreatePublicationUserOptionsSchema = z.object({
     protocolVersion: ProtocolVersionSchema.optional(),
     timestamp: PlebbitTimestampSchema.optional(),
     // pubsubMessage field will contain fields to be added to request.encrypted
-    pubsubMessage: z
+    challengeRequest: z
         .object({
             challengeAnswers: ChallengeAnswersSchema.optional(),
             challengeCommentCids: CidStringSchema.array().optional()

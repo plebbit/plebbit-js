@@ -429,7 +429,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 ...remeda.pick(cleanedFieldsFilled, signature.signedPropertyNames),
                 signature
             };
-            commentInstance._initLocalProps({ ...parsedOptions, ...cleanedFieldsFilled, comment: signedComment });
+            commentInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: fieldsFilled.signer,
+                comment: signedComment
+            });
         } else if ("subplebbitAddress" in parsedOptions) commentInstance.setSubplebbitAddress(parsedOptions.subplebbitAddress);
         else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
@@ -604,7 +608,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
             };
-            voteInstance._initLocalProps({ ...parsedOptions, ...finalOptions, vote: signedVote });
+            voteInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: finalOptions.signer,
+                vote: signedVote
+            });
         }
         return voteInstance;
     }
@@ -636,7 +644,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
             };
-            editInstance._initLocalProps({ ...parsedOptions, ...cleanedFinalOptions, commentEdit: signedEdit });
+            editInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: finalOptions.signer,
+                commentEdit: signedEdit
+            });
         }
         return editInstance;
     }
@@ -672,7 +684,11 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
                 signature
             };
-            modInstance._initLocalProps({ ...parsedOptions, ...cleanedFinalOptions, commentModeration: signedMod });
+            modInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: finalOptions.signer,
+                commentModeration: signedMod
+            });
         }
         return modInstance;
     }

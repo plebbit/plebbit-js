@@ -81,11 +81,11 @@ export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePubl
     messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE
 ).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
 
-export const CommentChallengeRequestToEncryptSchema = z
-    .object({
+export const CommentChallengeRequestToEncryptSchema = CreateCommentOptionsSchema.shape.challengeRequest
+    .unwrap()
+    .extend({
         comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
     })
-    .merge(CreateCommentOptionsSchema.pick({ pubsubMessage: true }))
     .strict();
 
 // Remote comments

@@ -82,10 +82,10 @@ class Publication extends TypedEmitter<PublicationEvents> {
     author!: AuthorPubsubJsonType;
     protocolVersion!: DecryptedChallengeRequestMessageType["protocolVersion"];
 
+    challengeRequest?: CreatePublicationOptions["challengeRequest"];
+
     state!: PublicationState | Comment["state"];
     publishingState!: PublicationPublishingState;
-    challengeAnswers?: DecryptedChallengeRequestMessageType["challengeAnswers"];
-    challengeCommentCids?: DecryptedChallengeRequestMessageType["challengeCommentCids"];
 
     // private
     private _subplebbit?: Pick<SubplebbitIpfsType, "encryption" | "pubsubTopic" | "address"> = undefined; // will be used for publishing
@@ -101,7 +101,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private _publishToDifferentProviderThresholdSeconds: number;
     private _setProviderFailureThresholdSeconds: number;
     private _rpcPublishSubscriptionId?: number = undefined;
-    private _pubsubFieldsToIncludeInRequest?: CreatePublicationOptions["pubsubMessage"];
     _clientsManager!: PublicationClientsManager;
     _plebbit: Plebbit;
 
@@ -133,12 +132,6 @@ class Publication extends TypedEmitter<PublicationEvents> {
         this.shortSubplebbitAddress = shortifyAddress(subplebbitAddress);
     }
 
-    _initChallengeRequestChallengeProps(props: NonNullable<CreatePublicationOptions["pubsubMessage"]>) {
-        this._pubsubFieldsToIncludeInRequest = props;
-        this.challengeAnswers = props.challengeAnswers;
-        this.challengeCommentCids = props.challengeCommentCids;
-    }
-
     _initBaseRemoteProps(props: CommentIpfsType | PublicationFromDecryptedChallengeRequest) {
         this.setSubplebbitAddress(props.subplebbitAddress);
         this.timestamp = props.timestamp;
@@ -163,7 +156,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     toJSONPubsubRequestToEncrypt(): DecryptedChallengeRequest {
         return {
             [this.getType()]: this.toJSONPubsubMessagePublication(),
-            ...this._pubsubFieldsToIncludeInRequest
+            ...this.challengeRequest
         };
     }
 

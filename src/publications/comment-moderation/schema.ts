@@ -55,11 +55,11 @@ export const CommentModerationsTableRowSchema = CommentModerationPubsubMessagePu
     extraProps: z.object({}).passthrough().optional()
 });
 
-export const CommentModerationChallengeRequestToEncryptSchema = z
-    .object({
+export const CommentModerationChallengeRequestToEncryptSchema = CreateCommentModerationOptionsSchema.shape.challengeRequest
+    .unwrap()
+    .extend({
         commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough()
-    })
-    .merge(CreateCommentModerationOptionsSchema.pick({pubsubMessage: true}));
+    });
 
 export const CommentModerationReservedFields = remeda.difference(
     [

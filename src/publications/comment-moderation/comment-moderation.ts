@@ -12,6 +12,7 @@ export class CommentModeration extends Publication implements CommentModerationP
     override signature!: CommentModerationPubsubMessagePublication["signature"];
 
     _pubsubMsgToPublish?: CommentModerationPubsubMessagePublication = undefined;
+    override challengeRequest?: CreateCommentModerationOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -25,11 +26,10 @@ export class CommentModeration extends Publication implements CommentModerationP
     _initLocalProps(props: {
         commentModeration: CommentModerationPubsubMessagePublication;
         signer?: SignerType;
-        pubsubMessage?: CreateCommentModerationOptions["pubsubMessage"];
+        challengeRequest?: CreateCommentModerationOptions["challengeRequest"];
     }) {
         this._initPubsubPublication(props.commentModeration);
-
-        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.challengeRequest = props.challengeRequest;
         this.signer = props.signer;
     }
 

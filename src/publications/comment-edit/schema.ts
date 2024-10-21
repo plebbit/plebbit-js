@@ -54,7 +54,7 @@ export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSch
     id: z.number().nonnegative().int()
 }).strict();
 
-export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.pick({ pubsubMessage: true }).extend({
+export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.shape.challengeRequest.unwrap().extend({
     commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough()
 });
 
@@ -67,7 +67,8 @@ export const CommentEditReservedFields = remeda.difference(
         "state",
         "publishingState",
         "signer",
-        "clients"
+        "clients",
+        "commentEdit"
     ]),
     remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape)
 );

@@ -2,7 +2,7 @@
 
 import type { CreatePublicationOptions } from "../types";
 
-export const keysToOmitFromSignedPropertyNames = <(keyof Pick<CreatePublicationOptions, "signer" | "pubsubMessage">)[]>[
+export const keysToOmitFromSignedPropertyNames = <(keyof Pick<CreatePublicationOptions, "signer" | "challengeRequest">)[]>[
     "signer",
-    "pubsubMessage"
+    "challengeRequest"
 ];

@@ -42,7 +42,7 @@ export const VoteTablesRowSchema = VotePubsubMessagePublicationSchema.pick({
     extraProps: z.object({}).passthrough().optional()
 });
 
-export const VoteChallengeRequestToEncryptSchema = CreateVoteUserOptionsSchema.pick({ pubsubMessage: true }).extend({
+export const VoteChallengeRequestToEncryptSchema = CreateVoteUserOptionsSchema.shape.challengeRequest.unwrap().extend({
     vote: VotePubsubMessagePublicationSchema.passthrough()
 });
 

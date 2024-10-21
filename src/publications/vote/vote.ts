@@ -14,6 +14,7 @@ class Vote extends Publication implements VotePubsubMessagePublication {
     override signature!: VotePubsubMessagePublication["signature"];
 
     private _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
+    override challengeRequest?: CreateVoteOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -27,10 +28,10 @@ class Vote extends Publication implements VotePubsubMessagePublication {
     _initLocalProps(props: {
         vote: VotePubsubMessagePublication;
         signer?: SignerType;
-        pubsubMessage?: CreateVoteOptions["pubsubMessage"];
+        challengeRequest?: CreateVoteOptions["challengeRequest"];
     }): void {
         this._initRemoteProps(props.vote);
-        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.challengeRequest = props.challengeRequest;
         this.signer = props.signer;
     }
 

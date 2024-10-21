@@ -64,7 +64,7 @@ export const DecryptedChallengeRequestPublicationSchema = z.object({
 
 // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
 export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(
-    CreatePublicationUserOptionsSchema.shape.pubsubMessage.unwrap()
+    CreatePublicationUserOptionsSchema.shape.challengeRequest.unwrap()
 );
 
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(

@@ -93,6 +93,7 @@ export class Comment
     override _clientsManager!: CommentClientsManager;
     private _updateRpcSubscriptionId?: number = undefined;
     _pubsubMsgToPublish?: CommentPubsubMessagePublication = undefined;
+    override challengeRequest?: CreateCommentOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -129,10 +130,10 @@ export class Comment
     _initLocalProps(props: {
         comment: CommentPubsubMessagePublication;
         signer?: SignerType;
-        pubsubMessage?: CreateCommentOptions["pubsubMessage"];
+        challengeRequest?: CreateCommentOptions["challengeRequest"];
     }) {
         this._initPubsubMessageProps(props.comment);
-        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.challengeRequest = props.challengeRequest;
         this.signer = props.signer;
     }
 

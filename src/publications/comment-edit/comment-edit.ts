@@ -18,6 +18,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     override signature!: CommentEditPubsubMessagePublication["signature"];
 
     _pubsubMsgToPublish?: CommentEditPubsubMessagePublication = undefined;
+    override challengeRequest?: CreateCommentEditOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
         super(plebbit);
@@ -31,10 +32,10 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     _initLocalProps(props: {
         commentEdit: CommentEditPubsubMessagePublication;
         signer?: SignerType;
-        pubsubMessage?: CreateCommentEditOptions["pubsubMessage"];
+        challengeRequest?: CreateCommentEditOptions["challengeRequest"];
     }) {
         this._initPubsubPublicationProps(props.commentEdit);
-        if (props.pubsubMessage) super._initChallengeRequestChallengeProps(props.pubsubMessage);
+        this.challengeRequest = props.challengeRequest;
         this.signer = props.signer;
     }
 
