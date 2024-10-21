@@ -52,7 +52,7 @@ describe("plebbit.createCommentEdit", async () => {
 
     it(`(edit: CommentEdit) === await plebbit.createCommentEdit(edit)`, async () => {
         const props = {
-            pubsubMessage: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["1234"] },
+            challengeRequest: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["1234"] },
             subplebbitAddress: subplebbitAddress,
             commentCid: commentToEditCid,
             reason: "editReason" + Date.now(),
@@ -67,9 +67,10 @@ describe("plebbit.createCommentEdit", async () => {
             expect(curEdit.reason).to.equal(props.reason);
             expect(curEdit.content).to.equal(props.content);
             expect(curEdit.author.address).to.deep.equal(props.signer.address);
-            expect(curEdit.challengeAnswers).to.deep.equal(props.pubsubMessage.challengeAnswers);
-            expect(curEdit.challengeCommentCids).to.deep.equal(props.pubsubMessage.challengeCommentCids);
+            expect(curEdit.challengeRequest).to.deep.equal(props.challengeRequest);
         });
+
+        expect(localEdit.toJSONPubsubRequestToEncrypt()).to.deep.equal(recreatedLocalEdit.toJSONPubsubRequestToEncrypt());
 
         const localEditJson = JSON.parse(JSON.stringify(localEdit));
         const recreatedLocalEditJson = JSON.parse(JSON.stringify(recreatedLocalEdit));
@@ -78,6 +79,26 @@ describe("plebbit.createCommentEdit", async () => {
         expect(localEditJson.signer).to.be.a("object").and.deep.equal(recreatedLocalEditJson.signer);
 
         expect(deterministicStringify(localEdit)).to.equal(deterministicStringify(recreatedLocalEdit));
+    });
+
+    it(`Can publish a CommentEdit that was created from jsonfied CommentEdit instance`, async () => {
+        const props = {
+            subplebbitAddress: subplebbitAddress,
+            commentCid: commentToEditCid,
+            reason: "editReason" + Date.now(),
+            content: "editedText" + Date.now(),
+            signer: signers[7] // Create a new signer, different than the signer of the original comment
+        };
+        const edit = await plebbit.createCommentEdit(props);
+        const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));
+
+        const challengeRequestPromise = new Promise((resolve) => editFromStringifiedEdit.once("challengerequest", resolve));
+        await publishWithExpectedResult(editFromStringifiedEdit, true);
+        const challengerequest = await challengeRequestPromise;
+
+        expect(challengerequest.commentEdit).to.deep.equal(edit.toJSONPubsubMessagePublication());
+        expect(edit.toJSONPubsubMessagePublication()).to.deep.equal(editFromStringifiedEdit.toJSONPubsubMessagePublication());
+        expect(edit.toJSONPubsubRequestToEncrypt()).to.deep.equal(editFromStringifiedEdit.toJSONPubsubRequestToEncrypt());
     });
 });
 

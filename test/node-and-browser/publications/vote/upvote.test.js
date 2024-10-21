@@ -117,4 +117,17 @@ describe("Test upvote", async () => {
         });
         await publishWithExpectedResult(vote, true);
     });
+
+    it(`Can publish a vote that was created from jsonfied vote instance`, async () => {
+        const vote = await generateMockVote(postToVote, 1, plebbit, remeda.sample(signers, 1)[0]);
+        const voteFromStringifiedVote = await plebbit.createVote(JSON.parse(JSON.stringify(vote)));
+        const challengeRequestPromise = new Promise((resolve) => voteFromStringifiedVote.once("challengerequest", resolve));
+
+        await publishWithExpectedResult(voteFromStringifiedVote, true);
+        const challengerequest = await challengeRequestPromise;
+        expect(challengerequest.vote).to.deep.equal(vote.toJSONPubsubMessagePublication());
+
+        expect(vote.toJSONPubsubMessagePublication()).to.deep.equal(voteFromStringifiedVote.toJSONPubsubMessagePublication());
+        expect(vote.toJSONPubsubRequestToEncrypt()).to.deep.equal(voteFromStringifiedVote.toJSONPubsubRequestToEncrypt());
+    });
 });

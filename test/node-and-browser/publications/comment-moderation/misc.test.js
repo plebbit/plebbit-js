@@ -52,7 +52,7 @@ describe("plebbit.createCommentModeration misc", async () => {
 
     it(`(commentMod: CommentModeration) === await plebbit.createCommentModeration(commentMod)`, async () => {
         const props = {
-            pubsubMessage: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["test123"] },
+            challengeRequest: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["test123"] },
             subplebbitAddress: subplebbitAddress,
             commentCid: commentToModCid,
             commentModeration: { locked: true, reason: "editReason" + Date.now() },
@@ -65,8 +65,7 @@ describe("plebbit.createCommentModeration misc", async () => {
             expect(curMod.commentCid).to.equal(props.commentCid);
             expect(curMod.commentModeration).to.deep.equal(props.commentModeration);
             expect(curMod.author.address).to.deep.equal(props.signer.address);
-            expect(curMod.challengeAnswers).to.deep.equal(props.pubsubMessage.challengeAnswers);
-            expect(curMod.challengeCommentCids).to.deep.equal(props.pubsubMessage.challengeCommentCids);
+            expect(curMod.challengeRequest).to.deep.equal(props.challengeRequest);
         });
 
         const localModJson = JSON.parse(JSON.stringify(localMod));
@@ -76,6 +75,27 @@ describe("plebbit.createCommentModeration misc", async () => {
         expect(localModJson.signer).to.be.a("object").and.deep.equal(recreatedLocalModJson.signer);
 
         expect(deterministicStringify(localMod)).to.equal(deterministicStringify(recreatedLocalMod));
+    });
+
+    it(`Can publish a CommentModeration that was created from jsonfied CommentModeration instance`, async () => {
+        const modProps = {
+            subplebbitAddress: subplebbitAddress,
+            commentCid: commentToModCid,
+            commentModeration: { removed: true, reason: "mod Reason" + Date.now() },
+            signer: signers[7] // Create a new signer, different than the signer of the original comment
+        };
+        const commentMod = await plebbit.createCommentModeration(modProps);
+        const modFromStringifiedMod = await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentMod)));
+
+        const challengeRequestPromise = new Promise((resolve) => modFromStringifiedMod.once("challengerequest", resolve));
+
+        await publishWithExpectedResult(modFromStringifiedMod, true);
+        const challengerequest = await challengeRequestPromise;
+
+        expect(challengerequest.commentModeration).to.deep.equal(commentMod.toJSONPubsubMessagePublication());
+
+        expect(commentMod.toJSONPubsubMessagePublication()).to.deep.equal(modFromStringifiedMod.toJSONPubsubMessagePublication());
+        expect(commentMod.toJSONPubsubRequestToEncrypt()).to.deep.equal(modFromStringifiedMod.toJSONPubsubRequestToEncrypt());
     });
 });
 

@@ -153,6 +153,14 @@ describe("publishing comments", async () => {
         expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
     });
 
+    it(`Can publish a comment that was created from jsonfied comment instance`, async () => {
+        const comment1 = await generateMockPost(subplebbitAddress, plebbit);
+        const commentToPublish = await plebbit.createComment(JSON.parse(JSON.stringify(comment1)));
+        await publishWithExpectedResult(commentToPublish, true);
+        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
+        expect(commentToPublish.toJSONPubsubRequestToEncrypt()).to.deep.equal(comment1.toJSONPubsubRequestToEncrypt());
+    });
+
     it(`Can publish a comment with linkHtmlTagName defined`, async () => {
         const post = await generateMockPost(subplebbitAddress, plebbit, false, { linkHtmlTagName: "img", link: "https://google.com" });
         expect(post.linkHtmlTagName).to.equal("img");

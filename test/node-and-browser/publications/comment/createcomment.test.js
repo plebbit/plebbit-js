@@ -79,25 +79,6 @@ getRemotePlebbitConfigs().map((config) => {
             expect(localCommentJson).to.deep.equal(commentCloneJson);
         });
 
-        it(`challengeCommentCids and challengeAnswers are copied properly with plebbit.createComment(commentJsonfied)`, async () => {
-            const localComment = await publishRandomPost(
-                subplebbitAddress,
-                plebbit,
-                { pubsubMessage: { challengeAnswers: ["1234"], challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"] } },
-                false
-            );
-            const commentClone = await plebbit.createComment(JSON.parse(JSON.stringify(localComment)));
-
-            const commentCloneJson = jsonifyCommentAndRemoveInstanceProps(commentClone);
-            expect(commentCloneJson.signer).to.be.a("object");
-            expect(commentCloneJson.challengeAnswers).to.be.a("array");
-            expect(commentCloneJson.challengeCommentCids).to.be.a("array");
-
-            const localCommentJson = jsonifyCommentAndRemoveInstanceProps(localComment);
-
-            expect(commentCloneJson).to.deep.equal(localCommentJson);
-        });
-
         it(`Can create a Comment instance with subplebbit.posts.pages.hot.comments[0]`, async () => {
             const subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
             const commentFromPage = subplebbit.posts.pages.hot.comments[0];
