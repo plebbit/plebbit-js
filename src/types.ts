@@ -140,6 +140,7 @@ export interface PlebbitEvents {
     error: (error: PlebbitError | Error) => void;
     subplebbitschange: (listOfSubplebbits: string[]) => void;
     settingschange: (newSettings: ParsedPlebbitOptions) => void;
+    rpcstatechange: (newState: PlebbitRpcState) => void;
 }
 
 export interface GenericClientEvents<T extends string> {
@@ -249,3 +250,7 @@ type OmitUnderscoreProps<T> = Omit<T, `_${string}`>;
 type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: T[K] };
 
 export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
+
+// RPC state
+
+export type PlebbitRpcState = "stopped" | "connecting" | "connected";

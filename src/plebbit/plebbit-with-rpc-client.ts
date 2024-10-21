@@ -21,6 +21,15 @@ export class PlebbitWithRpcClient extends Plebbit {
 
     constructor(options: InputPlebbitOptions) {
         super(options);
+        this.on("subplebbitschange", () => {
+            this._setRpcState("connected");
+        });
+    }
+
+    _setRpcState(newState: Plebbit["rpcState"]) {
+        if (this.rpcState === newState) return;
+        this.rpcState = newState;
+        this.emit("rpcstatechange", newState);
     }
 
     override async _init(): Promise<void> {
@@ -29,10 +38,13 @@ export class PlebbitWithRpcClient extends Plebbit {
 
         this.subplebbits = [];
 
+        this._setRpcState("connecting");
+
         // const retryOperation =
-        this.plebbitRpcClient
-            .initalizeSubplebbitschangeEvent()
-            .catch((err) => log.error("Failed to initialize RPC subplebbitschange event", err));
+        this.plebbitRpcClient.initalizeSubplebbitschangeEvent().catch((err) => {
+            log.error("Failed to initialize RPC subplebbitschange event", err);
+            this.emit("error", err);
+        });
 
         // TODO should set up settingschange
     }
@@ -54,6 +66,7 @@ export class PlebbitWithRpcClient extends Plebbit {
     override async destroy() {
         await super.destroy();
         await this.plebbitRpcClient.destroy();
+        this._setRpcState("stopped");
     }
 
     override async getComment(commentCid: string) {

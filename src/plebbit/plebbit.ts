@@ -16,7 +16,8 @@ import type {
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
     InputPlebbitOptions,
-    AuthorPubsubType
+    AuthorPubsubType,
+    PlebbitRpcState
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
@@ -123,6 +124,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     noData: ParsedPlebbitOptions["noData"];
     userAgent: ParsedPlebbitOptions["userAgent"];
     subplebbits!: string[];
+    rpcState: PlebbitRpcState;
 
     // Only Plebbit instance has these props
     clients: {
@@ -194,6 +196,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
+        this.rpcState = "stopped";
     }
 
     private _initIpfsClientsIfNeeded() {
