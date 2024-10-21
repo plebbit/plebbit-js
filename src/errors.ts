@@ -15,6 +15,10 @@ export enum messages {
     ERR_PLEBBIT_OPTION_NOT_ACCEPTED = "Option is not accepted on Plebbit constructor",
     ERR_CAN_NOT_CREATE_A_SUB = "Can't create a new sub with the provided arguments",
     ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED = "User provided options.address in createSubplebbit that is either undefined or null",
+    ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_PUBLICATION_FROM_JSONIFIED_COMMENT = "User provided a jsonfied (cloned) Comment and we're unable to derive request.comment from it. This is an implementation error",
+    ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_EDIT_PUBLICATION_FROM_JSONIFIED_COMMENT_EDIT = "User provided a jsonfied (cloned) CommentEdit and we're unable to derive request.commentEdit from it. This is an implementation error",
+    ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_MODERATION_PUBLICATION_FROM_JSONIFIED_COMMENT_MODERATION = "User provided a jsonfied (cloned) CommentModeration and we're unable to derive request.commentModeration from it. This is an implementation error",
+    ERR_UNABLE_TO_DERIVE_PUBSUB_VOTE_PUBLICATION_FROM_JSONIFIED_VOTE = "User provided a jsonfied (cloned) Vote and we're unable to derive request.vote from it. This is an implementation error",
 
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",

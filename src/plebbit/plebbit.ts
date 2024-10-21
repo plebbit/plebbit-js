@@ -21,11 +21,18 @@ import type {
 import { Comment } from "../publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import Vote from "../publications/vote/vote.js";
-import { createSigner } from "../signer/index.js";
+import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
-import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signVote } from "../signer/signatures.js";
+import {
+    cleanUpBeforePublishing,
+    signComment,
+    signCommentEdit,
+    signCommentModeration,
+    signVote,
+    verifyCommentEdit
+} from "../signer/signatures.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "../stats.js";
 import Storage from "../runtime/node/storage.js";
@@ -388,6 +395,28 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
 
+        if (options.publishingState !== "succeeded") {
+            // only initialze when comment is not published
+            const pubsubMsgToPublish = <CommentPubsubMessagePublication>{
+                ...remeda.pick(options, <(keyof CommentPubsubMessagePublication)[]>options.signature.signedPropertyNames),
+                signature: options.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifyCommentPubsubMessage(
+                pubsubMsgToPublish,
+                this.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_PUBLICATION_FROM_JSONIFIED_COMMENT", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            commentInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
+
         return commentInstance;
     }
 
@@ -589,6 +618,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         const voteInstance = new Vote(this);
         // we stringify here to remove functions and create a deep copy
         Object.assign(voteInstance, remeda.omit(<VoteJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"]));
+
+        if (jsonfied.publishingState !== "succeeded") {
+            // only initialze when vote is not published
+            const pubsubMsgToPublish = <VotePubsubMessagePublication>{
+                ...remeda.pick(jsonfied, <(keyof VotePubsubMessagePublication)[]>jsonfied.signature.signedPropertyNames),
+                signature: jsonfied.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifyCommentEdit(pubsubMsgToPublish, this.resolveAuthorAddresses, this._clientsManager, false);
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_VOTE_PUBLICATION_FROM_JSONIFIED_VOTE", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            voteInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
         return voteInstance;
     }
 
@@ -624,6 +670,23 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             editInstance,
             remeda.omit(<CommentEditTypeJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"])
         );
+
+        if (jsonfied.publishingState !== "succeeded") {
+            // only initialze when commentEdit is not published
+            const pubsubMsgToPublish = <CommentEditPubsubMessagePublication>{
+                ...remeda.pick(jsonfied, <(keyof CommentEditPubsubMessagePublication)[]>jsonfied.signature.signedPropertyNames),
+                signature: jsonfied.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifyCommentEdit(pubsubMsgToPublish, this.resolveAuthorAddresses, this._clientsManager, false);
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_EDIT_PUBLICATION_FROM_JSONIFIED_COMMENT_EDIT", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            editInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
 
         return editInstance;
     }
@@ -661,6 +724,22 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             remeda.omit(<CommentModerationTypeJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"])
         );
 
+        if (jsonfied.publishingState !== "succeeded") {
+            // only initialze when comment moderation is not published
+            const pubsubMsgToPublish = <CommentModerationPubsubMessagePublication>{
+                ...remeda.pick(jsonfied, <(keyof CommentModerationPubsubMessagePublication)[]>jsonfied.signature.signedPropertyNames),
+                signature: jsonfied.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifyCommentEdit(pubsubMsgToPublish, this.resolveAuthorAddresses, this._clientsManager, false);
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_MODERATION_PUBLICATION_FROM_JSONIFIED_COMMENT_MODERATION", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            editInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
         return editInstance;
     }
 
