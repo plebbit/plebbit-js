@@ -24,6 +24,19 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
         });
+
+        describe(`Comments with extra props in challengeRequest.encrypted - ${config.name}`, async () => {
+            it(`An extra prop in challengeRequest.encrypted should be accepted by the sub`, async () => {
+                const comment = await generateMockPost(subplebbitAddress, plebbit);
+                comment.challengeRequest = { extraProp: "1234" };
+                const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+
+                await publishWithExpectedResult(comment, true);
+                const challengeRequest = await challengeRequestPromise;
+                expect(challengeRequest.extraProp).to.equal("1234");
+            });
+        });
+
         describe(`Publishing comments with extra props - ${config.name}`, async () => {
             it(`A CommentPubsub with a field not included in signature.signedPropertyNames will be rejected`, async () => {
                 // Skip for rpc because it's gonna throw due to invalid signature
