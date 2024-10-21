@@ -683,12 +683,11 @@ export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, 
             vote.signer!,
             log
         );
-    //@ts-expect-error
     vote._pubsubMsgToPublish = publicationWithExtraProp;
 
     disableValidationOfSignatureBeforePublishing(vote);
 
-    Object.assign(vote, extraProps);
+    Object.assign(vote, publicationWithExtraProp);
 }
 
 export async function setExtraPropOnCommentEditAndSign(
@@ -710,7 +709,7 @@ export async function setExtraPropOnCommentEditAndSign(
 
     disableValidationOfSignatureBeforePublishing(commentEdit);
 
-    Object.assign(commentEdit, extraProps);
+    Object.assign(commentEdit, publicationWithExtraProp);
 }
 
 export async function setExtraPropOnCommentModerationAndSign(

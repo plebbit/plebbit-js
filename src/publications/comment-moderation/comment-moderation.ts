@@ -41,7 +41,7 @@ export class CommentModeration extends Publication implements CommentModerationP
     }
 
     override toJSONPubsubMessagePublication(): CommentModerationPubsubMessagePublication {
-        if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentEditPubsubMessage first");
+        if (!this._pubsubMsgToPublish) throw Error("Need to define local CommentModerationPubsubMessage first");
         return this._pubsubMsgToPublish;
     }
 

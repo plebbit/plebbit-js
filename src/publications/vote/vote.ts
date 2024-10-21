@@ -13,7 +13,7 @@ class Vote extends Publication implements VotePubsubMessagePublication {
     vote!: VotePubsubMessagePublication["vote"]; // (upvote = 1, cancel vote = 0, downvote = -1)
     override signature!: VotePubsubMessagePublication["signature"];
 
-    private _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
+    _pubsubMsgToPublish?: VotePubsubMessagePublication = undefined;
     override challengeRequest?: CreateVoteOptions["challengeRequest"];
 
     constructor(plebbit: Plebbit) {
