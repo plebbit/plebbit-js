@@ -185,6 +185,7 @@ export const CommentPubsubMessageReservedFields = remeda.difference(
         ...remeda.keys.strict(CommentIpfsSchema.shape),
         ...remeda.keys.strict(CommentsTableRowSchema.shape),
         ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
+        ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
         ...CommentUpdateSignedPropertyNames,
         "original",
         "shortCid",

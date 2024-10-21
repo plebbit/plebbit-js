@@ -669,7 +669,7 @@ export async function setExtraPropOnCommentAndSign(comment: Comment, extraProps:
 
     disableValidationOfSignatureBeforePublishing(comment);
 
-    Object.assign(comment, extraProps);
+    Object.assign(comment, publicationWithExtraProp);
 }
 
 export async function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean) {
@@ -1002,8 +1002,8 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
 
     for (const funcBind of functionsToBind) {
         const originalFunc = plebbitWs[funcBind].bind(plebbitWs);
-        plebbitWs[funcBind] = (...args: any[]) => {
-            const pubInstance = originalFunc(...args);
+        plebbitWs[funcBind] = async (...args: any[]) => {
+            const pubInstance = await originalFunc(...args);
             disableValidationOfSignatureBeforePublishing(pubInstance);
             return pubInstance;
         };

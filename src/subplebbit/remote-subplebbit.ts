@@ -171,7 +171,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
         const isDomain = newAddress.includes(".");
         if (!isDomain && !isIpns(newAddress))
-            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns: false });
+            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA", { subplebbitAddress: newAddress, isDomain, isIpns: false });
 
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
