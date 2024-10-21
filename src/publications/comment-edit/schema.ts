@@ -72,5 +72,3 @@ export const CommentEditReservedFields = remeda.difference(
     ]),
     remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape)
 );
-
-export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditOptionsSchema.or(CommentEditPubsubMessagePublicationSchema);

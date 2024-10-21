@@ -204,10 +204,3 @@ export const CommentUpdateReservedFields = remeda.difference(
     CommentPubsubMessageReservedFields,
     remeda.keys.strict(CommentUpdateSchema.shape)
 );
-
-// Plebbit.createComment here
-
-export const CreateCommentFunctionArgumentsSchema = CreateCommentOptionsWithRefinementSchema.or(CommentIpfsWithRefinmentSchema)
-    .or(CommentPubsubMessageWithRefinementSchema)
-    .or(CommentUpdateSchema.pick({ cid: true }))
-    .or(z.object({ subplebbitAddress: CommentPubsubMessagePublicationSchema.shape.subplebbitAddress, cid: CommentUpdateSchema.shape.cid }));

@@ -74,7 +74,3 @@ export const CommentModerationReservedFields = remeda.difference(
     ],
     remeda.keys.strict(CommentModerationPubsubMessagePublicationSchema.shape)
 );
-
-export const CreateCommentModerationFunctionArgumentSchema = CreateCommentModerationOptionsSchema.or(
-    CommentModerationPubsubMessagePublicationSchema
-);

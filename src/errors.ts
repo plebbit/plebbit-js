@@ -4,7 +4,7 @@ export enum messages {
     ERR_PUBLICATION_MISSING_FIELD = "Publication is missing field(s)",
     ERR_SUBPLEBBIT_MISSING_FIELD = "Subplebbit is missing field needed for publishing",
     ERR_SUBPLEBBIT_OPTIONS_MISSING_ADDRESS = "The options sent to plebbit.createSubplebbit() is missing address or signer",
-    ERR_INVALID_SUBPLEBBIT_ADDRESS = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
+    ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA = "Subplebbit address is incorrect. Address should be either a domain or IPNS",
     ERR_CID_IS_INVALID = "CID is invalid",
     ERR_DATA_PATH_IS_NOT_DEFINED = "plebbitOptions.dataPath needs to be defined with native functions",
     ERR_IPNS_IS_INVALID = "IPNS is invalid",

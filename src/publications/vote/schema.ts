@@ -58,5 +58,3 @@ export const VotePubsubReservedFields = remeda.difference(
     ],
     remeda.keys.strict(VotePubsubMessagePublicationSchema.shape)
 );
-
-export const CreateVoteFunctionArgumentSchema = CreateVoteUserOptionsSchema.or(VotePubsubMessagePublicationSchema);

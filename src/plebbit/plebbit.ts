@@ -64,19 +64,18 @@ import type {
     CommentEditTypeJson,
     CreateCommentEditOptions
 } from "../publications/comment-edit/types.js";
-import { CreateCommentEditFunctionArgumentSchema } from "../publications/comment-edit/schema.js";
 import type { CreateVoteOptions, VoteJson, VoteOptionsToSign, VotePubsubMessagePublication } from "../publications/vote/types.js";
-import { CreateVoteFunctionArgumentSchema } from "../publications/vote/schema.js";
 import type {
     CommentIpfsType,
     CommentIpfsWithCidDefined,
     CommentJson,
     CommentOptionsToSign,
     CommentPubsubMessagePublication,
+    CommentUpdateType,
     CommentWithinPageJson,
     CreateCommentOptions
 } from "../publications/comment/types.js";
-import { CreateCommentFunctionArgumentsSchema } from "../publications/comment/schema.js";
+
 import { AuthorAddressSchema, AuthorReservedFields, CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import {
     CreateRemoteSubplebbitFunctionArgumentSchema,
@@ -86,13 +85,19 @@ import {
 } from "../subplebbit/schema.js";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
-    parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails,
-    parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails,
-    parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails,
+    parseCommentIpfsSchemaWithPlebbitErrorIfItFails,
+    parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails,
+    parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails,
+    parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails,
+    parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails,
+    parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails,
     parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
     parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
-    parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails,
-    parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails
+    parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails,
+    parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails,
+    parseSubplebbitAddressWithPlebbitErrorIfItFails,
+    parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type {
@@ -101,7 +106,6 @@ import type {
     CommentModerationTypeJson,
     CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
-import { CreateCommentModerationFunctionArgumentSchema } from "../publications/comment-moderation/schema.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     plebbitRpcClient?: PlebbitRpcClient;
@@ -395,7 +399,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
         if (commentInstance.cid) commentInstance._updateRepliesPostsInstance(options.replies); // we need to update replies manually because it's a class instance
 
-        if (options.publishingState !== "succeeded") {
+        if (options.publishingState !== "succeeded" && !options.cid && !options.updatedAt) {
             // only initialze when comment is not published
             const pubsubMsgToPublish = <CommentPubsubMessagePublication>{
                 ...remeda.pick(options, <(keyof CommentPubsubMessagePublication)[]>options.signature.signedPropertyNames),
@@ -422,7 +426,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
 
     async createComment(
         options:
-            | z.infer<typeof CreateCommentFunctionArgumentsSchema>
+            | CommentIpfsType
+            | CommentPubsubMessagePublication
+            | { cid: CommentUpdateType["cid"]; subplebbitAddress?: CommentPubsubMessagePublication["subplebbitAddress"] }
+            | CreateCommentOptions
             | CommentJson
             | Comment
             | CommentWithinPageJson
@@ -430,26 +437,27 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     ): Promise<Comment> {
         const log = Logger("plebbit-js:plebbit:createComment");
 
-        if (options instanceof Comment) return this._createCommentInstanceFromAnotherCommentInstance(options);
-        else if ("clients" in options) return this._createCommentInstanceFromJsonfiedCommentInstance(options);
-        else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options);
-        const parsedOptions = parseCreateCommentFunctionArgumentsWithPlebbitErrorIfItFails(options);
+        if (options instanceof Comment)
+            return this._createCommentInstanceFromAnotherCommentInstance(options); // Comment
+        else if ("clients" in options)
+            return this._createCommentInstanceFromJsonfiedCommentInstance(options); // CommentJson
+        else if ("original" in options) return this._createCommentInstanceFromJsonfiedPageComment(options); // CommentWithinPageJson
 
         const commentInstance = new Comment(this);
-        if ("cid" in parsedOptions) {
-            commentInstance.setCid(parsedOptions.cid);
-            if (Object.keys(parsedOptions).length === 1) return commentInstance; // No need to initialize other props if {cid: string} is provided
-        }
 
-        if ("depth" in parsedOptions) {
+        if ("depth" in options) {
             // Options is CommentIpfs | CommentIpfsWithCidDefined
+            if ("cid" in options) commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
             //@ts-expect-error
-            const commentIpfs: CommentIpfsType = remeda.omit(parsedOptions, ["cid"]); // make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
-            commentInstance._initIpfsProps(commentIpfs);
-        } else if ("signature" in parsedOptions) {
+            const commentIpfs: CommentIpfsType = remeda.omit(options, ["cid"]); // remove cid to make sure if options:CommentIpfsWithCidDefined that cid doesn't become part of comment._rawCommentIpfs
+            commentInstance._initIpfsProps(parseCommentIpfsSchemaWithPlebbitErrorIfItFails(commentIpfs));
+        } else if ("signature" in options) {
             // parsedOptions is CommentPubsubMessage
+            const parsedOptions = parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails(options);
             commentInstance._initPubsubMessageProps(parsedOptions);
-        } else if ("signer" in parsedOptions) {
+        } else if ("signer" in options) {
+            // options is CreateCommentOptions
+            const parsedOptions = parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails(options);
             // we're creating a new comment to sign and publish here
             const fieldsFilled = <CommentOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFieldsFilled = cleanUpBeforePublishing(fieldsFilled);
@@ -463,8 +471,12 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
                 signer: fieldsFilled.signer,
                 comment: signedComment
             });
-        } else if ("subplebbitAddress" in parsedOptions) commentInstance.setSubplebbitAddress(parsedOptions.subplebbitAddress);
-        else {
+        } else if ("cid" in options) {
+            // {cid: string, subplebbitAddress?: string}
+            commentInstance.setCid(parseCidStringSchemaWithPlebbitErrorIfItFails(options.cid));
+            if (options.subplebbitAddress)
+                commentInstance.setSubplebbitAddress(parseSubplebbitAddressWithPlebbitErrorIfItFails(options.subplebbitAddress));
+        } else {
             throw Error("Make sure you provided a remote comment props or signer to create a new local comment");
         }
 
@@ -638,15 +650,16 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return voteInstance;
     }
 
-    async createVote(options: z.infer<typeof CreateVoteFunctionArgumentSchema> | VoteJson): Promise<Vote> {
+    async createVote(options: CreateVoteOptions | VotePubsubMessagePublication | VoteJson): Promise<Vote> {
         const log = Logger("plebbit-js:plebbit:createVote");
         if ("clients" in options) return this._createVoteInstanceFromJsonfiedVote(options);
-        const parsedOptions = parseCreateVoteFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const voteInstance = new Vote(this);
 
-        if ("signature" in parsedOptions) {
+        if ("signature" in options) {
+            const parsedOptions = parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(options);
             voteInstance._initRemoteProps(parsedOptions);
         } else {
+            const parsedOptions = parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = <VoteOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signature = await signVote(cleanedFinalOptions, this);
@@ -691,16 +704,19 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         return editInstance;
     }
 
-    async createCommentEdit(options: z.infer<typeof CreateCommentEditFunctionArgumentSchema> | CommentEditTypeJson): Promise<CommentEdit> {
+    async createCommentEdit(
+        options: CreateCommentEditOptions | CommentEditPubsubMessagePublication | CommentEditTypeJson
+    ): Promise<CommentEdit> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         if ("clients" in options) return this._createCommentEditInstanceFromJsonfiedCommentEdit(options);
-        const parsedOptions = parseCreateCommentEditFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const editInstance = new CommentEdit(this);
 
-        if ("signature" in parsedOptions)
+        if ("signature" in options) {
+            const parsedOptions = parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(options);
             editInstance._initPubsubPublicationProps(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
-        else {
-            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log);
+        } else {
+            const parsedOptions = parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails(options);
+            const finalOptions = <CommentEditOptionsToSign>await this._initMissingFieldsOfPublicationBeforeSigning(options, log);
             const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
             const signature = await signCommentEdit(cleanedFinalOptions, this);
             const signedEdit = <CommentEditPubsubMessagePublication>{
@@ -744,16 +760,17 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     async createCommentModeration(
-        options: z.infer<typeof CreateCommentModerationFunctionArgumentSchema> | CommentModerationTypeJson
+        options: CreateCommentModerationOptions | CommentModerationPubsubMessagePublication | CommentModerationTypeJson
     ): Promise<CommentModeration> {
         const log = Logger("plebbit-js:plebbit:createCommentEdit");
         if ("clients" in options) return this._createCommentModerationInstanceFromJsonfiedCommentModeration(options);
-        const parsedOptions = parseCreateCommentModerationFunctionArgumentSchemaWithPlebbitErrorIfItFails(options);
         const modInstance = new CommentModeration(this);
 
-        if ("signature" in parsedOptions)
+        if ("signature" in options) {
+            const parsedOptions = parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(options);
             modInstance._initPubsubPublication(parsedOptions); // User just wants to instantiate a CommentEdit object, not publish
-        else {
+        } else {
+            const parsedOptions = parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails(options);
             const finalOptions = <CommentModerationOptionsToSign>(
                 await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log)
             );
