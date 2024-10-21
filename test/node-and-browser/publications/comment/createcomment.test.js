@@ -162,5 +162,12 @@ getRemotePlebbitConfigs().map((config) => {
             const commentLoaded = await plebbit.getComment(comment.cid);
             expect(commentLoaded.author.subplebbit).to.be.undefined;
         });
+
+        it(`Can create comment with {subplebbitAddress: string, cid: string}`, async () => {
+            const cid = "QmQ9mK33zshLf4Bj8dVSQimdbyXGgw5QFRoUQpsCqqz6We";
+            const comment = await plebbit.createComment({ cid, subplebbitAddress });
+            expect(comment.cid).to.equal(cid);
+            expect(comment.subplebbitAddress).to.equal(subplebbitAddress);
+        });
     });
 });

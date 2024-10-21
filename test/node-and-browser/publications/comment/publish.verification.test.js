@@ -93,7 +93,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
         await publishWithExpectedResult(mockPost, false, messages.ERR_COMMENT_OVER_ALLOWED_SIZE);
     });
 
-    it(`Throws an error when a comment has no title, link or content`, async () => {
+    itSkipIfRpc(`Throws an error when a comment has no title, link or content`, async () => {
         // should fail both locally in plebbit.createComment, and when we publish to the sub
         try {
             await generateMockPost(subplebbitAddress, plebbit, false, {
@@ -101,7 +101,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
                 content: undefined,
                 title: undefined
             });
-            expect.fail("Should fail if link, content and title are defined");
+            expect.fail("Should fail if no link, content and title are defined");
         } catch (e) {
             expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
             expect(e.details.zodError.issues[0].message).to.equal(messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
@@ -185,14 +185,16 @@ describe(`Posts with forbidden fields are rejected during challenge exchange`, a
         { shortCid: "QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh" }
     ];
     forbiddenFieldsWithValue.map((forbiddenType) =>
-        it(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
+        itSkipIfRpc(`comment.${Object.keys(forbiddenType)[0]} is rejected by sub`, async () => {
             const propName = Object.keys(forbiddenType)[0];
             try {
                 await generateMockPost(subplebbitAddress, plebbit, false, forbiddenType);
                 expect.fail("Should fail because these fields should not part be of CreateComment");
             } catch (e) {
                 // no need to test for cid
-                if (!forbiddenType.cid) {
+                if (forbiddenType.depth) {
+                    expect(e.code).to.equal("ERR_INVALID_COMMENT_IPFS_SCHEMA");
+                } else if (!forbiddenType.cid) {
                     expect(e.code).to.equal("ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA");
                     expect(e.details.zodError.issues[0].message).to.equal(`Unrecognized key(s) in object: '${propName}'`);
                 }

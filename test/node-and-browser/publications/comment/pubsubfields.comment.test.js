@@ -12,6 +12,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`plebbit.createComment({challengeRequest: challengeAnswers}) includes challengeAnswers in request pubsub message`, async () => {
             const challengeRequestFields = { challengeAnswers: ["12345"] };
             const comment = await generateMockPost(signers[0].address, plebbit, false, { challengeRequest: challengeRequestFields });
+            expect(comment.challengeRequest).to.deep.equal(challengeRequestFields);
 
             expect(comment.toJSONPubsubRequestToEncrypt().challengeAnswers).to.deep.equal(challengeRequestFields.challengeAnswers);
             let challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));

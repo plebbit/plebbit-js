@@ -44,12 +44,14 @@ getRemotePlebbitConfigs().map((config) => {
                 const extraProps = { extraProp: "1234" };
                 await setExtraPropOnCommentAndSign(post, extraProps, false);
 
+                const challengeRequestPromise = new Promise((resolve) => post.once("challengerequest", resolve));
                 await publishWithExpectedResult(
                     post,
                     false,
                     messages.ERR_COMMENT_PUBSUB_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
                 );
-                expect(post._publishedChallengeRequests[0].comment.extraProp).to.equal(extraProps.extraProp);
+                const challengeRequest = await challengeRequestPromise;
+                expect(challengeRequest.comment.extraProp).to.equal(extraProps.extraProp);
             });
 
             it(`A CommentPubsub with an extra field as a reserved field name will be rejected`, async () => {
