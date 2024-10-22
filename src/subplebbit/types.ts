@@ -28,6 +28,15 @@ import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import type { JsonOfClass } from "../types.js";
 import type { JsonSignature } from "../signer/types.js";
 
+export type ReplyStats = {
+    hourReplyCount: number;
+    dayReplyCount: number;
+    weekReplyCount: number;
+    monthReplyCount: number;
+    yearReplyCount: number;
+    allReplyCount: number;
+};
+
 export type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
@@ -41,7 +50,7 @@ export type SubplebbitStats = {
     monthPostCount: number;
     yearPostCount: number;
     allPostCount: number;
-};
+} & ReplyStats;
 
 export type SubplebbitFeatures = z.infer<typeof SubplebbitFeaturesSchema>;
 

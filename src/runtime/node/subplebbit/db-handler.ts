@@ -760,15 +760,16 @@ export class DbHandler {
         return res;
     }
 
-    private _calcPostCount(commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[]) {
+    private _calcCommentCount(commentsRaw: Pick<CommentsTableRow, "depth" | "authorSignerAddress" | "timestamp">[], countReply: boolean) {
+        // if countReply = false, then it's a post count
         const timeframes = remeda.keys.strict(TIMEFRAMES_TO_SECONDS);
         const res = {};
         for (const timeframe of timeframes) {
-            const propertyName = `${timeframe.toLowerCase()}PostCount`;
+            const propertyName = timeframe.toLowerCase() + (countReply ? "ReplyCount" : "PostCount");
             const [from, to] = [Math.max(0, timestamp() - TIMEFRAMES_TO_SECONDS[timeframe]), timestamp()];
             const posts = commentsRaw
                 .filter((comment) => comment.timestamp >= from && comment.timestamp <= to)
-                .filter((comment) => comment.depth === 0);
+                .filter((comment) => (countReply ? comment.depth > 0 : comment.depth === 0));
 
             // Too lazy to type this function up, not high priority
             //@ts-expect-error
@@ -780,7 +781,11 @@ export class DbHandler {
     async querySubplebbitStats(trx?: Transaction): Promise<SubplebbitStats> {
         const commentsRaw = await this._baseTransaction(trx)(TABLES.COMMENTS).select(["depth", "authorSignerAddress", "timestamp"]);
         const votesRaw = await this._baseTransaction(trx)(TABLES.VOTES).select(["timestamp", "authorSignerAddress"]);
-        const res = { ...this._calcActiveUserCount(commentsRaw, votesRaw), ...this._calcPostCount(commentsRaw) };
+        const res = {
+            ...this._calcActiveUserCount(commentsRaw, votesRaw),
+            ...this._calcCommentCount(commentsRaw, false),
+            ...this._calcCommentCount(commentsRaw, true)
+        };
         //@ts-expect-error
         return res;
     }
