@@ -256,9 +256,13 @@ export function hideClassPrivateProps(_this: any) {
     }
 }
 
-export function derivePublicationFromChallengeRequest(
-    request: DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-): PublicationFromDecryptedChallengeRequest | PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest {
+export function derivePublicationFromChallengeRequest<
+    T extends DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+>(
+    request: T
+): T extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+    ? PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
+    : PublicationFromDecryptedChallengeRequest {
     const pub = request.vote || request.comment || request.commentEdit || request.commentModeration;
     if (!pub) throw Error("Failed to find publication on request");
     return pub;

@@ -59,9 +59,9 @@ const addFilteredRateLimiter = (
 const getRateLimitersToTest = (
     exclude: Exclude,
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     challengeSuccess: ChallengeResult["success"]
 ) => {
+    const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
     if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
@@ -76,11 +76,7 @@ const getRateLimitersToTest = (
     return filteredRateLimiters;
 };
 
-const testRateLimit = (
-    exclude: Exclude,
-    request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
-) => {
+const testRateLimit = (exclude: Exclude, request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor) => {
     if (
         exclude?.rateLimit === undefined ||
         (exclude.post === true && !isPost(request)) ||
@@ -101,7 +97,7 @@ const testRateLimit = (
     }
 
     // check all the rate limiters that match the exclude and publication type
-    const rateLimiters = getRateLimitersToTest(exclude, request, publication, challengeSuccess);
+    const rateLimiters = getRateLimitersToTest(exclude, request, challengeSuccess);
     // if any of the matching rate limiter is out of tokens, test failed
     for (const rateLimiter of Object.values(rateLimiters)) {
         const tokensRemaining = rateLimiter.getTokensRemaining();
@@ -114,11 +110,12 @@ const testRateLimit = (
 const getRateLimitersToAddTo = (
     excludeArray: Exclude[],
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     challengeSuccess: ChallengeResult["success"]
 ) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters: Record<string, RateLimiter> = {};
+    const publication = derivePublicationFromChallengeRequest(request);
+
     for (const exclude of excludeArray) {
         if (exclude?.rateLimit === undefined) {
             continue;
@@ -166,8 +163,7 @@ const addToRateLimiter = (
         return;
     }
 
-    const publication = <PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest>derivePublicationFromChallengeRequest(request);
-    const rateLimiters = getRateLimitersToAddTo(excludeArray, request, publication, challengeSuccess);
+    const rateLimiters = getRateLimitersToAddTo(excludeArray, request, challengeSuccess);
     for (const rateLimiter of Object.values(rateLimiters)) {
         rateLimiter.tryRemoveTokens(1);
     }

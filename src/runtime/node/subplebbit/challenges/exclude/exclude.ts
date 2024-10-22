@@ -4,23 +4,21 @@ import QuickLRU from "quick-lru";
 import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
 import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from "../../../../../subplebbit/types.js";
-import type {
-    DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
-} from "../../../../../pubsub-messages/types.js";
+import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { Comment } from "../../../../../publications/comment/comment.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
 import { Plebbit } from "../../../../../plebbit/plebbit.js";
+import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
 const shouldExcludePublication = (
     subplebbitChallenge: SubplebbitChallenge,
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     subplebbit: LocalSubplebbit
 ) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludePublication invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
     }
+    const publication = derivePublicationFromChallengeRequest(request);
     if (!publication?.author) {
         throw Error(`shouldExcludePublication invalid publication argument '${publication}'`);
     }
@@ -73,7 +71,7 @@ const shouldExcludePublication = (
         if (typeof exclude.vote === "boolean" && !testVote(exclude.vote, request)) {
             shouldExclude = false;
         }
-        if (!testRateLimit(exclude, request, publication)) {
+        if (!testRateLimit(exclude, request)) {
             shouldExclude = false;
         }
         if (exclude.address && !exclude.address.includes(author.address)) {
@@ -145,7 +143,6 @@ const getCommentPending: Record<string, boolean> = {}; // cid -> boolean if it's
 const shouldExcludeChallengeCommentCids = async (
     subplebbitChallenge: SubplebbitChallenge,
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
-    publication: PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest,
     plebbit: Plebbit
 ) => {
     if (!subplebbitChallenge) {
@@ -157,6 +154,7 @@ const shouldExcludeChallengeCommentCids = async (
     if (typeof plebbit?.getComment !== "function") {
         throw Error(`shouldExcludeChallengeCommentCids invalid plebbit argument '${plebbit}'`);
     }
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     const commentCids = challengeRequestMessage.challengeCommentCids;
     const author = publication?.author;
     if (commentCids && !Array.isArray(commentCids)) {
