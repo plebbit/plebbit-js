@@ -64,7 +64,7 @@ describe("getPendingChallengesOrChallengeVerification", () => {
                 const requestFixture = parsePubsubMsgFixture(validChallengeRequestFixture);
                 const challengeRequestMessage = {
                     ...requestFixture,
-                    publication: {
+                    comment: {
                         ...validCommentIpfsFixture,
                         author: { ...author, subplebbit: subplebbitAuthors[author.address]?.[subplebbit.title] }
                     },
@@ -126,7 +126,7 @@ describe("getChallengeVerification", () => {
         }
     };
     const challengeRequestMessage = {
-        publication: { author },
+        comment: { author },
         // define mock challenge answers in challenge request
         challengeAnswers: [undefined, undefined, undefined, undefined, undefined, "password"]
     };
@@ -185,7 +185,7 @@ describe("getChallengeVerification", () => {
 
         // correct preanswered
         let challengeRequestMessage = {
-            publication: { author },
+            comment: { author },
             challengeAnswers: ["password"]
         };
         const shouldNotCall = async () => {
@@ -196,7 +196,7 @@ describe("getChallengeVerification", () => {
 
         // wrong preanswered
         challengeRequestMessage = {
-            publication: { author },
+            comment: { author },
             challengeAnswers: ["wrong"]
         };
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
@@ -205,7 +205,7 @@ describe("getChallengeVerification", () => {
 
         // correct answered via challenge
         challengeRequestMessage = {
-            publication: { author }
+            comment: { author }
         };
         const getChallengeAnswers = async (challenges) => {
             return ["password"];
@@ -246,7 +246,7 @@ describe("getChallengeVerification", () => {
         };
 
         const challengeRequestMessage = {
-            publication: { author: { address: getRandomAddress() } }
+            comment: { author: { address: getRandomAddress() } }
         };
         const shouldNotCall = async () => {
             throw Error("should not call");
@@ -282,7 +282,7 @@ describe("getChallengeVerification", () => {
         };
 
         const challengeRequestMessage = {
-            publication: { author: { address: getRandomAddress() } }
+            comment: { author: { address: getRandomAddress() } }
         };
         const shouldNotCall = async () => {
             throw Error("should not call");

@@ -19,9 +19,9 @@ describe("shouldExcludePublication", () => {
     it("empty", () => {
         const publication = { author: { address: "Qm..." } };
         let subplebbitChallenge = { exclude: [] };
-        expect(shouldExcludePublication(subplebbitChallenge, publication)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publication })).to.equal(false);
         subplebbitChallenge = { exclude: undefined };
-        expect(shouldExcludePublication(subplebbitChallenge, publication)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publication })).to.equal(false);
     });
 
     it("postScore and replyScore", () => {
@@ -78,14 +78,14 @@ describe("shouldExcludePublication", () => {
                 }
             }
         };
-        expect(shouldExcludePublication(subplebbitChallenge, authorScoreUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorSubplebbitUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreLow)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreHigh)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, authorReplyScoreLow)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorReplyScoreHigh)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, authorReplyAndPostScoreHigh)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, authorReplyAndPostScoreLow)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorScoreUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorSubplebbitUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreLow })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreHigh })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorReplyScoreLow })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorReplyScoreHigh }, authorReplyScoreHigh)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorReplyAndPostScoreHigh })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorReplyAndPostScoreLow })).to.equal(false);
     });
 
     it("firstCommentTimestamp", () => {
@@ -108,8 +108,8 @@ describe("shouldExcludePublication", () => {
                 }
             }
         };
-        expect(shouldExcludePublication(subplebbitChallenge, oldAuthor)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, newAuthor)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: oldAuthor })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: newAuthor })).to.equal(false);
     });
 
     it("firstCommentTimestamp and postScore", () => {
@@ -137,8 +137,8 @@ describe("shouldExcludePublication", () => {
                 }
             }
         };
-        expect(shouldExcludePublication(subplebbitChallenge, oldAuthor)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, newAuthor)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: oldAuthor })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: newAuthor })).to.equal(false);
     });
 
     it("firstCommentTimestamp or (postScore and replyScore)", () => {
@@ -171,9 +171,9 @@ describe("shouldExcludePublication", () => {
                 }
             }
         };
-        expect(shouldExcludePublication(subplebbitChallenge, oldAuthor)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, newAuthor)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, popularAuthor)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: oldAuthor })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: newAuthor })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: popularAuthor })).to.equal(true);
     });
 
     const author = { address: "Qm..." };
@@ -196,36 +196,36 @@ describe("shouldExcludePublication", () => {
         const subplebbitChallenge = {
             exclude: [{ post: true }]
         };
-        expect(shouldExcludePublication(subplebbitChallenge, post)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, reply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, vote)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
     });
 
     it("reply", () => {
         const subplebbitChallenge = {
             exclude: [{ reply: true }]
         };
-        expect(shouldExcludePublication(subplebbitChallenge, post)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, reply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, vote)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
     });
 
     it("vote", () => {
         const subplebbitChallenge = {
             exclude: [{ vote: true }]
         };
-        expect(shouldExcludePublication(subplebbitChallenge, post)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, reply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, vote)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(true);
     });
 
     it("vote and reply", () => {
         const subplebbitChallenge = {
             exclude: [{ vote: true, reply: true }]
         };
-        expect(shouldExcludePublication(subplebbitChallenge, post)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, reply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, vote)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: post })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: reply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote })).to.equal(false);
     });
 
     // Exclude based on roles
@@ -249,10 +249,10 @@ describe("shouldExcludePublication", () => {
         const voteOfMod = remeda.clone(validVoteFixture);
         voteOfMod.author = modAuthor;
 
-        expect(shouldExcludePublication(subplebbitChallenge, commentEditOfMod)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, postOfMod)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, replyOfMod)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, voteOfMod)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { commentEdit: commentEditOfMod })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: postOfMod })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: replyOfMod })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: voteOfMod })).to.equal(false);
     });
 
     it("rateLimit", () => {
@@ -265,10 +265,10 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = true;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit and postScore", () => {
@@ -298,19 +298,19 @@ describe("shouldExcludePublication", () => {
                 }
             }
         };
-        expect(shouldExcludePublication(subplebbitChallenge, authorScoreUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorSubplebbitUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreLow)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreHigh)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorScoreUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorSubplebbitUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreLow })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreHigh })).to.equal(true);
 
         // after rate limited
         const subplebbitChallenges = [subplebbitChallenge];
         const challengeSuccess = true;
-        addToRateLimiter(subplebbitChallenges, authorPostScoreHigh, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, authorScoreUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorSubplebbitUndefined)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreLow)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, authorPostScoreHigh)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { comment: authorPostScoreHigh }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorScoreUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorSubplebbitUndefined })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreLow })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: authorPostScoreHigh })).to.equal(false);
     });
 
     it("rateLimit challengeSuccess false", () => {
@@ -323,11 +323,11 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = false;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
         // without rateLimitChallengeSuccess, rateLimit only applies to challengeSuccess true publications
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit post, reply, vote", () => {
@@ -344,31 +344,31 @@ describe("shouldExcludePublication", () => {
         const publicationReply = { author, parentCid: "Qm..." };
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         let challengeSuccess = true;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationPost, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationReply, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(true);
 
         // publish with challengeSuccess false, should do nothing
         challengeSuccess = false;
-        addToRateLimiter(subplebbitChallenges, publicationVote, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(true);
 
         // publish with challengeSuccess true, should rate limit
         challengeSuccess = true;
-        addToRateLimiter(subplebbitChallenges, publicationVote, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { vote: publicationVote }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
     });
 
     it("rateLimit rateLimitChallengeSuccess true", () => {
@@ -381,10 +381,10 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = true;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit rateLimitChallengeSuccess true challengeSuccess false", () => {
@@ -397,10 +397,10 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = false;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit rateLimitChallengeSuccess false challengeSuccess true", () => {
@@ -413,10 +413,10 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = true;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit rateLimitChallengeSuccess false challengeSuccess false", () => {
@@ -429,10 +429,10 @@ describe("shouldExcludePublication", () => {
         const publicationAuthor1 = { author: { address: getRandomAddress() } };
         const publicationAuthor2 = { author: { address: getRandomAddress() } };
         const challengeSuccess = false;
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(true);
-        addToRateLimiter(subplebbitChallenges, publicationAuthor1, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor1)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationAuthor2)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(true);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationAuthor1 }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor1 })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationAuthor2 })).to.equal(true);
     });
 
     it("rateLimit post, reply rateLimitChallengeSuccess false", () => {
@@ -449,36 +449,36 @@ describe("shouldExcludePublication", () => {
         const publicationVote = { author, commentCid: "Qm...", vote: 0 };
         let challengeSuccess = true;
 
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
         // vote can never pass because it's not included in any of the excludes
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
 
         // no effect because post true and rateLimitChallengeSuccess false
-        addToRateLimiter(subplebbitChallenges, publicationPost, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
 
         // now has effect because success false
         challengeSuccess = false;
-        addToRateLimiter(subplebbitChallenges, publicationPost, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationPost }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
 
         // no effect because reply true, challengeSuccess false and rateLimitChallengeSuccess undefined
-        addToRateLimiter(subplebbitChallenges, publicationReply, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(true);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(true);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
 
         // now has effect because success true
         challengeSuccess = true;
-        addToRateLimiter(subplebbitChallenges, publicationReply, challengeSuccess);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationPost)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationReply)).to.equal(false);
-        expect(shouldExcludePublication(subplebbitChallenge, publicationVote)).to.equal(false);
+        addToRateLimiter(subplebbitChallenges, { comment: publicationReply }, challengeSuccess);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationPost })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { comment: publicationReply })).to.equal(false);
+        expect(shouldExcludePublication(subplebbitChallenge, { vote: publicationVote })).to.equal(false);
     });
 });
 
@@ -529,7 +529,7 @@ describe("shouldExcludeChallengeCommentCids", () => {
             author.address = authors[1].address;
         }
         return {
-            publication: { author },
+            comment: { author },
             challengeCommentCids: commentCids
         };
     };
