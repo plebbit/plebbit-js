@@ -139,4 +139,37 @@ describe(`subplebbit.statsCid`, async () => {
             for (const postCountKey of postCountKeys) expect(statsAfterNewPost[postCountKey]).to.equal(statsBefore[postCountKey]);
         });
     });
+
+    describe(`subplebbit.stats.replyCount`, async () => {
+        let postToReplyOn;
+        before(async () => {
+            postToReplyOn = await publishRandomPost(subplebbit.address, plebbit);
+        });
+        it(`replyCount should increase by 1 for new reply`, async () => {
+            const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+            await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] }, false);
+            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const statsAfterNewReply = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+
+            for (const replyCountKey of replyCountKeys) expect(statsAfterNewReply[replyCountKey]).to.equal(statsBefore[replyCountKey] + 1);
+        });
+
+        it(`PostCount should increase by 1 for new reply with existing author`, async () => {
+            const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+            await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] }, false);
+            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const statsAfterNewReply = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+
+            for (const replyCountKey of replyCountKeys) expect(statsAfterNewReply[replyCountKey]).to.equal(statsBefore[replyCountKey] + 1);
+        });
+
+        it(`ReplyCount does not increase by 1 for new post`, async () => {
+            const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+            await publishRandomPost(subplebbit.address, plebbit, {}, false);
+            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
+
+            for (const replyCountKey of replyCountKeys) expect(statsAfterNewPost[replyCountKey]).to.equal(statsBefore[replyCountKey]);
+        });
+    });
 });
