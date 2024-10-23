@@ -109,7 +109,6 @@ import type {
 } from "../publications/comment-moderation/types.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
-    plebbitRpcClient?: PlebbitRpcClient;
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
     pubsubHttpClientsOptions: ParsedPlebbitOptions["pubsubHttpClientsOptions"];
@@ -123,8 +122,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
     userAgent: ParsedPlebbitOptions["userAgent"];
-    subplebbits!: string[];
-    rpcState: PlebbitRpcState;
+    subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
 
     // Only Plebbit instance has these props
     clients: {
@@ -134,6 +132,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: GenericPlebbitRpcStateClient };
     };
+
+    _plebbitRpcClient?: PlebbitRpcClient;
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
     _clientsManager!: ClientsManager;
     _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
@@ -182,8 +182,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this._subplebbitschangeEventHasbeenEmitted = true;
         });
 
-        if (this.plebbitRpcClientsOptions) this.plebbitRpcClient = new PlebbitRpcClient(this);
-
         //@ts-expect-error
         this.clients = {};
 
@@ -196,7 +194,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         if (!this.noData && !this.plebbitRpcClientsOptions)
             this.dataPath = this.parsedPlebbitOptions.dataPath =
                 "dataPath" in this.parsedPlebbitOptions ? this.parsedPlebbitOptions.dataPath : getDefaultDataPath();
-        this.rpcState = "stopped";
     }
 
     private _initIpfsClientsIfNeeded() {
@@ -263,8 +260,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         // Init clients manager
         this._clientsManager = new ClientsManager(this);
 
-        // TODO plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
-        if (this._canCreateNewLocalSub() && !this.plebbitRpcClient) {
+        // plebbit-with-rpc-client will subscribe to subplebbitschange and settingschange for us
+        if (this._canCreateNewLocalSub() && !this.plebbitRpcClientsOptions) {
             this._subplebbitFsWatchAbort = await monitorSubplebbitsDirectory(this);
             await this._waitForSubplebbitsToBeDefined();
         } else {

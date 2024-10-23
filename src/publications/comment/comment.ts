@@ -356,7 +356,7 @@ export class Comment
             decryptedVerification
         );
 
-        if (!this._plebbit.plebbitRpcClient) {
+        if (!this._plebbit._plebbitRpcClient) {
             // no need to validate if RPC
             const errorInVerificationProps = await this._verifyChallengeVerificationCommentProps(decryptedVerification);
             if (errorInVerificationProps) return;
@@ -590,7 +590,7 @@ export class Comment
         if (!rpcUrl) throw Error("Failed to get rpc url");
         if (!this.cid) throw Error("Can't start updating comment without defining this.cid");
         try {
-            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient!.commentUpdateSubscribe(this.cid);
+            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.commentUpdateSubscribe(this.cid);
         } catch (e) {
             log.error("Failed to receive commentUpdate from RPC due to error", e);
             this._updateState("stopped");
@@ -600,20 +600,20 @@ export class Comment
         this._updateState("updating");
 
         this._plebbit
-            .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
+            ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._handleUpdateEventFromRpc.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpc.bind(this))
             .on("statechange", this._handleStateChangeFromRpc.bind(this))
             .on("error", this._handleErrorEventFromRpc.bind(this));
 
-        this._plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
+        this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
     async update() {
         const log = Logger("plebbit-js:comment:update");
         if (this.state === "updating") return; // Do nothing if it's already updating
 
-        if (this._plebbit.plebbitRpcClient) return this._updateViaRpc();
+        if (this._plebbit._plebbitRpcClient) return this._updateViaRpc();
 
         this._updateState("updating");
         const updateLoop = (async () => {
@@ -629,7 +629,7 @@ export class Comment
         this._loadingOperation?.stop();
         this._updateInterval = clearTimeout(this._updateInterval);
         if (this._updateRpcSubscriptionId) {
-            await this._plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+            await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
             this._updateRpcSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         }

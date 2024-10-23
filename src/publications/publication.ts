@@ -165,7 +165,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         if (verification.comment)
             await this._verifyDecryptedChallengeVerificationAndUpdateCommentProps(<DecryptedChallengeVerification>verification);
         this.emit("challengeverification", verification, this instanceof Comment && verification.comment ? this : undefined);
-        if (this._rpcPublishSubscriptionId) await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
+        if (this._rpcPublishSubscriptionId) await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
         this._rpcPublishSubscriptionId = undefined;
     }
 
@@ -381,8 +381,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
         });
         if (!this._challenge) throw Error("this._challenge is not defined in publishChallengeAnswers");
 
-        if (this._plebbit.plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
-            return this._plebbit.plebbitRpcClient.publishChallengeAnswers(
+        if (this._plebbit._plebbitRpcClient && typeof this._rpcPublishSubscriptionId === "number") {
+            return this._plebbit._plebbitRpcClient.publishChallengeAnswers(
                 this._rpcPublishSubscriptionId,
                 toEncryptAnswers.challengeAnswers
             );
@@ -586,7 +586,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
     private async _postSucessOrFailurePublishing() {
         this._updateState("stopped");
         if (this._rpcPublishSubscriptionId) {
-            await this._plebbit.plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
+            await this._plebbit._plebbitRpcClient!.unsubscribe(this._rpcPublishSubscriptionId);
             this._rpcPublishSubscriptionId = undefined;
             this._setRpcClientState("stopped");
         } else if (this._subplebbit) {
@@ -641,18 +641,19 @@ class Publication extends TypedEmitter<PublicationEvents> {
     async _publishWithRpc() {
         const log = Logger("plebbit-js:publication:_publishWithRpc");
 
-        if (!this._plebbit.plebbitRpcClient) throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
+        if (!this._plebbit._plebbitRpcClient)
+            throw Error("Can't publish to RPC without publication.plebbit.plebbitRpcClient being defined");
         this._updateState("publishing");
 
         const pubNameToPublishFunction: Record<PublicationTypeName, PlebbitRpcClient["publishComment"]> = {
-            comment: this._plebbit.plebbitRpcClient.publishComment,
-            vote: this._plebbit.plebbitRpcClient.publishVote,
-            commentEdit: this._plebbit.plebbitRpcClient.publishCommentEdit,
-            commentModeration: this._plebbit.plebbitRpcClient.publishCommentModeration
+            comment: this._plebbit._plebbitRpcClient.publishComment,
+            vote: this._plebbit._plebbitRpcClient.publishVote,
+            commentEdit: this._plebbit._plebbitRpcClient.publishCommentEdit,
+            commentModeration: this._plebbit._plebbitRpcClient.publishCommentModeration
         };
         try {
             // PlebbitRpcClient will take care of zod parsing for us
-            this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()].bind(this._plebbit.plebbitRpcClient)(
+            this._rpcPublishSubscriptionId = await pubNameToPublishFunction[this.getType()].bind(this._plebbit._plebbitRpcClient)(
                 this.toJSONPubsubRequestToEncrypt()
             );
             if (typeof this._rpcPublishSubscriptionId !== "number") throw Error("Failed to find the type of publication");
@@ -663,7 +664,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             throw e;
         }
 
-        this._plebbit.plebbitRpcClient
+        this._plebbit._plebbitRpcClient
             .getSubscription(this._rpcPublishSubscriptionId)
             .on("challengerequest", this._handleIncomingChallengeRequestFromRpc.bind(this))
             .on("challenge", this._handleIncomingChallengeFromRpc.bind(this))
@@ -672,7 +673,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .on("publishingstatechange", this._handleIncomingPublishingStateFromRpc.bind(this))
             .on("statechange", this._handleIncomingStateFromRpc.bind(this))
             .on("error", (args) => this.emit("error", args.params.result));
-        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
+        this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._rpcPublishSubscriptionId);
         return;
     }
 
@@ -691,7 +692,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
         const log = Logger("plebbit-js:publication:publish");
         this._validatePublicationFields();
 
-        if (this._plebbit.plebbitRpcClient) return this._publishWithRpc();
+        if (this._plebbit._plebbitRpcClient) return this._publishWithRpc();
 
         if (typeof this._currentPubsubProviderIndex !== "number") this._currentPubsubProviderIndex = 0;
         this._publishedChallengeRequests = this._publishedChallengeRequests || [];

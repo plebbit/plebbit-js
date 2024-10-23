@@ -65,7 +65,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "stopped" || this._updateRpcSubscriptionId) return; // No need to do anything if subplebbit is already updating
 
         try {
-            this._updateRpcSubscriptionId = await this._plebbit.plebbitRpcClient!.subplebbitUpdateSubscribe(this.address);
+            this._updateRpcSubscriptionId = await this._plebbit._plebbitRpcClient!.subplebbitUpdateSubscribe(this.address);
             this._setState("updating");
         } catch (e) {
             log.error("Failed to receive subplebbitUpdate from RPC due to error", e);
@@ -74,12 +74,12 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
             throw e;
         }
         this._plebbit
-            .plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
+            ._plebbitRpcClient!.getSubscription(this._updateRpcSubscriptionId)
             .on("update", this._processUpdateEventFromRpcUpdate.bind(this))
             .on("updatingstatechange", this._handleUpdatingStateChangeFromRpcUpdate.bind(this))
             .on("error", (args) => this.emit("error", args.params.result)); // zod here
 
-        this._plebbit.plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
+        this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._updateRpcSubscriptionId);
     }
 
     override async stop() {
@@ -87,7 +87,7 @@ export class RpcRemoteSubplebbit extends RemoteSubplebbit {
         if (this.state !== "updating") throw Error("User call rpcRemoteSubplebbit.stop() without updating first");
 
         if (!this._updateRpcSubscriptionId) throw Error("rpcRemoteSub.state is updating but no subscription id");
-        await this._plebbit.plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
+        await this._plebbit._plebbitRpcClient!.unsubscribe(this._updateRpcSubscriptionId);
         this._setRpcClientState("stopped");
         this._updateRpcSubscriptionId = undefined;
         log.trace(`Stopped the update of remote subplebbit (${this.address}) via RPC`);

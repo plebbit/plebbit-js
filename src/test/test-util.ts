@@ -989,7 +989,7 @@ export async function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Pleb
 }
 
 export function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean {
-    return !plebbit.plebbitRpcClient && Object.keys(plebbit.clients.ipfsClients).length === 0;
+    return !plebbit._plebbitRpcClient && Object.keys(plebbit.clients.ipfsClients).length === 0;
 }
 
 export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {

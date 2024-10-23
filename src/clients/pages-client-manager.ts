@@ -148,8 +148,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
             const page = this._pages._parentCid
-                ? await this._plebbit.plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
-                : await this._plebbit.plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
+                ? await this._plebbit._plebbitRpcClient!.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
+                : await this._plebbit._plebbitRpcClient!.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
             this.updateRpcState("stopped", currentRpcUrl, sortTypes);
 
             return page;
@@ -188,7 +188,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes: string[] | undefined = pageCidToSortTypesCache.get(pageCid);
         let page: PageIpfs;
-        if (this._plebbit.plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
+        if (this._plebbit._plebbitRpcClient) page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl) page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);
         else page = await this._fetchPageFromGateways(pageCid);
 

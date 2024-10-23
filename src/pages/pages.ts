@@ -59,7 +59,7 @@ export class BasePages {
 
     async _fetchAndVerifyPage(pageCid: string): Promise<PageIpfs> {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        if (!this._plebbit.plebbitRpcClient) {
+        if (!this._plebbit._plebbitRpcClient) {
             const signatureValidity = await verifyPage(
                 pageCid,
                 pageIpfs,

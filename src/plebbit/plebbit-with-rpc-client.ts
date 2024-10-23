@@ -12,24 +12,17 @@ import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit";
 import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types";
 import { z } from "zod";
 import { PlebbitError } from "../plebbit-error";
+import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client";
 
 // This is a helper class for separating RPC-client logic from main Plebbit
 // Not meant to be used with end users
 export class PlebbitWithRpcClient extends Plebbit {
-    override plebbitRpcClient!: NonNullable<Plebbit["plebbitRpcClient"]>;
+    override _plebbitRpcClient!: NonNullable<Plebbit["_plebbitRpcClient"]>;
     override plebbitRpcClientsOptions!: NonNullable<Plebbit["plebbitRpcClientsOptions"]>;
 
     constructor(options: InputPlebbitOptions) {
         super(options);
-        this.on("subplebbitschange", () => {
-            this._setRpcState("connected");
-        });
-    }
-
-    _setRpcState(newState: Plebbit["rpcState"]) {
-        if (this.rpcState === newState) return;
-        this.rpcState = newState;
-        this.emit("rpcstatechange", newState);
+        this._plebbitRpcClient = new PlebbitRpcClient(this);
     }
 
     override async _init(): Promise<void> {
@@ -38,41 +31,38 @@ export class PlebbitWithRpcClient extends Plebbit {
 
         this.subplebbits = [];
 
-        this._setRpcState("connecting");
-
-        // const retryOperation =
-        this.plebbitRpcClient.initalizeSubplebbitschangeEvent().catch((err) => {
+        this._plebbitRpcClient.initalizeSubplebbitschangeEvent().catch((err) => {
             log.error("Failed to initialize RPC subplebbitschange event", err);
             this.emit("error", err);
         });
 
+        // TODO should set up plebbit.settings
         // TODO should set up settingschange
     }
 
     override async fetchCid(cid: string) {
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(cid);
-        return this.plebbitRpcClient.fetchCid(parsedCid);
+        return this._plebbitRpcClient.fetchCid(parsedCid);
     }
 
     override async resolveAuthorAddress(authorAddress: string) {
         const parsedAddress = AuthorAddressSchema.parse(authorAddress);
-        return this.plebbitRpcClient.resolveAuthorAddress(parsedAddress);
+        return this._plebbitRpcClient.resolveAuthorAddress(parsedAddress);
     }
 
     override async rpcCall(method: string, params: any[]): Promise<any> {
-        return this.plebbitRpcClient.rpcCall(method, params);
+        return this._plebbitRpcClient.rpcCall(method, params);
     }
 
     override async destroy() {
         await super.destroy();
-        await this.plebbitRpcClient.destroy();
-        this._setRpcState("stopped");
+        await this._plebbitRpcClient.destroy();
     }
 
     override async getComment(commentCid: string) {
         const parsedCommentCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
 
-        const commentIpfs = await this.plebbitRpcClient.getComment(parsedCommentCid);
+        const commentIpfs = await this._plebbitRpcClient.getComment(parsedCommentCid);
         return this.createComment({ ...commentIpfs, cid: parsedCommentCid });
     }
 
@@ -116,7 +106,7 @@ export class PlebbitWithRpcClient extends Plebbit {
             }
         } else if (!("address" in parsedRpcOptions)) {
             // We're creating a new local sub
-            const newLocalSub = await this.plebbitRpcClient!.createSubplebbit(parsedRpcOptions);
+            const newLocalSub = await this._plebbitRpcClient!.createSubplebbit(parsedRpcOptions);
             log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, JSON.parse(JSON.stringify(newLocalSub)));
             newLocalSub.emit("update", newLocalSub);
             await this._awaitSubplebbitsToIncludeSub(newLocalSub.address);
