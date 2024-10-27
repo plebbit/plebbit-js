@@ -188,6 +188,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
             this._subscriptionEvents = //@ts-expect-error
             this._pendingSubscriptionMsgs =
                 undefined;
+        this.setState("stopped");
     }
 
     toJSON() {

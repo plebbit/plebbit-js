@@ -22,7 +22,7 @@ export class PlebbitWithRpcClient extends Plebbit {
 
     constructor(options: InputPlebbitOptions) {
         super(options);
-        this._plebbitRpcClient = new PlebbitRpcClient(this.plebbitRpcClientsOptions[0]); // will change later once we start supporting multiple RPCs
+        this._plebbitRpcClient = this.clients.plebbitRpcClients[Object.keys(this.clients.plebbitRpcClients)[0]]; // will change later once we start supporting multiple RPCs
     }
 
     override async _init(): Promise<void> {
