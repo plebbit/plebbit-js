@@ -141,3 +141,10 @@ export const convertBase58IpnsNameToBase36Cid = (ipnsName: string): string => {
         throw e;
     }
 };
+
+export function convertBase32ToBase58btc(base32String: string) {
+    // Decode base32 to bytes
+    const test = CID.parse(base32String);
+    const peerId = PeerId.createFromBytes(test.bytes);
+    return peerId.toB58String().trim();
+}

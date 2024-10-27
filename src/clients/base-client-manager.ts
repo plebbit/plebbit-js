@@ -48,14 +48,13 @@ type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | nul
 export type OptionsToLoadFromGateway = { recordIpfsType: "ipfs" | "ipns"; root: string; path?: string; recordPlebbitType: LoadType };
 
 const createUrlFromPathResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
-    return `${gateway}/${opts.recordIpfsType}/${opts.root}${opts.path ? "/" + opts.path : ""}`;
+    const root = opts.recordIpfsType === "ipns" ? convertBase58IpnsNameToBase36Cid(opts.root) : opts.root;
+    return `${gateway}/${opts.recordIpfsType}/${root}${opts.path ? "/" + opts.path : ""}`;
 };
 
 const createUrlFromSubdomainResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
     const gatewayUrl = new URL(gateway);
-    let root: string;
-    if (opts.recordIpfsType === "ipfs") root = CID.parse(opts.root).toV1().toString();
-    else root = convertBase58IpnsNameToBase36Cid(opts.root);
+    const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
 
     return `${gatewayUrl.protocol}//${root}.${opts.recordIpfsType}.${gatewayUrl.host}${opts.path ? "/" + opts.path : ""}`;
 };
