@@ -365,20 +365,18 @@ PubsubSignature {
   - [`plebbit.createCommentModeration(createCommentModerationOptions)`](#plebbitcreatecommentmoderationcreatecommentmoderationoptions)
   - [`plebbit.createVote(createVoteOptions)`](#plebbitcreatevotecreatevoteoptions)
   - [`plebbit.createSigner(createSignerOptions)`](#plebbitcreatesignercreatesigneroptions)
-  - [`plebbit.subplebbits`]
-  - [`plebbit.settings`]
+  - `plebbit.subplebbits`
+  - `plebbit.clients`
   - [`plebbit.getDefaults()`](#plebbitgetdefaults)
   - `plebbit.fetchCid(cid)`
   - `plebbit.resolveAuthorAddress(address)`
   - `Plebbit.getShortAddress(address)`
   - `Plebbit.getShortCid(cid)`
-  - `Plebbit.rpcCall(method, params)`
   - `Plebbit.setNativeFunctions(nativeFunctions)`
   - `Plebbit.nativeFunctions`
   - `Plebbit.challenges`
 - [Plebbit Events](#plebbit-events)
   - [`subplebbitschange`](#subplebbitschange)
-  - [`settingschange`](#settingschange)
   - `error`
 - [Subplebbit API](#subplebbit-api)
   - [`subplebbit.edit(subplebbitEditOptions)`](#subplebbiteditsubplebbiteditoptions)
@@ -475,10 +473,14 @@ PubsubSignature {
   - `pages.pageCids`
 - Client API
   - `client.state`
+  - `client.settings`
+  - `client.setSettings(plebbitRpcSettings)`
+  - `client.rpcCall(methodName, arguments)`
   - `client.getPeers()`
   - `client.getStats()`
 - [Client Events](#client-events)
   - [`statechange`](#statechange-2)
+  - [`settingschange`](#settingschange)
 
 ## Plebbit API
 The plebbit API for reading and writing to and from subplebbits.
@@ -1123,16 +1125,6 @@ The plebbit events.
 | -------- | -------- |
 | `string[]` | The `Subplebbit.subplebbits` property |
 
-### `settingschange`
-
-> `Plebbit.settings` property changed.
-
-#### Emits
-
-| Type | Description |
-| -------- | -------- |
-| `PlebbitRpcSettings` | The `Subplebbit.settings` property |
-
 ## Subplebbit API
 The subplebbit API for getting subplebbit updates, or creating, editing, running a subplebbit as an owner.
 
@@ -1591,7 +1583,7 @@ The client events.
 
 | Type | Description |
 | -------- | -------- |
-| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'subscribing-pubsub' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification'` | The `Client.state` property |
+| `'stopped' \| 'resolving-author-address' \| 'fetching-ipfs' \| 'fetching-update-ipns' \| 'fetching-update-ipfs' \| 'resolving-subplebbit-address' \| 'fetching-subplebbit-ipns' \| 'fetching-subplebbit-ipfs' \| 'subscribing-pubsub' \| 'publishing-challenge-request' \| 'waiting-challenge' \| 'waiting-challenge-answers' \| 'publishing-challenge-answer' \| 'waiting-challenge-verification'` \| 'connecting'` \| 'connected'` | The `Client.state` property |
 
 #### Example
 
@@ -1612,3 +1604,13 @@ for (const chainTicker in clients?.chainProviders) {
   }
 }
 ```
+
+### `settingschange`
+
+> `Client.settings` property changed.
+
+#### Emits
+
+| Type | Description |
+| -------- | -------- |
+| `PlebbitRpcSettings` | The `Client.settings` property |
