@@ -26,25 +26,24 @@ import { SetNewSettingsPlebbitWsServerSchema } from "../../rpc/src/schema.js";
 import * as z from "zod";
 import { TypedEmitter } from "tiny-typed-emitter";
 import type { PlebbitRpcClientEvents } from "../../types.js";
-import { Plebbit } from "../../plebbit/plebbit.js";
 
 const log = Logger("plebbit-js:PlebbitRpcClient");
 
 export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvents> {
     state: "stopped" | "connecting" | "failed" | "connected";
     subplebbits: string[];
+    settings?: PlebbitWsServerSettingsSerialized;
 
     private _webSocketClient: WebSocketClient;
-    private _plebbit: Plebbit;
     private _websocketServerUrl: string;
     private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
     private _openConnectionPromise?: Promise<any>;
-    constructor(plebbit: PlebbitRpcClient["_plebbit"], rpcServerUrl: string) {
+    constructor(rpcServerUrl: string) {
         super();
-        assert(plebbit.plebbitRpcClientsOptions, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
-        this._plebbit = plebbit;
+        assert(rpcServerUrl, "plebbit.plebbitRpcClientsOptions needs to be defined to create a new rpc client");
+
         this._websocketServerUrl = rpcServerUrl; // default to first for now. Will change later
         this._timeoutSeconds = 20;
         this.subplebbits = [];
@@ -53,7 +52,9 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
             this.subplebbits = newSubs;
         });
 
-        this.on("error", (err) => this._plebbit.emit("error", err));
+        this.on("settingschange", (newSettings) => {
+            this.settings = newSettings;
+        });
 
         // temporary place holder because we don't want to initialize the web socket client until we call
         //@ts-expect-error
@@ -340,6 +341,15 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         this.emitAllPendingMessages(subscriptionId);
     }
 
+    async initalizeSettingschangeEvent() {
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("settingsSubscribe", []));
+        this._initSubscriptionEvent(subscriptionId);
+        this.getSubscription(subscriptionId).on("settingschange", (res) => {
+            this.emit("settingschange", <PlebbitWsServerSettingsSerialized>res.params.result);
+        });
+        this.emitAllPendingMessages(subscriptionId);
+    }
+
     async fetchCid(parsedCid: string): Promise<string> {
         const res = <string>await this._webSocketClient.call("fetchCid", [parsedCid]);
         if (typeof res !== "string") throw Error("RPC function fetchCid did not respond with string");
@@ -349,12 +359,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     async setSettings(settings: z.input<typeof SetNewSettingsPlebbitWsServerSchema>) {
         const parsedSettings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(settings);
         const res = <boolean>await this._webSocketClient.call("setSettings", [parsedSettings]);
-        if (res !== true) throw Error("result of setSettings should be true");
-        return res;
-    }
-
-    async getSettings() {
-        const res = <PlebbitWsServerSettingsSerialized>await this._webSocketClient.call("getSettings", []);
+        if (res !== true) throw Error("Failed setSettings");
         return res;
     }
 

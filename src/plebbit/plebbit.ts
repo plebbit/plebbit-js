@@ -232,7 +232,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private _initRpcClientsIfNeeded() {
         this.clients.plebbitRpcClients = {};
         if (!this.plebbitRpcClientsOptions) return;
-        for (const rpcUrl of this.plebbitRpcClientsOptions) this.clients.plebbitRpcClients[rpcUrl] = new PlebbitRpcClient(this, rpcUrl);
+        for (const rpcUrl of this.plebbitRpcClientsOptions) this.clients.plebbitRpcClients[rpcUrl] = new PlebbitRpcClient(rpcUrl);
     }
 
     private _initChainProviders() {
@@ -826,10 +826,6 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             await this._storageLRUs[opts.cacheName].init();
         }
         return this._storageLRUs[opts.cacheName];
-    }
-
-    async rpcCall(method: string, params: any[]): Promise<any> {
-        throw Error("Can't call rpcCall without having a rpc connection");
     }
 
     async destroy() {

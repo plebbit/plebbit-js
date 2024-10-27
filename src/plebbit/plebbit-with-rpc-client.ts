@@ -22,7 +22,7 @@ export class PlebbitWithRpcClient extends Plebbit {
 
     constructor(options: InputPlebbitOptions) {
         super(options);
-        this._plebbitRpcClient = new PlebbitRpcClient(this, this.plebbitRpcClientsOptions[0]); // will change later once we start supporting multiple RPCs
+        this._plebbitRpcClient = new PlebbitRpcClient(this.plebbitRpcClientsOptions[0]); // will change later once we start supporting multiple RPCs
     }
 
     override async _init(): Promise<void> {
@@ -31,10 +31,19 @@ export class PlebbitWithRpcClient extends Plebbit {
 
         this.subplebbits = [];
 
-        this._plebbitRpcClient.initalizeSubplebbitschangeEvent().catch((err) => {
-            log.error("Failed to initialize RPC subplebbitschange event", err);
-            this.emit("error", err);
-        });
+        this._plebbitRpcClient.on("subplebbitschange", (newSubs) => this.emit("subplebbitschange", newSubs));
+
+        for (const rpcUrl of Object.keys(this.clients.plebbitRpcClients)) {
+            const rpcClient = this.clients.plebbitRpcClients[rpcUrl];
+            rpcClient.on("error", (err) => this.emit("error", err));
+            rpcClient.initalizeSubplebbitschangeEvent().catch((err) => {
+                log.error("Failed to initialize RPC", rpcUrl, "subplebbitschange event", err);
+            });
+            rpcClient.initalizeSettingschangeEvent().catch((err) => {
+                log.error("Failed to initialize RPC", rpcUrl, "settingschange event", err);
+            });
+        }
+        // TODO merge different plebbitRpcClient.subplebbits
 
         // TODO should set up plebbit.settings
         // TODO should set up settingschange
@@ -48,10 +57,6 @@ export class PlebbitWithRpcClient extends Plebbit {
     override async resolveAuthorAddress(authorAddress: string) {
         const parsedAddress = AuthorAddressSchema.parse(authorAddress);
         return this._plebbitRpcClient.resolveAuthorAddress(parsedAddress);
-    }
-
-    override async rpcCall(method: string, params: any[]): Promise<any> {
-        return this._plebbitRpcClient.rpcCall(method, params);
     }
 
     override async destroy() {

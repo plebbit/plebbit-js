@@ -30,6 +30,7 @@ import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, Ple
 import { VoteTablesRowSchema } from "./publications/vote/schema.js";
 import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
+import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -147,7 +148,7 @@ export interface PlebbitRpcClientEvents {
     statechange: (state: PlebbitRpcClient["state"]) => void;
     error: (error: PlebbitError | Error) => void;
     subplebbitschange: (listOfSubplebbits: string[]) => void;
-    settingschange: (newSettings: ParsedPlebbitOptions) => void;
+    settingschange: (newSettings: PlebbitWsServerSettingsSerialized) => void;
 }
 
 export interface GenericClientEvents<T extends string> {
