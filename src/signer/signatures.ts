@@ -35,7 +35,7 @@ import type { SubplebbitIpfsType, SubplebbitSignature } from "../subplebbit/type
 import { commentUpdateVerificationCache, pageVerificationCache, subplebbitVerificationCache } from "../constants.js";
 import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
-import type { JsonSignature, PublicationToVerify, PubsubMsgsToSign, PubsubSignature, SignerType } from "./types.js";
+import type { JsonSignature, PublicationToVerify, PubsubMsgToSign, PubsubSignature, SignerType } from "./types.js";
 import type {
     CommentEditOptionsToSign,
     CommentEditPubsubMessagePublication,
@@ -128,7 +128,7 @@ async function _validateAuthorAddressBeforeSigning(author: CommentOptionsToSign[
 
 export async function _signJson(
     signedPropertyNames: JsonSignature["signedPropertyNames"],
-    publication: Object,
+    cleanedPublication: Object, // should call cleanUpBeforePublish before calling _signJson
     signer: SignerType,
     log: Logger
 ): Promise<JsonSignature> {
@@ -136,20 +136,20 @@ export async function _signJson(
 
     // we assume here that publication already has been cleaned
     //@ts-expect-error
-    const propsToSign = remeda.pick(publication, signedPropertyNames);
+    const propsToSign = remeda.pick(cleanedPublication, signedPropertyNames);
     const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
         publicKey: signer.publicKey,
         type: signer.type,
-        signedPropertyNames: signedPropertyNames
+        signedPropertyNames: remeda.keys.strict(propsToSign)
     };
 }
 
 export async function _signPubsubMsg(
     signedPropertyNames: PubsubSignature["signedPropertyNames"],
-    msg: PubsubMsgsToSign,
+    msg: PubsubMsgToSign, // should call cleanUpBeforePublish before calling _signPubsubMsg
     signer: SignerType,
     log: Logger
 ): Promise<PubsubSignature> {
@@ -165,7 +165,7 @@ export async function _signPubsubMsg(
         signature: signatureData,
         publicKey: publicKeyBuffer,
         type: signer.type,
-        signedPropertyNames: signedPropertyNames
+        signedPropertyNames: remeda.keys.strict(propsToSign)
     };
 }
 

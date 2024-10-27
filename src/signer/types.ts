@@ -37,7 +37,7 @@ export type PubsubSignature = z.infer<typeof PubsubMessageSignatureSchema>;
 // ---------------------------
 // Signing
 
-export type PubsubMsgsToSign =
+export type PubsubMsgToSign =
     | Omit<ChallengeAnswerMessageType, "signature">
     | Omit<ChallengeRequestMessageType, "signature">
     | Omit<ChallengeVerificationMessageType, "signature">
