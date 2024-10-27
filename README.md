@@ -475,7 +475,7 @@ PubsubSignature {
   - `client.state`
   - `client.settings`
   - `client.setSettings(plebbitRpcSettings)`
-  - `client.rpcCall(methodName, arguments)`
+  - `client.rpcCall(method, params)`
   - `client.getPeers()`
   - `client.getStats()`
 - [Client Events](#client-events)
