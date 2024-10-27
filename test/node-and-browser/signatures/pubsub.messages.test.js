@@ -289,7 +289,8 @@ describeSkipIfRpc("challengeanswer", async () => {
             challengeRequestId: comment._publishedChallengeRequests[0].challengeRequestId,
             encrypted: JSON.stringify([2]),
             userAgent: PlebbitJsVersion.USER_AGENT,
-            protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION
+            protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION,
+            timestamp: Math.round(Date.now() / 1000)
         };
 
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
@@ -299,7 +300,7 @@ describeSkipIfRpc("challengeanswer", async () => {
         };
         expect(await verifyChallengeAnswer(challengeAnswer)).to.deep.equal({ valid: true });
 
-        challengeAnswer.timestamp += "123"; // Invalidate signature
+        challengeAnswer.timestamp += 123; // Invalidate signature
         const verification = await verifyChallengeAnswer(challengeAnswer);
         expect(verification).to.deep.equal({
             valid: false,

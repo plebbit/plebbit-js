@@ -27,22 +27,7 @@ const fixtureSignature = {
     signature: "RTBNJ8bEnvEENOAxzk3pqxc9I3a0M9H7qlXsL5yu2frEEbJKqf789eFVnmyccmB99hyBb1Hyw5Soqma+RIxIAw",
     publicKey: "CFhuD55tmzZjWZ113tZbDw/AsuNDkgSdvCCbPeqiF10",
     type: "ed25519",
-    signedPropertyNames: [
-        "flair",
-        "spoiler",
-        "content",
-        "title",
-        "link",
-        "linkWidth",
-        "linkHeight",
-        "linkHtmlTagName",
-        "parentCid",
-        "postCid",
-        "author",
-        "subplebbitAddress",
-        "protocolVersion",
-        "timestamp"
-    ]
+    signedPropertyNames: Object.keys(fixtureComment).sort()
 };
 
 describe("sign comment", async () => {
@@ -90,7 +75,7 @@ describe("sign comment", async () => {
         expect(authorSignature.signature).to.equal(fixtureSignature.signature);
         expect(authorSignature.publicKey).to.equal(fixtureSignature.publicKey);
         expect(authorSignature.type).to.equal(fixtureSignature.type);
-        expect(authorSignature.signedPropertyNames).to.deep.equal(fixtureSignature.signedPropertyNames);
+        expect(authorSignature.signedPropertyNames.sort()).to.deep.equal(fixtureSignature.signedPropertyNames);
     });
 
     it(`signComment throws with invalid author`, async () => {

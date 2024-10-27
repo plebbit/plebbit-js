@@ -22,7 +22,10 @@ describeSkipIfRpc("Sign subplebbit", async () => {
         const subFixtureClone = remeda.clone(subFixture);
         delete subFixtureClone["signature"];
         const signature = await signSubplebbit(subFixtureClone, signers[0]);
-        expect(signature).to.deep.equal(subFixture.signature);
+        expect(signature.signature).to.equal(subFixture.signature.signature);
+        expect(signature.publicKey).to.equal(subFixture.signature.publicKey);
+        expect(signature.signedPropertyNames.sort()).to.deep.equal(subFixture.signature.signedPropertyNames.sort());
+        expect(signature.type).to.equal(subFixture.signature.type);
     });
     it(`Can sign and validate live subplebbit correctly`, async () => {
         const subplebbit = await plebbit.getSubplebbit(signers[0].address);
@@ -113,7 +116,11 @@ describeSkipIfRpc("Verify subplebbit", async () => {
         const subFixtureClone = remeda.clone(subFixture);
         subFixtureClone.extraProp = "1234";
         const signature = await signSubplebbit(subFixtureClone, signers[0]);
-        expect(signature).to.deep.equal(subFixture.signature);
+        expect(signature.signature).to.equal(subFixture.signature.signature);
+        expect(signature.publicKey).to.equal(subFixture.signature.publicKey);
+        expect(signature.signedPropertyNames.sort()).to.deep.equal(subFixture.signature.signedPropertyNames.sort());
+        expect(signature.type).to.equal(subFixture.signature.type);
+
         expect(signature.signedPropertyNames).to.not.include("extraProp");
 
         const validation = await verifySubplebbit(
