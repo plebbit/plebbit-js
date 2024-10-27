@@ -29,6 +29,7 @@ import type {
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
 import { VoteTablesRowSchema } from "./publications/vote/schema.js";
 import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
+import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
@@ -140,7 +141,13 @@ export interface PlebbitEvents {
     error: (error: PlebbitError | Error) => void;
     subplebbitschange: (listOfSubplebbits: string[]) => void;
     settingschange: (newSettings: ParsedPlebbitOptions) => void;
-    rpcstatechange: (newState: PlebbitRpcState) => void;
+}
+
+export interface PlebbitRpcClientEvents {
+    statechange: (state: PlebbitRpcClient["state"]) => void;
+    error: (error: PlebbitError | Error) => void;
+    subplebbitschange: (listOfSubplebbits: string[]) => void;
+    settingschange: (newSettings: ParsedPlebbitOptions) => void;
 }
 
 export interface GenericClientEvents<T extends string> {
@@ -252,5 +259,3 @@ type ExcludeMethods<T> = { [K in keyof T as T[K] extends Function ? never : K]: 
 export type JsonOfClass<T> = ExcludeMethods<OmitUnderscoreProps<T>>;
 
 // RPC state
-
-export type PlebbitRpcState = "stopped" | "connecting" | "connected";

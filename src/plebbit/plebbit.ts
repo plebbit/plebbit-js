@@ -16,8 +16,7 @@ import type {
     LRUStorageConstructor,
     PubsubSubscriptionHandler,
     InputPlebbitOptions,
-    AuthorPubsubType,
-    PlebbitRpcState
+    AuthorPubsubType
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
 import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
@@ -40,7 +39,6 @@ import Storage from "../runtime/node/storage.js";
 import { ClientsManager } from "../clients/client-manager.js";
 import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client.js";
 import { PlebbitError } from "../plebbit-error.js";
-import { GenericPlebbitRpcStateClient } from "../clients/rpc-client/plebbit-rpc-state-client.js";
 import type {
     CreateInstanceOfLocalOrRemoteSubplebbitOptions,
     CreateNewLocalSubplebbitParsedOptions,
@@ -130,10 +128,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         ipfsClients: { [ipfsClientUrl: string]: IpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: PubsubClient };
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
-        plebbitRpcClients: { [plebbitRpcUrl: string]: GenericPlebbitRpcStateClient };
+        plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
     };
 
-    _plebbitRpcClient?: PlebbitRpcClient;
+    _plebbitRpcClient?: PlebbitRpcClient; // default rpc client for now. For now we will default to clients.plebbitRpcClients[0]
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
     _clientsManager!: ClientsManager;
     _userPlebbitOptions: InputPlebbitOptions; // this is the raw input from user
@@ -234,8 +232,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     private _initRpcClientsIfNeeded() {
         this.clients.plebbitRpcClients = {};
         if (!this.plebbitRpcClientsOptions) return;
-        for (const rpcUrl of this.plebbitRpcClientsOptions)
-            this.clients.plebbitRpcClients[rpcUrl] = new GenericPlebbitRpcStateClient("stopped");
+        for (const rpcUrl of this.plebbitRpcClientsOptions) this.clients.plebbitRpcClients[rpcUrl] = new PlebbitRpcClient(this, rpcUrl);
     }
 
     private _initChainProviders() {

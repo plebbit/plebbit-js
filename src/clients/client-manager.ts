@@ -48,7 +48,6 @@ export class ClientsManager extends BaseClientsManager {
         ipfsClients: { [ipfsClientUrl: string]: GenericIpfsClient };
         pubsubClients: { [pubsubClientUrl: string]: GenericPubsubClient };
         chainProviders: Record<ChainTicker, { [chainProviderUrl: string]: GenericChainProviderClient }>;
-        plebbitRpcClients: { [plebbitRpcClientUrl: string]: GenericPlebbitRpcStateClient };
     };
 
     constructor(plebbit: Plebbit) {
@@ -60,7 +59,6 @@ export class ClientsManager extends BaseClientsManager {
         this._initIpfsClients();
         this._initPubsubClients();
         this._initChainProviders();
-        this._initPlebbitRpcClients();
         hideClassPrivateProps(this);
     }
 
@@ -89,8 +87,7 @@ export class ClientsManager extends BaseClientsManager {
     }
 
     protected _initPlebbitRpcClients() {
-        for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
-            this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new GenericPlebbitRpcStateClient("stopped") };
+        throw Error("Should be overridden in children of client-manager");
     }
 
     // Overriding functions from base client manager here

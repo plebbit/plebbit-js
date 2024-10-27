@@ -22,7 +22,7 @@ export class PlebbitWithRpcClient extends Plebbit {
 
     constructor(options: InputPlebbitOptions) {
         super(options);
-        this._plebbitRpcClient = new PlebbitRpcClient(this);
+        this._plebbitRpcClient = new PlebbitRpcClient(this, this.plebbitRpcClientsOptions[0]); // will change later once we start supporting multiple RPCs
     }
 
     override async _init(): Promise<void> {
@@ -106,11 +106,16 @@ export class PlebbitWithRpcClient extends Plebbit {
             }
         } else if (!("address" in parsedRpcOptions)) {
             // We're creating a new local sub
-            const newLocalSub = await this._plebbitRpcClient!.createSubplebbit(parsedRpcOptions);
-            log(`Created local-RPC subplebbit (${newLocalSub.address}) with props:`, JSON.parse(JSON.stringify(newLocalSub)));
-            newLocalSub.emit("update", newLocalSub);
-            await this._awaitSubplebbitsToIncludeSub(newLocalSub.address);
-            return newLocalSub;
+            const subPropsAfterCreation = await this._plebbitRpcClient!.createSubplebbit(parsedRpcOptions);
+            log(
+                `Created new local-RPC subplebbit (${subPropsAfterCreation.address}) with props:`,
+                JSON.parse(JSON.stringify(subPropsAfterCreation))
+            );
+            const sub = new RpcLocalSubplebbit(this);
+            await sub.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(subPropsAfterCreation);
+            sub.emit("update", sub);
+            await this._awaitSubplebbitsToIncludeSub(subPropsAfterCreation.address);
+            return sub;
         } else throw Error("Failed to create subplebbit rpc instance, are you sure you provided the correct args?");
     }
 }
