@@ -154,7 +154,7 @@ describe(`subplebbit.statsCid`, async () => {
             for (const replyCountKey of replyCountKeys) expect(statsAfterNewReply[replyCountKey]).to.equal(statsBefore[replyCountKey] + 1);
         });
 
-        it(`PostCount should increase by 1 for new reply with existing author`, async () => {
+        it(`ReplyCount should increase by 1 for new reply with existing author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] }, false);
             await new Promise((resolve) => subplebbit.once("update", resolve));
