@@ -9,6 +9,7 @@ import {
     mockRpcWsToSkipSignatureValidation
 } from "../../dist/node/test/test-util.js";
 import { cleanUpBeforePublishing, signSubplebbit } from "../../dist/node/signer/signatures.js";
+import { convertBase32ToBase58btc } from "../../dist/node/signer/util.js";
 
 import PlebbitWsServer from "../../rpc";
 import signers from "../fixtures/signers.js";
@@ -133,7 +134,7 @@ const setUpMockGateways = async () => {
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else if (req.url.includes("/ipns")) {
-            const subAddress = req.url.split("/")[2];
+            const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]); // TODO need to convert to base 58 btc
             const sub = await plebbit.getSubplebbit(subAddress);
             res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
             res.end(JSON.stringify(sub.toJSONIpfs()));
