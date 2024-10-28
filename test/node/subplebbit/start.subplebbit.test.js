@@ -117,9 +117,10 @@ describe(`Start lock`, async () => {
     let plebbit, dataPath;
     before(async () => {
         plebbit = await mockPlebbit();
-        if (plebbit.plebbitRpcClient) {
+        if (Object.keys(plebbit.clients.plebbitRpcClients).length > 0) {
             dataPath = path.join(process.env.PWD, ".plebbit-rpc-server");
         } else dataPath = plebbit.dataPath;
+        expect(dataPath).to.be.a("string");
     });
     it(`subplebbit.start throws if sub is already started (same Subplebbit instance)`, async () => {
         const subplebbit = await plebbit.createSubplebbit();
