@@ -86,10 +86,6 @@ export class ClientsManager extends BaseClientsManager {
         }
     }
 
-    protected _initPlebbitRpcClients() {
-        throw Error("Should be overridden in children of client-manager");
-    }
-
     // Overriding functions from base client manager here
 
     override preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void {
@@ -472,6 +468,7 @@ export class PublicationClientsManager extends ClientsManager {
     constructor(publication: Publication) {
         super(publication._plebbit);
         this._publication = publication;
+        this._initPlebbitRpcClients();
     }
 
     protected override _initIpfsClients(): void {
@@ -485,7 +482,7 @@ export class PublicationClientsManager extends ClientsManager {
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new PublicationPubsubClient("stopped") };
     }
 
-    protected override _initPlebbitRpcClients() {
+    protected _initPlebbitRpcClients() {
         for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = {
                 ...this.clients.plebbitRpcClients,
@@ -996,6 +993,7 @@ export class SubplebbitClientsManager extends ClientsManager {
     constructor(subplebbit: SubplebbitClientsManager["_subplebbit"]) {
         super(subplebbit._plebbit);
         this._subplebbit = subplebbit;
+        this._initPlebbitRpcClients();
     }
 
     protected override _initIpfsClients(): void {
@@ -1009,7 +1007,7 @@ export class SubplebbitClientsManager extends ClientsManager {
             this.clients.pubsubClients = { ...this.clients.pubsubClients, [pubsubUrl]: new SubplebbitPubsubClient("stopped") };
     }
 
-    protected override _initPlebbitRpcClients() {
+    protected _initPlebbitRpcClients() {
         for (const rpcUrl of remeda.keys.strict(this._plebbit.clients.plebbitRpcClients))
             this.clients.plebbitRpcClients = {
                 ...this.clients.plebbitRpcClients,
