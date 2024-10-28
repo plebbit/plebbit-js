@@ -220,7 +220,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
             .on("challengeanswer", this._handleRpcChallengeAnswerEvent.bind(this))
             .on("challengeverification", this._handleRpcChallengeVerificationEvent.bind(this))
 
-            .on("error", (args) => this.emit("error", args.params.result)); // TODO need to figure out how to zod parse error
+            .on("error", (args) => this.emit("error", args.params.result));
 
         this._plebbit._plebbitRpcClient!.emitAllPendingMessages(this._startRpcSubscriptionId);
     }

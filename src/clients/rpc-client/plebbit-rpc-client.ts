@@ -36,7 +36,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
 
     private _webSocketClient: WebSocketClient;
     private _websocketServerUrl: string;
-    private _subscriptionEvents: Record<string, EventEmitter> = {}; // subscription ID -> event emitter
+    private _subscriptionEvents: Record<string, EventEmitter>; // subscription ID -> event emitter
     private _pendingSubscriptionMsgs: Record<string, any[]> = {};
     private _timeoutSeconds: number;
     private _openConnectionPromise?: Promise<any>;
@@ -47,6 +47,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         this._websocketServerUrl = rpcServerUrl; // default to first for now. Will change later
         this._timeoutSeconds = 20;
         this.subplebbits = [];
+        this._subscriptionEvents = {};
 
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
@@ -175,19 +176,19 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     }
 
     async destroy() {
-        try {
-            for (const subscriptionId of Object.keys(this._subscriptionEvents)) await this.unsubscribe(Number(subscriptionId));
-        } catch {}
+        for (const subscriptionId of Object.keys(this._subscriptionEvents))
+            try {
+                await this.unsubscribe(Number(subscriptionId));
+            } catch (e) {
+                log.error("Failed to unsubscribe to subscription ID", subscriptionId, e);
+            }
 
         try {
             this._webSocketClient.close();
-        } catch {}
+        } catch (e) {
+            log.error("Failed to close websocket", e);
+        }
 
-        //@ts-expect-error
-        this._webSocketClient = //@ts-expect-error
-            this._subscriptionEvents = //@ts-expect-error
-            this._pendingSubscriptionMsgs =
-                undefined;
         this.setState("stopped");
     }
 
