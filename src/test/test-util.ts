@@ -42,6 +42,7 @@ import { getIpfsKeyFromPrivateKey } from "../signer/util.js";
 import type { PageTypeJson } from "../pages/types.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
+import { Buffer } from "buffer";
 import type {
     ChallengeAnswerMessageType,
     ChallengeMessageType,
@@ -605,11 +606,11 @@ export function isRunningInBrowser(): boolean {
     return Boolean(globalThis["window"]);
 }
 
-export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>) {
+export async function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName = "update") {
     // should add a timeout?
     if (!(await predicate()))
         await new Promise((resolve) => {
-            toUpdate.on("update", async () => {
+            toUpdate.on(eventName, async () => {
                 const conditionStatus = await predicate();
                 if (conditionStatus) resolve(conditionStatus);
             });
@@ -885,7 +886,8 @@ export async function publishChallengeVerificationMessageWithEncryption(
     });
 
     //@ts-expect-error
-    const publicKey = Buffer.from(publication._publishedChallengeRequests[0].signature.publicKey).toString("base64");
+    const challengeRequest = publication._publishedChallengeRequests![0];
+    const publicKey = Buffer.from(challengeRequest.signature.publicKey).toString("base64");
     const encrypted = await encryptEd25519AesGcm(JSON.stringify(toEncrypt), pubsubSigner.privateKey, publicKey);
 
     toSignChallengeVerification.encrypted = encrypted;
