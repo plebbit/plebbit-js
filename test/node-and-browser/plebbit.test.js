@@ -273,11 +273,47 @@ describe("plebbit.fetchCid", async () => {
     });
 });
 
-describeIfRpc(`plebbit.rpcCall`, async () => {
-    it.skip(`Can use plebbit.rpcCall to get settings`, async () => {
+describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
+    it(`plebbit.clients.plebbitRpcClients.state`, async () => {
         const plebbit = await mockPlebbit();
-        const plebbitRpcSettings = await plebbit.rpcCall("getSettings", []);
-        expect(plebbitRpcSettings.challenges).to.be.a("object");
+        const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
+
+        const rpcStates = [];
+
+        rpcClient.on("statechange", (newState) => rpcStates.push(newState));
+
+        if (rpcClient.state !== "connected")
+            await new Promise((resolve) => rpcClient.once("statechange", (newState) => newState === "connected" && resolve()));
+
+        expect(rpcStates).to.deep.equal(["connected"]);
+
+        await plebbit.destroy();
+    });
+    it(`plebbit.clients.plebbitRpcClients.rpcCall`);
+    it(`plebbit.clients.plebbitRpcClients.setSettings`, async () => {
+        const plebbit = await mockPlebbit();
+        const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
+        const allSettings = [];
+        rpcClient.on("settingschange", (newSettings) => allSettings.push(newSettings));
+
+        if (!rpcClient.settings) await new Promise((resolve) => rpcClient.once("settingschange", resolve));
+
+        // change settings here, and await for a new settingschange to be emitted
+        const newSettings = { ...rpcClient.settings, plebbitOptions: { ...rpcClient.settings.plebbitOptions, userAgent: "test-agent" } };
+        await rpcClient.setSettings(newSettings);
+        if (JSON.stringify(rpcClient.settings) !== JSON.stringify(newSettings))
+            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
+        expect(rpcClient.settings).to.deep.equal(newSettings);
+        expect(allSettings[allSettings.length - 1]).to.deep.equal(newSettings);
+        await plebbit.destroy();
+    });
+    it(`plebbit.clients.plebbitRpcClients.settings is defined after awaiting settingschange`, async () => {
+        const plebbit = await mockPlebbit();
+        const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
+        if (!rpcClient.settings) await new Promise((resolve) => rpcClient.once("settingschange", resolve));
+        expect(rpcClient.settings.plebbitOptions).to.be.a("object");
+        expect(rpcClient.settings.challenges).to.be.a("object");
+        await plebbit.destroy();
     });
 });
 
