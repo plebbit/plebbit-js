@@ -92,14 +92,14 @@ new Subscription(subscriptionId).on('message', console.log)
 # JSON-RPC Websocket API
 
 - `method: getComment, params: [cid: string], result: Comment`
-- `method: getCommentPage, params: [pageCid, commentCid]`
-- `method: getSubplebbitPage, params: [pageCid, subplebbitAddress]`
-- `method: createSubplebbit, params: [createSubplebbitOptions]`
+- `method: getCommentPage, params: [pageCid: string, commentCid: string]`
+- `method: getSubplebbitPage, params: [pageCid: string, subplebbitAddress: string]`
+- `method: createSubplebbit, params: [createSubplebbitOptions: CreateSubplebbitOptions]`
 - `method: stopSubplebbit, params: [address: string]`
-- `method: editSubplebbit, params: [address: string, subplebbitEditOptions]`
+- `method: editSubplebbit, params: [address: string, subplebbitEditOptions: SubplebbitEditOptions]`
 - `method: deleteSubplebbit, params: [address: string]`
 - `method: fetchCid, params: [cid: string]`
-- `method: setSettings, params: [plebbitRpcSettings]`
+- `method: setSettings, params: [plebbitRpcSettings: PlebbitRpcSettings]`
 - (below not implemented yet, probably make them subscriptions only)
 - `method: getDefaults, params: []`
 - `method: getPeers, params: []`
@@ -109,11 +109,11 @@ new Subscription(subscriptionId).on('message', console.log)
 
 - [`method: commentUpdateSubscribe, params: [cid: string]`](#commentupdatesubscribe)
 - [`method: subplebbitUpdateSubscribe, params: [address: string]`](#subplebbitupdatesubscribe)
-- [`method: publishComment, params: [comment]`](#publishcomment)
-- `method: publishVote, params: [vote]`
-- `method: publishCommentEdit, params: [commentEdit]`
-- `method: publishCommentModeration, params: [commentModeration]`
-- `method: publishChallengeAnswers, params: [subscriptionId: number, challengeAnswers: string[]]`
+- [`method: publishComment, params: [{comment, challengeAnswers, challengeCommentCids}]`](#publishcomment)
+- `method: publishVote, params: [{vote, challengeAnswers, challengeCommentCids}]`
+- `method: publishCommentEdit, params: [{commentEdit, challengeAnswers, challengeCommentCids}]`
+- `method: publishCommentModeration, params: [{commentModeration, challengeAnswers, challengeCommentCids}]`
+- `method: publishChallengeAnswers, params: [subscriptionId: number, {challengeAnswers}]`
 - `method: startSubplebbit, params: [address: string]`
 - [`method: subplebbitsSubscribe, params: []`](#subplebbitssubscribe)
 - [`method: settingsSubscribe, params: []`](#settingssubscribe)
@@ -280,8 +280,8 @@ Publish a comment and subscribe to receive notifications of the challenge pubsub
   "jsonrpc": "2.0",
   "id": 1,
   "method": "publishComment",
-  "params": [
-    {
+  "params": [{
+    "comment": {
       "title": "Hello",
       "content": "World",
       "author": {"address": "john.eth"},
@@ -291,8 +291,9 @@ Publish a comment and subscribe to receive notifications of the challenge pubsub
         "type": "ed25519",
         "signedPropertyNames": ["title", "content", "author"]
       }
-    }
-  ]
+    },
+    "challengeAnswers": ["some answer"]
+  }]
 }
 ```
 
@@ -336,8 +337,7 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
     "result": {
       "type": "CHALLENGEVERIFICATION",
       "challengeSuccess": true,
-      "publication": {
-        "cid": "Qm...",
+      "comment": {
         "title": "Hello",
         "content": "World",
         "author": {"address": "john.eth"},
@@ -346,6 +346,15 @@ The notification format is the same as seen in the plebbit-js [Comment Events](h
           "publicKey": "...",
           "type": "ed25519",
           "signedPropertyNames": ["title", "content", "author"]
+        }
+      },
+      "commentUpdate": {
+        "cid": "Qm...",
+        "signature": {
+          "signature": "...",
+          "publicKey": "...",
+          "type": "ed25519",
+          "signedPropertyNames": ["cid"]
         }
       }
     },
@@ -394,7 +403,7 @@ The notification format is the same as seen in the plebbit-js [Plebbit Events](h
     "result": [
       "memes.eth", 
       "news.eth"
-    ]
+    ],
     "event": "subplebbitschange",
     "subscription": 23784
   }
