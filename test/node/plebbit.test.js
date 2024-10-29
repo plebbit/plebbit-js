@@ -1,10 +1,10 @@
 import Plebbit from "../../dist/node";
 import { expect } from "chai";
-import { mockPlebbit } from "../../dist/node/test/test-util";
+import { itIfRpc, itSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-util";
 
 // example of node only tests
 
-describe("plebbit", () => {
+describe("await plebbit()", () => {
     it("has default plebbit options", async () => {
         const plebbit = await Plebbit();
         expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"].sort());
@@ -18,8 +18,12 @@ describe("plebbit", () => {
         expect(plebbit.dataPath).to.match(/\.plebbit$/);
 
         JSON.stringify(plebbit); // Will throw an error if circular json
-    });
 
+        await plebbit.destroy();
+    });
+});
+
+describe(`plebbit.subplebbits`, async () => {
     it(`plebbit.subplebbits updates after creating a new sub`, async () => {
         const plebbit = await mockPlebbit();
         const newSubplebbit = await plebbit.createSubplebbit({
@@ -29,6 +33,26 @@ describe("plebbit", () => {
         expect(plebbit.subplebbits).to.include(newSubplebbit.address);
 
         JSON.stringify(plebbit); // Will throw an error if circular json
+        await plebbit.destroy();
+    });
+
+    itSkipIfRpc(`plebbit.subplebbits should be defined after creating Plebbit instance (NodeJS/IPFS-P2P)`, async () => {
+        const plebbit = await mockPlebbit(); // mockPlebbit will set up a nodejs plebbit or RPC plebbit
+        expect(plebbit.subplebbits).to.be.a("array");
+        expect(plebbit.subplebbits).to.have.length.of.at.least(1);
+        await plebbit.destroy();
+    });
+
+    itIfRpc(`plebbit.subplebbits is defined after emitting rpcstatechange with rpcState=connected (RPC client)`, async () => {
+        const plebbit = await mockPlebbit(); // mockPlebbit will set up a RPC plebbit
+        await new Promise((resolve) => plebbit.once("subplebbitschange", resolve));
+        const defaultRpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
+        expect(defaultRpcClient.state).to.equal("connected");
+        expect(plebbit.subplebbits).to.be.a("array");
+        expect(plebbit.subplebbits).to.have.length.of.at.least(1);
+        expect(defaultRpcClient.subplebbits).to.deep.equal(plebbit.subplebbits);
+        await plebbit.destroy();
+        expect(defaultRpcClient.state).to.equal("stopped");
     });
 });
 
