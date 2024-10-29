@@ -108,7 +108,7 @@ describe(`plebbit.createSubplebbit - (remote) - errors`, async () => {
                 await plebbit.createSubplebbit({});
                 expect.fail("should fail");
             } catch (e) {
-                expect(e.name).to.equal("ZodError");
+                expect(e.code).to.equal("ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA");
             }
         });
 });
