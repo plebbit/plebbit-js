@@ -52,8 +52,8 @@ describe(`Pinning posts`, async () => {
         sub = await plebbit.getSubplebbit(subplebbitAddress);
         await sub.update();
 
-        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1100 }, false);
-        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: 1000 }, false);
+        postToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: Math.round(Date.now() / 1000) - 110 }, false);
+        secondPostToPin = await publishRandomPost(subplebbitAddress, plebbit, { timestamp: Math.round(Date.now() / 1000) - 100 }, false);
 
         await postToPin.update();
         await secondPostToPin.update();
