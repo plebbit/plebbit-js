@@ -510,7 +510,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
                 reject(msg);
             } else resolve(1);
         });
-    }).catch(() => {});
+    });
 
     await publication.publish();
     await validateResponsePromise;
