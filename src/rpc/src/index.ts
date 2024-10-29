@@ -10,7 +10,6 @@ import {
 } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
-const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import type {
     PlebbitWsServerClassOptions,
     JsonRpcSendNotificationOptions,
@@ -53,10 +52,6 @@ import {
     parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
-import { Comment } from "../../publications/comment/comment.js";
-import Vote from "../../publications/vote/vote.js";
-import { CommentEdit } from "../../publications/comment-edit/comment-edit.js";
-import { CommentModeration } from "../../publications/comment-moderation/comment-moderation.js";
 import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
 import type { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
@@ -73,6 +68,8 @@ const getStartedSubplebbit = async (address: string): Promise<LocalSubplebbit> =
     return <LocalSubplebbit>startedSubplebbits[address];
 };
 
+const log = Logger("plebbit-js-rpc:plebbit-ws-server");
+
 class PlebbitWsServer extends EventEmitter {
     plebbit: Plebbit;
     rpcWebsockets: RpcWebsocketsServer;
@@ -83,6 +80,8 @@ class PlebbitWsServer extends EventEmitter {
     publishing: { [subscriptionId: number]: Publication } = {};
     authKey: string | undefined;
     private _getIpFromConnectionRequest = (req: IncomingMessage) => <string>req.socket.remoteAddress; // we set it up here so we can mock it in tests
+
+    private _onSettingsChange: { [connectionId: string]: { [subscriptionId: number]: () => void } } = {};
 
     constructor({ port, server, plebbit, authKey }: PlebbitWsServerClassOptions) {
         super();
@@ -140,6 +139,8 @@ class PlebbitWsServer extends EventEmitter {
             this.connections[ws._id] = ws;
             //@ts-ignore-error
             this.subscriptionCleanups[ws._id] = {};
+            //@ts-expect-error
+            this._onSettingsChange[ws._id] = {};
         });
 
         // cleanup on disconnect
@@ -163,10 +164,10 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("editSubplebbit", this.editSubplebbit.bind(this));
         this.rpcWebsocketsRegister("deleteSubplebbit", this.deleteSubplebbit.bind(this));
         this.rpcWebsocketsRegister("subplebbitsSubscribe", this.subplebbitsSubscribe.bind(this));
+        this.rpcWebsocketsRegister("settingsSubscribe", this.settingsSubscribe.bind(this));
 
         this.rpcWebsocketsRegister("fetchCid", this.fetchCid.bind(this));
         this.rpcWebsocketsRegister("resolveAuthorAddress", this.resolveAuthorAddress.bind(this));
-        this.rpcWebsocketsRegister("getSettings", this.getSettings.bind(this));
         this.rpcWebsocketsRegister("setSettings", this.setSettings.bind(this));
         // JSON RPC pubsub methods
         this.rpcWebsocketsRegister("commentUpdateSubscribe", this.commentUpdateSubscribe.bind(this));
@@ -190,7 +191,7 @@ class PlebbitWsServer extends EventEmitter {
             } catch (e: any) {
                 log.error(`${callback.name} error`, { params, error: e });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                const errorJson = JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e)));
+                const errorJson = JSON.parse(JSON.stringify(e));
                 delete errorJson["stack"];
                 throw errorJson;
             }
@@ -432,18 +433,52 @@ class PlebbitWsServer extends EventEmitter {
         return res;
     }
 
-    async getSettings(params: any): Promise<PlebbitWsServerSettingsSerialized> {
+    private _getCurrentSettings(): PlebbitWsServerSettingsSerialized {
         const plebbitOptions = this.plebbit.parsedPlebbitOptions;
         const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) =>
             remeda.omit(challengeFactory({}), ["getChallenge"])
         );
-        return { plebbitOptions, challenges };
+
+        const rpcSettings = <PlebbitWsServerSettingsSerialized>{ plebbitOptions, challenges };
+        return rpcSettings;
+    }
+
+    async settingsSubscribe(params: any, connectionId: string): Promise<number> {
+        const subscriptionId = generateSubscriptionId();
+        const sendEvent = (event: string, result: any) => {
+            this.jsonRpcSendNotification({
+                method: "settingsNotification",
+                subscription: Number(subscriptionId),
+                event,
+                result,
+                connectionId
+            });
+        };
+
+        const sendRpcSettings = () => {
+            sendEvent("settingschange", this._getCurrentSettings());
+        };
+
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this._onSettingsChange[connectionId][subscriptionId];
+        };
+
+        this._onSettingsChange[connectionId][subscriptionId] = sendRpcSettings;
+        sendRpcSettings();
+
+        return subscriptionId;
     }
 
     async setSettings(params: any) {
         const settings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(params[0]);
-        if (deterministicStringify(settings.plebbitOptions) === deterministicStringify(this.plebbit._userPlebbitOptions)) {
+        if (deterministicStringify(settings.plebbitOptions) === deterministicStringify(this._getCurrentSettings().plebbitOptions)) {
+            log("RPC client called setSettings with the same settings as the current one, aborting");
+            return true;
+        }
+
+        log(`RPC client called setSettings, the clients need to call all subscription methods again`);
         await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
+
         this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
         this.plebbit.on("error", (error: any) => {
             this.emit("error", error);
@@ -463,6 +498,11 @@ class PlebbitWsServer extends EventEmitter {
                 log.error("setPlebbitOptions failed restarting subplebbit", { error, address, params });
             }
         }
+
+        // send a settingsNotification to all subscribers
+        for (const connectionId of remeda.keys.strict(this._onSettingsChange))
+            for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
+                await this._onSettingsChange[connectionId][subscriptionId];
 
         // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
         // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
@@ -495,6 +535,7 @@ class PlebbitWsServer extends EventEmitter {
             }
         });
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
+        comment.on("statechange", () => sendEvent("statechange", comment.state));
         comment.on("error", (error) => sendEvent("error", error));
 
         // cleanup function
@@ -836,6 +877,7 @@ class PlebbitWsServer extends EventEmitter {
 
         this.ws.close();
         await this.plebbit.destroy();
+        this._onSettingsChange = {};
     }
 }
 
