@@ -152,6 +152,7 @@ class PlebbitWsServer extends EventEmitter {
             }
             delete this.subscriptionCleanups[ws._id];
             delete this.connections[ws._id];
+            delete this._onSettingsChange[ws._id];
         });
 
         // register all JSON RPC methods
@@ -502,7 +503,7 @@ class PlebbitWsServer extends EventEmitter {
         // send a settingsNotification to all subscribers
         for (const connectionId of remeda.keys.strict(this._onSettingsChange))
             for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
-                await this._onSettingsChange[connectionId][subscriptionId];
+                await this._onSettingsChange[connectionId][subscriptionId]();
 
         // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
         // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
