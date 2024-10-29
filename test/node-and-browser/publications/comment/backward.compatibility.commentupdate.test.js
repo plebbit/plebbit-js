@@ -71,13 +71,12 @@ getRemotePlebbitConfigs().map((config) => {
             mockPostToFetchSpecificCommentUpdateCid(postToUpdate, invalidCommentUpdateCid);
             // should emit an error because we did not include extraProp in signedPropertyNames
 
-            let error;
 
-            postToUpdate.once("error", (_err) => (error = _err));
+            const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
 
             await postToUpdate.update();
 
-            await new Promise((resolve) => setTimeout(resolve, plebbit.updateInterval * 2));
+            const error = await errorPromise;
 
             await postToUpdate.stop();
 

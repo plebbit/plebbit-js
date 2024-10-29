@@ -44,12 +44,14 @@ getRemotePlebbitConfigs().map((config) => {
             });
             await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, false);
 
+            const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
             await publishWithExpectedResult(
                 commentEdit,
                 false,
                 messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES
             );
-            expect(commentEdit._publishedChallengeRequests[0].commentEdit.extraProp).to.equal("1234");
+            const challengeRequest = await challengeRequestPromise;
+            expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
         });
 
         it(`publishing commentEdit.extraProp should succeed as an author edit if it's included in commentEdit.signature.signedPropertyNames`, async () => {
@@ -61,13 +63,16 @@ getRemotePlebbitConfigs().map((config) => {
             });
             await setExtraPropOnCommentEditAndSign(commentEdit, { extraProp: "1234" }, true);
 
+            const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
+
             await publishWithExpectedResult(commentEdit, true);
 
             await new Promise((resolve) => commentToEdit.once("update", resolve));
             // if commentToEdit emits update that means the signature of update.edit is correct
             expect(commentToEdit.content).to.equal(commentEdit.content); // should process only content since it's the known field
             expect(commentToEdit.extraProp).to.be.undefined;
-            expect(commentEdit._publishedChallengeRequests[0].commentEdit.extraProp).to.equal("1234");
+            const challengeRequest = await challengeRequestPromise;
+            expect(challengeRequest.commentEdit.extraProp).to.equal("1234");
             await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
         });
 
@@ -80,8 +85,10 @@ getRemotePlebbitConfigs().map((config) => {
             });
             await setExtraPropOnCommentEditAndSign(commentEdit, { insertedAt: "1234" }, true);
 
+            const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
             await publishWithExpectedResult(commentEdit, false, messages.ERR_COMMENT_EDIT_HAS_RESERVED_FIELD);
-            expect(commentEdit._publishedChallengeRequests[0].commentEdit.insertedAt).to.equal("1234");
+            const challengeRequest = await challengeRequestPromise;
+            expect(challengeRequest.commentEdit.insertedAt).to.equal("1234");
         });
 
         describe(`Publishing CommentEdit with extra props in author field - ${config.name}`, async () => {
@@ -99,8 +106,11 @@ getRemotePlebbitConfigs().map((config) => {
                     true
                 );
 
+                const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
+
                 await publishWithExpectedResult(commentEdit, false, messages.ERR_PUBLICATION_AUTHOR_HAS_RESERVED_FIELD);
-                expect(commentEdit._publishedChallengeRequests[0].commentEdit.author.subplebbit).to.equal("random");
+                const challengerequest = await challengeRequestPromise;
+                expect(challengerequest.commentEdit.author.subplebbit).to.equal("random");
             });
             it(`Publishing with extra prop for author should succeed`, async () => {
                 const commentEdit = await plebbit.createCommentEdit({
@@ -118,8 +128,11 @@ getRemotePlebbitConfigs().map((config) => {
 
                 await plebbit.createCommentEdit(JSON.parse(JSON.stringify(commentEdit))); // Just to test if create will throw because of extra prop
 
+                const challengeRequestPromise = new Promise((resolve) => commentEdit.once("challengerequest", resolve));
+
                 await publishWithExpectedResult(commentEdit, true);
-                expect(commentEdit._publishedChallengeRequests[0].commentEdit.author.extraProp).to.equal(extraProps.extraProp);
+                const challengeRequest = await challengeRequestPromise;
+                expect(challengeRequest.commentEdit.author.extraProp).to.equal(extraProps.extraProp);
             });
         });
     });

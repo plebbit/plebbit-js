@@ -57,13 +57,10 @@ describeSkipIfRpc("challengerequest", async () => {
 
     it(`challenge request with outdated timestamp is invalidated`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
         await comment.publish();
-        expect(comment._publishedChallengeRequests).to.be.a("array");
-        const challengeRequestToEdit = remeda.omit(remeda.clone(comment._publishedChallengeRequests[0]), [
-            "comment",
-            "challengeAnswers",
-            "challengeCommentCids"
-        ]);
+        const challengeRequest = await challengeRequestPromise;
+        const challengeRequestToEdit = remeda.omit(remeda.clone(challengeRequest), ["comment", "challengeAnswers", "challengeCommentCids"]);
         challengeRequestToEdit.timestamp = timestamp() - 6 * 60; // Should be invalidated now
         const signer = Object.values(comment._challengeIdToPubsubSigner)[0];
         challengeRequestToEdit.signature = await signChallengeRequest(challengeRequestToEdit, signer);
@@ -73,14 +70,11 @@ describeSkipIfRpc("challengerequest", async () => {
 
     it(`Valid live ChallengeRequest gets validated correctly`, async () => {
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[5] });
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+
         await comment.publish();
-        // comment._publishedChallengeRequests (ChallengeRequest[]) should be defined now
-        expect(comment._publishedChallengeRequests).to.be.a("array");
-        const requestToValidate = remeda.omit(comment._publishedChallengeRequests[0], [
-            "comment",
-            "challengeAnswers",
-            "challengeCommentCids"
-        ]);
+        const challengeRequest = await challengeRequestPromise;
+        const requestToValidate = remeda.omit(challengeRequest, ["comment", "challengeAnswers", "challengeCommentCids"]);
         const verificaiton = await verifyChallengeRequest(requestToValidate);
         expect(verificaiton).to.deep.equal({ valid: true });
     });
@@ -90,13 +84,12 @@ describeSkipIfRpc("challengerequest", async () => {
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
         comment._clientsManager.pubsubPublishOnProvider = () => undefined;
 
-        await comment.publish(); // comment._publishedChallengeRequests should be defined now, although it hasn't been published
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
 
-        const challengeRequestToModify = remeda.omit(comment._publishedChallengeRequests[0], [
-            "comment",
-            "challengeCommentCids",
-            "challengeAnswers"
-        ]);
+        await comment.publish();
+        const challengeRequest = await challengeRequestPromise;
+
+        const challengeRequestToModify = remeda.omit(challengeRequest, ["comment", "challengeCommentCids", "challengeAnswers"]);
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
         challengeRequestToModify.encrypted = await encryptEd25519AesGcm(
             JSON.stringify(comment.toJSONPubsubRequestToEncrypt()),
@@ -121,13 +114,14 @@ describeSkipIfRpc("challengerequest", async () => {
         const originalPublish = comment._clientsManager.pubsubPublishOnProvider.bind(comment._clientsManager);
         comment._clientsManager.pubsubPublishOnProvider = () => undefined;
 
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+
         try {
-            await comment.publish(); // comment._publishedChallengeRequests should be defined now, although it hasn't been published
+            await comment.publish();
         } catch {}
 
+        const challengeRequest = await challengeRequestPromise;
         comment._clientsManager.pubsubPublishOnProvider = originalPublish;
-
-        expect(comment._publishedChallengeRequests).to.be.a("array");
 
         const commentObjToEncrypt = JSON.parse(JSON.stringify(comment.toJSONPubsubRequestToEncrypt()));
 
@@ -142,11 +136,7 @@ describeSkipIfRpc("challengerequest", async () => {
             reason: messages.ERR_SIGNATURE_IS_INVALID
         });
 
-        const challengeRequestToModify = remeda.omit(comment._publishedChallengeRequests[0], [
-            "comment",
-            "challengeCommentCids",
-            "challengeAnswers"
-        ]);
+        const challengeRequestToModify = remeda.omit(challengeRequest, ["comment", "challengeCommentCids", "challengeAnswers"]);
         const pubsubSigner = Object.values(comment._challengeIdToPubsubSigner)[0];
 
         challengeRequestToModify.encrypted = await encryptEd25519AesGcm(
@@ -170,12 +160,12 @@ describeSkipIfRpc("challengerequest", async () => {
     it(`Sub ignores a challenge request with invalid pubsubMessage.signature`, async () => {
         // This test case also includes challengeRequestId not being derived from signer since it's caught by verifyChallengeRequest
         const comment = await generateMockPost(signers[0].address, plebbit, false, { signer: signers[6] });
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
 
         await Promise.all([new Promise((resolve) => comment.once("challengeverification", resolve)), comment.publish()]);
 
-        // comment._publishedChallengeRequests (ChallengeRequest) should be defined now
-        expect(comment._publishedChallengeRequests).to.be.a("array");
-        const requestWithInvalidSignature = remeda.omit(remeda.clone(comment._publishedChallengeRequests[0]), [
+        const challengeRequest = await challengeRequestPromise;
+        const requestWithInvalidSignature = remeda.omit(remeda.clone(challengeRequest), [
             "comment",
             "challengeCommentCids",
             "challengeAnswers"
@@ -279,14 +269,18 @@ describeSkipIfRpc("challengeanswer", async () => {
         const comment = await generateMockPost(mathCliSubplebbitAddress, plebbit, false, { signer: signers[6] });
 
         comment.removeAllListeners();
+        const challengeRequestPromise = new Promise((resolve) => comment.once("challengerequest", resolve));
+        const challengePromise = new Promise((resolve) => comment.once("challenge", resolve));
+
         await comment.publish();
 
-        await new Promise((resolve) => comment.once("challenge", resolve));
+        const challengeRequest = await challengeRequestPromise;
+        const challenge = await challengePromise;
 
         await comment._plebbit._clientsManager.pubsubUnsubscribe(comment._subplebbit.pubsubTopic, comment.handleChallengeExchange);
         const toSignAnswer = {
             type: "CHALLENGEANSWER",
-            challengeRequestId: comment._publishedChallengeRequests[0].challengeRequestId,
+            challengeRequestId: challengeRequest.challengeRequestId,
             encrypted: JSON.stringify([2]),
             userAgent: PlebbitJsVersion.USER_AGENT,
             protocolVersion: PlebbitJsVersion.PROTOCOL_VERSION,
@@ -311,10 +305,7 @@ describeSkipIfRpc("challengeanswer", async () => {
 
         const subMethod = (pubsubMsg) => {
             const msgParsed = cborgDecode(pubsubMsg["data"]);
-            if (
-                msgParsed.type === "CHALLENGEVERIFICATION" &&
-                msgParsed.challengeRequestId === comment._publishedChallengeRequests[0].challengeRequestId
-            ) {
+            if (msgParsed.type === "CHALLENGEVERIFICATION" && msgParsed.challengeRequestId === challengeRequest.challengeRequestId) {
                 assert.fail("Subplebbit should ignore a challenge answer with invalid signature");
             }
         };
