@@ -270,3 +270,7 @@
 //     };
 //     return libp2pPubsubClient;
 // }
+
+export function createLibp2pNode() {
+    return undefined;
+}

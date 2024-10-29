@@ -1,5 +1,5 @@
-import { generateMockPost, getRemotePlebbitConfigs, publishWithExpectedResult } from "../../../../dist/node/test/test-util";
-import signers from "../../../fixtures/signers";
+import { generateMockPost, getRemotePlebbitConfigs, publishWithExpectedResult } from "../../../../dist/node/test/test-util.js";
+import signers from "../../../fixtures/signers.js";
 import { expect } from "chai";
 
 getRemotePlebbitConfigs().map((config) => {

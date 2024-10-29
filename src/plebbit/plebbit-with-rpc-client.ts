@@ -1,18 +1,17 @@
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "./plebbit";
+import { Plebbit } from "./plebbit.js";
 import { InputPlebbitOptions } from "../types";
 import {
     parseCidStringSchemaWithPlebbitErrorIfItFails,
     parseCreateRpcSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails
-} from "../schema/schema-util";
-import { AuthorAddressSchema } from "../schema/schema";
-import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema";
-import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit";
-import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit";
+} from "../schema/schema-util.js";
+import { AuthorAddressSchema } from "../schema/schema.js";
+import { CreateRpcSubplebbitFunctionArgumentSchema } from "../subplebbit/schema.js";
+import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
+import { RpcRemoteSubplebbit } from "../subplebbit/rpc-remote-subplebbit.js";
 import type { RpcLocalSubplebbitJson, RpcRemoteSubplebbitJson } from "../subplebbit/types";
 import { z } from "zod";
-import { PlebbitError } from "../plebbit-error";
-import PlebbitRpcClient from "../clients/rpc-client/plebbit-rpc-client";
+import { PlebbitError } from "../plebbit-error.js";
 
 // This is a helper class for separating RPC-client logic from main Plebbit
 // Not meant to be used with end users

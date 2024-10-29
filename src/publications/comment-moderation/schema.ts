@@ -8,9 +8,9 @@ import {
     PublicationBaseBeforeSigning,
     SignerWithAddressPublicKeySchema,
     SubplebbitAuthorSchema
-} from "../../schema/schema";
+} from "../../schema/schema.js";
 import * as remeda from "remeda";
-import { keysToOmitFromSignedPropertyNames } from "../../signer/constants";
+import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
 export const ModeratorOptionsSchema = z
     .object({
