@@ -150,7 +150,7 @@ describe("Subplebbit rejection of incorrect values of fields", async () => {
         const reply = await generateMockComment(post, plebbit, false);
         await setExtraPropOnCommentAndSign(reply, { postCid: undefined }, true);
         expect(reply.postCid).to.be.undefined;
-        await publishWithExpectedResult(reply, messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
+        await publishWithExpectedResult(reply, false, messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
         expect(reply._publishedChallengeRequests[0].comment.postCid).to.be.undefined;
     });
 });

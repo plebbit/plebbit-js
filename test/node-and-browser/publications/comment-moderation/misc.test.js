@@ -15,7 +15,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-const commentToModCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";
 
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -25,14 +24,16 @@ const roles = [
 
 describe("plebbit.createCommentModeration misc", async () => {
     let plebbit;
+    let commentToMod;
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
+        commentToMod = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
     });
     it(`(commentMod: CommentModeration) === plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentMod)))`, async () => {
         const modProps = {
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToModCid,
+            commentCid: commentToMod.cid,
             commentModeration: { removed: true, reason: "mod Reason" + Date.now() },
             signer: signers[7] // Create a new signer, different than the signer of the original comment
         };
@@ -54,7 +55,7 @@ describe("plebbit.createCommentModeration misc", async () => {
         const props = {
             challengeRequest: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["test123"] },
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToModCid,
+            commentCid: commentToMod.cid,
             commentModeration: { locked: true, reason: "editReason" + Date.now() },
             signer: signers[7] // Create a new signer, different than the signer of the original comment
         };
@@ -80,9 +81,9 @@ describe("plebbit.createCommentModeration misc", async () => {
     it(`Can publish a CommentModeration that was created from jsonfied CommentModeration instance`, async () => {
         const modProps = {
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToModCid,
+            commentCid: commentToMod.cid,
             commentModeration: { removed: true, reason: "mod Reason" + Date.now() },
-            signer: signers[7] // Create a new signer, different than the signer of the original comment
+            signer: roles[0].signer // mod signer
         };
         const commentMod = await plebbit.createCommentModeration(modProps);
         const modFromStringifiedMod = await plebbit.createCommentModeration(JSON.parse(JSON.stringify(commentMod)));

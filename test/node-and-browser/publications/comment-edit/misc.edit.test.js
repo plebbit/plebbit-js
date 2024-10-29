@@ -13,7 +13,6 @@ chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
-const commentToEditCid = "QmRxNUGsYYg3hxRnhnbvETdYSc16PXqzgF8WP87UXpb9Rs";
 
 const roles = [
     { role: "owner", signer: signers[1] },
@@ -23,14 +22,17 @@ const roles = [
 
 describe("plebbit.createCommentEdit", async () => {
     let plebbit;
+    let commentToEdit;
 
     before(async () => {
         plebbit = await mockRemotePlebbit();
+        commentToEdit = await publishRandomPost(subplebbitAddress, plebbit);
+        expect(commentToEdit.cid).to.be.a("string");
     });
     it(`(edit: CommentEdit) === plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)))`, async () => {
         const props = {
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToEditCid,
+            commentCid: commentToEdit.cid,
             reason: "editReason" + Date.now(),
             content: "editedText" + Date.now(),
             signer: signers[7] // Create a new signer, different than the signer of the original comment
@@ -54,7 +56,7 @@ describe("plebbit.createCommentEdit", async () => {
         const props = {
             challengeRequest: { challengeCommentCids: ["QmVZR5Ts9MhRc66hr6TsYnX1A2oPhJ2H1fRJknxgjLLwrh"], challengeAnswers: ["1234"] },
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToEditCid,
+            commentCid: commentToEdit.cid,
             reason: "editReason" + Date.now(),
             content: "editedText" + Date.now(),
             signer: signers[7] // Create a new signer, different than the signer of the original comment
@@ -84,10 +86,10 @@ describe("plebbit.createCommentEdit", async () => {
     it(`Can publish a CommentEdit that was created from jsonfied CommentEdit instance`, async () => {
         const props = {
             subplebbitAddress: subplebbitAddress,
-            commentCid: commentToEditCid,
+            commentCid: commentToEdit.cid,
             reason: "editReason" + Date.now(),
             content: "editedText" + Date.now(),
-            signer: signers[7] // Create a new signer, different than the signer of the original comment
+            signer: commentToEdit.signer
         };
         const edit = await plebbit.createCommentEdit(props);
         const editFromStringifiedEdit = await plebbit.createCommentEdit(JSON.parse(JSON.stringify(edit)));

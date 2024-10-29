@@ -293,16 +293,20 @@ describeIfRpc(`plebbit.clients.plebbitRpcClients`, async () => {
     it(`plebbit.clients.plebbitRpcClients.setSettings`, async () => {
         const plebbit = await mockPlebbit();
         const rpcClient = plebbit.clients.plebbitRpcClients[Object.keys(plebbit.clients.plebbitRpcClients)[0]];
+        const settingsPromise = new Promise((resolve) => rpcClient.once("settingschange", resolve));
         const allSettings = [];
         rpcClient.on("settingschange", (newSettings) => allSettings.push(newSettings));
 
-        if (!rpcClient.settings) await new Promise((resolve) => rpcClient.once("settingschange", resolve));
+        if (!rpcClient.settings) await settingsPromise;
 
         // change settings here, and await for a new settingschange to be emitted
-        const newSettings = { ...rpcClient.settings, plebbitOptions: { ...rpcClient.settings.plebbitOptions, userAgent: "test-agent" } };
+        const newSettings = {
+            ...rpcClient.settings,
+            plebbitOptions: { ...rpcClient.settings.plebbitOptions, userAgent: "test-agent" + Date.now() }
+        };
+        const editedSettingsPromise = new Promise((resolve) => rpcClient.once("settingschange", resolve));
         await rpcClient.setSettings(newSettings);
-        if (JSON.stringify(rpcClient.settings) !== JSON.stringify(newSettings))
-            await new Promise((resolve) => rpcClient.once("settingschange", resolve));
+        await editedSettingsPromise;
         expect(rpcClient.settings).to.deep.equal(newSettings);
         expect(allSettings[allSettings.length - 1]).to.deep.equal(newSettings);
         await plebbit.destroy();
