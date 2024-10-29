@@ -937,6 +937,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (publication.subplebbitAddress !== this.address) return messages.ERR_PUBLICATION_INVALID_SUBPLEBBIT_ADDRESS;
 
+        if (publication.timestamp <= timestamp() - 5 * 60 || publication.timestamp >= timestamp() + 5 * 60)
+            return messages.ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE;
+
         if (typeof authorSubplebbit?.banExpiresAt === "number" && authorSubplebbit.banExpiresAt > timestamp())
             return messages.ERR_AUTHOR_IS_BANNED;
 

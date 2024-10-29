@@ -181,6 +181,7 @@ export enum messages {
     ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT = "CommentEditPubsubMessagePublication is attempting to edit a comment that does not exist",
     ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD = "CommentModerationPubsubMessagePublication has a reserved field",
     ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR = "CommentModerationPubsubMessagePublication signer is not a mod at this subplebbit",
+    ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
