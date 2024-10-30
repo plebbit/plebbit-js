@@ -10,7 +10,10 @@ import {
     findCommentInPage,
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
-    itSkipIfRpc
+    itSkipIfRpc,
+    getRemotePlebbitConfigs,
+    describeSkipIfRpc,
+    mockPlebbit
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
@@ -27,195 +30,250 @@ const { expect, assert } = chai;
 const subplebbitAddress = signers[0].address;
 const mathCliSubplebbitAddress = signers[1].address;
 
-describe("publishing comments", async () => {
-    let plebbit;
+getRemotePlebbitConfigs().map((config) => {
+    describe("publishing posts - " + config.name, async () => {
+        let plebbit;
 
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-    });
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+        });
 
-    it("Can publish a post", async () => {
-        await publishRandomPost(subplebbitAddress, plebbit, {});
-    });
+        it("Can publish a post", async () => {
+            await publishRandomPost(subplebbitAddress, plebbit, {});
+        });
 
-    it(`Can Publish a post with only link`, async () => {
-        const link = "https://demo.plebbit.eth.limo";
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { link });
-        expect(post.link).to.equal(link);
-        await publishWithExpectedResult(post, true);
-        await waitTillCommentIsInParentPages(post, plebbit, { link });
-    });
+        it(`Can Publish a post with only link`, async () => {
+            const link = "https://demo.plebbit.eth.limo";
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, { link });
+            expect(post.link).to.equal(link);
+            await publishWithExpectedResult(post, true);
+            await waitTillCommentIsInParentPages(post, plebbit, { link });
+        });
 
-    it("Can publish posts and comments with emoji for title and content", async () => {
-        const emojiContents = [
-            "Hey 👋 Mate.\nCongratulations 🎉, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n🌟 CG Watchlist $8 / 1000\n🌟 CG Thumb 👍 Votes \n\n⭐️ CoinGecko Trendings\n    🔘 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    🔘 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
-            "Hey \ud83d\udc4b Mate.\nCongratulations \ud83c\udf89, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n\ud83c\udf1f CG Watchlist $8 / 1000\n\ud83c\udf1f CG Thumb \ud83d\udc4d Votes \n\n⭐️ CoinGecko Trendings\n    \ud83d\udd18 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    \ud83d\udd18 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
-            "Lorem ipsum dolor...\n...there's a mouse on the floor\\s\\s\nand it's running for the door\\s\\s\nin front of the the zombie Moor.\n...thank you, I'll let myself out.\n💂\n",
-            " 😜 😀 you will never be fixed"
-        ];
+        it("Can publish posts with emoji for title and content", async () => {
+            const emojiContents = [
+                "Hey 👋 Mate.\nCongratulations 🎉, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n🌟 CG Watchlist $8 / 1000\n🌟 CG Thumb 👍 Votes \n\n⭐️ CoinGecko Trendings\n    🔘 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    🔘 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
+                "Hey \ud83d\udc4b Mate.\nCongratulations \ud83c\udf89, Your Project Listed On CoinGecko.\n\nhttps://www.coingecko.com/en/coins/plebbit\n\nWe have best service for help grow your project.\n\n\ud83c\udf1f CG Watchlist $8 / 1000\n\ud83c\udf1f CG Thumb \ud83d\udc4d Votes \n\n⭐️ CoinGecko Trendings\n    \ud83d\udd18 Reginal Trend\nhttps://www.coingecko.com/en/watchlists/trending-crypto/united-states\n\nUSA, UK, Brazil, India, Philippines, Turkey, Indonesia,\n    \n    \ud83d\udd18 Main & Searches Bar Trend \nhttps://www.coingecko.com/en/watchlists/trending-crypto\n\nTop Spot -   #1 to #3\nHighly probably top #1",
+                "Lorem ipsum dolor...\n...there's a mouse on the floor\\s\\s\nand it's running for the door\\s\\s\nin front of the the zombie Moor.\n...thank you, I'll let myself out.\n💂\n",
+                " 😜 😀 you will never be fixed"
+            ];
 
-        for (const content of emojiContents) {
-            const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content }, true);
-            expect(publishedPostContent.content).to.equal(content);
-            // TODO add a test for expected cid here, very important
+            for (const content of emojiContents) {
+                const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content }, true);
+                expect(publishedPostContent.content).to.equal(content);
 
-            const publishedPostIpfs = deterministicStringify(publishedPostContent.toJSONIpfs());
-            expect(await calculateIpfsHash(publishedPostIpfs)).to.equal(publishedPostContent.cid);
+                const publishedPostIpfs = deterministicStringify(publishedPostContent.toJSONIpfs());
+                expect(await calculateIpfsHash(publishedPostIpfs)).to.equal(publishedPostContent.cid);
 
-            const remotePost = await plebbit.getComment(publishedPostContent.cid);
-            const remotePostIpfs = deterministicStringify(remotePost.toJSONIpfs());
-            expect(await calculateIpfsHash(remotePostIpfs)).to.equal(publishedPostContent.cid);
-        }
-    });
+                const remotePost = await plebbit.getComment(publishedPostContent.cid);
+                const remotePostIpfs = deterministicStringify(remotePost.toJSONIpfs());
+                expect(await calculateIpfsHash(remotePostIpfs)).to.equal(publishedPostContent.cid);
+            }
+        });
 
-    it(`comment.author.shortAddress is defined throughout publishing`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false);
-        expect(post.author.shortAddress).to.be.a("string").with.length.above(0);
-        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
-            .to.be.a("string")
-            .with.length.above(0);
-        await publishWithExpectedResult(post, true);
-        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
-            .to.be.a("string")
-            .with.length.above(0);
-        await post.update();
-        await new Promise((resolve) => post.once("update", resolve));
-        expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
-            .to.be.a("string")
-            .with.length.above(0);
-        await post.stop();
-    });
+        it(`post.author.shortAddress is defined throughout publishing`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, false);
+            expect(post.author.shortAddress).to.be.a("string").with.length.above(0);
+            expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+                .to.be.a("string")
+                .with.length.above(0);
+            await publishWithExpectedResult(post, true);
+            expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+                .to.be.a("string")
+                .with.length.above(0);
+            await post.update();
+            await new Promise((resolve) => post.once("update", resolve));
+            expect(JSON.parse(JSON.stringify(post)).author.shortAddress)
+                .to.be.a("string")
+                .with.length.above(0);
+            await post.stop();
+        });
 
-    it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
-        const commentProps = {
-            title: "Random " + Math.random(),
-            content: "Random " + Math.random(),
-            subplebbitAddress,
-            author: {
-                address: signers[6].address,
-                avatar: {
-                    address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
-                    chainTicker: "matic",
-                    timestamp: 123456,
-                    id: "8",
-                    signature: {
-                        signature:
-                            "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
-                        type: "eip191"
+        it(`Can publish a post with author.avatar. Can also validate it after publishing`, async () => {
+            const commentProps = {
+                title: "Random " + Math.random(),
+                content: "Random " + Math.random(),
+                subplebbitAddress,
+                author: {
+                    address: signers[6].address,
+                    avatar: {
+                        address: "0x890a2e81836e0E76e0F49995e6b51ca6ce6F39ED",
+                        chainTicker: "matic",
+                        timestamp: 123456,
+                        id: "8",
+                        signature: {
+                            signature:
+                                "0x52d29d32fcb1c5b3cd3638ccd67573985c4b01816a5e77fdfb0122488a0fdeb854ca6dae4fbdb0594db88e36ba83e87a321321fcfde498f84310a6b5cd543f3f1c",
+                            type: "eip191"
+                        }
                     }
                 }
+            };
+            const post = await plebbit.createComment({ ...commentProps, signer: signers[6] });
+
+            await publishWithExpectedResult(post, true);
+            await waitTillCommentIsInParentPages(post, plebbit, remeda.omit(commentProps, ["author"]));
+            const postSubplebbit = await plebbit.getSubplebbit(post.subplebbitAddress);
+            // Should have post
+            const postInPage = await findCommentInPage(post.cid, postSubplebbit.posts.pageCids.new, postSubplebbit.posts);
+            expect(postInPage.author.avatar).to.deep.equal(commentProps.author.avatar);
+            expect(postInPage.author.address).to.equal(commentProps.author.address);
+        });
+
+        it(`Can publish a post with spoiler`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true });
+
+            expect(post.spoiler).to.be.true;
+
+            await publishWithExpectedResult(post, true);
+            expect(post.spoiler).to.be.true;
+            await waitTillCommentIsInParentPages(post, plebbit, { spoiler: true });
+            await post.stop();
+        });
+
+        it(`Can publish a post with author.wallets`, async () => {
+            const wallets = {
+                eth: {
+                    address: "rinse12.eth",
+                    timestamp: Math.round(Date.now() / 1000),
+                    signature: { type: "eip191", signature: "0xnotactualsignaturejusttosatisfyschema" }
+                }
+            };
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
+            expect(post.author.wallets).to.deep.equal(wallets);
+            await publishWithExpectedResult(post, true);
+            await waitTillCommentIsInParentPages(post, plebbit);
+            const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+            const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInPage.author.wallets).to.deep.equal(wallets);
+            await post.stop();
+        });
+
+        it(`Can publish a post that was created from another comment instance`, async () => {
+            const comment1 = await generateMockPost(subplebbitAddress, plebbit);
+            const commentToPublish = await plebbit.createComment(comment1);
+            await publishWithExpectedResult(commentToPublish, true);
+            expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
+        });
+
+        it(`Can publish a post that was created from jsonfied comment instance`, async () => {
+            const comment1 = await generateMockPost(subplebbitAddress, plebbit);
+            const commentToPublish = await plebbit.createComment(JSON.parse(JSON.stringify(comment1)));
+            await publishWithExpectedResult(commentToPublish, true);
+            expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
+            expect(commentToPublish.toJSONPubsubRequestToEncrypt()).to.deep.equal(comment1.toJSONPubsubRequestToEncrypt());
+        });
+
+        it(`Can publish a post with linkHtmlTagName defined`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, { linkHtmlTagName: "img", link: "https://google.com" });
+            expect(post.linkHtmlTagName).to.equal("img");
+            expect(post.link).to.equal("https://google.com");
+
+            await publishWithExpectedResult(post, true);
+            expect(post.linkHtmlTagName).to.equal("img");
+            expect(post.link).to.equal("https://google.com");
+
+            const remotePost = await plebbit.getComment(post.cid);
+            expect(remotePost.linkHtmlTagName).to.equal("img");
+            expect(remotePost.link).to.equal("https://google.com");
+        });
+
+        it(`A post with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
+            const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets: {} } });
+            // plebbit.createComment will remove empty {}, so author.wallets will be undefined
+            expect(post.author.wallets).to.be.undefined;
+            await publishWithExpectedResult(post, true);
+            expect(post.author.wallets).to.be.undefined;
+            await waitTillCommentIsInParentPages(post, plebbit);
+            await post.stop();
+            expect(post.author.wallets).to.be.undefined;
+
+            const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
+            expect(loadedPost.author.wallets).to.be.undefined;
+        });
+
+        it(`publish() can be caught if subplebbit failed to load`, async () => {
+            const downSubplebbitAddress = signers[7].address; // an offline sub
+            const post = await generateMockPost(downSubplebbitAddress, plebbit);
+
+            try {
+                await post.publish();
+                expect.fail("should fail");
+            } catch (e) {
+                expect(e.code).to.be.oneOf(["ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS", "ERR_FAILED_TO_RESOLVE_IPNS_VIA_IPFS_P2P"]);
+                // await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
             }
-        };
-        const post = await plebbit.createComment({ ...commentProps, signer: signers[6] });
+        });
 
-        await publishWithExpectedResult(post, true);
-        await waitTillCommentIsInParentPages(post, plebbit, remeda.omit(commentProps, ["author"]));
-        const postSubplebbit = await plebbit.getSubplebbit(post.subplebbitAddress);
-        // Should have post
-        const postInPage = await findCommentInPage(post.cid, postSubplebbit.posts.pageCids.new, postSubplebbit.posts);
-        expect(postInPage.author.avatar).to.deep.equal(commentProps.author.avatar);
-        expect(postInPage.author.address).to.equal(commentProps.author.address);
-    });
-
-    it(`Publish a post with spoiler`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true });
-
-        expect(post.spoiler).to.be.true;
-
-        await publishWithExpectedResult(post, true);
-        expect(post.spoiler).to.be.true;
-        await waitTillCommentIsInParentPages(post, plebbit, { spoiler: true });
-        await post.stop();
-    });
-
-    it(`publish a post with author.wallets`, async () => {
-        const wallets = {
-            eth: {
-                address: "rinse12.eth",
+        it(`Can publish a post whose signature is defined prior to plebbit.createComment()`, async () => {
+            const signer = await plebbit.createSigner();
+            const props = {
+                subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
                 timestamp: Math.round(Date.now() / 1000),
-                signature: { type: "eip191", signature: "0xnotactualsignaturejusttosatisfyschema" }
-            }
-        };
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
-        expect(post.author.wallets).to.deep.equal(wallets);
-        await publishWithExpectedResult(post, true);
-        await waitTillCommentIsInParentPages(post, plebbit);
-        const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
-        const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
-        expect(postInPage.author.wallets).to.deep.equal(wallets);
-        await post.stop();
+                author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
+                protocolVersion: "1.0.0",
+                content: "Mock content - 1690130836.1711266" + Math.random(),
+                title: "Mock Post - 1690130836.1711266" + Math.random()
+            };
+
+            props.signature = await signComment({ ...props, signer }, plebbit);
+            const post = await plebbit.createComment(props);
+            expect(post.signature).to.deep.equal(props.signature);
+            await publishWithExpectedResult(post, true);
+            await post.stop();
+        });
     });
 
-    it(`Can publish a comment that was created from another comment instance`, async () => {
-        const comment1 = await generateMockPost(subplebbitAddress, plebbit);
-        const commentToPublish = await plebbit.createComment(comment1);
-        await publishWithExpectedResult(commentToPublish, true);
-        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
+    describe(`Publishing replies - ${config.name}`, async () => {
+        let post, plebbit;
+
+        const parents = [];
+
+        before(async () => {
+            plebbit = await config.plebbitInstancePromise();
+            post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            parents.push(post);
+        });
+
+        after(() => [...parents, post].forEach((parent) => parent.stop()));
+
+        it(`Can publish a reply with title, content and link defined`, async () => {
+            await publishRandomReply(
+                post,
+                plebbit,
+                {
+                    title: `Test title on Comment ${Date.now()} ${Math.random()}`,
+                    content: "Random Content" + Math.random(),
+                    link: "https://plebbit.com"
+                },
+                true
+            );
+        });
+
+        [1, 2, 3].map((depth) =>
+            it(`Can publish comment with depth = ${depth}`, async () => {
+                const parentComment = parents[depth - 1];
+
+                const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
+                expect(reply.depth).to.be.equal(depth);
+
+                await waitTillCommentIsInParentPages(
+                    reply,
+                    plebbit,
+                    { ...remeda.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
+                    true
+                );
+
+                await reply.stop();
+                parents.push(reply);
+            })
+        );
     });
+});
 
-    it(`Can publish a comment that was created from jsonfied comment instance`, async () => {
-        const comment1 = await generateMockPost(subplebbitAddress, plebbit);
-        const commentToPublish = await plebbit.createComment(JSON.parse(JSON.stringify(comment1)));
-        await publishWithExpectedResult(commentToPublish, true);
-        expect(commentToPublish.toJSONPubsubMessagePublication()).to.deep.equal(comment1.toJSONPubsubMessagePublication());
-        expect(commentToPublish.toJSONPubsubRequestToEncrypt()).to.deep.equal(comment1.toJSONPubsubRequestToEncrypt());
-    });
-
-    it(`Can publish a comment with linkHtmlTagName defined`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { linkHtmlTagName: "img", link: "https://google.com" });
-        expect(post.linkHtmlTagName).to.equal("img");
-        expect(post.link).to.equal("https://google.com");
-
-        await publishWithExpectedResult(post, true);
-        expect(post.linkHtmlTagName).to.equal("img");
-        expect(post.link).to.equal("https://google.com");
-
-        const remotePost = await plebbit.getComment(post.cid);
-        expect(remotePost.linkHtmlTagName).to.equal("img");
-        expect(remotePost.link).to.equal("https://google.com");
-    });
-
-    // TODO rewrite this test
-    it.skip(`a comment with nested null value doesn't cause issues with pages or signatures`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false);
-        post.author.displayName = null;
-        post.signature = await signComment(removeUndefinedValuesRecursively(post.toJSONPubsubMessagePublication()), post.signer, plebbit);
-        await publishWithExpectedResult(post, true);
-        expect(post.author.displayName).to.be.null;
-        await waitTillCommentIsInParentPages(post, plebbit);
-        await post.stop();
-        expect(post.author.displayName).to.be.null;
-
-        const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
-        expect(loadedPost.author.displayName).to.be.null;
-    });
-
-    it(`A comment with author.wallet = {} doesn't cause issues with pages or signatures`, async () => {
-        const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets: {} } });
-        // plebbit.createComment will remove empty {}, so author.wallets will be undefined
-        expect(post.author.wallets).to.be.undefined;
-        await publishWithExpectedResult(post, true);
-        expect(post.author.wallets).to.be.undefined;
-        await waitTillCommentIsInParentPages(post, plebbit);
-        await post.stop();
-        expect(post.author.wallets).to.be.undefined;
-
-        const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
-        expect(loadedPost.author.wallets).to.be.undefined;
-    });
-
-    itSkipIfRpc(`publish() can be caught if subplebbit failed to load (gateway)`, async () => {
-        // RPC exception
-        const downPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:28080", "http://127.0.0.1:28480"] });
-        const post = await generateMockPost(subplebbitAddress, downPlebbit);
-        post._getSubplebbitCache = () => undefined;
-
-        await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
-    });
-
-    it(`publish() can be caught if subplebbit failed to load (P2P or RPC)`);
-
-    itSkipIfRpc(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
+describeSkipIfRpc(`Publishing resilience and errors of gateways and pubsub providers`, async () => {
+    it(`comment.publish() can be caught if one of the gateways threw 429 status code`, async () => {
+        // move
         const error429Gateway = `http://localhost:13416`;
         const normalIpfsGateway = `http://localhost:18080`;
         const subAddress = signers[7].address;
@@ -226,26 +284,7 @@ describe("publishing comments", async () => {
 
         await assert.isRejected(post.publish(), messages.ERR_FAILED_TO_FETCH_SUBPLEBBIT_FROM_GATEWAYS);
     });
-
-    it(`Can publish a comment whose signature is defined prior to plebbit.createComment()`, async () => {
-        const signer = await plebbit.createSigner();
-        const props = {
-            subplebbitAddress: "12D3KooWN5rLmRJ8fWMwTtkDN7w2RgPPGRM4mtWTnfbjpi1Sh7zR",
-            timestamp: Math.round(Date.now() / 1000),
-            author: { address: signer.address, displayName: "Mock Author - 1690130836.1711266" + Math.random() },
-            protocolVersion: "1.0.0",
-            content: "Mock content - 1690130836.1711266" + Math.random(),
-            title: "Mock Post - 1690130836.1711266" + Math.random()
-        };
-
-        props.signature = await signComment({ ...props, signer }, plebbit);
-        const post = await plebbit.createComment(props);
-        expect(post.signature).to.deep.equal(props.signature);
-        await publishWithExpectedResult(post, true);
-        await post.stop();
-    });
-
-    itSkipIfRpc(`Can publish a comment when all ipfs gateways are down except one`, async () => {
+    it(`Can publish a comment when all ipfs gateways are down except one`, async () => {
         const gatewayPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [
                 "http://127.0.0.1:28080", // Not working
@@ -264,8 +303,7 @@ describe("publishing comments", async () => {
         const post = await generateMockPost(subplebbitAddress, gatewayPlebbit);
         await publishWithExpectedResult(post, true);
     });
-
-    itSkipIfRpc(`Can publish a comment when all pubsub providers are down except one`, async () => {
+    it(`Can publish a comment when all pubsub providers are down except one`, async () => {
         const tempPlebbit = await mockRemotePlebbit();
         // We're gonna modify this plebbit instance to throw errors when pubsub publish/subscribe is called for two of its pubsub providers (it uses three)
         const pubsubProviders = Object.keys(tempPlebbit.clients.pubsubClients);
@@ -289,17 +327,21 @@ describe("publishing comments", async () => {
         const post = await generateMockPost(subplebbitAddress, tempPlebbit);
         await publishWithExpectedResult(post, true);
     });
-
-    itSkipIfRpc(`comment.publish emits an error if provider 1 and 2 are not responding`, async () => {
+    it(`comment.publish succeeds if provider 1 is not responding and 2 is responding`, async () => {
         const notRespondingPubsubUrl = "http://localhost:15005/api/v0"; // Should take msgs but not respond, never throws errors
         const upPubsubUrl = "http://localhost:15002/api/v0";
-        const plebbit = await mockRemotePlebbit({
-            pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
-        });
+        const plebbit = await mockPlebbit(
+            {
+                pubsubHttpClientsOptions: [notRespondingPubsubUrl, upPubsubUrl]
+            },
+            true
+        );
+
+        // make the pubsub provider unresponsive
+        plebbit.clients.pubsubClients[notRespondingPubsubUrl]._client.pubsub.publish = () => {};
+        plebbit.clients.pubsubClients[notRespondingPubsubUrl]._client.pubsub.subscribe = () => {};
 
         const mockPost = await generateMockPost(signers[0].address, plebbit);
-        mockPost._publishToDifferentProviderThresholdSeconds = 5;
-        mockPost._setProviderFailureThresholdSeconds = 10;
 
         const expectedStates = {
             [notRespondingPubsubUrl]: ["subscribing-pubsub", "publishing-challenge-request", "waiting-challenge", "stopped"],
@@ -311,49 +353,30 @@ describe("publishing comments", async () => {
         for (const pubsubUrl of Object.keys(expectedStates))
             mockPost.clients.pubsubClients[pubsubUrl].on("statechange", (newState) => actualStates[pubsubUrl].push(newState));
 
-        let emittedError;
-        mockPost.on("error", (err) => {
-            if (emittedError) expect.fail("Can't receive the same error twice");
-            emittedError = err;
-        });
-        await mockPost.publish();
+        await publishWithExpectedResult(mockPost, true);
 
-        await new Promise((resolve) =>
-            setTimeout(
-                resolve,
-                mockPost._setProviderFailureThresholdSeconds * 1000 + mockPost._publishToDifferentProviderThresholdSeconds * 1000 + 2000
-            )
-        );
-
-        expect(emittedError).to.be.not.undefined;
-        expect(emittedError.code).to.equal("ERR_CHALLENGE_REQUEST_RECEIVED_NO_RESPONSE_FROM_ANY_PROVIDER");
-
-        expect(mockPost.publishingState).to.equal("failed");
+        expect(mockPost.publishingState).to.equal("succeeded");
         expect(actualStates).to.deep.equal(expectedStates);
         await mockPost.stop();
     });
-
-    itSkipIfRpc(`comment emits and throws errors if all providers fail to publish`, async () => {
+    it(`comment emits and throws errors if all providers fail to publish`, async () => {
         const offlinePubsubUrls = ["http://localhost:23425", "http://localhost:23426"];
         const offlinePubsubPlebbit = await mockRemotePlebbit({
             pubsubHttpClientsOptions: offlinePubsubUrls
         });
         const mockPost = await generateMockPost(signers[1].address, offlinePubsubPlebbit);
 
-        let emittedError;
-        mockPost.once("error", (err) => {
-            emittedError = err;
-        });
+        const errorPromise = new Promise((resolve) => mockPost.once("error", resolve));
 
         await assert.isRejected(mockPost.publish(), messages.ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS);
+        const emittedError = await errorPromise;
         expect(emittedError.code).to.equal("ERR_ALL_PUBSUB_PROVIDERS_THROW_ERRORS");
 
         expect(mockPost.publishingState).to.equal("failed");
         expect(mockPost.clients.pubsubClients[offlinePubsubUrls[0]].state).to.equal("stopped");
         expect(mockPost.clients.pubsubClients[offlinePubsubUrls[1]].state).to.equal("stopped");
     });
-
-    itSkipIfRpc(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
+    it(`comment emits error when provider 1 is not responding and provider 2 throws an error`, async () => {
         // First provider waits, second provider fails to publish
         // second provider should update its state to be stopped, but it should not emit an error until the first provider is done with waiting
 
@@ -392,52 +415,6 @@ describe("publishing comments", async () => {
         expect(actualStates).to.deep.equal(expectedStates);
         await mockPost.stop();
     });
-});
-
-describe(`Publishing replies`, async () => {
-    let post, plebbit;
-
-    const parents = [];
-
-    before(async () => {
-        plebbit = await mockRemotePlebbit();
-        post = await publishRandomPost(subplebbitAddress, plebbit);
-        parents.push(post);
-    });
-
-    after(() => [...parents, post].forEach((parent) => parent.stop()));
-
-    it(`Can publish a reply (Comment) with title, content and link defined`, async () => {
-        await publishRandomReply(
-            post,
-            plebbit,
-            {
-                title: `Test title on Comment ${Date.now()} ${Math.random()}`,
-                content: "Random Content" + Math.random(),
-                link: "https://plebbit.com"
-            },
-            true
-        );
-    });
-
-    [1, 2, 3].map((depth) =>
-        it(`Can publish comment with depth = ${depth}`, async () => {
-            const parentComment = parents[depth - 1];
-
-            const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
-            expect(reply.depth).to.be.equal(depth);
-
-            await waitTillCommentIsInParentPages(
-                reply,
-                plebbit,
-                { ...remeda.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
-                true
-            );
-
-            await reply.stop();
-            parents.push(reply);
-        })
-    );
 });
 
 describe(`comment.publishingState`, async () => {
