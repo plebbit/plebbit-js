@@ -435,7 +435,7 @@ class Publication extends TypedEmitter<PublicationEvents> {
             .map(([provider]) => provider);
         providers.forEach((provider) => this._clientsManager.updatePubsubState("waiting-challenge-verification", provider));
 
-        log(`Responded to challenge (${this._challengeAnswer.challengeRequestId}) with answers`, challengeAnswers);
+        log(`Responded to challenge  with answers`, challengeAnswers);
         this.emit("challengeanswer", this._challengeAnswer);
     }
 

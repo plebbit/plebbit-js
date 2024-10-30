@@ -150,10 +150,7 @@ export async function loadAllPages(pageCid: string, pagesInstance: BasePages) {
 }
 
 async function _mockSubplebbitPlebbit(signers: SignerType[], plebbitOptions: InputPlebbitOptions) {
-    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] });
-
-    for (const pubsubUrl of remeda.keys.strict(plebbit.clients.pubsubClients))
-        plebbit.clients.pubsubClients[pubsubUrl]._client = createMockIpfsClient();
+    const plebbit = await mockPlebbit({ ...plebbitOptions, pubsubHttpClientsOptions: ["http://localhost:15002/api/v0"] }, true);
 
     return plebbit;
 }
@@ -404,7 +401,7 @@ export async function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions) 
 }
 
 export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOptions) {
-    const plebbit = await mockRemotePlebbit({
+    const plebbit = await mockPlebbit({
         ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
         plebbitRpcClientsOptions: undefined,
         dataPath: undefined,
@@ -511,6 +508,13 @@ export async function publishWithExpectedResult(publication: Publication, expect
             } else resolve(1);
         });
     });
+
+    publication.once("challenge", (challenge) =>
+        console.log(
+            "Received challenges in publishWithExpectedResult. Are you sure you're publishing to a sub with no challenges?",
+            challenge
+        )
+    );
 
     await publication.publish();
     await validateResponsePromise;

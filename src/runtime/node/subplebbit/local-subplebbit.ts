@@ -786,8 +786,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         this._clientsManager.updatePubsubState("publishing-challenge", undefined);
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeMessage);
-        log.trace(
-            `Published ${challengeMessage.type} over pubsub: `,
+        log(
+            `Subplebbit ${this.address} published ${challengeMessage.type} over pubsub: `,
             remeda.pick(toSignChallenge, ["timestamp"]),
             toEncryptChallenge.challenges.map((challenge) => challenge.type)
         );

@@ -141,6 +141,8 @@ class PlebbitWsServer extends EventEmitter {
             this.subscriptionCleanups[ws._id] = {};
             //@ts-expect-error
             this._onSettingsChange[ws._id] = {};
+            //@ts-expect-error
+            log("Established connection with new RPC client", ws._id);
         });
 
         // cleanup on disconnect
@@ -153,6 +155,7 @@ class PlebbitWsServer extends EventEmitter {
             delete this.subscriptionCleanups[ws._id];
             delete this.connections[ws._id];
             delete this._onSettingsChange[ws._id];
+            log("Disconnected from RPC client", ws._id);
         });
 
         // register all JSON RPC methods
