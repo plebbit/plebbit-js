@@ -71,7 +71,6 @@ getRemotePlebbitConfigs().map((config) => {
             mockPostToFetchSpecificCommentUpdateCid(postToUpdate, invalidCommentUpdateCid);
             // should emit an error because we did not include extraProp in signedPropertyNames
 
-
             const errorPromise = new Promise((resolve) => postToUpdate.once("error", resolve));
 
             await postToUpdate.update();
@@ -80,7 +79,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await postToUpdate.stop();
 
-            expect(postToUpdate.updatedAt).to.be.undefined; // should not expect the comment update
+            expect(postToUpdate.updatedAt).to.be.undefined; // should not accept the comment update
 
             if (postToUpdate.clients.ipfsClients) {
                 expect(error.code).to.equal("ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID");
