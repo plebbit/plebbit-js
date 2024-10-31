@@ -54,7 +54,7 @@ describeSkipIfRpc(`subplebbit.clients.ipfsClients`, async () => {
 
     it(`Correct order of ipfsClients state when updating a subplebbit that was created with plebbit.getSubplebbit(address)`, async () => {
         const sub = await remotePlebbit.getSubplebbit(signers[0].address);
-        await publishRandomPost(sub.address, plebbit, {}, false);
+        await publishRandomPost(sub.address, plebbit, {});
         const expectedStates = ["fetching-ipns", "fetching-ipfs", "stopped"];
 
         const actualStates = [];

@@ -9,7 +9,8 @@ import {
     describeIfRpc,
     jsonifyLocalSubWithNoInternalProps,
     jsonifySubplebbitAndRemoveInternalProps,
-    mockRemotePlebbit
+    mockRemotePlebbit,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 import { POSTS_SORT_TYPES } from "../../../dist/node/pages/util";
 import { timestamp } from "../../../dist/node/util";
@@ -43,7 +44,7 @@ describeSkipIfRpc(`subplebbit.edit`, async () => {
 
         await plebbit.resolveAuthorAddress("esteban.eth");
         await subplebbit.start();
-        await new Promise((resolve) => subplebbit.once("update", resolve));
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         await publishRandomPost(subplebbit.address, plebbit);
     });
     after(async () => {
@@ -290,7 +291,8 @@ describeSkipIfRpc(`Concurrency with subplebbit.edit`, async () => {
         expect(await sub._dbHandler.isSubStartLocked(sub.signer.address)).to.be.false;
         expect(await sub._dbHandler.isSubStartLocked(domain)).to.be.true;
 
-        await publishRandomPost(sub.address, customPlebbit);
+        const post = await publishRandomPost(sub.address, customPlebbit);
+        await waitTillPostInSubplebbitPages(post, customPlebbit);
         await sub.stop();
     });
 });

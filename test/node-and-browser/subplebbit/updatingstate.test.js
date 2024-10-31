@@ -5,7 +5,8 @@ import {
     mockRemotePlebbit,
     mockGatewayPlebbit,
     itSkipIfRpc,
-    mockRemotePlebbitIpfsOnly
+    mockRemotePlebbitIpfsOnly,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util.js";
 
 import chai from "chai";
@@ -29,7 +30,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
@@ -45,7 +46,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
@@ -63,7 +64,7 @@ describe(`subplebbit.updatingState (node/browser - remote sub)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, gatewayPlebbit, {}, false); // To force trigger an update
+        publishRandomPost(subplebbit.address, gatewayPlebbit, {}); // To force trigger an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 

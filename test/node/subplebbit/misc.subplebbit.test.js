@@ -11,7 +11,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     resolveWhenConditionIsTrue,
     describeSkipIfRpc,
-    describeIfRpc
+    describeIfRpc,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
 
@@ -89,8 +90,7 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
         plebbit = await mockPlebbit();
         sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
     });
 
     after(async () => await sub.stop());
@@ -98,8 +98,8 @@ describe(`subplebbit.{lastPostCid, lastCommentCid}`, async () => {
     it(`subplebbit.lastPostCid and lastCommentCid reflects latest post published`, async () => {
         expect(sub.lastPostCid).to.be.undefined;
         expect(sub.lastCommentCid).to.be.undefined;
-        const post = await publishRandomPost(sub.address, plebbit, {}, true);
-        if (!sub.lastPostCid) await new Promise((resolve) => sub.once("update", resolve));
+        const post = await publishRandomPost(sub.address, plebbit, {});
+        await waitTillPostInSubplebbitPages(post, plebbit);
         expect(sub.lastPostCid).to.equal(post.cid);
         expect(sub.lastCommentCid).to.equal(post.cid);
     });
@@ -158,9 +158,8 @@ describeSkipIfRpc(`Create a sub with basic auth urls`, async () => {
         const plebbit = await mockPlebbit(plebbitOptions);
         const sub = await createSubWithNoChallenge({}, plebbit);
         await sub.start();
-        await new Promise((resolve) => sub.once("update", resolve));
-        if (!sub.updatedAt) await new Promise((resolve) => sub.once("update", resolve));
-        await publishRandomPost(sub.address, plebbit, {}, false);
+        await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
+        await publishRandomPost(sub.address, plebbit, {});
         await sub.stop();
     });
 });
@@ -186,7 +185,7 @@ describe(`subplebbit.pubsubTopic`, async () => {
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
         expect(subplebbit.pubsubTopic).to.be.undefined;
 
-        const post = await publishRandomPost(subplebbit.address, plebbit, {}, false);
+        const post = await publishRandomPost(subplebbit.address, plebbit, {});
         expect(post.subplebbit?.pubsubTopic).to.be.undefined;
     });
 });
@@ -301,7 +300,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, plebbit, {}, false); // To force trigger an update
+        publishRandomPost(subplebbit.address, plebbit, {}); // To force trigger an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
@@ -319,7 +318,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
 
         await subplebbit.update();
 
-        publishRandomPost(subplebbit.address, gatewayPlebbit, {}, false); // To force trigger an update
+        publishRandomPost(subplebbit.address, gatewayPlebbit, {}); // To force trigger an update
         await new Promise((resolve) => subplebbit.once("update", resolve));
         await subplebbit.stop();
 
@@ -336,7 +335,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
 
         await localSub.update();
 
-        publishRandomPost(localSub.address, plebbit, {}, false);
+        publishRandomPost(localSub.address, plebbit, {});
 
         await new Promise((resolve) => localSub.once("update", resolve));
         await localSub.stop();
@@ -362,7 +361,7 @@ describe(`subplebbit.updatingState (node)`, async () => {
 
         await recreateLocalSub.update();
 
-        publishRandomPost(localSub.address, plebbit, {}, false); // to trigger an update
+        publishRandomPost(localSub.address, plebbit, {}); // to trigger an update
 
         setTimeout(() => publishRandomPost(localSub.address, plebbit, {}, false), 1000);
         await resolveWhenConditionIsTrue(recreateLocalSub, () => recreateLocalSubUpdatingStates.length >= 2);
@@ -436,7 +435,7 @@ describe(`comment.link`, async () => {
 
     it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
         const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
         expect(post.thumbnailUrlWidth).to.equal(1280);
@@ -445,7 +444,7 @@ describe(`comment.link`, async () => {
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
         expect(post.thumbnailUrlWidth).to.be.undefined;
@@ -454,7 +453,7 @@ describe(`comment.link`, async () => {
 
     it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
         const link = "https://files.catbox.moe/nlsfav.gif";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link }, false);
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
         expect(post.link).to.equal(link);
         expect(post.thumbnailUrl).to.be.undefined;
         expect(post.thumbnailUrlWidth).to.be.undefined;
@@ -465,12 +464,14 @@ describe(`comment.link`, async () => {
         const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
         const linkWidth = 200;
         const linkHeight = 200;
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link, linkWidth, linkHeight }, true);
+        const post = await publishRandomPost(subplebbit.address, plebbit, { link, linkWidth, linkHeight });
         expect(post.link).to.equal(link);
         expect(post.linkHeight).to.equal(linkHeight);
         expect(post.linkWidth).to.equal(linkWidth);
         expect(post.thumbnailUrlWidth).to.be.undefined;
         expect(post.thumbnailUrlHeight).to.be.undefined;
+
+        await waitTillPostInSubplebbitPages(post, plebbit);
 
         const postInSubPages = subplebbit.posts.pages.hot.comments.find((comment) => comment.cid === post.cid);
         expect(postInSubPages.link).to.equal(link);
@@ -541,7 +542,7 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await new Promise((resolve) => mockSub.once("update", resolve));
 
-            publishRandomPost(mockSub.address, plebbit, {}, false);
+            publishRandomPost(mockSub.address, plebbit, {});
 
             await new Promise((resolve) => mockSub.once("challengeverification", resolve));
 

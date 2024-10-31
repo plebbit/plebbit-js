@@ -8,7 +8,13 @@ const { expect, assert } = chai;
 
 const subplebbitAddress = signers[0].address;
 
-import { describeSkipIfRpc, publishRandomPost, mockPlebbit, mockGatewayPlebbit } from "../../../dist/node/test/test-util.js";
+import {
+    describeSkipIfRpc,
+    publishRandomPost,
+    mockPlebbit,
+    mockGatewayPlebbit,
+    waitTillPostInSubplebbitPages
+} from "../../../dist/node/test/test-util.js";
 
 describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, async () => {
     // these test gateways will be set in test-server.js
@@ -68,7 +74,8 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
     });
 
     it(`Fetching algo resolves immedietly if a gateway responds with a record that has been published in the last 60 min`, async () => {
-        await publishRandomPost(subAddress, plebbit, {}, true); // Force sub to publish a new update
+        const post = await publishRandomPost(subAddress, plebbit, {}); // Force sub to publish a new update
+        await waitTillPostInSubplebbitPages(post, plebbit);
         // normalWithStallingGateway gateway will return the latest SubplebbitIpfs
 
         // gateway that responds quickly with updatedAt > 2 min => thirtyMinuteLateGateway
@@ -99,7 +106,8 @@ describeSkipIfRpc(`Test fetching subplebbit record from multiple gateways`, asyn
             .lessThanOrEqual(timestampHourAgo + bufferSeconds);
     });
     it(`fetching algo gets the highest updatedAt with 5 gateways`, async () => {
-        await publishRandomPost(subplebbitAddress, plebbit, {}, true); // should publish a new record after
+        const post = await publishRandomPost(subplebbitAddress, plebbit, {}); // should publish a new record after
+        await waitTillPostInSubplebbitPages(post, plebbit);
         const customPlebbit = await mockGatewayPlebbit({
             ipfsGatewayUrls: [normalGateway, normalWithStallingGateway, thirtyMinuteLateGateway, errorGateway, stallingGateway]
         });

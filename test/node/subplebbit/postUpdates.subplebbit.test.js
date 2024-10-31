@@ -4,7 +4,8 @@ import {
     createSubWithNoChallenge,
     publishRandomReply,
     describeSkipIfRpc,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -31,6 +32,7 @@ describeSkipIfRpc("plebbit.postUpdates", async () => {
 
     it(`subplebbit.postUpdates = {86400} when a comment is published`, async () => {
         const post = await publishRandomPost(subplebbit.address, plebbit);
+        await waitTillPostInSubplebbitPages(post, plebbit);
         expect(Object.keys(subplebbit.postUpdates)).to.deep.equal(["86400"]);
     });
 

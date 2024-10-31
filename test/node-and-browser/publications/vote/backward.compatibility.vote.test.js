@@ -24,7 +24,7 @@ getRemotePlebbitConfigs().map((config) => {
         let commentToVoteOn;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            commentToVoteOn = await publishRandomPost(signers[0].address, plebbit, {}, false);
+            commentToVoteOn = await publishRandomPost(signers[0].address, plebbit, {});
         });
 
         it(`Publishing vote.extraProp should fail if it's not included in vote.signature.signedPropertyNames`, async () => {

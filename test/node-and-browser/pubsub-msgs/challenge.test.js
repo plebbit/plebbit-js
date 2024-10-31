@@ -22,7 +22,7 @@ describe.skip(`Stress test challenge exchange`, async () => {
     });
 
     it(`Initiate ${num} challenge exchange in parallel`, async () => {
-        const promises = new Array(num).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}, false));
+        const promises = new Array(num).fill(null).map(() => publishRandomPost(subplebbit.address, plebbit, {}));
         await Promise.all(promises);
     });
 });

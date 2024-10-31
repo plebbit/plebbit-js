@@ -4,7 +4,9 @@ import {
     createSubWithNoChallenge,
     publishRandomReply,
     publishVote,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    waitTillPostInSubplebbitPages,
+    waitTillReplyInParentPages
 } from "../../../dist/node/test/test-util";
 
 import signers from "../../fixtures/signers";
@@ -52,9 +54,8 @@ describe(`subplebbit.statsCid`, async () => {
     describe(`subplebbit.stats.ActiveUserCount`, async () => {
         it(`ActiveUserCount should increase by 1 for new post author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            const statsCidBefore = subplebbit.statsCid;
-            await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] }, false);
-            if (subplebbit.statsCid === statsCidBefore) await new Promise((resolve) => subplebbit.once("update", resolve));
+            const post = await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] });
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewPost[userCountKey]).to.equal(statsBefore[userCountKey] + 1);
@@ -62,8 +63,8 @@ describe(`subplebbit.statsCid`, async () => {
 
         it(`ActiveUserCount does not increase when an existing user is publishing a new post`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const post = await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] });
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewPost[userCountKey]).to.equal(statsBefore[userCountKey]);
@@ -72,8 +73,8 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount should increase by 1 for new comment author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishRandomReply(post, plebbit, { signer: signers[4] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const reply = await publishRandomReply(post, plebbit, { signer: signers[4] });
+            await waitTillReplyInParentPages(reply, plebbit);
             const statsAfterNewReply = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys)
@@ -83,8 +84,8 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount does not increase when an existing user is publishing a new reply`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishRandomReply(post, plebbit, { signer: signers[4] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const reply = await publishRandomReply(post, plebbit, { signer: signers[4] });
+            await waitTillReplyInParentPages(reply, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewPost[userCountKey]).to.equal(statsBefore[userCountKey]);
@@ -93,8 +94,9 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount should increase by 1 for new vote author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[3] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
+            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[3] });
+            await updatePromise;
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewVote[userCountKey]).to.equal(statsBefore[userCountKey] + 1);
@@ -103,8 +105,9 @@ describe(`subplebbit.statsCid`, async () => {
         it(`ActiveUserCount does not increase when an existing user is publishing a new vote`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
+            const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
             await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            await updatePromise;
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewVote[userCountKey]).to.equal(statsBefore[userCountKey]);
@@ -114,8 +117,8 @@ describe(`subplebbit.statsCid`, async () => {
     describe(`subplebbit.stats.postCount`, async () => {
         it(`PostCount should increase by 1 for new post`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const post = await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] });
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const postCountKey of postCountKeys) expect(statsAfterNewPost[postCountKey]).to.equal(statsBefore[postCountKey] + 1);
@@ -123,8 +126,8 @@ describe(`subplebbit.statsCid`, async () => {
 
         it(`PostCount should increase by 1 for new post with existing user`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const post = await publishRandomPost(subplebbit.address, plebbit, { signer: signers[5] });
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const postCountKey of postCountKeys) expect(statsAfterNewPost[postCountKey]).to.equal(statsBefore[postCountKey] + 1);
@@ -133,8 +136,8 @@ describe(`subplebbit.statsCid`, async () => {
         it(`PostCount does not increase by 1 for new reply`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            await publishRandomReply(post, plebbit, {}, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const reply = await publishRandomReply(post, plebbit, {});
+            await waitTillReplyInParentPages(reply, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const postCountKey of postCountKeys) expect(statsAfterNewPost[postCountKey]).to.equal(statsBefore[postCountKey]);
@@ -148,8 +151,8 @@ describe(`subplebbit.statsCid`, async () => {
         });
         it(`replyCount should increase by 1 for new reply`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const reply = await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] });
+            await waitTillReplyInParentPages(reply, plebbit);
             const statsAfterNewReply = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const replyCountKey of replyCountKeys) expect(statsAfterNewReply[replyCountKey]).to.equal(statsBefore[replyCountKey] + 1);
@@ -157,8 +160,8 @@ describe(`subplebbit.statsCid`, async () => {
 
         it(`ReplyCount should increase by 1 for new reply with existing author`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] }, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const reply = await publishRandomReply(postToReplyOn, plebbit, { signer: signers[5] });
+            await waitTillReplyInParentPages(reply, plebbit);
             const statsAfterNewReply = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const replyCountKey of replyCountKeys) expect(statsAfterNewReply[replyCountKey]).to.equal(statsBefore[replyCountKey] + 1);
@@ -166,8 +169,8 @@ describe(`subplebbit.statsCid`, async () => {
 
         it(`ReplyCount does not increase by 1 for new post`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
-            await publishRandomPost(subplebbit.address, plebbit, {}, false);
-            await new Promise((resolve) => subplebbit.once("update", resolve));
+            const post = await publishRandomPost(subplebbit.address, plebbit, {}, false);
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const statsAfterNewPost = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const replyCountKey of replyCountKeys) expect(statsAfterNewPost[replyCountKey]).to.equal(statsBefore[replyCountKey]);

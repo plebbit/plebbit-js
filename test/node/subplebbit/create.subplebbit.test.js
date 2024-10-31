@@ -5,7 +5,8 @@ import {
     createSubWithNoChallenge,
     mockRemotePlebbitIpfsOnly,
     resolveWhenConditionIsTrue,
-    jsonifySubplebbitAndRemoveInternalProps
+    jsonifySubplebbitAndRemoveInternalProps,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 import { timestamp } from "../../../dist/node/util";
 import { messages } from "../../../dist/node/errors";
@@ -92,8 +93,9 @@ describe(`plebbit.createSubplebbit (local)`, async () => {
         const sub = await createSubWithNoChallenge(props, plebbit);
         await sub.start();
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        const post = await publishRandomPost(sub.address, plebbit, {}, false);
-        await publishRandomReply(post, plebbit, {}, true);
+        const post = await publishRandomPost(sub.address, plebbit, {});
+        await waitTillPostInSubplebbitPages(post, plebbit);
+        await publishRandomReply(post, plebbit, {});
         expect(sub.posts).to.be.a("object");
         const clonedSub = await plebbit.createSubplebbit(sub);
         expect(clonedSub.posts).to.be.a("object");

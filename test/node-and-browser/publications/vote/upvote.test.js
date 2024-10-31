@@ -21,8 +21,8 @@ getRemotePlebbitConfigs().map((config) => {
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
             signer = await plebbit.createSigner();
-            postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer }, false);
-            replyToVote = await publishRandomReply(postToVote, plebbit, { signer }, false);
+            postToVote = await publishRandomPost(subplebbitAddress, plebbit, { signer });
+            replyToVote = await publishRandomReply(postToVote, plebbit, { signer });
             await Promise.all([postToVote.update(), replyToVote.update()]);
             await resolveWhenConditionIsTrue(postToVote, () => typeof postToVote.updatedAt === "number");
             await resolveWhenConditionIsTrue(replyToVote, () => typeof replyToVote.updatedAt === "number");

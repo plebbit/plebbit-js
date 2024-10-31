@@ -28,7 +28,7 @@ getRemotePlebbitConfigs().map((config) => {
             expect(subplebbit.address).to.equal("plebbit.eth");
             const oldUpdatedAt = remeda.clone(subplebbit.updatedAt);
             await subplebbit.update();
-            await publishRandomPost(subplebbit.address, plebbit, {}, false); // Invoke an update
+            await publishRandomPost(subplebbit.address, plebbit, {}); // Invoke an update
             await new Promise((resolve) => subplebbit.once("update", resolve));
             expect(oldUpdatedAt).to.not.equal(subplebbit.updatedAt);
             expect(subplebbit.address).to.equal("plebbit.eth");
@@ -180,7 +180,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             await subplebbit.update();
 
-            await publishRandomPost(subplebbit.address, plebbit, {}, false);
+            await publishRandomPost(subplebbit.address, plebbit, {});
             await new Promise((resolve) => subplebbit.once("update", resolve));
             await subplebbit.stop();
         });

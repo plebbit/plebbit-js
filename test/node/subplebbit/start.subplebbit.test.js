@@ -7,7 +7,8 @@ import {
     itSkipIfRpc,
     itIfRpc,
     resolveWhenConditionIsTrue,
-    mockRpcServerPlebbit
+    mockRpcServerPlebbit,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 import path from "path";
@@ -383,7 +384,8 @@ describe(`Publish loop resiliency`, async () => {
 
         expect(mockPost.author.address).to.equal("plebbit.eth");
 
-        await publishRandomPost(subplebbit.address, plebbit); // Stimulate an update
+        const post = await publishRandomPost(subplebbit.address, plebbit); // Stimulate an update
+        await waitTillPostInSubplebbitPages(post, plebbit);
 
         for (const resolveAuthorAddresses of [true, false]) {
             subplebbitVerificationCache.clear();
