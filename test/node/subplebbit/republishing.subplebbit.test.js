@@ -9,8 +9,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     describeSkipIfRpc,
     findCommentInPage,
-    waitTillCommentIsInParentPages,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    waitTillPostInSubplebbitPages
 } from "../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -44,7 +44,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         await publishWithExpectedResult(postWithExtraProps, true);
         await publishRandomReply(postWithExtraProps, plebbit, {}, true);
 
-        await waitTillCommentIsInParentPages(postWithExtraProps, plebbit);
+        await waitTillPostInSubplebbitPages(postWithExtraProps, plebbit);
 
         await subBeforeMigration.stop();
 
@@ -54,7 +54,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         expect(subAfterMigration.updatedAt).to.equal(subBeforeMigration.updatedAt);
         await subAfterMigration.start(); // should migrate everything here
         await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt !== subBeforeMigration.updatedAt);
-        await waitTillCommentIsInParentPages(postWithExtraProps, remotePlebbit);
+        await waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit);
     });
     it(`Subplebbit IPNS is republished`, async () => {
         const subLoaded = await remotePlebbit.getSubplebbit(subAfterMigration.address);

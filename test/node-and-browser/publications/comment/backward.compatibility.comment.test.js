@@ -5,8 +5,8 @@ import {
     getRemotePlebbitConfigs,
     publishWithExpectedResult,
     findCommentInPage,
-    waitTillCommentIsInParentPages,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -93,7 +93,7 @@ getRemotePlebbitConfigs().map((config) => {
                 extraProps = { extraProp: "1234" };
                 await setExtraPropOnCommentAndSign(commentWithExtraProps, extraProps, true);
                 await publishWithExpectedResult(commentWithExtraProps, true);
-                await waitTillCommentIsInParentPages(commentWithExtraProps, plebbit);
+                await waitTillPostInSubplebbitPages(commentWithExtraProps, plebbit);
             });
             it(`Can load CommentIpfs with extra props`, async () => {
                 const loadedCommentWithExtraProps = await plebbit.getComment(commentWithExtraProps.cid);
@@ -191,7 +191,7 @@ getRemotePlebbitConfigs().map((config) => {
                 for (const shape of shapes) expect(shape.author.extraProp).to.equal(extraProps.extraProp);
             });
             it(`Can load a page with comment.author.extraProp`, async () => {
-                await waitTillCommentIsInParentPages(postWithExtraAuthorProp, plebbit);
+                await waitTillPostInSubplebbitPages(postWithExtraAuthorProp, plebbit);
 
                 const subplebbit = await plebbit.getSubplebbit(postWithExtraAuthorProp.subplebbitAddress);
                 const postInPage = await findCommentInPage(postWithExtraAuthorProp.cid, subplebbit.posts.pageCids.new, subplebbit.posts);

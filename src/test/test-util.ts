@@ -20,12 +20,7 @@ import * as resolverClass from "../resolver.js";
 import type { CreateNewLocalSubplebbitUserOptions, LocalSubplebbitJson, RemoteSubplebbitJson } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type {
-    CommentIpfsWithCidDefined,
-    CommentIpfsWithCidPostCidDefined,
-    CommentJson,
-    CreateCommentOptions
-} from "../publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CommentIpfsWithCidPostCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
 import {
     signComment,
     _signJson,
@@ -182,11 +177,11 @@ async function _startEnsSubplebbit(signers: SignerType[], plebbit: Plebbit) {
 }
 
 async function _publishPosts(subplebbitAddress: string, numOfPosts: number, plebbit: Plebbit) {
-    return Promise.all(new Array(numOfPosts).fill(null).map(() => publishRandomPost(subplebbitAddress, plebbit, {}, false)));
+    return Promise.all(new Array(numOfPosts).fill(null).map(() => publishRandomPost(subplebbitAddress, plebbit, {})));
 }
 
 async function _publishReplies(parentComment: CommentIpfsWithCidDefined, numOfReplies: number, plebbit: Plebbit) {
-    return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {}, false)));
+    return Promise.all(new Array(numOfReplies).fill(null).map(() => publishRandomReply(parentComment, plebbit, {})));
 }
 
 async function _publishVotesOnOneComment(
@@ -440,33 +435,23 @@ export async function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitO
 export async function publishRandomReply(
     parentComment: CommentIpfsWithCidDefined,
     plebbit: Plebbit,
-    commentProps: Partial<CreateCommentOptions>,
-    verifyCommentPropsInParentPages = true
+    commentProps: Partial<CreateCommentOptions>
 ): Promise<Comment> {
     const reply = await generateMockComment(parentComment, plebbit, false, {
         content: `Content ${uuidv4()}`,
         ...commentProps
     });
     await publishWithExpectedResult(reply, true);
-    const commentIpfsProps = { ...reply.toJSONIpfs(), cid: reply.cid! };
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return reply;
 }
 
-export async function publishRandomPost(
-    subplebbitAddress: string,
-    plebbit: Plebbit,
-    postProps?: Partial<CreateCommentOptions>,
-    verifyCommentPropsInParentPages = true
-) {
+export async function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>) {
     const post = await generateMockPost(subplebbitAddress, plebbit, false, {
         content: `Random post Content ${uuidv4()}`,
         title: `Random post Title ${uuidv4()}`,
         ...postProps
     });
     await publishWithExpectedResult(post, true);
-    const commentIpfsProps = { ...post.toJSONIpfs(), cid: post.cid! };
-    if (verifyCommentPropsInParentPages) await waitTillCommentIsInParentPages(commentIpfsProps, plebbit);
     return post;
 }
 
@@ -531,53 +516,37 @@ export async function findCommentInPage(commentCid: string, pageCid: string, pag
     return undefined;
 }
 
-export async function waitTillCommentIsInParentPages(
-    comment: Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "parentCid">,
-    plebbit: Plebbit,
-    propsToCheckFor: Partial<CommentJson> = {},
-    checkInAllPages = false
+export async function waitTillPostInSubplebbitPages(
+    post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>,
+    plebbit: Plebbit
 ) {
-    if (comment.depth > 0 && !comment.parentCid) throw Error("waitTillCommentIsInParentPages has to be called with a reply");
-    const parent =
-        comment.depth === 0
-            ? await plebbit.getSubplebbit(comment.subplebbitAddress)
-            : await plebbit.createComment({ cid: <string>comment.parentCid });
-    await parent.update();
-    const pagesInstance = () => (parent instanceof RemoteSubplebbit ? parent.posts : parent.replies);
-    let commentInPage: PageTypeJson["comments"][number] | undefined;
-    const isCommentInParentPages = async () => {
-        const instance = pagesInstance();
-        const repliesPageCid = "new" in instance?.pageCids && instance?.pageCids?.new;
-        if (repliesPageCid) commentInPage = await findCommentInPage(comment.cid, repliesPageCid, instance);
-        return Boolean(commentInPage);
+    const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+    const isPostInSubPages = async () => {
+        if (!("new" in sub.posts.pageCids)) return false;
+        const postsNewPageCid = sub.posts.pageCids.new;
+        const postInPage = await findCommentInPage(post.cid, postsNewPageCid, sub.posts);
+        return Boolean(postInPage);
     };
+    await sub.update();
+    await resolveWhenConditionIsTrue(sub, isPostInSubPages);
+    await sub.stop();
+}
 
-    await resolveWhenConditionIsTrue(parent, isCommentInParentPages);
+export async function waitTillReplyInParentPages(
+    reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>,
+    plebbit: Plebbit
+) {
+    const parentComment = await plebbit.createComment({ cid: reply.parentCid });
+    const isReplyInParentPages = async () => {
+        if (!("new" in parentComment.replies.pageCids)) return false;
 
-    await parent.stop();
-
-    if (!commentInPage) throw Error("Failed to find comment in page");
-
-    const pageCids = parent instanceof Comment ? parent.replies?.pageCids : parent.posts?.pageCids;
-
-    if (!pageCids || remeda.isEmpty(pageCids)) throw Error("Failed to retrieve pages");
-
-    const commentKeys = remeda.keys.strict(remeda.omit(propsToCheckFor, ["signer"]));
-
-    if (checkInAllPages)
-        for (const pageCid of Object.values(pageCids)) {
-            const commentInPage = await findCommentInPage(comment.cid, <string>pageCid, pagesInstance());
-            if (!commentInPage) throw Error("Failed to find comment in page");
-            for (const commentKey of commentKeys) {
-                //@ts-expect-error
-                if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
-                    throw Error(`commentInPage[${commentKey}] is incorrect`);
-            }
-        }
-    else
-        for (const commentKey of commentKeys) //@ts-expect-error
-            if (deterministicStringify(commentInPage[commentKey]) !== deterministicStringify(propsToCheckFor[commentKey]))
-                throw Error(`commentInPage[${commentKey}] is incorrect`);
+        const commentNewPageCid = parentComment.replies.pageCids.new;
+        const replyInPage = await findCommentInPage(reply.cid, commentNewPageCid, parentComment.replies);
+        return Boolean(replyInPage);
+    };
+    await parentComment.update();
+    await resolveWhenConditionIsTrue(parentComment, isReplyInParentPages);
+    await parentComment.stop();
 }
 
 export async function createSubWithNoChallenge(

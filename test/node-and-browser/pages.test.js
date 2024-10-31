@@ -5,7 +5,8 @@ import {
     mockGatewayPlebbit,
     mockPlebbit,
     addStringToIpfs,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    waitTillPostInSubplebbitPages
 } from "../../dist/node/test/test-util.js";
 import { TIMEFRAMES_TO_SECONDS, POSTS_SORT_TYPES, REPLIES_SORT_TYPES } from "../../dist/node/pages/util.js";
 import { expect } from "chai";
@@ -153,7 +154,8 @@ getRemotePlebbitConfigs().map((config) => {
         let plebbit, newPost;
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            newPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true); // After publishing this post the subplebbit should have all pages
+            newPost = await publishRandomPost(subplebbitAddress, plebbit, {}); // After publishing this post the subplebbit should have all pages
+            await waitTillPostInSubplebbitPages(newPost, plebbit);
             subplebbit = await plebbit.getSubplebbit(subplebbitAddress);
         });
 

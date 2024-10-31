@@ -4,16 +4,18 @@ import {
     generateMockPost,
     publishRandomReply,
     publishWithExpectedResult,
-    waitTillCommentIsInParentPages,
     publishRandomPost,
     mockRemotePlebbit,
     findCommentInPage,
     mockGatewayPlebbit,
     generatePostToAnswerMathQuestion,
     itSkipIfRpc,
+    waitTillReplyInParentPages,
     getRemotePlebbitConfigs,
     describeSkipIfRpc,
-    mockPlebbit
+    mockPlebbit,
+    waitTillPostInSubplebbitPages,
+    resolveWhenConditionIsTrue
 } from "../../../../dist/node/test/test-util.js";
 import * as remeda from "remeda";
 import { messages } from "../../../../dist/node/errors.js";
@@ -39,7 +41,10 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("Can publish a post", async () => {
-            await publishRandomPost(subplebbitAddress, plebbit, {});
+            const title = "Test of ability to publish posts" + Date.now();
+            const post = await publishRandomPost(subplebbitAddress, plebbit, { title });
+            expect(post.depth).to.equal(0);
+            expect(post.title).to.equal(title);
         });
 
         it(`Can Publish a post with only link`, async () => {
@@ -47,7 +52,10 @@ getRemotePlebbitConfigs().map((config) => {
             const post = await generateMockPost(subplebbitAddress, plebbit, false, { link });
             expect(post.link).to.equal(link);
             await publishWithExpectedResult(post, true);
-            await waitTillCommentIsInParentPages(post, plebbit, { link });
+            await waitTillPostInSubplebbitPages(post, plebbit);
+            const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+            const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInPage.link).to.equal(link);
         });
 
         it("Can publish posts with emoji for title and content", async () => {
@@ -59,14 +67,15 @@ getRemotePlebbitConfigs().map((config) => {
             ];
 
             for (const content of emojiContents) {
-                const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content }, true);
+                const publishedPostContent = await publishRandomPost(subplebbitAddress, plebbit, { content, title: content });
                 expect(publishedPostContent.content).to.equal(content);
+                expect(publishedPostContent.title).to.equal(content);
 
-                const publishedPostIpfs = deterministicStringify(publishedPostContent.toJSONIpfs());
+                const publishedPostIpfs = JSON.stringify(publishedPostContent.toJSONIpfs());
                 expect(await calculateIpfsHash(publishedPostIpfs)).to.equal(publishedPostContent.cid);
 
                 const remotePost = await plebbit.getComment(publishedPostContent.cid);
-                const remotePostIpfs = deterministicStringify(remotePost.toJSONIpfs());
+                const remotePostIpfs = JSON.stringify(remotePost.toJSONIpfs());
                 expect(await calculateIpfsHash(remotePostIpfs)).to.equal(publishedPostContent.cid);
             }
         });
@@ -112,12 +121,15 @@ getRemotePlebbitConfigs().map((config) => {
             const post = await plebbit.createComment({ ...commentProps, signer: signers[6] });
 
             await publishWithExpectedResult(post, true);
-            await waitTillCommentIsInParentPages(post, plebbit, remeda.omit(commentProps, ["author"]));
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const postSubplebbit = await plebbit.getSubplebbit(post.subplebbitAddress);
             // Should have post
             const postInPage = await findCommentInPage(post.cid, postSubplebbit.posts.pageCids.new, postSubplebbit.posts);
             expect(postInPage.author.avatar).to.deep.equal(commentProps.author.avatar);
             expect(postInPage.author.address).to.equal(commentProps.author.address);
+            expect(postInPage.content).to.equal(commentProps.content);
+            expect(postInPage.title).to.equal(commentProps.title);
+            expect(postInPage.subplebbitAddress).to.equal(commentProps.subplebbitAddress);
         });
 
         it(`Can publish a post with spoiler`, async () => {
@@ -127,7 +139,10 @@ getRemotePlebbitConfigs().map((config) => {
 
             await publishWithExpectedResult(post, true);
             expect(post.spoiler).to.be.true;
-            await waitTillCommentIsInParentPages(post, plebbit, { spoiler: true });
+            await waitTillPostInSubplebbitPages(post, plebbit);
+            const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+            const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInPage.spoiler).to.be.true;
             await post.stop();
         });
 
@@ -142,7 +157,7 @@ getRemotePlebbitConfigs().map((config) => {
             const post = await generateMockPost(subplebbitAddress, plebbit, false, { author: { wallets } });
             expect(post.author.wallets).to.deep.equal(wallets);
             await publishWithExpectedResult(post, true);
-            await waitTillCommentIsInParentPages(post, plebbit);
+            await waitTillPostInSubplebbitPages(post, plebbit);
             const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
             const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
             expect(postInPage.author.wallets).to.deep.equal(wallets);
@@ -184,9 +199,13 @@ getRemotePlebbitConfigs().map((config) => {
             expect(post.author.wallets).to.be.undefined;
             await publishWithExpectedResult(post, true);
             expect(post.author.wallets).to.be.undefined;
-            await waitTillCommentIsInParentPages(post, plebbit);
+            await waitTillPostInSubplebbitPages(post, plebbit);
             await post.stop();
             expect(post.author.wallets).to.be.undefined;
+
+            const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+            const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+            expect(postInPage.author.wallets).to.be.undefined;
 
             const loadedPost = await plebbit.getComment(post.cid); // should fail if signature is incorrect
             expect(loadedPost.author.wallets).to.be.undefined;
@@ -231,7 +250,7 @@ getRemotePlebbitConfigs().map((config) => {
 
         before(async () => {
             plebbit = await config.plebbitInstancePromise();
-            post = await publishRandomPost(subplebbitAddress, plebbit, {}, false);
+            post = await publishRandomPost(subplebbitAddress, plebbit, {});
             parents.push(post);
         });
 
@@ -254,17 +273,24 @@ getRemotePlebbitConfigs().map((config) => {
             it(`Can publish comment with depth = ${depth}`, async () => {
                 const parentComment = parents[depth - 1];
 
-                const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer }, false);
+                const reply = await publishRandomReply(parentComment, plebbit, { signer: post.signer });
                 expect(reply.depth).to.be.equal(depth);
 
-                await waitTillCommentIsInParentPages(
-                    reply,
-                    plebbit,
-                    { ...remeda.omit(reply.toJSONPubsubMessagePublication(), ["author", "spoiler"]), depth },
-                    true
-                );
+                await waitTillReplyInParentPages(reply, plebbit);
 
-                await reply.stop();
+                const parentCommentLatest = await plebbit.getComment(parentComment.cid);
+                await parentCommentLatest.update();
+                await resolveWhenConditionIsTrue(parentCommentLatest, () => typeof parentCommentLatest.updatedAt === "number");
+                await parentCommentLatest.stop();
+                const replyInPage = await findCommentInPage(
+                    reply.cid,
+                    parentCommentLatest.replies.pageCids.new,
+                    parentCommentLatest.replies
+                );
+                expect(replyInPage).to.exist;
+                expect(replyInPage.content).to.equal(reply.content);
+                expect(replyInPage.timestamp).to.equal(reply.timestamp);
+                expect(replyInPage.depth).to.equal(reply.depth);
                 parents.push(reply);
             })
         );
