@@ -313,7 +313,6 @@ export class BaseClientsManager {
             : createUrlFromPathResolution(gateway, loadOpts);
 
         const timeBefore = Date.now();
-        const isIpfsFile = loadOpts.recordIpfsType === "ipfs";
 
         this.preFetchGateway(gateway, loadOpts);
         const cacheKey = url;
@@ -331,8 +330,7 @@ export class BaseClientsManager {
             // TODO should check if redirect here
             await validateGatewayResponse(resObj); // should throw if there's an issue
             this.postFetchGatewaySuccess(gateway, loadOpts);
-            if (!isUsingCache)
-                await this._plebbit._stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
+            if (!isUsingCache) await this._plebbit._stats.recordGatewaySuccess(gateway, loadOpts.recordIpfsType, Date.now() - timeBefore);
             await this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         } catch (e) {
@@ -343,7 +341,7 @@ export class BaseClientsManager {
                 return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e, loadOpts }) };
             } else {
                 this.postFetchGatewayFailure(gateway, loadOpts, <PlebbitError>e);
-                if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
+                if (!isUsingCache) await this._plebbit._stats.recordGatewayFailure(gateway, loadOpts.recordIpfsType);
                 delete (<PlebbitError>e)!["stack"];
                 return { error: <PlebbitError>e };
             }

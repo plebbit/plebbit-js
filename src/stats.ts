@@ -3,7 +3,7 @@ import assert from "assert";
 import { ChainTicker } from "./types.js";
 import * as remeda from "remeda";
 
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
+type StatTypes = "ipns" | "ipfs" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
 export default class Stats {
     private _plebbit: Pick<Plebbit, "_storage" | "clients">;
     constructor(plebbit: Stats["_plebbit"]) {
@@ -62,7 +62,7 @@ export default class Stats {
 
     async sortGatewaysAccordingToScore(type: StatTypes): Promise<string[]> {
         const gatewayType =
-            type === "cid" || type === "ipns"
+            type === "ipfs" || type === "ipns"
                 ? "ipfsGateways"
                 : type === "pubsub-publish" || type === "pubsub-subscribe"
                   ? "pubsubClients"

@@ -1,4 +1,4 @@
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress, timestamp } from "../util.js";
 import { Plebbit } from "../plebbit/plebbit.js";
 
 import type { SubplebbitEvents } from "../types.js";
@@ -270,7 +270,10 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 `Remote Subplebbit`,
                 this.address,
                 `received a new update. Will emit an update event with updatedAt`,
-                loadedSubIpfsOrError.updatedAt
+                loadedSubIpfsOrError.updatedAt,
+                "that's",
+                timestamp() - loadedSubIpfsOrError.updatedAt,
+                "seconds old"
             );
             this.emit("update", this);
         } else log.trace("Remote subplebbit loaded a SubplebbitIpfsType with no new information");
