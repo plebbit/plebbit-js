@@ -1,11 +1,12 @@
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import type { SubplebbitEvents } from "../types.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { RetryOperation } from "retry";
 import { SubplebbitClientsManager } from "../clients/client-manager.js";
-import type { CreateRemoteSubplebbitOptions, SubplebbitIpfsType, SubplebbitStats, RpcRemoteSubplebbitType, SubplebbitJson, SubplebbitUpdatingState, SubplebbitState } from "./types.js";
+import type { CreateRemoteSubplebbitOptions, SubplebbitIpfsType, RpcRemoteSubplebbitType, SubplebbitJson, SubplebbitUpdatingState, SubplebbitState, SubplebbitStartedState, SubplebbitSettings, RpcInternalSubplebbitRecordAfterFirstUpdateType, SubplebbitEditOptions } from "./types.js";
 import { PostsPages } from "../pages/pages.js";
-export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
+import { SignerWithPublicKeyAddress } from "../signer/index.js";
+export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements Omit<Partial<SubplebbitIpfsType>, "posts"> {
     title?: SubplebbitIpfsType["title"];
     description?: SubplebbitIpfsType["description"];
     roles?: SubplebbitIpfsType["roles"];
@@ -13,21 +14,25 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     lastCommentCid?: SubplebbitIpfsType["lastCommentCid"];
     posts: PostsPages;
     pubsubTopic?: SubplebbitIpfsType["pubsubTopic"];
-    stats?: SubplebbitStats;
     features?: SubplebbitIpfsType["features"];
     suggested?: SubplebbitIpfsType["suggested"];
     flairs?: SubplebbitIpfsType["flairs"];
     address: SubplebbitIpfsType["address"];
     shortAddress: string;
-    statsCid: SubplebbitIpfsType["statsCid"];
-    createdAt: SubplebbitIpfsType["createdAt"];
-    updatedAt: SubplebbitIpfsType["updatedAt"];
-    encryption: SubplebbitIpfsType["encryption"];
-    protocolVersion: SubplebbitIpfsType["protocolVersion"];
-    signature: SubplebbitIpfsType["signature"];
+    statsCid?: SubplebbitIpfsType["statsCid"];
+    createdAt?: SubplebbitIpfsType["createdAt"];
+    updatedAt?: SubplebbitIpfsType["updatedAt"];
+    encryption?: SubplebbitIpfsType["encryption"];
+    protocolVersion?: SubplebbitIpfsType["protocolVersion"];
+    signature?: SubplebbitIpfsType["signature"];
     rules?: SubplebbitIpfsType["rules"];
-    challenges: SubplebbitIpfsType["challenges"];
+    challenges?: SubplebbitIpfsType["challenges"];
     postUpdates?: SubplebbitIpfsType["postUpdates"];
+    startedState?: "stopped" | SubplebbitStartedState;
+    started?: boolean;
+    signer?: SignerWithPublicKeyAddress | RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
+    settings?: SubplebbitSettings;
+    editable?: Pick<RemoteSubplebbit, keyof SubplebbitEditOptions>;
     state: SubplebbitState;
     updatingState: SubplebbitUpdatingState;
     clients: SubplebbitClientsManager["clients"];
@@ -42,7 +47,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     initSubplebbitIpfsPropsNoMerge(newProps: SubplebbitIpfsType): Promise<void>;
     initRemoteSubplebbitPropsNoMerge(newProps: SubplebbitJson | CreateRemoteSubplebbitOptions): Promise<void>;
     setAddress(newAddress: string): void;
-    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "description" | "pubsubTopic" | "title" | "challenges" | "updatedAt" | "encryption" | "createdAt" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
+    protected _toJSONIpfsBaseNoPosts(): Pick<this, "address" | "signature" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "description" | "challenges" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs">;
     toJSONIpfs(): SubplebbitIpfsType;
     toJSONRpcRemote(): RpcRemoteSubplebbitType;
     protected _setState(newState: RemoteSubplebbit["state"]): void;
@@ -52,4 +57,7 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> {
     private updateOnce;
     update(): Promise<void>;
     stop(): Promise<void>;
+    edit(options: any): Promise<any>;
+    delete(options: any): Promise<void>;
+    start(options: any): Promise<void>;
 }

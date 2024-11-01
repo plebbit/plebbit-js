@@ -1,14 +1,18 @@
 import type { RpcInternalSubplebbitRecordAfterFirstUpdateType, RpcInternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitEditOptions, SubplebbitStartedState } from "./types.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
-import { Plebbit } from "../plebbit.js";
-export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
+import { Plebbit } from "../plebbit/plebbit.js";
+export declare class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcInternalSubplebbitRecordBeforeFirstUpdateType {
     started: boolean;
     startedState: SubplebbitStartedState;
     signer: RpcInternalSubplebbitRecordAfterFirstUpdateType["signer"];
-    settings?: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
+    settings: RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     editable: Pick<RpcLocalSubplebbit, keyof SubplebbitEditOptions>;
+    challenges: RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    encryption: RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
+    createdAt: RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
+    protocolVersion: RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
     private _startRpcSubscriptionId?;
-    protected _usingDefaultChallenge: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
+    _usingDefaultChallenge: RpcInternalSubplebbitRecordAfterFirstUpdateType["_usingDefaultChallenge"];
     constructor(plebbit: Plebbit);
     toJSONInternalRpcAfterFirstUpdate(): RpcInternalSubplebbitRecordAfterFirstUpdateType;
     toJSONInternalRpcBeforeFirstUpdate(): RpcInternalSubplebbitRecordBeforeFirstUpdateType;

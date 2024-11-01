@@ -1,4 +1,4 @@
-import * as PlebbitClass from "./plebbit.js";
+import * as PlebbitClass from "./plebbit/plebbit.js";
 import type { InputPlebbitOptions } from "./types.js";
 import { shortifyAddress, shortifyCid } from "./util.js";
 declare const Plebbit: {
@@ -13,8 +13,8 @@ declare const Plebbit: {
     challenges: Record<string, (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: import("zod").objectInputType<{
             subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                 addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -52,8 +52,8 @@ declare const Plebbit: {
         getChallenge: (args_0: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: import("zod").objectInputType<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                     addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -125,8 +125,8 @@ export declare const getShortAddress: typeof shortifyAddress;
 export declare const challenges: Record<string, (args_0: {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: import("zod").objectInputType<{
         subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
             addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -164,8 +164,8 @@ export declare const challenges: Record<string, (args_0: {
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: import("zod").objectInputType<{
             subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                 addresses: import("zod").ZodArray<import("zod").ZodString, "many">;

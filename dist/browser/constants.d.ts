@@ -1,7 +1,7 @@
 import { LRUCache } from "lru-cache";
 import type { ChainTicker, LRUStorageConstructor } from "./types.js";
 import { PublicClient as ViemClient } from "viem";
-import { Plebbit } from "./plebbit.js";
+import { Plebbit } from "./plebbit/plebbit.js";
 export declare enum STORAGE_KEYS {
     INTERNAL_SUBPLEBBIT = 0,// InternalSubplebbitType
     PERSISTENT_DELETED_SUBPLEBBITS = 1,// These are basically sub db files that we're unable to remove for some reason on windows
@@ -15,9 +15,10 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     };
     protocolVersion: string;
+    updatedAt: number;
     challenges: import("zod").objectOutputType<{
         exclude: import("zod").ZodOptional<import("zod").ZodArray<import("zod").ZodObject<{
             subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
@@ -117,7 +118,6 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
         challenge: import("zod").ZodOptional<import("zod").ZodString>;
         type: import("zod").ZodOptional<import("zod").ZodString>;
     }, import("zod").ZodTypeAny, "passthrough">[];
-    updatedAt: number;
     encryption: {
         type: "ed25519-aes-gcm";
         publicKey: string;
@@ -127,13 +127,13 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
     createdAt: number;
     statsCid: string;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     posts?: {
         pages: Record<string, import("./pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, import("zod").objectOutputType<{
         role: import("zod").ZodEnum<["owner", "admin", "moderator"]>;
@@ -180,7 +180,7 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
         textColor: import("zod").ZodOptional<import("zod").ZodString>;
         expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
     }, import("zod").ZodTypeAny, "passthrough">[]> | undefined;
-}, "address" | "pubsubTopic" | "encryption">, unknown>;
+}, "address" | "encryption" | "pubsubTopic">, unknown>;
 export declare const pageCidToSortTypesCache: LRUCache<string, string[], unknown>;
 export declare const domainResolverPromiseCache: LRUCache<string, Promise<string | null>, unknown>;
 export declare const gatewayFetchPromiseCache: LRUCache<string, Promise<{

@@ -1,7 +1,6 @@
 import Publication from "../publication.js";
 import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
-import * as remeda from "remeda";
 export class CommentEdit extends Publication {
     constructor(plebbit) {
         super(plebbit);
@@ -10,32 +9,20 @@ export class CommentEdit extends Publication {
         this.publish = this.publish.bind(this);
         hideClassPrivateProps(this);
     }
-    _initEditProps(props) {
+    _initLocalProps(props) {
+        this._initPubsubPublicationProps(props.commentEdit);
+        this.challengeRequest = props.challengeRequest;
+        this.signer = props.signer;
+    }
+    _initPubsubPublicationProps(props) {
+        this._pubsubMsgToPublish = props;
+        super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.content = props.content;
         this.reason = props.reason;
         this.deleted = props.deleted;
         this.flair = props.flair;
         this.spoiler = props.spoiler;
-        this.pinned = props.pinned;
-        this.locked = props.locked;
-        this.removed = props.removed;
-        this.commentAuthor = props.commentAuthor;
-    }
-    _initLocalProps(props) {
-        super._initBaseLocalProps(props);
-        this._initEditProps(props);
-        const keysCasted = props.signature.signedPropertyNames;
-        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
-    }
-    _initRemoteProps(props) {
-        super._initBaseRemoteProps(props);
-        this._initEditProps(props);
-    }
-    _initChallengeRequestProps(props) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.publication);
-        this._pubsubMsgToPublish = props.publication;
     }
     toJSONPubsubMessagePublication() {
         if (!this._pubsubMsgToPublish)
@@ -43,7 +30,7 @@ export class CommentEdit extends Publication {
         return this._pubsubMsgToPublish;
     }
     getType() {
-        return "commentedit";
+        return "commentEdit";
     }
     async _validateSignature() {
         const editObj = JSON.parse(JSON.stringify(this.toJSONPubsubMessagePublication()));

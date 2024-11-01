@@ -1,8 +1,14 @@
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import { PlebbitError } from "../plebbit-error.js";
 import type { PubsubMessage } from "../pubsub-messages/types";
 import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
+export type OptionsToLoadFromGateway = {
+    recordIpfsType: "ipfs" | "ipns";
+    root: string;
+    path?: string;
+    recordPlebbitType: LoadType;
+};
 export declare class BaseClientsManager {
     protected _plebbit: Plebbit;
     _defaultPubsubProviderUrl: string;
@@ -23,12 +29,13 @@ export declare class BaseClientsManager {
     pubsubPublishOnProvider(pubsubTopic: string, data: PubsubMessage, pubsubProvider: string): Promise<void>;
     pubsubPublish(pubsubTopic: string, data: PubsubMessage): Promise<void>;
     private _fetchWithLimit;
-    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType, error: PlebbitError): void;
-    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
+    preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway, error: PlebbitError): void;
+    postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     private _fetchFromGatewayAndVerifyIfNeeded;
-    protected _fetchWithGateway(gateway: string, path: string, loadType: LoadType, abortController: AbortController, validateGatewayResponse: (resObj: {
+    private _handleIfGatewayRedirectsToSubdomainResolution;
+    protected _fetchWithGateway(gateway: string, loadOpts: OptionsToLoadFromGateway, abortController: AbortController, validateGatewayResponse: (resObj: {
         resText: string;
         res: Response;
     }) => Promise<void>): Promise<{
@@ -50,10 +57,7 @@ export declare class BaseClientsManager {
         i: number;
     }>;
     getGatewayTimeoutMs(loadType: LoadType): number;
-    fetchFromMultipleGateways(loadOpts: {
-        cid?: string;
-        ipns?: string;
-    }, loadType: LoadType, valiateGatewayResponse: (resObj: {
+    fetchFromMultipleGateways(loadOpts: OptionsToLoadFromGateway, valiateGatewayResponse: (resObj: {
         resText: string;
         res: Response;
     }) => Promise<void>): Promise<{

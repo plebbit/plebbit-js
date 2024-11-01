@@ -1,12 +1,11 @@
 import Logger from "@plebbit/plebbit-logger";
-import { Plebbit } from "../../../plebbit.js";
+import { Plebbit } from "../../../plebbit/plebbit.js";
 import type { CreateNewLocalSubplebbitParsedOptions, InternalSubplebbitRecordBeforeFirstUpdateType, InternalSubplebbitRecordAfterFirstUpdateType, SubplebbitEditOptions, RpcInternalSubplebbitRecordBeforeFirstUpdateType, RpcInternalSubplebbitRecordAfterFirstUpdateType } from "../../../subplebbit/types.js";
 import { DbHandler } from "./db-handler.js";
 import type { ChallengeAnswerMessageType } from "../../../pubsub-messages/types.js";
 import { SignerWithPublicKeyAddress } from "../../../signer/index.js";
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
-import type { CommentEditPubsubMessage } from "../../../publications/comment-edit/types.js";
-export declare class LocalSubplebbit extends RpcLocalSubplebbit {
+export declare class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
     signer: SignerWithPublicKeyAddress;
     private _postUpdatesBuckets;
     private _defaultSubplebbitChallenges;
@@ -44,24 +43,22 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit {
     private shouldResolveDomainForVerification;
     private _validateSubSchemaAndSignatureBeforePublishing;
     private storeCommentEdit;
+    private storeCommentModeration;
     private storeVote;
-    private isPublicationVote;
-    private isPublicationComment;
     private isPublicationReply;
     private isPublicationPost;
-    private isPublicationCommentEdit;
     private _calculateLinkProps;
     private _calculatePostProps;
     private _calculateReplyProps;
+    private storeComment;
     private storePublication;
     private _decryptOrRespondWithFailure;
     private _respondWithErrorIfSignatureOfPublicationIsInvalid;
     private _publishChallenges;
     private _publishFailedChallengeVerification;
+    private _storePublicationAndEncryptForChallengeVerification;
     private _publishChallengeVerification;
-    private _commentEditIncludesUniqueModFields;
-    private _commentEditIncludesUniqueAuthorFields;
-    _isAuthorEdit(request: CommentEditPubsubMessage, editHasBeenSignedByOriginalAuthor: boolean): boolean;
+    private _isModerator;
     private _checkPublicationValidity;
     private _parseChallengeRequestPublicationOrRespondWithFailure;
     private handleChallengeRequest;

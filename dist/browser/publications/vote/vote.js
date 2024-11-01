@@ -1,7 +1,6 @@
 import Publication from "../publication.js";
 import { verifyVote } from "../../signer/index.js";
 import { hideClassPrivateProps, throwWithErrorCode } from "../../util.js";
-import * as remeda from "remeda";
 // vote.signer is inherited from Publication
 class Vote extends Publication {
     constructor(plebbit) {
@@ -12,21 +11,15 @@ class Vote extends Publication {
         hideClassPrivateProps(this);
     }
     _initLocalProps(props) {
-        this._initBaseLocalProps(props);
-        this.commentCid = props.commentCid;
-        this.vote = props.vote;
-        const keysCasted = props.signature.signedPropertyNames;
-        this._pubsubMsgToPublish = remeda.pick(props, ["signature", ...keysCasted]);
+        this._initRemoteProps(props.vote);
+        this.challengeRequest = props.challengeRequest;
+        this.signer = props.signer;
     }
     _initRemoteProps(props) {
         super._initBaseRemoteProps(props);
         this.commentCid = props.commentCid;
         this.vote = props.vote;
-    }
-    _initChallengeRequestProps(props) {
-        super._initChallengeRequestChallengeProps(props);
-        this._initRemoteProps(props.publication);
-        this._pubsubMsgToPublish = props.publication;
+        this._pubsubMsgToPublish = props;
     }
     toJSONPubsubMessagePublication() {
         if (!this._pubsubMsgToPublish)

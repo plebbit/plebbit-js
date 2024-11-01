@@ -1,6 +1,6 @@
 declare const PlebbitJs: {
     Plebbit: {
-        (plebbitOptions?: import("../../../../types.js").InputPlebbitOptions): Promise<import("../../../../plebbit.js").Plebbit>;
+        (plebbitOptions?: import("../../../../types.js").InputPlebbitOptions): Promise<import("../../../../plebbit/plebbit.js").Plebbit>;
         setNativeFunctions: (newNativeFunctions: Partial<import("../../../../types.js").NativeFunctions>) => void;
         nativeFunctions: {
             node: import("../../../../types.js").NativeFunctions;
@@ -11,8 +11,8 @@ declare const PlebbitJs: {
         challenges: Record<string, (args_0: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: import("zod").objectInputType<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                     addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -50,8 +50,8 @@ declare const PlebbitJs: {
             getChallenge: (args_0: {
                 path?: string | undefined;
                 options?: Record<string, string> | undefined;
-                name?: string | undefined;
                 description?: string | undefined;
+                name?: string | undefined;
                 exclude?: import("zod").objectInputType<{
                     subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                         addresses: import("zod").ZodArray<import("zod").ZodString, "many">;

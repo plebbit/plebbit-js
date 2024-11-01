@@ -40,7 +40,7 @@ export default class Stats {
             ((successCounts + 0.288) / (failureCounts * 2 + successCounts + 1)) * 0.8);
     }
     async sortGatewaysAccordingToScore(type) {
-        const gatewayType = type === "cid" || type === "ipns"
+        const gatewayType = type === "ipfs" || type === "ipns"
             ? "ipfsGateways"
             : type === "pubsub-publish" || type === "pubsub-subscribe"
                 ? "pubsubClients"

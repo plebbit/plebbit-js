@@ -1,5 +1,5 @@
 import { Comment } from "../publications/comment/comment.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import Vote from "../publications/vote/vote.js";
 import { RemoteSubplebbit } from "../subplebbit/remote-subplebbit.js";
 import type { InputPlebbitOptions } from "../types.js";
@@ -10,11 +10,12 @@ import { RpcLocalSubplebbit } from "../subplebbit/rpc-local-subplebbit.js";
 import type { CreateNewLocalSubplebbitUserOptions } from "../subplebbit/types.js";
 import type { SignerType } from "../signer/types.js";
 import type { CreateVoteOptions } from "../publications/vote/types.js";
-import type { CommentIpfsWithCidDefined, CommentJson, CreateCommentOptions } from "../publications/comment/types.js";
+import type { CommentIpfsWithCidDefined, CreateCommentOptions } from "../publications/comment/types.js";
 import { BasePages } from "../pages/pages.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import type { CreateCommentEditOptions } from "../publications/comment-edit/types.js";
-import type { PubsubMessage } from "../pubsub-messages/types.js";
+import type { ChallengeVerificationMessageType, PubsubMessage } from "../pubsub-messages/types.js";
+import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 export declare function generateMockPost(subplebbitAddress: string, plebbit: Plebbit, randomTimestamp?: boolean, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockComment(parentPostOrComment: CommentIpfsWithCidDefined, plebbit: Plebbit, randomTimestamp?: boolean, commentProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function generateMockVote(parentPostOrComment: CommentIpfsWithCidDefined, vote: -1 | 0 | 1, plebbit: Plebbit, signer?: SignerType): Promise<Vote>;
@@ -24,6 +25,7 @@ type TestServerSubs = {
     ensSub: string;
     mainSub: string;
     mathSub: string;
+    NoPubsubResponseSub: string;
 };
 export declare function startOnlineSubplebbit(): Promise<LocalSubplebbit | RpcLocalSubplebbit>;
 export declare function startSubplebbits(props: {
@@ -36,15 +38,7 @@ export declare function startSubplebbits(props: {
     startOnlineSub: boolean;
 }): Promise<TestServerSubs>;
 export declare function fetchTestServerSubs(): Promise<TestServerSubs>;
-export declare function mockDefaultOptionsForNodeAndBrowserTests(): {
-    plebbitRpcClientsOptions: string[];
-    ipfsHttpClientsOptions?: undefined;
-    pubsubHttpClientsOptions?: undefined;
-} | {
-    ipfsHttpClientsOptions: string[];
-    pubsubHttpClientsOptions: string[];
-    plebbitRpcClientsOptions?: undefined;
-};
+export declare function mockDefaultOptionsForNodeAndBrowserTests(): Pick<InputPlebbitOptions, "plebbitRpcClientsOptions" | "ipfsHttpClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions">;
 export declare function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub?: boolean, stubStorage?: boolean, mockResolve?: boolean): Promise<Plebbit>;
 export declare function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
@@ -53,27 +47,30 @@ export declare function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOption
 export declare function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function mockGatewayPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function mockMultipleGatewaysPlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
-export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
-export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>, verifyCommentPropsInParentPages?: boolean): Promise<Comment>;
+export declare function publishRandomReply(parentComment: CommentIpfsWithCidDefined, plebbit: Plebbit, commentProps: Partial<CreateCommentOptions>): Promise<Comment>;
+export declare function publishRandomPost(subplebbitAddress: string, plebbit: Plebbit, postProps?: Partial<CreateCommentOptions>): Promise<Comment>;
 export declare function publishVote(commentCid: string, subplebbitAddress: string, vote: 1 | 0 | -1, plebbit: Plebbit, voteProps?: Partial<CreateVoteOptions>): Promise<Vote>;
 export declare function publishWithExpectedResult(publication: Publication, expectedChallengeSuccess: boolean, expectedReason?: string): Promise<void>;
 export declare function findCommentInPage(commentCid: string, pageCid: string, pages: BasePages): Promise<import("../publications/comment/types.js").CommentWithinPageJson | undefined>;
-export declare function waitTillCommentIsInParentPages(comment: Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "depth" | "parentCid">, plebbit: Plebbit, propsToCheckFor?: Partial<CommentJson>, checkInAllPages?: boolean): Promise<void>;
+export declare function waitTillPostInSubplebbitPages(post: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress">>, plebbit: Plebbit): Promise<void>;
+export declare function waitTillReplyInParentPages(reply: Required<Pick<CommentIpfsWithCidDefined, "cid" | "subplebbitAddress" | "parentCid">>, plebbit: Plebbit): Promise<void>;
 export declare function createSubWithNoChallenge(props: CreateNewLocalSubplebbitUserOptions, plebbit: Plebbit): Promise<LocalSubplebbit | RpcLocalSubplebbit>;
 export declare function generatePostToAnswerMathQuestion(props: CreateCommentOptions, plebbit: Plebbit): Promise<Comment>;
 export declare function isRpcFlagOn(): boolean;
 export declare function isRunningInBrowser(): boolean;
-export declare function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>): Promise<void>;
-export declare function disableZodValidationOfPublication(publication: Publication): Promise<void>;
+export declare function resolveWhenConditionIsTrue(toUpdate: EventEmitter, predicate: () => Promise<boolean>, eventName?: string): Promise<void>;
+export declare function disableValidationOfSignatureBeforePublishing(publication: Publication): Promise<void>;
 export declare function overrideCommentInstancePropsAndSign(comment: Comment, props: CreateCommentOptions): Promise<void>;
 export declare function overrideCommentEditInstancePropsAndSign(commentEdit: CommentEdit, props: CreateCommentEditOptions): Promise<void>;
 export declare function setExtraPropOnCommentAndSign(comment: Comment, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean): Promise<void>;
 export declare function setExtraPropOnVoteAndSign(vote: Vote, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean): Promise<void>;
 export declare function setExtraPropOnCommentEditAndSign(commentEdit: CommentEdit, extraProps: Object, includeExtraPropInSignedPropertyNames: boolean): Promise<void>;
+export declare function setExtraPropOnCommentModerationAndSign(commentModeration: CommentModeration, extraProps: any, includeExtraPropInSignedPropertyNames: boolean): Promise<void>;
 export declare function setExtraPropOnChallengeRequestAndSign(publication: Publication, extraProps: Object, includeExtraPropsInRequestSignedPropertyNames: boolean): Promise<void>;
 export declare function publishChallengeAnswerMessageWithExtraProps(publication: Publication, challengeAnswers: string[], extraProps: Object, includeExtraPropsInChallengeSignedPropertyNames: boolean): Promise<void>;
 export declare function publishChallengeMessageWithExtraProps(publication: Publication, pubsubSigner: SignerType, extraProps: Object, includeExtraPropsInChallengeSignedPropertyNames: boolean): Promise<void>;
 export declare function publishChallengeVerificationMessageWithExtraProps(publication: Publication, pubsubSigner: SignerType, extraProps: Object, includeExtraPropsInChallengeSignedPropertyNames: boolean): Promise<void>;
+export declare function publishChallengeVerificationMessageWithEncryption(publication: Publication, pubsubSigner: SignerType, toEncrypt: Object, verificationProps?: Partial<ChallengeVerificationMessageType>): Promise<void>;
 export declare function addStringToIpfs(content: string): Promise<string>;
 export declare function publishOverPubsub(pubsubTopic: string, jsonToPublish: PubsubMessage): Promise<void>;
 export declare function getRemotePlebbitConfigs(): {
@@ -96,25 +93,25 @@ export declare function publishSubplebbitRecordWithExtraProp(opts: {
         plebbit: Plebbit;
     };
 }>;
-export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "updatingState" | "started" | "startedState" | "settings" | "editable">;
+export declare function jsonifySubplebbitAndRemoveInternalProps(sub: RemoteSubplebbit): Omit<any, "signer" | "state" | "clients" | "settings" | "updatingState" | "started" | "startedState" | "editable">;
 export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit): Omit<{
     address: import("../subplebbit/types.js").SubplebbitIpfsType["address"];
     shortAddress: string;
-    signature: import("../subplebbit/types.js").SubplebbitIpfsType["signature"];
+    signature?: import("../subplebbit/types.js").SubplebbitIpfsType["signature"] | undefined;
     signer: import("../signer/index.js").SignerWithPublicKeyAddress;
-    protocolVersion: import("../subplebbit/types.js").SubplebbitIpfsType["protocolVersion"];
+    protocolVersion: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["protocolVersion"];
     lastCommentCid?: import("../subplebbit/types.js").SubplebbitIpfsType["lastCommentCid"];
-    description?: import("../subplebbit/types.js").SubplebbitIpfsType["description"];
-    pubsubTopic?: import("../subplebbit/types.js").SubplebbitIpfsType["pubsubTopic"];
     state: import("../subplebbit/types.js").SubplebbitState;
     clients: import("../clients/client-manager.js").SubplebbitClientsManager["clients"];
     title?: import("../subplebbit/types.js").SubplebbitIpfsType["title"];
-    challenges: import("../subplebbit/types.js").SubplebbitIpfsType["challenges"];
-    updatedAt: import("../subplebbit/types.js").SubplebbitIpfsType["updatedAt"];
+    updatedAt?: import("../subplebbit/types.js").SubplebbitIpfsType["updatedAt"] | undefined;
+    description?: import("../subplebbit/types.js").SubplebbitIpfsType["description"];
+    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
     posts: import("../pages/pages.js").PostsPages;
-    encryption: import("../subplebbit/types.js").SubplebbitIpfsType["encryption"];
-    createdAt: import("../subplebbit/types.js").SubplebbitIpfsType["createdAt"];
-    statsCid: import("../subplebbit/types.js").SubplebbitIpfsType["statsCid"];
+    encryption: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
+    createdAt: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
+    pubsubTopic?: import("../subplebbit/types.js").SubplebbitIpfsType["pubsubTopic"];
+    statsCid?: import("../subplebbit/types.js").SubplebbitIpfsType["statsCid"] | undefined;
     postUpdates?: import("../subplebbit/types.js").SubplebbitIpfsType["postUpdates"];
     roles?: import("../subplebbit/types.js").SubplebbitIpfsType["roles"];
     rules?: import("../subplebbit/types.js").SubplebbitIpfsType["rules"];
@@ -123,16 +120,30 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     suggested?: import("../subplebbit/types.js").SubplebbitIpfsType["suggested"];
     flairs?: import("../subplebbit/types.js").SubplebbitIpfsType["flairs"];
     updateCid?: string | undefined;
+    settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
     updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
     started: boolean;
     startedState: import("../subplebbit/types.js").SubplebbitStartedState;
-    stats?: import("../subplebbit/types.js").SubplebbitStats | undefined;
-    settings?: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"] | undefined;
     editable: Pick<RpcLocalSubplebbit, keyof import("../subplebbit/types.js").SubplebbitEditOptions>;
 }, "state" | "clients" | "updatingState" | "started" | "startedState">;
 export declare function jsonifyCommentAndRemoveInstanceProps(comment: Comment): Omit<any, "state" | "publishingState" | "clients" | "updatingState">;
-export declare const describeSkipIfRpc: Mocha.SuiteFunction | ((_: any) => void);
-export declare const describeIfRpc: Mocha.SuiteFunction | ((_: any) => void);
-export declare const itSkipIfRpc: Mocha.TestFunction | ((_: any) => void);
-export declare const itIfRpc: Mocha.TestFunction | ((_: any) => void);
+export declare function waitUntilPlebbitSubplebbitsIncludeSubAddress(plebbit: Plebbit, subAddress: string): Promise<void>;
+export declare function isPlebbitFetchingUsingGateways(plebbit: Plebbit): boolean;
+export declare function mockRpcWsToSkipSignatureValidation(plebbitWs: any): void;
+export declare const describeSkipIfRpc: Mocha.SuiteFunction | {
+    (_: any): void;
+    skip(): void;
+};
+export declare const describeIfRpc: Mocha.SuiteFunction | {
+    (_: any): void;
+    skip(): void;
+};
+export declare const itSkipIfRpc: Mocha.TestFunction | {
+    (_: any): void;
+    skip(): void;
+};
+export declare const itIfRpc: Mocha.TestFunction | {
+    (_: any): void;
+    skip(): void;
+};
 export {};

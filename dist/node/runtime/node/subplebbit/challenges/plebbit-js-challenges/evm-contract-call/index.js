@@ -2,7 +2,7 @@ import { getPlebbitAddressFromPublicKey } from "../../../../../../signer/util.js
 import { decodeFunctionResult, encodeFunctionData } from "viem";
 import Logger from "@plebbit/plebbit-logger";
 import { getViemClient } from "../../../../../../constants.js";
-import { isStringDomain } from "../../../../../../util.js";
+import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 const optionInputs = [
     {
@@ -275,7 +275,7 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     const doesConditionStartWithSupportedOperator = supportedConditionOperators.find((operator) => condition.startsWith(operator));
     if (!doesConditionStartWithSupportedOperator)
         throw Error(`Condition uses unsupported comparison operator`);
-    const publication = challengeRequestMessage.publication;
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     // Run the contract call and validate condition, by this order:
     // - author wallet address (if they have author.wallets set)
     // - ENS author address (if they have author.address as an ENS name)

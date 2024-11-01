@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { FlairSchema, AuthorPubsubSchema, ChallengeRequestToEncryptBaseSchema, CidStringSchema, CreatePublicationUserOptionsSchema, JsonSignatureSchema, PlebbitTimestampSchema, ProtocolVersionSchema, PublicationBaseBeforeSigning, SignerWithAddressPublicKeySchema, SubplebbitAuthorSchema } from "../../schema/schema.js";
-import { AuthorCommentEditPubsubPassthroughSchema } from "../comment-edit/schema.js";
+import { FlairSchema, AuthorPubsubSchema, CidStringSchema, CreatePublicationUserOptionsSchema, JsonSignatureSchema, PlebbitTimestampSchema, ProtocolVersionSchema, PublicationBaseBeforeSigning, SignerWithAddressPublicKeySchema, SubplebbitAuthorSchema } from "../../schema/schema.js";
+import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../comment-edit/schema.js";
 import * as remeda from "remeda";
 import { messages } from "../../errors.js";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
@@ -22,30 +22,34 @@ export const CreateCommentOptionsSchema = z
     linkWidth: z.number().positive().optional(), // author can optionally provide dimensions of image/video link which helps UI clients with infinite scrolling feeds
     linkHeight: z.number().positive().optional(),
     linkHtmlTagName: z.enum(["a", "img", "video", "audio"]).optional(),
-    parentCid: CidStringSchema.optional() // The parent comment CID
+    parentCid: CidStringSchema.optional(), // The parent comment CID
+    postCid: CidStringSchema.optional() // the post cid, required if the comment is reply
 })
     .merge(CreatePublicationUserOptionsSchema)
     .strict();
 // This one is used for parsing user's input
-export const CreateCommentOptionsWithRefinementSchema = CreateCommentOptionsSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
-export const CommentOptionsToSignSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning);
+export const CreateCommentOptionsWithRefinementSchema = CreateCommentOptionsSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
 // Below is what's used to initialize a local publication to be published
-export const LocalCommentSchema = CommentOptionsToSignSchema.extend({ signature: JsonSignatureSchema }).merge(ChallengeRequestToEncryptBaseSchema);
 export const CommentSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateCommentOptionsSchema.shape, keysToOmitFromSignedPropertyNames));
 const commentPubsubKeys = (remeda.mapToObj([...CommentSignedPropertyNames, "signature"], (x) => [x, true]));
-export const CommentPubsubMessageSchema = LocalCommentSchema.pick(commentPubsubKeys).strict();
-export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessageSchema.merge(z.object({ author: AuthorPubsubSchema.passthrough() })).strict();
-// This is used by the subplebbit when parsing request.publication
+export const CommentPubsubMessagePublicationSchema = CreateCommentOptionsSchema.merge(PublicationBaseBeforeSigning)
+    .extend({ signature: JsonSignatureSchema })
+    .pick(commentPubsubKeys)
+    .strict();
+export const CommentPubsubMessageWithFlexibleAuthorSchema = CommentPubsubMessagePublicationSchema.merge(z.object({ author: AuthorPubsubSchema.passthrough() })).strict();
+// This is used by the subplebbit when parsing request.comment
 export const CommentPubsubMessageWithFlexibleAuthorRefinementSchema = CommentPubsubMessageWithFlexibleAuthorSchema.passthrough().refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
-export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessageSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
-export const CommentChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
-}).strict();
+export const CommentPubsubMessageWithRefinementSchema = CommentPubsubMessagePublicationSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE).refine((arg) => (arg.parentCid ? arg.postCid : true), messages.ERR_REPLY_HAS_NOT_DEFINED_POST_CID);
+export const CommentChallengeRequestToEncryptSchema = CreateCommentOptionsSchema.shape.challengeRequest
+    .unwrap()
+    .extend({
+    comment: CommentPubsubMessageWithFlexibleAuthorSchema.passthrough()
+})
+    .strict();
 // Remote comments
 // These are the props added by the subplebbit before adding the comment to ipfs
 export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.extend({
     depth: z.number().nonnegative().int(),
-    postCid: CidStringSchema.optional(),
     thumbnailUrl: z.string().url().optional(),
     thumbnailUrlWidth: z.number().positive().optional(),
     thumbnailUrlHeight: z.number().positive().optional(),
@@ -53,14 +57,8 @@ export const CommentIpfsSchema = CommentPubsubMessageWithFlexibleAuthorSchema.ex
 }).strict();
 // This one should be used for parsing user's input or from gateway/p2p etc
 export const CommentIpfsWithRefinmentSchema = CommentIpfsSchema.refine((arg) => arg.link || arg.content || arg.title, messages.ERR_COMMENT_HAS_NO_CONTENT_LINK_TITLE);
-export const CommentIpfsWithCidDefinedSchema = CommentIpfsSchema.extend({
-    cid: CidStringSchema
-}).strict();
-export const CommentIpfsWithCidPostCidDefinedSchema = CommentIpfsWithCidDefinedSchema.extend({
-    postCid: CidStringSchema
-}).strict();
 // Comment update schemas
-export const AuthorWithCommentUpdateSchema = CommentPubsubMessageSchema.shape.author
+export const AuthorWithCommentUpdateSchema = CommentPubsubMessagePublicationSchema.shape.author
     .extend({
     subplebbit: SubplebbitAuthorSchema.optional()
 })
@@ -70,7 +68,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     upvoteCount: z.number().nonnegative().int(),
     downvoteCount: z.number().nonnegative().int(),
     replyCount: z.number().nonnegative().int(),
-    edit: AuthorCommentEditPubsubPassthroughSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
+    edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
     flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
     pinned: z.boolean().optional(),
@@ -88,17 +86,23 @@ export const CommentUpdateSchema = CommentUpdateNoRepliesSchema.extend({
     replies: z.lazy(() => RepliesPagesIpfsSchema.optional()) // only preload page 1 sorted by 'topAll', might preload more later, only provide sorting for posts (not comments) that have 100+ child comments
 }).strict();
 export const CommentUpdateSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"]));
+export const CommentUpdateForChallengeVerificationSchema = CommentUpdateSchema.pick({
+    author: true,
+    cid: true,
+    signature: true,
+    protocolVersion: true
+}).strict();
+export const CommentUpdateForChallengeVerificationSignedPropertyNames = remeda.keys.strict(remeda.omit(CommentUpdateForChallengeVerificationSchema.shape, ["signature"]));
 const originalFields = (remeda
-    .intersection(remeda.keys.strict(CommentPubsubMessageSchema.shape), remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"])))
+    .intersection(remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape), remeda.keys.strict(remeda.omit(CommentUpdateSchema.shape, ["signature"])))
     .concat("content") // have to hard code this here because Comment.content uses CommentUpdate.edit.content
 );
 const originalFieldsObj = remeda.fromKeys(originalFields, () => true);
 export const OriginalCommentFieldsBeforeCommentUpdateSchema = CommentPubsubMessageWithFlexibleAuthorSchema.pick(originalFieldsObj).strip();
 // Comment table here
-export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    authorAddress: AuthorPubsubSchema.shape.address,
-    challengeRequestPublicationSha256: z.string(),
-    ipnsName: z.string().optional(),
+export const CommentsTableRowSchema = CommentIpfsSchema.extend({
+    cid: CidStringSchema,
+    postCid: CidStringSchema,
     id: z.number().nonnegative().int(),
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
@@ -108,25 +112,19 @@ export const CommentsTableRowSchema = CommentIpfsWithCidPostCidDefinedSchema.ext
 export const CommentPubsubMessageReservedFields = remeda.difference(remeda.unique([
     ...remeda.keys.strict(CommentIpfsSchema.shape),
     ...remeda.keys.strict(CommentsTableRowSchema.shape),
-    ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
+    ...remeda.keys.strict(CommentChallengeRequestToEncryptSchema.shape),
+    ...remeda.keys.strict(CreateCommentOptionsSchema.shape),
     ...CommentUpdateSignedPropertyNames,
     "original",
     "shortCid",
     "shortSubplebbitAddress",
     "deleted",
     "signer",
+    "comment",
     "state",
     "clients",
     "publishingState",
     "updatingState"
-]), remeda.keys.strict(CommentPubsubMessageSchema.shape));
+]), remeda.keys.strict(CommentPubsubMessagePublicationSchema.shape));
 export const CommentUpdateReservedFields = remeda.difference(CommentPubsubMessageReservedFields, remeda.keys.strict(CommentUpdateSchema.shape));
-// Plebbit.createComment here
-export const CreateCommentFunctionArguments = CreateCommentOptionsWithRefinementSchema.or(CommentIpfsWithRefinmentSchema)
-    .or(CommentIpfsWithCidDefinedSchema)
-    .or(CommentIpfsWithCidPostCidDefinedSchema)
-    .or(CommentPubsubMessageWithRefinementSchema)
-    .or(CommentChallengeRequestToEncryptSchema)
-    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true }))
-    .or(CommentIpfsWithCidDefinedSchema.pick({ cid: true, subplebbitAddress: true }));
 //# sourceMappingURL=schema.js.map

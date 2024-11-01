@@ -1,25 +1,26 @@
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import Publication from "../publication.js";
-import type { CommentEditChallengeRequestToEncryptType, CommentEditPubsubMessage, LocalCommentEditOptions } from "./types.js";
+import type { CommentEditPubsubMessagePublication, CreateCommentEditOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
-export declare class CommentEdit extends Publication {
-    commentCid: CommentEditPubsubMessage["commentCid"];
-    content?: CommentEditPubsubMessage["content"];
-    reason?: CommentEditPubsubMessage["reason"];
-    deleted?: CommentEditPubsubMessage["deleted"];
-    flair?: CommentEditPubsubMessage["flair"];
-    spoiler?: CommentEditPubsubMessage["spoiler"];
-    pinned?: CommentEditPubsubMessage["pinned"];
-    locked?: CommentEditPubsubMessage["locked"];
-    removed?: CommentEditPubsubMessage["removed"];
-    commentAuthor?: CommentEditPubsubMessage["commentAuthor"];
-    _pubsubMsgToPublish?: CommentEditPubsubMessage;
+import { SignerType } from "../../signer/types.js";
+export declare class CommentEdit extends Publication implements CommentEditPubsubMessagePublication {
+    commentCid: CommentEditPubsubMessagePublication["commentCid"];
+    content?: CommentEditPubsubMessagePublication["content"];
+    reason?: CommentEditPubsubMessagePublication["reason"];
+    deleted?: CommentEditPubsubMessagePublication["deleted"];
+    flair?: CommentEditPubsubMessagePublication["flair"];
+    spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+    signature: CommentEditPubsubMessagePublication["signature"];
+    _pubsubMsgToPublish?: CommentEditPubsubMessagePublication;
+    challengeRequest?: CreateCommentEditOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
-    _initEditProps(props: LocalCommentEditOptions | CommentEditPubsubMessage): void;
-    _initLocalProps(props: LocalCommentEditOptions): void;
-    _initRemoteProps(props: CommentEditPubsubMessage): void;
-    _initChallengeRequestProps(props: CommentEditChallengeRequestToEncryptType): void;
-    toJSONPubsubMessagePublication(): CommentEditPubsubMessage;
+    _initLocalProps(props: {
+        commentEdit: CommentEditPubsubMessagePublication;
+        signer?: SignerType;
+        challengeRequest?: CreateCommentEditOptions["challengeRequest"];
+    }): void;
+    _initPubsubPublicationProps(props: CommentEditPubsubMessagePublication): void;
+    toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication;
     getType(): PublicationTypeName;
     private _validateSignature;
     publish(): Promise<void>;

@@ -3,22 +3,14 @@ import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { encodeChallengeAnswerMessage, encodeChallengeMessage, encodeChallengeRequest, encodeChallengeVerificationMessage, generateSubscriptionId } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
-const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/node/subplebbit/local-subplebbit.js";
-import path from "path";
-import { watch as fsWatch } from "node:fs";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
-import { CreateNewLocalSubplebbitUserOptionsSchema, SubplebbitEditOptionsSchema } from "../../subplebbit/schema.js";
-import { CommentChallengeRequestToEncryptSchema } from "../../publications/comment/schema.js";
-import { VoteChallengeRequestToEncryptSchema } from "../../publications/vote/schema.js";
-import { CommentEditChallengeRequestToEncryptSchema } from "../../publications/comment-edit/schema.js";
-import { DecryptedChallengeAnswerSchema } from "../../pubsub-messages/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
-import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema } from "./schema.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails, parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails, parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
 const startedSubplebbits = {};
@@ -31,6 +23,7 @@ const getStartedSubplebbit = async (address) => {
     }
     return startedSubplebbits[address];
 };
+const log = Logger("plebbit-js-rpc:plebbit-ws-server");
 class PlebbitWsServer extends EventEmitter {
     constructor({ port, server, plebbit, authKey }) {
         super();
@@ -38,8 +31,8 @@ class PlebbitWsServer extends EventEmitter {
         this.subscriptionCleanups = {};
         // store publishing publications so they can be used by publishChallengeAnswers
         this.publishing = {};
-        this._listSubsSubscriptionIdToConnectionId = {};
         this._getIpFromConnectionRequest = (req) => req.socket.remoteAddress; // we set it up here so we can mock it in tests
+        this._onSettingsChange = {};
         const log = Logger("plebbit-js:PlebbitWsServer");
         this.authKey = authKey;
         // don't instantiate plebbit in constructor because it's an async function
@@ -59,7 +52,7 @@ class PlebbitWsServer extends EventEmitter {
                 const hasAuth = this.authKey && `/${this.authKey}` === req.url;
                 // if isn't localhost and doesn't have auth, block access
                 if (!isLocalhost && !hasAuth) {
-                    log("Rejecting RPC connection request because there is no auth key");
+                    log(`Rejecting RPC connection request from`, requestOriginatorIp, `rejected because there is no auth key, url:`, req.url);
                     callback(false, 403, "You need to set the auth key to connect remotely");
                 }
                 else
@@ -84,6 +77,10 @@ class PlebbitWsServer extends EventEmitter {
             this.connections[ws._id] = ws;
             //@ts-ignore-error
             this.subscriptionCleanups[ws._id] = {};
+            //@ts-expect-error
+            this._onSettingsChange[ws._id] = {};
+            //@ts-expect-error
+            log("Established connection with new RPC client", ws._id);
         });
         // cleanup on disconnect
         this.rpcWebsockets.on("disconnection", (ws) => {
@@ -94,6 +91,8 @@ class PlebbitWsServer extends EventEmitter {
             }
             delete this.subscriptionCleanups[ws._id];
             delete this.connections[ws._id];
+            delete this._onSettingsChange[ws._id];
+            log("Disconnected from RPC client", ws._id);
         });
         // register all JSON RPC methods
         this.rpcWebsocketsRegister("getComment", this.getComment.bind(this));
@@ -104,17 +103,18 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("stopSubplebbit", this.stopSubplebbit.bind(this));
         this.rpcWebsocketsRegister("editSubplebbit", this.editSubplebbit.bind(this));
         this.rpcWebsocketsRegister("deleteSubplebbit", this.deleteSubplebbit.bind(this));
-        this.rpcWebsocketsRegister("listSubplebbits", this.listSubplebbits.bind(this));
+        this.rpcWebsocketsRegister("subplebbitsSubscribe", this.subplebbitsSubscribe.bind(this));
+        this.rpcWebsocketsRegister("settingsSubscribe", this.settingsSubscribe.bind(this));
         this.rpcWebsocketsRegister("fetchCid", this.fetchCid.bind(this));
         this.rpcWebsocketsRegister("resolveAuthorAddress", this.resolveAuthorAddress.bind(this));
-        this.rpcWebsocketsRegister("getSettings", this.getSettings.bind(this));
         this.rpcWebsocketsRegister("setSettings", this.setSettings.bind(this));
         // JSON RPC pubsub methods
-        this.rpcWebsocketsRegister("commentUpdate", this.commentUpdate.bind(this));
-        this.rpcWebsocketsRegister("subplebbitUpdate", this.subplebbitUpdate.bind(this));
+        this.rpcWebsocketsRegister("commentUpdateSubscribe", this.commentUpdateSubscribe.bind(this));
+        this.rpcWebsocketsRegister("subplebbitUpdateSubscribe", this.subplebbitUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("publishComment", this.publishComment.bind(this));
         this.rpcWebsocketsRegister("publishVote", this.publishVote.bind(this));
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
+        this.rpcWebsocketsRegister("publishCommentModeration", this.publishCommentModeration.bind(this));
         this.rpcWebsocketsRegister("publishChallengeAnswers", this.publishChallengeAnswers.bind(this));
         this.rpcWebsocketsRegister("unsubscribe", this.unsubscribe.bind(this));
         hideClassPrivateProps(this);
@@ -129,7 +129,7 @@ class PlebbitWsServer extends EventEmitter {
             catch (e) {
                 log.error(`${callback.name} error`, { params, error: e });
                 // We need to stringify the error here because rpc-websocket will remove props from PlebbitError
-                const errorJson = JSON.parse(JSON.stringify(e, Object.getOwnPropertyNames(e)));
+                const errorJson = JSON.parse(JSON.stringify(e));
                 delete errorJson["stack"];
                 throw errorJson;
             }
@@ -181,7 +181,7 @@ class PlebbitWsServer extends EventEmitter {
         return page;
     }
     async createSubplebbit(params) {
-        const createSubplebbitOptions = CreateNewLocalSubplebbitUserOptionsSchema.parse(params[0]);
+        const createSubplebbitOptions = parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails(params[0]);
         const subplebbit = await this.plebbit.createSubplebbit(createSubplebbitOptions);
         if (!(subplebbit instanceof LocalSubplebbit))
             throw Error("Failed to create a local subplebbit. This is a critical error");
@@ -218,7 +218,7 @@ class PlebbitWsServer extends EventEmitter {
     }
     async startSubplebbit(params, connectionId) {
         const address = SubplebbitAddressSchema.parse(params[0]);
-        const localSubs = await this.plebbit.listSubplebbits();
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_ATTEMPTING_TO_START_A_REMOTE_SUB", { subplebbitAddress: address });
         const subscriptionId = generateSubscriptionId();
@@ -248,7 +248,7 @@ class PlebbitWsServer extends EventEmitter {
     }
     async stopSubplebbit(params) {
         const address = SubplebbitAddressSchema.parse(params[0]);
-        const localSubs = await this.plebbit.listSubplebbits();
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_STOP_REMOTE_SUB", { subplebbitAddress: address });
         const isSubStarted = address in startedSubplebbits;
@@ -279,8 +279,8 @@ class PlebbitWsServer extends EventEmitter {
     async editSubplebbit(params) {
         const address = SubplebbitAddressSchema.parse(params[0]);
         const replacedProps = replaceXWithY(params[1], null, undefined);
-        const editSubplebbitOptions = SubplebbitEditOptionsSchema.parse(replacedProps);
-        const localSubs = await this.plebbit.listSubplebbits();
+        const editSubplebbitOptions = parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails(replacedProps);
+        const localSubs = this.plebbit.subplebbits;
         if (!localSubs.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_EDIT_REMOTE_SUB", { subplebbitAddress: address });
         let subplebbit;
@@ -300,7 +300,7 @@ class PlebbitWsServer extends EventEmitter {
     }
     async deleteSubplebbit(params) {
         const address = SubplebbitAddressSchema.parse(params[0]);
-        const addresses = await this.plebbit.listSubplebbits();
+        const addresses = this.plebbit.subplebbits;
         if (!addresses.includes(address))
             throwWithErrorCode("ERR_RPC_CLIENT_TRYING_TO_DELETE_REMOTE_SUB", { subplebbitAddress: address });
         const isSubStarted = address in startedSubplebbits;
@@ -312,51 +312,22 @@ class PlebbitWsServer extends EventEmitter {
         delete startedSubplebbits[address];
         return true;
     }
-    async listSubplebbits(params, connectionId) {
+    async subplebbitsSubscribe(params, connectionId) {
+        const subscriptionId = generateSubscriptionId();
         const sendEvent = (event, result) => {
-            for (const [subscriptionId, connectionId] of Object.entries(this._listSubsSubscriptionIdToConnectionId)) {
-                this.jsonRpcSendNotification({
-                    method: "listSubplebbits",
-                    subscription: Number(subscriptionId),
-                    event,
-                    result,
-                    connectionId: connectionId
-                });
-            }
-        };
-        const getListedSubsWithTimestamp = async () => {
-            return { subs: await this.plebbit.listSubplebbits(), timestamp: Date.now() };
-        };
-        const newSubscriptionId = generateSubscriptionId();
-        const watchNotConfigured = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 0;
-        if (watchNotConfigured) {
-            // First time listSubplebbits is called, need to set up everything
-            // set up fs watch here
-            await this.plebbit.listSubplebbits(); // Just to mkdir plebbitDataPath/subplebbits
-            const subsPath = path.join(this.plebbit.dataPath, "subplebbits");
-            const watchAbortController = new AbortController();
-            fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
-                if (filename?.endsWith(".lock"))
-                    return; // we only care about subplebbits
-                const currentSubs = await getListedSubsWithTimestamp();
-                if (!this._lastListedSubs ||
-                    (currentSubs.timestamp > this._lastListedSubs.timestamp &&
-                        JSON.stringify(currentSubs.subs) !== JSON.stringify(this._lastListedSubs.subs))) {
-                    sendEvent("update", currentSubs.subs);
-                    this._lastListedSubs = currentSubs;
-                }
+            this.jsonRpcSendNotification({
+                method: "subplebbitsNotification",
+                subscription: Number(subscriptionId),
+                event,
+                result,
+                connectionId
             });
-            this.subscriptionCleanups[connectionId][newSubscriptionId] = () => {
-                this._lastListedSubs = undefined;
-                this._listSubsSubscriptionIdToConnectionId = {};
-                watchAbortController.abort();
-            };
-        }
-        this._listSubsSubscriptionIdToConnectionId[newSubscriptionId] = connectionId;
-        if (!this._lastListedSubs)
-            this._lastListedSubs = await getListedSubsWithTimestamp();
-        sendEvent("update", this._lastListedSubs.subs);
-        return newSubscriptionId;
+        };
+        const plebbitSubscribeEvent = (newSubs) => sendEvent("subplebbitschange", newSubs);
+        this.plebbit.on("subplebbitschange", plebbitSubscribeEvent);
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => this.plebbit.removeListener("subplebbitschange", plebbitSubscribeEvent);
+        sendEvent("subplebbitschange", this.plebbit.subplebbits);
+        return subscriptionId;
     }
     async fetchCid(params) {
         const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
@@ -365,14 +336,45 @@ class PlebbitWsServer extends EventEmitter {
             throw Error("Result of fetchCid should be a string");
         return res;
     }
-    async getSettings(params) {
+    _getCurrentSettings() {
         const plebbitOptions = this.plebbit.parsedPlebbitOptions;
         const challenges = remeda.mapValues(PlebbitJs.Plebbit.challenges, (challengeFactory) => remeda.omit(challengeFactory({}), ["getChallenge"]));
-        return { plebbitOptions, challenges };
+        const rpcSettings = { plebbitOptions, challenges };
+        return rpcSettings;
+    }
+    async settingsSubscribe(params, connectionId) {
+        const subscriptionId = generateSubscriptionId();
+        const sendEvent = (event, result) => {
+            this.jsonRpcSendNotification({
+                method: "settingsNotification",
+                subscription: Number(subscriptionId),
+                event,
+                result,
+                connectionId
+            });
+        };
+        const sendRpcSettings = () => {
+            sendEvent("settingschange", this._getCurrentSettings());
+        };
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this._onSettingsChange[connectionId][subscriptionId];
+        };
+        this._onSettingsChange[connectionId][subscriptionId] = sendRpcSettings;
+        sendRpcSettings();
+        return subscriptionId;
+    }
+    async _createPlebbitInstanceFromSetSettings(newOptions) {
+        return PlebbitJs.Plebbit(newOptions);
     }
     async setSettings(params) {
-        const settings = SetNewSettingsPlebbitWsServerSchema.parse(params[0]);
-        this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
+        const settings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(params[0]);
+        if (deterministicStringify(settings.plebbitOptions) === deterministicStringify(this._getCurrentSettings().plebbitOptions)) {
+            log("RPC client called setSettings with the same settings as the current one, aborting");
+            return true;
+        }
+        log(`RPC client called setSettings, the clients need to call all subscription methods again`);
+        await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
+        this.plebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
         this.plebbit.on("error", (error) => {
             this.emit("error", error);
         });
@@ -393,14 +395,24 @@ class PlebbitWsServer extends EventEmitter {
                 log.error("setPlebbitOptions failed restarting subplebbit", { error, address, params });
             }
         }
+        // send a settingsNotification to all subscribers
+        for (const connectionId of remeda.keys.strict(this._onSettingsChange))
+            for (const subscriptionId of remeda.keys.strict(this._onSettingsChange[connectionId]))
+                await this._onSettingsChange[connectionId][subscriptionId]();
         // TODO: possibly restart all updating comment/subplebbit subscriptions with new plebbit options,
         // not sure if needed because plebbit-react-hooks clients can just reload the page, low priority
         return true;
     }
-    async commentUpdate(params, connectionId) {
+    async commentUpdateSubscribe(params, connectionId) {
         const cid = parseCidStringSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
-        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "commentUpdate", subscription: subscriptionId, event, result, connectionId });
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "commentUpdateNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
         const comment = await this.plebbit.createComment({ cid });
         comment.on("update", () => {
             if (typeof comment.updatedAt === "number") {
@@ -415,11 +427,13 @@ class PlebbitWsServer extends EventEmitter {
             }
         });
         comment.on("updatingstatechange", () => sendEvent("updatingstatechange", comment.updatingState));
+        comment.on("statechange", () => sendEvent("statechange", comment.state));
         comment.on("error", (error) => sendEvent("error", error));
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
             comment.removeAllListeners("update");
             comment.removeAllListeners("updatingstatechange");
+            comment.removeAllListeners("statechange");
             comment.stop().catch((error) => log.error("commentUpdate stop error", { error, params }));
         };
         // if fail, cleanup
@@ -432,10 +446,16 @@ class PlebbitWsServer extends EventEmitter {
         }
         return subscriptionId;
     }
-    async subplebbitUpdate(params, connectionId) {
+    async subplebbitUpdateSubscribe(params, connectionId) {
         const address = SubplebbitAddressSchema.parse(params[0]);
         const subscriptionId = generateSubscriptionId();
-        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "subplebbitUpdate", subscription: subscriptionId, event, result, connectionId });
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "subplebbitUpdateNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
         const isSubStarted = address in startedSubplebbits;
         const subplebbit = isSubStarted
             ? await getStartedSubplebbit(address)
@@ -486,17 +506,29 @@ class PlebbitWsServer extends EventEmitter {
         }
         return subscriptionId;
     }
+    async _createCommentInstanceFromPublishCommentParams(params) {
+        const comment = await this.plebbit.createComment(params.comment);
+        comment.challengeRequest = remeda.omit(params, ["comment"]);
+        return comment;
+    }
     async publishComment(params, connectionId) {
-        const publishOptions = CommentChallengeRequestToEncryptSchema.parse(params[0]);
+        const publishOptions = parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
-        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "publishComment", subscription: subscriptionId, event, result, connectionId });
-        const comment = await this.plebbit.createComment(publishOptions);
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "publishCommentNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
+        const comment = await this._createCommentInstanceFromPublishCommentParams(publishOptions);
         this.publishing[subscriptionId] = comment;
         comment.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         comment.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
         comment.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
         comment.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
         comment.on("publishingstatechange", () => sendEvent("publishingstatechange", comment.publishingState));
+        comment.on("statechange", () => sendEvent("statechange", comment.state));
         comment.on("error", (error) => sendEvent("error", error));
         // cleanup function
         this.subscriptionCleanups[connectionId][subscriptionId] = () => {
@@ -505,6 +537,7 @@ class PlebbitWsServer extends EventEmitter {
             comment.removeAllListeners("challengerequest");
             comment.removeAllListeners("challengeverification");
             comment.removeAllListeners("publishingstatechange");
+            comment.removeAllListeners("statechange");
             delete this.publishing[subscriptionId];
             comment.stop().catch((error) => log.error("publishComment stop error", { error, params }));
         };
@@ -518,11 +551,16 @@ class PlebbitWsServer extends EventEmitter {
         }
         return subscriptionId;
     }
+    async _createVoteInstanceFromPublishVoteParams(params) {
+        const vote = await this.plebbit.createVote(params.vote);
+        vote.challengeRequest = remeda.omit(params, ["vote"]);
+        return vote;
+    }
     async publishVote(params, connectionId) {
-        const publishOptions = VoteChallengeRequestToEncryptSchema.parse(params[0]);
+        const publishOptions = parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
-        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "publishVote", subscription: subscriptionId, event, result, connectionId });
-        const vote = await this.plebbit.createVote(publishOptions);
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "publishVoteNotification", subscription: subscriptionId, event, result, connectionId });
+        const vote = await this._createVoteInstanceFromPublishVoteParams(publishOptions);
         this.publishing[subscriptionId] = vote;
         vote.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         vote.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -550,11 +588,22 @@ class PlebbitWsServer extends EventEmitter {
         }
         return subscriptionId;
     }
+    async _createCommentEditInstanceFromPublishCommentEditParams(params) {
+        const commentEdit = await this.plebbit.createCommentEdit(params.commentEdit);
+        commentEdit.challengeRequest = remeda.omit(params, ["commentEdit"]);
+        return commentEdit;
+    }
     async publishCommentEdit(params, connectionId) {
-        const publishOptions = CommentEditChallengeRequestToEncryptSchema.parse(params[0]);
+        const publishOptions = parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
         const subscriptionId = generateSubscriptionId();
-        const sendEvent = (event, result) => this.jsonRpcSendNotification({ method: "publishCommentEdit", subscription: subscriptionId, event, result, connectionId });
-        const commentEdit = await this.plebbit.createCommentEdit(publishOptions);
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "publishCommentEditNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
+        const commentEdit = await this._createCommentEditInstanceFromPublishCommentEditParams(publishOptions);
         this.publishing[subscriptionId] = commentEdit;
         commentEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
         commentEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
@@ -582,14 +631,57 @@ class PlebbitWsServer extends EventEmitter {
         }
         return subscriptionId;
     }
+    async _createCommentModerationInstanceFromPublishCommentModerationParams(params) {
+        const commentModeration = await this.plebbit.createCommentModeration(params.commentModeration);
+        commentModeration.challengeRequest = remeda.omit(params, ["commentModeration"]);
+        return commentModeration;
+    }
+    async publishCommentModeration(params, connectionId) {
+        const publishOptions = parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
+        const subscriptionId = generateSubscriptionId();
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "publishCommentModerationNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
+        const commentMod = await this._createCommentModerationInstanceFromPublishCommentModerationParams(publishOptions);
+        this.publishing[subscriptionId] = commentMod;
+        commentMod.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        commentMod.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        commentMod.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
+        commentMod.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
+        commentMod.on("publishingstatechange", () => sendEvent("publishingstatechange", commentMod.publishingState));
+        commentMod.on("error", (error) => sendEvent("error", error));
+        // cleanup function
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this.publishing[subscriptionId];
+            commentMod.stop().catch((error) => log.error("publishCommentModeration stop error", { error, params }));
+            commentMod.removeAllListeners("challengerequest");
+            commentMod.removeAllListeners("challenge");
+            commentMod.removeAllListeners("challengeanswer");
+            commentMod.removeAllListeners("challengeverification");
+            commentMod.removeAllListeners("publishingstatechange");
+        };
+        // if fail, cleanup
+        try {
+            await commentMod.publish();
+        }
+        catch (e) {
+            this.subscriptionCleanups[connectionId][subscriptionId]();
+            throw e;
+        }
+        return subscriptionId;
+    }
     async publishChallengeAnswers(params) {
         const subscriptionId = SubscriptionIdSchema.parse(params[0]);
-        const answers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(params[1]);
+        const decryptedChallengeAnswers = parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(params[1]);
         if (!this.publishing[subscriptionId]) {
             throw Error(`no subscription with id '${subscriptionId}'`);
         }
         const publication = this.publishing[subscriptionId];
-        await publication.publishChallengeAnswers(answers);
+        await publication.publishChallengeAnswers(decryptedChallengeAnswers.challengeAnswers);
         return true;
     }
     async resolveAuthorAddress(params) {
@@ -599,15 +691,6 @@ class PlebbitWsServer extends EventEmitter {
     }
     async unsubscribe(params, connectionId) {
         const subscriptionId = SubscriptionIdSchema.parse(params[0]);
-        if (this._listSubsSubscriptionIdToConnectionId[subscriptionId]) {
-            const noClientSubscribingToListSubs = remeda.keys.strict(this._listSubsSubscriptionIdToConnectionId).length === 1;
-            if (noClientSubscribingToListSubs)
-                // clean up fs watch only when there is no rpc client listening for listSubplebbits
-                this.subscriptionCleanups[connectionId][subscriptionId]();
-            delete this.subscriptionCleanups[connectionId][subscriptionId];
-            delete this._listSubsSubscriptionIdToConnectionId[subscriptionId];
-            return true;
-        }
         if (!this.subscriptionCleanups[connectionId][subscriptionId])
             return true;
         this.subscriptionCleanups[connectionId][subscriptionId]();
@@ -625,10 +708,11 @@ class PlebbitWsServer extends EventEmitter {
                 await this.unsubscribe([Number(subscriptionId)], connectionId);
         this.ws.close();
         await this.plebbit.destroy();
+        this._onSettingsChange = {};
     }
 }
 const createPlebbitWsServer = async (options) => {
-    const parsedOptions = CreatePlebbitWsServerOptionsSchema.parse(options);
+    const parsedOptions = parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails(options);
     const plebbit = await PlebbitJs.Plebbit(parsedOptions.plebbitOptions);
     const plebbitWss = new PlebbitWsServer({
         plebbit,

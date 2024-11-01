@@ -1,6 +1,6 @@
 import type { PageIpfs, PageTypeJson, PostSortName, PostsPagesTypeIpfs, RepliesPagesTypeIpfs, ReplySortName } from "./types.js";
 import { BasePagesClientsManager, PostsPagesClientsManager, RepliesPagesClientsManager } from "../clients/pages-client-manager.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 type BaseProps = {
     plebbit: BasePages["_plebbit"];
     subplebbitAddress: BasePages["_subplebbitAddress"];

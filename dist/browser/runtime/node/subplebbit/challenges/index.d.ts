@@ -4,7 +4,7 @@ import { LocalSubplebbit } from "../local-subplebbit.js";
 type PendingChallenge = Challenge & {
     index: number;
 };
-export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<string[]>;
+export type GetChallengeAnswers = (challenges: Omit<Challenge, "verify">[]) => Promise<DecryptedChallengeAnswer["challengeAnswers"]>;
 declare const plebbitJsChallenges: Record<string, ChallengeFileFactory>;
 declare const getPendingChallengesOrChallengeVerification: (challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, subplebbit: LocalSubplebbit) => Promise<{
     challengeSuccess: true;

@@ -1,17 +1,18 @@
 import { z } from "zod";
-import { ChallengeAnswersSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema.js";
-import { VotePubsubMessageSchema } from "../publications/vote/schema.js";
-import { CommentEditPubsubMessageSchema } from "../publications/comment-edit/schema.js";
-import { CommentIpfsWithCidPostCidDefinedSchema, AuthorWithCommentUpdateSchema, CommentPubsubMessageSchema, CreateCommentOptionsSchema } from "../publications/comment/schema.js";
+import { ChallengeAnswersSchema, CreatePublicationUserOptionsSchema, PlebbitTimestampSchema, ProtocolVersionSchema, UserAgentSchema } from "../schema/schema.js";
+import { VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
+import { CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema } from "../publications/comment-edit/schema.js";
+import { CommentIpfsSchema, CommentPubsubMessageWithFlexibleAuthorRefinementSchema, CommentUpdateForChallengeVerificationSchema } from "../publications/comment/schema.js";
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
+import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
 const AcceptedChallengeTypeSchema = z.string().min(1);
 export const PubsubMessageSignatureSchema = z
     .object({
     signature: z.instanceof(Uint8Array), // (byte string in cbor)
     publicKey: z.instanceof(Uint8Array), // (byte string in cbor) 32 bytes
     type: z.enum(["ed25519"]),
-    signedPropertyNames: z.string().array().nonempty()
+    signedPropertyNames: z.string().array()
 })
     .strict();
 const PubsubMessageBaseSchema = z.object({
@@ -31,24 +32,20 @@ export const EncryptedSchema = z
 })
     .strict();
 // publication with subplebbit author that are added by subplebbit when they respond to publication, or emit an event
-export const CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema = CommentIpfsWithCidPostCidDefinedSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).strict();
-export const VotePubsubMessageWithSubplebbitAuthorSchema = VotePubsubMessageSchema.extend({
-    author: AuthorWithCommentUpdateSchema
-}).passthrough();
 // Challenge Request message
 export const ChallengeRequestMessageSchema = PubsubMessageBaseSchema.extend({
     type: z.enum(["CHALLENGEREQUEST"]),
     encrypted: EncryptedSchema, // Will decrypt to DecryptedChallengeRequestSchema
     acceptedChallengeTypes: AcceptedChallengeTypeSchema.array().optional()
 }).strict();
-export const DecryptedChallengeRequestSchema = z.object({
-    // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
-    publication: VotePubsubMessageSchema.or(CommentEditPubsubMessageSchema).or(CommentPubsubMessageSchema),
-    challengeAnswers: CreateCommentOptionsSchema.shape.challengeAnswers, // some challenges might be included in subplebbit.challenges and can be pre-answered
-    challengeCommentCids: CreateCommentOptionsSchema.shape.challengeCommentCids // some challenges could require including comment cids in other subs, like friendly subplebbit karma challenges
+export const DecryptedChallengeRequestPublicationSchema = z.object({
+    comment: CommentPubsubMessageWithFlexibleAuthorRefinementSchema.optional(),
+    vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
+    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough().optional(),
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional()
 });
+// ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
+export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(CreatePublicationUserOptionsSchema.shape.challengeRequest.unwrap());
 export const ChallengeRequestMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeRequestMessageSchema.shape, ["signature"]));
 // Challenge message
 export const ChallengeInChallengePubsubMessageSchema = z
@@ -89,7 +86,8 @@ export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend
 }).strict();
 export const DecryptedChallengeVerificationSchema = z
     .object({
-    publication: CommentIpfsWithCidDefinedAndOptionalSubplebbitAuthorSchema.passthrough().optional()
+    comment: CommentIpfsSchema.passthrough(),
+    commentUpdate: CommentUpdateForChallengeVerificationSchema.passthrough()
 })
     .strict();
 export const ChallengeVerificationMessageSignedPropertyNames = remeda.keys.strict(remeda.omit(ChallengeVerificationMessageSchema.shape, ["signature"]));

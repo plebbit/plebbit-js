@@ -756,8 +756,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
 }, "strict", z.ZodTypeAny, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -793,8 +793,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -830,8 +830,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
 }>, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -867,8 +867,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1031,8 +1031,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1068,8 +1068,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1105,8 +1105,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1142,8 +1142,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1234,8 +1234,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1299,8 +1299,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1462,8 +1462,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
 }, "strict", z.ZodTypeAny, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1499,8 +1499,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1536,8 +1536,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
 }>, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1573,8 +1573,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    name?: string | undefined;
     description?: string | undefined;
+    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1736,8 +1736,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1773,8 +1773,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1810,8 +1810,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1847,8 +1847,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1939,8 +1939,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -2004,8 +2004,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -2375,17 +2375,17 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -2536,9 +2536,10 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     };
     protocolVersion: string;
+    updatedAt: number;
     challenges: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2638,7 +2639,6 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[];
-    updatedAt: number;
     encryption: {
         type: "ed25519-aes-gcm";
         publicKey: string;
@@ -2648,13 +2648,13 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     createdAt: number;
     statsCid: string;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -2707,9 +2707,10 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     };
     protocolVersion: string;
+    updatedAt: number;
     challenges: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2809,7 +2810,6 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[];
-    updatedAt: number;
     encryption: {
         type: "ed25519-aes-gcm";
         publicKey: string;
@@ -2819,13 +2819,13 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     createdAt: number;
     statsCid: string;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    description?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -2873,7 +2873,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
 }>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "description" | "pubsubTopic" | "title" | "challenges" | "updatedAt" | "posts" | "encryption" | "createdAt" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "description" | "challenges" | "posts" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -3185,17 +3185,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
             publicKey: z.ZodString;
-            signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
             type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -3650,17 +3650,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
             publicKey: z.ZodString;
-            signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
             type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -4115,17 +4115,17 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
             signature: z.ZodString;
             publicKey: z.ZodString;
-            signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
         }, "strip", z.ZodTypeAny, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }, {
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         }>;
         encryption: z.ZodObject<{
             type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -4279,9 +4279,10 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         };
         protocolVersion: string;
+        updatedAt: number;
         challenges: z.objectOutputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4381,7 +4382,6 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             challenge: z.ZodOptional<z.ZodString>;
             type: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough">[];
-        updatedAt: number;
         encryption: {
             type: "ed25519-aes-gcm";
             publicKey: string;
@@ -4391,13 +4391,13 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         createdAt: number;
         statsCid: string;
         lastCommentCid?: string | undefined;
-        description?: string | undefined;
-        pubsubTopic?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids: Record<string, string>;
         } | undefined;
+        pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectOutputType<{
             role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -4455,9 +4455,10 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             type: "ed25519" | "eip191";
             publicKey: string;
             signature: string;
-            signedPropertyNames: [string, ...string[]];
+            signedPropertyNames: string[];
         };
         protocolVersion: string;
+        updatedAt: number;
         challenges: z.objectInputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4557,7 +4558,6 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             challenge: z.ZodOptional<z.ZodString>;
             type: z.ZodOptional<z.ZodString>;
         }, z.ZodTypeAny, "passthrough">[];
-        updatedAt: number;
         encryption: {
             type: "ed25519-aes-gcm";
             publicKey: string;
@@ -4567,13 +4567,13 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         createdAt: number;
         statsCid: string;
         lastCommentCid?: string | undefined;
-        description?: string | undefined;
-        pubsubTopic?: string | undefined;
         title?: string | undefined;
+        description?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids: Record<string, string>;
         } | undefined;
+        pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectInputType<{
             role: z.ZodEnum<["owner", "admin", "moderator"]>;
@@ -4935,17 +4935,17 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -5400,17 +5400,17 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -5580,13 +5580,13 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5686,7 +5686,6 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -5698,6 +5697,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -5752,13 +5752,13 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5858,7 +5858,6 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -5870,6 +5869,7 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -6024,8 +6024,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6061,8 +6061,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6098,8 +6098,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6135,8 +6135,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6174,8 +6174,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     challenges?: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6215,8 +6215,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     challenges?: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        name?: string | undefined;
         description?: string | undefined;
+        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6255,9 +6255,9 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
 }>;
 export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     address: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         noVideos: z.ZodOptional<z.ZodBoolean>;
@@ -6478,8 +6478,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6515,8 +6515,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6552,8 +6552,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6589,8 +6589,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6628,8 +6628,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6669,8 +6669,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6716,9 +6716,9 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
 }, "strict", z.ZodTypeAny, {
     address?: string | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
@@ -6767,8 +6767,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6807,9 +6807,9 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
     } | undefined;
 }, {
     address?: string | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
@@ -6858,8 +6858,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6899,9 +6899,9 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
 }>;
 export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendShape<Omit<{
     address: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         noVideos: z.ZodOptional<z.ZodBoolean>;
@@ -7122,8 +7122,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7159,8 +7159,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7196,8 +7196,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7233,8 +7233,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7272,8 +7272,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7313,8 +7313,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7381,9 +7381,9 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -7432,8 +7432,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7475,9 +7475,9 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -7526,8 +7526,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7567,9 +7567,9 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
 }>;
 export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extendShape<z.objectUtil.extendShape<Omit<{
     address: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         noVideos: z.ZodOptional<z.ZodBoolean>;
@@ -7790,8 +7790,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7827,8 +7827,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7864,8 +7864,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7901,8 +7901,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7940,8 +7940,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7981,8 +7981,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8071,9 +8071,9 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         address: string;
         publicKey: string;
     };
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -8122,8 +8122,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8168,9 +8168,9 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         address: string;
         publicKey: string;
     };
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -8219,8 +8219,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8568,17 +8568,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -9033,17 +9033,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -9213,13 +9213,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9319,7 +9319,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -9331,6 +9330,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -9385,13 +9385,13 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9491,7 +9491,6 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -9503,6 +9502,7 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -9861,17 +9861,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -10326,17 +10326,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -10791,17 +10791,17 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -11257,17 +11257,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -11722,17 +11722,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -11902,13 +11902,13 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12008,7 +12008,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -12020,6 +12019,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -12074,13 +12074,13 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12180,7 +12180,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -12192,6 +12191,7 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -12550,17 +12550,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -13015,17 +13015,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -13480,17 +13480,17 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -13637,9 +13637,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     }, z.ZodTypeAny, "passthrough">>, "many">>>;
 }, z.ZodTypeAny, "passthrough">>]>, z.ZodObject<z.objectUtil.extendShape<Omit<{
     address: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         noVideos: z.ZodOptional<z.ZodBoolean>;
@@ -13860,8 +13860,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13897,8 +13897,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13934,8 +13934,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13971,8 +13971,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14010,8 +14010,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14051,8 +14051,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14119,9 +14119,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -14170,8 +14170,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14213,9 +14213,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -14264,8 +14264,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14305,9 +14305,9 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
 }>]>;
 export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodObject<z.objectUtil.extendShape<Omit<{
     address: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
-    title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
         noVideos: z.ZodOptional<z.ZodBoolean>;
@@ -14528,8 +14528,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14565,8 +14565,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14602,8 +14602,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14639,8 +14639,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14678,8 +14678,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14719,8 +14719,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14787,9 +14787,9 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectOutputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -14838,8 +14838,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14881,9 +14881,9 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: "ed25519";
         privateKey: string;
     } | undefined;
+    title?: string | undefined;
     description?: string | undefined;
     pubsubTopic?: string | undefined;
-    title?: string | undefined;
     roles?: Record<string, z.objectInputType<{
         role: z.ZodEnum<["owner", "admin", "moderator"]>;
     }, z.ZodTypeAny, "passthrough">> | undefined;
@@ -14932,8 +14932,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            name?: string | undefined;
             description?: string | undefined;
+            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -15280,17 +15280,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>>;
     encryption: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -15745,17 +15745,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -15925,13 +15925,13 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16031,7 +16031,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -16043,6 +16042,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -16097,13 +16097,13 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     } | undefined;
     protocolVersion?: string | undefined;
     lastCommentCid?: string | undefined;
-    description?: string | undefined;
-    pubsubTopic?: string | undefined;
     title?: string | undefined;
+    updatedAt?: number | undefined;
+    description?: string | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16203,7 +16203,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenge: z.ZodOptional<z.ZodString>;
         type: z.ZodOptional<z.ZodString>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    updatedAt?: number | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
@@ -16215,6 +16214,7 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         publicKey: z.ZodString;
     }, z.ZodTypeAny, "passthrough"> | undefined;
     createdAt?: number | undefined;
+    pubsubTopic?: string | undefined;
     statsCid?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -16573,17 +16573,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -17038,17 +17038,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
@@ -17503,17 +17503,17 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         type: z.ZodEnum<["ed25519", "eip191"]>;
         signature: z.ZodString;
         publicKey: z.ZodString;
-        signedPropertyNames: z.ZodArray<z.ZodString, "atleastone">;
+        signedPropertyNames: z.ZodArray<z.ZodString, "many">;
     }, "strip", z.ZodTypeAny, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }, {
         type: "ed25519" | "eip191";
         publicKey: string;
         signature: string;
-        signedPropertyNames: [string, ...string[]];
+        signedPropertyNames: string[];
     }>;
     encryption: z.ZodObject<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;

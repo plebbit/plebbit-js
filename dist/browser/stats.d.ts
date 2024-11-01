@@ -1,5 +1,5 @@
 import { ChainTicker } from "./types.js";
-type StatTypes = "ipns" | "cid" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
+type StatTypes = "ipns" | "ipfs" | "pubsub-publish" | "pubsub-subscribe" | ChainTicker;
 export default class Stats {
     private _plebbit;
     constructor(plebbit: Stats["_plebbit"]);

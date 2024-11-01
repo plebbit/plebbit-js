@@ -10,9 +10,7 @@ export default class LRUStorage {
         return undefined;
     }
     async init() {
-        const dbPath = this._opts.plebbit.noData || !this._opts.plebbit.dataPath
-            ? `sqlite://:memory:`
-            : path.join(this._opts.plebbit.dataPath, "lru-storage");
+        const dbPath = this._opts.plebbit.noData || !this._opts.plebbit.dataPath ? `:memory:` : path.join(this._opts.plebbit.dataPath, "lru-storage");
         this._cache = new SqliteCache({
             database: dbPath,
             cacheTableName: this._opts.cacheName,

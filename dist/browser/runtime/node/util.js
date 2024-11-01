@@ -17,6 +17,8 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { create as CreateKuboRpcClient } from "kubo-rpc-client";
 import Logger from "@plebbit/plebbit-logger";
 import * as remeda from "remeda";
+import { watch as fsWatch } from "node:fs";
+import { mkdir } from "fs/promises";
 const storedIpfsClients = {};
 export const getDefaultDataPath = () => path.join(process.cwd(), ".plebbit");
 export const getDefaultSubplebbitDbConfig = async (subplebbitAddress, plebbit) => {
@@ -223,5 +225,19 @@ export function createIpfsClient(ipfsHttpClientOptions) {
         timeout: onehourMs
     });
     return storedIpfsClients[cacheKey];
+}
+export async function monitorSubplebbitsDirectory(plebbit) {
+    const watchAbortController = new AbortController();
+    const subsPath = path.join(plebbit.dataPath, "subplebbits");
+    await mkdir(subsPath, { recursive: true });
+    fsWatch(subsPath, { signal: watchAbortController.signal }, async (eventType, filename) => {
+        if (filename?.endsWith(".lock"))
+            return; // we only care about subplebbits
+        const currentSubs = await listSubplebbits(plebbit);
+        if (JSON.stringify(currentSubs) !== JSON.stringify(plebbit.subplebbits))
+            plebbit.emit("subplebbitschange", currentSubs);
+    });
+    plebbit.emit("subplebbitschange", await listSubplebbits(plebbit));
+    return watchAbortController;
 }
 //# sourceMappingURL=util.js.map

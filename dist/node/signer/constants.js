@@ -1,7 +1,6 @@
 // Signer section
 export const keysToOmitFromSignedPropertyNames = [
     "signer",
-    "challengeCommentCids",
-    "challengeAnswers"
+    "challengeRequest"
 ];
 //# sourceMappingURL=constants.js.map

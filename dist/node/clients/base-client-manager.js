@@ -16,7 +16,19 @@ import * as remeda from "remeda";
 import { resolveTxtRecord } from "../resolver.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
+import { CID } from "kubo-rpc-client";
+import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
+const createUrlFromPathResolution = (gateway, opts) => {
+    const root = opts.root;
+    return `${gateway}/${opts.recordIpfsType}/${root}${opts.path ? "/" + opts.path : ""}`;
+};
+const createUrlFromSubdomainResolution = (gateway, opts) => {
+    const gatewayUrl = new URL(gateway);
+    const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
+    return `${gatewayUrl.protocol}//${root}.${opts.recordIpfsType}.${gatewayUrl.host}${opts.path ? "/" + opts.path : ""}`;
+};
+const GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION = {};
 export class BaseClientsManager {
     constructor(plebbit) {
         this.providerSubscriptions = {}; // To keep track of subscriptions of each provider
@@ -195,24 +207,36 @@ export class BaseClientsManager {
         }
         throw Error("should not reach this block in _fetchWithLimit");
     }
-    preFetchGateway(gatewayUrl, path, loadType) { }
-    postFetchGatewaySuccess(gatewayUrl, path, loadType) { }
-    postFetchGatewayFailure(gatewayUrl, path, loadType, error) { }
-    postFetchGatewayAborted(gatewayUrl, path, loadType) { }
-    async _fetchFromGatewayAndVerifyIfNeeded(url, abortController, isIpfsFile, verifyCidWithContent, log) {
+    preFetchGateway(gatewayUrl, loadOpts) { }
+    postFetchGatewaySuccess(gatewayUrl, loadOpts) { }
+    postFetchGatewayFailure(gatewayUrl, loadOpts, error) { }
+    postFetchGatewayAborted(gatewayUrl, loadOpts) { }
+    async _fetchFromGatewayAndVerifyIfNeeded(url, loadOpts, abortController, log) {
         log.trace(`Fetching url (${url})`);
-        const resObj = await this._fetchWithLimit(url, isIpfsFile ? "force-cache" : "no-store", abortController.signal);
+        const resObj = await this._fetchWithLimit(url, loadOpts.recordIpfsType === "ipfs" ? "force-cache" : "no-store", abortController.signal);
+        const verifyCidWithContent = loadOpts.recordIpfsType === "ipfs" && !loadOpts.path;
         if (verifyCidWithContent)
-            await this._verifyContentIsSameAsCid(resObj.resText, url.split("/ipfs/")[1]);
+            await this._verifyContentIsSameAsCid(resObj.resText, loadOpts.root);
         return resObj;
     }
-    async _fetchWithGateway(gateway, path, loadType, abortController, validateGatewayResponse) {
+    async _handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, res, log) {
+        if (GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway])
+            return; // already handled, no need to do anything
+        if (!res.redirected)
+            return; // if it doesn't redirect to subdomain gateway then the gateway doesn't support subdomain resolution
+        const resUrl = new URL(res.url);
+        if (resUrl.hostname.includes(`.${loadOpts.recordIpfsType}.`)) {
+            log(`Gateway`, gateway, "supports subdomain resolution. Switching url formulation to subdomain resolution");
+            GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway] = true;
+        }
+    }
+    async _fetchWithGateway(gateway, loadOpts, abortController, validateGatewayResponse) {
         const log = Logger("plebbit-js:plebbit:fetchWithGateway");
-        const url = `${gateway}${path}`;
+        const url = GATEWAYS_THAT_SUPPORT_SUBDOMAIN_RESOLUTION[gateway]
+            ? createUrlFromSubdomainResolution(gateway, loadOpts)
+            : createUrlFromPathResolution(gateway, loadOpts);
         const timeBefore = Date.now();
-        const isIpfsFile = path.startsWith("/ipfs/"); // If false, then IPNS
-        const shouldVerifyContentWithCid = isIpfsFile && loadType !== "comment-update"; // can't verify comment update because it's a long path, and not just a cid
-        this.preFetchGateway(gateway, path, loadType);
+        this.preFetchGateway(gateway, loadOpts);
         const cacheKey = url;
         let isUsingCache = true;
         try {
@@ -221,28 +245,30 @@ export class BaseClientsManager {
                 resObj = await gatewayFetchPromiseCache.get(cacheKey);
             else {
                 isUsingCache = false;
-                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(url, abortController, isIpfsFile, shouldVerifyContentWithCid, log);
+                const fetchPromise = this._fetchFromGatewayAndVerifyIfNeeded(url, loadOpts, abortController, log);
                 gatewayFetchPromiseCache.set(cacheKey, fetchPromise);
                 resObj = await fetchPromise;
-                if (loadType === "subplebbit")
+                if (loadOpts.recordIpfsType === "ipns")
                     gatewayFetchPromiseCache.delete(cacheKey); // ipns should not be cached
             }
+            // TODO should check if redirect here
             await validateGatewayResponse(resObj); // should throw if there's an issue
-            this.postFetchGatewaySuccess(gateway, path, loadType);
+            this.postFetchGatewaySuccess(gateway, loadOpts);
             if (!isUsingCache)
-                await this._plebbit._stats.recordGatewaySuccess(gateway, isIpfsFile ? "cid" : "ipns", Date.now() - timeBefore);
+                await this._plebbit._stats.recordGatewaySuccess(gateway, loadOpts.recordIpfsType, Date.now() - timeBefore);
+            await this._handleIfGatewayRedirectsToSubdomainResolution(gateway, loadOpts, resObj.res, log);
             return resObj;
         }
         catch (e) {
             gatewayFetchPromiseCache.delete(cacheKey);
             if (e instanceof PlebbitError && e?.details?.fetchError?.includes("AbortError")) {
-                this.postFetchGatewayAborted(gateway, path, loadType);
-                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e }) };
+                this.postFetchGatewayAborted(gateway, loadOpts);
+                return { error: new PlebbitError("ERR_GATEWAY_TIMED_OUT_OR_ABORTED", { abortError: e, loadOpts }) };
             }
             else {
-                this.postFetchGatewayFailure(gateway, path, loadType, e);
+                this.postFetchGatewayFailure(gateway, loadOpts, e);
                 if (!isUsingCache)
-                    await this._plebbit._stats.recordGatewayFailure(gateway, isIpfsFile ? "cid" : "ipns");
+                    await this._plebbit._stats.recordGatewayFailure(gateway, loadOpts.recordIpfsType);
                 delete e["stack"];
                 return { error: e };
             }
@@ -265,17 +291,14 @@ export class BaseClientsManager {
                     ? 2 * 60 * 1000 // 2min
                     : 30 * 1000; // 30s for page ipfs and generic ipfs
     }
-    async fetchFromMultipleGateways(loadOpts, loadType, valiateGatewayResponse) {
-        assert(loadOpts.cid || loadOpts.ipns, "You did not provide cid or ipns to load from gateways");
-        const path = loadOpts.cid ? `/ipfs/${loadOpts.cid}` : `/ipns/${loadOpts.ipns}`;
-        const type = loadOpts.cid ? "cid" : "ipns";
-        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadType);
+    async fetchFromMultipleGateways(loadOpts, valiateGatewayResponse) {
+        const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadOpts.recordPlebbitType);
         const concurrencyLimit = 3;
         const queueLimit = pLimit(concurrencyLimit);
         // Only sort if we have more than 3 gateways
         const gatewaysSorted = remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
             ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-            : await this._plebbit._stats.sortGatewaysAccordingToScore(type);
+            : await this._plebbit._stats.sortGatewaysAccordingToScore(loadOpts.recordIpfsType);
         const gatewayFetches = {};
         const cleanUp = () => {
             queueLimit.clearQueue();
@@ -289,7 +312,7 @@ export class BaseClientsManager {
             const abortController = new AbortController();
             gatewayFetches[gateway] = {
                 abortController,
-                promise: queueLimit(() => this._fetchWithGateway(gateway, path, loadType, abortController, valiateGatewayResponse)),
+                promise: queueLimit(() => this._fetchWithGateway(gateway, loadOpts, abortController, valiateGatewayResponse)),
                 timeoutId: setTimeout(() => abortController.abort(), timeoutMs)
             };
         }
@@ -305,15 +328,15 @@ export class BaseClientsManager {
             for (let i = 0; i < res.length; i++)
                 if (res[i]["value"])
                     gatewayToError[gatewaysSorted[i]] = res[i]["value"].error;
-            const combinedError = loadType === "comment"
-                ? new FailedToFetchCommentIpfsFromGatewaysError({ commentCid: loadOpts.cid, gatewayToError })
-                : loadType === "comment-update"
-                    ? new FailedToFetchCommentUpdateFromGatewaysError({ commentUpdatePath: path, gatewayToError })
-                    : loadType === "page-ipfs"
-                        ? new FailedToFetchPageIpfsFromGatewaysError({ pageCid: loadOpts.cid, gatewayToError })
-                        : loadType === "subplebbit"
-                            ? new FailedToFetchSubplebbitFromGatewaysError({ ipnsName: loadOpts.ipns, gatewayToError })
-                            : new FailedToFetchGenericIpfsFromGatewaysError({ cid: loadOpts.cid, gatewayToError });
+            const combinedError = loadOpts.recordPlebbitType === "comment"
+                ? new FailedToFetchCommentIpfsFromGatewaysError({ commentCid: loadOpts.root, gatewayToError, loadOpts })
+                : loadOpts.recordPlebbitType === "comment-update"
+                    ? new FailedToFetchCommentUpdateFromGatewaysError({ gatewayToError, loadOpts })
+                    : loadOpts.recordPlebbitType === "page-ipfs"
+                        ? new FailedToFetchPageIpfsFromGatewaysError({ pageCid: loadOpts.root, gatewayToError, loadOpts })
+                        : loadOpts.recordPlebbitType === "subplebbit"
+                            ? new FailedToFetchSubplebbitFromGatewaysError({ ipnsName: loadOpts.root, gatewayToError, loadOpts })
+                            : new FailedToFetchGenericIpfsFromGatewaysError({ cid: loadOpts.root, gatewayToError, loadOpts });
             throw combinedError;
         }
         else {
@@ -446,7 +469,16 @@ export class BaseClientsManager {
         }
         catch (e) {
             domainResolverPromiseCache.delete(cacheKey);
-            const parsedError = e instanceof PlebbitError ? e : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", { error: e });
+            const parsedError = e instanceof PlebbitError
+                ? e
+                : new PlebbitError("ERR_FAILED_TO_RESOLVE_TEXT_RECORD", {
+                    error: e,
+                    address,
+                    txtRecordName,
+                    chain,
+                    chainproviderUrl,
+                    chainId
+                });
             this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
             if (!isUsingCache)
                 await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
@@ -527,13 +559,9 @@ export class BaseClientsManager {
         await this._plebbit._storage.removeItem(cacheKey);
     }
     async resolveAuthorAddressIfNeeded(authorAddress) {
-        assert(typeof authorAddress === "string", "subplebbitAddress needs to be a string to be resolved");
         if (!isStringDomain(authorAddress))
-            return authorAddress;
-        else if (this._plebbit.plebbitRpcClient)
-            return this._plebbit.plebbitRpcClient.resolveAuthorAddress(authorAddress);
-        else
-            return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
+            throw new PlebbitError("ERR_AUTHOR_ADDRESS_IS_NOT_A_DOMAIN_OR_B58", { authorAddress });
+        return this._resolveTextRecordWithCache(authorAddress, "plebbit-author-address");
     }
     // Misc functions
     emitError(e) {
