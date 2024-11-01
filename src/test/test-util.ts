@@ -986,6 +986,7 @@ export function mockRpcWsToSkipSignatureValidation(plebbitWs: any) {
 }
 
 const skipFunction = (_: any) => {};
+skipFunction.skip = () => {};
 
 export const describeSkipIfRpc = isRpcFlagOn() ? skipFunction : globalThis["describe"];
 
