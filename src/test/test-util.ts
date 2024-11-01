@@ -406,7 +406,7 @@ export async function mockRemotePlebbitIpfsOnly(plebbitOptions?: InputPlebbitOpt
 }
 
 export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions) {
-    const plebbit = await mockPlebbit(plebbitOptions);
+    const plebbit = await mockPlebbit(plebbitOptions, true);
     return plebbit;
 }
 
@@ -477,7 +477,7 @@ export async function publishWithExpectedResult(publication: Publication, expect
     let receivedResponse: boolean = false;
 
     const validateResponsePromise = new Promise((resolve, reject) => {
-        setTimeout(() => !receivedResponse && reject(`Publication did not receive any response`), 90000); // throw after 20 seconds if we haven't received a response
+        setTimeout(() => !receivedResponse && reject(new Error(`Publication did not receive any response`)), 90000); // throw after 20 seconds if we haven't received a response
         publication.once("challengeverification", (verificationMsg) => {
             receivedResponse = true;
             if (verificationMsg.challengeSuccess !== expectedChallengeSuccess) {
