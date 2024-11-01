@@ -2,10 +2,11 @@ import Plebbit from "../../../../dist/node/index.js";
 import signers from "../../../fixtures/signers.js";
 import {
     generateMockPost,
-    mockRemotePlebbit,
     publishRandomPost,
     publishWithExpectedResult,
-    describeIfRpc
+    describeIfRpc,
+    mockRpcRemotePlebbit,
+    waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -19,7 +20,7 @@ const mathCliSubplebbitAddress = signers[1].address;
 describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
     let plebbit;
     before(async () => {
-        plebbit = await mockRemotePlebbit();
+        plebbit = await mockRpcRemotePlebbit();
     });
 
     it(`Correct order of comment.clients.plebbitRpcClients states when publishing to a sub with challenge`, async () => {
@@ -55,7 +56,8 @@ describeIfRpc(`comment.clients.plebbitRpcClients`, async () => {
     });
 
     it(`Correct order of comment.clients.plebbitRpcClients states when updating a comment`, async () => {
-        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
+        await waitTillPostInSubplebbitPages(mockPost, plebbit);
         const postToUpdate = await plebbit.createComment({ cid: mockPost.cid });
         const expectedStates = [
             "fetching-ipfs",

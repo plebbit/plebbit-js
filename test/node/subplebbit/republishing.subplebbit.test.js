@@ -34,15 +34,15 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         subBeforeMigration = await createSubWithNoChallenge({}, plebbit);
         await subBeforeMigration.start();
         await resolveWhenConditionIsTrue(subBeforeMigration, () => typeof subBeforeMigration.updatedAt === "number");
-        const post = await publishRandomPost(subBeforeMigration.address, plebbit, {}, true);
-        await publishRandomReply(post, plebbit, {}, true);
+        const post = await publishRandomPost(subBeforeMigration.address, plebbit);
+        await publishRandomReply(post, plebbit);
         // publish a post with extra prop here
         postWithExtraProps = await generateMockPost(subBeforeMigration.address, plebbit);
         const extraProps = { extraProp: "1234" };
         await setExtraPropOnCommentAndSign(postWithExtraProps, extraProps, true);
 
         await publishWithExpectedResult(postWithExtraProps, true);
-        await publishRandomReply(postWithExtraProps, plebbit, {}, true);
+        await publishRandomReply(postWithExtraProps, plebbit);
 
         await waitTillPostInSubplebbitPages(postWithExtraProps, plebbit);
 

@@ -193,7 +193,8 @@ describe(`Start lock`, async () => {
         await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for 10s
         await assert.isFulfilled(sub.start());
         await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
-        await publishRandomPost(sub.address, plebbit, {}, true);
+        const post = await publishRandomPost(sub.address, plebbit);
+        await waitTillPostInSubplebbitPages(post, plebbit);
         await sub.delete();
     });
 

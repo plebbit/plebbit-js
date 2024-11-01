@@ -1,4 +1,4 @@
-import { mockRemotePlebbit } from "../../dist/node/test/test-util.js";
+import { mockPlebbit } from "../../dist/node/test/test-util.js";
 import fixtureSigners from "../fixtures/signers.js";
 import { signBufferEd25519, verifyBufferEd25519 } from "../../dist/node/signer/signatures.js";
 import chai from "chai";
@@ -11,7 +11,7 @@ const authorSignerFixture = fixtureSigners[1];
 describe("signer (node and browser)", async () => {
     let plebbit, authorSigner, randomSigner;
     before(async () => {
-        plebbit = await mockRemotePlebbit();
+        plebbit = await mockPlebbit();
         authorSigner = await plebbit.createSigner({ privateKey: authorSignerFixture.privateKey, type: "ed25519" });
         randomSigner = await plebbit.createSigner();
     });

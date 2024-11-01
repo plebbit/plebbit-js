@@ -5,7 +5,8 @@ import {
     mockRemotePlebbitIpfsOnly,
     publishRandomPost,
     resolveWhenConditionIsTrue,
-    itSkipIfRpc
+    itSkipIfRpc,
+    waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util";
 
 import chai from "chai";
@@ -52,7 +53,8 @@ describe(`subplebbit.settings.challenges`, async () => {
         await subplebbit.edit({ settings: { challenges: [] } });
         await subplebbit.start();
         await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
-        await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
+        const post = await publishRandomPost(subplebbit.address, plebbit); // won't get a challenge
+        await waitTillPostInSubplebbitPages(post, plebbit);
 
         await subplebbit.delete();
     });
@@ -70,7 +72,8 @@ describe(`subplebbit.settings.challenges`, async () => {
         expect(subplebbit.settings.challenges).to.deep.equal([]);
         expect(subplebbit.challenges).to.deep.equal([]);
         expect(subplebbit._usingDefaultChallenge).to.be.true;
-        await publishRandomPost(subplebbit.address, plebbit, {}, false); // won't get a challenge
+        const post = await publishRandomPost(subplebbit.address, plebbit); // won't get a challenge
+        await waitTillPostInSubplebbitPages(post, plebbit);
         await subplebbit.delete();
     });
 

@@ -8,7 +8,9 @@ import {
     mockGatewayPlebbit,
     itSkipIfRpc,
     itIfRpc,
-    generatePostToAnswerMathQuestion
+    generatePostToAnswerMathQuestion,
+    mockRpcRemotePlebbit,
+    waitTillPostInSubplebbitPages
 } from "../../../../dist/node/test/test-util.js";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -97,7 +99,9 @@ describe("comment.updatingState", async () => {
     });
 
     itIfRpc(`updating states is in correct order upon updating a comment with RPC`, async () => {
-        const mockPost = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
+        const plebbit = await mockRpcRemotePlebbit();
+        const mockPost = await publishRandomPost(subplebbitAddress, plebbit);
+        await waitTillPostInSubplebbitPages(mockPost, plebbit);
         const postToUpdate = await plebbit.createComment({ cid: mockPost.cid });
         const expectedStates = [
             "fetching-ipfs",

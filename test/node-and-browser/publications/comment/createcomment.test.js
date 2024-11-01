@@ -122,9 +122,9 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it("comment instance created with {subplebbitAddress, cid} prop can call getPage", async () => {
-            const post = await publishRandomPost(subplebbitAddress, plebbit, {}, true);
+            const post = await publishRandomPost(subplebbitAddress, plebbit);
             expect(post.replies).to.be.a("object");
-            await publishRandomReply(post, plebbit, {}, true);
+            await publishRandomReply(post, plebbit);
             await post.update();
             await resolveWhenConditionIsTrue(post, () => typeof post.updatedAt === "number");
             expect(post.content).to.be.a("string");

@@ -510,8 +510,9 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             sub.once("update", () => (updateTime = Date.now()));
 
+            const updatePromise = new Promise((resolve) => sub.once("update", resolve));
             await sub.start();
-            await new Promise((resolve) => sub.once("update", resolve));
+            await updatePromise;
             await sub.stop();
 
             expect(publishStateTime).to.be.a("number");
@@ -667,7 +668,8 @@ describe(`subplebbit.clients (Local)`, async () => {
 
             await resolveWhenConditionIsTrue(sub, () => typeof sub.updatedAt === "number");
 
-            await publishRandomPost(sub.address, plebbit, {}, true);
+            const post = await publishRandomPost(sub.address, plebbit, {});
+            await waitTillPostInSubplebbitPages(post, plebbit);
             if (recordedStates[recordedStates.length - 1] === "stopped")
                 expect(recordedStates).to.deep.equal([...expectedStates, "stopped"]);
             else expect(recordedStates).to.deep.equal(expectedStates);
