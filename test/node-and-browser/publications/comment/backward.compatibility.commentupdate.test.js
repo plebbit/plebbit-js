@@ -33,10 +33,9 @@ const mockPostToFetchSpecificCommentUpdateCid = (postToUpdate, commentUpdateCid)
             if (loadOpts.recordPlebbitType === "comment-update")
                 return originalFetch(
                     {
-                        recordIpfsType: "ipfs",
+                        ...loadOpts,
                         root: commentUpdateCid,
-                        path: "/",
-                        recordPlebbitType: "comment-update"
+                        path: undefined
                     },
                     validateGatewayResponse
                 );
