@@ -134,7 +134,7 @@ const setUpMockGateways = async () => {
         else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else if (req.url.includes("/ipns")) {
-            const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]); // TODO need to convert to base 58 btc
+            const subAddress = req.url.split("/")[2];
             const sub = await plebbit.getSubplebbit(subAddress);
             res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
             res.end(JSON.stringify(sub.toJSONIpfs()));
