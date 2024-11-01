@@ -5,6 +5,7 @@ import {
     publishRandomReply,
     setExtraPropOnCommentAndSign,
     generateMockPost,
+    waitTillReplyInParentPages,
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
     describeSkipIfRpc,
@@ -42,7 +43,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         await setExtraPropOnCommentAndSign(postWithExtraProps, extraProps, true);
 
         await publishWithExpectedResult(postWithExtraProps, true);
-        await publishRandomReply(postWithExtraProps, plebbit);
+        const reply = await publishRandomReply(postWithExtraProps, plebbit);
 
         await waitTillPostInSubplebbitPages(postWithExtraProps, plebbit);
 
@@ -55,6 +56,7 @@ describeSkipIfRpc(`Migration to a new IPFS repo`, async () => {
         await subAfterMigration.start(); // should migrate everything here
         await resolveWhenConditionIsTrue(subAfterMigration, () => subAfterMigration.updatedAt !== subBeforeMigration.updatedAt);
         await waitTillPostInSubplebbitPages(postWithExtraProps, remotePlebbit);
+        await waitTillReplyInParentPages(reply, remotePlebbit);
     });
     it(`Subplebbit IPNS is republished`, async () => {
         const subLoaded = await remotePlebbit.getSubplebbit(subAfterMigration.address);

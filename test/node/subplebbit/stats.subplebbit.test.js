@@ -106,7 +106,7 @@ describe(`subplebbit.statsCid`, async () => {
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
             const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
-            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[5] }, false);
+            await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[5] });
             await updatePromise;
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
