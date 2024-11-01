@@ -374,7 +374,6 @@ export class BaseClientsManager {
         valiateGatewayResponse: (resObj: { resText: string; res: Response }) => Promise<void>
     ): Promise<{ resText: string; res: Response }> {
         const timeoutMs = this._plebbit._clientsManager.getGatewayTimeoutMs(loadOpts.recordPlebbitType);
-        const type = loadOpts.recordIpfsType === "ipfs" ? "cid" : "ipns";
         const concurrencyLimit = 3;
 
         const queueLimit = pLimit(concurrencyLimit);
@@ -383,7 +382,7 @@ export class BaseClientsManager {
         const gatewaysSorted =
             remeda.keys.strict(this._plebbit.clients.ipfsGateways).length <= concurrencyLimit
                 ? remeda.keys.strict(this._plebbit.clients.ipfsGateways)
-                : await this._plebbit._stats.sortGatewaysAccordingToScore(type);
+                : await this._plebbit._stats.sortGatewaysAccordingToScore(loadOpts.recordIpfsType);
 
         const gatewayFetches: GenericGatewayFetch = {};
 
