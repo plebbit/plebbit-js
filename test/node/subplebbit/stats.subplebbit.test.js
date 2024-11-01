@@ -92,11 +92,11 @@ describe(`subplebbit.statsCid`, async () => {
         });
 
         it(`ActiveUserCount should increase by 1 for new vote author`, async () => {
+            const statsCidBefore = JSON.parse(JSON.stringify(subplebbit.statsCid));
             const statsBefore = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
             const post = subplebbit.posts.pages.hot.comments[0];
-            const updatePromise = new Promise((resolve) => subplebbit.once("update", resolve));
             await publishVote(post.cid, post.subplebbitAddress, 1, plebbit, { signer: signers[3] });
-            await updatePromise;
+            await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.statsCid !== statsCidBefore);
             const statsAfterNewVote = JSON.parse(await plebbit.fetchCid(subplebbit.statsCid));
 
             for (const userCountKey of activeUserCountKeys) expect(statsAfterNewVote[userCountKey]).to.equal(statsBefore[userCountKey] + 1);
