@@ -411,6 +411,7 @@ export async function mockRpcServerPlebbit(plebbitOptions?: InputPlebbitOptions)
 }
 
 export async function mockRpcRemotePlebbit(plebbitOptions?: InputPlebbitOptions) {
+    if (!isRpcFlagOn()) throw Error("Can't connect to RPC server without RPC flag on");
     // This instance will connect to an rpc server that has no local subs
     const plebbit = await mockPlebbit({ plebbitRpcClientsOptions: ["ws://localhost:39653"], dataPath: undefined, ...plebbitOptions });
     return plebbit;
