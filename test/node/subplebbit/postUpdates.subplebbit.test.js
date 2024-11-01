@@ -13,7 +13,7 @@ import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 const { expect, assert } = chai;
 
-describeSkipIfRpc("plebbit.postUpdates", async () => {
+describeSkipIfRpc("subplebbit.postUpdates", async () => {
     let plebbit, subplebbit;
     before(async () => {
         plebbit = await mockPlebbit();
