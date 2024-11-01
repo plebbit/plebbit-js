@@ -55,6 +55,7 @@ import { stringify as deterministicStringify } from "safe-stable-stringify";
 import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/types.js";
 import type { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
+import type { InputPlebbitOptions } from "../../types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -473,6 +474,10 @@ class PlebbitWsServer extends EventEmitter {
         return subscriptionId;
     }
 
+    private async _createPlebbitInstanceFromSetSettings(newOptions: InputPlebbitOptions) {
+        return PlebbitJs.Plebbit(newOptions);
+    }
+
     async setSettings(params: any) {
         const settings = parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails(params[0]);
         if (deterministicStringify(settings.plebbitOptions) === deterministicStringify(this._getCurrentSettings().plebbitOptions)) {
@@ -483,7 +488,7 @@ class PlebbitWsServer extends EventEmitter {
         log(`RPC client called setSettings, the clients need to call all subscription methods again`);
         await this.plebbit.destroy(); // make sure to destroy previous fs watcher before changing the instance
 
-        this.plebbit = await PlebbitJs.Plebbit(settings.plebbitOptions);
+        this.plebbit = await this._createPlebbitInstanceFromSetSettings(settings.plebbitOptions);
         this.plebbit.on("error", (error: any) => {
             this.emit("error", error);
         });
