@@ -17,7 +17,6 @@ import {
 import { createMockIpfsClient } from "../../../dist/node/test/mock-ipfs-client";
 
 import signers from "../../fixtures/signers";
-import { getThumbnailUrlOfLink } from "../../../dist/node/runtime/node/util";
 import path from "path";
 import fs from "fs";
 
@@ -392,72 +391,63 @@ describe(`comment.link`, async () => {
         await subplebbit.stop();
     });
 
-    describeSkipIfRpc(`Test getThumbnailUrlOfLink`, async () => {
-        it(`Generates thumbnail url for youtube video correctly with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
+    describe.skip(`comment.thumbnailUrl`, async () => {
+        it(`comment.thumbnailUrl is generated for youtube video with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url = "https://www.youtube.com/watch?v=TLysAkFM4cA";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
             const expectedThumbnailUrl = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
-            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(1280);
-            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(720);
+            expect(post.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(post.thumbnailUrlWidth).to.equal(1280);
+            expect(post.thumbnailUrlHeight).to.equal(720);
         });
 
         it(`generates thumbnail url for html page with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url =
                 "https://www.correiobraziliense.com.br/politica/2023/06/5101828-moraes-determina-novo-bloqueio-das-redes-sociais-e-canais-de-monark.html";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
             const expectedThumbnailUrl =
                 "https://midias.correiobraziliense.com.br/_midias/jpg/2022/03/23/675x450/1_monark-7631489.jpg?20230614170105?20230614170105";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
-            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(675);
-            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(450);
+            expect(post.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(post.thumbnailUrlWidth).to.equal(675);
+            expect(post.thumbnailUrlHeight).to.equal(450);
         });
 
         it(`Generates thumbnail url for html page with no ogWidth and ogHeight correctly with thumbnailUrlWidth and thumbnailUrlHeight`, async () => {
             const url =
                 "https://pleb.bz/p/reddit-screenshots.eth/c/QmUBqbdaVNNCaPUYZjqizYYL42wgr4YBfxDAcjxLJ59vid?redirect=plebones.eth.limo";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
             const expectedThumbnailUrl = "https://i.imgur.com/6Ogacyq.png";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
-            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(512);
-            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(497);
+            expect(post.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(post.thumbnailUrlWidth).to.equal(512);
+            expect(post.thumbnailUrlHeight).to.equal(497);
         });
 
-        it.skip(`Generates thumbnail url for twitter urls correctly`, async () => {
+        it(`Generates thumbnail url for twitter urls correctly`, async () => {
             const url = "https://twitter.com/eustatheia/status/1691285870244937728";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link: url });
             const expectedThumbnailUrl = "https://pbs.twimg.com/media/F3iniP-XcAA1TVU.jpg:large";
-            const thumbnailInfo = await getThumbnailUrlOfLink(url, new EventEmitter());
-            expect(thumbnailInfo.thumbnailUrl).to.equal(expectedThumbnailUrl);
-            expect(thumbnailInfo.thumbnailUrlWidth).to.equal(1125);
-            expect(thumbnailInfo.thumbnailUrlHeight).to.equal(1315);
+            expect(post.thumbnailUrl).to.equal(expectedThumbnailUrl);
+            expect(post.thumbnailUrlWidth).to.equal(1125);
+            expect(post.thumbnailUrlHeight).to.equal(1315);
         });
-    });
 
-    it(`comment.thumbnailUrl is populated by subplebbit in challengeVerification`, async () => {
-        const link = "https://www.youtube.com/watch?v=TLysAkFM4cA";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
-        expect(post.link).to.equal(link);
-        expect(post.thumbnailUrl).to.equal("https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg");
-        expect(post.thumbnailUrlWidth).to.equal(1280);
-        expect(post.thumbnailUrlHeight).to.equal(720);
-    });
+        it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
+            const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link });
+            expect(post.link).to.equal(link);
+            expect(post.thumbnailUrl).to.be.undefined;
+            expect(post.thumbnailUrlWidth).to.be.undefined;
+            expect(post.thumbnailUrlHeight).to.be.undefined;
+        });
 
-    it(`comment.thumbnailUrl is undefined if comment.link is a link of a jpg`, async () => {
-        const link = "https://i.ytimg.com/vi/TLysAkFM4cA/maxresdefault.jpg";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
-        expect(post.link).to.equal(link);
-        expect(post.thumbnailUrl).to.be.undefined;
-        expect(post.thumbnailUrlWidth).to.be.undefined;
-        expect(post.thumbnailUrlHeight).to.be.undefined;
-    });
-
-    it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
-        const link = "https://files.catbox.moe/nlsfav.gif";
-        const post = await publishRandomPost(subplebbit.address, plebbit, { link });
-        expect(post.link).to.equal(link);
-        expect(post.thumbnailUrl).to.be.undefined;
-        expect(post.thumbnailUrlWidth).to.be.undefined;
-        expect(post.thumbnailUrlHeight).to.be.undefined;
+        it(`comment.thumbnailUrl is undefined if comment.link is a link of a gif`, async () => {
+            const link = "https://files.catbox.moe/nlsfav.gif";
+            const post = await publishRandomPost(subplebbit.address, plebbit, { link });
+            expect(post.link).to.equal(link);
+            expect(post.thumbnailUrl).to.be.undefined;
+            expect(post.thumbnailUrlWidth).to.be.undefined;
+            expect(post.thumbnailUrlHeight).to.be.undefined;
+        });
     });
 
     it(`comment.linkWidth and linkHeight is defined if the author defines them`, async () => {
