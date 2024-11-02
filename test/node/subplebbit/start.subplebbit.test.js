@@ -256,7 +256,6 @@ describe(`Start lock`, async () => {
 
             const sub2 = await plebbit.createSubplebbit({ address: sub1.address });
             expect(sub2.started).to.be.true;
-            await sub2.start();
             await sub2.stop(); // This should stop sub1 and sub2
 
             await new Promise((resolve) => setTimeout(resolve, plebbit.publishInterval * 2));
