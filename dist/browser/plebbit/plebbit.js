@@ -1,6 +1,6 @@
 import { getDefaultDataPath, listSubplebbits as nodeListSubplebbits, createIpfsClient, monitorSubplebbitsDirectory } from "../runtime/browser/util.js";
 import { Comment } from "../publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, setHttpRoutersOnIpfsNodes, timestamp } from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -53,6 +53,7 @@ export class Plebbit extends TypedEmitter {
         this.noData = this.parsedPlebbitOptions.noData;
         this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
+        this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
             this._subplebbitschangeEventHasbeenEmitted = true;
@@ -136,6 +137,14 @@ export class Plebbit extends TypedEmitter {
         }
         else {
             this.subplebbits = []; // subplebbits = [] on browser
+        }
+        if (Object.keys(this.clients.ipfsClients).length > 0 && this.httpRoutersOptions) {
+            setHttpRoutersOnIpfsNodes(this.clients.ipfsClients, this.httpRoutersOptions)
+                .then(() => log("Set http router options on all connected ipfs", Object.keys(this.clients.ipfsClients)))
+                .catch((e) => {
+                log.error("Failed to set http router options on ipfs nodes due to error", e);
+                this.emit("error", e);
+            });
         }
         hideClassPrivateProps(this);
     }
