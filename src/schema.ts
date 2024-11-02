@@ -47,6 +47,7 @@ const ParsedIpfsHttpClientOptionsSchema = z.custom<z.output<typeof TransformIpfs
 const PlebbitUserOptionBaseSchema = z.object({
     ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
     ipfsHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
+    httpRoutersOptions: z.string().url().array().optional(),
     pubsubHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
     plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),

@@ -18,6 +18,8 @@ import type {
     PublicationFromDecryptedChallengeRequest,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "./pubsub-messages/types.js";
+import { Plebbit } from "./plebbit/plebbit.js";
+import Logger from "@plebbit/plebbit-logger";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -246,6 +248,76 @@ export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof
         };
     } else if ("bytes" in ipfsRawOption) return { url: ipfsRawOption };
     else return ipfsRawOption;
+}
+
+export async function setHttpRoutersOnIpfsNodes(
+    ipfsClients: Plebbit["clients"]["ipfsClients"],
+    httpRouterOptions: NonNullable<Plebbit["httpRoutersOptions"]>
+) {
+    const log = Logger("plebbit-js:plebbit:_init:setHttpRouterOnIpfsNodesIfNotSet");
+    const httpRoutersConfig: any = {
+        HttpRoutersParallel: { Type: "parallel", Parameters: { Routers: [] } },
+        HttpRouterNotSupported: { Type: "http", Parameters: { Endpoint: "http://kubohttprouternotsupported" } }
+    };
+    for (const [i, httpRouterUrl] of httpRouterOptions.entries()) {
+        const RouterName = `HttpRouter${i + 1}`;
+        httpRoutersConfig[RouterName] = {
+            Type: "http",
+            Parameters: {
+                Endpoint: httpRouterUrl
+            }
+        };
+        httpRoutersConfig.HttpRoutersParallel.Parameters.Routers[i] = {
+            RouterName: RouterName,
+            IgnoreErrors: true,
+            Timeout: "10s"
+        };
+    }
+
+    const httpRoutersMethodsConfig = {
+        "find-providers": { RouterName: "HttpRoutersParallel" },
+        provide: { RouterName: "HttpRoutersParallel" },
+        // not supported by plebbit trackers
+        "find-peers": { RouterName: "HttpRouterNotSupported" },
+        "get-ipns": { RouterName: "HttpRouterNotSupported" },
+        "put-ipns": { RouterName: "HttpRouterNotSupported" }
+    };
+
+    const keysToExpectedValue = {
+        "Routing.Type": "custom",
+        "Routing.Methods": httpRoutersMethodsConfig,
+        "Routing.Routers": httpRoutersConfig
+    };
+
+    for (const ipfsClient of Object.values(ipfsClients)) {
+        const configBeforeChanging = await ipfsClient._client.config.getAll();
+        for (const [key, expectedValue] of Object.entries(keysToExpectedValue)) {
+            const url = `${ipfsClient._clientOptions.url}/config?arg=${key}&arg=${JSON.stringify(expectedValue)}&json=true`;
+            try {
+                await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
+            } catch (e) {
+                const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
+                    fullUrl: url,
+                    actualError: e,
+                    kuboEndpoint: ipfsClient._clientOptions.url,
+                    configKey: key,
+                    configValueToBeSet: expectedValue
+                });
+                log.error(e);
+                throw error;
+            }
+            log.trace("Succeeded in setting config key", key, "on node", ipfsClient._clientOptions.url, "to be", expectedValue);
+        }
+        const configAfterChanging = await ipfsClient._client.config.getAll();
+        if (!remeda.isDeepEqual(configBeforeChanging, configAfterChanging)) {
+            log(
+                "Config on kubo node has been changed. Plebbit-js will send shutdown command to node",
+                ipfsClient._clientOptions.url,
+                "Clients of plebbit-js should restart ipfs node"
+            );
+            await ipfsClient._client.stop();
+        }
+    }
 }
 
 export function hideClassPrivateProps(_this: any) {

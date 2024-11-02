@@ -19,7 +19,13 @@ import type {
     AuthorPubsubType
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
+import {
+    doesDomainAddressHaveCapitalLetter,
+    hideClassPrivateProps,
+    removeUndefinedValuesRecursively,
+    setHttpRoutersOnIpfsNodes,
+    timestamp
+} from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -120,7 +126,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
     userAgent: ParsedPlebbitOptions["userAgent"];
-    subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
+    httpRoutersOptions: ParsedPlebbitOptions["httpRoutersOptions"];
 
     // Only Plebbit instance has these props
     clients: {
@@ -130,6 +136,9 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         chainProviders: { [chainProviderUrl: string]: ChainProvider };
         plebbitRpcClients: { [plebbitRpcUrl: string]: PlebbitRpcClient };
     };
+    subplebbits!: string[]; // default is [], in case of RPC it will be the aggregate of all RPC servers' subs
+
+    // private props
 
     _plebbitRpcClient?: PlebbitRpcClient; // default rpc client for now. For now we will default to clients.plebbitRpcClients[0]
     private _pubsubSubscriptions: Record<string, PubsubSubscriptionHandler> = {};
@@ -175,6 +184,7 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
         this.noData = this.parsedPlebbitOptions.noData;
         this.browserLibp2pJsPublish = this.parsedPlebbitOptions.browserLibp2pJsPublish;
         this.userAgent = this.parsedPlebbitOptions.userAgent;
+        this.httpRoutersOptions = this.parsedPlebbitOptions.httpRoutersOptions;
         this.on("subplebbitschange", (newSubs) => {
             this.subplebbits = newSubs;
             this._subplebbitschangeEventHasbeenEmitted = true;
@@ -263,6 +273,15 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             await this._waitForSubplebbitsToBeDefined();
         } else {
             this.subplebbits = []; // subplebbits = [] on browser
+        }
+
+        if (Object.keys(this.clients.ipfsClients).length > 0 && this.httpRoutersOptions) {
+            setHttpRoutersOnIpfsNodes(this.clients.ipfsClients, this.httpRoutersOptions)
+                .then(() => log("Set http router options on all connected ipfs", Object.keys(this.clients.ipfsClients)))
+                .catch((e: Error) => {
+                    log.error("Failed to set http router options on ipfs nodes due to error", e);
+                    this.emit("error", e);
+                });
         }
 
         hideClassPrivateProps(this);
