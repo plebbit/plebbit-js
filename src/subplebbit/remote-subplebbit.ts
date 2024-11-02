@@ -313,11 +313,11 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         throw Error("Can't edit a remote subplebbit");
     }
 
-    async delete(options: any) {
+    async delete() {
         throw Error("Can't delete a remote subplebbit");
     }
 
-    async start(options: any) {
+    async start() {
         throw Error("Can't start a remote subplebbit");
     }
 }
