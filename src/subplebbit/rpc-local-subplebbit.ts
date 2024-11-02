@@ -238,7 +238,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
     override async stop() {
         if (this.state === "updating") {
             return super.stop();
-        } else if (this.state === "started") {
+        } else if (this.state === "started" || this.started) {
             // Need to be careful not to stop an already running sub
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
             try {
