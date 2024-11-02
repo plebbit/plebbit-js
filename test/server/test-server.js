@@ -74,7 +74,8 @@ const httpRouterNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-http-router"),
     apiPort: 15006,
     gatewayPort: 18085,
-    extraCommands: ["bootstrap rm --all", "--offline"]
+    daemonArgs: "--offline",
+    extraCommands: ["bootstrap rm --all"]
 };
 
 const startIpfsNodes = async () => {
