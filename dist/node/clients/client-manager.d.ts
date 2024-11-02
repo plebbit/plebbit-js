@@ -1,5 +1,5 @@
 import Publication from "../publications/publication.js";
-import { Plebbit } from "../plebbit.js";
+import { Plebbit } from "../plebbit/plebbit.js";
 import { Comment } from "../publications/comment/comment.js";
 import type { ChainTicker } from "../types.js";
 import { PlebbitError } from "../plebbit-error.js";
@@ -7,10 +7,10 @@ import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, Subplebbit
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
 import { CommentIpfsGatewayClient, GenericIpfsGatewayClient, PublicationIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { BaseClientsManager, LoadType } from "./base-client-manager.js";
-import { CommentPlebbitRpcStateClient, GenericPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
+import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
+import { CommentPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
-import type { CommentIpfsType, CommentIpfsWithCidDefined, CommentUpdateType } from "../publications/comment/types.js";
+import type { CommentIpfsType, CommentUpdateType } from "../publications/comment/types.js";
 type ResultOfFetchingSubplebbit = {
     subplebbit: SubplebbitIpfsType;
     cid: string;
@@ -29,20 +29,16 @@ export declare class ClientsManager extends BaseClientsManager {
         chainProviders: Record<ChainTicker, {
             [chainProviderUrl: string]: GenericChainProviderClient;
         }>;
-        plebbitRpcClients: {
-            [plebbitRpcClientUrl: string]: GenericPlebbitRpcStateClient;
-        };
     };
     constructor(plebbit: Plebbit);
     protected _initIpfsGateways(): void;
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initChainProviders(): void;
-    protected _initPlebbitRpcClients(): void;
-    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
+    preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
     postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string): void;
     postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
@@ -126,75 +122,13 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     protected _initPlebbitRpcClients(): void;
     preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string): {
-        timestamp: number;
-        signature: {
-            type: "ed25519" | "eip191";
-            publicKey: string;
-            signature: string;
-            signedPropertyNames: [string, ...string[]];
-        };
-        author: {
-            address: string;
-            previousCommentCid?: string | undefined;
-            displayName?: string | undefined;
-            wallets?: Record<string, {
-                address: string;
-                timestamp: number;
-                signature: {
-                    type: "eip191";
-                    signature: string;
-                };
-            }> | undefined;
-            avatar?: import("zod").objectOutputType<{
-                chainTicker: import("zod").ZodString;
-                address: import("zod").ZodString;
-                id: import("zod").ZodString;
-                timestamp: import("zod").ZodNumber;
-                signature: import("zod").ZodObject<{
-                    signature: import("zod").ZodString;
-                    type: import("zod").ZodEnum<["eip191"]>;
-                }, "strip", import("zod").ZodTypeAny, {
-                    type: "eip191";
-                    signature: string;
-                }, {
-                    type: "eip191";
-                    signature: string;
-                }>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-            flair?: import("zod").objectOutputType<{
-                text: import("zod").ZodString;
-                backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-                textColor: import("zod").ZodOptional<import("zod").ZodString>;
-                expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-            }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        } & {
-            [k: string]: unknown;
-        };
-        subplebbitAddress: string;
-        protocolVersion: string;
-        cid: string;
-        depth: number;
-        postCid: string;
-        flair?: import("zod").objectOutputType<{
-            text: import("zod").ZodString;
-            backgroundColor: import("zod").ZodOptional<import("zod").ZodString>;
-            textColor: import("zod").ZodOptional<import("zod").ZodString>;
-            expiresAt: import("zod").ZodOptional<import("zod").ZodNumber>;
-        }, import("zod").ZodTypeAny, "passthrough"> | undefined;
-        link?: string | undefined;
-        spoiler?: boolean | undefined;
-        content?: string | undefined;
-        title?: string | undefined;
-        linkWidth?: number | undefined;
-        linkHeight?: number | undefined;
-        linkHtmlTagName?: "audio" | "video" | "a" | "img" | undefined;
-        parentCid?: string | undefined;
-        thumbnailUrl?: string | undefined;
-        thumbnailUrlWidth?: number | undefined;
-        thumbnailUrlHeight?: number | undefined;
-        previousCid?: string | undefined;
+        comment: CommentIpfsType;
+        commentUpdate: CommentUpdateType;
     } | undefined;
-    _fetchParentCommentForCommentUpdate(parentCid: string): Promise<CommentIpfsWithCidDefined>;
+    _fetchParentCommentForCommentUpdate(parentCid: string): Promise<{
+        comment: CommentIpfsType;
+        commentUpdate: Pick<CommentUpdateType, "cid">;
+    }>;
     _getParentsPath(subIpns: SubplebbitIpfsType): Promise<string>;
     private _calculatePathForCommentUpdate;
     private _fetchCommentUpdateIpfsP2P;
@@ -217,7 +151,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     protected postFetchSubplebbitStringJsonP2PFailure(subIpnsName: string, subplebbitCid: string, err: PlebbitError): void;
     protected postFetchSubplebbitIpfsSuccess(subJson: ResultOfFetchingSubplebbit): void;
     protected postFetchSubplebbitInvalidRecord(subJson: string, subError: PlebbitError): void;
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
+    postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
 }
 export declare class SubplebbitClientsManager extends ClientsManager {
     clients: {

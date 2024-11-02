@@ -1,3 +1,4 @@
+import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 const optionInputs = [
     {
         option: "blacklist",
@@ -21,7 +22,8 @@ const getChallenge = async (subplebbitChallengeSettings, challengeRequestMessage
     const error = subplebbitChallengeSettings?.options?.error;
     const blacklist = subplebbitChallengeSettings?.options?.blacklist?.split(",");
     const blacklistSet = new Set(blacklist);
-    if (blacklistSet.has(challengeRequestMessage.publication?.author?.address)) {
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
+    if (blacklistSet.has(publication?.author?.address)) {
         return {
             success: false,
             error: error || `You're blacklisted.`

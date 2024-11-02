@@ -1,16 +1,22 @@
 import Publication from "../publication.js";
 import type { PublicationTypeName } from "../../types.js";
-import { Plebbit } from "../../plebbit.js";
-import type { LocalVoteOptions, VoteChallengeRequestToEncryptType, VotePubsubMessage } from "./types.js";
-declare class Vote extends Publication {
-    commentCid: VotePubsubMessage["commentCid"];
-    vote: VotePubsubMessage["vote"];
-    private _pubsubMsgToPublish?;
+import { Plebbit } from "../../plebbit/plebbit.js";
+import type { CreateVoteOptions, VotePubsubMessagePublication } from "./types.js";
+import type { SignerType } from "../../signer/types.js";
+declare class Vote extends Publication implements VotePubsubMessagePublication {
+    commentCid: VotePubsubMessagePublication["commentCid"];
+    vote: VotePubsubMessagePublication["vote"];
+    signature: VotePubsubMessagePublication["signature"];
+    _pubsubMsgToPublish?: VotePubsubMessagePublication;
+    challengeRequest?: CreateVoteOptions["challengeRequest"];
     constructor(plebbit: Plebbit);
-    _initLocalProps(props: LocalVoteOptions): void;
-    _initRemoteProps(props: VotePubsubMessage): void;
-    _initChallengeRequestProps(props: VoteChallengeRequestToEncryptType): void;
-    toJSONPubsubMessagePublication(): VotePubsubMessage;
+    _initLocalProps(props: {
+        vote: VotePubsubMessagePublication;
+        signer?: SignerType;
+        challengeRequest?: CreateVoteOptions["challengeRequest"];
+    }): void;
+    _initRemoteProps(props: VotePubsubMessagePublication): void;
+    toJSONPubsubMessagePublication(): VotePubsubMessagePublication;
     getType(): PublicationTypeName;
     private _validateSignature;
     publish(): Promise<void>;

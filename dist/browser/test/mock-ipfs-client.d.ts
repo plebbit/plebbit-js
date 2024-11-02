@@ -1,4 +1,4 @@
-import { IpfsClient } from "../types.js";
+import type { IpfsClient } from "../types.js";
 declare class IpfsHttpClient {
     pubsub: IpfsClient["_client"]["pubsub"];
     private subscriptions;

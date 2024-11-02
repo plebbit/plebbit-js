@@ -1,14 +1,8 @@
 import { z } from "zod";
 import { CreateSignerSchema, JsonSignatureSchema } from "../schema/schema";
-import type { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType } from "../pubsub-messages/types";
-import type { PublicationTypeName } from "../types";
+import type { ChallengeAnswerMessageType, ChallengeMessageType, ChallengeRequestMessageType, ChallengeVerificationMessageType, PublicationFromDecryptedChallengeRequest } from "../pubsub-messages/types";
 import type { SubplebbitIpfsType } from "../subplebbit/types";
-import type { CommentEditPubsubMessage } from "../publications/comment-edit/types";
-import type { VotePubsubMessage } from "../publications/vote/types";
-import type { CommentPubsubMessage, CommentUpdateType } from "../publications/comment/types";
-import { CommentSignedPropertyNames, CommentUpdateSignedPropertyNames } from "../publications/comment/schema";
-import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema";
-import { VoteSignedPropertyNames } from "../publications/vote/schema";
+import type { CommentUpdateForChallengeVerification, CommentUpdateType } from "../publications/comment/types";
 import { EncryptedSchema, PubsubMessageSignatureSchema } from "../pubsub-messages/schema";
 export type CreateSignerOptions = z.infer<typeof CreateSignerSchema>;
 export type JsonSignature = z.infer<typeof JsonSignatureSchema>;
@@ -22,11 +16,5 @@ export interface SignerType {
 }
 export type Encrypted = z.infer<typeof EncryptedSchema>;
 export type PubsubSignature = z.infer<typeof PubsubMessageSignatureSchema>;
-export type SignatureTypes = PublicationTypeName | "challengerequestmessage" | "challengemessage" | "challengeanswermessage" | "challengeverificationmessage";
-export type CommentSignedPropertyNamesUnion = (typeof CommentSignedPropertyNames)[number];
-export type CommentEditSignedPropertyNamesUnion = (typeof CommentEditSignedPropertyNames)[number];
-export type VoteSignedPropertyNamesUnion = (typeof VoteSignedPropertyNames)[number];
-export type CommentUpdatedSignedPropertyNamesUnion = (typeof CommentUpdateSignedPropertyNames)[number];
-export type PublicationsToSign = Omit<CommentEditPubsubMessage, "signature"> | Omit<VotePubsubMessage, "signature"> | Omit<CommentPubsubMessage, "signature"> | Omit<CommentUpdateType, "signature"> | Omit<SubplebbitIpfsType, "signature">;
-export type PubsubMsgsToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
-export type PublicationToVerify = CommentEditPubsubMessage | VotePubsubMessage | CommentPubsubMessage | SubplebbitIpfsType | CommentUpdateType;
+export type PubsubMsgToSign = Omit<ChallengeAnswerMessageType, "signature"> | Omit<ChallengeRequestMessageType, "signature"> | Omit<ChallengeVerificationMessageType, "signature"> | Omit<ChallengeMessageType, "signature">;
+export type PublicationToVerify = PublicationFromDecryptedChallengeRequest | SubplebbitIpfsType | CommentUpdateType | CommentUpdateForChallengeVerification;

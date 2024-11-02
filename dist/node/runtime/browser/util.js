@@ -13,6 +13,9 @@ export const mkdir = () => {
 export const listSubplebbits = () => {
     throw Error("listSubplebbits should not be called in browser");
 };
+export const monitorSubplebbitsDirectory = () => {
+    throw Error("monitorSubplebbitsDirectory should not be called in browser");
+};
 export async function importSignerIntoIpfsNode(ipnsKeyName, ipfsKey, ipfsNode) {
     const data = new FormData();
     if (typeof ipnsKeyName !== "string")

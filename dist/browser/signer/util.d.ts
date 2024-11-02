@@ -9,3 +9,5 @@ export declare const getPublicKeyFromPrivateKey: (privateKeyBase64: string) => P
 export declare const getPeerIdFromPrivateKey: (privateKeyBase64: string) => Promise<PeerId>;
 export declare const getPeerIdFromPublicKey: (publicKeyBase64: string) => Promise<PeerId>;
 export declare const getPeerIdFromPublicKeyBuffer: (publicKeyBuffer: Uint8Array) => Promise<PeerId>;
+export declare const convertBase58IpnsNameToBase36Cid: (ipnsName: string) => string;
+export declare function convertBase32ToBase58btc(base32String: string): string;

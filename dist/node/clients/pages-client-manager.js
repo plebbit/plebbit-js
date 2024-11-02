@@ -53,21 +53,21 @@ export class BasePagesClientsManager extends BaseClientsManager {
         }
     }
     // Override methods from BaseClientsManager here
-    preFetchGateway(gatewayUrl, path, loadType) {
-        const cid = path.split("/")[2];
+    preFetchGateway(gatewayUrl, loadOpts) {
+        const cid = loadOpts.root;
         const sortTypes = pageCidToSortTypesCache.get(cid);
         this.updateGatewayState("fetching-ipfs", gatewayUrl, sortTypes);
     }
-    postFetchGatewaySuccess(gatewayUrl, path, loadType) {
-        const cid = path.split("/")[2];
+    postFetchGatewaySuccess(gatewayUrl, loadOpts) {
+        const cid = loadOpts.root;
         const sortTypes = pageCidToSortTypesCache.get(cid);
         this.updateGatewayState("stopped", gatewayUrl, sortTypes);
     }
-    postFetchGatewayFailure(gatewayUrl, path, loadType) {
-        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    postFetchGatewayFailure(gatewayUrl, loadOpts) {
+        this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
-    postFetchGatewayAborted(gatewayUrl, path, loadType) {
-        this.postFetchGatewaySuccess(gatewayUrl, path, loadType);
+    postFetchGatewayAborted(gatewayUrl, loadOpts) {
+        this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
     _updatePageCidsSortCache(pageCid, sortTypes) {
         const curSortTypes = pageCidToSortTypesCache.get(pageCid);
@@ -126,8 +126,8 @@ export class BasePagesClientsManager extends BaseClientsManager {
         this.updateRpcState("fetching-ipfs", currentRpcUrl, sortTypes);
         try {
             const page = this._pages._parentCid
-                ? await this._plebbit.plebbitRpcClient.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
-                : await this._plebbit.plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
+                ? await this._plebbit._plebbitRpcClient.getCommentPage(pageCid, this._pages._parentCid, this._pages._subplebbitAddress)
+                : await this._plebbit._plebbitRpcClient.getSubplebbitPage(pageCid, this._pages._subplebbitAddress);
             this.updateRpcState("stopped", currentRpcUrl, sortTypes);
             return page;
         }
@@ -153,7 +153,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
     async _fetchPageFromGateways(pageCid) {
         // No need to validate schema for every gateway, because the cid validation will make sure it's the page ipfs we're looking for
         // we just need to validate the end result's schema
-        const res = await this.fetchFromMultipleGateways({ cid: pageCid }, "page-ipfs", async (_) => { });
+        const res = await this.fetchFromMultipleGateways({ root: pageCid, recordIpfsType: "ipfs", recordPlebbitType: "page-ipfs" }, async (_) => { });
         const pageIpfs = parsePageIpfsSchemaWithPlebbitErrorIfItFails(parseJsonWithPlebbitErrorIfFails(res.resText));
         return pageIpfs;
     }
@@ -161,7 +161,7 @@ export class BasePagesClientsManager extends BaseClientsManager {
         const log = Logger("plebbit-js:pages:getPage");
         const sortTypes = pageCidToSortTypesCache.get(pageCid);
         let page;
-        if (this._plebbit.plebbitRpcClient)
+        if (this._plebbit._plebbitRpcClient)
             page = await this._fetchPageWithRpc(pageCid, log, sortTypes);
         else if (this._defaultIpfsProviderUrl)
             page = await this._fetchPageWithIpfsP2P(pageCid, log, sortTypes);

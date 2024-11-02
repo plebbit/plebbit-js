@@ -1,4 +1,4 @@
-import { BaseClientsManager, LoadType } from "./base-client-manager.js";
+import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
 import { PagesIpfsClient } from "./ipfs-client.js";
 import { PagesIpfsGatewayClient } from "./ipfs-gateway-client.js";
 import { PageIpfs, PostSortName, ReplySortName } from "../pages/types.js";
@@ -28,10 +28,10 @@ export declare class BasePagesClientsManager extends BaseClientsManager {
     protected _initIpfsGateways(): void;
     protected _initIpfsClients(): void;
     protected _initPlebbitRpcClients(): void;
-    preFetchGateway(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewaySuccess(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayFailure(gatewayUrl: string, path: string, loadType: LoadType): void;
-    postFetchGatewayAborted(gatewayUrl: string, path: string, loadType: LoadType): void;
+    preFetchGateway(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
+    postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     _updatePageCidsSortCache(pageCid: string, sortTypes: string[]): void;
     updatePageCidsToSortTypes(newPageCids: BasePages["pageCids"]): void;
     updatePageCidsToSortTypesToIncludeSubsequent(nextPageCid: string, previousPageCid: string): void;

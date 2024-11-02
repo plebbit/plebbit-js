@@ -1,6 +1,7 @@
 import QuickLRU from "quick-lru";
 import { isVote, isReply, isPost, testVote, testReply, testPost } from "./utils.js";
 import { RateLimiter } from "limiter-es6-compat";
+import { derivePublicationFromChallengeRequest, isRequestPubsubPublicationOfPost, isRequestPubsubPublicationOfReply } from "../../../../../util.js";
 // each author could have 20+ rate limiters each if the sub has
 // several rate limit rules so keep a large cache
 const rateLimiters = new QuickLRU({ maxSize: 50000 });
@@ -21,28 +22,29 @@ const getOrCreateRateLimiter = (exclude, publication, publicationType, challenge
 const addFilteredRateLimiter = (exclude, publication, publicationType, challengeSuccess, filteredRateLimiters) => {
     filteredRateLimiters[getRateLimiterName(exclude, publication, publicationType, challengeSuccess)] = getOrCreateRateLimiter(exclude, publication, publicationType, challengeSuccess);
 };
-const getRateLimitersToTest = (exclude, publication, challengeSuccess) => {
+const getRateLimitersToTest = (exclude, request, challengeSuccess) => {
+    const publication = derivePublicationFromChallengeRequest(request);
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters = {};
-    if (testPost(exclude.post, publication) && ![exclude.reply, exclude.vote].includes(true)) {
+    if (testPost(exclude.post, request) && ![exclude.reply, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
     }
-    if (testReply(exclude.reply, publication) && ![exclude.post, exclude.vote].includes(true)) {
+    if (testReply(exclude.reply, request) && ![exclude.post, exclude.vote].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
     }
-    if (testVote(exclude.vote, publication) && ![exclude.post, exclude.reply].includes(true)) {
+    if (testVote(exclude.vote, request) && ![exclude.post, exclude.reply].includes(true)) {
         addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
     }
     return filteredRateLimiters;
 };
-const testRateLimit = (exclude, publication) => {
+const testRateLimit = (exclude, request) => {
     if (exclude?.rateLimit === undefined ||
-        (exclude.post === true && !isPost(publication)) ||
-        (exclude.reply === true && !isReply(publication)) ||
-        (exclude.vote === true && !isVote(publication)) ||
-        (exclude.post === false && isPost(publication)) ||
-        (exclude.reply === false && isReply(publication)) ||
-        (exclude.vote === false && isVote(publication))) {
+        (exclude.post === true && !isPost(request)) ||
+        (exclude.reply === true && !isReply(request)) ||
+        (exclude.vote === true && !isVote(request)) ||
+        (exclude.post === false && isPost(request)) ||
+        (exclude.reply === false && isReply(request)) ||
+        (exclude.vote === false && isVote(request))) {
         // early exit based on exclude type and publication type
         return true;
     }
@@ -52,7 +54,7 @@ const testRateLimit = (exclude, publication) => {
         challengeSuccess = false;
     }
     // check all the rate limiters that match the exclude and publication type
-    const rateLimiters = getRateLimitersToTest(exclude, publication, challengeSuccess);
+    const rateLimiters = getRateLimitersToTest(exclude, request, challengeSuccess);
     // if any of the matching rate limiter is out of tokens, test failed
     for (const rateLimiter of Object.values(rateLimiters)) {
         const tokensRemaining = rateLimiter.getTokensRemaining();
@@ -62,35 +64,33 @@ const testRateLimit = (exclude, publication) => {
     }
     return true;
 };
-const getRateLimitersToAddTo = (excludeArray, publication, challengeSuccess) => {
+const getRateLimitersToAddTo = (excludeArray, request, challengeSuccess) => {
     // get all rate limiters associated with the exclude (publication type and challengeSuccess true/false)
     const filteredRateLimiters = {};
+    const publication = derivePublicationFromChallengeRequest(request);
     for (const exclude of excludeArray) {
         if (exclude?.rateLimit === undefined) {
             continue;
         }
-        if (isPost(publication)) {
+        if (isRequestPubsubPublicationOfPost(request)) {
             addFilteredRateLimiter(exclude, publication, "post", challengeSuccess, filteredRateLimiters);
         }
-        if (isReply(publication)) {
+        if (isRequestPubsubPublicationOfReply(request)) {
             addFilteredRateLimiter(exclude, publication, "reply", challengeSuccess, filteredRateLimiters);
         }
-        if (isVote(publication)) {
+        if (request.vote) {
             addFilteredRateLimiter(exclude, publication, "vote", challengeSuccess, filteredRateLimiters);
         }
     }
     return filteredRateLimiters;
 };
-const addToRateLimiter = (subplebbitChallenges, publication, challengeSuccess) => {
+const addToRateLimiter = (subplebbitChallenges, request, challengeSuccess) => {
     if (!subplebbitChallenges) {
         // subplebbit has no challenges, no need to rate limit
         return;
     }
     if (!Array.isArray(subplebbitChallenges)) {
         throw Error(`addToRateLimiter invalid argument subplebbitChallenges '${subplebbitChallenges}' not an array`);
-    }
-    if (typeof publication?.author?.address !== "string") {
-        throw Error(`addToRateLimiter invalid argument publication '${publication}'`);
     }
     if (typeof challengeSuccess !== "boolean") {
         throw Error(`addToRateLimiter invalid argument challengeSuccess '${challengeSuccess}' not a boolean`);
@@ -106,7 +106,7 @@ const addToRateLimiter = (subplebbitChallenges, publication, challengeSuccess) =
         // no need to add to rate limiter if the subplebbit has no exclude rules in any challenges
         return;
     }
-    const rateLimiters = getRateLimitersToAddTo(excludeArray, publication, challengeSuccess);
+    const rateLimiters = getRateLimitersToAddTo(excludeArray, request, challengeSuccess);
     for (const rateLimiter of Object.values(rateLimiters)) {
         rateLimiter.tryRemoveTokens(1);
     }

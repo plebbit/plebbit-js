@@ -249,4 +249,16 @@ export function hideClassPrivateProps(_this) {
             Object.defineProperty(_this, propertyName, { enumerable: false });
     }
 }
+export function derivePublicationFromChallengeRequest(request) {
+    const pub = request.vote || request.comment || request.commentEdit || request.commentModeration;
+    if (!pub)
+        throw Error("Failed to find publication on request");
+    return pub;
+}
+export function isRequestPubsubPublicationOfReply(request) {
+    return Boolean(request.comment && request.comment.parentCid);
+}
+export function isRequestPubsubPublicationOfPost(request) {
+    return Boolean(request.comment && !request.comment.parentCid);
+}
 //# sourceMappingURL=util.js.map

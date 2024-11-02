@@ -144,7 +144,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         if (typeof this._startRpcSubscriptionId === "number")
             throw new PlebbitError("ERR_SUB_ALREADY_STARTED", { subplebbitAddress: this.address });
         try {
-            this._startRpcSubscriptionId = await this._plebbit.plebbitRpcClient.startSubplebbit(this.address);
+            this._startRpcSubscriptionId = await this._plebbit._plebbitRpcClient.startSubplebbit(this.address);
             this._setState("started");
         }
         catch (e) {
@@ -155,19 +155,19 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         }
         this.started = true;
         this._plebbit
-            .plebbitRpcClient.getSubscription(this._startRpcSubscriptionId)
+            ._plebbitRpcClient.getSubscription(this._startRpcSubscriptionId)
             .on("update", this._handleRpcUpdateEventFromStart.bind(this))
             .on("startedstatechange", this._handleRpcStartedStateChangeEvent.bind(this))
             .on("challengerequest", this._handleRpcChallengeRequestEvent.bind(this))
             .on("challenge", this._handleRpcChallengeEvent.bind(this))
             .on("challengeanswer", this._handleRpcChallengeAnswerEvent.bind(this))
             .on("challengeverification", this._handleRpcChallengeVerificationEvent.bind(this))
-            .on("error", (args) => this.emit("error", args.params.result)); // TODO need to figure out how to zod parse error
-        this._plebbit.plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
+            .on("error", (args) => this.emit("error", args.params.result));
+        this._plebbit._plebbitRpcClient.emitAllPendingMessages(this._startRpcSubscriptionId);
     }
     async _cleanUpRpcConnection(log) {
         if (this._startRpcSubscriptionId)
-            await this._plebbit.plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
+            await this._plebbit._plebbitRpcClient.unsubscribe(this._startRpcSubscriptionId);
         this._setStartedState("stopped");
         this._setRpcClientState("stopped");
         this.started = false;
@@ -183,7 +183,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             // Need to be careful not to stop an already running sub
             const log = Logger("plebbit-js:rpc-local-subplebbit:stop");
             try {
-                await this._plebbit.plebbitRpcClient.stopSubplebbit(this.address);
+                await this._plebbit._plebbitRpcClient.stopSubplebbit(this.address);
             }
             catch (e) {
                 if (e instanceof Error && e.message !== messages.ERR_RPC_CLIENT_TRYING_TO_STOP_SUB_THAT_IS_NOT_RUNNING)
@@ -195,7 +195,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
             throw Error("User called rpcLocalSub.stop() without updating or starting");
     }
     async edit(newSubplebbitOptions) {
-        const subPropsAfterEdit = await this._plebbit.plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
+        const subPropsAfterEdit = await this._plebbit._plebbitRpcClient.editSubplebbit(this.address, newSubplebbitOptions);
         if ("updatedAt" in subPropsAfterEdit)
             await this.initRpcInternalSubplebbitAfterFirstUpdateNoMerge(subPropsAfterEdit);
         else
@@ -213,7 +213,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         // Make sure to stop updating or starting first
         if (this.state === "started" || this.state === "updating")
             await this.stop();
-        await this._plebbit.plebbitRpcClient.deleteSubplebbit(this.address);
+        await this._plebbit._plebbitRpcClient.deleteSubplebbit(this.address);
         this.started = false;
         this._setRpcClientState("stopped");
         this._setState("stopped");

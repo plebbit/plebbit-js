@@ -13,9 +13,10 @@ import { sha256 } from "js-sha256";
 import * as remeda from "remeda"; // tree-shaking supported!
 import { CommentEditSignedPropertyNames } from "../publications/comment-edit/schema.js";
 import { VoteSignedPropertyNames } from "../publications/vote/schema.js";
-import { CommentSignedPropertyNames, CommentUpdateReservedFields, CommentUpdateSignedPropertyNames } from "../publications/comment/schema.js";
+import { CommentSignedPropertyNames, CommentUpdateForChallengeVerificationSignedPropertyNames, CommentUpdateReservedFields, CommentUpdateSignedPropertyNames } from "../publications/comment/schema.js";
 import { SubplebbitIpfsReservedFields, SubplebbitSignedPropertyNames } from "../subplebbit/schema.js";
 import { ChallengeRequestMessageSignedPropertyNames, ChallengeMessageSignedPropertyNames, ChallengeAnswerMessageSignedPropertyNames, ChallengeVerificationMessageSignedPropertyNames } from "../pubsub-messages/schema.js";
+import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema.js";
 const cborgEncodeOptions = {
     typeEncoders: {
         undefined: () => {
@@ -62,21 +63,23 @@ async function _validateAuthorAddressBeforeSigning(author, signer, plebbit) {
             throwWithErrorCode("ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER", { authorAddress: author.address, signerAddress: derivedAddress });
     }
 }
-export async function _signJson(signedPropertyNames, publication, signer, log) {
+export async function _signJson(signedPropertyNames, cleanedPublication, // should call cleanUpBeforePublish before calling _signJson
+signer, log) {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
     // we assume here that publication already has been cleaned
     //@ts-expect-error
-    const propsToSign = remeda.pick(publication, signedPropertyNames);
+    const propsToSign = remeda.pick(cleanedPublication, signedPropertyNames);
     const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions);
     const signatureData = uint8ArrayToString(await signBufferEd25519(publicationEncoded, signer.privateKey), "base64");
     return {
         signature: signatureData,
         publicKey: signer.publicKey,
         type: signer.type,
-        signedPropertyNames: signedPropertyNames
+        signedPropertyNames: remeda.keys.strict(propsToSign)
     };
 }
-export async function _signPubsubMsg(signedPropertyNames, msg, signer, log) {
+export async function _signPubsubMsg(signedPropertyNames, msg, // should call cleanUpBeforePublish before calling _signPubsubMsg
+signer, log) {
     assert(signer.publicKey && typeof signer.type === "string" && signer.privateKey, "Signer props need to be defined befoe signing");
     // we assume here that pubsub msg already has been cleaned
     //@ts-expect-error
@@ -88,7 +91,7 @@ export async function _signPubsubMsg(signedPropertyNames, msg, signer, log) {
         signature: signatureData,
         publicKey: publicKeyBuffer,
         type: signer.type,
-        signedPropertyNames: signedPropertyNames
+        signedPropertyNames: remeda.keys.strict(propsToSign)
     };
 }
 export function cleanUpBeforePublishing(msg) {
@@ -100,42 +103,52 @@ export function cleanUpBeforePublishing(msg) {
 export async function signComment(comment, plebbit) {
     const log = Logger("plebbit-js:signatures:signComment");
     await _validateAuthorAddressBeforeSigning(comment.author, comment.signer, plebbit);
-    return _signJson(CommentSignedPropertyNames, comment, comment.signer, log);
+    return (await _signJson(CommentSignedPropertyNames, comment, comment.signer, log));
 }
 export async function signCommentUpdate(update, signer) {
     const log = Logger("plebbit-js:signatures:signCommentUpdate");
     // Not sure, should we validate update.authorEdit here?
-    return _signJson(CommentUpdateSignedPropertyNames, update, signer, log);
+    return (await _signJson(CommentUpdateSignedPropertyNames, update, signer, log));
+}
+export async function signCommentUpdateForChallengeVerification(update, signer) {
+    const log = Logger("plebbit-js:signatures:signCommentUpdateForChallengeVerification");
+    // Not sure, should we validate update.authorEdit here?
+    return (await _signJson(CommentUpdateForChallengeVerificationSignedPropertyNames, update, signer, log));
 }
 export async function signVote(vote, plebbit) {
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
-    return _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
+    return await _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
 }
 export async function signCommentEdit(edit, plebbit) {
     const log = Logger("plebbit-js:signatures:signCommentEdit");
     await _validateAuthorAddressBeforeSigning(edit.author, edit.signer, plebbit);
-    return _signJson(CommentEditSignedPropertyNames, edit, edit.signer, log);
+    return (await _signJson(CommentEditSignedPropertyNames, edit, edit.signer, log));
+}
+export async function signCommentModeration(commentMod, plebbit) {
+    const log = Logger("plebbit-js:signatures:signCommentModeration");
+    await _validateAuthorAddressBeforeSigning(commentMod.author, commentMod.signer, plebbit);
+    return await _signJson(CommentModerationSignedPropertyNames, commentMod, commentMod.signer, log);
 }
 export async function signSubplebbit(subplebbit, signer) {
     const log = Logger("plebbit-js:signatures:signSubplebbit");
-    return _signJson(SubplebbitSignedPropertyNames, subplebbit, signer, log);
+    return (await _signJson(SubplebbitSignedPropertyNames, subplebbit, signer, log));
 }
 export async function signChallengeRequest(request, signer) {
     const log = Logger("plebbit-js:signatures:signChallengeRequest");
-    return _signPubsubMsg(ChallengeRequestMessageSignedPropertyNames, request, signer, log);
+    return (await _signPubsubMsg(ChallengeRequestMessageSignedPropertyNames, request, signer, log));
 }
 export async function signChallengeMessage(challengeMessage, signer) {
     const log = Logger("plebbit-js:signatures:signChallengeMessage");
-    return _signPubsubMsg(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log);
+    return (await _signPubsubMsg(ChallengeMessageSignedPropertyNames, challengeMessage, signer, log));
 }
 export async function signChallengeAnswer(challengeAnswer, signer) {
     const log = Logger("plebbit-js:signatures:signChallengeAnswer");
-    return _signPubsubMsg(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log);
+    return (await _signPubsubMsg(ChallengeAnswerMessageSignedPropertyNames, challengeAnswer, signer, log));
 }
 export async function signChallengeVerification(challengeVerification, signer) {
     const log = Logger("plebbit-js:signatures:signChallengeVerification");
-    return _signPubsubMsg(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log);
+    return (await _signPubsubMsg(ChallengeVerificationMessageSignedPropertyNames, challengeVerification, signer, log));
 }
 // Verify functions
 const _verifyAuthor = async (publicationJson, resolveAuthorAddresses, clientsManager) => {
@@ -246,6 +259,14 @@ export async function verifyCommentEdit(edit, resolveAuthorAddresses, clientsMan
     if (!_allFieldsOfRecordInSignedPropertyNames(edit))
         return { valid: false, reason: messages.ERR_COMMENT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
     const res = await _verifyPublicationWithAuthor(edit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    if (!res.valid)
+        return res;
+    return { valid: true };
+}
+export async function verifyCommentModeration(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(moderation))
+        return { valid: false, reason: messages.ERR_COMMENT_MODERATION_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    const res = await _verifyPublicationWithAuthor(moderation, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid)
         return res;
     return { valid: true };
@@ -396,6 +417,17 @@ export async function verifyCommentUpdate(update, resolveAuthorAddresses, client
     commentUpdateVerificationCache.set(cacheKey, true);
     return { valid: true };
 }
+export async function verifyCommentUpdateForChallengeVerification(update) {
+    if (!_allFieldsOfRecordInSignedPropertyNames(update))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+    if (_isThereReservedFieldInRecord(update, CommentUpdateReservedFields))
+        return { valid: false, reason: messages.ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD };
+    // Validate signature
+    const jsonValidation = await _getJsonValidationResult(update);
+    if (!jsonValidation.valid)
+        return jsonValidation;
+    return { valid: true };
+}
 // -5 mins
 function _minimumTimestamp() {
     return timestamp() - 5 * 60;
@@ -467,7 +499,7 @@ export async function verifyPage(pageCid, page, resolveAuthorAddresses, clientsM
             return commentSignatureValidity;
         if ("derivedAddress" in commentSignatureValidity && commentSignatureValidity.derivedAddress)
             shouldCache = false;
-        const commentUpdateSignatureValidity = await verifyCommentUpdate(pageComment.update, resolveAuthorAddresses, clientsManager, subplebbitAddress, pageComment.comment, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
+        const commentUpdateSignatureValidity = await verifyCommentUpdate(pageComment.commentUpdate, resolveAuthorAddresses, clientsManager, subplebbitAddress, { signature: pageComment.comment.signature, cid: pageComment.commentUpdate.cid }, overrideAuthorAddressIfInvalid, resolveDomainSubAddress);
         if (!commentUpdateSignatureValidity.valid)
             return commentUpdateSignatureValidity;
     }

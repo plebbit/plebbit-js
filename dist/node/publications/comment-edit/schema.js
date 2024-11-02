@@ -1,6 +1,6 @@
 // Comment edit schemas here
 import { z } from "zod";
-import { FlairSchema, ChallengeRequestToEncryptBaseSchema, CommentAuthorSchema, CidStringSchema, CreatePublicationUserOptionsSchema, JsonSignatureSchema, PublicationBaseBeforeSigning, PlebbitTimestampSchema, SignerWithAddressPublicKeySchema } from "../../schema/schema.js";
+import { FlairSchema, CidStringSchema, CreatePublicationUserOptionsSchema, JsonSignatureSchema, PublicationBaseBeforeSigning, PlebbitTimestampSchema, SignerWithAddressPublicKeySchema } from "../../schema/schema.js";
 import * as remeda from "remeda";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 export const AuthorCommentEditOptionsSchema = z
@@ -13,61 +13,38 @@ export const AuthorCommentEditOptionsSchema = z
     reason: z.string().optional()
 })
     .strict();
-export const ModeratorCommentEditOptionsSchema = z
-    .object({
-    commentCid: CidStringSchema,
-    flair: FlairSchema.optional(),
-    spoiler: z.boolean().optional(),
-    pinned: z.boolean().optional(),
-    locked: z.boolean().optional(),
-    removed: z.boolean().optional(),
-    reason: z.string().optional(),
-    commentAuthor: CommentAuthorSchema.optional()
-})
-    .strict();
-// I have to explicitly include the cast here, it may be fixed in the future
-export const uniqueModFields = (remeda.difference(remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape), remeda.keys.strict(AuthorCommentEditOptionsSchema.shape)));
-export const uniqueAuthorFields = (remeda.difference(remeda.keys.strict(AuthorCommentEditOptionsSchema.shape), remeda.keys.strict(ModeratorCommentEditOptionsSchema.shape)));
-export const CreateCommentEditAuthorPublicationSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema).strict();
-export const CreateCommentEditModeratorPublicationSchema = CreatePublicationUserOptionsSchema.merge(ModeratorCommentEditOptionsSchema).strict();
-// Before signing, and after filling the missing props of CreateCommentEditUserOptions
-export const CommentEditModeratorOptionsToSignSchema = CreateCommentEditModeratorPublicationSchema.merge(PublicationBaseBeforeSigning);
-export const CommentEditAuthorOptionsToSignSchema = CreateCommentEditAuthorPublicationSchema.merge(PublicationBaseBeforeSigning);
-export const CreateCommentEditOptionsSchema = CommentEditModeratorOptionsToSignSchema.merge(CommentEditAuthorOptionsToSignSchema);
-// after signing, and before initializing the local comment edit props
-export const LocalCommentEditAfterSigningSchema = CreateCommentEditOptionsSchema.extend({
-    signature: JsonSignatureSchema
-});
-// ChallengeRequest.publication
+export const CreateCommentEditOptionsSchema = CreatePublicationUserOptionsSchema.merge(AuthorCommentEditOptionsSchema).strict();
 export const CommentEditSignedPropertyNames = remeda.keys.strict(remeda.omit(CreateCommentEditOptionsSchema.shape, keysToOmitFromSignedPropertyNames));
 const editPubsubPickOptions = (remeda.mapToObj([...CommentEditSignedPropertyNames, "signature"], (x) => [x, true]));
-export const AuthorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueModFields));
-export const AuthorCommentEditPubsubPassthroughSchema = AuthorCommentEditPubsubSchema.passthrough();
-export const ModeratorCommentEditPubsubSchema = LocalCommentEditAfterSigningSchema.pick(remeda.omit(editPubsubPickOptions, uniqueAuthorFields));
-export const CommentEditPubsubMessageSchema = AuthorCommentEditPubsubSchema.merge(ModeratorCommentEditPubsubSchema).strict();
-export const CommentEditPubsubMessageWithFlexibleAuthorSchema = CommentEditPubsubMessageSchema.extend({
-    author: CommentEditPubsubMessageSchema.shape.author.passthrough()
-}).strict();
-export const CommentEditsTableRowSchema = CommentEditPubsubMessageSchema.extend({
-    authorAddress: CommentEditPubsubMessageSchema.shape.author.shape.address,
+// ChallengeRequest.commentEdit
+export const CommentEditPubsubMessagePublicationSchema = CreateCommentEditOptionsSchema.merge(PublicationBaseBeforeSigning)
+    .extend({
+    signature: JsonSignatureSchema
+})
+    .pick(editPubsubPickOptions)
+    .strict();
+export const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema = CommentEditPubsubMessagePublicationSchema.extend({
+    author: CommentEditPubsubMessagePublicationSchema.shape.author.passthrough()
+}).passthrough();
+export const CommentEditsTableRowSchema = CommentEditPubsubMessagePublicationSchema.extend({
     insertedAt: PlebbitTimestampSchema,
     authorSignerAddress: SignerWithAddressPublicKeySchema.shape.address,
-    isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing, otherwise it's a mod
-    extraProps: z.object({}).passthrough().optional() // will hold unknown props
+    isAuthorEdit: z.boolean(), // if true, then it was an author at the time of editing
+    extraProps: z.object({}).passthrough().optional(), // will hold unknown props,
+    id: z.number().nonnegative().int()
 }).strict();
-export const CommentEditReservedFields = remeda.difference([
+export const CommentEditChallengeRequestToEncryptSchema = CreateCommentEditOptionsSchema.shape.challengeRequest.unwrap().extend({
+    commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough()
+});
+export const CommentEditReservedFields = remeda.difference(remeda.unique([
     ...remeda.keys.strict(CommentEditsTableRowSchema.shape),
-    ...remeda.keys.strict(ChallengeRequestToEncryptBaseSchema.shape),
+    ...remeda.keys.strict(CommentEditChallengeRequestToEncryptSchema.shape),
+    "shortCommentCid",
     "shortSubplebbitAddress",
     "state",
     "publishingState",
     "signer",
-    "clients"
-], remeda.keys.strict(CommentEditPubsubMessageSchema.shape));
-export const CommentEditChallengeRequestToEncryptSchema = ChallengeRequestToEncryptBaseSchema.extend({
-    publication: CommentEditPubsubMessageWithFlexibleAuthorSchema.passthrough()
-});
-export const CreateCommentEditFunctionArgumentSchema = CreateCommentEditAuthorPublicationSchema.or(CreateCommentEditModeratorPublicationSchema)
-    .or(CommentEditPubsubMessageSchema)
-    .or(CommentEditChallengeRequestToEncryptSchema);
+    "clients",
+    "commentEdit"
+]), remeda.keys.strict(CommentEditPubsubMessagePublicationSchema.shape));
 //# sourceMappingURL=schema.js.map

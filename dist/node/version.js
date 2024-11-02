@@ -4,7 +4,7 @@ const plebbitJsVersion = "0.0.4"; // TODO should be imported from package.json
 const userAgent = UserAgentSchema.parse(`/plebbit-js:${plebbitJsVersion}/`);
 export default {
     PLEBBIT_JS_VERSION: plebbitJsVersion,
-    DB_VERSION: 15,
+    DB_VERSION: 17,
     PROTOCOL_VERSION: protocolVersion,
     USER_AGENT: userAgent
 };

@@ -28,13 +28,15 @@ const defaultChainProviders = {
         chainId: -1 // no chain ID for solana
     }
 };
-const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array().transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
+const TransformIpfsHttpClientOptionsSchema = IpfsHttpCreateClientOptionSchema.array()
+    .nonempty()
+    .transform((options) => options.map(parseIpfsRawOptionToIpfsOptions));
 const ParsedIpfsHttpClientOptionsSchema = z.custom();
 const PlebbitUserOptionBaseSchema = z.object({
-    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().optional(),
+    ipfsGatewayUrls: IpfsGatewayUrlSchema.array().nonempty().optional(),
     ipfsHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
     pubsubHttpClientsOptions: TransformIpfsHttpClientOptionsSchema.optional(),
-    plebbitRpcClientsOptions: RpcUrlSchema.array().optional(),
+    plebbitRpcClientsOptions: RpcUrlSchema.array().nonempty().optional(),
     dataPath: DirectoryPathSchema.optional(),
     chainProviders: z.record(ChainTickerSchema, ChainProviderSchema),
     resolveAuthorAddresses: z.boolean(),
@@ -47,7 +49,7 @@ const PlebbitUserOptionBaseSchema = z.object({
 });
 export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     // used in await Plebbit({PlebbitOption}), will set defaults here
-    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://cloudflare-ipfs.com", "https://ipfs.io"]),
+    ipfsGatewayUrls: PlebbitUserOptionBaseSchema.shape.ipfsGatewayUrls.default(["https://dweb.link", "https://ipfs.io"]),
     pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),

@@ -3,28 +3,27 @@ import { Knex } from "knex";
 import { Comment } from "./publications/comment/comment.js";
 import type Publication from "./publications/publication.js";
 import type { PlebbitError } from "./plebbit-error.js";
-import type { Plebbit } from "./plebbit.js";
+import type { Plebbit } from "./plebbit/plebbit.js";
 import type { RemoteSubplebbit } from "./subplebbit/remote-subplebbit.js";
 import type { RpcLocalSubplebbit } from "./subplebbit/rpc-local-subplebbit.js";
 import { AuthorAvatarNftSchema, AuthorPubsubSchema, AuthorWithOptionalCommentUpdateSchema, CreatePublicationUserOptionsSchema, ProtocolVersionSchema } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentEditPubsubMessage, LocalCommentEditOptions } from "./publications/comment-edit/types.js";
-import type { LocalVoteOptions, VotePubsubMessage } from "./publications/vote/types.js";
-import type { CommentPubsubMessage, CommentUpdateType, LocalCommentOptions } from "./publications/comment/types.js";
+import type { CommentModerationTableRow } from "./publications/comment-edit/types.js";
+import type { CommentUpdateType } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
-import type { DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeVerificationMessageType } from "./pubsub-messages/types.js";
+import type { DecryptedChallengeAnswerMessageType, DecryptedChallengeMessageType, DecryptedChallengeRequestMessageType, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, DecryptedChallengeRequestPublication, DecryptedChallengeVerificationMessageType } from "./pubsub-messages/types.js";
 import { ChainProviderSchema, ChainTickerSchema, PlebbitParsedOptionsSchema, PlebbitUserOptionsSchema } from "./schema.js";
 import { VoteTablesRowSchema } from "./publications/vote/schema.js";
 import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
+import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
+import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;
 export type ChainProvider = z.infer<typeof ChainProviderSchema>;
 export type InputPlebbitOptions = z.input<typeof PlebbitUserOptionsSchema>;
 export type ParsedPlebbitOptions = z.output<typeof PlebbitParsedOptionsSchema>;
-export type LocalPublicationProps = LocalCommentOptions | LocalVoteOptions | LocalCommentEditOptions;
 export type AuthorPubsubType = z.infer<typeof AuthorPubsubSchema>;
 export type AuthorTypeWithCommentUpdate = z.infer<typeof AuthorWithOptionalCommentUpdateSchema>;
-export type PublicationPubsubMessage = CommentPubsubMessage | VotePubsubMessage | CommentEditPubsubMessage;
 export type CreatePublicationOptions = z.infer<typeof CreatePublicationUserOptionsSchema>;
 export type Nft = z.infer<typeof AuthorAvatarNftSchema>;
 export type AuthorPubsubJsonType = AuthorPubsubType & {
@@ -33,7 +32,7 @@ export type AuthorPubsubJsonType = AuthorPubsubType & {
 export type AuthorWithOptionalCommentUpdateJson = AuthorTypeWithCommentUpdate & {
     shortAddress: string;
 };
-export type PublicationTypeName = "comment" | "vote" | "commentedit" | "subplebbit" | "commentupdate";
+export type PublicationTypeName = keyof DecryptedChallengeRequestPublication;
 export type NativeFunctions = {
     fetch: typeof fetch;
 };
@@ -50,7 +49,9 @@ export type VotesTableRow = z.infer<typeof VoteTablesRowSchema>;
 export interface VotesTableRowInsert extends Omit<VotesTableRow, "insertedAt"> {
 }
 export type CommentEditsTableRow = z.infer<typeof CommentEditsTableRowSchema>;
-export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt"> {
+export interface CommentEditsTableRowInsert extends Omit<CommentEditsTableRow, "insertedAt" | "id"> {
+}
+export interface CommentModerationsTableRowInsert extends Omit<CommentModerationTableRow, "insertedAt" | "id"> {
 }
 declare module "knex/types/tables" {
     interface Tables {
@@ -58,6 +59,7 @@ declare module "knex/types/tables" {
         commentUpdates: Knex.CompositeTableType<CommentUpdatesRow, CommentUpdatesTableRowInsert, Omit<CommentUpdatesTableRowInsert, "cid">, Omit<CommentUpdatesTableRowInsert, "cid">>;
         votes: Knex.CompositeTableType<VotesTableRow, VotesTableRowInsert>;
         commentEdits: Knex.CompositeTableType<CommentEditsTableRow, CommentEditsTableRowInsert>;
+        commentModerations: Knex.CompositeTableType<CommentModerationTableRow, CommentModerationsTableRowInsert>;
     }
 }
 export interface SubplebbitEvents {
@@ -76,14 +78,22 @@ export interface PublicationEvents {
     challenge: (challenge: DecryptedChallengeMessageType) => void;
     challengeanswer: (answer: DecryptedChallengeAnswerMessageType) => void;
     challengeverification: (verification: DecryptedChallengeVerificationMessageType, decryptedComment?: Comment) => void;
-    error: (error: PlebbitError) => void;
+    error: (error: PlebbitError | Error) => void;
     publishingstatechange: (newState: Publication["publishingState"]) => void;
     statechange: (newState: Publication["state"]) => void;
     update: (updatedInstance: Comment) => void;
     updatingstatechange: (newState: Comment["updatingState"]) => void;
 }
 export interface PlebbitEvents {
-    error: (error: PlebbitError) => void;
+    error: (error: PlebbitError | Error) => void;
+    subplebbitschange: (listOfSubplebbits: string[]) => void;
+    settingschange: (newSettings: ParsedPlebbitOptions) => void;
+}
+export interface PlebbitRpcClientEvents {
+    statechange: (state: PlebbitRpcClient["state"]) => void;
+    error: (error: PlebbitError | Error) => void;
+    subplebbitschange: (listOfSubplebbits: string[]) => void;
+    settingschange: (newSettings: PlebbitWsServerSettingsSerialized) => void;
 }
 export interface GenericClientEvents<T extends string> {
     statechange: (state: T) => void;

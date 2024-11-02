@@ -7,9 +7,9 @@ import blacklist from "./plebbit-js-challenges/blacklist.js";
 import question from "./plebbit-js-challenges/question.js";
 import evmContractCall from "./plebbit-js-challenges/evm-contract-call/index.js";
 import * as remeda from "remeda";
-import { DecryptedChallengeAnswerSchema } from "../../../../pubsub-messages/schema.js";
 import { ChallengeFileFactorySchema, ChallengeFileSchema, SubplebbitChallengeSettingSchema } from "../../../../subplebbit/schema.js";
 import { PlebbitError } from "../../../../plebbit-error.js";
+import { derivePublicationFromChallengeRequest } from "../../../../util.js";
 const plebbitJsChallenges = {
     "text-math": textMath,
     "captcha-canvas-v3": captchaCanvasV3,
@@ -97,13 +97,14 @@ const getPendingChallengesOrChallengeVerification = async (challengeRequestMessa
     let challengeFailureCount = 0;
     let pendingChallenges = [];
     const challengeErrors = new Array(challengeOrChallengeResults.length);
+    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
     for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
         const subplebbitChallengeSettings = subplebbit.settings.challenges[challengeIndex];
         const subplebbitChallenge = getSubplebbitChallengeFromSubplebbitChallengeSettings(subplebbitChallengeSettings);
         // exclude author from challenge based on the subplebbit minimum karma settings
-        if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage.publication, subplebbit)) {
+        if (shouldExcludePublication(subplebbitChallenge, challengeRequestMessage, subplebbit)) {
             continue;
         }
         if (await shouldExcludeChallengeCommentCids(subplebbitChallenge, challengeRequestMessage, subplebbit._plebbit)) {
@@ -217,12 +218,11 @@ const getChallengeVerification = async (challengeRequestMessage, subplebbit, get
     }
     // author still has some pending challenges to complete
     else {
-        const rawAnswersFromPending = await getChallengeAnswers(res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"])));
-        const challengeAnswers = DecryptedChallengeAnswerSchema.shape.challengeAnswers.parse(rawAnswersFromPending);
+        const challengeAnswers = await getChallengeAnswers(res.pendingChallenges.map((challenge) => remeda.omit(challenge, ["index", "verify"])));
         challengeVerification = await getChallengeVerificationFromChallengeAnswers(res.pendingChallenges, challengeAnswers, subplebbit);
     }
     // store the publication result and author address in mem cache for rateLimit exclude challenge settings
-    addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage.publication, challengeVerification.challengeSuccess);
+    addToRateLimiter(subplebbit.settings?.challenges, challengeRequestMessage, challengeVerification.challengeSuccess);
     return challengeVerification;
 };
 // get the data to be published publicly to subplebbit.challenges

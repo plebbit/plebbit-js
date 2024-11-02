@@ -1,12 +1,18 @@
 import { z } from "zod";
-import { CreateVoteUserOptionsSchema, LocalVoteOptionsAfterSigningSchema, VoteChallengeRequestToEncryptSchema, VoteOptionsToSignSchema, VotePubsubMessageSchema } from "./schema";
-import { VotePubsubMessageWithSubplebbitAuthorSchema } from "../../pubsub-messages/schema";
+import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema, VoteSignedPropertyNames } from "./schema";
 import Vote from "./vote";
-import { JsonOfClass } from "../../types";
-export type LocalVoteOptions = z.infer<typeof LocalVoteOptionsAfterSigningSchema>;
-export type VotePubsubMessageWithSubplebbitAuthor = z.infer<typeof VotePubsubMessageWithSubplebbitAuthorSchema>;
-export type VotePubsubMessage = z.infer<typeof VotePubsubMessageSchema>;
+import { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
+import { JsonSignature, SignerType } from "../../signer/types";
 export type CreateVoteOptions = z.infer<typeof CreateVoteUserOptionsSchema>;
 export type VoteChallengeRequestToEncryptType = z.infer<typeof VoteChallengeRequestToEncryptSchema>;
-export type VoteOptionsToSign = z.infer<typeof VoteOptionsToSignSchema>;
 export type VoteJson = JsonOfClass<Vote>;
+export interface VoteOptionsToSign extends Omit<VotePubsubMessagePublication, "signature"> {
+    signer: SignerType;
+}
+export interface VoteSignature extends JsonSignature {
+    signedPropertyNames: typeof VoteSignedPropertyNames;
+}
+export type VotePubsubMessagePublication = z.infer<typeof VotePubsubMessagePublicationSchema>;
+export interface VotePubsubMessageWithSubplebbitAuthor extends VotePubsubMessagePublication {
+    author: AuthorTypeWithCommentUpdate;
+}

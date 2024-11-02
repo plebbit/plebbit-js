@@ -38,7 +38,7 @@ export class BasePages {
     }
     async _fetchAndVerifyPage(pageCid) {
         const pageIpfs = await this._clientsManager.fetchPage(pageCid);
-        if (!this._plebbit.plebbitRpcClient) {
+        if (!this._plebbit._plebbitRpcClient) {
             const signatureValidity = await verifyPage(pageCid, pageIpfs, this._plebbit.resolveAuthorAddresses, this._clientsManager, this._subplebbitAddress, this._parentCid, true);
             if (!signatureValidity.valid)
                 throw new PlebbitError("ERR_PAGE_SIGNATURE_IS_INVALID", {

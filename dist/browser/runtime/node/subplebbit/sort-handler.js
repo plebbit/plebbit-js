@@ -1,6 +1,7 @@
 import { timestamp } from "../../../util.js";
 import assert from "assert";
 import * as remeda from "remeda";
+import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { POSTS_SORT_TYPES, REPLIES_SORT_TYPES, TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 export class SortHandler {
     constructor(subplebbit) {
@@ -12,7 +13,7 @@ export class SortHandler {
         const cids = new Array(chunks.length);
         for (let i = chunks.length - 1; i >= 0; i--) {
             const pageIpfs = { nextCid: cids[i + 1], comments: chunks[i] };
-            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(JSON.stringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
+            cids[i] = (await this.subplebbit._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(pageIpfs))).path; // JSON.stringify will remove undefined values for us
             listOfPage[i] = pageIpfs;
         }
         return { [sortName]: { pages: listOfPage, cids } };
@@ -30,19 +31,22 @@ export class SortHandler {
         if (sortName === "active") {
             activeScores = {};
             for (const comment of comments)
-                activeScores[comment.comment.cid] = await this.subplebbit._dbHandler.queryActiveScore(comment.comment);
+                activeScores[comment.commentUpdate.cid] = await this.subplebbit._dbHandler.queryActiveScore({
+                    cid: comment.commentUpdate.cid,
+                    timestamp: comment.comment.timestamp
+                });
         }
         const scoreSort = (obj1, obj2) => {
             if (activeScores) {
                 // Make exception for active sorting because it has a different mechanism for sorting
-                return activeScores[obj2.comment.cid] - activeScores[obj1.comment.cid];
+                return activeScores[obj2.commentUpdate.cid] - activeScores[obj1.commentUpdate.cid];
             }
             const score1 = sortProps.score(obj1);
             const score2 = sortProps.score(obj2);
             return score2 - score1;
         };
-        const pinnedComments = comments.filter((obj) => obj.update.pinned === true).sort(scoreSort);
-        let unpinnedComments = comments.filter((obj) => !obj.update.pinned).sort(scoreSort);
+        const pinnedComments = comments.filter((obj) => obj.commentUpdate.pinned === true).sort(scoreSort);
+        let unpinnedComments = comments.filter((obj) => !obj.commentUpdate.pinned).sort(scoreSort);
         if (sortProps.timeframe) {
             const timestampLower = timestamp() - TIMEFRAMES_TO_SECONDS[sortProps.timeframe];
             unpinnedComments = unpinnedComments.filter((obj) => obj.comment.timestamp >= timestampLower);

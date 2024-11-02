@@ -1,4 +1,4 @@
-import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress } from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, isIpns, shortifyAddress, timestamp } from "../util.js";
 import Logger from "@plebbit/plebbit-logger";
 import { TypedEmitter } from "tiny-typed-emitter";
 import { FailedToFetchSubplebbitFromGatewaysError, PlebbitError } from "../plebbit-error.js";
@@ -74,28 +74,22 @@ export class RemoteSubplebbit extends TypedEmitter {
         this.lastCommentCid = newProps.lastCommentCid;
         this.setAddress(newProps.address);
         this.pubsubTopic = newProps.pubsubTopic;
-        if (newProps.protocolVersion)
-            this.protocolVersion = newProps.protocolVersion;
+        this.protocolVersion = newProps.protocolVersion;
         this.roles = newProps.roles;
         this.features = newProps.features;
         this.suggested = newProps.suggested;
         this.rules = newProps.rules;
         this.flairs = newProps.flairs;
         this.postUpdates = newProps.postUpdates;
-        if (Array.isArray(newProps.challenges))
-            this.challenges = newProps.challenges;
-        if (newProps.statsCid)
-            this.statsCid = newProps.statsCid;
-        if (typeof newProps.createdAt === "number")
-            this.createdAt = newProps.createdAt;
-        if (typeof newProps.updatedAt === "number")
-            this.updatedAt = newProps.updatedAt;
-        if (newProps.encryption)
-            this.encryption = newProps.encryption;
-        if (newProps.signature)
-            this.signature = newProps.signature;
+        this.challenges = newProps.challenges;
+        this.statsCid = newProps.statsCid;
+        this.createdAt = newProps.createdAt;
+        this.updatedAt = newProps.updatedAt;
+        this.encryption = newProps.encryption;
+        this.signature = newProps.signature;
         await this._updateLocalPostsInstance(newProps.posts);
-        if ("updateCid" in newProps)
+        // Exclusive Instance props
+        if (newProps.updateCid)
             this.updateCid = newProps.updateCid;
     }
     setAddress(newAddress) {
@@ -105,7 +99,7 @@ export class RemoteSubplebbit extends TypedEmitter {
             throw new PlebbitError("ERR_DOMAIN_ADDRESS_HAS_CAPITAL_LETTER", { subplebbitAddress: newAddress });
         const isDomain = newAddress.includes(".");
         if (!isDomain && !isIpns(newAddress))
-            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS", { subplebbitAddress: newAddress, isDomain, isIpns: false });
+            throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_ADDRESS_SCHEMA", { subplebbitAddress: newAddress, isDomain, isIpns: false });
         this.address = newAddress;
         this.shortAddress = shortifyAddress(this.address);
         this.posts._subplebbitAddress = this.address;
@@ -121,7 +115,7 @@ export class RemoteSubplebbit extends TypedEmitter {
     }
     toJSONRpcRemote() {
         if (!this.updateCid)
-            throw Error("subplebbit.cid should be defined before calling toJSONRpcRemote");
+            throw Error("subplebbit.updateCid should be defined before calling toJSONRpcRemote");
         return {
             subplebbit: this.toJSONIpfs(),
             updateCid: this.updateCid
@@ -146,6 +140,8 @@ export class RemoteSubplebbit extends TypedEmitter {
             return false; // If it's not a recognizable error, then we throw to notify the user
         if (err.code === "ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID" ||
             err.code === "ERR_INVALID_SUBPLEBBIT_IPFS_SCHEMA" ||
+            err.code === "ERR_GATEWAY_RESPONDED_WITH_DIFFERENT_SUBPLEBBIT" ||
+            err.code === "ERR_OVER_DOWNLOAD_LIMIT" ||
             err.code === "ERR_INVALID_JSON")
             return false;
         if (err instanceof FailedToFetchSubplebbitFromGatewaysError) {
@@ -189,11 +185,11 @@ export class RemoteSubplebbit extends TypedEmitter {
         // Signature already has been validated
         if ((this.updatedAt || 0) < loadedSubIpfsOrError.updatedAt) {
             await this.initSubplebbitIpfsPropsNoMerge(loadedSubIpfsOrError);
-            log(`Remote Subplebbit received a new update. Will emit an update event`);
+            log(`Remote Subplebbit`, this.address, `received a new update. Will emit an update event with updatedAt`, loadedSubIpfsOrError.updatedAt, "that's", timestamp() - loadedSubIpfsOrError.updatedAt, "seconds old");
             this.emit("update", this);
         }
         else
-            log.trace("Remote subplebbit received a SubplebbitIpfsType with no new information");
+            log.trace("Remote subplebbit loaded a SubplebbitIpfsType with no new information");
     }
     async update() {
         if (this.state !== "stopped")
@@ -217,6 +213,16 @@ export class RemoteSubplebbit extends TypedEmitter {
         clearTimeout(this._updateTimeout);
         this._setUpdatingState("stopped");
         this._setState("stopped");
+    }
+    // functions to be overridden in local subplebbit classes
+    async edit(options) {
+        throw Error("Can't edit a remote subplebbit");
+    }
+    async delete(options) {
+        throw Error("Can't delete a remote subplebbit");
+    }
+    async start(options) {
+        throw Error("Can't start a remote subplebbit");
     }
 }
 //# sourceMappingURL=remote-subplebbit.js.map

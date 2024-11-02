@@ -1,11 +1,20 @@
 import { z } from "zod";
 import { FlairSchema } from "../schema/schema.js";
-import { ChallengeExcludeSchema, ChallengeFileFactorySchema, ChallengeFileSchema, ChallengeFromGetChallengeSchema, ChallengeResultSchema, CreateNewLocalSubplebbitParsedOptionsSchema, CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitOptionsSchema, SubplebbitChallengeSchema, SubplebbitChallengeSettingSchema, SubplebbitEditOptionsSchema, SubplebbitEncryptionSchema, SubplebbitFeaturesSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema, SubplebbitSettingsSchema, SubplebbitSuggestedSchema, RpcRemoteSubplebbitUpdateEventResultSchema } from "./schema.js";
+import { ChallengeExcludeSchema, ChallengeFileFactorySchema, ChallengeFileSchema, ChallengeFromGetChallengeSchema, ChallengeResultSchema, CreateNewLocalSubplebbitParsedOptionsSchema, CreateNewLocalSubplebbitUserOptionsSchema, CreateRemoteSubplebbitOptionsSchema, SubplebbitChallengeSchema, SubplebbitChallengeSettingSchema, SubplebbitEditOptionsSchema, SubplebbitEncryptionSchema, SubplebbitFeaturesSchema, SubplebbitIpfsSchema, SubplebbitRoleSchema, SubplebbitSettingsSchema, SubplebbitSuggestedSchema, RpcRemoteSubplebbitUpdateEventResultSchema, SubplebbitSignedPropertyNames } from "./schema.js";
 import { RpcLocalSubplebbit } from "./rpc-local-subplebbit.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import { RemoteSubplebbit } from "./remote-subplebbit.js";
 import { RpcRemoteSubplebbit } from "./rpc-remote-subplebbit.js";
 import type { JsonOfClass } from "../types.js";
+import type { JsonSignature } from "../signer/types.js";
+export type ReplyStats = {
+    hourReplyCount: number;
+    dayReplyCount: number;
+    weekReplyCount: number;
+    monthReplyCount: number;
+    yearReplyCount: number;
+    allReplyCount: number;
+};
 export type SubplebbitStats = {
     hourActiveUserCount: number;
     dayActiveUserCount: number;
@@ -19,7 +28,7 @@ export type SubplebbitStats = {
     monthPostCount: number;
     yearPostCount: number;
     allPostCount: number;
-};
+} & ReplyStats;
 export type SubplebbitFeatures = z.infer<typeof SubplebbitFeaturesSchema>;
 export type SubplebbitSuggested = z.infer<typeof SubplebbitSuggestedSchema>;
 export type Flair = z.infer<typeof FlairSchema>;
@@ -27,6 +36,9 @@ export type SubplebbitEncryption = z.infer<typeof SubplebbitEncryptionSchema>;
 export type SubplebbitRole = z.infer<typeof SubplebbitRoleSchema>;
 export type RpcRemoteSubplebbitType = z.infer<typeof RpcRemoteSubplebbitUpdateEventResultSchema>;
 export type SubplebbitIpfsType = z.infer<typeof SubplebbitIpfsSchema>;
+export interface SubplebbitSignature extends JsonSignature {
+    signedPropertyNames: typeof SubplebbitSignedPropertyNames;
+}
 export type CreateRemoteSubplebbitOptions = z.infer<typeof CreateRemoteSubplebbitOptionsSchema>;
 export type CreateNewLocalSubplebbitUserOptions = z.infer<typeof CreateNewLocalSubplebbitUserOptionsSchema>;
 export type CreateNewLocalSubplebbitParsedOptions = z.infer<typeof CreateNewLocalSubplebbitParsedOptionsSchema>;

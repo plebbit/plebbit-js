@@ -1,4 +1,4 @@
-import { Plebbit } from "../../plebbit.js";
+import { Plebbit } from "../../plebbit/plebbit.js";
 import { CreatePlebbitWsServerOptionsSchema, SetNewSettingsPlebbitWsServerSchema, PlebbitWsServerSettingsSerializedSchema } from "./schema.js";
 import { z } from "zod";
 export type CreatePlebbitWsServerOptions = z.infer<typeof CreatePlebbitWsServerOptionsSchema>;
