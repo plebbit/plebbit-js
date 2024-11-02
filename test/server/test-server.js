@@ -70,8 +70,15 @@ const anotherPubsubNodeArgs = {
     extraCommands: ["bootstrap rm --all"]
 };
 
+const httpRouterNodeArgs = {
+    dir: path.join(process.cwd(), ".test-ipfs-http-router"),
+    apiPort: 15006,
+    gatewayPort: 18085,
+    extraCommands: ["bootstrap rm --all", "--offline"]
+};
+
 const startIpfsNodes = async () => {
-    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs];
+    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, httpRouterNodeArgs];
     if (startOnlineSub) ipfsNodesToRun.push(onlineNodeArgs);
     for (const nodeArgs of ipfsNodesToRun) {
         console.log("Initializing Node", nodeArgs.dir, "\n");

@@ -79,7 +79,7 @@ describe("Plebbit options", async () => {
     });
 
     it(`Plebbit({ipfsHttpClientOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        const onlineIpfsNode = "http://localhost:5001/api/v0";
+        const onlineIpfsNode = "http://localhost:15006/api/v0";
         // default list of http routers to use
         const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
 
