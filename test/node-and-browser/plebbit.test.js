@@ -79,15 +79,18 @@ describe("Plebbit options", async () => {
     });
 
     it(`Plebbit({ipfsHttpClientOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        const onlineIpfsNode = "http://localhost:15006/api/v0";
+        const nodeForHttpRouter = "http://localhost:15006/api/v0";
         // default list of http routers to use
         const httpRouterUrls = ["https://routing.lol", "https://peers.pleb.bot"];
 
-        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [onlineIpfsNode], httpRoutersOptions: httpRouterUrls });
+        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+
+        plebbit.clients.ipfsClients[nodeForHttpRouter]._client.stop = () => {};
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
 
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        const ipfsClient = plebbit.clients.ipfsClients[onlineIpfsNode]._client;
+
+        const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
         const configValueType = await ipfsClient.config.get("Routing.Type");
         expect(configValueType).to.equal("custom");
 
