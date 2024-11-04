@@ -13,6 +13,7 @@ export declare const ChainProviderSchema: z.ZodObject<{
 export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendShape<{
     ipfsGatewayUrls: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
     ipfsHttpClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
+    httpRoutersOptions: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     pubsubHttpClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
     plebbitRpcClientsOptions: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
     dataPath: z.ZodOptional<z.ZodString>;
@@ -65,12 +66,14 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     noData: boolean;
     browserLibp2pJsPublish: boolean;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
 }, {
     userAgent?: string | undefined;
     ipfsGatewayUrls?: [string, ...string[]] | undefined;
     ipfsHttpClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubHttpClientsOptions?: [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
@@ -87,6 +90,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
 export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extendShape<{
     ipfsGatewayUrls: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
     ipfsHttpClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
+    httpRoutersOptions: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
     pubsubHttpClientsOptions: z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>;
     plebbitRpcClientsOptions: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
     dataPath: z.ZodOptional<z.ZodString>;
@@ -122,6 +126,7 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extend
     browserLibp2pJsPublish: boolean;
     ipfsGatewayUrls?: [string, ...string[]] | undefined;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
@@ -138,6 +143,7 @@ export declare const PlebbitParsedOptionsSchema: z.ZodObject<z.objectUtil.extend
     browserLibp2pJsPublish: boolean;
     ipfsGatewayUrls?: [string, ...string[]] | undefined;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     pubsubHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;

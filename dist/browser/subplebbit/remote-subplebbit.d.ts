@@ -58,6 +58,6 @@ export declare class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> imp
     update(): Promise<void>;
     stop(): Promise<void>;
     edit(options: any): Promise<any>;
-    delete(options: any): Promise<void>;
-    start(options: any): Promise<void>;
+    delete(): Promise<void>;
+    start(): Promise<void>;
 }

@@ -1529,6 +1529,7 @@ export declare function parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails(a
     noData: boolean;
     browserLibp2pJsPublish: boolean;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
+    httpRoutersOptions?: string[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
 };

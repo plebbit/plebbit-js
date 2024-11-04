@@ -34,7 +34,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pars
     updateInterval: ParsedPlebbitOptions["updateInterval"];
     noData: ParsedPlebbitOptions["noData"];
     userAgent: ParsedPlebbitOptions["userAgent"];
-    subplebbits: string[];
+    httpRoutersOptions: ParsedPlebbitOptions["httpRoutersOptions"];
     clients: {
         ipfsGateways: {
             [ipfsGatewayUrl: string]: GatewayClient;
@@ -52,6 +52,7 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pars
             [plebbitRpcUrl: string]: PlebbitRpcClient;
         };
     };
+    subplebbits: string[];
     _plebbitRpcClient?: PlebbitRpcClient;
     private _pubsubSubscriptions;
     _clientsManager: ClientsManager;
