@@ -308,12 +308,13 @@ export async function setHttpRoutersOnIpfsNodes(
         }
         log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
 
-        if (
-            !remeda.isDeepEqual(
-                Object.keys(routingConfigBeforeChanging?.["Routers"] || {}).sort(),
-                Object.keys(routingValue["Routers"]).sort()
-            )
-        ) {
+        const endpointsBefore: string[] = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
+            //@ts-expect-error
+            (router) => router["Parameters"]["Endpoint"]
+        );
+        //@ts-expect-error
+        const endpointsAfter = Object.values(routingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
+        if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
             log(
                 "Config on kubo node has been changed. Plebbit-js will send shutdown command to node",
                 ipfsClient._clientOptions.url,
