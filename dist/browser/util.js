@@ -295,7 +295,12 @@ export async function setHttpRoutersOnIpfsNodes(ipfsClients, httpRouterOptions) 
             throw error;
         }
         log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
-        if (!remeda.isDeepEqual(Object.keys(routingConfigBeforeChanging?.["Routers"] || {}).sort(), Object.keys(routingValue["Routers"]).sort())) {
+        const endpointsBefore = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
+        //@ts-expect-error
+        (router) => router["Parameters"]["Endpoint"]);
+        //@ts-expect-error
+        const endpointsAfter = Object.values(routingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
+        if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
             log("Config on kubo node has been changed. Plebbit-js will send shutdown command to node", ipfsClient._clientOptions.url, "Clients of plebbit-js should restart ipfs node");
             const shutdownUrl = `${ipfsClient._clientOptions.url}/shutdown`;
             await fetch(shutdownUrl, { method: "POST", headers: ipfsClient._clientOptions.headers });
