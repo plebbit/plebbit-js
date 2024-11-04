@@ -122,13 +122,12 @@ export class DbHandler {
         return res;
     }
 
-    async initDestroyedConnection() {
-        this._knex.initialize();
-    }
-
     async destoryConnection() {
         await this._knex!.destroy();
         await this._keyv.disconnect();
+
+        //@ts-expect-error
+        this._knex = this._keyv = undefined;
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
@@ -322,7 +321,7 @@ export class DbHandler {
 
                 await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
-                await this.initDestroyedConnection();
+                await this.initDbIfNeeded();
             }
             await this._knex.raw("PRAGMA foreign_keys = OFF");
 
@@ -1078,7 +1077,6 @@ export class DbHandler {
                 filename: newPath
             }
         };
-        await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
 
