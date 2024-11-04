@@ -38,23 +38,28 @@ export class DbHandler {
         return undefined;
     }
     async initDbIfNeeded() {
-        const log = Logger("plebbit-js:subplebbit:db-handler:initDbIfNeeded");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:initDbIfNeeded");
         assert(typeof this._subplebbit.address === "string" && this._subplebbit.address.length > 0, `DbHandler needs to be an instantiated with a Subplebbit that has a valid address, (${this._subplebbit.address}) was provided`);
         await this.initDbConfigIfNeeded();
-        if (!this._knex)
+        const dbFilePath = this._dbConfig.connection.filename;
+        if (!this._knex) {
             this._knex = knex(this._dbConfig);
+            log.trace("initialized a new connection to db", dbFilePath);
+        }
         if (!this._keyv)
-            this._keyv = new Keyv(`sqlite://${this._dbConfig.connection.filename}`);
+            this._keyv = new Keyv(`sqlite://${dbFilePath}`);
     }
     async createOrMigrateTablesIfNeeded() {
-        const log = Logger("plebbit-js:subplebbit:db-handler:createOrMigrateTablesIfNeeded");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
         if (this._createdTables)
             return;
         try {
             await this._createOrMigrateTablesIfNeeded();
         }
         catch (e) {
+            await this.initDbIfNeeded();
             log.error(`Sub (${this._subplebbit.address}) failed to create/migrate tables. Current db version (${await this.getDbVersion()}), latest db version (${env.DB_VERSION}). Error`, e);
+            await this.destoryConnection();
             throw e;
         }
         hideClassPrivateProps(this);
@@ -84,7 +89,7 @@ export class DbHandler {
         await this._keyv.disconnect();
         //@ts-expect-error
         this._knex = this._keyv = undefined;
-        log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
+        log.trace("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
     async createTransaction(transactionId) {
         assert(!this._currentTrxs[transactionId]);
@@ -99,7 +104,7 @@ export class DbHandler {
         delete this._currentTrxs[transactionId];
     }
     async rollbackTransaction(transactionId) {
-        const log = Logger("plebbit-js:db-handler:rollbackTransaction");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:rollbackTransaction");
         const trx = this._currentTrxs[transactionId];
         if (trx) {
             assert(trx.isTransaction, `Transaction (${transactionId}) needs to be stored to rollback`);
@@ -224,7 +229,7 @@ export class DbHandler {
         return Number((await this._knex.raw("PRAGMA user_version"))[0]["user_version"]);
     }
     async _createOrMigrateTablesIfNeeded() {
-        const log = Logger("plebbit-js:db-handler:createOrMigrateTablesIfNeeded");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:createOrMigrateTablesIfNeeded");
         const currentDbVersion = await this.getDbVersion();
         log.trace(`current db version: ${currentDbVersion}`);
         const needToMigrate = currentDbVersion < env.DB_VERSION;
@@ -237,7 +242,8 @@ export class DbHandler {
                 await this.destoryConnection();
                 backupDbPath = path.join(path.dirname(dbPath), ".backup_before_migration", `${path.basename(dbPath)}.${currentDbVersion}.${timestamp()}`);
                 log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
-                await fs.promises.mkdir(path.dirname(backupDbPath));
+                if (!fs.existsSync(path.dirname(backupDbPath)))
+                    await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
                 await this.initDbIfNeeded();
             }
@@ -290,7 +296,6 @@ export class DbHandler {
                     ? internalState._usingDefaultChallenge //@ts-expect-error
                     : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
                 const updateCid = ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
-                //@ts-expect-error
                 await this._subplebbit._updateDbInternalState({
                     posts: undefined,
                     updateCid,
@@ -309,7 +314,7 @@ export class DbHandler {
             await fs.promises.rm(backupDbPath);
     }
     async _copyTable(srcTable, dstTable, currentDbVersion) {
-        const log = Logger("plebbit-js:db-handler:createTablesIfNeeded:copyTable");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:createTablesIfNeeded:copyTable");
         const dstTableColumns = remeda.keys.strict(await this._knex(dstTable).columnInfo());
         const srcRecords = await this._knex(srcTable).select("*");
         if (srcRecords.length > 0) {
@@ -808,7 +813,7 @@ export class DbHandler {
         await this._baseTransaction()(TABLES.COMMENTS).where({ cid }).del(); // Will throw if we do not disable foreign_keys constraint
     }
     async changeDbFilename(oldDbName, newDbName) {
-        const log = Logger("plebbit-js:db-handler:changeDbFilename");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:changeDbFilename");
         const oldPathString = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", oldDbName);
         const newPath = path.format({ dir: path.dirname(oldPathString), base: newDbName });
         await fs.promises.mkdir(path.dirname(oldPathString), { recursive: true });
@@ -833,7 +838,7 @@ export class DbHandler {
     }
     // Start lock
     async lockSubStart(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:local-subplebbit:lock:start");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:start");
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         try {
@@ -853,7 +858,7 @@ export class DbHandler {
         }
     }
     async unlockSubStart(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:local-subplebbit:unlock:start");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:unlock:start");
         log.trace(`Attempting to unlock the start of sub (${subAddress})`);
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.start.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
@@ -876,7 +881,7 @@ export class DbHandler {
     }
     // Subplebbit state lock
     async lockSubState(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:lock:lockSubState");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:lockSubState");
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         try {
@@ -894,7 +899,7 @@ export class DbHandler {
         }
     }
     async unlockSubState(subAddress = this._subplebbit.address) {
-        const log = Logger("plebbit-js:lock:unlockSubState");
+        const log = Logger("plebbit-js:local-subplebbit:db-handler:lock:unlockSubState");
         const lockfilePath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", `${subAddress}.state.lock`);
         const subDbPath = path.join(this._subplebbit._plebbit.dataPath, "subplebbits", subAddress);
         if (!fs.existsSync(lockfilePath))

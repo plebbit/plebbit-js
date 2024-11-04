@@ -18,6 +18,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     _dbHandler: DbHandler;
     private _stopHasBeenCalled;
     private _publishLoopPromise?;
+    private _updateLoopPromise?;
     private _publishInterval?;
     private _internalStateUpdateId;
     constructor(plebbit: Plebbit);
@@ -32,7 +33,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private initDbHandlerIfNeeded;
     _loadLocalSubDb(): Promise<void>;
     private _importSubplebbitSignerIntoIpfsIfNeeded;
-    private _updateDbInternalState;
+    _updateDbInternalState(props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>): Promise<void>;
     private _getDbInternalState;
     private _updateInstanceStateWithDbState;
     _setChallengesToDefaultIfNotDefined(log: Logger): Promise<void>;

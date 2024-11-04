@@ -41,6 +41,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             }
         ];
         this._publishLoopPromise = undefined;
+        this._updateLoopPromise = undefined;
         this._publishInterval = undefined;
         this.handleChallengeExchange = this.handleChallengeExchange.bind(this);
         this.started = false;
@@ -967,7 +968,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     async _updateComment(comment) {
         const log = Logger("plebbit-js:local-subplebbit:_updateComment");
         // If we're here that means we're gonna calculate the new update and publish it
-        log(`Attempting to publish new CommentUpdate for comment (${comment.cid})`);
+        log(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
         const [calculatedCommentUpdate, storedCommentUpdate, generatedPages] = await Promise.all([
@@ -1406,13 +1407,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this.state === "updating" || this.state === "started")
             return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
-            if (this.state === "updating")
-                this._updateOnce()
+            if (this.state === "updating" && !this._stopHasBeenCalled) {
+                this._updateLoopPromise = this._updateOnce();
+                this._updateLoopPromise
                     .catch((e) => log.error(`Failed to update subplebbit`, e))
                     .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
+            }
         }).bind(this);
         this._setState("updating");
-        this._updateOnce()
+        this._updateLoopPromise = this._updateOnce();
+        this._updateLoopPromise
             .catch((e) => log.error(`Failed to update subplebbit`, e))
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
@@ -1443,6 +1447,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._setState("stopped");
         }
         else if (this.state === "updating") {
+            if (this._updateLoopPromise) {
+                await this._updateLoopPromise;
+                this._updateLoopPromise = undefined;
+            }
             clearTimeout(this._updateTimeout);
             await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
@@ -1450,7 +1458,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._setState("stopped");
         }
         else
-            throw Error("User called localSubplebbit.stop() without updating or starting first");
+            throw Error("User called localSubplebbit.stop() without updating or starting first on subplebbit" + this.address);
         this._stopHasBeenCalled = false;
     }
     async delete() {

@@ -198,7 +198,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         const updateLoop = (async () => {
             if (this.state === "updating")
                 this.updateOnce()
-                    .catch((e) => log.error(`Failed to update subplebbit`, e))
+                    .catch((e) => log.error(`Failed to update subplebbit ${this.address}`, e))
                     .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
         }).bind(this);
         this._setState("updating");
