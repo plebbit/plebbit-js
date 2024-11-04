@@ -271,35 +271,34 @@ export async function setHttpRoutersOnIpfsNodes(ipfsClients, httpRouterOptions) 
         "get-ipns": { RouterName: "HttpRouterNotSupported" },
         "put-ipns": { RouterName: "HttpRouterNotSupported" }
     };
-    const keysToExpectedValue = {
-        "Routing.Type": "custom",
-        "Routing.Methods": httpRoutersMethodsConfig,
-        "Routing.Routers": httpRoutersConfig
+    const routingKey = "Routing";
+    const routingValue = {
+        Type: "custom",
+        Methods: httpRoutersMethodsConfig,
+        Routers: httpRoutersConfig
     };
     for (const ipfsClient of Object.values(ipfsClients)) {
-        const configBeforeChanging = await ipfsClient._client.config.getAll();
-        for (const [key, expectedValue] of Object.entries(keysToExpectedValue)) {
-            const url = `${ipfsClient._clientOptions.url}/config?arg=${key}&arg=${JSON.stringify(expectedValue)}&json=true`;
-            try {
-                await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
-            }
-            catch (e) {
-                const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
-                    fullUrl: url,
-                    actualError: e,
-                    kuboEndpoint: ipfsClient._clientOptions.url,
-                    configKey: key,
-                    configValueToBeSet: expectedValue
-                });
-                log.error(e);
-                throw error;
-            }
-            log.trace("Succeeded in setting config key", key, "on node", ipfsClient._clientOptions.url, "to be", expectedValue);
+        const routingConfigBeforeChanging = await ipfsClient._client.config.get(routingKey);
+        const url = `${ipfsClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
+        try {
+            await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
         }
-        const configAfterChanging = await ipfsClient._client.config.getAll();
-        if (!remeda.isDeepEqual(configBeforeChanging, configAfterChanging)) {
+        catch (e) {
+            const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
+                fullUrl: url,
+                actualError: e,
+                kuboEndpoint: ipfsClient._clientOptions.url,
+                configKey: routingKey,
+                configValueToBeSet: routingValue
+            });
+            log.error(e);
+            throw error;
+        }
+        log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
+        if (!remeda.isDeepEqual(Object.keys(routingConfigBeforeChanging?.["Routers"] || {}).sort(), Object.keys(routingValue["Routers"]).sort())) {
             log("Config on kubo node has been changed. Plebbit-js will send shutdown command to node", ipfsClient._clientOptions.url, "Clients of plebbit-js should restart ipfs node");
-            await ipfsClient._client.stop();
+            const shutdownUrl = `${ipfsClient._clientOptions.url}/shutdown`;
+            await fetch(shutdownUrl, { method: "POST", headers: ipfsClient._clientOptions.headers });
         }
     }
 }
