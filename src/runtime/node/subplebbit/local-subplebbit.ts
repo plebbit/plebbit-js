@@ -164,6 +164,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     _dbHandler!: DbHandler;
     private _stopHasBeenCalled: boolean; // we use this to track if sub.stop() has been called after sub.start() or sub.update()
     private _publishLoopPromise?: Promise<void> = undefined;
+    private _updateLoopPromise?: Promise<void> = undefined;
     private _publishInterval?: NodeJS.Timeout = undefined;
     private _internalStateUpdateId!: InternalSubplebbitRecordBeforeFirstUpdateType["_internalStateUpdateId"];
 
@@ -1833,15 +1834,18 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:update");
         if (this.state === "updating" || this.state === "started") return; // No need to do anything if subplebbit is already updating
         const updateLoop = (async () => {
-            if (this.state === "updating")
-                this._updateOnce()
+            if (this.state === "updating" && !this._stopHasBeenCalled) {
+                this._updateLoopPromise = this._updateOnce();
+                this._updateLoopPromise
                     .catch((e) => log.error(`Failed to update subplebbit`, e))
                     .finally(() => setTimeout(updateLoop, this._plebbit.updateInterval));
+            }
         }).bind(this);
 
         this._setState("updating");
 
-        this._updateOnce()
+        this._updateLoopPromise = this._updateOnce();
+        this._updateLoopPromise
             .catch((e) => log.error(`Failed to update subplebbit`, e))
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
@@ -1871,6 +1875,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             log(`Stopped the running of local subplebbit (${this.address})`);
             this._setState("stopped");
         } else if (this.state === "updating") {
+            if (this._updateLoopPromise) {
+                await this._updateLoopPromise;
+                this._updateLoopPromise = undefined;
+            }
             clearTimeout(this._updateTimeout);
             await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
