@@ -78,55 +78,67 @@ const httpRouterNodeArgs = {
     extraCommands: ["bootstrap rm --all"]
 };
 
+const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, httpRouterNodeArgs];
+
+const startIpfsNode = async (nodeArgs) => {
+    console.log("Initializing Node", nodeArgs.dir, "\n");
+    try {
+        execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
+    } catch {}
+
+    const ipfsConfigPath = path.join(nodeArgs.dir, "config");
+    const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
+
+    ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
+    ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
+    ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
+
+    fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
+
+    if (nodeArgs.extraCommands)
+        for (const extraCommand of nodeArgs.extraCommands)
+            execSync(`${ipfsPath} ${extraCommand}`, {
+                stdio: "inherit",
+                env: { IPFS_PATH: nodeArgs.dir }
+            });
+
+    const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
+    console.log(ipfsCmd);
+    const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
+    ipfsProcess.stderr.on("data", console.error);
+    ipfsProcess.stdin.on("data", console.log);
+    ipfsProcess.stdout.on("data", console.log);
+    ipfsProcess.on("error", console.error);
+    ipfsProcess.on("exit", () => {
+        console.error(`${ipfsPath} process with dir ${path.basename(nodeArgs.dir)} with pid ${ipfsProcess.pid} exited`);
+    });
+    process.on("exit", () => {
+        exec(`kill ${ipfsProcess.pid + 1}`);
+    });
+
+    const ipfsDaemonIsReady = () =>
+        new Promise((resolve) => {
+            ipfsProcess.stdout.on("data", (data) => {
+                if (data.match("Daemon is ready")) {
+                    resolve();
+                }
+            });
+        });
+    await ipfsDaemonIsReady();
+    return { ipfsProcess };
+};
+
 const startIpfsNodes = async () => {
-    const ipfsNodesToRun = [offlineNodeArgs, pubsubNodeArgs, anotherOfflineNodeArgs, anotherPubsubNodeArgs, httpRouterNodeArgs];
     if (startOnlineSub) ipfsNodesToRun.push(onlineNodeArgs);
     for (const nodeArgs of ipfsNodesToRun) {
-        console.log("Initializing Node", nodeArgs.dir, "\n");
-        try {
-            execSync(`${ipfsPath} init`, { stdio: "ignore", env: { IPFS_PATH: nodeArgs.dir } });
-        } catch {}
-
-        const ipfsConfigPath = path.join(nodeArgs.dir, "config");
-        const ipfsConfig = JSON.parse(fs.readFileSync(ipfsConfigPath));
-
-        ipfsConfig["Addresses"]["API"] = `/ip4/127.0.0.1/tcp/${nodeArgs.apiPort}`;
-        ipfsConfig["Addresses"]["Gateway"] = `/ip4/127.0.0.1/tcp/${nodeArgs.gatewayPort}`;
-        ipfsConfig["API"]["HTTPHeaders"]["Access-Control-Allow-Origin"] = ["*"];
-
-        fs.writeFileSync(ipfsConfigPath, JSON.stringify(ipfsConfig), "utf8");
-
-        if (nodeArgs.extraCommands)
-            for (const extraCommand of nodeArgs.extraCommands)
-                execSync(`${ipfsPath} ${extraCommand}`, {
-                    stdio: "inherit",
-                    env: { IPFS_PATH: nodeArgs.dir }
-                });
-
-        const ipfsCmd = `${ipfsPath} daemon ${nodeArgs.daemonArgs}`;
-        console.log(ipfsCmd);
-        const ipfsProcess = exec(ipfsCmd, { env: { IPFS_PATH: nodeArgs.dir } });
-        ipfsProcess.stderr.on("data", console.error);
-        ipfsProcess.stdin.on("data", console.log);
-        ipfsProcess.stdout.on("data", console.log);
-        ipfsProcess.on("error", console.error);
-        ipfsProcess.on("exit", () => {
-            console.error(`${ipfsPath}  process with pid ${ipfsProcess.pid} exited`);
-            process.exit(1);
-        });
-        process.on("exit", () => {
-            exec(`kill ${ipfsProcess.pid + 1}`);
-        });
-
-        const ipfsDaemonIsReady = () =>
-            new Promise((resolve) => {
-                ipfsProcess.stdout.on("data", (data) => {
-                    if (data.match("Daemon is ready")) {
-                        resolve();
-                    }
-                });
+        const res = await startIpfsNode(nodeArgs);
+        if (nodeArgs.apiPort === 15006) {
+            // is this http router config node
+            res.ipfsProcess.on("exit", async () => {
+                console.log("ipfs node for http router has been shut down. Will attempt to restart");
+                await startIpfsNode(nodeArgs);
             });
-        await ipfsDaemonIsReady();
+        }
     }
 };
 
@@ -286,11 +298,7 @@ const setUpMockGateways = async () => {
         ".plebbit2",
         ".plebbit-rpc-server",
         ".plebbit-rpc-server-remote",
-        ".test-ipfs-offline",
-        ".test-ipfs-offline2",
-        ".test-ipfs-online",
-        ".test-ipfs-pubsub",
-        ".test-ipfs-pubsub2"
+        ...ipfsNodesToRun.map((node) => path.basename(node.dir))
     ];
     for (const dir of dirsToDelete) await fs.promises.rm(path.join(process.cwd(), dir), { recursive: true, force: true });
 
