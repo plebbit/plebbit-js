@@ -1604,6 +1604,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
+        await this._dbHandler.initDbIfNeeded();
         await this._switchDbWhileRunningIfNeeded();
 
         try {
@@ -1802,7 +1803,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             throw e;
         }
 
-        this.syncIpnsWithDb()
+        this._publishLoopPromise = this.syncIpnsWithDb();
+
+        this._publishLoopPromise
             .then(() => this._publishLoop(this._plebbit.publishInterval))
             .catch((reason) => {
                 log.error(reason);
@@ -1852,7 +1855,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             } catch (e) {
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
-            if (this._publishLoopPromise) await this._publishLoopPromise; // should be in try/catch
+            if (this._publishLoopPromise) {
+                await this._publishLoopPromise; // should be in try/catch
+                this._publishLoopPromise = undefined;
+            }
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this._dbHandler.rollbackAllTransactions();
@@ -1866,6 +1872,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setState("stopped");
         } else if (this.state === "updating") {
             clearTimeout(this._updateTimeout);
+            await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");

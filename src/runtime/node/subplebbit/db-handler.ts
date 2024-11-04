@@ -123,11 +123,14 @@ export class DbHandler {
     }
 
     async destoryConnection() {
+        const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
         await this._knex!.destroy();
         await this._keyv.disconnect();
 
         //@ts-expect-error
         this._knex = this._keyv = undefined;
+
+        log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
     async createTransaction(transactionId: string): Promise<Transaction> {
         assert(!this._currentTrxs[transactionId]);
