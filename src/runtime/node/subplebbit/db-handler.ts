@@ -380,9 +380,15 @@ export class DbHandler {
                     "_usingDefaultChallenge" in internalState
                         ? internalState._usingDefaultChallenge //@ts-expect-error
                         : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
-                const updateCid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                const updateCid =
+                    ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
                 //@ts-expect-error
-                await this._subplebbit._updateDbInternalState({ posts: undefined, updateCid, protocolVersion, _usingDefaultChallenge });
+                await this._subplebbit._updateDbInternalState({
+                    posts: undefined,
+                    updateCid,
+                    protocolVersion,
+                    _usingDefaultChallenge
+                });
             }
         }
         const newDbVersion = await this.getDbVersion();

@@ -67,7 +67,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONInternalRpcBeforeFirstUpdate(),
-            cid: this.updateCid
+            updateCid: this.updateCid
         };
     }
 
@@ -98,7 +98,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit implements RpcIntern
         } else await super.initRemoteSubplebbitPropsNoMerge(newProps);
 
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
-        this.updateCid = newProps.cid;
+        this.updateCid = newProps.updateCid;
     }
 
     protected _setStartedState(newState: RpcLocalSubplebbit["startedState"]) {

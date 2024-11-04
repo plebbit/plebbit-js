@@ -145,7 +145,7 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
 }
 
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
-    cid: string;
+    updateCid: string;
 }
 
 // RPC server transmitting Internal Subplebbit records to clients
