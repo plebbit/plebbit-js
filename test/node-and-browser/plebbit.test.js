@@ -21,7 +21,16 @@ const subplebbitSigner = signers[0];
 describe("Plebbit options", async () => {
     it("Plebbit() uses correct default plebbit options", async () => {
         const defaultPlebbit = await Plebbit();
-        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"].sort());
+        expect(Object.keys(defaultPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
+            [
+                "https://ipfsgateway.xyz",
+                "https://ipfs.io",
+                "https://dweb.link",
+                "https://flk-ipfs.xyz",
+                "https://4everland.io",
+                "https://gateway.pinata.cloud"
+            ].sort()
+        );
         expect(Object.keys(defaultPlebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(defaultPlebbit.pubsubHttpClientsOptions).to.deep.equal([{ url: "https://pubsubprovider.xyz/api/v0" }]);
         expect(defaultPlebbit.pubsubHttpClientsOptions.headers?.authorization).to.be.undefined;
@@ -43,7 +52,14 @@ describe("Plebbit options", async () => {
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
         expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
-        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"]);
+        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal([
+            "https://ipfsgateway.xyz",
+            "https://ipfs.io",
+            "https://dweb.link",
+            "https://flk-ipfs.xyz",
+            "https://4everland.io",
+            "https://gateway.pinata.cloud"
+        ]);
         expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
@@ -55,7 +71,14 @@ describe("Plebbit options", async () => {
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
 
-        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"]);
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal([
+            "https://ipfsgateway.xyz",
+            "https://ipfs.io",
+            "https://dweb.link",
+            "https://flk-ipfs.xyz",
+            "https://4everland.io",
+            "https://gateway.pinata.cloud"
+        ]);
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
         expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
 
@@ -88,7 +111,7 @@ describe("Plebbit options", async () => {
         plebbit.clients.ipfsClients[nodeForHttpRouter]._client.stop = () => {};
         expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
 
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
         const configValueType = await ipfsClient.config.get("Routing.Type");

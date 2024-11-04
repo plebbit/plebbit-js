@@ -7,7 +7,16 @@ import { itIfRpc, itSkipIfRpc, mockPlebbit } from "../../dist/node/test/test-uti
 describe("await plebbit()", () => {
     it("has default plebbit options", async () => {
         const plebbit = await Plebbit();
-        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(["https://dweb.link", "https://ipfs.io"].sort());
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
+            [
+                "https://ipfsgateway.xyz",
+                "https://ipfs.io",
+                "https://dweb.link",
+                "https://flk-ipfs.xyz",
+                "https://4everland.io",
+                "https://gateway.pinata.cloud"
+            ].sort()
+        );
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal(["https://pubsubprovider.xyz/api/v0"]);
         expect(plebbit.clients.ipfsClients).to.deep.equal({});
         expect(plebbit.ipfsHttpClientsOptions).to.be.undefined;
