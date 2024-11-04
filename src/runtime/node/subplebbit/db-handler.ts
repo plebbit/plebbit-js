@@ -311,9 +311,16 @@ export class DbHandler {
         let backupDbPath: string | undefined;
         const dbExistsAlready = fs.existsSync(dbPath);
         if (needToMigrate) {
-            if (dbExistsAlready) {
+            if (dbExistsAlready && currentDbVersion > 0) {
                 await this.destoryConnection();
-                backupDbPath = dbPath + `.backup-migration.${currentDbVersion}.${timestamp()}`;
+                backupDbPath = path.join(
+                    path.dirname(dbPath),
+                    ".backup_before_migration",
+                    `${path.basename(dbPath)}.${currentDbVersion}.${timestamp()}`
+                );
+                log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
+
+                await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
                 await this.initDestroyedConnection();
             }
