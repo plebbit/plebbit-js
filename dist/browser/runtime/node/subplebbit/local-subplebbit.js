@@ -1060,7 +1060,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._dbHandler.destoryConnection();
             this.setAddress(internalState.address);
             await this._dbHandler.changeDbFilename(currentDbAddress, internalState.address);
-            await this._dbHandler.initDestroyedConnection();
+            await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.lockSubStart(internalState.address); // Lock the new address start
             this._subplebbitUpdateTrigger = true;
             await this._updateDbInternalState({ _subplebbitUpdateTrigger: this._subplebbitUpdateTrigger });
@@ -1109,6 +1109,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             if (contentHash !== unpinnedCommentRow.cid)
                 throw Error("Unable to recreate the CommentIpfs. This is a critical error");
             await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
+            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
         }
         await this._dbHandler.deleteAllCommentUpdateRows(); // delete CommentUpdate rows to force a new production of CommentUpdate
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
@@ -1206,6 +1207,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
+        await this._dbHandler.initDbIfNeeded();
         await this._switchDbWhileRunningIfNeeded();
         try {
             await this._updateInstanceStateWithDbState();
@@ -1278,7 +1280,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             });
         if (!this._cidsToUnPin)
             this._cidsToUnPin = [];
-        await this._dbHandler.initDestroyedConnection();
+        await this._dbHandler.initDbIfNeeded();
     }
     _parseRolesToEdit(newRawRoles) {
         return remeda.omitBy(newRawRoles, (val, key) => val === undefined || val === null);
@@ -1301,7 +1303,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             ...remeda.omit(parsedEditOptions, ["roles"]), // we omit here to make tsc shut up
             ...newInternalProps
         };
-        await this._dbHandler.initDestroyedConnection();
+        await this._dbHandler.initDbIfNeeded();
         if (newProps.address && newProps.address !== this.address) {
             // we're modifying sub.address
             if (doesDomainAddressHaveCapitalLetter(newProps.address))
@@ -1317,6 +1319,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 await this._movePostUpdatesFolderToNewAddress(this.address, newProps.address);
                 await this._dbHandler.destoryConnection();
                 await this._dbHandler.changeDbFilename(this.address, newProps.address);
+                await this._dbHandler.initDbIfNeeded();
                 this.setAddress(newProps.address);
             }
         }
@@ -1358,7 +1361,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._dbHandler.lockSubStart(); // Will throw if sub is locked already
             await this._updateStartedValue();
             await this._dbHandler.initDbIfNeeded();
-            await this._dbHandler.initDestroyedConnection();
+            await this._dbHandler.initDbIfNeeded();
             await this._setChallengesToDefaultIfNotDefined(log);
             // Import subplebbit keys onto ipfs node
             await this._importSubplebbitSignerIntoIpfsIfNeeded();
@@ -1373,7 +1376,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this.stop(); // Make sure to reset the sub state
             throw e;
         }
-        this.syncIpnsWithDb()
+        this._publishLoopPromise = this.syncIpnsWithDb();
+        this._publishLoopPromise
             .then(() => this._publishLoop(this._plebbit.publishInterval))
             .catch((reason) => {
             log.error(reason);
@@ -1382,6 +1386,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _updateOnce() {
         const log = Logger("plebbit-js:local-subplebbit:update");
+        await this._dbHandler.initDbIfNeeded();
         const dbSubState = await this._getDbInternalState(false);
         if (!dbSubState)
             throw Error("There is no internal sub state in db");
@@ -1421,8 +1426,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             catch (e) {
                 log.error(`Failed to unlock start lock on sub (${this.address})`, e);
             }
-            if (this._publishLoopPromise)
+            if (this._publishLoopPromise) {
                 await this._publishLoopPromise; // should be in try/catch
+                this._publishLoopPromise = undefined;
+            }
             await this._clientsManager.pubsubUnsubscribe(this.pubsubTopicWithfallback(), this.handleChallengeExchange);
             this._setStartedState("stopped");
             await this._dbHandler.rollbackAllTransactions();
@@ -1437,6 +1444,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         }
         else if (this.state === "updating") {
             clearTimeout(this._updateTimeout);
+            await this._dbHandler.destoryConnection();
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");

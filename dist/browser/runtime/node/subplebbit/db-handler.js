@@ -78,12 +78,13 @@ export class DbHandler {
         const res = await this._keyv.has(key);
         return res;
     }
-    async initDestroyedConnection() {
-        this._knex.initialize();
-    }
     async destoryConnection() {
+        const log = Logger("plebbit-js:local-subplebbit:dbHandler:destroyConnection");
         await this._knex.destroy();
         await this._keyv.disconnect();
+        //@ts-expect-error
+        this._knex = this._keyv = undefined;
+        log("Destroyed DB connection to sub", this._subplebbit.address, "successfully");
     }
     async createTransaction(transactionId) {
         assert(!this._currentTrxs[transactionId]);
@@ -238,7 +239,7 @@ export class DbHandler {
                 log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
                 await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
-                await this.initDestroyedConnection();
+                await this.initDbIfNeeded();
             }
             await this._knex.raw("PRAGMA foreign_keys = OFF");
             // Remove unneeded tables
@@ -828,7 +829,6 @@ export class DbHandler {
                 filename: newPath
             }
         };
-        await this.initDbIfNeeded();
         log(`Changed db path from (${oldPathString}) to (${newPath})`);
     }
     // Start lock
