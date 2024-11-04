@@ -488,7 +488,7 @@ class PlebbitWsServer extends EventEmitter {
             subplebbit.removeListener("error", errorListener);
             subplebbit.removeListener("startedstatechange", startedStateListener);
             // We don't wanna stop the local sub if it's running already, this function is just for fetching updates
-            if (!isSubStarted)
+            if (!isSubStarted && subplebbit.state !== "stopped")
                 subplebbit.stop().catch((error) => log.error("subplebbitUpdate stop error", { error, params }));
         };
         // if fail, cleanup

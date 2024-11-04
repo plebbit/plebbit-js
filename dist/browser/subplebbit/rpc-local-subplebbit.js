@@ -29,7 +29,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         return {
             ...this.toJSONIpfs(),
             ...this.toJSONInternalRpcBeforeFirstUpdate(),
-            cid: this.updateCid
+            updateCid: this.updateCid
         };
     }
     toJSONInternalRpcBeforeFirstUpdate() {
@@ -59,7 +59,7 @@ export class RpcLocalSubplebbit extends RpcRemoteSubplebbit {
         else
             await super.initRemoteSubplebbitPropsNoMerge(newProps);
         await this.initRpcInternalSubplebbitBeforeFirstUpdateNoMerge(newProps);
-        this.updateCid = newProps.cid;
+        this.updateCid = newProps.updateCid;
     }
     _setStartedState(newState) {
         if (newState === this.startedState)

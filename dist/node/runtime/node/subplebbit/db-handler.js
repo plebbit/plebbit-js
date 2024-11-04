@@ -232,9 +232,11 @@ export class DbHandler {
         let backupDbPath;
         const dbExistsAlready = fs.existsSync(dbPath);
         if (needToMigrate) {
-            if (dbExistsAlready) {
+            if (dbExistsAlready && currentDbVersion > 0) {
                 await this.destoryConnection();
-                backupDbPath = dbPath + `.backup-migration.${currentDbVersion}.${timestamp()}`;
+                backupDbPath = path.join(path.dirname(dbPath), ".backup_before_migration", `${path.basename(dbPath)}.${currentDbVersion}.${timestamp()}`);
+                log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
+                await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
                 await this.initDestroyedConnection();
             }
@@ -286,9 +288,14 @@ export class DbHandler {
                 const _usingDefaultChallenge = "_usingDefaultChallenge" in internalState
                     ? internalState._usingDefaultChallenge //@ts-expect-error
                     : remeda.isDeepEqual(this._subplebbit._defaultSubplebbitChallenges, internalState?.settings?.challenges);
-                const updateCid = ("cid" in internalState && internalState.cid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
+                const updateCid = ("updateCid" in internalState && internalState.updateCid) || "QmYHzA8euDgUpNy3fh7JRwpPwt6jCgF35YTutYkyGGyr8f"; // this is a random cid, should be overridden later by local-subplebbit
                 //@ts-expect-error
-                await this._subplebbit._updateDbInternalState({ posts: undefined, updateCid, protocolVersion, _usingDefaultChallenge });
+                await this._subplebbit._updateDbInternalState({
+                    posts: undefined,
+                    updateCid,
+                    protocolVersion,
+                    _usingDefaultChallenge
+                });
             }
         }
         const newDbVersion = await this.getDbVersion();

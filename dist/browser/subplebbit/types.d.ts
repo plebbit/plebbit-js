@@ -74,7 +74,7 @@ export interface InternalSubplebbitRecordBeforeFirstUpdateType extends CreateNew
     _internalStateUpdateId: string;
 }
 export interface InternalSubplebbitRecordAfterFirstUpdateType extends InternalSubplebbitRecordBeforeFirstUpdateType, SubplebbitIpfsType {
-    cid: string;
+    updateCid: string;
 }
 export interface RpcInternalSubplebbitRecordBeforeFirstUpdateType extends Omit<InternalSubplebbitRecordBeforeFirstUpdateType, "signer" | "_subplebbitUpdateTrigger" | "_internalStateUpdateId"> {
     signer: Omit<InternalSubplebbitRecordBeforeFirstUpdateType["signer"], "privateKey">;
