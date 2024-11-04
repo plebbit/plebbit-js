@@ -52,14 +52,16 @@ describe("Plebbit options", async () => {
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
         expect(testPlebbit.clients.pubsubClients[url]).to.exist;
         expect(testPlebbit.clients.ipfsClients[url]._client).to.deep.equal(testPlebbit.clients.pubsubClients[url]._client);
-        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal([
-            "https://ipfsgateway.xyz",
-            "https://ipfs.io",
-            "https://dweb.link",
-            "https://flk-ipfs.xyz",
-            "https://4everland.io",
-            "https://gateway.pinata.cloud"
-        ]);
+        expect(Object.keys(testPlebbit.clients.ipfsGateways).sort()).to.deep.equal(
+            [
+                "https://ipfsgateway.xyz",
+                "https://ipfs.io",
+                "https://dweb.link",
+                "https://flk-ipfs.xyz",
+                "https://4everland.io",
+                "https://gateway.pinata.cloud"
+            ].sort()
+        );
         expect(Object.keys(testPlebbit.clients.ipfsClients)).to.deep.equal([url]);
 
         expect(Object.keys(testPlebbit.clients.pubsubClients)).to.deep.equal([url]);
@@ -71,14 +73,16 @@ describe("Plebbit options", async () => {
         const url = "http://localhost:12323/api/v0"; // Should be offline
         const plebbit = await Plebbit({ ipfsHttpClientsOptions: [url] });
 
-        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal([
-            "https://ipfsgateway.xyz",
-            "https://ipfs.io",
-            "https://dweb.link",
-            "https://flk-ipfs.xyz",
-            "https://4everland.io",
-            "https://gateway.pinata.cloud"
-        ]);
+        expect(Object.keys(plebbit.clients.ipfsGateways).sort()).to.deep.equal(
+            [
+                "https://ipfsgateway.xyz",
+                "https://ipfs.io",
+                "https://dweb.link",
+                "https://flk-ipfs.xyz",
+                "https://4everland.io",
+                "https://gateway.pinata.cloud"
+            ].sort()
+        );
         expect(Object.keys(plebbit.clients.pubsubClients)).to.deep.equal([url]);
         expect(Object.keys(plebbit.clients.ipfsClients)).to.deep.equal([url]);
 
