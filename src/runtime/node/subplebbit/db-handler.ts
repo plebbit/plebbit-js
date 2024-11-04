@@ -322,7 +322,7 @@ export class DbHandler {
                 );
                 log(`Copying db ${path.basename(dbPath)} to ${backupDbPath} before migration`);
 
-                await fs.promises.mkdir(path.dirname(backupDbPath));
+                if (!fs.existsSync(path.dirname(backupDbPath))) await fs.promises.mkdir(path.dirname(backupDbPath));
                 await fs.promises.cp(dbPath, backupDbPath);
                 await this.initDbIfNeeded();
             }
