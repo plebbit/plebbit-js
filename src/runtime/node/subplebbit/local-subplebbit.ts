@@ -280,7 +280,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             });
     }
 
-    private async _updateDbInternalState(
+    async _updateDbInternalState(
         props: Partial<InternalSubplebbitRecordBeforeFirstUpdateType | InternalSubplebbitRecordAfterFirstUpdateType>
     ) {
         if (remeda.isEmpty(props)) return;
@@ -1338,7 +1338,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:_updateComment");
 
         // If we're here that means we're gonna calculate the new update and publish it
-        log(`Attempting to publish new CommentUpdate for comment (${comment.cid})`);
+        log(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
@@ -1876,7 +1876,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._setUpdatingState("stopped");
             log(`Stopped the updating of local subplebbit (${this.address})`);
             this._setState("stopped");
-        } else throw Error("User called localSubplebbit.stop() without updating or starting first");
+        } else throw Error("User called localSubplebbit.stop() without updating or starting first on subplebbit" + this.address);
         this._stopHasBeenCalled = false;
     }
 
