@@ -703,7 +703,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const calculatedHash = await calculateIpfsHash(deterministicStringify(commentIpfsRecreated));
             if (calculatedHash !== commentInDb.cid) throw Error("There is a problem with db processing comment rows, the cids don't match");
         } catch (e) {
-            log.error(`Failed to insert post to db due to error, rolling back on inserting the comment. This is a critical error`, e);
+            log.error(
+                `Failed to insert comment (${commentCid}) to db due to error, rolling back on inserting the comment. This is a critical error`,
+                e
+            );
             await this._dbHandler.rollbackTransaction(request.challengeRequestId.toString());
             throw e;
         }
@@ -756,7 +759,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         if (!validity.valid) {
             await this._publishFailedChallengeVerification({ reason: validity.reason }, request.challengeRequestId);
-            throwWithErrorCode(getErrorCodeFromMessage(validity.reason!), { request, validity });
+            throwWithErrorCode(getErrorCodeFromMessage(validity.reason), { request, validity });
         }
     }
 
@@ -823,7 +826,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         };
 
         this._clientsManager.updatePubsubState("publishing-challenge-verification", undefined);
-        log(`(${challengeRequestId}): `, `Will publish ${challengeVerification.type} over pubsub:`, toSignVerification);
+        log(`Will publish ${challengeVerification.type} over pubsub:`, remeda.omit(toSignVerification, ["challengeRequestId"]));
 
         await this._clientsManager.pubsubPublish(this.pubsubTopicWithfallback(), challengeVerification);
         this._clientsManager.updatePubsubState("waiting-challenge-requests", undefined);
@@ -872,10 +875,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (!challengeResult.challengeSuccess) return this._publishFailedChallengeVerification(challengeResult, request.challengeRequestId);
         else {
             // Challenge has passed, we store the publication (except if there's an issue with the publication)
-            log.trace(
-                `(${request.challengeRequestId.toString()}): `,
-                `Will attempt to publish challengeVerification with challengeSuccess=true`
-            );
             const toEncrypt = await this._storePublicationAndEncryptForChallengeVerification(request);
 
             const toSignMsg: Omit<ChallengeVerificationMessageType, "signature"> = cleanUpBeforePublishing({
@@ -1470,7 +1469,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _repinCommentsIPFSIfNeeded() {
-        const log = Logger("plebbit-js:local-subplebbit:sync");
+        const log = Logger("plebbit-js:local-subplebbit:start:_repinCommentsIPFSIfNeeded");
         const latestCommentCid = await this._dbHandler.queryLatestCommentCid(); // latest comment ordered by id
         if (!latestCommentCid) return;
         try {
@@ -1496,7 +1495,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const contentHash: string = await calculateIpfsHash(commentIpfsContent);
             if (contentHash !== unpinnedCommentRow.cid) throw Error("Unable to recreate the CommentIpfs. This is a critical error");
             await this._clientsManager.getDefaultIpfs()._client.add(commentIpfsContent, { pin: true });
-            log("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
+            log.trace("Pinned comment", unpinnedCommentRow.cid, "of subplebbit", this.address, "to IPFS node");
         }
 
         await this._dbHandler.deleteAllCommentUpdateRows(); // delete CommentUpdate rows to force a new production of CommentUpdate
@@ -1504,7 +1503,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
 
     private async _unpinStaleCids() {
-        const log = Logger("plebbit-js:local-subplebbit:unpinStaleCids");
+        const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
         this._cidsToUnPin = remeda.uniq(this._cidsToUnPin);
         if (this._cidsToUnPin.length > 0) {
             await Promise.all(

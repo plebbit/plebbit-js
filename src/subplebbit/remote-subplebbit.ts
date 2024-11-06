@@ -233,14 +233,14 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     private async _retryLoadingSubplebbitIpns(log: Logger, subplebbitIpnsAddress: string): Promise<SubplebbitIpfsType | PlebbitError> {
         return new Promise((resolve) => {
             this._ipnsLoadingOperation!.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
+                log.trace(`Retrying to load subplebbit ${this.address} ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
                     this.updateCid = update.cid;
                     resolve(update.subplebbit);
                 } catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
+                    log.error(`Failed to load Subplebbit ${this.address} IPNS for the ${curAttempt}th attempt`, e);
                     if (e instanceof PlebbitError && !this._isRetriableErrorWhenLoading(e)) resolve(e);
                     else this._ipnsLoadingOperation!.retry(<Error>e);
                 }
@@ -249,7 +249,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
     }
 
     private async updateOnce() {
-        const log = Logger("plebbit-js:remote-subplebbit:update");
+        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
 
         this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
 
@@ -294,7 +294,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._setState("updating");
 
         this.updateOnce()
-            .catch((e) => log.error(`Failed to update subplebbit`, e))
+            .catch((e) => log.error(`Failed to update subplebbit ${this.address}`, e))
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
 
