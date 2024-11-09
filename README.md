@@ -971,15 +971,6 @@ An object which may have the following keys:
 | commentModeration | `CommentModerationOptions` | The comment moderation options |
 | challengeRequest | `ChallengeRequest` or `undefined` | Optional properties to pass to `ChallengeRequestPubsubMessage` |
 
-##### ChallengeRequest
-
-An object which may have the following keys:
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
-| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
-
 ##### CommentModerationOptions
 
 An object which may have the following keys:
