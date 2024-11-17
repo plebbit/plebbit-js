@@ -79,4 +79,6 @@ export declare class BaseClientsManager {
     clearDomainCache(domainAddress: string, txtRecordName: "subplebbit-address" | "plebbit-author-address"): Promise<void>;
     resolveAuthorAddressIfNeeded(authorAddress: string): Promise<string | null>;
     emitError(e: PlebbitError): void;
+    private _setHttpRouterOptionsOnIpfsNode;
+    retrySettingHttpRoutersOnIpfsNodes(): Promise<void>;
 }

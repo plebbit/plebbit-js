@@ -15,6 +15,7 @@ export var messages;
     messages["ERR_PLEBBIT_OPTION_NOT_ACCEPTED"] = "Option is not accepted on Plebbit constructor";
     messages["ERR_FAILED_TO_GET_CONFIG_ON_KUBO_NODE"] = "Failed to get config on kubo node";
     messages["ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE"] = "Failed to set config on kubo node";
+    messages["ERR_FAILED_TO_SHUTDOWN_KUBO_NODE"] = "Failed to shutdown kubo node";
     messages["ERR_CAN_NOT_CREATE_A_SUB"] = "Can't create a new sub with the provided arguments";
     messages["ERR_SUB_ADDRESS_IS_PROVIDED_AS_NULL_OR_UNDEFINED"] = "User provided options.address in createSubplebbit that is either undefined or null";
     messages["ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_PUBLICATION_FROM_JSONIFIED_COMMENT"] = "User provided a jsonfied (cloned) Comment and we're unable to derive request.comment from it. This is an implementation error";
