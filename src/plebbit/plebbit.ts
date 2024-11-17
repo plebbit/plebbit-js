@@ -19,13 +19,7 @@ import type {
     AuthorPubsubType
 } from "../types.js";
 import { Comment } from "../publications/comment/comment.js";
-import {
-    doesDomainAddressHaveCapitalLetter,
-    hideClassPrivateProps,
-    removeUndefinedValuesRecursively,
-    setHttpRoutersOnIpfsNodes,
-    timestamp
-} from "../util.js";
+import { doesDomainAddressHaveCapitalLetter, hideClassPrivateProps, removeUndefinedValuesRecursively, timestamp } from "../util.js";
 import Vote from "../publications/vote/vote.js";
 import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
@@ -275,9 +269,10 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this.subplebbits = []; // subplebbits = [] on browser
         }
 
-        if (Object.keys(this.clients.ipfsClients).length > 0 && this.httpRoutersOptions) {
-            setHttpRoutersOnIpfsNodes(this.clients.ipfsClients, this.httpRoutersOptions)
-                .then(() => log("Set http router options on all connected ipfs", Object.keys(this.clients.ipfsClients)))
+        if (this.httpRoutersOptions) {
+            this._clientsManager
+                .retrySettingHttpRoutersOnIpfsNodes()
+                .then(() => log("Set http router options successfully on all connected ipfs", Object.keys(this.clients.ipfsClients)))
                 .catch((e: Error) => {
                     log.error("Failed to set http router options on ipfs nodes due to error", e);
                     this.emit("error", e);

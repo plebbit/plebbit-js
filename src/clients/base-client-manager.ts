@@ -28,6 +28,7 @@ import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import { CidPathSchema } from "../schema/schema.js";
 import { CID } from "kubo-rpc-client";
 import { convertBase58IpnsNameToBase36Cid } from "../signer/util.js";
+import retry, { RetryOperation } from "retry";
 
 const DOWNLOAD_LIMIT_BYTES = 1000000; // 1mb
 
@@ -701,5 +702,122 @@ export class BaseClientsManager {
     // Misc functions
     emitError(e: PlebbitError) {
         this._plebbit.emit("error", e);
+    }
+
+    private async _setHttpRouterOptionsOnIpfsNode(ipfsClient: Plebbit["clients"]["ipfsClients"][string], routingValue: any) {
+        const log = Logger("plebbit-js:plebbit:_init:retrySettingHttpRoutersOnIpfsNodes:setHttpRouterOptionsOnIpfsNode");
+        const routingKey = "Routing";
+
+        let routingConfigBeforeChanging: typeof routingValue | undefined;
+        try {
+            routingConfigBeforeChanging = await ipfsClient._client.config.get(routingKey);
+        } catch (e) {
+            const error = new PlebbitError("ERR_FAILED_TO_GET_CONFIG_ON_KUBO_NODE", {
+                actualError: e,
+                kuboEndpoint: ipfsClient._clientOptions.url,
+                configKey: routingKey
+            });
+            log.error(e);
+            throw error;
+        }
+        const url = `${ipfsClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
+        try {
+            await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
+        } catch (e) {
+            const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
+                fullUrl: url,
+                actualError: e,
+                kuboEndpoint: ipfsClient._clientOptions.url,
+                configKey: routingKey,
+                configValueToBeSet: routingValue
+            });
+            log.error(e);
+            throw error;
+        }
+        log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
+
+        const endpointsBefore: string[] = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
+            //@ts-expect-error
+            (router) => router["Parameters"]["Endpoint"]
+        );
+        //@ts-expect-error
+        const endpointsAfter = Object.values(routingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
+        if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
+            log(
+                "Config on kubo node has been changed. Plebbit-js will send shutdown command to node",
+                ipfsClient._clientOptions.url,
+                "Clients of plebbit-js should restart ipfs node"
+            );
+            const shutdownUrl = `${ipfsClient._clientOptions.url}/shutdown`;
+            try {
+                await fetch(shutdownUrl, { method: "POST", headers: ipfsClient._clientOptions.headers });
+            } catch (e) {
+                const error = new PlebbitError("ERR_FAILED_TO_SHUTDOWN_KUBO_NODE", {
+                    actualError: e,
+                    kuboEndpoint: ipfsClient._clientOptions.url,
+                    shutdownUrl
+                });
+                log.error(e);
+                throw error;
+            }
+        }
+    }
+
+    async retrySettingHttpRoutersOnIpfsNodes() {
+        if (!this._plebbit.httpRoutersOptions) throw Error("Need http router options to be defined");
+        const ipfsClients = this._plebbit.clients.ipfsClients;
+        const httpRouterOptions = this._plebbit.httpRoutersOptions;
+        const httpRoutersConfig: any = {
+            HttpRoutersParallel: { Type: "parallel", Parameters: { Routers: [] } },
+            HttpRouterNotSupported: { Type: "http", Parameters: { Endpoint: "http://kubohttprouternotsupported" } }
+        };
+        for (const [i, httpRouterUrl] of httpRouterOptions.entries()) {
+            const RouterName = `HttpRouter${i + 1}`;
+            httpRoutersConfig[RouterName] = {
+                Type: "http",
+                Parameters: {
+                    Endpoint: httpRouterUrl
+                }
+            };
+            httpRoutersConfig.HttpRoutersParallel.Parameters.Routers[i] = {
+                RouterName: RouterName,
+                IgnoreErrors: true,
+                Timeout: "10s"
+            };
+        }
+
+        const httpRoutersMethodsConfig = {
+            "find-providers": { RouterName: "HttpRoutersParallel" },
+            provide: { RouterName: "HttpRoutersParallel" },
+            // not supported by plebbit trackers
+            "find-peers": { RouterName: "HttpRouterNotSupported" },
+            "get-ipns": { RouterName: "HttpRouterNotSupported" },
+            "put-ipns": { RouterName: "HttpRouterNotSupported" }
+        };
+
+        const routingValue = {
+            Type: "custom",
+            Methods: httpRoutersMethodsConfig,
+            Routers: httpRoutersConfig
+        };
+
+        const settingOptionRetryOption = retry.operation({ forever: true, factor: 2 });
+
+        const setHttpRouterOnAllNodes = new Promise((resolve) => {
+            settingOptionRetryOption.attempt(async (curAttempt) => {
+                for (const ipfsClient of Object.values(ipfsClients)) {
+                    try {
+                        await this._setHttpRouterOptionsOnIpfsNode(ipfsClient, routingValue);
+                    } catch (e) {
+                        settingOptionRetryOption.retry(<Error>e);
+                        return;
+                    }
+                }
+                resolve(1);
+            });
+        });
+
+        await setHttpRouterOnAllNodes;
+        settingOptionRetryOption.stop();
     }
 }
