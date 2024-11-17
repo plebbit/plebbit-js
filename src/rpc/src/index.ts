@@ -902,20 +902,6 @@ const createPlebbitWsServer = async (options: CreatePlebbitWsServerOptions) => {
         authKey: parsedOptions.authKey
     });
 
-    let error: Error | undefined = undefined;
-    const errorListener = (err: Error) => (error = err);
-    plebbitWss.on("error", errorListener);
-
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5s to see if there are any errors
-
-    if (error)
-        throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
-            error: error,
-            options: parsedOptions
-        });
-
-    plebbitWss.removeListener("error", errorListener);
-
     return plebbitWss;
 };
 

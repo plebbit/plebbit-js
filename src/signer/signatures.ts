@@ -388,7 +388,8 @@ const _verifyPublicationWithAuthor = async (
 
     if (overrideAuthorAddressIfInvalid && authorSignatureValidity.useDerivedAddress) {
         log(
-            `Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`
+            `Will override publication.author.address (${publicationJson.author.address}) with signer address (${authorSignatureValidity.derivedAddress})`,
+            publicationJson
         );
         publicationJson.author.address = authorSignatureValidity.derivedAddress;
     }
