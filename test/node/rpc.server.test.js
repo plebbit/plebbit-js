@@ -28,7 +28,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         expect(plebbit.dataPath).to.be.a("string");
         expect(lanAddress).to.be.a("string");
     });
-    it(`Rpc server throws is rpc port is already taken`, async () => {
+    it(`Rpc server emits an error is rpc port is already taken`, async () => {
         const rpcServerPort = 9138;
         const options = {
             port: rpcServerPort,
@@ -39,15 +39,13 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
         };
         const rpcServer = await PlebbitWsServer.PlebbitWsServer(options); // was able to create an rpc server
 
-        try {
-            await PlebbitWsServer.PlebbitWsServer(options);
-            expect.fail("Should throw an error");
-        } catch (e) {
-            expect(e.code).to.equal("ERR_FAILED_TO_CREATE_WS_RPC_SERVER");
-            expect(e.details.error.code).to.equal("EADDRINUSE");
-        } finally {
-            await rpcServer.destroy();
-        }
+        const rpcServer2 = await PlebbitWsServer.PlebbitWsServer(options);
+        const e = await new Promise((resolve) => rpcServer2.once("error", resolve));
+
+        expect(e.code).to.equal("EADDRINUSE");
+
+        await rpcServer.destroy();
+        await rpcServer2.destroy();
     });
 
     it(`Can connect to rpc server locally with ws://localhost:port`, async () => {
