@@ -149,12 +149,12 @@ const setUpMockGateways = async () => {
 
     http.createServer(async (req, res) => {
         res.setHeader("Access-Control-Allow-Origin", "*");
-        if (req.url === "/ipfs/QmbWqTYuyfcpDyn6gawRf5eSFVtYnGDAKttjESXjjbAHbr")
+        if (req.url === "/ipfs/bafybeigdypsgdcm2ddvyh2y2gnltw3zi5iphzzwdlpie3jfxpmer7frknu")
             res.end("Hello plebs"); // Valid content
-        else if (req.url === "/ipfs/QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav")
+        else if (req.url === "/ipfs/bafybeicx52dlvj3dlxtvr2hbr4femfntkeikr4erlmsnxequm2tezud7rm")
             res.end("This string does not generate the CID in the URL. This should throw an error in plebbit.fetchCid");
         else if (req.url.includes("/ipns")) {
-            const subAddress = req.url.split("/")[2];
+            const subAddress = convertBase32ToBase58btc(req.url.split("/")[2]);
             const sub = await plebbit.getSubplebbit(subAddress);
             res.setHeader("x-ipfs-roots", "QmUFu8fzuT1th3jJYgR4oRgGpw3sgRALr4nbenA4pyoCav"); // random cid
             res.end(JSON.stringify(sub.toJSONIpfs()));
