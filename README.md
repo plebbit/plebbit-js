@@ -840,10 +840,18 @@ An object which may have the following keys:
 | link | `string` or `undefined` | If comment is a post, it might be a link post |
 | spoiler | `boolean` or `undefined` | Hide the comment thumbnail behind spoiler warning |
 | flair | `Flair` or `undefined` | Author or mod chosen colored label for the comment |
-| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
-| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
+| challengeRequest | `ChallengeRequest` or `undefined` | Optional properties to pass to `ChallengeRequestPubsubMessage` |
 | cid | `string` or `undefined` | (Not for publishing) Gives access to `Comment.on('update')` for a comment already fetched |
 | ...comment | `any` | `CreateCommentOptions` can also initialize any property on the `Comment` instance |
+
+##### ChallengeRequest
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
+| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 
 #### Returns
 
@@ -910,6 +918,14 @@ An object which may have the following keys:
 | flair | `Flair` or `undefined` | Edited flair of the comment |
 | spoiler | `boolean` or `undefined` | Edited spoiler of the comment |
 | reason | `string` or `undefined` | Reason of the edit |
+| challengeRequest | `ChallengeRequest` or `undefined` | Optional properties to pass to `ChallengeRequestPubsubMessage` |
+
+##### ChallengeRequest
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
 | challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 
@@ -953,8 +969,7 @@ An object which may have the following keys:
 | author | `Author` | Author of the `CommentModeration` publication, must be moderator. Not used to edit the `comment.author` property, only to authenticate the `CommentModeration` publication |
 | signer | `Signer` | Signer of the edit, must be moderator |
 | commentModeration | `CommentModerationOptions` | The comment moderation options |
-| challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
-| challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
+| challengeRequest | `ChallengeRequest` or `undefined` | Optional properties to pass to `ChallengeRequestPubsubMessage` |
 
 ##### CommentModerationOptions
 
@@ -1019,6 +1034,14 @@ An object which may have the following keys:
 | author | `Author` | Author of the comment, will be needed for voting with NFTs or tokens |
 | vote | `1` or `0` or `-1` | 0 is for resetting a vote |
 | signer | `Signer` | Signer of the vote |
+| challengeRequest | `ChallengeRequest` or `undefined` | Optional properties to pass to `ChallengeRequestPubsubMessage` |
+
+##### ChallengeRequest
+
+An object which may have the following keys:
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | challengeAnswers | `string[]` or `undefined` | Optional pre-answers to subplebbit.challenges |
 | challengeCommentCids | `string[]` or `undefined` | Optional comment cids for subplebbit.challenges related to author karma/age in other subs |
 
