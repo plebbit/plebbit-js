@@ -48,7 +48,7 @@ type CachedResolve = { timestampSeconds: number; valueOfTextRecord: string | nul
 export type OptionsToLoadFromGateway = { recordIpfsType: "ipfs" | "ipns"; root: string; path?: string; recordPlebbitType: LoadType };
 
 const createUrlFromPathResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
-    const root = opts.root;
+    const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
     return `${gateway}/${opts.recordIpfsType}/${root}${opts.path ? "/" + opts.path : ""}`;
 };
 
