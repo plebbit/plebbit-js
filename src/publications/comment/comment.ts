@@ -487,6 +487,7 @@ export class Comment
 
         const commentUpdateOrError = await this._retryLoadingCommentUpdate(log); // Will keep retrying to load until comment.stop() is called
 
+        this._loadingOperation.stop();
         if (commentUpdateOrError instanceof Error) {
             // An error, either a signature or a schema problem
             // We should emit an error, and keep retrying to load a different record

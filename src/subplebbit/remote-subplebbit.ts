@@ -254,6 +254,7 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
         this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
 
         const loadedSubIpfsOrError = await this._retryLoadingSubplebbitIpns(log, this.address);
+        this._ipnsLoadingOperation.stop();
         if (loadedSubIpfsOrError instanceof Error) {
             log.error(
                 `Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`,
