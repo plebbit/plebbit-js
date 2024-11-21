@@ -1,6 +1,6 @@
 import { Plebbit } from "../plebbit/plebbit.js";
 import assert from "assert";
-import { delay, hideClassPrivateProps, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
+import { delay, hideClassPrivateProps, isIpfsCid, isIpns, isStringDomain, throwWithErrorCode, timestamp } from "../util.js";
 import { nativeFunctions } from "../runtime/node/util.js";
 import pLimit from "p-limit";
 import {
@@ -55,7 +55,12 @@ const createUrlFromPathResolution = (gateway: string, opts: OptionsToLoadFromGat
 
 const createUrlFromSubdomainResolution = (gateway: string, opts: OptionsToLoadFromGateway): string => {
     const gatewayUrl = new URL(gateway);
-    const root = opts.recordIpfsType === "ipfs" ? CID.parse(opts.root).toV1().toString() : convertBase58IpnsNameToBase36Cid(opts.root);
+    const root =
+        opts.recordIpfsType === "ipfs"
+            ? CID.parse(opts.root).toV1().toString()
+            : opts.recordIpfsType === "ipns"
+              ? convertBase58IpnsNameToBase36Cid(opts.root)
+              : opts.root;
 
     return `${gatewayUrl.protocol}//${root}.${opts.recordIpfsType}.${gatewayUrl.host}${opts.path ? "/" + opts.path : ""}`;
 };
