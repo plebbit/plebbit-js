@@ -1006,7 +1006,6 @@ export class DbHandler {
     }
 
     async querySubplebbitAuthor(authorSignerAddress: string, trx?: Knex.Transaction): Promise<SubplebbitAuthor | undefined> {
-
         const authorComments: (Pick<CommentsTableRow, "depth" | "id" | "timestamp" | "cid"> & {
             upvoteCount: number;
             downvoteCount: number;

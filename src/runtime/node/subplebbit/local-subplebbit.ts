@@ -69,7 +69,13 @@ import {
     verifyCommentModeration,
     verifyCommentUpdate
 } from "../../../signer/signatures.js";
-import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, listSubplebbits, moveSubplebbitDbToDeletedDirectory } from "../util.js";
+import {
+    getThumbnailUrlOfLink,
+    importSignerIntoIpfsNode,
+    isDirectoryEmptyRecursive,
+    listSubplebbits,
+    moveSubplebbitDbToDeletedDirectory
+} from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import {
     SignerWithPublicKeyAddress,
@@ -135,6 +141,10 @@ import {
     CommentModerationReservedFields
 } from "../../../publications/comment-moderation/schema.js";
 import type { CommentModerationPubsubMessagePublication } from "../../../publications/comment-moderation/types.js";
+import path from "path";
+import fs from "fs";
+import fsPromises from "fs/promises";
+import { globSource } from "kubo-rpc-client";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -1320,25 +1330,33 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async _writeCommentUpdateToIpfsFilePath(newCommentUpdate: CommentUpdateType, ipfsPath: string, oldIpfsPath?: string) {
+    private async _writeCommentUpdateToFilesystemAndDatabase(newCommentUpdate: CommentUpdateType, ipfsPath: string, oldIpfsPath?: string) {
         const log = Logger("plebbit-js:local-subplebibt:_writeCommentUpdateToIpfsFilePath");
         // TODO need to exclude reply.replies here
-        await this._clientsManager
-            .getDefaultIpfs()
-            ._client.files.write(ipfsPath, deterministicStringify(newCommentUpdate), { parents: true, truncate: true, create: true });
-        if (oldIpfsPath && oldIpfsPath !== ipfsPath)
+
+        const fullPath = path.join(this._getPostUpdatesDirOnFilesystem(), ...ipfsPath.split("/"));
+        if (!fs.existsSync(fullPath)) await fsPromises.mkdir(path.dirname(fullPath), { recursive: true });
+
+        await fsPromises.writeFile(fullPath, deterministicStringify(newCommentUpdate));
+        await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
+        log("Wrote comment update", newCommentUpdate.cid, "To filesystem and database successfully");
+        if (oldIpfsPath && oldIpfsPath !== ipfsPath) {
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.rm(oldIpfsPath);
             } catch (e) {
                 log.error(`Failed to remove old commentUpdate from MFS`, oldIpfsPath, e);
             }
+
+            const fullOldPath = path.join(this._getPostUpdatesDirOnFilesystem(), ...oldIpfsPath.split("/"));
+            await fsPromises.rm(fullOldPath, { force: true });
+        }
     }
 
     private async _updateComment(comment: CommentsTableRow): Promise<void> {
         const log = Logger("plebbit-js:local-subplebbit:_updateComment");
 
         // If we're here that means we're gonna calculate the new update and publish it
-        log(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
+        log.trace(`Attempting to publish new CommentUpdate for comment (${comment.cid}) on subplebbit`, this.address);
 
         // This comment will have the local new CommentUpdate, which we will publish to IPFS fiels
         // It includes new author.subplebbit as well as updated values in CommentUpdate (except for replies field)
@@ -1381,8 +1399,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const ipfsPath = await this._calculateIpfsPathForCommentUpdate(comment, storedCommentUpdate);
 
-        await this._writeCommentUpdateToIpfsFilePath(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
-        await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
+        await this._writeCommentUpdateToFilesystemAndDatabase(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
@@ -1410,15 +1427,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     private async _movePostUpdatesFolderToNewAddress(oldAddress: string, newAddress: string) {
         try {
             await this._clientsManager.getDefaultIpfs()._client.files.mv(`/${oldAddress}`, `/${newAddress}`); // Could throw
-            const commentUpdates = await this._dbHandler.queryAllStoredCommentUpdates();
-            for (const commentUpdate of commentUpdates) {
-                const pathParts = commentUpdate.ipfsPath.split("/");
-                pathParts[1] = newAddress;
-                const newIpfsPath = pathParts.join("/");
-                await this._dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
-            }
         } catch (e) {
             if (e instanceof Error && e.message !== "file does not exist") throw e; // A critical error
+        }
+        const commentUpdates = await this._dbHandler.queryAllStoredCommentUpdates();
+        for (const commentUpdate of commentUpdates) {
+            const pathParts = commentUpdate.ipfsPath.split("/");
+            pathParts[1] = newAddress;
+            const newIpfsPath = pathParts.join("/");
+            await this._writeCommentUpdateToFilesystemAndDatabase(commentUpdate, newIpfsPath, commentUpdate.ipfsPath);
         }
     }
 
@@ -1465,7 +1482,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const depthsKeySorted = remeda.keys.strict(commentsGroupedByDepth).sort((a, b) => Number(b) - Number(a)); // Make sure comments with higher depths are sorted first
 
-        for (const depthKey of depthsKeySorted) for (const comment of commentsGroupedByDepth[depthKey]) await this._updateComment(comment);
+        for (const depthKey of depthsKeySorted) {
+            await Promise.all(commentsGroupedByDepth[depthKey].map(this._updateComment.bind(this)));
+        }
+        await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
     private async _repinCommentsIPFSIfNeeded() {
@@ -1499,6 +1519,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
 
         await this._dbHandler.deleteAllCommentUpdateRows(); // delete CommentUpdate rows to force a new production of CommentUpdate
+        const subPostUpdatesDir = path.join(this._getPostUpdatesDirOnFilesystem(), this.address);
+        if (fs.existsSync(subPostUpdatesDir)) await fsPromises.rmdir(subPostUpdatesDir);
         log(`${unpinnedCommentsFromDb.length} comments' IPFS have been repinned`);
     }
 
@@ -1519,6 +1541,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
     }
     private pubsubTopicWithfallback() {
         return this.pubsubTopic || this.address;
+    }
+
+    private _getPostUpdatesDirOnFilesystem() {
+        return path.join(this._plebbit.dataPath!, ".post-updates");
     }
 
     private async _repinCommentUpdateIfNeeded() {
@@ -1546,10 +1572,44 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const commentInDb = await this._dbHandler.queryComment(commentUpdate.cid);
             if (!commentInDb) throw Error("Can't create a new CommentUpdate with comment not existing in db" + commentUpdate.cid);
             const newIpfsPath = await this._calculateIpfsPathForCommentUpdate(commentInDb, undefined);
-            await this._writeCommentUpdateToIpfsFilePath(commentUpdate, newIpfsPath, undefined);
-            await this._dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
-            log(`Added the CommentUpdate of (${commentUpdate.cid}) to IPFS files`);
+            await this._writeCommentUpdateToFilesystemAndDatabase(commentUpdate, newIpfsPath, commentUpdate.ipfsPath);
+            log(`Added the CommentUpdate of (${commentUpdate.cid}) to Filesystem and database`);
         }
+        await this._syncPostUpdatesFilesystemWithIpfs();
+    }
+
+    private async _syncPostUpdatesFilesystemWithIpfs() {
+        const log = Logger("plebbit-js:local-subplebbit:sync:_syncPostUpdatesFilesystemWithIpfs");
+        const postUpdatesDir = path.resolve(path.join(this._getPostUpdatesDirOnFilesystem(), this.address));
+        if (!fs.existsSync(postUpdatesDir)) {
+            log.trace("Post updates directory does not exist on Filesystem. Skipping syncing FS with IPFS");
+            return;
+        }
+
+        // remove empty timebuckets directories
+        await Promise.all(
+            (await fsPromises.readdir(postUpdatesDir)).map(async (timebucketDir) => {
+                if (await isDirectoryEmptyRecursive(path.join(postUpdatesDir, timebucketDir)))
+                    await fsPromises.rmdir(path.join(postUpdatesDir, timebucketDir));
+            })
+        );
+
+        try {
+            await this._clientsManager.getDefaultIpfs()._client.files.rm(`/${this.address}`, { recursive: true });
+        } catch (e) {
+            const error = <Error>e;
+            if (!error.message?.includes("file does not exist")) throw error;
+        }
+
+        const res = await genToArray(
+            this._clientsManager.getDefaultIpfs()._client.addAll(globSource(postUpdatesDir, "**/*"), {
+                wrapWithDirectory: true,
+                // @ts-expect-error
+                "to-files": `/${this.address}`
+            })
+        );
+
+        log("Synced", res.length, "file nodes", "of FS post updates to IPFS");
     }
 
     private async _adjustPostUpdatesBucketsIfNeeded() {
@@ -1575,27 +1635,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 const newPostIpfsPath = this._calculatePostUpdatePathForExistingCommentUpdate(newTimestampBucketOfPost, post.ipfsPath);
                 const newPostIpfsPathWithoutUpdate = newPostIpfsPath.replace("/update", "");
                 const currentPostIpfsPathWithoutUpdate = post.ipfsPath.replace("/update", "");
-                const newTimestampBucketPath = newPostIpfsPathWithoutUpdate.split("/").slice(0, 4).join("/");
-                await this._clientsManager.getDefaultIpfs()._client.files.mkdir(newTimestampBucketPath, { parents: true });
+                await fsPromises.rename(currentPostIpfsPathWithoutUpdate, newPostIpfsPathWithoutUpdate);
 
-                try {
-                    await this._clientsManager
-                        .getDefaultIpfs()
-                        ._client.files.mv(currentPostIpfsPathWithoutUpdate, newPostIpfsPathWithoutUpdate); // should move post and its children
-                } catch (e) {
-                    // ipfs mv will throw an error because currentPostIpfsPathWithoutUpdate doesn't exist on the node
-                    log.error(`Failed to move commentUpdate from`, currentPostIpfsPathWithoutUpdate, `to`, newPostIpfsPath, "error", e);
-                    const commentRow = await this._dbHandler.queryComment(post.cid);
-                    if (!commentRow) throw Error("Can't publish a commentUpdate if comment row is not in DB");
-                    await this._updateComment(commentRow);
-                }
+                const commentRow = await this._dbHandler.queryComment(post.cid);
+                if (!commentRow) throw Error("Can't publish a commentUpdate if comment row is not in DB");
+                await this._updateComment(commentRow);
+
                 const commentUpdatesWithOutdatedIpfsPath = await this._dbHandler.queryCommentsUpdatesWithPostCid(post.cid);
                 for (const commentUpdate of commentUpdatesWithOutdatedIpfsPath) {
                     const newIpfsPath = this._calculatePostUpdatePathForExistingCommentUpdate(
                         newTimestampBucketOfPost,
                         commentUpdate.ipfsPath
                     );
-                    await this._dbHandler.upsertCommentUpdate({ ...commentUpdate, ipfsPath: newIpfsPath });
+                    await this._writeCommentUpdateToFilesystemAndDatabase(commentUpdate, newIpfsPath, commentUpdate.ipfsPath);
                 }
                 this._subplebbitUpdateTrigger = true;
             }
@@ -1784,7 +1836,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             await this._updateStartedValue();
             await this._dbHandler.lockSubStart(); // Will throw if sub is locked already
             await this._updateStartedValue();
-            await this._dbHandler.initDbIfNeeded();
             await this._dbHandler.initDbIfNeeded();
 
             await this._setChallengesToDefaultIfNotDefined(log);
