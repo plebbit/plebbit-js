@@ -277,7 +277,13 @@ export class RemoteSubplebbit extends TypedEmitter<SubplebbitEvents> implements 
                 "seconds old"
             );
             this.emit("update", this);
-        } else log.trace("Remote subplebbit loaded a SubplebbitIpfsType with no new information");
+        } else
+            log.trace(
+                "Remote subplebbit",
+                this.address,
+                "loaded a SubplebbitIpfsType with no new information whose updatedAt is",
+                loadedSubIpfsOrError.updatedAt
+            );
     }
 
     async update() {
