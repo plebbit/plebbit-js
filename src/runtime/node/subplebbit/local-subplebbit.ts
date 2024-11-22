@@ -459,9 +459,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         log(
             `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt})`
         );
-        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
+        if (this.updateCid) this._cidsToUnPin.push(this.updateCid); // add old cid of subplebbit to be unpinned
 
-        this._cidsToUnPin.push(file.path);
+        this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
 
         await this.initSubplebbitIpfsPropsNoMerge(newSubplebbitRecord);
         this.updateCid = file.path;
@@ -1355,7 +1355,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._dbHandler.upsertCommentUpdate({ ...newCommentUpdate, ipfsPath });
         log.trace("Wrote comment update", newCommentUpdate.cid, "to database successfully");
         if (oldIpfsPath && oldIpfsPath !== ipfsPath) {
-            // TODO need to remove pin cid of old ipfs path as well
             this._mfsPathsToUnPin.push(oldIpfsPath);
         }
     }
@@ -1409,6 +1408,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         await this._writeCommentUpdateToFilesystem(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
         await this._writeCommentUpdateToDatabase(newCommentUpdate, ipfsPath, storedCommentUpdate?.ipfsPath);
+        if (storedCommentUpdate) {
+            const oldCommentUpdateRecord = deterministicStringify({
+                //@ts-expect-error
+                signature: storedCommentUpdate.signature,
+                //@ts-expect-error
+                ...remeda.pick(storedCommentUpdate, storedCommentUpdate.signature.signedPropertyNames)
+            });
+            const oldCommentUpdateCid = await calculateIpfsHash(oldCommentUpdateRecord);
+            this._cidsToUnPin.push(oldCommentUpdateCid);
+        }
     }
 
     private async _validateCommentUpdateSignature(newCommentUpdate: CommentUpdateType, comment: CommentsTableRow, log: Logger) {
@@ -1551,17 +1560,21 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:sync:unpinStaleCids");
         this._cidsToUnPin = remeda.uniq(this._cidsToUnPin);
         if (this._cidsToUnPin.length > 0) {
-            const pinRmInputs = this._cidsToUnPin.map((cid) => ({ cid: CID.parse(cid) }));
-            const rmCall = this._clientsManager.getDefaultIpfs()._client.pin.rmAll(pinRmInputs);
             const removedCids: string[] = [];
-            for await (const result of rmCall) {
-                try {
-                    removedCids.push(result.toV0().toString());
-                } catch (e) {
-                    log.error("Failed to remove pin", this.address, e);
-                }
-            }
-            log.trace(`unpinned ${removedCids.length} stale cids from ipfs node for subplebbit (${this.address})`);
+            await Promise.all(
+                this._cidsToUnPin.map(async (cid) => {
+                    try {
+                        await this._clientsManager.getDefaultIpfs()._client.pin.rm(cid, { recursive: true });
+                        removedCids.push(cid);
+                    } catch (e) {
+                        const error = <Error>e;
+                        if (error.message.startsWith("not pinned")) removedCids.push(cid);
+                        else log.error("Failed to unpin cid", cid, "on subplebbit", this.address, "due to error", error);
+                    }
+                })
+            );
+
+            log(`unpinned ${removedCids.length} stale cids from ipfs node for subplebbit (${this.address})`);
             this._cidsToUnPin = remeda.difference(this._cidsToUnPin, removedCids);
         }
 
@@ -1569,7 +1582,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (this._mfsPathsToUnPin.length > 0) {
             try {
                 await this._clientsManager.getDefaultIpfs()._client.files.rm(this._mfsPathsToUnPin, { recursive: true });
-                log("Removed ", this._mfsPathsToUnPin.length, "files from MFS directory");
+                log("Removed ", this._mfsPathsToUnPin.length, "files from MFS directory", this._mfsPathsToUnPin);
             } catch (e) {
                 const error = <Error>e;
                 if (!error.message.includes("file does not exist")) {
@@ -1683,9 +1696,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                     dstPostUpdateOnFs
                 );
 
-                const commentRow = await this._dbHandler.queryComment(post.cid);
-                if (!commentRow) throw Error("Can't publish a commentUpdate if comment row is not in DB");
-                await this._calculateNewCommentUpdateAndWriteToFilesystemAndDb(commentRow);
+                const postDbRow = await this._dbHandler.queryComment(post.cid);
+                if (!postDbRow) throw Error("Can't publish a commentUpdate if comment row is not in DB");
+                await this._calculateNewCommentUpdateAndWriteToFilesystemAndDb(postDbRow);
 
                 const commentUpdatesWithOutdatedIpfsPath = await this._dbHandler.queryCommentsUpdatesWithPostCid(post.cid);
                 for (const commentUpdate of commentUpdatesWithOutdatedIpfsPath) {
