@@ -22,6 +22,7 @@ import { AuthorAddressSchema, AuthorReservedFields, SubplebbitAddressSchema } fr
 import { PubsubTopicSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
 import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails, parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails, parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails, parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails, parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails, parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseSubplebbitAddressWithPlebbitErrorIfItFails, parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
+import { setupIpfsAddressesRewriterAndHttpRouters } from "../runtime/browser/setup-ipfs-rewrite-and-http-router.js";
 export class Plebbit extends TypedEmitter {
     constructor(options) {
         super();
@@ -138,12 +139,11 @@ export class Plebbit extends TypedEmitter {
         else {
             this.subplebbits = []; // subplebbits = [] on browser
         }
-        if (this.httpRoutersOptions) {
-            this._clientsManager
-                .retrySettingHttpRoutersOnIpfsNodes()
-                .then(() => log("Set http router options successfully on all connected ipfs", Object.keys(this.clients.ipfsClients)))
+        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && typeof process !== "undefined") {
+            setupIpfsAddressesRewriterAndHttpRouters(this)
+                .then(() => log("Set http router options and their proxies successfully on all connected ipfs", Object.keys(this.clients.ipfsClients)))
                 .catch((e) => {
-                log.error("Failed to set http router options on ipfs nodes due to error", e);
+                log.error("Failed to set http router options and their proxies on ipfs nodes due to error", e);
                 this.emit("error", e);
             });
         }

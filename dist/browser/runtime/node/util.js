@@ -240,4 +240,21 @@ export async function monitorSubplebbitsDirectory(plebbit) {
     plebbit.emit("subplebbitschange", await listSubplebbits(plebbit));
     return watchAbortController;
 }
+export async function isDirectoryEmptyRecursive(dirPath) {
+    // does this directory have files or just empty directories
+    const items = await fs.readdir(dirPath);
+    for (const item of items) {
+        const fullPath = path.join(dirPath, item);
+        const stat = await fs.stat(fullPath);
+        if (stat.isFile()) {
+            return false;
+        }
+        if (stat.isDirectory()) {
+            if (!(await isDirectoryEmptyRecursive(fullPath))) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 //# sourceMappingURL=util.js.map
