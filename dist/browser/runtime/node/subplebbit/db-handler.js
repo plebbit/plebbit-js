@@ -463,8 +463,8 @@ export class DbHandler {
             excludeRemovedComments: true,
             parentCid: commentCid
         };
-        const children = await this.queryCommentsForPages(options, trx);
-        return (children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.commentUpdate.cid, trx)))));
+        const children = await this._basePageQuery(options, trx).select(`${TABLES.COMMENTS}.cid`);
+        return children.length + remeda.sum(await Promise.all(children.map((comment) => this.queryReplyCount(comment.cid, trx))));
     }
     async queryActiveScore(comment, trx) {
         let maxTimestamp = comment.timestamp;
@@ -473,12 +473,14 @@ export class DbHandler {
             for (const commentChild of localComments) {
                 if (commentChild.timestamp > maxTimestamp)
                     maxTimestamp = commentChild.timestamp;
-                const children = await this.queryCommentsUnderComment(commentChild.cid, trx);
+                const children = await this._baseTransaction(trx)(TABLES.COMMENTS)
+                    .where("parentCid", commentChild.cid)
+                    .select(["cid", "timestamp"]);
                 if (children.length > 0)
                     await updateMaxTimestamp(children);
             }
         };
-        const children = await this.queryCommentsUnderComment(comment.cid, trx);
+        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where("parentCid", comment.cid).select(["cid", "timestamp"]);
         if (children.length > 0)
             await updateMaxTimestamp(children);
         return maxTimestamp;
@@ -768,17 +770,14 @@ export class DbHandler {
         return agreggateAuthor;
     }
     async querySubplebbitAuthor(authorSignerAddress, trx) {
-        const authorCommentCids = (await this._baseTransaction(trx)(TABLES.COMMENTS).select("cid").where("authorSignerAddress", authorSignerAddress));
-        if (authorCommentCids.length === 0)
+        const authorComments = await this._baseTransaction(trx)(TABLES.COMMENTS)
+            .leftJoin(TABLES.VOTES, `${TABLES.COMMENTS}.cid`, `${TABLES.VOTES}.commentCid`)
+            .where(`${TABLES.COMMENTS}.authorSignerAddress`, authorSignerAddress)
+            .select(`${TABLES.COMMENTS}.depth`, `${TABLES.COMMENTS}.id`, `${TABLES.COMMENTS}.timestamp`, `${TABLES.COMMENTS}.cid`)
+            .select(this._knex.raw(`COALESCE(SUM(CASE WHEN ${TABLES.VOTES}.vote = 1 THEN 1 ELSE 0 END), 0) as upvoteCount`), this._knex.raw(`COALESCE(SUM(CASE WHEN ${TABLES.VOTES}.vote = -1 THEN 1 ELSE 0 END), 0) as downvoteCount`))
+            .groupBy(`${TABLES.COMMENTS}.cid`);
+        if (authorComments.length === 0)
             return undefined;
-        const authorComments = await Promise.all(authorCommentCids.map(async (authorCommentCid) => {
-            const authorFullComment = await this.queryComment(authorCommentCid.cid, trx);
-            return {
-                ...authorFullComment,
-                upvoteCount: await this._queryCommentUpvote(authorCommentCid.cid, trx),
-                downvoteCount: await this._queryCommentDownvote(authorCommentCid.cid, trx)
-            };
-        }));
         const authorPosts = authorComments.filter((comment) => comment.depth === 0);
         const authorReplies = authorComments.filter((comment) => comment.depth > 0);
         const postScore = remeda.sumBy(authorPosts, (post) => post.upvoteCount) - remeda.sumBy(authorPosts, (post) => post.downvoteCount);

@@ -156,7 +156,7 @@ export class RemoteSubplebbit extends TypedEmitter {
     async _retryLoadingSubplebbitIpns(log, subplebbitIpnsAddress) {
         return new Promise((resolve) => {
             this._ipnsLoadingOperation.attempt(async (curAttempt) => {
-                log.trace(`Retrying to load subplebbit ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
+                log.trace(`Retrying to load subplebbit ${this.address} ipns (${subplebbitIpnsAddress}) for the ${curAttempt}th time`);
                 try {
                     const update = await this._clientsManager.fetchSubplebbit(subplebbitIpnsAddress);
                     this.updateCid = update.cid;
@@ -164,7 +164,7 @@ export class RemoteSubplebbit extends TypedEmitter {
                 }
                 catch (e) {
                     this._setUpdatingState("failed");
-                    log.error(`Failed to load Subplebbit IPNS for the ${curAttempt}th attempt`, e);
+                    log.error(`Failed to load Subplebbit ${this.address} IPNS for the ${curAttempt}th attempt`, e);
                     if (e instanceof PlebbitError && !this._isRetriableErrorWhenLoading(e))
                         resolve(e);
                     else
@@ -174,9 +174,10 @@ export class RemoteSubplebbit extends TypedEmitter {
         });
     }
     async updateOnce() {
-        const log = Logger("plebbit-js:remote-subplebbit:update");
+        const log = Logger("plebbit-js:remote-subplebbit:update:updateOnce");
         this._ipnsLoadingOperation = retry.operation({ forever: true, factor: 2 });
         const loadedSubIpfsOrError = await this._retryLoadingSubplebbitIpns(log, this.address);
+        this._ipnsLoadingOperation.stop();
         if (loadedSubIpfsOrError instanceof Error) {
             log.error(`Subplebbit ${this.address} encountered a non retriable error while updating, will emit an error event and abort the current update iteration`, `Will retry after ${this._plebbit.updateInterval}ms`);
             this.emit("error", loadedSubIpfsOrError);
@@ -203,7 +204,7 @@ export class RemoteSubplebbit extends TypedEmitter {
         }).bind(this);
         this._setState("updating");
         this.updateOnce()
-            .catch((e) => log.error(`Failed to update subplebbit`, e))
+            .catch((e) => log.error(`Failed to update subplebbit ${this.address}`, e))
             .finally(() => (this._updateTimeout = setTimeout(updateLoop, this._plebbit.updateInterval)));
     }
     async stop() {

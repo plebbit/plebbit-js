@@ -7,7 +7,6 @@ import * as Digest from "multiformats/hashes/digest";
 import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
-import Logger from "@plebbit/plebbit-logger";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -242,70 +241,6 @@ export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption) {
         return { url: ipfsRawOption };
     else
         return ipfsRawOption;
-}
-export async function setHttpRoutersOnIpfsNodes(ipfsClients, httpRouterOptions) {
-    const log = Logger("plebbit-js:plebbit:_init:setHttpRouterOnIpfsNodesIfNotSet");
-    const httpRoutersConfig = {
-        HttpRoutersParallel: { Type: "parallel", Parameters: { Routers: [] } },
-        HttpRouterNotSupported: { Type: "http", Parameters: { Endpoint: "http://kubohttprouternotsupported" } }
-    };
-    for (const [i, httpRouterUrl] of httpRouterOptions.entries()) {
-        const RouterName = `HttpRouter${i + 1}`;
-        httpRoutersConfig[RouterName] = {
-            Type: "http",
-            Parameters: {
-                Endpoint: httpRouterUrl
-            }
-        };
-        httpRoutersConfig.HttpRoutersParallel.Parameters.Routers[i] = {
-            RouterName: RouterName,
-            IgnoreErrors: true,
-            Timeout: "10s"
-        };
-    }
-    const httpRoutersMethodsConfig = {
-        "find-providers": { RouterName: "HttpRoutersParallel" },
-        provide: { RouterName: "HttpRoutersParallel" },
-        // not supported by plebbit trackers
-        "find-peers": { RouterName: "HttpRouterNotSupported" },
-        "get-ipns": { RouterName: "HttpRouterNotSupported" },
-        "put-ipns": { RouterName: "HttpRouterNotSupported" }
-    };
-    const routingKey = "Routing";
-    const routingValue = {
-        Type: "custom",
-        Methods: httpRoutersMethodsConfig,
-        Routers: httpRoutersConfig
-    };
-    for (const ipfsClient of Object.values(ipfsClients)) {
-        const routingConfigBeforeChanging = await ipfsClient._client.config.get(routingKey);
-        const url = `${ipfsClient._clientOptions.url}/config?arg=${routingKey}&arg=${JSON.stringify(routingValue)}&json=true`;
-        try {
-            await fetch(url, { method: "POST", headers: ipfsClient._clientOptions.headers });
-        }
-        catch (e) {
-            const error = new PlebbitError("ERR_FAILED_TO_SET_CONFIG_ON_KUBO_NODE", {
-                fullUrl: url,
-                actualError: e,
-                kuboEndpoint: ipfsClient._clientOptions.url,
-                configKey: routingKey,
-                configValueToBeSet: routingValue
-            });
-            log.error(e);
-            throw error;
-        }
-        log.trace("Succeeded in setting config key", routingKey, "on node", ipfsClient._clientOptions.url, "to be", routingValue);
-        const endpointsBefore = Object.values(routingConfigBeforeChanging?.["Routers"] || {}).map(
-        //@ts-expect-error
-        (router) => router["Parameters"]["Endpoint"]);
-        //@ts-expect-error
-        const endpointsAfter = Object.values(routingValue.Routers).map((router) => router["Parameters"]["Endpoint"]);
-        if (!remeda.isDeepEqual(endpointsBefore.sort(), endpointsAfter.sort())) {
-            log("Config on kubo node has been changed. Plebbit-js will send shutdown command to node", ipfsClient._clientOptions.url, "Clients of plebbit-js should restart ipfs node");
-            const shutdownUrl = `${ipfsClient._clientOptions.url}/shutdown`;
-            await fetch(shutdownUrl, { method: "POST", headers: ipfsClient._clientOptions.headers });
-        }
-    }
 }
 export function hideClassPrivateProps(_this) {
     // make props that start with _ not enumerable

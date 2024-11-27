@@ -3,7 +3,6 @@ import PlebbitJs, { setPlebbitJs } from "./lib/plebbit-js/index.js";
 import { encodeChallengeAnswerMessage, encodeChallengeMessage, encodeChallengeRequest, encodeChallengeVerificationMessage, generateSubscriptionId } from "./utils.js";
 import Logger from "@plebbit/plebbit-logger";
 import { EventEmitter } from "events";
-import { PlebbitError } from "../../plebbit-error.js";
 import { LocalSubplebbit } from "../../runtime/browser/subplebbit/local-subplebbit.js";
 import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../util.js";
 import * as remeda from "remeda";
@@ -720,16 +719,6 @@ const createPlebbitWsServer = async (options) => {
         server: parsedOptions.server,
         authKey: parsedOptions.authKey
     });
-    let error = undefined;
-    const errorListener = (err) => (error = err);
-    plebbitWss.on("error", errorListener);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 0.5s to see if there are any errors
-    if (error)
-        throw new PlebbitError("ERR_FAILED_TO_CREATE_WS_RPC_SERVER", {
-            error: error,
-            options: parsedOptions
-        });
-    plebbitWss.removeListener("error", errorListener);
     return plebbitWss;
 };
 const PlebbitRpc = {
