@@ -74,7 +74,7 @@ const httpRouterNodeArgs = {
     dir: path.join(process.cwd(), ".test-ipfs-http-router"),
     apiPort: 15006,
     gatewayPort: 18085,
-    daemonArgs: "--offline",
+    daemonArgs: "--enable-pubsub-experiment",
     extraCommands: ["bootstrap rm --all"]
 };
 
