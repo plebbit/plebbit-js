@@ -18,14 +18,16 @@ export class AddressesRewriterProxyServer {
     plebbitOptions: AddressesRewriterOptions["plebbitOptions"];
     port: number;
     hostname: string;
-    proxyTarget: ReturnType<typeof parseUrl>;
+    proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
+
+    private _updateAddressesInterval!: ReturnType<typeof setInterval>;
     constructor({ plebbitOptions, port, hostname, proxyTargetUrl }: AddressesRewriterOptions) {
         this.addresses = {};
         this.plebbitOptions = plebbitOptions;
         this.port = port;
         this.hostname = hostname || "127.0.0.1";
-        this.proxyTarget = parseUrl(proxyTargetUrl);
+        this.proxyTarget = new URL(proxyTargetUrl);
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
     }
 
@@ -38,6 +40,11 @@ export class AddressesRewriterProxyServer {
             "started listening to forward requests to",
             this.proxyTarget.host
         );
+    }
+
+    destroy() {
+        this.server.close();
+        clearInterval(this._updateAddressesInterval);
     }
 
     _proxyRequestRewrite(req: Parameters<http.RequestListener>[0], res: Parameters<http.RequestListener>[1]) {
@@ -70,22 +77,24 @@ export class AddressesRewriterProxyServer {
 
             // proxy the request
             const { request: httpRequest } = this.proxyTarget.protocol === "https:" ? https : http;
-            const requestOptions = {
+            const requestOptions: Exclude<Parameters<typeof httpRequest>[0], string> = {
                 hostname: this.proxyTarget.hostname,
-                port: this.proxyTarget.port,
+                protocol: this.proxyTarget.protocol,
+                //@ts-expect-error
                 path: req.url,
                 method: req.method,
                 headers: {
                     ...req.headers,
-                    "Content-Length": Buffer.byteLength(rewrittenBody)
+                    "Content-Length": Buffer.byteLength(rewrittenBody),
+                    host: this.proxyTarget.host // Add the host header
                 }
             };
             const proxyReq = httpRequest(requestOptions, (proxyRes) => {
-                res.writeHead(proxyRes.statusCode!, proxyRes.headers);
+                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
                 proxyRes.pipe(res, { end: true });
             });
             proxyReq.on("error", (e) => {
-                debug("proxy error:", e.message);
+                debug("proxy error:", e.message, requestOptions);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             });
@@ -119,7 +128,7 @@ export class AddressesRewriterProxyServer {
             }
         };
         tryUpdateAddresses();
-        setInterval(tryUpdateAddresses, 1000 * 60);
+        this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 }
 
