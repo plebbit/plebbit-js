@@ -254,8 +254,9 @@ export class ClientsManager extends BaseClientsManager {
             if (bestGatewayRecordAge <= freshThreshold) {
                 // A very recent subplebbit, a good thing
                 // TODO reward this gateway
-                log(`Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${ipnsName}) record that's ${bestGatewayRecordAge}s old`);
-                return { subplebbit: gatewayFetches[bestGatewayUrl].subplebbitRecord, cid: gatewayFetches[bestGatewayUrl].cid };
+                const bestSubRecord = gatewayFetches[bestGatewayUrl].subplebbitRecord;
+                log(`Gateway (${bestGatewayUrl}) was able to find a very recent subplebbit (${bestSubRecord.address}) whose IPNS is (${ipnsName}).  The record has updatedAt (${bestSubRecord.updatedAt}) that's ${bestGatewayRecordAge}s old`);
+                return { subplebbit: bestSubRecord, cid: gatewayFetches[bestGatewayUrl].cid };
             }
             // We weren't able to find a very recent subplebbit record
             if (gatewaysWithSub.length >= quorm || gatewaysWithError.length + gatewaysWithSub.length === totalGateways) {

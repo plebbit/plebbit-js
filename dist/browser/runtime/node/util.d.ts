@@ -21,3 +21,4 @@ export declare function importSignerIntoIpfsNode(ipnsKeyName: string, ipfsKey: U
 export declare function moveSubplebbitDbToDeletedDirectory(subplebbitAddress: string, plebbit: Plebbit): Promise<void>;
 export declare function createIpfsClient(ipfsHttpClientOptions: IpfsClient["_clientOptions"]): IpfsClient["_client"];
 export declare function monitorSubplebbitsDirectory(plebbit: Plebbit): Promise<AbortController>;
+export declare function isDirectoryEmptyRecursive(dirPath: string): Promise<boolean>;

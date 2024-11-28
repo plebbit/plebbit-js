@@ -13,6 +13,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _challengeAnswerResolveReject;
     private _ongoingChallengeExchanges;
     private _cidsToUnPin;
+    private _mfsPathsToUnPin;
     private _subplebbitUpdateTrigger;
     private _sortHandler;
     _dbHandler: DbHandler;
@@ -69,8 +70,9 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private handleChallengeExchange;
     private _calculatePostUpdatePathForExistingCommentUpdate;
     private _calculateIpfsPathForCommentUpdate;
-    private _writeCommentUpdateToIpfsFilePath;
-    private _updateComment;
+    private _writeCommentUpdateToFilesystem;
+    private _writeCommentUpdateToDatabase;
+    private _calculateNewCommentUpdateAndWriteToFilesystemAndDb;
     private _validateCommentUpdateSignature;
     private _listenToIncomingRequests;
     private _movePostUpdatesFolderToNewAddress;
@@ -79,7 +81,9 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _repinCommentsIPFSIfNeeded;
     private _unpinStaleCids;
     private pubsubTopicWithfallback;
+    private _getPostUpdatesDirOnFilesystem;
     private _repinCommentUpdateIfNeeded;
+    private _syncPostUpdatesFilesystemWithIpfs;
     private _adjustPostUpdatesBucketsIfNeeded;
     private syncIpnsWithDb;
     private _assertDomainResolvesCorrectly;
