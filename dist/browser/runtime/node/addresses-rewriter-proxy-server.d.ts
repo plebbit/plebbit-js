@@ -1,5 +1,4 @@
 import http from "node:http";
-import { parse as parseUrl } from "url";
 import { Plebbit } from "../../plebbit/plebbit";
 type AddressesRewriterOptions = {
     plebbitOptions: Required<Pick<Plebbit, "ipfsHttpClientsOptions">>;
@@ -12,10 +11,12 @@ export declare class AddressesRewriterProxyServer {
     plebbitOptions: AddressesRewriterOptions["plebbitOptions"];
     port: number;
     hostname: string;
-    proxyTarget: ReturnType<typeof parseUrl>;
+    proxyTarget: URL;
     server: ReturnType<(typeof http)["createServer"]>;
+    private _updateAddressesInterval;
     constructor({ plebbitOptions, port, hostname, proxyTargetUrl }: AddressesRewriterOptions);
     listen(callback?: () => void): void;
+    destroy(): void;
     _proxyRequestRewrite(req: Parameters<http.RequestListener>[0], res: Parameters<http.RequestListener>[1]): void;
     _startUpdateAddressesLoop(): void;
 }

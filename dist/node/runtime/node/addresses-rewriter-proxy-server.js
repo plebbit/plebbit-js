@@ -1,6 +1,5 @@
 import http from "node:http";
 import https from "node:https";
-import { parse as parseUrl } from "url";
 import Logger from "@plebbit/plebbit-logger";
 const debug = Logger("plebbit-js:addresses-rewriter");
 export class AddressesRewriterProxyServer {
@@ -9,13 +8,17 @@ export class AddressesRewriterProxyServer {
         this.plebbitOptions = plebbitOptions;
         this.port = port;
         this.hostname = hostname || "127.0.0.1";
-        this.proxyTarget = parseUrl(proxyTargetUrl);
+        this.proxyTarget = new URL(proxyTargetUrl);
         this.server = http.createServer((req, res) => this._proxyRequestRewrite(req, res));
     }
     listen(callback) {
         this._startUpdateAddressesLoop();
         this.server.listen(this.port, this.hostname, callback);
         debug("Addresses rewriter proxy at", this.hostname + ":" + this.port, "started listening to forward requests to", this.proxyTarget.host);
+    }
+    destroy() {
+        this.server.close();
+        clearInterval(this._updateAddressesInterval);
     }
     _proxyRequestRewrite(req, res) {
         // get post body
@@ -47,20 +50,22 @@ export class AddressesRewriterProxyServer {
             const { request: httpRequest } = this.proxyTarget.protocol === "https:" ? https : http;
             const requestOptions = {
                 hostname: this.proxyTarget.hostname,
-                port: this.proxyTarget.port,
+                protocol: this.proxyTarget.protocol,
+                //@ts-expect-error
                 path: req.url,
                 method: req.method,
                 headers: {
                     ...req.headers,
-                    "Content-Length": Buffer.byteLength(rewrittenBody)
+                    "Content-Length": Buffer.byteLength(rewrittenBody),
+                    host: this.proxyTarget.host // Add the host header
                 }
             };
             const proxyReq = httpRequest(requestOptions, (proxyRes) => {
-                res.writeHead(proxyRes.statusCode, proxyRes.headers);
+                res.writeHead(proxyRes.statusCode || 500, proxyRes.headers);
                 proxyRes.pipe(res, { end: true });
             });
             proxyReq.on("error", (e) => {
-                debug("proxy error:", e.message);
+                debug("proxy error:", e.message, requestOptions);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             });
@@ -93,7 +98,7 @@ export class AddressesRewriterProxyServer {
             }
         };
         tryUpdateAddresses();
-        setInterval(tryUpdateAddresses, 1000 * 60);
+        this._updateAddressesInterval = setInterval(tryUpdateAddresses, 1000 * 60);
     }
 }
 // example
