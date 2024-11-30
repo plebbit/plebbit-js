@@ -1,8 +1,6 @@
 import http from "node:http";
 import https from "node:https";
-import { parse as parseUrl } from "url";
 import Logger from "@plebbit/plebbit-logger";
-import type { InputPlebbitOptions, ParsedPlebbitOptions } from "../../types";
 import { Plebbit } from "../../plebbit/plebbit";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
@@ -86,6 +84,7 @@ export class AddressesRewriterProxyServer {
                 headers: {
                     ...req.headers,
                     "Content-Length": Buffer.byteLength(rewrittenBody),
+                    "content-length": Buffer.byteLength(rewrittenBody),
                     host: this.proxyTarget.host // Add the host header
                 }
             };
@@ -94,7 +93,7 @@ export class AddressesRewriterProxyServer {
                 proxyRes.pipe(res, { end: true });
             });
             proxyReq.on("error", (e) => {
-                debug("proxy error:", e.message, requestOptions);
+                debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             });
