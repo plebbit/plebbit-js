@@ -448,8 +448,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         // If this._stopHasBeenCalled = true, then this is the last publish before stopping
         // if this._stopHasBeenCalled = false, it means we're gonna publish another update very soon, so the record should not live for long
         // TODO double check these values
-        const ttl = this._stopHasBeenCalled ? undefined : `${this._plebbit.publishInterval * 3}ms`;
-        const lifetime = `24h`; // doesn't matter anyway, DHT drops all entries after 24h
+        const ttl = `${this._plebbit.publishInterval * 3}ms`;
+        const lifetime = `999999h`; // doesn't matter anyway, DHT drops all entries after 24h
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
@@ -457,7 +457,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             lifetime
         });
         log(
-            `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt})`
+            `Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl}) and lifetime (${lifetime})`
         );
         if (this.updateCid) this._cidsToUnPin.push(this.updateCid); // add old cid of subplebbit to be unpinned
 
