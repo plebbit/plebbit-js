@@ -57,6 +57,7 @@ export class AddressesRewriterProxyServer {
                 headers: {
                     ...req.headers,
                     "Content-Length": Buffer.byteLength(rewrittenBody),
+                    "content-length": Buffer.byteLength(rewrittenBody),
                     host: this.proxyTarget.host // Add the host header
                 }
             };
@@ -65,7 +66,7 @@ export class AddressesRewriterProxyServer {
                 proxyRes.pipe(res, { end: true });
             });
             proxyReq.on("error", (e) => {
-                debug("proxy error:", e.message, requestOptions);
+                debug.error("proxy error:", e, "Request options", requestOptions, "request.body", rewrittenBody);
                 res.writeHead(500);
                 res.end("Internal Server Error");
             });
