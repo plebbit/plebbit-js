@@ -10,13 +10,15 @@ import type {
     SubplebbitEditOptions,
     SubplebbitIpfsType,
     RpcInternalSubplebbitRecordBeforeFirstUpdateType,
-    RpcInternalSubplebbitRecordAfterFirstUpdateType
+    RpcInternalSubplebbitRecordAfterFirstUpdateType,
+    SubplebbitRole
 } from "../../../subplebbit/types.js";
 import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
 import {
+    derivePublicationFromChallengeRequest,
     doesDomainAddressHaveCapitalLetter,
     genToArray,
     hideClassPrivateProps,
@@ -67,7 +69,8 @@ import {
     verifyChallengeRequest,
     verifyCommentEdit,
     verifyCommentModeration,
-    verifyCommentUpdate
+    verifyCommentUpdate,
+    verifySubplebbitEdit
 } from "../../../signer/signatures.js";
 import {
     getThumbnailUrlOfLink,
@@ -145,6 +148,8 @@ import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import { CID, globSource } from "kubo-rpc-client";
+import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
+import { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -605,6 +610,25 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         return undefined;
     }
 
+    private async storeSubplebbitEditPublication(
+        editProps: SubplebbitEditPubsubMessagePublication,
+        challengeRequestId: ChallengeRequestMessageType["challengeRequestId"]
+    ) {
+        const log = Logger("plebbit-js:local-subplebbit:storeSubplebbitEdit");
+
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(editProps.signature.publicKey);
+        log(
+            "Received subplebbit edit from author",
+            editProps.author.address,
+            "with signer address",
+            authorSignerAddress,
+            "Will be using these props to edit the sub props"
+        );
+
+        await this.edit(editProps.subplebbitEdit);
+        return undefined;
+    }
+
     private isPublicationReply(publication: CommentPubsubMessagePublication): publication is ReplyPubsubMessageWithSubplebbitAuthor {
         return Boolean(publication.parentCid);
     }
@@ -730,7 +754,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         else if (request.commentEdit) return this.storeCommentEdit(request.commentEdit, request.challengeRequestId);
         else if (request.commentModeration) return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment) return this.storeComment(request.comment, request);
-        else throw Error("Don't know how to store this publication");
+        else if (request.subplebbitEdit) return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
+        else throw Error("Don't know how to store this publication" + request);
     }
 
     private async _decryptOrRespondWithFailure(request: ChallengeRequestMessageType | ChallengeAnswerMessageType): Promise<string> {
@@ -758,6 +783,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         else if (request.commentModeration)
             validity = await verifyCommentModeration(
                 request.commentModeration,
+                this._plebbit.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+        else if (request.subplebbitEdit)
+            validity = await verifySubplebbitEdit(
+                request.subplebbitEdit,
                 this._plebbit.resolveAuthorAddresses,
                 this._clientsManager,
                 false
@@ -917,20 +949,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         }
     }
 
-    private async _isModerator(commentModerationPublication: CommentModerationPubsubMessagePublication): Promise<boolean> {
+    private async _isPublicationAuthorPartOfRoles(
+        publication: Pick<CommentModerationPubsubMessagePublication, "author" | "signature">,
+        rolesToCheckAgainst: SubplebbitRole["role"][]
+    ): Promise<boolean> {
         if (!this.roles) return false;
-        // is the author of CommentModeration a moderator?
-        const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
-        const signerAddress = await getPlebbitAddressFromPublicKey(commentModerationPublication.signature.publicKey);
-        if (modRoles.includes(this.roles[signerAddress]?.role)) return true;
+        // is the author of publication a moderator?
+        const signerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        if (rolesToCheckAgainst.includes(this.roles[signerAddress]?.role)) return true;
 
         if (this._plebbit.resolveAuthorAddresses) {
-            const resolvedSignerAddress = isStringDomain(commentModerationPublication.author.address)
-                ? await this._plebbit.resolveAuthorAddress(commentModerationPublication.author.address)
-                : commentModerationPublication.author.address;
+            const resolvedSignerAddress = isStringDomain(publication.author.address)
+                ? await this._plebbit.resolveAuthorAddress(publication.author.address)
+                : publication.author.address;
             if (resolvedSignerAddress !== signerAddress) return false;
-            if (modRoles.includes(this.roles[commentModerationPublication.author.address]?.role)) return true;
-            if (modRoles.includes(this.roles[resolvedSignerAddress]?.role)) return true;
+            if (rolesToCheckAgainst.includes(this.roles[publication.author.address]?.role)) return true;
+            if (rolesToCheckAgainst.includes(this.roles[resolvedSignerAddress]?.role)) return true;
         }
         return false;
     }
@@ -1019,7 +1053,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(commentModerationPublication)).length > 0)
                 return messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD;
 
-            const isAuthorMod = await this._isModerator(commentModerationPublication);
+            const isAuthorMod = await this._isPublicationAuthorPartOfRoles(commentModerationPublication, ["owner", "moderator", "admin"]);
 
             if (!isAuthorMod) return messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR;
 
@@ -1028,6 +1062,20 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+        } else if (request.subplebbitEdit) {
+            const subplebbitEdit = request.subplebbitEdit;
+            if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
+                return messages.ERR_SUBPLEBBIT_EDIT_HAS_RESERVED_FIELD;
+
+            if (subplebbitEdit.subplebbitEdit.roles) {
+                const isAuthorOwner = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner"]);
+                if (!isAuthorOwner) return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_ROLES_WITHOUT_BEING_OWNER;
+            }
+
+            const isAuthorOwnerOrAdmin = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner", "admin"]);
+            if (!isAuthorOwnerOrAdmin) {
+                return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN;
+            }
         } else if (request.commentEdit) {
             const commentEditPublication = request.commentEdit;
             if (remeda.intersection(CommentEditReservedFields, remeda.keys.strict(commentEditPublication)).length > 0)
@@ -1093,13 +1141,15 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const decryptedRequest = await this._parseChallengeRequestPublicationOrRespondWithFailure(request, decryptedRawString);
 
         const publicationFieldNames = remeda.keys.strict(DecryptedChallengeRequestPublicationSchema.shape);
-        const publication =
-            decryptedRequest.comment || decryptedRequest.commentEdit || decryptedRequest.vote || decryptedRequest.commentModeration;
-        if (!publication)
+        let publication: PublicationFromDecryptedChallengeRequest;
+        try {
+            publication = derivePublicationFromChallengeRequest(decryptedRequest);
+        } catch {
             return this._publishFailedChallengeVerification(
                 { reason: messages.ERR_CHALLENGE_REQUEST_ENCRYPTED_HAS_NO_PUBLICATION_AFTER_DECRYPTING },
                 request.challengeRequestId
             );
+        }
         let publicationCount = 0;
         publicationFieldNames.forEach((pubField) => {
             if (pubField in decryptedRequest) publicationCount++;

@@ -30,8 +30,10 @@ import {
     signComment,
     signCommentEdit,
     signCommentModeration,
+    signSubplebbitEdit,
     signVote,
-    verifyCommentEdit
+    verifyCommentEdit,
+    verifySubplebbitEdit
 } from "../signer/signatures.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "../stats.js";
@@ -92,10 +94,12 @@ import {
     parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails,
     parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails,
     parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails,
+    parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails,
     parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails,
     parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails,
     parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails,
     parseSubplebbitAddressWithPlebbitErrorIfItFails,
+    parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails,
     parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails
 } from "../schema/schema-util.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
@@ -106,6 +110,13 @@ import type {
     CreateCommentModerationOptions
 } from "../publications/comment-moderation/types.js";
 import { setupIpfsAddressesRewriterAndHttpRouters } from "../runtime/node/setup-ipfs-rewrite-and-http-router.js";
+import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
+import {
+    CreateSubplebbitEditPublicationOptions,
+    SubplebbitEditJson,
+    SubplebbitEditPublicationOptionsToSign,
+    SubplebbitEditPubsubMessagePublication
+} from "../publications/subplebbit-edit/types.js";
 
 export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
@@ -345,9 +356,14 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
     }
 
     private async _initMissingFieldsOfPublicationBeforeSigning(
-        pubOptions: CreateCommentOptions | CreateCommentEditOptions | CreateVoteOptions | CreateCommentModerationOptions,
+        pubOptions:
+            | CreateCommentOptions
+            | CreateCommentEditOptions
+            | CreateVoteOptions
+            | CreateCommentModerationOptions
+            | CreateSubplebbitEditPublicationOptions,
         log: Logger
-    ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign> {
+    ): Promise<CommentOptionsToSign | VoteOptionsToSign | CommentEditOptionsToSign | SubplebbitEditPublicationOptionsToSign> {
         const finalOptions = remeda.clone(pubOptions);
         if (!finalOptions.signer) throw Error("User did not provide a signer to create a local publication");
         if (finalOptions.author) {
@@ -803,6 +819,68 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             });
         }
         return modInstance;
+    }
+
+    async _createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(jsonfied: SubplebbitEditJson) {
+        const subplebbitEditInstance = new SubplebbitEdit(this);
+        // we stringify here to remove functions and create a deep copy
+        Object.assign(
+            subplebbitEditInstance,
+            remeda.omit(<SubplebbitEditJson>JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"])
+        );
+
+        if (jsonfied.publishingState !== "succeeded") {
+            // only initialze when subplebbitEdit is not published
+            const pubsubMsgToPublish = <SubplebbitEditPubsubMessagePublication>{
+                ...remeda.pick(jsonfied, <(keyof SubplebbitEditPubsubMessagePublication)[]>jsonfied.signature.signedPropertyNames),
+                signature: jsonfied.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifySubplebbitEdit(
+                pubsubMsgToPublish,
+                this.resolveAuthorAddresses,
+                this._clientsManager,
+                false
+            );
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            subplebbitEditInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
+        return subplebbitEditInstance;
+    }
+
+    async createSubplebbitEdit(
+        options: CreateSubplebbitEditPublicationOptions | SubplebbitEditPubsubMessagePublication | SubplebbitEditJson
+    ): Promise<SubplebbitEdit> {
+        const log = Logger("plebbit-js:plebbit:createSubplebbitEdit");
+        if ("clients" in options) return this._createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(options);
+        const subplebbitEditInstance = new SubplebbitEdit(this);
+
+        if ("signature" in options) {
+            const parsedOptions = parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(options);
+            subplebbitEditInstance._initRemoteProps(parsedOptions);
+        } else {
+            const parsedOptions = parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails(options);
+            const finalOptions = <SubplebbitEditPublicationOptionsToSign>(
+                await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log)
+            );
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signature = await signSubplebbitEdit(cleanedFinalOptions, this);
+            const signedSubplebbitEdit: SubplebbitEditPubsubMessagePublication = {
+                ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
+                signature
+            };
+            subplebbitEditInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: finalOptions.signer,
+                subplebbitEdit: signedSubplebbitEdit
+            });
+        }
+        return subplebbitEditInstance;
     }
 
     createSigner(createSignerOptions?: CreateSignerOptions) {

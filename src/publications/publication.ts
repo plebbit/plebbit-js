@@ -649,7 +649,8 @@ class Publication extends TypedEmitter<PublicationEvents> {
             comment: this._plebbit._plebbitRpcClient.publishComment,
             vote: this._plebbit._plebbitRpcClient.publishVote,
             commentEdit: this._plebbit._plebbitRpcClient.publishCommentEdit,
-            commentModeration: this._plebbit._plebbitRpcClient.publishCommentModeration
+            commentModeration: this._plebbit._plebbitRpcClient.publishCommentModeration,
+            subplebbitEdit: this._plebbit._plebbitRpcClient.publishSubplebbitEdit
         };
         try {
             // PlebbitRpcClient will take care of zod parsing for us

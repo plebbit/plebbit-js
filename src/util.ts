@@ -15,11 +15,11 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     DecryptedChallengeRequestMessageWithPostSubplebbitAuthor,
     DecryptedChallengeRequestMessageWithReplySubplebbitAuthor,
+    DecryptedChallengeRequestPublication,
     PublicationFromDecryptedChallengeRequest,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "./pubsub-messages/types.js";
-import { Plebbit } from "./plebbit/plebbit.js";
-import Logger from "@plebbit/plebbit-logger";
+import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -250,8 +250,6 @@ export function parseIpfsRawOptionToIpfsOptions(ipfsRawOption: Parameters<typeof
     else return ipfsRawOption;
 }
 
-
-
 export function hideClassPrivateProps(_this: any) {
     // make props that start with _ not enumerable
 
@@ -261,15 +259,21 @@ export function hideClassPrivateProps(_this: any) {
 }
 
 export function derivePublicationFromChallengeRequest<
-    T extends DecryptedChallengeRequestMessageType | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+    T extends Pick<
+        | DecryptedChallengeRequestMessageType
+        | DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
+        | DecryptedChallengeRequestMessageType,
+        keyof DecryptedChallengeRequestPublication
+    >
 >(
     request: T
 ): T extends DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
     ? PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
     : PublicationFromDecryptedChallengeRequest {
-    const pub = request.vote || request.comment || request.commentEdit || request.commentModeration;
-    if (!pub) throw Error("Failed to find publication on request");
-    return pub;
+    const publicationFieldNames = remeda.keys.strict(DecryptedChallengeRequestPublicationSchema.shape);
+    for (const pubName of publicationFieldNames) if (request[pubName]) return request[pubName];
+
+    throw Error("Failed to find publication on ChallengeRequest");
 }
 
 export function isRequestPubsubPublicationOfReply(

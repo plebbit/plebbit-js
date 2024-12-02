@@ -22,6 +22,7 @@ export enum messages {
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_EDIT_PUBLICATION_FROM_JSONIFIED_COMMENT_EDIT = "User provided a jsonfied (cloned) CommentEdit and we're unable to derive request.commentEdit from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_COMMENT_MODERATION_PUBLICATION_FROM_JSONIFIED_COMMENT_MODERATION = "User provided a jsonfied (cloned) CommentModeration and we're unable to derive request.commentModeration from it. This is an implementation error",
     ERR_UNABLE_TO_DERIVE_PUBSUB_VOTE_PUBLICATION_FROM_JSONIFIED_VOTE = "User provided a jsonfied (cloned) Vote and we're unable to derive request.vote from it. This is an implementation error",
+    ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT = "User provided a jsonfied (cloned) SubplebbitEdit and we're unable to derive request.subplebbitEdit from it. This is an implementation error",
 
     // Fetch errors
     ERR_FAILED_TO_FETCH_IPFS_VIA_GATEWAY = "Failed to fetch IPFS file via gateway",
@@ -74,6 +75,7 @@ export enum messages {
     ERR_INVALID_CREATE_COMMENT_MODERATION_ARGS_SCHEMA = "User provided an invalid schema of arguments for plebbit.createCommentModeration",
     ERR_INVALID_CREATE_COMMENT_ARGS_SCHEMA = "User provided an invalid schema of arguments for plebbit.createComment",
     ERR_INVALID_CREATE_REMOTE_SUBPLEBBIT_ARGS_SCHEMA = "User provided an invalid remote subplebbit schema",
+    ERR_INVALID_CREATE_SUBPLEBBIT_EDIT_ARGS_SCHEMA = "User provided an invalid args to plebbit.createSubplebbitEdit",
     ERR_GENERIC_RPC_INVALID_SCHEMA = "The RPC server responded with invalid schema error",
     ERR_INVALID_NEW_WS_SERVER_SETTINGS_SCHEMA = "RPC client sent new settings with invalid schema",
     ERR_INVALID_CREATE_NEW_LOCAL_SUB_USER_OPTIONS = "User provided arguments to create a local sub with invalid schema",
@@ -81,6 +83,7 @@ export enum messages {
     ERR_INVALID_VOTE_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA = "RPC client sent an invalid schema for challenge request with vote",
     ERR_INVALID_COMMENT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA = "RPC client sent an invalid schema for challenge request with comment",
     ERR_INVALID_COMMENT_MODERATION_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA = "RPC client sent an invalid schema for challenge request with commentModeration",
+    ERR_INVALID_SUBPLEBBIT_EDIT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA = "RPC client sent an invalid schema for challenge request with subplebbitEdit",
     ERR_SUBPLEBBIT_EDIT_OPTIONS_SCHEMA = "User sent a subplebbit edit options with invalid schema",
     ERR_INVALID_CHALLENGE_ANSWERS = "User sent challenge answers with invalid schema",
     ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA = "Invalid create arguments for Plebbit WS RPC server",
@@ -113,6 +116,7 @@ export enum messages {
     ERR_COMMENT_IPFS_SIGNATURE_IS_INVALID = "CommentIpfs signature is invalid",
     ERR_COMMENT_UPDATE_SIGNATURE_IS_INVALID = "CommentUpdate signature is invalid",
     ERR_COMMENT_UPDATE_RECORD_INCLUDES_RESERVED_FIELD = "CommentUpdate record includes a reserved field",
+    ERR_SUBPLEBBIT_EDIT_HAS_RESERVED_FIELD = "SubplebbitEdit record includes a reserved field",
     ERR_SUBPLEBBIT_SIGNATURE_IS_INVALID = "Subplebbit signature is invalid",
     ERR_SUBPLEBBIT_RECORD_INCLUDES_RESERVED_FIELD = "The SubplebbitIpfs record includes a reserved field",
     ERR_FAILED_TO_RESOLVE_SUBPLEBBIT_DOMAIN = "Failed to resolve the subplebbit domain address to use for verification",
@@ -127,6 +131,7 @@ export enum messages {
     ERR_CHALLENGE_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengePubsubMessage includes a field that's not part of signature.signedPropertyNames",
     ERR_CHALLENGE_ANSWER_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeAnswerPubsubMessage includes a field that's not part of signature.signedPropertyNames",
     ERR_CHALLENGE_VERIFICATION_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "ChallengeVerificationPubsubMessage includes a field that's not part of signature.signedPropertyNames",
+    ERR_SUBPLEBBIT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES = "SubplebbitEditPubsubPublication includes a field that's not in signature.signedPropertyNames",
     ERR_SUB_CHANGED_COMMENT_PUBSUB_PUBLICATION_PROPS = "The sub changed CommentPubsubMessagePublication props in decryptedChallengeVerification.comment",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENT = "The subplebbit sent an invalid decryptedChallengeVerification.comment",
     ERR_SUB_SENT_CHALLENGE_VERIFICATION_WITH_INVALID_COMMENTUPDATE = "The subplebbit sent an invalid decryptedChallengeVerification.commentUpdate",
@@ -184,6 +189,8 @@ export enum messages {
     ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT = "CommentEditPubsubMessagePublication is attempting to edit a comment that does not exist",
     ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD = "CommentModerationPubsubMessagePublication has a reserved field",
     ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR = "CommentModerationPubsubMessagePublication signer is not a mod at this subplebbit",
+    ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_ROLES_WITHOUT_BEING_OWNER = "SubplebbitEdit attempted to modify subplebbit.roles without being the owner of the sub",
+    ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN = "SubplebbitEdit attempted to modify subplebbit without being an owner or admin",
     ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
 
     // Comment Edit errors

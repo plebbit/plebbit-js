@@ -313,6 +313,11 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
         return subscriptionId;
     }
 
+    async publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest) {
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]));
+        return subscriptionId;
+    }
+
     async commentUpdateSubscribe(commentCid: string) {
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdateSubscribe", [parsedCid]));

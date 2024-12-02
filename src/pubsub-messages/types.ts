@@ -12,6 +12,10 @@ import type {
     PostPubsubMessageWithSubplebbitAuthor,
     ReplyPubsubMessageWithSubplebbitAuthor
 } from "../publications/comment/types";
+import type {
+    SubplebbitEditPublicationPubsubMessageWithSubplebbitAuthor,
+    SubplebbitEditPubsubMessagePublication
+} from "../publications/subplebbit-edit/types";
 import type { VotePubsubMessagePublication, VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
 import type { AuthorTypeWithCommentUpdate } from "../types";
@@ -44,11 +48,12 @@ export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequest
 export type DecryptedChallengeRequestMessageType = DecryptedChallengeRequest & ChallengeRequestMessageType;
 
 export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor
-    extends Omit<DecryptedChallengeRequestMessageType, "comment" | "vote" | "commentEdit" | "commentModeration"> {
+    extends Omit<DecryptedChallengeRequestMessageType, "comment" | "vote" | "commentEdit" | "commentModeration" | "subplebbitEdit"> {
     vote?: VotePubsubMessageWithSubplebbitAuthor;
     comment?: CommentPubsubMessageWithSubplebbitAuthor;
     commentEdit?: CommentEditPubsubMessagePublicationWithSubplebbitAuthor;
     commentModeration?: CommentModerationPubsubMessagePublicationWithSubplebbitAuthor;
+    subplebbitEdit?: SubplebbitEditPublicationPubsubMessageWithSubplebbitAuthor;
 }
 
 export type PublicationFromDecryptedChallengeRequest = NonNullable<
@@ -56,6 +61,7 @@ export type PublicationFromDecryptedChallengeRequest = NonNullable<
     | CommentPubsubMessagePublication
     | CommentEditPubsubMessagePublication
     | CommentModerationPubsubMessagePublication
+    | SubplebbitEditPubsubMessagePublication
 >;
 
 export type PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest = PublicationFromDecryptedChallengeRequest & {

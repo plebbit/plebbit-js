@@ -75,6 +75,12 @@ import type {
     CommentModerationSignature
 } from "../publications/comment-moderation/types.js";
 import { CommentModerationSignedPropertyNames } from "../publications/comment-moderation/schema.js";
+import type {
+    SubplebbitEditPublicationOptionsToSign,
+    SubplebbitEditPublicationSignature,
+    SubplebbitEditPubsubMessagePublication
+} from "../publications/subplebbit-edit/types.js";
+import { SubplebbitEditPublicationSignedPropertyNames } from "../publications/subplebbit-edit/schema.js";
 
 export type ValidationResult = { valid: true } | { valid: false; reason: string };
 
@@ -208,6 +214,17 @@ export async function signVote(vote: VoteOptionsToSign, plebbit: Plebbit): Promi
     const log = Logger("plebbit-js:signatures:signVote");
     await _validateAuthorAddressBeforeSigning(vote.author, vote.signer, plebbit);
     return <VoteSignature>await _signJson(VoteSignedPropertyNames, vote, vote.signer, log);
+}
+
+export async function signSubplebbitEdit(
+    subplebbitEdit: SubplebbitEditPublicationOptionsToSign,
+    plebbit: Plebbit
+): Promise<SubplebbitEditPublicationSignature> {
+    const log = Logger("plebbit-js:signatures:signSubplebbitEdit");
+    await _validateAuthorAddressBeforeSigning(subplebbitEdit.author, subplebbitEdit.signer, plebbit);
+    return <SubplebbitEditPublicationSignature>(
+        await _signJson(SubplebbitEditPublicationSignedPropertyNames, subplebbitEdit, subplebbitEdit.signer, log)
+    );
 }
 
 export async function signCommentEdit(edit: CommentEditOptionsToSign, plebbit: Plebbit): Promise<CommentEditSignature> {
@@ -409,6 +426,20 @@ export async function verifyVote(
         return { valid: false, reason: messages.ERR_VOTE_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
 
     const res = await _verifyPublicationWithAuthor(vote, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
+    if (!res.valid) return res;
+    return { valid: true };
+}
+
+export async function verifySubplebbitEdit(
+    subplebbitEdit: SubplebbitEditPubsubMessagePublication,
+    resolveAuthorAddresses: boolean,
+    clientsManager: BaseClientsManager,
+    overrideAuthorAddressIfInvalid: boolean
+): Promise<ValidationResult> {
+    if (!_allFieldsOfRecordInSignedPropertyNames(subplebbitEdit))
+        return { valid: false, reason: messages.ERR_SUBPLEBBIT_EDIT_RECORD_INCLUDES_FIELD_NOT_IN_SIGNED_PROPERTY_NAMES };
+
+    const res = await _verifyPublicationWithAuthor(subplebbitEdit, resolveAuthorAddresses, clientsManager, overrideAuthorAddressIfInvalid);
     if (!res.valid) return res;
     return { valid: true };
 }

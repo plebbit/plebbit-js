@@ -48,6 +48,7 @@ import {
     parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails,
     parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails,
     parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails,
+    parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails,
     parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails,
     parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails
 } from "../../schema/schema-util.js";
@@ -56,6 +57,7 @@ import type { VoteChallengeRequestToEncryptType } from "../../publications/vote/
 import type { CommentEditChallengeRequestToEncryptType } from "../../publications/comment-edit/types.js";
 import type { CommentModerationChallengeRequestToEncrypt } from "../../publications/comment-moderation/types.js";
 import type { InputPlebbitOptions } from "../../types.js";
+import type { SubplebbitEditChallengeRequestToEncryptType } from "../../publications/subplebbit-edit/types.js";
 
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -732,6 +734,60 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             await vote.publish();
+        } catch (e) {
+            this.subscriptionCleanups[connectionId][subscriptionId]();
+            throw e;
+        }
+
+        return subscriptionId;
+    }
+
+    private async _createSubplebbitEditInstanceFromPublishSubplebbitEditParams(params: SubplebbitEditChallengeRequestToEncryptType) {
+        const subplebbitEdit = await this.plebbit.createSubplebbitEdit(params.subplebbitEdit);
+        subplebbitEdit.challengeRequest = remeda.omit(params, ["subplebbitEdit"]);
+        return subplebbitEdit;
+    }
+
+    async publishSubplebbitEdit(params: any, connectionId: string) {
+        const publishOptions = parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
+
+
+        const subscriptionId = generateSubscriptionId();
+
+        const sendEvent = (event: string, result: any) =>
+            this.jsonRpcSendNotification({
+                method: "publishSubplebbitEditNotification",
+                subscription: subscriptionId,
+                event,
+                result,
+                connectionId
+            });
+
+        const subplebbitEdit = await this._createSubplebbitEditInstanceFromPublishSubplebbitEditParams(publishOptions);
+        this.publishing[subscriptionId] = subplebbitEdit;
+        subplebbitEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        subplebbitEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        subplebbitEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
+        subplebbitEdit.on("challengeverification", (challengeVerification) =>
+            sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification))
+        );
+        subplebbitEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", subplebbitEdit.publishingState));
+        subplebbitEdit.on("error", (error: any) => sendEvent("error", error));
+
+        // cleanup function
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this.publishing[subscriptionId];
+            subplebbitEdit.stop().catch((error: any) => log.error("publishSubplebbitEdit stop error", { error, params }));
+            subplebbitEdit.removeAllListeners("challenge");
+            subplebbitEdit.removeAllListeners("challengeanswer");
+            subplebbitEdit.removeAllListeners("challengerequest");
+            subplebbitEdit.removeAllListeners("challengeverification");
+            subplebbitEdit.removeAllListeners("publishingstatechange");
+        };
+
+        // if fail, cleanup
+        try {
+            await subplebbitEdit.publish();
         } catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();
             throw e;
