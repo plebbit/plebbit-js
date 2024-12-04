@@ -149,7 +149,8 @@ import fs from "fs";
 import fsPromises from "fs/promises";
 import { CID, globSource } from "kubo-rpc-client";
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
-import { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
+import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
+import { default as lodashDeepMerge } from "lodash/merge"; // Importing only the `merge` function
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
@@ -618,14 +619,19 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
         const authorSignerAddress = await getPlebbitAddressFromPublicKey(editProps.signature.publicKey);
         log(
-            "Received subplebbit edit from author",
+            "Received subplebbit edit",
+            editProps.subplebbitEdit,
+            "from author",
             editProps.author.address,
             "with signer address",
             authorSignerAddress,
             "Will be using these props to edit the sub props"
         );
 
-        await this.edit(editProps.subplebbitEdit);
+        const propsAfterEdit = remeda.pick(this, remeda.keys.strict(editProps.subplebbitEdit));
+        log("Current props from sub edit (not edited yet)", propsAfterEdit);
+        lodashDeepMerge(propsAfterEdit, editProps.subplebbitEdit);
+        await this.edit(propsAfterEdit);
         return undefined;
     }
 
@@ -1067,9 +1073,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
                 return messages.ERR_SUBPLEBBIT_EDIT_HAS_RESERVED_FIELD;
 
-            if (subplebbitEdit.subplebbitEdit.roles) {
+            if (subplebbitEdit.subplebbitEdit.roles || subplebbitEdit.subplebbitEdit.address) {
                 const isAuthorOwner = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner"]);
-                if (!isAuthorOwner) return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_ROLES_WITHOUT_BEING_OWNER;
+                if (!isAuthorOwner) return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS;
             }
 
             const isAuthorOwnerOrAdmin = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner", "admin"]);

@@ -189,7 +189,7 @@ export enum messages {
     ERR_COMMENT_EDIT_NO_COMMENT_TO_EDIT = "CommentEditPubsubMessagePublication is attempting to edit a comment that does not exist",
     ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD = "CommentModerationPubsubMessagePublication has a reserved field",
     ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR = "CommentModerationPubsubMessagePublication signer is not a mod at this subplebbit",
-    ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_ROLES_WITHOUT_BEING_OWNER = "SubplebbitEdit attempted to modify subplebbit.roles without being the owner of the sub",
+    ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS = "SubplebbitEdit attempted to modify props meant only for the owner to edit",
     ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN = "SubplebbitEdit attempted to modify subplebbit without being an owner or admin",
     ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
 
