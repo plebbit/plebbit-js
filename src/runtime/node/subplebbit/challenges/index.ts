@@ -333,7 +333,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (
         exclude: subplebbitChallengeSettings.exclude,
         description: subplebbitChallengeSettings.description || challengeFile.description,
         challenge,
-        type
+        type,
+        caseInsensitive: challengeFile.caseInsensitive
     };
 };
 

@@ -3,7 +3,7 @@ import TinyCache from "tinycache";
 import QuickLRU from "quick-lru";
 import { testVote, testReply, testPost, testScore, testFirstCommentTimestamp, testRole } from "./utils.js";
 import { testRateLimit } from "./rate-limiter.js";
-import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude } from "../../../../../subplebbit/types.js";
+import type { Challenge, ChallengeResult, SubplebbitChallenge, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { Comment } from "../../../../../publications/comment/comment.js";
 import { LocalSubplebbit } from "../../local-subplebbit.js";
@@ -89,7 +89,10 @@ const shouldExcludePublication = (
     return false;
 };
 
-const shouldExcludeChallengeSuccess = (subplebbitChallenge: SubplebbitChallenge, challengeResults: (Challenge | ChallengeResult)[]) => {
+const shouldExcludeChallengeSuccess = (
+    subplebbitChallenge: NonNullable<SubplebbitSettings["challenges"]>[0],
+    challengeResults: (Challenge | ChallengeResult)[]
+) => {
     if (!subplebbitChallenge) {
         throw Error(`shouldExcludeChallengeSuccess invalid subplebbitChallenge argument '${subplebbitChallenge}'`);
     }

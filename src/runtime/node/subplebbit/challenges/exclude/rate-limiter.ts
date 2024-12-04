@@ -4,7 +4,7 @@ import type {
     DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest
 } from "../../../../../pubsub-messages/types.js";
-import type { ChallengeResult, Exclude, SubplebbitChallenge } from "../../../../../subplebbit/types.js";
+import type { ChallengeResult, Exclude, SubplebbitSettings } from "../../../../../subplebbit/types.js";
 import { RateLimiter } from "limiter-es6-compat";
 import {
     derivePublicationFromChallengeRequest,
@@ -134,7 +134,7 @@ const getRateLimitersToAddTo = (
 };
 
 const addToRateLimiter = (
-    subplebbitChallenges: SubplebbitChallenge[],
+    subplebbitChallenges: NonNullable<SubplebbitSettings["challenges"]>,
     request: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     challengeSuccess: ChallengeResult["success"]
 ) => {
