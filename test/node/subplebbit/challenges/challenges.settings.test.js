@@ -43,6 +43,7 @@ describe(`subplebbit.settings.challenges`, async () => {
             expect(_subplebbit.challenges[0].exclude).to.deep.equal([
                 { role: ["moderator", "admin", "owner"], post: false, reply: false, vote: false }
             ]);
+            expect(_subplebbit.challenges[0].caseInsensitive).to.be.true;
         }
         // clean up
         await subplebbit.delete();
