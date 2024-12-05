@@ -191,6 +191,7 @@ export enum messages {
     ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR = "CommentModerationPubsubMessagePublication signer is not a mod at this subplebbit",
     ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS = "SubplebbitEdit attempted to modify props meant only for the owner to edit",
     ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN = "SubplebbitEdit attempted to modify subplebbit without being an owner or admin",
+    ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS = "SubplebbitEdit attempted to modify non public props or non existent. SubplebbitEdit is only allowed to edit props from SubplebbitIpfs schema",
     ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
 
     // Comment Edit errors

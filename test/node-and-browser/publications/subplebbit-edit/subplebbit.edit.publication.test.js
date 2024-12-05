@@ -155,6 +155,17 @@ getRemotePlebbitConfigs().map((config) => {
             await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS);
         });
 
+        it(`Admin should not be able to modify settings`, async () => {
+            const adminSigner = await plebbit.createSigner(roles[1].signer);
+            const editProps = { description: "Test" + Math.random(), settings: { fetchThumbnailUrls: true } };
+            const subplebbitEdit = await plebbit.createSubplebbitEdit({
+                subplebbitEdit: editProps,
+                subplebbitAddress,
+                signer: adminSigner
+            });
+            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS);
+        });
+
         it(`Admin should be able to modify subplebbit props via SubplebbitEdit`, async () => {
             const adminSigner = await plebbit.createSigner(roles[1].signer);
             editProps = { description: "Test" + Math.random() };
@@ -211,6 +222,17 @@ getRemotePlebbitConfigs().map((config) => {
                 signer: ownerSigner
             });
             await publishWithExpectedResult(subplebbitEdit, true);
+        });
+
+        it(`Owner should not be able to modify settings`, async () => {
+            const modSigner = await plebbit.createSigner(roles[0].signer);
+            const editProps = { description: "Test" + Math.random(), settings: { fetchThumbnailUrls: true } };
+            const subplebbitEdit = await plebbit.createSubplebbitEdit({
+                subplebbitEdit: editProps,
+                subplebbitAddress,
+                signer: modSigner
+            });
+            await publishWithExpectedResult(subplebbitEdit, false, messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS);
         });
 
         it(`Subplebbit should publish an update after the owner edits one of its props`, async () => {
