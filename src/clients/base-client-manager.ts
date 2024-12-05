@@ -116,9 +116,25 @@ export class BaseClientsManager {
         let error: Error | undefined;
         try {
             await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
-                onError(err) {
+                onError: async (err) => {
                     error = err;
-                    log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err);
+                    log.error(
+                        "pubsub callback error, topic",
+                        pubsubTopic,
+                        "provider url",
+                        pubsubProviderUrl,
+                        "error",
+                        err,
+                        "Will unsubscribe and re-attempt to subscribe"
+                    );
+
+                    await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+                    try {
+                        await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
+                    } catch (e) {
+                        log.error("Failed to unsubscribe after onError, topic", pubsubTopic, "provider url", pubsubProviderUrl, e);
+                    }
+                    await this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
                 }
             });
             if (error) throw error;
