@@ -451,9 +451,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
 
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        // If this._stopHasBeenCalled = true, then this is the last publish before stopping
-        // if this._stopHasBeenCalled = false, it means we're gonna publish another update very soon, so the record should not live for long
-        // TODO double check these values
         const ttl = `${this._plebbit.publishInterval * 3}ms`;
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
@@ -1777,6 +1774,23 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         if (this._subplebbitUpdateTrigger) await this._syncPostUpdatesFilesystemWithIpfs();
     }
 
+    private async _cleanUpIpfsRepoRarely() {
+        const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
+        if (Math.random() < 0.005) {
+            let gcCids = 0;
+            try {
+                for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
+                    if (res.cid) gcCids++;
+                    else log.error("Failed to GC ipfs repo due to error", res.err);
+                }
+            } catch (e) {
+                log.error("Failed to GC ipfs repo due to error", e);
+            }
+
+            log("GC cleaned", gcCids, "out of the IPFS node");
+        }
+    }
+
     private async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
         await this._dbHandler.initDbIfNeeded();
@@ -1790,6 +1804,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             this._clientsManager.updateIpfsState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
+            await this._cleanUpIpfsRepoRarely();
         } catch (e) {
             this._setStartedState("failed");
             this._clientsManager.updateIpfsState("stopped");
