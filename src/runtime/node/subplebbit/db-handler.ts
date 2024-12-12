@@ -599,19 +599,36 @@ export class DbHandler {
 
     async queryActiveScore(comment: Pick<CommentsTableRow, "cid" | "timestamp">, trx?: Transaction): Promise<number> {
         let maxTimestamp = comment.timestamp;
-        // Note: active score will include deleted and removed comments
+        // Note: active score should not include include deleted and removed comments
 
         const updateMaxTimestamp = async (localComments: (typeof comment)[]) => {
             for (const commentChild of localComments) {
                 if (commentChild.timestamp > maxTimestamp) maxTimestamp = commentChild.timestamp;
-                const children = await this._baseTransaction(trx)(TABLES.COMMENTS)
-                    .where("parentCid", commentChild.cid)
-                    .select(["cid", "timestamp"]);
+                const activeScoreOptions: Omit<PageOptions, "pageSize"> = {
+                    excludeCommentsWithDifferentSubAddress: true,
+                    excludeDeletedComments: true,
+                    excludeRemovedComments: true,
+                    parentCid: commentChild.cid
+                };
+                const children: Pick<CommentsTableRow, "cid" | "timestamp">[] = await this._basePageQuery(activeScoreOptions, trx).select([
+                    `${TABLES.COMMENTS}.cid`,
+                    `${TABLES.COMMENTS}.timestamp`
+                ]);
                 if (children.length > 0) await updateMaxTimestamp(children);
             }
         };
 
-        const children = await this._baseTransaction(trx)(TABLES.COMMENTS).where("parentCid", comment.cid).select(["cid", "timestamp"]);
+        const activeScoreOptions: Omit<PageOptions, "pageSize"> = {
+            excludeCommentsWithDifferentSubAddress: true,
+            excludeDeletedComments: true,
+            excludeRemovedComments: true,
+            parentCid: comment.cid
+        };
+
+        const children: Pick<CommentsTableRow, "cid" | "timestamp">[] = await this._basePageQuery(activeScoreOptions, trx).select([
+            `${TABLES.COMMENTS}.cid`,
+            `${TABLES.COMMENTS}.timestamp`
+        ]);
         if (children.length > 0) await updateMaxTimestamp(children);
 
         return maxTimestamp;
@@ -921,6 +938,7 @@ export class DbHandler {
         const lastChildCidRaw = await this._baseTransaction(trx)(TABLES.COMMENTS)
             .where("parentCid", comment.cid)
             .orderBy("id", "desc")
+            .select(["cid", "timestamp"])
             .first();
         const lastReplyTimestamp = lastChildCidRaw ? await this.queryActiveScore(comment, trx) : undefined;
         return {
