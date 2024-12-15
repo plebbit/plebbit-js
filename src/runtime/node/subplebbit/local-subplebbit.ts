@@ -150,7 +150,7 @@ import fsPromises from "fs/promises";
 import { CID, globSource } from "kubo-rpc-client";
 import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
 import type { SubplebbitEditPubsubMessagePublication } from "../../../publications/subplebbit-edit/types.js";
-import { default as lodashDeepMerge } from "lodash/merge"; // Importing only the `merge` function
+import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLocalSubplebbitParsedOptions {
