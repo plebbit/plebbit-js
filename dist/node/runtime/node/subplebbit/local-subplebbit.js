@@ -287,14 +287,12 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         // if this._stopHasBeenCalled = false, it means we're gonna publish another update very soon, so the record should not live for long
         // TODO double check these values
         const ttl = `${this._plebbit.publishInterval * 3}ms`;
-        const lifetime = `999999h`; // doesn't matter anyway, DHT drops all entries after 24h
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
             allowOffline: true,
-            ttl,
-            lifetime
+            ttl
         });
-        log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl}) and lifetime (${lifetime})`);
+        log(`Published a new IPNS record for sub(${this.address}) on IPNS (${publishRes.name}) that points to file (${publishRes.value}) with updatedAt (${newSubplebbitRecord.updatedAt}) and TTL (${ttl})`);
         if (this.updateCid)
             this._cidsToUnPin.push(this.updateCid); // add old cid of subplebbit to be unpinned
         this._unpinStaleCids().catch((err) => log.error("Failed to unpin stale cids due to ", err));
