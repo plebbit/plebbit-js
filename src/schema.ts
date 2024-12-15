@@ -74,6 +74,12 @@ export const PlebbitUserOptionsSchema = PlebbitUserOptionBaseSchema.extend({
     pubsubHttpClientsOptions: PlebbitUserOptionBaseSchema.shape.pubsubHttpClientsOptions.default([
         { url: "https://pubsubprovider.xyz/api/v0" }
     ]),
+    httpRoutersOptions: PlebbitUserOptionBaseSchema.shape.httpRoutersOptions.default([
+        "https://peers.pleb.bot",
+        "https://routing.lol",
+        "https://peers.forumindex.com",
+        "https://peers.plebpubsub.xyz"
+    ]),
     chainProviders: PlebbitUserOptionBaseSchema.shape.chainProviders.default(defaultChainProviders),
     resolveAuthorAddresses: PlebbitUserOptionBaseSchema.shape.resolveAuthorAddresses.default(true),
     publishInterval: PlebbitUserOptionBaseSchema.shape.publishInterval.default(20000),
