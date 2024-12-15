@@ -1787,7 +1787,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
                 log.error("Failed to GC ipfs repo due to error", e);
             }
 
-            log("GC cleaned", gcCids, "out of the IPFS node");
+            log("GC cleaned", gcCids, "cids out of the IPFS node");
         }
     }
 
