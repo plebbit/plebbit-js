@@ -180,6 +180,7 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("commentUpdateSubscribe", this.commentUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("subplebbitUpdateSubscribe", this.subplebbitUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("publishComment", this.publishComment.bind(this));
+        this.rpcWebsocketsRegister("publishSubplebbitEdit", this.publishSubplebbitEdit.bind(this));
         this.rpcWebsocketsRegister("publishVote", this.publishVote.bind(this));
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
         this.rpcWebsocketsRegister("publishCommentModeration", this.publishCommentModeration.bind(this));
@@ -750,7 +751,6 @@ class PlebbitWsServer extends EventEmitter {
 
     async publishSubplebbitEdit(params: any, connectionId: string) {
         const publishOptions = parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
-
 
         const subscriptionId = generateSubscriptionId();
 
