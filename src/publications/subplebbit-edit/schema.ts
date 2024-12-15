@@ -1,12 +1,5 @@
-import z from "zod";
-import { SubplebbitEditOptionsSchema } from "../../subplebbit/schema";
-import {
-    CreatePublicationUserOptionsSchema,
-    JsonSignatureSchema,
-    PlebbitTimestampSchema,
-    PublicationBaseBeforeSigning,
-    SignerWithAddressPublicKeySchema
-} from "../../schema/schema";
+import { SubplebbitEditOptionsSchema } from "../../subplebbit/schema.js";
+import { CreatePublicationUserOptionsSchema, JsonSignatureSchema, PublicationBaseBeforeSigning } from "../../schema/schema.js";
 import * as remeda from "remeda";
 import { keysToOmitFromSignedPropertyNames } from "../../signer/constants.js";
 
