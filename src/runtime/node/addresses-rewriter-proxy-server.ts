@@ -118,7 +118,12 @@ export class AddressesRewriterProxyServer {
                     const peerId: string = idRes["ID"];
                     const addresses: string[] = idRes["Addresses"];
                     if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
-                    if (!Array.isArray(addresses)) throw Error("Failed to get addresses of kubo node");
+                    if (!Array.isArray(addresses))
+                        debug.error(
+                            "Could not get addresses of kubo node",
+                            kuboApiUrl,
+                            "If this error persists in production, then there's an issue"
+                        );
                     this.addresses[peerId] = addresses;
                 } catch (e) {
                     const error = <Error>e;
