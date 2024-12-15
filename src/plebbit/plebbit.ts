@@ -281,7 +281,8 @@ export class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbi
             this.subplebbits = []; // subplebbits = [] on browser
         }
 
-        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && typeof process !== "undefined") {
+        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
+            // only for node
             setupIpfsAddressesRewriterAndHttpRouters(this)
                 .then(() =>
                     log(
