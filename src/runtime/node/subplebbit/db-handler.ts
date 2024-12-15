@@ -887,7 +887,6 @@ export class DbHandler {
                 .where("commentCid", comment.cid)
                 .whereNotNull("reason")
                 .orderBy("id", "desc")
-                .select(["reason"])
                 .first()
         );
         return res;
@@ -906,7 +905,6 @@ export class DbHandler {
                         .where("commentCid", cid)
                         .whereNotNull(field)
                         .orderBy("id", "desc")
-                        .select([field])
                         .first()
                 )
             ))
