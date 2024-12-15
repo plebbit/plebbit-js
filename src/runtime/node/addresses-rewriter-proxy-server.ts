@@ -12,7 +12,7 @@ type AddressesRewriterOptions = {
 };
 
 export class AddressesRewriterProxyServer {
-    addresses: Record<string, string>;
+    addresses: Record<string, string[]>; // Peer id => addresses
     plebbitOptions: AddressesRewriterOptions["plebbitOptions"];
     port: number;
     hostname: string;
@@ -112,14 +112,14 @@ export class AddressesRewriterProxyServer {
                 if (!ipfsHttpClientOptions) throw Error("should have a defined ipfs http client option to start the address rewriter");
                 const kuboApiUrl = typeof ipfsHttpClientOptions === "string" ? ipfsHttpClientOptions : ipfsHttpClientOptions.url;
                 try {
-                    const { ID: peerId } = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then(
-                        (res) => res.json()
+                    const idRes = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) =>
+                        res.json()
                     );
-                    const res = await fetch(`${kuboApiUrl}/swarm/addrs/listen`, {
-                        method: "POST",
-                        headers: ipfsHttpClientOptions.headers
-                    }).then((res) => res.json());
-                    this.addresses[peerId] = res.Strings;
+                    const peerId: string = idRes["ID"];
+                    const addresses: string[] = idRes["Addresses"];
+                    if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
+                    if (!Array.isArray(addresses)) throw Error("Failed to get addresses of kubo node");
+                    this.addresses[peerId] = addresses;
                 } catch (e) {
                     const error = <Error>e;
                     debug("tryUpdateAddresses error:", error.message, { kuboApiUrl });
