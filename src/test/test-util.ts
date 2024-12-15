@@ -282,6 +282,7 @@ export async function startSubplebbits(props: {
         publishInterval: 3000,
         updateInterval: 3000
     });
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // wait for 5 seconds for plebbit to change ipfs config and restart the node
     const signer = await plebbit.createSigner(props.signers[0]);
     const mainSub = await createSubWithNoChallenge({ signer }, plebbit); // most publications will be on this sub
 
