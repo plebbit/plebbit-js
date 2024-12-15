@@ -132,13 +132,12 @@ const startIpfsNodes = async () => {
     if (startOnlineSub) ipfsNodesToRun.push(onlineNodeArgs);
     for (const nodeArgs of ipfsNodesToRun) {
         const res = await startIpfsNode(nodeArgs);
-        if (nodeArgs.apiPort === 15006) {
-            // is this http router config node
-            res.ipfsProcess.on("exit", async () => {
-                console.log("ipfs node for http router has been shut down. Will attempt to restart");
-                await startIpfsNode(nodeArgs);
-            });
-        }
+
+        // is this http router config node
+        res.ipfsProcess.on("exit", async () => {
+            console.log("ipfs node for http router has been shut down. Will attempt to restart");
+            await startIpfsNode(nodeArgs);
+        });
     }
 };
 
