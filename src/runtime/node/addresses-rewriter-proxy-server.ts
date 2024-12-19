@@ -31,6 +31,9 @@ export class AddressesRewriterProxyServer {
 
     listen(callback?: () => void) {
         this._startUpdateAddressesLoop();
+        this.server.on("error", (err) =>
+            debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err)
+        );
         this.server.listen(this.port, this.hostname, callback);
         debug(
             "Addresses rewriter proxy at",
