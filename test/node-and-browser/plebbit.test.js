@@ -9,7 +9,8 @@ import {
     mockPlebbit,
     itIfRpc,
     describeIfRpc,
-    getRemotePlebbitConfigs
+    getRemotePlebbitConfigs,
+    mockRemotePlebbitIpfsOnly
 } from "../../dist/node/test/test-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 chai.use(chaiAsPromised);
@@ -215,7 +216,7 @@ describe("plebbit.fetchCid", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
         gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
-        ipfsPlebbit = await mockPlebbit({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"] });
+        ipfsPlebbit = await mockRemotePlebbitIpfsOnly();
     });
 
     it(`Can fetch a cid correctly`, async () => {

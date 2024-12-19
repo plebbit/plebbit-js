@@ -325,7 +325,7 @@ export function mockDefaultOptionsForNodeAndBrowserTests(): Pick<
 > {
     const shouldUseRPC = isRpcFlagOn();
 
-    if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
+    if (shouldUseRPC) return { plebbitRpcClientsOptions: ["ws://localhost:39652"], httpRoutersOptions: [] };
     else
         return {
             ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
