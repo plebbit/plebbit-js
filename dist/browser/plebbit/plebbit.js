@@ -6,7 +6,7 @@ import { createSigner, verifyCommentPubsubMessage } from "../signer/index.js";
 import { CommentEdit } from "../publications/comment-edit/comment-edit.js";
 import Logger from "@plebbit/plebbit-logger";
 import env from "../version.js";
-import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signVote, verifyCommentEdit } from "../signer/signatures.js";
+import { cleanUpBeforePublishing, signComment, signCommentEdit, signCommentModeration, signSubplebbitEdit, signVote, verifyCommentEdit, verifySubplebbitEdit } from "../signer/signatures.js";
 import { TypedEmitter } from "tiny-typed-emitter";
 import Stats from "../stats.js";
 import Storage from "../runtime/browser/storage.js";
@@ -20,9 +20,10 @@ import pTimeout, { TimeoutError } from "p-timeout";
 import * as remeda from "remeda";
 import { AuthorAddressSchema, AuthorReservedFields, SubplebbitAddressSchema } from "../schema/schema.js";
 import { PubsubTopicSchema, SubplebbitIpfsSchema } from "../subplebbit/schema.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails, parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails, parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails, parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails, parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails, parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseSubplebbitAddressWithPlebbitErrorIfItFails, parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
+import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentIpfsSchemaWithPlebbitErrorIfItFails, parseCommentModerationPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseCommentPubsubMessagePublicationWithPlebbitErrorIfItFails, parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentModerationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails, parseCreateRemoteSubplebbitFunctionArgumentSchemaWithPlebbitErrorIfItFails, parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails, parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails, parseCreateVoteOptionsSchemaWithPlebbitErrorIfItFails, parsePlebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseSubplebbitAddressWithPlebbitErrorIfItFails, parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails, parseVotePubsubMessagePublicationSchemaWithPlebbitErrorIfItFails } from "../schema/schema-util.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import { setupIpfsAddressesRewriterAndHttpRouters } from "../runtime/browser/setup-ipfs-rewrite-and-http-router.js";
+import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
 export class Plebbit extends TypedEmitter {
     constructor(options) {
         super();
@@ -139,7 +140,8 @@ export class Plebbit extends TypedEmitter {
         else {
             this.subplebbits = []; // subplebbits = [] on browser
         }
-        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && typeof process !== "undefined") {
+        if (this.httpRoutersOptions?.length && this.ipfsHttpClientsOptions?.length && this._canCreateNewLocalSub()) {
+            // only for node
             setupIpfsAddressesRewriterAndHttpRouters(this)
                 .then(() => log("Set http router options and their proxies successfully on all connected ipfs", Object.keys(this.clients.ipfsClients)))
                 .catch((e) => {
@@ -600,6 +602,54 @@ export class Plebbit extends TypedEmitter {
             });
         }
         return modInstance;
+    }
+    async _createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(jsonfied) {
+        const subplebbitEditInstance = new SubplebbitEdit(this);
+        // we stringify here to remove functions and create a deep copy
+        Object.assign(subplebbitEditInstance, remeda.omit(JSON.parse(JSON.stringify(jsonfied)), ["state", "publishingState", "clients"]));
+        if (jsonfied.publishingState !== "succeeded") {
+            // only initialze when subplebbitEdit is not published
+            const pubsubMsgToPublish = {
+                ...remeda.pick(jsonfied, jsonfied.signature.signedPropertyNames),
+                signature: jsonfied.signature
+            };
+            //@ts-expect-error
+            pubsubMsgToPublish.author = remeda.omit(pubsubMsgToPublish.author, AuthorReservedFields); // will remove subplebbit and shortAddress for us
+            const signatureValidity = await verifySubplebbitEdit(pubsubMsgToPublish, this.resolveAuthorAddresses, this._clientsManager, false);
+            if (!signatureValidity.valid)
+                throw new PlebbitError("ERR_UNABLE_TO_DERIVE_PUBSUB_SUBPLEBBIT_EDIT_PUBLICATION_FROM_JSONIFIED_SUBPLEBBIT_EDIT", {
+                    signatureValidity,
+                    pubsubMsgToPublish
+                });
+            subplebbitEditInstance._pubsubMsgToPublish = pubsubMsgToPublish;
+        }
+        return subplebbitEditInstance;
+    }
+    async createSubplebbitEdit(options) {
+        const log = Logger("plebbit-js:plebbit:createSubplebbitEdit");
+        if ("clients" in options)
+            return this._createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(options);
+        const subplebbitEditInstance = new SubplebbitEdit(this);
+        if ("signature" in options) {
+            const parsedOptions = parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(options);
+            subplebbitEditInstance._initRemoteProps(parsedOptions);
+        }
+        else {
+            const parsedOptions = parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails(options);
+            const finalOptions = (await this._initMissingFieldsOfPublicationBeforeSigning(parsedOptions, log));
+            const cleanedFinalOptions = cleanUpBeforePublishing(finalOptions);
+            const signature = await signSubplebbitEdit(cleanedFinalOptions, this);
+            const signedSubplebbitEdit = {
+                ...remeda.pick(cleanedFinalOptions, signature.signedPropertyNames),
+                signature
+            };
+            subplebbitEditInstance._initLocalProps({
+                challengeRequest: parsedOptions.challengeRequest,
+                signer: finalOptions.signer,
+                subplebbitEdit: signedSubplebbitEdit
+            });
+        }
+        return subplebbitEditInstance;
     }
     createSigner(createSignerOptions) {
         return createSigner(createSignerOptions);

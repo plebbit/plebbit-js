@@ -253,7 +253,8 @@ const getSubplebbitChallengeFromSubplebbitChallengeSettings = (subplebbitChallen
         exclude: subplebbitChallengeSettings.exclude,
         description: subplebbitChallengeSettings.description || challengeFile.description,
         challenge,
-        type
+        type,
+        caseInsensitive: challengeFile.caseInsensitive
     };
 };
 export { plebbitJsChallenges, getPendingChallengesOrChallengeVerification, getChallengeVerificationFromChallengeAnswers, getChallengeVerification, getSubplebbitChallengeFromSubplebbitChallengeSettings };

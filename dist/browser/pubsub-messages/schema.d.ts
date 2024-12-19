@@ -12198,6 +12198,4312 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough">>>;
+    subplebbitEdit: z.ZodOptional<z.ZodObject<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", z.ZodTypeAny, z.objectOutputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough">, z.objectInputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough">>>;
 }, "strip", z.ZodTypeAny, {
     commentEdit?: z.objectOutputType<z.objectUtil.extendShape<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
         signer: z.ZodObject<{
@@ -15686,6 +19992,1442 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough"> | undefined;
+    subplebbitEdit?: z.objectOutputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
     commentEdit?: z.objectInputType<z.objectUtil.extendShape<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
         signer: z.ZodObject<{
@@ -19174,6 +24916,1442 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough"> | undefined;
+    subplebbitEdit?: z.objectInputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
 export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.extendShape<{
     comment: z.ZodOptional<z.ZodEffects<z.ZodObject<z.objectUtil.extendShape<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
@@ -31263,6 +38441,4312 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "commentModeration">, z.ZodTypeAny, "passthrough">>>;
+    subplebbitEdit: z.ZodOptional<z.ZodObject<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, "passthrough", z.ZodTypeAny, z.objectOutputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough">, z.objectInputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough">>>;
 }, {
     challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
     challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
@@ -34756,6 +46240,1442 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough"> | undefined;
+    subplebbitEdit?: z.objectOutputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
     challengeAnswers?: [string, ...string[]] | undefined;
     challengeCommentCids?: string[] | undefined;
@@ -38246,6 +51166,1442 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             }, z.ZodTypeAny, "passthrough">>>;
         }, z.ZodTypeAny, "passthrough">>;
     }>, z.ZodTypeAny, "passthrough"> | undefined;
+    subplebbitEdit?: z.objectInputType<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
+        signer: z.ZodObject<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+        }>;
+        author: z.ZodOptional<z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodOptional<z.ZodString>;
+            previousCommentCid: z.ZodOptional<z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>>;
+            displayName: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            wallets: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>>;
+            avatar: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flair: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+        }, z.ZodTypeAny, "passthrough">>>;
+        subplebbitAddress: z.ZodString;
+        protocolVersion: z.ZodOptional<z.ZodString>;
+        timestamp: z.ZodOptional<z.ZodNumber>;
+        challengeRequest: z.ZodOptional<z.ZodObject<{
+            challengeAnswers: z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>;
+            challengeCommentCids: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodString, string, string>, "many">>;
+        }, "strip", z.ZodTypeAny, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }, {
+            challengeAnswers?: [string, ...string[]] | undefined;
+            challengeCommentCids?: string[] | undefined;
+        }>>;
+    }, {
+        subplebbitEdit: z.ZodObject<{
+            address: z.ZodOptional<z.ZodString>;
+            title: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            description: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            pubsubTopic: z.ZodOptional<z.ZodOptional<z.ZodString>>;
+            rules: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
+            features: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            suggested: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough">>>>;
+            flairs: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodArray<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>, "many">>>>;
+            settings: z.ZodOptional<z.ZodOptional<z.ZodObject<{
+                fetchThumbnailUrls: z.ZodOptional<z.ZodBoolean>;
+                fetchThumbnailUrlsProxyUrl: z.ZodOptional<z.ZodString>;
+                challenges: z.ZodOptional<z.ZodArray<z.ZodEffects<z.ZodObject<{
+                    path: z.ZodOptional<z.ZodString>;
+                    name: z.ZodOptional<z.ZodString>;
+                    options: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
+                    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">>, "many">>;
+                    description: z.ZodOptional<z.ZodString>;
+                }, "strict", z.ZodTypeAny, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }, {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }>, "many">>;
+            }, "strict", z.ZodTypeAny, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }, {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            }>>>;
+            roles: z.ZodOptional<z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnion<[z.ZodObject<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough">>, z.ZodUndefined]>>>>;
+        }, "strict", z.ZodTypeAny, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectOutputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectOutputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectOutputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectOutputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }, {
+            address?: string | undefined;
+            title?: string | undefined;
+            description?: string | undefined;
+            pubsubTopic?: string | undefined;
+            roles?: Record<string, z.objectInputType<{
+                role: z.ZodEnum<["owner", "admin", "moderator"]>;
+            }, z.ZodTypeAny, "passthrough"> | undefined> | undefined;
+            rules?: string[] | undefined;
+            features?: z.objectInputType<{
+                noVideos: z.ZodOptional<z.ZodBoolean>;
+                noSpoilers: z.ZodOptional<z.ZodBoolean>;
+                noImages: z.ZodOptional<z.ZodBoolean>;
+                noVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                noSpoilerReplies: z.ZodOptional<z.ZodBoolean>;
+                noImageReplies: z.ZodOptional<z.ZodBoolean>;
+                noPolls: z.ZodOptional<z.ZodBoolean>;
+                noCrossposts: z.ZodOptional<z.ZodBoolean>;
+                noUpvotes: z.ZodOptional<z.ZodBoolean>;
+                noDownvotes: z.ZodOptional<z.ZodBoolean>;
+                noAuthors: z.ZodOptional<z.ZodBoolean>;
+                anonymousAuthors: z.ZodOptional<z.ZodBoolean>;
+                noNestedReplies: z.ZodOptional<z.ZodBoolean>;
+                safeForWork: z.ZodOptional<z.ZodBoolean>;
+                authorFlairs: z.ZodOptional<z.ZodBoolean>;
+                requireAuthorFlairs: z.ZodOptional<z.ZodBoolean>;
+                postFlairs: z.ZodOptional<z.ZodBoolean>;
+                requirePostFlairs: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownImages: z.ZodOptional<z.ZodBoolean>;
+                noMarkdownVideos: z.ZodOptional<z.ZodBoolean>;
+                markdownImageReplies: z.ZodOptional<z.ZodBoolean>;
+                markdownVideoReplies: z.ZodOptional<z.ZodBoolean>;
+                requirePostLink: z.ZodOptional<z.ZodBoolean>;
+                requirePostLinkIsMedia: z.ZodOptional<z.ZodBoolean>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            suggested?: z.objectInputType<{
+                primaryColor: z.ZodOptional<z.ZodString>;
+                secondaryColor: z.ZodOptional<z.ZodString>;
+                avatarUrl: z.ZodOptional<z.ZodString>;
+                bannerUrl: z.ZodOptional<z.ZodString>;
+                backgroundUrl: z.ZodOptional<z.ZodString>;
+                language: z.ZodOptional<z.ZodString>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flairs?: Record<string, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">[]> | undefined;
+            settings?: {
+                challenges?: {
+                    path?: string | undefined;
+                    options?: Record<string, string> | undefined;
+                    exclude?: z.objectInputType<{
+                        subplebbit: z.ZodOptional<z.ZodObject<{
+                            addresses: z.ZodArray<z.ZodString, "many">;
+                            maxCommentCids: z.ZodNumber;
+                            postScore: z.ZodOptional<z.ZodNumber>;
+                            replyScore: z.ZodOptional<z.ZodNumber>;
+                            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        }, "strict", z.ZodTypeAny, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }, {
+                            addresses: string[];
+                            maxCommentCids: number;
+                            postScore?: number | undefined;
+                            replyScore?: number | undefined;
+                            firstCommentTimestamp?: number | undefined;
+                        }>>;
+                        postScore: z.ZodOptional<z.ZodNumber>;
+                        replyScore: z.ZodOptional<z.ZodNumber>;
+                        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+                        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+                        post: z.ZodOptional<z.ZodBoolean>;
+                        reply: z.ZodOptional<z.ZodBoolean>;
+                        vote: z.ZodOptional<z.ZodBoolean>;
+                        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+                        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+                        rateLimit: z.ZodOptional<z.ZodNumber>;
+                        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+                    }, z.ZodTypeAny, "passthrough">[] | undefined;
+                    description?: string | undefined;
+                    name?: string | undefined;
+                }[] | undefined;
+                fetchThumbnailUrls?: boolean | undefined;
+                fetchThumbnailUrlsProxyUrl?: string | undefined;
+            } | undefined;
+        }>;
+    }>, {
+        signer: z.ZodObject<z.objectUtil.extendShape<{
+            type: z.ZodEnum<["ed25519"]>;
+            privateKey: z.ZodString;
+        }, {
+            address: z.ZodString;
+            publicKey: z.ZodString;
+        }>, "strip", z.ZodTypeAny, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }, {
+            type: "ed25519";
+            privateKey: string;
+            address: string;
+            publicKey: string;
+        }>;
+        timestamp: z.ZodNumber;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "strict", z.ZodTypeAny, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }, {
+            address: string;
+            previousCommentCid?: string | undefined;
+            displayName?: string | undefined;
+            wallets?: Record<string, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }> | undefined;
+            avatar?: z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+            flair?: z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough"> | undefined;
+        }>;
+        protocolVersion: z.ZodString;
+    }>, {
+        signature: z.ZodObject<{
+            type: z.ZodEnum<["ed25519", "eip191"]>;
+            signature: z.ZodString;
+            publicKey: z.ZodString;
+            signedPropertyNames: z.ZodArray<z.ZodString, "many">;
+        }, "strip", z.ZodTypeAny, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }, {
+            type: "ed25519" | "eip191";
+            publicKey: string;
+            signature: string;
+            signedPropertyNames: string[];
+        }>;
+        author: z.ZodObject<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+            address: z.ZodString;
+            previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+            displayName: z.ZodOptional<z.ZodString>;
+            wallets: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodObject<{
+                address: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "strip", z.ZodTypeAny, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }, {
+                address: string;
+                timestamp: number;
+                signature: {
+                    type: "eip191";
+                    signature: string;
+                };
+            }>>>;
+            avatar: z.ZodOptional<z.ZodObject<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                chainTicker: z.ZodString;
+                address: z.ZodString;
+                id: z.ZodString;
+                timestamp: z.ZodNumber;
+                signature: z.ZodObject<{
+                    signature: z.ZodString;
+                    type: z.ZodEnum<["eip191"]>;
+                }, "strip", z.ZodTypeAny, {
+                    type: "eip191";
+                    signature: string;
+                }, {
+                    type: "eip191";
+                    signature: string;
+                }>;
+            }, z.ZodTypeAny, "passthrough">>>;
+            flair: z.ZodOptional<z.ZodObject<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+                text: z.ZodString;
+                backgroundColor: z.ZodOptional<z.ZodString>;
+                textColor: z.ZodOptional<z.ZodString>;
+                expiresAt: z.ZodOptional<z.ZodNumber>;
+            }, z.ZodTypeAny, "passthrough">>>;
+        }, z.ZodTypeAny, "passthrough">>;
+    }>, "timestamp" | "signature" | "author" | "subplebbitAddress" | "protocolVersion" | "subplebbitEdit">, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
 export declare const ChallengeRequestMessageSignedPropertyNames: ("type" | "timestamp" | "protocolVersion" | "challengeRequestId" | "userAgent" | "encrypted" | "acceptedChallengeTypes")[];
 export declare const ChallengeInChallengePubsubMessageSchema: z.ZodObject<{

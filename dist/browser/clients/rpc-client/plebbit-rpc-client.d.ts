@@ -40,6 +40,7 @@ export default class PlebbitRpcClient extends TypedEmitter<PlebbitRpcClientEvent
     publishCommentEdit(commentEditProps: DecryptedChallengeRequest): Promise<number>;
     publishCommentModeration(commentModProps: DecryptedChallengeRequest): Promise<number>;
     publishVote(voteProps: DecryptedChallengeRequest): Promise<number>;
+    publishSubplebbitEdit(subplebbitEdit: DecryptedChallengeRequest): Promise<number>;
     commentUpdateSubscribe(commentCid: string): Promise<number>;
     publishChallengeAnswers(subscriptionId: number, challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"]): Promise<true>;
     resolveAuthorAddress(parsedAuthorAddress: string): Promise<string | null>;

@@ -3,6 +3,10 @@ import { PlebbitError } from "../plebbit-error.js";
 import type { PubsubMessage } from "../pubsub-messages/types";
 import type { ChainTicker, PubsubSubscriptionHandler } from "../types.js";
 export type LoadType = "subplebbit" | "comment-update" | "comment" | "page-ipfs" | "generic-ipfs";
+export type CachedResolve = {
+    timestampSeconds: number;
+    valueOfTextRecord: string | null;
+};
 export type OptionsToLoadFromGateway = {
     recordIpfsType: "ipfs" | "ipns";
     root: string;
@@ -70,9 +74,9 @@ export declare class BaseClientsManager {
     private _getKeyOfCachedDomainTextRecord;
     private _getCachedTextRecord;
     private _resolveTextRecordWithCache;
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string | null, chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, error: Error): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string | null, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, error: Error, staleCache?: CachedResolve): void;
     private _resolveTextRecordSingleChainProvider;
     private _resolveTextRecordConcurrently;
     resolveSubplebbitAddressIfNeeded(subplebbitAddress: string): Promise<string | null>;

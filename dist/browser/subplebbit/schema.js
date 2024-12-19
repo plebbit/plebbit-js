@@ -104,14 +104,6 @@ export const ChallengeExcludeSchema = z
     rateLimitChallengeSuccess: z.boolean().optional()
 })
     .passthrough();
-export const SubplebbitChallengeSchema = z
-    .object({
-    exclude: ChallengeExcludeSchema.array().optional(),
-    description: z.string().optional(), // TODO eventually use ChallengeFile.description
-    challenge: z.string().optional(), // TODO eventually use ChallengeFile.challenge
-    type: z.string().optional() // TODO eventually use ChallengeFile.type
-})
-    .passthrough();
 export const SubplebbitChallengeSettingSchema = z
     .object({
     // the private settings of the challenge (subplebbit.settings.challenges)
@@ -141,6 +133,15 @@ export const ChallengeFileSchema = z
         .returns(z.promise(ResultOfGetChallengeSchema))
 })
     .strict();
+export const SubplebbitChallengeSchema = z
+    .object({
+    exclude: ChallengeExcludeSchema.array().optional(),
+    description: ChallengeFileSchema.shape.description,
+    challenge: ChallengeFileSchema.shape.challenge,
+    type: ChallengeFileSchema.shape.type,
+    caseInsensitive: ChallengeFileSchema.shape.caseInsensitive
+})
+    .passthrough();
 export const ChallengeFileFactorySchema = z.function().args(SubplebbitChallengeSettingSchema).returns(ChallengeFileSchema);
 // Subplebbit actual schemas here
 export const SubplebbitIpfsSchema = z

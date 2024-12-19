@@ -20,6 +20,8 @@ import { CidStringSchema, SubplebbitAddressSchema } from "../schema/schema.js";
 import { CreateSubplebbitFunctionArgumentsSchema } from "../subplebbit/schema.js";
 import { CommentModeration } from "../publications/comment-moderation/comment-moderation.js";
 import type { CommentModerationPubsubMessagePublication, CommentModerationTypeJson, CreateCommentModerationOptions } from "../publications/comment-moderation/types.js";
+import SubplebbitEdit from "../publications/subplebbit-edit/subplebbit-edit.js";
+import { CreateSubplebbitEditPublicationOptions, SubplebbitEditJson, SubplebbitEditPubsubMessagePublication } from "../publications/subplebbit-edit/types.js";
 export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements ParsedPlebbitOptions {
     ipfsGatewayUrls: ParsedPlebbitOptions["ipfsGatewayUrls"];
     ipfsHttpClientsOptions?: ParsedPlebbitOptions["ipfsHttpClientsOptions"];
@@ -93,6 +95,8 @@ export declare class Plebbit extends TypedEmitter<PlebbitEvents> implements Pars
     createCommentEdit(options: CreateCommentEditOptions | CommentEditPubsubMessagePublication | CommentEditTypeJson): Promise<CommentEdit>;
     _createCommentModerationInstanceFromJsonfiedCommentModeration(jsonfied: CommentModerationTypeJson): Promise<CommentModeration>;
     createCommentModeration(options: CreateCommentModerationOptions | CommentModerationPubsubMessagePublication | CommentModerationTypeJson): Promise<CommentModeration>;
+    _createSubplebbitEditInstanceFromJsonfiedSubplebbitEdit(jsonfied: SubplebbitEditJson): Promise<SubplebbitEdit>;
+    createSubplebbitEdit(options: CreateSubplebbitEditPublicationOptions | SubplebbitEditPubsubMessagePublication | SubplebbitEditJson): Promise<SubplebbitEdit>;
     createSigner(createSignerOptions?: CreateSignerOptions): Promise<import("../signer/index.js").SignerWithPublicKeyAddress>;
     fetchCid(cid: string): Promise<string>;
     pubsubSubscribe(pubsubTopic: string): Promise<void>;

@@ -36,6 +36,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
 }, {
     ipfsGatewayUrls: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>>;
     pubsubHttpClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+    httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
     chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
         urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
         chainId: z.ZodNumber;
@@ -55,6 +56,7 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
 }>, "strict", z.ZodTypeAny, {
     userAgent: string;
     ipfsGatewayUrls: [string, ...string[]];
+    httpRoutersOptions: string[];
     pubsubHttpClientsOptions: import("kubo-rpc-client").Options[];
     chainProviders: Record<string, {
         urls: string[];
@@ -66,7 +68,6 @@ export declare const PlebbitUserOptionsSchema: z.ZodObject<z.objectUtil.extendSh
     noData: boolean;
     browserLibp2pJsPublish: boolean;
     ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
-    httpRoutersOptions?: string[] | undefined;
     plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
     dataPath?: string | undefined;
 }, {

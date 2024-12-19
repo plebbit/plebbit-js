@@ -249,6 +249,10 @@ export default class PlebbitRpcClient extends TypedEmitter {
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishVote", [voteProps]));
         return subscriptionId;
     }
+    async publishSubplebbitEdit(subplebbitEdit) {
+        const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("publishSubplebbitEdit", [subplebbitEdit]));
+        return subscriptionId;
+    }
     async commentUpdateSubscribe(commentCid) {
         const parsedCid = parseCidStringSchemaWithPlebbitErrorIfItFails(commentCid);
         const subscriptionId = SubscriptionIdSchema.parse(await this._webSocketClient.call("commentUpdateSubscribe", [parsedCid]));

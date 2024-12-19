@@ -70,15 +70,24 @@ export class ClientsManager extends BaseClientsManager {
     postFetchGatewayAborted(gatewayUrl, loadOpts) {
         this.postFetchGatewaySuccess(gatewayUrl, loadOpts);
     }
-    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) {
-        const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
-        this.updateChainProviderState(newState, chain, chainProviderUrl);
+    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) {
+        // only update state if there's no cache
+        if (!staleCache) {
+            const newState = txtRecordName === "subplebbit-address" ? "resolving-subplebbit-address" : "resolving-author-address";
+            this.updateChainProviderState(newState, chain, chainProviderUrl);
+        }
     }
-    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
-        this.updateChainProviderState("stopped", chain, chainProviderUrl);
+    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) {
+        // only update state if there's no cache
+        if (!staleCache) {
+            this.updateChainProviderState("stopped", chain, chainProviderUrl);
+        }
     }
-    postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl) {
-        this.updateChainProviderState("stopped", chain, chainProviderUrl);
+    postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl, error, staleCache) {
+        // only update state if there's no cache
+        if (!staleCache) {
+            this.updateChainProviderState("stopped", chain, chainProviderUrl);
+        }
     }
     // State methods here
     updatePubsubState(newState, pubsubProvider) {
@@ -358,15 +367,15 @@ export class PublicationClientsManager extends ClientsManager {
             };
     }
     // Resolver methods here
-    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) {
-        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
+    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) {
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
         const isStartingToPublish = this._publication.publishingState === "stopped" || this._publication.publishingState === "failed";
-        if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish)
+        if (this._publication.state === "publishing" && txtRecordName === "subplebbit-address" && isStartingToPublish && !staleCache)
             this._publication._updatePublishingState("resolving-subplebbit-address");
     }
-    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
+    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) {
         // TODO should check for regex of ipns eventually
-        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         if (!resolvedTextRecord) {
             this._publication._updatePublishingState("failed");
             const error = new PlebbitError("ERR_DOMAIN_TXT_RECORD_NOT_FOUND", {
@@ -436,9 +445,9 @@ export class CommentClientsManager extends PublicationClientsManager {
             this.clients.plebbitRpcClients = { ...this.clients.plebbitRpcClients, [rpcUrl]: new CommentPlebbitRpcStateClient("stopped") };
     }
     // Resolver methods here
-    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) {
-        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
-        if (this._comment.state === "updating") {
+    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) {
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
+        if (this._comment.state === "updating" && !staleCache) {
             if (txtRecordName === "subplebbit-address")
                 this._comment._setUpdatingState("resolving-subplebbit-address"); // Resolving for Subplebbit
             else if (txtRecordName === "plebbit-author-address")
@@ -685,8 +694,8 @@ export class CommentClientsManager extends PublicationClientsManager {
     _isPublishing() {
         return this._comment.state === "publishing";
     }
-    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
-        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) {
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord) {
             // need to check if publishing or updating
@@ -796,16 +805,17 @@ export class SubplebbitClientsManager extends ClientsManager {
     _getStatePriorToResolvingSubplebbitIpns() {
         return "fetching-ipns";
     }
-    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) {
-        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl);
+    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) {
+        super.preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache);
         if (this._subplebbit.state === "updating" &&
             txtRecordName === "subplebbit-address" &&
+            !staleCache &&
             this._subplebbit.updatingState !== "fetching-ipfs" // we don't state to be resolving-address when verifying signature
         )
             this._subplebbit._setUpdatingState("resolving-address");
     }
-    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) {
-        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl);
+    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) {
+        super.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache);
         // TODO should check for regex of ipns eventually
         if (!resolvedTextRecord && this._subplebbit.state === "updating") {
             this._subplebbit._setUpdatingState("failed");

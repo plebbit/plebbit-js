@@ -149,6 +149,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     }, {
         ipfsGatewayUrls: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>>;
         pubsubHttpClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
@@ -191,6 +192,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     }, {
         ipfsGatewayUrls: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>>;
         pubsubHttpClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
@@ -233,6 +235,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     }, {
         ipfsGatewayUrls: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "atleastone">>>;
         pubsubHttpClientsOptions: z.ZodDefault<z.ZodOptional<z.ZodEffects<z.ZodArray<z.ZodType<string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, z.ZodTypeDef, string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined>, "atleastone">, import("kubo-rpc-client").Options[], [string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined, ...(string | URL | import("@multiformats/multiaddr").Multiaddr | import("kubo-rpc-client").Options | undefined)[]]>>>;
+        httpRoutersOptions: z.ZodDefault<z.ZodOptional<z.ZodArray<z.ZodString, "many">>>;
         chainProviders: z.ZodDefault<z.ZodRecord<z.ZodString, z.ZodObject<{
             urls: z.ZodArray<z.ZodUnion<[z.ZodString, z.ZodEnum<["viem", "ethers.js", "web3.js"]>]>, "many">;
             chainId: z.ZodNumber;
@@ -254,6 +257,7 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
     plebbitOptions: {
         userAgent: string;
         ipfsGatewayUrls: [string, ...string[]];
+        httpRoutersOptions: string[];
         pubsubHttpClientsOptions: import("kubo-rpc-client").Options[];
         chainProviders: Record<string, {
             urls: string[];
@@ -265,7 +269,6 @@ export declare const SetNewSettingsPlebbitWsServerSchema: z.ZodObject<{
         noData: boolean;
         browserLibp2pJsPublish: boolean;
         ipfsHttpClientsOptions?: import("kubo-rpc-client").Options[] | undefined;
-        httpRoutersOptions?: string[] | undefined;
         plebbitRpcClientsOptions?: [string, ...string[]] | undefined;
         dataPath?: string | undefined;
     } & {
@@ -502,8 +505,6 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -536,11 +537,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -573,11 +574,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -610,11 +611,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -647,6 +648,8 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, z.ZodType<import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, z.ZodTypeDef, import("../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>, z.ZodNumber, z.ZodType<import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, z.ZodTypeDef, import("../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
             challenge: z.ZodString;
             verify: z.ZodFunction<z.ZodTuple<[z.ZodLazy<z.ZodString>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
@@ -703,8 +706,6 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
     }, "getChallenge">, "strict", z.ZodTypeAny, {
         type: string;
         description?: string | undefined;
-        challenge?: string | undefined;
-        caseInsensitive?: boolean | undefined;
         optionInputs?: z.objectOutputType<{
             option: z.ZodString;
             label: z.ZodString;
@@ -713,11 +714,11 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             placeholder: z.ZodOptional<z.ZodString>;
             required: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        challenge?: string | undefined;
+        caseInsensitive?: boolean | undefined;
     }, {
         type: string;
         description?: string | undefined;
-        challenge?: string | undefined;
-        caseInsensitive?: boolean | undefined;
         optionInputs?: z.objectInputType<{
             option: z.ZodString;
             label: z.ZodString;
@@ -726,13 +727,13 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             placeholder: z.ZodOptional<z.ZodString>;
             required: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        challenge?: string | undefined;
+        caseInsensitive?: boolean | undefined;
     }>>;
 }, "strip", z.ZodTypeAny, {
     challenges: Record<string, {
         type: string;
         description?: string | undefined;
-        challenge?: string | undefined;
-        caseInsensitive?: boolean | undefined;
         optionInputs?: z.objectOutputType<{
             option: z.ZodString;
             label: z.ZodString;
@@ -741,6 +742,8 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             placeholder: z.ZodOptional<z.ZodString>;
             required: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        challenge?: string | undefined;
+        caseInsensitive?: boolean | undefined;
     }>;
     plebbitOptions: {
         userAgent: string;
@@ -766,8 +769,6 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
     challenges: Record<string, {
         type: string;
         description?: string | undefined;
-        challenge?: string | undefined;
-        caseInsensitive?: boolean | undefined;
         optionInputs?: z.objectInputType<{
             option: z.ZodString;
             label: z.ZodString;
@@ -776,6 +777,8 @@ export declare const PlebbitWsServerSettingsSerializedSchema: z.ZodObject<{
             placeholder: z.ZodOptional<z.ZodString>;
             required: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        challenge?: string | undefined;
+        caseInsensitive?: boolean | undefined;
     }>;
     plebbitOptions: {
         userAgent: string;

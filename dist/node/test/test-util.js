@@ -195,11 +195,12 @@ export async function fetchTestServerSubs() {
 export function mockDefaultOptionsForNodeAndBrowserTests() {
     const shouldUseRPC = isRpcFlagOn();
     if (shouldUseRPC)
-        return { plebbitRpcClientsOptions: ["ws://localhost:39652"] };
+        return { plebbitRpcClientsOptions: ["ws://localhost:39652"], httpRoutersOptions: [] };
     else
         return {
             ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"],
-            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`]
+            pubsubHttpClientsOptions: [`http://localhost:15002/api/v0`, `http://localhost:42234/api/v0`, `http://localhost:42254/api/v0`],
+            httpRoutersOptions: []
         };
 }
 export async function mockPlebbit(plebbitOptions, forceMockPubsub = false, stubStorage = true, mockResolve = true) {

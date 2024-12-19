@@ -3,11 +3,11 @@ import { LRUCache } from "lru-cache";
 import { SortHandler } from "./sort-handler.js";
 import { DbHandler } from "./db-handler.js";
 import { of as calculateIpfsHash } from "typestub-ipfs-only-hash";
-import { doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, isLinkOfMedia, isStringDomain, removeUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
+import { derivePublicationFromChallengeRequest, doesDomainAddressHaveCapitalLetter, genToArray, hideClassPrivateProps, isLinkOfMedia, isStringDomain, removeUndefinedValuesRecursively, throwWithErrorCode, timestamp } from "../../../util.js";
 import { STORAGE_KEYS } from "../../../constants.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 import { PlebbitError } from "../../../plebbit-error.js";
-import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signCommentUpdate, signCommentUpdateForChallengeVerification, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentModeration, verifyCommentUpdate } from "../../../signer/signatures.js";
+import { cleanUpBeforePublishing, signChallengeMessage, signChallengeVerification, signCommentUpdate, signCommentUpdateForChallengeVerification, signSubplebbit, verifyChallengeAnswer, verifyChallengeRequest, verifyCommentEdit, verifyCommentModeration, verifyCommentUpdate, verifySubplebbitEdit } from "../../../signer/signatures.js";
 import { getThumbnailUrlOfLink, importSignerIntoIpfsNode, isDirectoryEmptyRecursive, listSubplebbits, moveSubplebbitDbToDeletedDirectory } from "../util.js";
 import { getErrorCodeFromMessage } from "../../../util.js";
 import { SignerWithPublicKeyAddress, decryptEd25519AesGcmPublicKeyBuffer, verifyCommentIpfs, verifyCommentPubsubMessage, verifySubplebbit, verifyVote } from "../../../signer/index.js";
@@ -21,7 +21,7 @@ import { getIpfsKeyFromPrivateKey, getPlebbitAddressFromPublicKey, getPublicKeyF
 import { RpcLocalSubplebbit } from "../../../subplebbit/rpc-local-subplebbit.js";
 import * as remeda from "remeda";
 import { CommentEditPubsubMessagePublicationSchema, CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema, CommentEditReservedFields } from "../../../publications/comment-edit/schema.js";
-import { SubplebbitIpfsSchema, SubplebbitRoleSchema } from "../../../subplebbit/schema.js";
+import { SubplebbitIpfsSchema } from "../../../subplebbit/schema.js";
 import { ChallengeAnswerMessageSchema, ChallengeMessageSchema, ChallengeRequestMessageSchema, ChallengeVerificationMessageSchema, DecryptedChallengeRequestPublicationSchema, DecryptedChallengeRequestSchema } from "../../../pubsub-messages/schema.js";
 import { parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseJsonWithPlebbitErrorIfFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails } from "../../../schema/schema-util.js";
 import { CommentIpfsSchema, CommentPubsubMessageReservedFields, CommentPubsubMessagePublicationSchema } from "../../../publications/comment/schema.js";
@@ -33,6 +33,8 @@ import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
 import { globSource } from "kubo-rpc-client";
+import { SubplebbitEditPublicationPubsubReservedFields } from "../../../publications/subplebbit-edit/schema.js";
+import { default as lodashDeepMerge } from "lodash.merge"; // Importing only the `merge` function
 // This is a sub we have locally in our plebbit datapath, in a NodeJS environment
 export class LocalSubplebbit extends RpcLocalSubplebbit {
     constructor(plebbit) {
@@ -283,9 +285,6 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const newSubplebbitRecord = { ...newIpns, signature };
         await this._validateSubSchemaAndSignatureBeforePublishing(newSubplebbitRecord);
         const file = await this._clientsManager.getDefaultIpfs()._client.add(deterministicStringify(newSubplebbitRecord));
-        // If this._stopHasBeenCalled = true, then this is the last publish before stopping
-        // if this._stopHasBeenCalled = false, it means we're gonna publish another update very soon, so the record should not live for long
-        // TODO double check these values
         const ttl = `${this._plebbit.publishInterval * 3}ms`;
         const publishRes = await this._clientsManager.getDefaultIpfs()._client.name.publish(file.path, {
             key: this.signer.ipnsKeyName,
@@ -402,6 +401,16 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         log(`inserted new vote in DB`, voteTableRow);
         return undefined;
     }
+    async storeSubplebbitEditPublication(editProps, challengeRequestId) {
+        const log = Logger("plebbit-js:local-subplebbit:storeSubplebbitEdit");
+        const authorSignerAddress = await getPlebbitAddressFromPublicKey(editProps.signature.publicKey);
+        log("Received subplebbit edit", editProps.subplebbitEdit, "from author", editProps.author.address, "with signer address", authorSignerAddress, "Will be using these props to edit the sub props");
+        const propsAfterEdit = remeda.pick(this, remeda.keys.strict(editProps.subplebbitEdit));
+        log("Current props from sub edit (not edited yet)", propsAfterEdit);
+        lodashDeepMerge(propsAfterEdit, editProps.subplebbitEdit);
+        await this.edit(propsAfterEdit);
+        return undefined;
+    }
     isPublicationReply(publication) {
         return Boolean(publication.parentCid);
     }
@@ -494,8 +503,10 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             return this.storeCommentModeration(request.commentModeration, request.challengeRequestId);
         else if (request.comment)
             return this.storeComment(request.comment, request);
+        else if (request.subplebbitEdit)
+            return this.storeSubplebbitEditPublication(request.subplebbitEdit, request.challengeRequestId);
         else
-            throw Error("Don't know how to store this publication");
+            throw Error("Don't know how to store this publication" + request);
     }
     async _decryptOrRespondWithFailure(request) {
         const log = Logger("plebbit-js:local-subplebbit:_decryptOrRespondWithFailure");
@@ -518,6 +529,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             validity = await verifyVote(request.vote, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
         else if (request.commentModeration)
             validity = await verifyCommentModeration(request.commentModeration, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
+        else if (request.subplebbitEdit)
+            validity = await verifySubplebbitEdit(request.subplebbitEdit, this._plebbit.resolveAuthorAddresses, this._clientsManager, false);
         else
             throw Error("Can't detect the type of publication");
         if (!validity.valid) {
@@ -625,23 +638,22 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             log(`Published ${challengeVerification.type} over pubsub:`, remeda.omit(objectToEmit, ["signature", "encrypted", "challengeRequestId"]));
         }
     }
-    async _isModerator(commentModerationPublication) {
+    async _isPublicationAuthorPartOfRoles(publication, rolesToCheckAgainst) {
         if (!this.roles)
             return false;
-        // is the author of CommentModeration a moderator?
-        const modRoles = SubplebbitRoleSchema.shape.role.options; // [mod, admin, owner]
-        const signerAddress = await getPlebbitAddressFromPublicKey(commentModerationPublication.signature.publicKey);
-        if (modRoles.includes(this.roles[signerAddress]?.role))
+        // is the author of publication a moderator?
+        const signerAddress = await getPlebbitAddressFromPublicKey(publication.signature.publicKey);
+        if (rolesToCheckAgainst.includes(this.roles[signerAddress]?.role))
             return true;
         if (this._plebbit.resolveAuthorAddresses) {
-            const resolvedSignerAddress = isStringDomain(commentModerationPublication.author.address)
-                ? await this._plebbit.resolveAuthorAddress(commentModerationPublication.author.address)
-                : commentModerationPublication.author.address;
+            const resolvedSignerAddress = isStringDomain(publication.author.address)
+                ? await this._plebbit.resolveAuthorAddress(publication.author.address)
+                : publication.author.address;
             if (resolvedSignerAddress !== signerAddress)
                 return false;
-            if (modRoles.includes(this.roles[commentModerationPublication.author.address]?.role))
+            if (rolesToCheckAgainst.includes(this.roles[publication.author.address]?.role))
                 return true;
-            if (modRoles.includes(this.roles[resolvedSignerAddress]?.role))
+            if (rolesToCheckAgainst.includes(this.roles[resolvedSignerAddress]?.role))
                 return true;
         }
         return false;
@@ -715,7 +727,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             const commentModerationPublication = request.commentModeration;
             if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(commentModerationPublication)).length > 0)
                 return messages.ERR_COMMENT_MODERATION_HAS_RESERVED_FIELD;
-            const isAuthorMod = await this._isModerator(commentModerationPublication);
+            const isAuthorMod = await this._isPublicationAuthorPartOfRoles(commentModerationPublication, ["owner", "moderator", "admin"]);
             if (!isAuthorMod)
                 return messages.ERR_COMMENT_MODERATION_ATTEMPTED_WITHOUT_BEING_MODERATOR;
             const commentToBeEdited = await this._dbHandler.queryComment(commentModerationPublication.commentCid, undefined); // We assume commentToBeEdited to be defined because we already tested for its existence above
@@ -723,6 +735,26 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 return messages.ERR_COMMENT_MODERATION_NO_COMMENT_TO_EDIT;
             if (isAuthorMod && commentModerationPublication.commentModeration.locked && commentToBeEdited.depth !== 0)
                 return messages.ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY;
+        }
+        else if (request.subplebbitEdit) {
+            const subplebbitEdit = request.subplebbitEdit;
+            if (remeda.intersection(SubplebbitEditPublicationPubsubReservedFields, remeda.keys.strict(subplebbitEdit)).length > 0)
+                return messages.ERR_SUBPLEBBIT_EDIT_HAS_RESERVED_FIELD;
+            if (subplebbitEdit.subplebbitEdit.roles || subplebbitEdit.subplebbitEdit.address) {
+                const isAuthorOwner = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner"]);
+                if (!isAuthorOwner)
+                    return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_OWNER_EXCLUSIVE_PROPS;
+            }
+            const isAuthorOwnerOrAdmin = await this._isPublicationAuthorPartOfRoles(subplebbitEdit, ["owner", "admin"]);
+            if (!isAuthorOwnerOrAdmin) {
+                return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN;
+            }
+            if (remeda.difference(remeda.keys.strict(subplebbitEdit.subplebbitEdit), remeda.keys.strict(SubplebbitIpfsSchema.shape))
+                .length > 0) {
+                // should only be allowed to modify public props from SubplebbitIpfs
+                // shouldn't be able to modify settings for example
+                return messages.ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS;
+            }
         }
         else if (request.commentEdit) {
             const commentEditPublication = request.commentEdit;
@@ -771,9 +803,13 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         const decryptedRawString = await this._decryptOrRespondWithFailure(request);
         const decryptedRequest = await this._parseChallengeRequestPublicationOrRespondWithFailure(request, decryptedRawString);
         const publicationFieldNames = remeda.keys.strict(DecryptedChallengeRequestPublicationSchema.shape);
-        const publication = decryptedRequest.comment || decryptedRequest.commentEdit || decryptedRequest.vote || decryptedRequest.commentModeration;
-        if (!publication)
+        let publication;
+        try {
+            publication = derivePublicationFromChallengeRequest(decryptedRequest);
+        }
+        catch {
             return this._publishFailedChallengeVerification({ reason: messages.ERR_CHALLENGE_REQUEST_ENCRYPTED_HAS_NO_PUBLICATION_AFTER_DECRYPTING }, request.challengeRequestId);
+        }
         let publicationCount = 0;
         publicationFieldNames.forEach((pubField) => {
             if (pubField in decryptedRequest)
@@ -1283,6 +1319,24 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
         if (this._subplebbitUpdateTrigger)
             await this._syncPostUpdatesFilesystemWithIpfs();
     }
+    async _cleanUpIpfsRepoRarely() {
+        const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
+        if (Math.random() < 0.005) {
+            let gcCids = 0;
+            try {
+                for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
+                    if (res.cid)
+                        gcCids++;
+                    else
+                        log.error("Failed to GC ipfs repo due to error", res.err);
+                }
+            }
+            catch (e) {
+                log.error("Failed to GC ipfs repo due to error", e);
+            }
+            log("GC cleaned", gcCids, "cids out of the IPFS node");
+        }
+    }
     async syncIpnsWithDb() {
         const log = Logger("plebbit-js:local-subplebbit:sync");
         await this._dbHandler.initDbIfNeeded();
@@ -1295,6 +1349,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             this._clientsManager.updateIpfsState("publishing-ipns");
             await this._updateCommentsThatNeedToBeUpdated();
             await this.updateSubplebbitIpnsIfNeeded();
+            await this._cleanUpIpfsRepoRarely();
         }
         catch (e) {
             this._setStartedState("failed");
@@ -1446,6 +1501,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
             await this._repinCommentsIPFSIfNeeded();
             await this._repinCommentUpdateIfNeeded();
             await this._listenToIncomingRequests();
+            this.challenges = this.settings.challenges.map(getSubplebbitChallengeFromSubplebbitChallengeSettings); // make sure subplebbit.challenges is using latest props from settings.challenges
         }
         catch (e) {
             await this.stop(); // Make sure to reset the sub state
