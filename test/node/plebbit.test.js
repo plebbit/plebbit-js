@@ -63,8 +63,6 @@ describe(`plebbit.subplebbits`, async () => {
         await plebbit.destroy();
         expect(defaultRpcClient.state).to.equal("stopped");
     });
-
-    
 });
 
 describe(`Plebbit.challenges`, async () => {

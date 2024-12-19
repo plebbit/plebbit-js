@@ -34,6 +34,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             port: rpcServerPort,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -56,6 +57,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -80,6 +82,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -104,6 +107,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -128,6 +132,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -152,6 +157,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -182,6 +188,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -208,6 +215,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };
@@ -232,6 +240,7 @@ describeSkipIfRpc(`Setting up rpc server`, async () => {
             authKey,
             plebbitOptions: {
                 ipfsHttpClientsOptions: plebbit.ipfsHttpClientsOptions,
+                httpRoutersOptions: plebbit.httpRoutersOptions,
                 dataPath: plebbit.dataPath
             }
         };

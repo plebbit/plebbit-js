@@ -80,6 +80,7 @@ const activeScore = async (comment, plebbit) => {
 
     const updateMaxTimestamp = async (localComments) => {
         for (const localComment of localComments) {
+            if (localComment.deleted || localComment.removed) continue; // shouldn't count
             if (localComment.timestamp > maxTimestamp) maxTimestamp = localComment.timestamp;
             if (localComment.replies) {
                 const commentInstance = await plebbit.createComment(localComment);

@@ -46,7 +46,7 @@ describe("Plebbit options", async () => {
 
     it("Plebbit Options is set up correctly when only ipfsHttpClientsOptions is provided", async () => {
         // RPC exception
-        const url = "http://localhost:15001/api/v0";
+        const url = "http://localhost:15018/api/v0"; // offline API
         const options = { ipfsHttpClientsOptions: [url] };
         const testPlebbit = await Plebbit(options);
         expect(testPlebbit.clients.ipfsClients[url]).to.exist;
@@ -215,7 +215,7 @@ describe("plebbit.fetchCid", async () => {
     before(async () => {
         plebbit = await mockRemotePlebbit(); // Here this should be alternated for RPC
         gatewayPlebbit = await Plebbit({ ipfsGatewayUrls: ["http://127.0.0.1:18080"] }); // Should not be alternated
-        ipfsPlebbit = await Plebbit({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"] });
+        ipfsPlebbit = await mockPlebbit({ ipfsHttpClientsOptions: ["http://localhost:15001/api/v0"] });
     });
 
     it(`Can fetch a cid correctly`, async () => {

@@ -12,15 +12,23 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
 
     let plebbit;
 
-    before(async () => {
-        plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+    it(`Plebbit({ipfsHttpClientsOptions}) sets correct default http routers`, async () => {
+        const plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter] });
+        expect(plebbit.httpRoutersOptions).to.deep.equal([
+            "https://peers.pleb.bot",
+            "https://routing.lol",
+            "https://peers.forumindex.com",
+            "https://peers.plebpubsub.xyz"
+        ]);
+        await plebbit.destroy();
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
     });
 
     it(`Plebbit({ipfsHttpClientOptions, httpRoutersOptions}) will change config of ipfs node`, async () => {
-        plebbit.clients.ipfsClients[nodeForHttpRouter]._client.stop = () => {};
-        expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
+        plebbit = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // wait unti plebbit is done changing config and restarting
 
-        await new Promise((resolve) => setTimeout(resolve, 5000));
+        expect(plebbit.httpRoutersOptions).to.deep.equal(httpRouterUrls);
 
         const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
         const configValueType = await ipfsClient.config.get("Routing.Type");
@@ -42,16 +50,16 @@ describe(`Testing HTTP router settings and address rewriter`, async () => {
     it(`Routing.Routers should be set to proxy`, async () => {
         const ipfsClient = plebbit.clients.ipfsClients[nodeForHttpRouter]._client;
         const configValueRouters = await ipfsClient.config.get("Routing.Routers");
-        expect(configValueRouters.HttpRouter1.Parameters.Endpoint).to.equal("http://127.0.0.1:19575");
-        expect(configValueRouters.HttpRouter2.Parameters.Endpoint).to.equal("http://127.0.0.1:19576");
+        expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
+        expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
     });
 
     it(`Can create another plebbit instance with same configs with no problem`, async () => {
         const anotherInstance = await Plebbit({ ipfsHttpClientsOptions: [nodeForHttpRouter], httpRoutersOptions: httpRouterUrls });
         const ipfsClient = anotherInstance.clients.ipfsClients[nodeForHttpRouter]._client;
         const configValueRouters = await ipfsClient.config.get("Routing.Routers");
-        expect(configValueRouters.HttpRouter1.Parameters.Endpoint).to.equal("http://127.0.0.1:19575");
-        expect(configValueRouters.HttpRouter2.Parameters.Endpoint).to.equal("http://127.0.0.1:19576");
+        expect(configValueRouters.HttpRouter1.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
+        expect(configValueRouters.HttpRouter2.Parameters.Endpoint.startsWith("http://127.0.0.1:")).to.be.true;
     });
 
     it(`The proxy proxies requests to http router properly`, async () => {

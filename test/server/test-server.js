@@ -125,19 +125,19 @@ const startIpfsNode = async (nodeArgs) => {
             });
         });
     await ipfsDaemonIsReady();
+
+    // is this http router config node
+    ipfsProcess.on("exit", async () => {
+        console.log("ipfs node", nodeArgs, "has been shut down. Will attempt to restart");
+        await startIpfsNode(nodeArgs);
+    });
     return { ipfsProcess };
 };
 
 const startIpfsNodes = async () => {
     if (startOnlineSub) ipfsNodesToRun.push(onlineNodeArgs);
     for (const nodeArgs of ipfsNodesToRun) {
-        const res = await startIpfsNode(nodeArgs);
-
-        // is this http router config node
-        res.ipfsProcess.on("exit", async () => {
-            console.log("ipfs node for http router has been shut down. Will attempt to restart");
-            await startIpfsNode(nodeArgs);
-        });
+        await startIpfsNode(nodeArgs);
     }
 };
 
