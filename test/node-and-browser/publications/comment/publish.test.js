@@ -133,17 +133,43 @@ getRemotePlebbitConfigs().map((config) => {
         });
 
         it(`Can publish a post with spoiler`, async () => {
-            const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: true });
+            const spoilerValues = [false, true, undefined];
 
-            expect(post.spoiler).to.be.true;
+            for (const spoilerValue of spoilerValues) {
+                const post = await generateMockPost(subplebbitAddress, plebbit, false, { spoiler: spoilerValue });
 
-            await publishWithExpectedResult(post, true);
-            expect(post.spoiler).to.be.true;
-            await waitTillPostInSubplebbitPages(post, plebbit);
-            const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
-            const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
-            expect(postInPage.spoiler).to.be.true;
-            await post.stop();
+                expect(post.spoiler).to.equal(spoilerValue);
+
+                await publishWithExpectedResult(post, true);
+                expect(post.spoiler).to.equal(spoilerValue);
+                const remotePostFromCid = await plebbit.getComment(post.cid);
+                expect(remotePostFromCid.spoiler).to.equal(spoilerValue);
+                await waitTillPostInSubplebbitPages(post, plebbit);
+                const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+                const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+                expect(postInPage.spoiler).to.equal(spoilerValue);
+                await post.stop();
+            }
+        });
+
+        it(`Can publish a post with nsfw`, async () => {
+            const nsfwValues = [false, true, undefined];
+
+            for (const nsfwValue of nsfwValues) {
+                const post = await generateMockPost(subplebbitAddress, plebbit, false, { nsfw: nsfwValue });
+
+                expect(post.nsfw).to.equal(nsfwValue);
+
+                await publishWithExpectedResult(post, true);
+                expect(post.nsfw).to.equal(nsfwValue);
+                const remotePostFromCid = await plebbit.getComment(post.cid);
+                expect(remotePostFromCid.nsfw).to.equal(nsfwValue);
+                await waitTillPostInSubplebbitPages(post, plebbit);
+                const sub = await plebbit.getSubplebbit(post.subplebbitAddress);
+                const postInPage = await findCommentInPage(post.cid, sub.posts.pageCids.new, sub.posts);
+                expect(postInPage.nsfw).to.equal(nsfwValue);
+                await post.stop();
+            }
         });
 
         it(`Can publish a post with author.wallets`, async () => {

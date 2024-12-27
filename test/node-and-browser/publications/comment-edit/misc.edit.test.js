@@ -112,6 +112,7 @@ getRemotePlebbitConfigs().map((config) => {
             const fieldsToChange = {
                 deleted: true,
                 spoiler: true,
+                nsfw: true,
                 content: "Test new content as author" + Date.now(),
                 reason: "Test as an author" + Date.now()
             };
@@ -131,6 +132,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(authorPost.spoiler).to.be.true;
             expect(authorPost._rawCommentUpdate.edit.spoiler).to.be.true;
+
+            expect(authorPost.nsfw).to.be.true;
+            expect(authorPost._rawCommentUpdate.edit.nsfw).to.be.true;
 
             expect(authorPost.content).to.equal(fieldsToChange.content);
             expect(authorPost._rawCommentUpdate.edit.content).equal(fieldsToChange.content);
@@ -152,6 +156,7 @@ getRemotePlebbitConfigs().map((config) => {
         it(`as an author`, async () => {
             const firstEditProps = {
                 spoiler: true,
+                nsfw: true,
                 content: "Test new content as author" + Date.now(),
                 reason: "Test as an author" + Date.now()
             };
@@ -200,6 +205,10 @@ getRemotePlebbitConfigs().map((config) => {
             expect(authorPost.spoiler).to.equal(firstEditProps.spoiler);
             expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(firstEditProps.spoiler);
             expect(authorPost._rawCommentUpdate.spoiler).to.be.undefined;
+
+            expect(authorPost.nsfw).to.equal(firstEditProps.nsfw);
+            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(firstEditProps.nsfw);
+            expect(authorPost._rawCommentUpdate.nsfw).to.be.undefined;
         });
     });
 });

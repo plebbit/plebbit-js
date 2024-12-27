@@ -118,6 +118,7 @@ getRemotePlebbitConfigs().map((config) => {
                 pinned: true,
                 locked: true,
                 spoiler: true,
+                nsfw: true,
                 reason: "Testing as a mod" + Date.now()
             };
 
@@ -141,8 +142,11 @@ getRemotePlebbitConfigs().map((config) => {
             expect(modPost.removed).to.be.true;
             expect(modPost._rawCommentUpdate.removed).to.be.true;
 
-            expect(modPost.removed).to.be.true;
+            expect(modPost.spoiler).to.be.true;
             expect(modPost._rawCommentUpdate.spoiler).to.be.true;
+
+            expect(modPost.nsfw).to.be.true;
+            expect(modPost._rawCommentUpdate.nsfw).to.be.true;
 
             expect(modPost.reason).to.equal(fieldsToChange.reason);
             expect(modPost._rawCommentUpdate.reason).to.equal(fieldsToChange.reason);
@@ -163,7 +167,8 @@ getRemotePlebbitConfigs().map((config) => {
                 reason: "Testing removing",
                 pinned: true,
                 locked: true,
-                spoiler: true
+                spoiler: true,
+                nsfw: true
             };
 
             const commentModeration1 = await plebbit.createCommentModeration({
@@ -206,11 +211,15 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(modPost.spoiler).to.be.true;
             expect(modPost._rawCommentUpdate.spoiler).to.be.true;
+
+            expect(modPost.nsfw).to.be.true;
+            expect(modPost._rawCommentUpdate.nsfw).to.be.true;
         });
 
         it(`Correct value of CommentUpdate after author edit, then mod edit`, async () => {
             const authorFieldsToChange = {
                 spoiler: true,
+                nsfw: true,
                 content: "Test new content as author" + Date.now(),
                 reason: "Test as an author" + Date.now()
             };
@@ -229,6 +238,7 @@ getRemotePlebbitConfigs().map((config) => {
                 removed: true,
                 reason: "Test remove as mod",
                 spoiler: false,
+                nsfw: false,
                 pinned: true
             };
             const modEdit = await plebbit.createCommentModeration({
@@ -254,6 +264,10 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(authorPost.spoiler).to.equal(modFieldsToChange.spoiler);
             expect(authorPost._rawCommentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
+
+            expect(authorPost.nsfw).to.equal(modFieldsToChange.nsfw);
+            expect(authorPost._rawCommentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
+
             expect(authorPost.pinned).to.equal(modFieldsToChange.pinned);
             expect(authorPost._rawCommentUpdate.pinned).to.equal(modFieldsToChange.pinned);
 
@@ -261,6 +275,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
             expect(authorPost.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
+
+            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
+            expect(authorPost.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
 
             expect(authorPost.content).to.equal(authorFieldsToChange.content);
             expect(authorPost.edit.content).to.equal(authorFieldsToChange.content);
@@ -276,6 +293,7 @@ getRemotePlebbitConfigs().map((config) => {
             const modFieldsToChange = {
                 reason: "Test setting spoiler as mod",
                 spoiler: true,
+                nsfw: true,
                 pinned: true
             };
             const modEdit = await plebbit.createCommentModeration({
@@ -289,6 +307,7 @@ getRemotePlebbitConfigs().map((config) => {
 
             const authorFieldsToChange = {
                 spoiler: false,
+                nsfw: false,
                 content: "Test new content as author" + Date.now(),
                 reason: "Test as an author" + Date.now()
             };
@@ -314,6 +333,10 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(authorPost.spoiler).to.equal(modFieldsToChange.spoiler);
             expect(authorPost._rawCommentUpdate.spoiler).to.equal(modFieldsToChange.spoiler);
+
+            expect(authorPost.nsfw).to.equal(modFieldsToChange.nsfw);
+            expect(authorPost._rawCommentUpdate.nsfw).to.equal(modFieldsToChange.nsfw);
+
             expect(authorPost.pinned).to.equal(modFieldsToChange.pinned);
             expect(authorPost._rawCommentUpdate.pinned).to.equal(modFieldsToChange.pinned);
 
@@ -321,6 +344,9 @@ getRemotePlebbitConfigs().map((config) => {
 
             expect(authorPost._rawCommentUpdate.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
             expect(authorPost.edit.spoiler).to.equal(authorFieldsToChange.spoiler);
+
+            expect(authorPost._rawCommentUpdate.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
+            expect(authorPost.edit.nsfw).to.equal(authorFieldsToChange.nsfw);
 
             expect(authorPost.content).to.equal(authorFieldsToChange.content);
             expect(authorPost.edit.content).to.equal(authorFieldsToChange.content);
