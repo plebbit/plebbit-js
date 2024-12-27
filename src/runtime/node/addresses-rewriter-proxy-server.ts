@@ -1,6 +1,7 @@
 import http from "node:http";
 import https from "node:https";
 import Logger from "@plebbit/plebbit-logger";
+import * as remeda from "remeda";
 import { Plebbit } from "../../plebbit/plebbit";
 const debug = Logger("plebbit-js:addresses-rewriter");
 
@@ -118,15 +119,14 @@ export class AddressesRewriterProxyServer {
                     const idRes = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) =>
                         res.json()
                     );
+                    const swarmAddrsRes = await fetch(`${kuboApiUrl}/swarm/addrs/listen`, {
+                        method: "POST",
+                        headers: ipfsHttpClientOptions.headers
+                    }).then((res) => res.json());
                     const peerId: string = idRes["ID"];
-                    const addresses: string[] = idRes["Addresses"];
                     if (typeof peerId !== "string") throw Error("Failed to get Peer ID of kubo node");
-                    if (!Array.isArray(addresses))
-                        debug.error(
-                            "Could not get addresses of kubo node",
-                            kuboApiUrl,
-                            "If this error persists in production, then there's an issue"
-                        );
+                    const addresses: string[] = remeda.unique([...idRes["Addresses"], ...swarmAddrsRes["Strings"]]);
+
                     this.addresses[peerId] = addresses;
                 } catch (e) {
                     const error = <Error>e;
