@@ -73,6 +73,7 @@ export class Comment
     flair?: CommentPubsubMessagePublication["flair"];
     deleted?: CommentWithinPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
+    nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
     locked?: CommentUpdateType["locked"];
     removed?: CommentUpdateType["removed"];
@@ -165,6 +166,7 @@ export class Comment
         this.linkWidth = props.linkWidth;
         this.parentCid = props.parentCid;
         this.spoiler = props.spoiler;
+        this.nsfw = props.nsfw;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
         // Initializing Comment Ipfs props
@@ -216,6 +218,8 @@ export class Comment
                 : typeof props.edit?.spoiler === "boolean"
                   ? props.edit?.spoiler
                   : this.spoiler;
+
+        this.nsfw = typeof props.nsfw === "boolean" ? props.nsfw : typeof props.edit?.nsfw === "boolean" ? props.edit?.nsfw : this.nsfw;
         if (props.author) Object.assign(this.author, props.author);
         if (props.edit?.content) this.content = props.edit.content;
         this.flair = props.flair || props.edit?.flair || this.flair;

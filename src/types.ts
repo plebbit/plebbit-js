@@ -14,7 +14,6 @@ import {
     ProtocolVersionSchema
 } from "./schema/schema.js";
 import { z } from "zod";
-import type { CommentModerationTableRow } from "./publications/comment-edit/types.js";
 import type { CommentUpdateType } from "./publications/comment/types.js";
 import { CommentsTableRowSchema } from "./publications/comment/schema.js";
 
@@ -31,6 +30,7 @@ import { VoteTablesRowSchema } from "./publications/vote/schema.js";
 import { CommentEditsTableRowSchema } from "./publications/comment-edit/schema.js";
 import PlebbitRpcClient from "./clients/rpc-client/plebbit-rpc-client.js";
 import type { PlebbitWsServerSettingsSerialized } from "./rpc/src/types.js";
+import { CommentModerationTableRow } from "./publications/comment-moderation/types.js";
 
 export type ProtocolVersion = z.infer<typeof ProtocolVersionSchema>;
 export type ChainTicker = z.infer<typeof ChainTickerSchema>;

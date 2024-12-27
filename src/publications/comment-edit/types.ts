@@ -9,7 +9,6 @@ import {
 import { CommentAuthorSchema } from "../../schema/schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
 import { CommentEdit } from "./comment-edit";
-import { CommentModerationsTableRowSchema } from "../comment-moderation/schema";
 import type { JsonSignature, SignerType } from "../../signer/types";
 
 export type CommentAuthorEditOptions = z.infer<typeof CommentAuthorSchema>;
@@ -23,8 +22,6 @@ export type CreateCommentEditOptions = z.infer<typeof CreateCommentEditOptionsSc
 export type CommentEditChallengeRequestToEncryptType = z.infer<typeof CommentEditChallengeRequestToEncryptSchema>;
 
 export type CommentEditTypeJson = JsonOfClass<CommentEdit>;
-
-export type CommentModerationTableRow = z.infer<typeof CommentModerationsTableRowSchema>;
 
 export interface CommentEditOptionsToSign extends Omit<CommentEditPubsubMessagePublication, "signature"> {
     signer: SignerType;

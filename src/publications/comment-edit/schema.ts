@@ -20,6 +20,7 @@ export const AuthorCommentEditOptionsSchema = z
         deleted: z.boolean().optional(),
         flair: FlairSchema.optional(),
         spoiler: z.boolean().optional(),
+        nsfw: z.boolean().optional(),
         reason: z.string().optional()
     })
     .strict();

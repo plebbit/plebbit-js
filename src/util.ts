@@ -105,7 +105,9 @@ export const parseDbResponses = (obj: any): any => {
         "pinned",
         "locked",
         "removed",
+        "nsfw",
         "commentIpfs_deleted",
+        "commentIpfs_nsfw",
         "commentIpfs_spoiler",
         "commentIpfs_pinned",
         "commentIpfs_locked",
@@ -115,6 +117,7 @@ export const parseDbResponses = (obj: any): any => {
         "commentUpdate_pinned",
         "commentUpdate_locked",
         "commentUpdate_removed",
+        "commentUpdate_nsfw",
         "isAuthorEdit"
     ]; // TODO use zod here
     for (const [key, value] of Object.entries(newObj)) {

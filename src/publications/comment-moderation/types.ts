@@ -3,7 +3,8 @@ import {
     CreateCommentModerationOptionsSchema,
     CommentModerationPubsubMessagePublicationSchema,
     CommentModerationChallengeRequestToEncryptSchema,
-    CommentModerationSignedPropertyNames
+    CommentModerationSignedPropertyNames,
+    CommentModerationsTableRowSchema
 } from "./schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
 import { CommentModeration } from "./comment-moderation";
@@ -28,3 +29,5 @@ export type CommentModerationPubsubMessagePublication = z.infer<typeof CommentMo
 export interface CommentModerationPubsubMessagePublicationWithSubplebbitAuthor extends CommentModerationPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }
+
+export type CommentModerationTableRow = z.infer<typeof CommentModerationsTableRowSchema>;

@@ -4,8 +4,7 @@ import { verifyCommentEdit } from "../../signer/signatures.js";
 import { hideClassPrivateProps, isIpfsCid, throwWithErrorCode } from "../../util.js";
 import type { CommentEditPubsubMessagePublication, CreateCommentEditOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
-import * as remeda from "remeda";
-import { SignerType } from "../../signer/types.js";
+import type { SignerType } from "../../signer/types.js";
 
 export class CommentEdit extends Publication implements CommentEditPubsubMessagePublication {
     commentCid!: CommentEditPubsubMessagePublication["commentCid"];
@@ -14,6 +13,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
     deleted?: CommentEditPubsubMessagePublication["deleted"];
     flair?: CommentEditPubsubMessagePublication["flair"];
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+    nsfw?: CommentEditPubsubMessagePublication["nsfw"];
 
     override signature!: CommentEditPubsubMessagePublication["signature"];
 
@@ -48,6 +48,7 @@ export class CommentEdit extends Publication implements CommentEditPubsubMessage
         this.deleted = props.deleted;
         this.flair = props.flair;
         this.spoiler = props.spoiler;
+        this.nsfw = props.nsfw;
     }
 
     override toJSONPubsubMessagePublication(): CommentEditPubsubMessagePublication {

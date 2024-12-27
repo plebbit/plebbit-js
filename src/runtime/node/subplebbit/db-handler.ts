@@ -29,13 +29,14 @@ import { LocalSubplebbit } from "./local-subplebbit.js";
 import { getPlebbitAddressFromPublicKey } from "../../../signer/util.js";
 import * as remeda from "remeda";
 import { CommentEditPubsubMessagePublicationSchema, CommentEditsTableRowSchema } from "../../../publications/comment-edit/schema.js";
-import type { CommentEditPubsubMessagePublication, CommentModerationTableRow } from "../../../publications/comment-edit/types.js";
+import type { CommentEditPubsubMessagePublication } from "../../../publications/comment-edit/types.js";
 import type { CommentUpdateType, SubplebbitAuthor } from "../../../publications/comment/types.js";
 import { TIMEFRAMES_TO_SECONDS } from "../../../pages/util.js";
 import { CommentIpfsSchema, CommentUpdateSchema } from "../../../publications/comment/schema.js";
 import { verifyCommentIpfs } from "../../../signer/signatures.js";
 import { ModeratorOptionsSchema } from "../../../publications/comment-moderation/schema.js";
 import type { PageIpfs } from "../../../pages/types.js";
+import { CommentModerationTableRow } from "../../../publications/comment-moderation/types.js";
 
 const TABLES = Object.freeze({
     COMMENTS: "comments",
@@ -203,6 +204,7 @@ export class DbHandler {
             table.json("flair").nullable();
 
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
 
             table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
 
@@ -224,6 +226,7 @@ export class DbHandler {
             table.integer("replyCount").notNullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
             table.boolean("pinned").nullable();
             table.boolean("locked").nullable();
             table.boolean("removed").nullable();
@@ -274,6 +277,7 @@ export class DbHandler {
             table.boolean("deleted").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
             table.boolean("isAuthorEdit").notNullable(); // if edit is signed by original author
 
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
@@ -895,11 +899,11 @@ export class DbHandler {
     async queryCommentFlagsSetByMod(
         cid: string,
         trx?: Transaction
-    ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">> {
-        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed"> = Object.assign(
+    ): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">> {
+        const res: Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw"> = Object.assign(
             {},
             ...(await Promise.all(
-                ["spoiler", "pinned", "locked", "removed"].map((field) =>
+                ["spoiler", "pinned", "locked", "removed", "nsfw"].map((field) =>
                     this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
                         .jsonExtract("commentModeration", `$.${field}`, field, true)
                         .where("commentCid", cid)
