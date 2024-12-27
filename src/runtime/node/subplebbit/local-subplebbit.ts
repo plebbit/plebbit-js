@@ -739,7 +739,9 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         } catch (e) {
             log.error(
                 `Failed to insert comment (${commentCid}) to db due to error, rolling back on inserting the comment. This is a critical error`,
-                e
+                e,
+                "Comment table row is",
+                commentRow
             );
             await this._dbHandler.rollbackTransaction(request.challengeRequestId.toString());
             throw e;
