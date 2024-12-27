@@ -7,7 +7,7 @@ type AddressesRewriterOptions = {
     proxyTargetUrl: string;
 };
 export declare class AddressesRewriterProxyServer {
-    addresses: Record<string, string>;
+    addresses: Record<string, string[]>;
     plebbitOptions: AddressesRewriterOptions["plebbitOptions"];
     port: number;
     hostname: string;

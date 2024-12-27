@@ -11,6 +11,7 @@ import { CommentModerationChallengeRequestToEncryptSchema, CommentModerationPubs
 import { CreateVoteUserOptionsSchema, VoteChallengeRequestToEncryptSchema, VotePubsubMessagePublicationSchema } from "../publications/vote/schema.js";
 import { CommentEditChallengeRequestToEncryptSchema, CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema, CreateCommentEditOptionsSchema } from "../publications/comment-edit/schema.js";
 import { PlebbitUserOptionsSchema } from "../schema.js";
+import { CreateSubplebbitEditPublicationOptionsSchema, SubplebbitEditPublicationChallengeRequestToEncryptSchema, SubplebbitEditPubsubMessagePublicationSchema } from "../publications/subplebbit-edit/schema.js";
 export function parseJsonWithPlebbitErrorIfFails(x) {
     try {
         return JSON.parse(x);
@@ -95,6 +96,28 @@ export function parseRpcCommentUpdateEventWithPlebbitErrorIfItFails(updateResult
     else
         return updateResult;
 }
+export function parseSubplebbitEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args) {
+    const parseRes = SubplebbitEditPubsubMessagePublicationSchema.safeParse(args);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_CREATE_SUBPLEBBIT_EDIT_ARGS_SCHEMA", {
+            zodError: parseRes.error,
+            args,
+            type: "SubplebbitEditPubsubMessagePublication"
+        });
+    else
+        return args;
+}
+export function parseCreateSubplebbitEditPublicationOptionsSchemaWithPlebbitErrorIfItFails(args) {
+    const parseRes = CreateSubplebbitEditPublicationOptionsSchema.safeParse(args);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_CREATE_SUBPLEBBIT_EDIT_ARGS_SCHEMA", {
+            zodError: parseRes.error,
+            args,
+            type: "CreateSubplebbitEditPublicationOptions"
+        });
+    else
+        return args;
+}
 export function parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails(decryptedChallengeAnswers) {
     const parseRes = DecryptedChallengeAnswerSchema.safeParse(decryptedChallengeAnswers);
     if (!parseRes.success)
@@ -119,6 +142,16 @@ export function parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbit
     const parseRes = CommentModerationChallengeRequestToEncryptSchema.safeParse(toEncrypt);
     if (!parseRes.success)
         throw new PlebbitError("ERR_INVALID_COMMENT_MODERATION_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
+            zodError: parseRes.error,
+            toEncrypt
+        });
+    else
+        return toEncrypt;
+}
+export function parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(toEncrypt) {
+    const parseRes = SubplebbitEditPublicationChallengeRequestToEncryptSchema.safeParse(toEncrypt);
+    if (!parseRes.success)
+        throw new PlebbitError("ERR_INVALID_SUBPLEBBIT_EDIT_CHALLENGE_REQUEST_TO_ENCRYPT_SCHEMA", {
             zodError: parseRes.error,
             toEncrypt
         });

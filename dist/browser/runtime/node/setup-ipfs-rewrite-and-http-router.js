@@ -58,6 +58,18 @@ async function _setHttpRouterOptionsOnIpfsNode(ipfsClient, routingValue) {
         }
     }
 }
+async function _getStartedProxyUrl(plebbit, httpRouterUrl) {
+    const mappingKeyName = `httprouter_proxy_${httpRouterUrl}`;
+    const urlOfProxyOfHttpRouter = await plebbit._storage.getItem(mappingKeyName);
+    if (urlOfProxyOfHttpRouter) {
+        const proxyHttpUrl = new URL(urlOfProxyOfHttpRouter);
+        if (await tcpPortUsed.check(Number(proxyHttpUrl.port), "127.0.0.1"))
+            return urlOfProxyOfHttpRouter;
+        else
+            await plebbit._storage.removeItem(mappingKeyName);
+    }
+    return undefined;
+}
 export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit) {
     if (!Array.isArray(plebbit.ipfsHttpClientsOptions) || plebbit.ipfsHttpClientsOptions.length <= 0)
         throw Error("need ipfs http client to be defined");
@@ -68,15 +80,17 @@ export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit) {
     const httpRouterProxyUrls = [];
     let addressesRewriterStartPort = 19575; // use port 19575 as first port, looks like IPRTR (IPFS ROUTER)
     for (const httpRouter of plebbit.httpRoutersOptions) {
-        // launch the proxy server
-        const port = addressesRewriterStartPort++;
-        // check if port is taken, if it is we assume proxy is already started
-        const hostname = "127.0.0.1";
-        if (await tcpPortUsed.check(port, hostname)) {
-            log(`Attempting to start addresses rewriter proxy at ${hostname + ":" + port}`, "port is taken. Will assume that proxy is already started");
-            httpRouterProxyUrls.push(`http://${hostname}:${port}`);
+        const startedProxyUrl = await _getStartedProxyUrl(plebbit, httpRouter);
+        if (startedProxyUrl) {
+            httpRouterProxyUrls.push(startedProxyUrl);
             continue;
         }
+        // launch the proxy server
+        let port = addressesRewriterStartPort;
+        const hostname = "127.0.0.1";
+        while (await tcpPortUsed.check(port, hostname))
+            // keep increasing port till we find an empty port
+            port++;
         const addressesRewriterProxyServer = new AddressesRewriterProxyServer({
             //@ts-expect-error
             plebbitOptions: plebbit,
@@ -86,8 +100,12 @@ export async function setupIpfsAddressesRewriterAndHttpRouters(plebbit) {
         });
         addressesRewriterProxyServer.listen();
         // save the proxy urls to use them later
-        httpRouterProxyUrls.push(`http://${hostname}:${port}`);
+        const httpRouterProxyUrl = `http://${hostname}:${port}`;
+        httpRouterProxyUrls.push(httpRouterProxyUrl);
+        const mappingKeyName = `httprouter_proxy_${httpRouter}`;
+        await plebbit._storage.setItem(mappingKeyName, httpRouterProxyUrl);
     }
+    httpRouterProxyUrls.sort(); // make sure it's always the same order
     // Set up http routers to use proxies
     const ipfsClients = plebbit.clients.ipfsClients;
     const httpRoutersConfig = {

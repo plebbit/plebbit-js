@@ -47,6 +47,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private storeCommentEdit;
     private storeCommentModeration;
     private storeVote;
+    private storeSubplebbitEditPublication;
     private isPublicationReply;
     private isPublicationPost;
     private _calculateLinkProps;
@@ -60,7 +61,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _publishFailedChallengeVerification;
     private _storePublicationAndEncryptForChallengeVerification;
     private _publishChallengeVerification;
-    private _isModerator;
+    private _isPublicationAuthorPartOfRoles;
     private _checkPublicationValidity;
     private _parseChallengeRequestPublicationOrRespondWithFailure;
     private handleChallengeRequest;
@@ -85,6 +86,7 @@ export declare class LocalSubplebbit extends RpcLocalSubplebbit implements Creat
     private _repinCommentUpdateIfNeeded;
     private _syncPostUpdatesFilesystemWithIpfs;
     private _adjustPostUpdatesBucketsIfNeeded;
+    private _cleanUpIpfsRepoRarely;
     private syncIpnsWithDb;
     private _assertDomainResolvesCorrectly;
     private _initSignerProps;

@@ -7,7 +7,7 @@ import { CommentIpfsClient, GenericIpfsClient, PublicationIpfsClient, Subplebbit
 import { GenericPubsubClient, PublicationPubsubClient, SubplebbitPubsubClient } from "./pubsub-client.js";
 import { GenericChainProviderClient } from "./chain-provider-client.js";
 import { CommentIpfsGatewayClient, GenericIpfsGatewayClient, PublicationIpfsGatewayClient, SubplebbitIpfsGatewayClient } from "./ipfs-gateway-client.js";
-import { BaseClientsManager, OptionsToLoadFromGateway } from "./base-client-manager.js";
+import { BaseClientsManager, CachedResolve, OptionsToLoadFromGateway } from "./base-client-manager.js";
 import { CommentPlebbitRpcStateClient, PublicationPlebbitRpcStateClient, SubplebbitPlebbitRpcStateClient } from "./rpc-client/plebbit-rpc-state-client.js";
 import type { SubplebbitIpfsType } from "../subplebbit/types.js";
 import type { CommentIpfsType, CommentUpdateType } from "../publications/comment/types.js";
@@ -39,9 +39,9 @@ export declare class ClientsManager extends BaseClientsManager {
     postFetchGatewayFailure(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     postFetchGatewaySuccess(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
     postFetchGatewayAborted(gatewayUrl: string, loadOpts: OptionsToLoadFromGateway): void;
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordFailure(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, error: Error, staleCache?: CachedResolve): void;
     updatePubsubState(newState: GenericPubsubClient["state"], pubsubProvider: string | undefined): void;
     updateIpfsState(newState: GenericIpfsClient["state"]): void;
     updateGatewayState(newState: GenericIpfsGatewayClient["state"], gateway: string): void;
@@ -84,8 +84,8 @@ export declare class PublicationClientsManager extends ClientsManager {
     protected _initIpfsClients(): void;
     protected _initPubsubClients(): void;
     protected _initPlebbitRpcClients(): void;
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
     emitError(e: PlebbitError): void;
     updateIpfsState(newState: PublicationIpfsClient["state"] | CommentIpfsClient["state"]): void;
     updatePubsubState(newState: PublicationPubsubClient["state"], pubsubProvider: string | undefined): void;
@@ -120,7 +120,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     constructor(comment: Comment);
     protected _initIpfsClients(): void;
     protected _initPlebbitRpcClients(): void;
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
     _findCommentInSubplebbitPosts(subIpns: SubplebbitIpfsType, commentCidToLookFor: string): {
         comment: CommentIpfsType;
         commentUpdate: CommentUpdateType;
@@ -142,7 +142,7 @@ export declare class CommentClientsManager extends PublicationClientsManager {
     fetchAndVerifyCommentCid(cid: string): Promise<CommentIpfsType>;
     updateIpfsState(newState: CommentIpfsClient["state"]): void;
     protected _isPublishing(): boolean;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
     protected preFetchSubplebbitIpns(subIpnsName: string): void;
     protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;
     protected postResolveSubplebbitIpnsP2PSuccess(subIpnsName: string, subplebbitCid: string): void;
@@ -179,8 +179,8 @@ export declare class SubplebbitClientsManager extends ClientsManager {
     updateGatewayState(newState: CommentIpfsGatewayClient["state"], gateway: string): void;
     emitError(e: PlebbitError): void;
     protected _getStatePriorToResolvingSubplebbitIpns(): "fetching-subplebbit-ipns" | "fetching-ipns";
-    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string): void;
-    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string): void;
+    preResolveTextRecord(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
+    postResolveTextRecordSuccess(address: string, txtRecordName: "subplebbit-address" | "plebbit-author-address", resolvedTextRecord: string, chain: ChainTicker, chainProviderUrl: string, staleCache?: CachedResolve): void;
     protected _getSubplebbitAddressFromInstance(): string;
     protected preFetchSubplebbitIpns(subIpnsName: string): void;
     protected preResolveSubplebbitIpnsP2P(subIpnsName: string): void;

@@ -1,6 +1,7 @@
 import type { CommentEditPubsubMessagePublication, CommentEditPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-edit/types";
 import type { CommentModerationPubsubMessagePublication, CommentModerationPubsubMessagePublicationWithSubplebbitAuthor } from "../publications/comment-moderation/types";
 import type { CommentPubsubMessagePublication, CommentPubsubMessageWithSubplebbitAuthor, PostPubsubMessageWithSubplebbitAuthor, ReplyPubsubMessageWithSubplebbitAuthor } from "../publications/comment/types";
+import type { SubplebbitEditPublicationPubsubMessageWithSubplebbitAuthor, SubplebbitEditPubsubMessagePublication } from "../publications/subplebbit-edit/types";
 import type { VotePubsubMessagePublication, VotePubsubMessageWithSubplebbitAuthor } from "../publications/vote/types";
 import type { PubsubSignature } from "../signer/types";
 import type { AuthorTypeWithCommentUpdate } from "../types";
@@ -10,13 +11,14 @@ export type ChallengeRequestMessageType = z.infer<typeof ChallengeRequestMessage
 export type DecryptedChallengeRequestPublication = z.infer<typeof DecryptedChallengeRequestPublicationSchema>;
 export type DecryptedChallengeRequest = z.infer<typeof DecryptedChallengeRequestSchema>;
 export type DecryptedChallengeRequestMessageType = DecryptedChallengeRequest & ChallengeRequestMessageType;
-export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends Omit<DecryptedChallengeRequestMessageType, "comment" | "vote" | "commentEdit" | "commentModeration"> {
+export interface DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor extends Omit<DecryptedChallengeRequestMessageType, "comment" | "vote" | "commentEdit" | "commentModeration" | "subplebbitEdit"> {
     vote?: VotePubsubMessageWithSubplebbitAuthor;
     comment?: CommentPubsubMessageWithSubplebbitAuthor;
     commentEdit?: CommentEditPubsubMessagePublicationWithSubplebbitAuthor;
     commentModeration?: CommentModerationPubsubMessagePublicationWithSubplebbitAuthor;
+    subplebbitEdit?: SubplebbitEditPublicationPubsubMessageWithSubplebbitAuthor;
 }
-export type PublicationFromDecryptedChallengeRequest = NonNullable<VotePubsubMessagePublication | CommentPubsubMessagePublication | CommentEditPubsubMessagePublication | CommentModerationPubsubMessagePublication>;
+export type PublicationFromDecryptedChallengeRequest = NonNullable<VotePubsubMessagePublication | CommentPubsubMessagePublication | CommentEditPubsubMessagePublication | CommentModerationPubsubMessagePublication | SubplebbitEditPubsubMessagePublication>;
 export type PublicationWithSubplebbitAuthorFromDecryptedChallengeRequest = PublicationFromDecryptedChallengeRequest & {
     author: AuthorTypeWithCommentUpdate;
 };

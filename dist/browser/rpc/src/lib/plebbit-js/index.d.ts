@@ -11,8 +11,6 @@ declare const PlebbitJs: {
         challenges: Record<string, (args_0: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: import("zod").objectInputType<{
                 subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                     addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -45,13 +43,13 @@ declare const PlebbitJs: {
                 rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                 rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
             }, import("zod").ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, ...args_1: unknown[]) => {
             type: string;
             getChallenge: (args_0: {
                 path?: string | undefined;
                 options?: Record<string, string> | undefined;
-                description?: string | undefined;
-                name?: string | undefined;
                 exclude?: import("zod").objectInputType<{
                     subplebbit: import("zod").ZodOptional<import("zod").ZodObject<{
                         addresses: import("zod").ZodArray<import("zod").ZodString, "many">;
@@ -84,6 +82,8 @@ declare const PlebbitJs: {
                     rateLimit: import("zod").ZodOptional<import("zod").ZodNumber>;
                     rateLimitChallengeSuccess: import("zod").ZodOptional<import("zod").ZodBoolean>;
                 }, import("zod").ZodTypeAny, "passthrough">[] | undefined;
+                description?: string | undefined;
+                name?: string | undefined;
             }, args_1: import("../../../../pubsub-messages/types.js").DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: import("../../../../runtime/browser/subplebbit/local-subplebbit.js").LocalSubplebbit, ...args_4: unknown[]) => Promise<{
                 success: true;
             } | {
@@ -100,8 +100,6 @@ declare const PlebbitJs: {
                 }>;
             }>;
             description?: string | undefined;
-            challenge?: string | undefined;
-            caseInsensitive?: boolean | undefined;
             optionInputs?: import("zod").objectOutputType<{
                 option: import("zod").ZodString;
                 label: import("zod").ZodString;
@@ -110,6 +108,8 @@ declare const PlebbitJs: {
                 placeholder: import("zod").ZodOptional<import("zod").ZodString>;
                 required: import("zod").ZodOptional<import("zod").ZodBoolean>;
             }, import("zod").ZodTypeAny, "passthrough">[] | undefined;
+            challenge?: string | undefined;
+            caseInsensitive?: boolean | undefined;
         }>;
     };
 };

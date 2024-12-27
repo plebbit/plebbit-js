@@ -51,6 +51,8 @@ declare class PlebbitWsServer extends EventEmitter {
     publishComment(params: any, connectionId: string): Promise<number>;
     private _createVoteInstanceFromPublishVoteParams;
     publishVote(params: any, connectionId: string): Promise<number>;
+    private _createSubplebbitEditInstanceFromPublishSubplebbitEditParams;
+    publishSubplebbitEdit(params: any, connectionId: string): Promise<number>;
     private _createCommentEditInstanceFromPublishCommentEditParams;
     publishCommentEdit(params: any, connectionId: string): Promise<number>;
     private _createCommentModerationInstanceFromPublishCommentModerationParams;

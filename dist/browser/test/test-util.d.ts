@@ -38,7 +38,7 @@ export declare function startSubplebbits(props: {
     startOnlineSub: boolean;
 }): Promise<TestServerSubs>;
 export declare function fetchTestServerSubs(): Promise<TestServerSubs>;
-export declare function mockDefaultOptionsForNodeAndBrowserTests(): Pick<InputPlebbitOptions, "plebbitRpcClientsOptions" | "ipfsHttpClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions">;
+export declare function mockDefaultOptionsForNodeAndBrowserTests(): Pick<InputPlebbitOptions, "plebbitRpcClientsOptions" | "ipfsHttpClientsOptions" | "ipfsGatewayUrls" | "pubsubHttpClientsOptions" | "httpRoutersOptions">;
 export declare function mockPlebbit(plebbitOptions?: InputPlebbitOptions, forceMockPubsub?: boolean, stubStorage?: boolean, mockResolve?: boolean): Promise<Plebbit>;
 export declare function mockRemotePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
 export declare function createOnlinePlebbit(plebbitOptions?: InputPlebbitOptions): Promise<Plebbit>;
@@ -105,9 +105,9 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     clients: import("../clients/client-manager.js").SubplebbitClientsManager["clients"];
     title?: import("../subplebbit/types.js").SubplebbitIpfsType["title"];
     updatedAt?: import("../subplebbit/types.js").SubplebbitIpfsType["updatedAt"] | undefined;
-    description?: import("../subplebbit/types.js").SubplebbitIpfsType["description"];
-    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
     posts: import("../pages/pages.js").PostsPages;
+    challenges: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["challenges"];
+    description?: import("../subplebbit/types.js").SubplebbitIpfsType["description"];
     encryption: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["encryption"];
     createdAt: import("../subplebbit/types.js").RpcInternalSubplebbitRecordBeforeFirstUpdateType["createdAt"];
     pubsubTopic?: import("../subplebbit/types.js").SubplebbitIpfsType["pubsubTopic"];
@@ -119,8 +119,8 @@ export declare function jsonifyLocalSubWithNoInternalProps(sub: LocalSubplebbit)
     features?: import("../subplebbit/types.js").SubplebbitIpfsType["features"];
     suggested?: import("../subplebbit/types.js").SubplebbitIpfsType["suggested"];
     flairs?: import("../subplebbit/types.js").SubplebbitIpfsType["flairs"];
-    updateCid?: string | undefined;
     settings: import("../subplebbit/types.js").RpcInternalSubplebbitRecordAfterFirstUpdateType["settings"];
+    updateCid?: string | undefined;
     updatingState: import("../subplebbit/types.js").SubplebbitUpdatingState;
     started: boolean;
     startedState: import("../subplebbit/types.js").SubplebbitStartedState;

@@ -8,7 +8,7 @@ import { hideClassPrivateProps, replaceXWithY, throwWithErrorCode } from "../../
 import * as remeda from "remeda";
 import { AuthorAddressSchema, SubplebbitAddressSchema } from "../../schema/schema.js";
 import { SubscriptionIdSchema } from "../../clients/rpc-client/schema.js";
-import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails, parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails, parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
+import { parseCidStringSchemaWithPlebbitErrorIfItFails, parseCommentChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCommentModerationChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseCreateNewLocalSubplebbitUserOptionsSchemaWithPlebbitErrorIfItFails, parseCreatePlebbitWsServerOptionsSchemaWithPlebbitErrorIfItFails, parseDecryptedChallengeAnswerWithPlebbitErrorIfItFails, parseSetNewSettingsPlebbitWsServerSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails, parseSubplebbitEditOptionsSchemaWithPlebbitErrorIfItFails, parseVoteChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails } from "../../schema/schema-util.js";
 import { stringify as deterministicStringify } from "safe-stable-stringify";
 // store started subplebbits  to be able to stop them
 // store as a singleton because not possible to start the same sub twice at the same time
@@ -111,6 +111,7 @@ class PlebbitWsServer extends EventEmitter {
         this.rpcWebsocketsRegister("commentUpdateSubscribe", this.commentUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("subplebbitUpdateSubscribe", this.subplebbitUpdateSubscribe.bind(this));
         this.rpcWebsocketsRegister("publishComment", this.publishComment.bind(this));
+        this.rpcWebsocketsRegister("publishSubplebbitEdit", this.publishSubplebbitEdit.bind(this));
         this.rpcWebsocketsRegister("publishVote", this.publishVote.bind(this));
         this.rpcWebsocketsRegister("publishCommentEdit", this.publishCommentEdit.bind(this));
         this.rpcWebsocketsRegister("publishCommentModeration", this.publishCommentModeration.bind(this));
@@ -580,6 +581,49 @@ class PlebbitWsServer extends EventEmitter {
         // if fail, cleanup
         try {
             await vote.publish();
+        }
+        catch (e) {
+            this.subscriptionCleanups[connectionId][subscriptionId]();
+            throw e;
+        }
+        return subscriptionId;
+    }
+    async _createSubplebbitEditInstanceFromPublishSubplebbitEditParams(params) {
+        const subplebbitEdit = await this.plebbit.createSubplebbitEdit(params.subplebbitEdit);
+        subplebbitEdit.challengeRequest = remeda.omit(params, ["subplebbitEdit"]);
+        return subplebbitEdit;
+    }
+    async publishSubplebbitEdit(params, connectionId) {
+        const publishOptions = parseSubplebbitEditChallengeRequestToEncryptSchemaWithPlebbitErrorIfItFails(params[0]);
+        const subscriptionId = generateSubscriptionId();
+        const sendEvent = (event, result) => this.jsonRpcSendNotification({
+            method: "publishSubplebbitEditNotification",
+            subscription: subscriptionId,
+            event,
+            result,
+            connectionId
+        });
+        const subplebbitEdit = await this._createSubplebbitEditInstanceFromPublishSubplebbitEditParams(publishOptions);
+        this.publishing[subscriptionId] = subplebbitEdit;
+        subplebbitEdit.on("challenge", (challenge) => sendEvent("challenge", encodeChallengeMessage(challenge)));
+        subplebbitEdit.on("challengeanswer", (answer) => sendEvent("challengeanswer", encodeChallengeAnswerMessage(answer)));
+        subplebbitEdit.on("challengerequest", (request) => sendEvent("challengerequest", encodeChallengeRequest(request)));
+        subplebbitEdit.on("challengeverification", (challengeVerification) => sendEvent("challengeverification", encodeChallengeVerificationMessage(challengeVerification)));
+        subplebbitEdit.on("publishingstatechange", () => sendEvent("publishingstatechange", subplebbitEdit.publishingState));
+        subplebbitEdit.on("error", (error) => sendEvent("error", error));
+        // cleanup function
+        this.subscriptionCleanups[connectionId][subscriptionId] = () => {
+            delete this.publishing[subscriptionId];
+            subplebbitEdit.stop().catch((error) => log.error("publishSubplebbitEdit stop error", { error, params }));
+            subplebbitEdit.removeAllListeners("challenge");
+            subplebbitEdit.removeAllListeners("challengeanswer");
+            subplebbitEdit.removeAllListeners("challengerequest");
+            subplebbitEdit.removeAllListeners("challengeverification");
+            subplebbitEdit.removeAllListeners("publishingstatechange");
+        };
+        // if fail, cleanup
+        try {
+            await subplebbitEdit.publish();
         }
         catch (e) {
             this.subscriptionCleanups[connectionId][subscriptionId]();

@@ -6,6 +6,7 @@ import { CommentIpfsSchema, CommentPubsubMessageWithFlexibleAuthorRefinementSche
 import { ChallengeFileSchema, ChallengeFromGetChallengeSchema } from "../subplebbit/schema.js";
 import * as remeda from "remeda";
 import { CommentModerationPubsubMessagePublicationSchema } from "../publications/comment-moderation/schema.js";
+import { SubplebbitEditPubsubMessagePublicationSchema } from "../publications/subplebbit-edit/schema.js";
 const AcceptedChallengeTypeSchema = z.string().min(1);
 export const PubsubMessageSignatureSchema = z
     .object({
@@ -42,7 +43,8 @@ export const DecryptedChallengeRequestPublicationSchema = z.object({
     comment: CommentPubsubMessageWithFlexibleAuthorRefinementSchema.optional(),
     vote: VotePubsubMessagePublicationSchema.passthrough().optional(),
     commentEdit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.passthrough().optional(),
-    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional()
+    commentModeration: CommentModerationPubsubMessagePublicationSchema.passthrough().optional(),
+    subplebbitEdit: SubplebbitEditPubsubMessagePublicationSchema.passthrough().optional()
 });
 // ChallengeRequestMessage.encrypted.ciphertext decrypts to JSON, with these props
 export const DecryptedChallengeRequestSchema = DecryptedChallengeRequestPublicationSchema.merge(CreatePublicationUserOptionsSchema.shape.challengeRequest.unwrap());

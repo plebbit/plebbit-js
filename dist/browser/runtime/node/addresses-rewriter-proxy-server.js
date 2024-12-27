@@ -13,6 +13,7 @@ export class AddressesRewriterProxyServer {
     }
     listen(callback) {
         this._startUpdateAddressesLoop();
+        this.server.on("error", (err) => debug.error("Error with address rewriter proxy", this.server.address(), "Proxy target", this.proxyTarget, err));
         this.server.listen(this.port, this.hostname, callback);
         debug("Addresses rewriter proxy at", this.hostname + ":" + this.port, "started listening to forward requests to", this.proxyTarget.host);
     }
@@ -85,12 +86,14 @@ export class AddressesRewriterProxyServer {
                     throw Error("should have a defined ipfs http client option to start the address rewriter");
                 const kuboApiUrl = typeof ipfsHttpClientOptions === "string" ? ipfsHttpClientOptions : ipfsHttpClientOptions.url;
                 try {
-                    const { ID: peerId } = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) => res.json());
-                    const res = await fetch(`${kuboApiUrl}/swarm/addrs/listen`, {
-                        method: "POST",
-                        headers: ipfsHttpClientOptions.headers
-                    }).then((res) => res.json());
-                    this.addresses[peerId] = res.Strings;
+                    const idRes = await fetch(`${kuboApiUrl}/id`, { method: "POST", headers: ipfsHttpClientOptions.headers }).then((res) => res.json());
+                    const peerId = idRes["ID"];
+                    const addresses = idRes["Addresses"];
+                    if (typeof peerId !== "string")
+                        throw Error("Failed to get Peer ID of kubo node");
+                    if (!Array.isArray(addresses))
+                        debug.error("Could not get addresses of kubo node", kuboApiUrl, "If this error persists in production, then there's an issue");
+                    this.addresses[peerId] = addresses;
                 }
                 catch (e) {
                     const error = e;

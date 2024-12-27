@@ -359,301 +359,6 @@ export declare const ChallengeExcludeSchema: z.ZodObject<{
     rateLimit: z.ZodOptional<z.ZodNumber>;
     rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
 }, z.ZodTypeAny, "passthrough">>;
-export declare const SubplebbitChallengeSchema: z.ZodObject<{
-    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">>, "many">>;
-    description: z.ZodOptional<z.ZodString>;
-    challenge: z.ZodOptional<z.ZodString>;
-    type: z.ZodOptional<z.ZodString>;
-}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">>, "many">>;
-    description: z.ZodOptional<z.ZodString>;
-    challenge: z.ZodOptional<z.ZodString>;
-    type: z.ZodOptional<z.ZodString>;
-}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
-        subplebbit: z.ZodOptional<z.ZodObject<{
-            addresses: z.ZodArray<z.ZodString, "many">;
-            maxCommentCids: z.ZodNumber;
-            postScore: z.ZodOptional<z.ZodNumber>;
-            replyScore: z.ZodOptional<z.ZodNumber>;
-            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        }, "strict", z.ZodTypeAny, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }, {
-            addresses: string[];
-            maxCommentCids: number;
-            postScore?: number | undefined;
-            replyScore?: number | undefined;
-            firstCommentTimestamp?: number | undefined;
-        }>>;
-        postScore: z.ZodOptional<z.ZodNumber>;
-        replyScore: z.ZodOptional<z.ZodNumber>;
-        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
-        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
-        post: z.ZodOptional<z.ZodBoolean>;
-        reply: z.ZodOptional<z.ZodBoolean>;
-        vote: z.ZodOptional<z.ZodBoolean>;
-        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
-        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-        rateLimit: z.ZodOptional<z.ZodNumber>;
-        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
-    }, z.ZodTypeAny, "passthrough">>, "many">>;
-    description: z.ZodOptional<z.ZodString>;
-    challenge: z.ZodOptional<z.ZodString>;
-    type: z.ZodOptional<z.ZodString>;
-}, z.ZodTypeAny, "passthrough">>;
 export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<{
     path: z.ZodOptional<z.ZodString>;
     name: z.ZodOptional<z.ZodString>;
@@ -756,8 +461,6 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
 }, "strict", z.ZodTypeAny, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -790,11 +493,11 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -827,11 +530,11 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }>, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -864,11 +567,11 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -901,6 +604,8 @@ export declare const SubplebbitChallengeSettingSchema: z.ZodEffects<z.ZodObject<
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }>;
 export declare const ChallengeFileSchema: z.ZodObject<{
     optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
@@ -1031,8 +736,6 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1065,11 +768,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1102,11 +805,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1139,11 +842,11 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1176,6 +879,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, z.ZodType<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, z.ZodTypeDef, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>, z.ZodNumber, z.ZodType<LocalSubplebbit, z.ZodTypeDef, LocalSubplebbit>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
         challenge: z.ZodString;
         verify: z.ZodFunction<z.ZodTuple<[z.ZodLazy<z.ZodString>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
@@ -1234,8 +939,6 @@ export declare const ChallengeFileSchema: z.ZodObject<{
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1268,6 +971,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args_4: unknown[]) => Promise<{
         success: true;
     } | {
@@ -1284,8 +989,6 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         }>;
     }>;
     description?: string | undefined;
-    challenge?: string | undefined;
-    caseInsensitive?: boolean | undefined;
     optionInputs?: z.objectOutputType<{
         option: z.ZodString;
         label: z.ZodString;
@@ -1294,13 +997,13 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         placeholder: z.ZodOptional<z.ZodString>;
         required: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    challenge?: string | undefined;
+    caseInsensitive?: boolean | undefined;
 }, {
     type: string;
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1333,6 +1036,8 @@ export declare const ChallengeFileSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args_4: unknown[]) => Promise<{
         success: true;
     } | {
@@ -1349,8 +1054,6 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         }>;
     }>;
     description?: string | undefined;
-    challenge?: string | undefined;
-    caseInsensitive?: boolean | undefined;
     optionInputs?: z.objectInputType<{
         option: z.ZodString;
         label: z.ZodString;
@@ -1359,7 +1062,307 @@ export declare const ChallengeFileSchema: z.ZodObject<{
         placeholder: z.ZodOptional<z.ZodString>;
         required: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    challenge?: string | undefined;
+    caseInsensitive?: boolean | undefined;
 }>;
+export declare const SubplebbitChallengeSchema: z.ZodObject<{
+    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+    description: z.ZodOptional<z.ZodString>;
+    challenge: z.ZodOptional<z.ZodString>;
+    type: z.ZodString;
+    caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+}, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+    description: z.ZodOptional<z.ZodString>;
+    challenge: z.ZodOptional<z.ZodString>;
+    type: z.ZodString;
+    caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+}, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+    exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
+        subplebbit: z.ZodOptional<z.ZodObject<{
+            addresses: z.ZodArray<z.ZodString, "many">;
+            maxCommentCids: z.ZodNumber;
+            postScore: z.ZodOptional<z.ZodNumber>;
+            replyScore: z.ZodOptional<z.ZodNumber>;
+            firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        }, "strict", z.ZodTypeAny, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }, {
+            addresses: string[];
+            maxCommentCids: number;
+            postScore?: number | undefined;
+            replyScore?: number | undefined;
+            firstCommentTimestamp?: number | undefined;
+        }>>;
+        postScore: z.ZodOptional<z.ZodNumber>;
+        replyScore: z.ZodOptional<z.ZodNumber>;
+        firstCommentTimestamp: z.ZodOptional<z.ZodNumber>;
+        challenges: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+        post: z.ZodOptional<z.ZodBoolean>;
+        reply: z.ZodOptional<z.ZodBoolean>;
+        vote: z.ZodOptional<z.ZodBoolean>;
+        role: z.ZodOptional<z.ZodArray<z.ZodEnum<["owner", "admin", "moderator"]>, "many">>;
+        address: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        rateLimit: z.ZodOptional<z.ZodNumber>;
+        rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
+    }, z.ZodTypeAny, "passthrough">>, "many">>;
+    description: z.ZodOptional<z.ZodString>;
+    challenge: z.ZodOptional<z.ZodString>;
+    type: z.ZodString;
+    caseInsensitive: z.ZodOptional<z.ZodBoolean>;
+}, z.ZodTypeAny, "passthrough">>;
 export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.ZodEffects<z.ZodObject<{
     path: z.ZodOptional<z.ZodString>;
     name: z.ZodOptional<z.ZodString>;
@@ -1462,8 +1465,6 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
 }, "strict", z.ZodTypeAny, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1496,11 +1497,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1533,11 +1534,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }>, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectOutputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1570,11 +1571,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }, {
     path?: string | undefined;
     options?: Record<string, string> | undefined;
-    description?: string | undefined;
-    name?: string | undefined;
     exclude?: z.objectInputType<{
         subplebbit: z.ZodOptional<z.ZodObject<{
             addresses: z.ZodArray<z.ZodString, "many">;
@@ -1607,6 +1608,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         rateLimit: z.ZodOptional<z.ZodNumber>;
         rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    description?: string | undefined;
+    name?: string | undefined;
 }>], z.ZodUnknown>, z.ZodObject<{
     optionInputs: z.ZodOptional<z.ZodArray<z.ZodObject<{
         option: z.ZodString;
@@ -1736,8 +1739,6 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1770,11 +1771,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1807,11 +1808,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1844,11 +1845,11 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1881,6 +1882,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, z.ZodType<DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, z.ZodTypeDef, DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor>, z.ZodNumber, z.ZodType<LocalSubplebbit, z.ZodTypeDef, LocalSubplebbit>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
         challenge: z.ZodString;
         verify: z.ZodFunction<z.ZodTuple<[z.ZodLazy<z.ZodString>], z.ZodUnknown>, z.ZodPromise<z.ZodUnion<[z.ZodObject<{
@@ -1939,8 +1942,6 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -1973,6 +1974,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args_4: unknown[]) => Promise<{
         success: true;
     } | {
@@ -1989,8 +1992,6 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         }>;
     }>;
     description?: string | undefined;
-    challenge?: string | undefined;
-    caseInsensitive?: boolean | undefined;
     optionInputs?: z.objectOutputType<{
         option: z.ZodString;
         label: z.ZodString;
@@ -1999,13 +2000,13 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         placeholder: z.ZodOptional<z.ZodString>;
         required: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    challenge?: string | undefined;
+    caseInsensitive?: boolean | undefined;
 }, {
     type: string;
     getChallenge: (args_0: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -2038,6 +2039,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, args_1: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor, args_2: number, args_3: LocalSubplebbit, ...args_4: unknown[]) => Promise<{
         success: true;
     } | {
@@ -2054,8 +2057,6 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         }>;
     }>;
     description?: string | undefined;
-    challenge?: string | undefined;
-    caseInsensitive?: boolean | undefined;
     optionInputs?: z.objectInputType<{
         option: z.ZodString;
         label: z.ZodString;
@@ -2064,6 +2065,8 @@ export declare const ChallengeFileFactorySchema: z.ZodFunction<z.ZodTuple<[z.Zod
         placeholder: z.ZodOptional<z.ZodString>;
         required: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
+    challenge?: string | undefined;
+    caseInsensitive?: boolean | undefined;
 }>>;
 export declare const SubplebbitIpfsSchema: z.ZodObject<{
     posts: z.ZodOptional<z.ZodObject<{
@@ -2173,7 +2176,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2271,7 +2275,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -2369,7 +2374,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -2637,7 +2643,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
     encryption: {
         type: "ed25519-aes-gcm";
@@ -2649,11 +2656,11 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     statsCid: string;
     lastCommentCid?: string | undefined;
     title?: string | undefined;
-    description?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectOutputType<{
@@ -2808,7 +2815,8 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[];
     encryption: {
         type: "ed25519-aes-gcm";
@@ -2820,11 +2828,11 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
     statsCid: string;
     lastCommentCid?: string | undefined;
     title?: string | undefined;
-    description?: string | undefined;
     posts?: {
         pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, z.objectInputType<{
@@ -2873,7 +2881,7 @@ export declare const SubplebbitIpfsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">[]> | undefined;
 }>;
-export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "description" | "challenges" | "posts" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
+export declare const SubplebbitSignedPropertyNames: ("address" | "protocolVersion" | "lastCommentCid" | "title" | "updatedAt" | "posts" | "challenges" | "description" | "encryption" | "createdAt" | "pubsubTopic" | "statsCid" | "postUpdates" | "roles" | "rules" | "lastPostCid" | "features" | "suggested" | "flairs")[];
 export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
     subplebbit: z.ZodObject<{
         posts: z.ZodOptional<z.ZodObject<{
@@ -2983,7 +2991,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3081,7 +3090,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3179,7 +3189,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -3448,7 +3459,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3546,7 +3558,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -3644,7 +3657,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -3913,7 +3927,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4011,7 +4026,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
             exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4109,7 +4125,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">>, "many">;
         signature: z.ZodObject<{
             type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -4380,7 +4397,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
         encryption: {
             type: "ed25519-aes-gcm";
@@ -4392,11 +4410,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         statsCid: string;
         lastCommentCid?: string | undefined;
         title?: string | undefined;
-        description?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids: Record<string, string>;
         } | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectOutputType<{
@@ -4556,7 +4574,8 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
             }, z.ZodTypeAny, "passthrough">>, "many">>;
             description: z.ZodOptional<z.ZodString>;
             challenge: z.ZodOptional<z.ZodString>;
-            type: z.ZodOptional<z.ZodString>;
+            type: z.ZodString;
+            caseInsensitive: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[];
         encryption: {
             type: "ed25519-aes-gcm";
@@ -4568,11 +4587,11 @@ export declare const RpcRemoteSubplebbitUpdateEventResultSchema: z.ZodObject<{
         statsCid: string;
         lastCommentCid?: string | undefined;
         title?: string | undefined;
-        description?: string | undefined;
         posts?: {
             pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
             pageCids: Record<string, string>;
         } | undefined;
+        description?: string | undefined;
         pubsubTopic?: string | undefined;
         postUpdates?: Record<string, string> | undefined;
         roles?: Record<string, z.objectInputType<{
@@ -4733,7 +4752,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4831,7 +4851,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -4929,7 +4950,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -5198,7 +5220,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5296,7 +5319,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5394,7 +5418,8 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -5586,7 +5611,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5684,14 +5714,10 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -5758,7 +5784,12 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -5856,14 +5887,10 @@ export declare const CreateRemoteSubplebbitOptionsSchema: z.ZodObject<z.objectUt
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -6024,8 +6051,6 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     }, "strict", z.ZodTypeAny, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6058,11 +6083,11 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6095,11 +6120,11 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6132,11 +6157,11 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }, {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6169,13 +6194,13 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }>, "many">>;
 }, "strict", z.ZodTypeAny, {
     challenges?: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectOutputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6208,6 +6233,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }[] | undefined;
     fetchThumbnailUrls?: boolean | undefined;
     fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -6215,8 +6242,6 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
     challenges?: {
         path?: string | undefined;
         options?: Record<string, string> | undefined;
-        description?: string | undefined;
-        name?: string | undefined;
         exclude?: z.objectInputType<{
             subplebbit: z.ZodOptional<z.ZodObject<{
                 addresses: z.ZodArray<z.ZodString, "many">;
@@ -6249,6 +6274,8 @@ export declare const SubplebbitSettingsSchema: z.ZodObject<{
             rateLimit: z.ZodOptional<z.ZodNumber>;
             rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
         }, z.ZodTypeAny, "passthrough">[] | undefined;
+        description?: string | undefined;
+        name?: string | undefined;
     }[] | undefined;
     fetchThumbnailUrls?: boolean | undefined;
     fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -6478,8 +6505,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6512,11 +6537,11 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6549,11 +6574,11 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6586,11 +6611,11 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6623,13 +6648,13 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, "many">>;
     }, "strict", z.ZodTypeAny, {
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6662,6 +6687,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -6669,8 +6696,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6703,6 +6728,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -6767,8 +6794,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6801,6 +6826,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -6858,8 +6885,6 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -6892,6 +6917,8 @@ export declare const SubplebbitEditOptionsSchema: z.ZodObject<{
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7122,8 +7149,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7156,11 +7181,11 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7193,11 +7218,11 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7230,11 +7255,11 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7267,13 +7292,13 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, "many">>;
     }, "strict", z.ZodTypeAny, {
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7306,6 +7331,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7313,8 +7340,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7347,6 +7372,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7432,8 +7459,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7466,6 +7491,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7526,8 +7553,6 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7560,6 +7585,8 @@ export declare const CreateNewLocalSubplebbitUserOptionsSchema: z.ZodObject<z.ob
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7790,8 +7817,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7824,11 +7849,11 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7861,11 +7886,11 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7898,11 +7923,11 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7935,13 +7960,13 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, "many">>;
     }, "strict", z.ZodTypeAny, {
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -7974,6 +7999,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -7981,8 +8008,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8015,6 +8040,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -8122,8 +8149,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8156,6 +8181,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -8219,8 +8246,6 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -8253,6 +8278,8 @@ export declare const CreateNewLocalSubplebbitParsedOptionsSchema: z.ZodObject<z.
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -8366,7 +8393,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -8464,7 +8492,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -8562,7 +8591,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -8831,7 +8861,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -8929,7 +8960,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9027,7 +9059,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -9219,7 +9252,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9317,14 +9355,10 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -9391,7 +9425,12 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9489,14 +9528,10 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -9659,7 +9694,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9757,7 +9793,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -9855,7 +9892,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -10124,7 +10162,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -10222,7 +10261,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -10320,7 +10360,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -10589,7 +10630,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -10687,7 +10729,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -10785,7 +10828,8 @@ export declare const CreateRemoteSubplebbitFunctionArgumentSchema: z.ZodUnion<[z
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -11055,7 +11099,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -11153,7 +11198,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -11251,7 +11297,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -11520,7 +11567,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -11618,7 +11666,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -11716,7 +11765,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -11908,7 +11958,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12006,14 +12061,10 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -12080,7 +12131,12 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12178,14 +12234,10 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -12348,7 +12400,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12446,7 +12499,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12544,7 +12598,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -12813,7 +12868,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -12911,7 +12967,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -13009,7 +13066,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -13278,7 +13336,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -13376,7 +13435,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -13474,7 +13534,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -13860,8 +13921,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13894,11 +13953,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13931,11 +13990,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -13968,11 +14027,11 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14005,13 +14064,13 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, "many">>;
     }, "strict", z.ZodTypeAny, {
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14044,6 +14103,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14051,8 +14112,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14085,6 +14144,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14170,8 +14231,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14204,6 +14263,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14264,8 +14325,6 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14298,6 +14357,8 @@ export declare const CreateRpcSubplebbitFunctionArgumentSchema: z.ZodUnion<[z.Zo
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14528,8 +14589,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, "strict", z.ZodTypeAny, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14562,11 +14621,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14599,11 +14658,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14636,11 +14695,11 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }, {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14673,13 +14732,13 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }>, "many">>;
     }, "strict", z.ZodTypeAny, {
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14712,6 +14771,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14719,8 +14780,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14753,6 +14812,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14838,8 +14899,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectOutputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14872,6 +14931,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -14932,8 +14993,6 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         challenges?: {
             path?: string | undefined;
             options?: Record<string, string> | undefined;
-            description?: string | undefined;
-            name?: string | undefined;
             exclude?: z.objectInputType<{
                 subplebbit: z.ZodOptional<z.ZodObject<{
                     addresses: z.ZodArray<z.ZodString, "many">;
@@ -14966,6 +15025,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
                 rateLimit: z.ZodOptional<z.ZodNumber>;
                 rateLimitChallengeSuccess: z.ZodOptional<z.ZodBoolean>;
             }, z.ZodTypeAny, "passthrough">[] | undefined;
+            description?: string | undefined;
+            name?: string | undefined;
         }[] | undefined;
         fetchThumbnailUrls?: boolean | undefined;
         fetchThumbnailUrlsProxyUrl?: string | undefined;
@@ -15078,7 +15139,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -15176,7 +15238,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -15274,7 +15337,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">>;
     signature: z.ZodOptional<z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -15543,7 +15607,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -15641,7 +15706,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -15739,7 +15805,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -15931,7 +15998,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16029,14 +16101,10 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectOutputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -16103,7 +16171,12 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
     lastCommentCid?: string | undefined;
     title?: string | undefined;
     updatedAt?: number | undefined;
-    description?: string | undefined;
+    posts?: {
+        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
+        pageCids: Record<string, string>;
+    } | {
+        pageCids: Record<string, string>;
+    } | undefined;
     challenges?: z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16201,14 +16274,10 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">[] | undefined;
-    posts?: {
-        pages: Record<string, import("../pages/types.js").PageIpfsManuallyDefined>;
-        pageCids: Record<string, string>;
-    } | {
-        pageCids: Record<string, string>;
-    } | undefined;
+    description?: string | undefined;
     encryption?: z.objectInputType<{
         type: z.ZodEnum<["ed25519-aes-gcm"]>;
         publicKey: z.ZodString;
@@ -16371,7 +16440,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16469,7 +16539,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16567,7 +16638,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -16836,7 +16908,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -16934,7 +17007,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -17032,7 +17106,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;
@@ -17301,7 +17376,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, "passthrough", z.ZodTypeAny, z.objectOutputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -17399,7 +17475,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">, z.objectInputType<{
         exclude: z.ZodOptional<z.ZodArray<z.ZodObject<{
             subplebbit: z.ZodOptional<z.ZodObject<{
@@ -17497,7 +17574,8 @@ export declare const CreateSubplebbitFunctionArgumentsSchema: z.ZodUnion<[z.ZodO
         }, z.ZodTypeAny, "passthrough">>, "many">>;
         description: z.ZodOptional<z.ZodString>;
         challenge: z.ZodOptional<z.ZodString>;
-        type: z.ZodOptional<z.ZodString>;
+        type: z.ZodString;
+        caseInsensitive: z.ZodOptional<z.ZodBoolean>;
     }, z.ZodTypeAny, "passthrough">>, "many">;
     signature: z.ZodObject<{
         type: z.ZodEnum<["ed25519", "eip191"]>;

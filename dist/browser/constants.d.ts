@@ -116,7 +116,8 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
         }, import("zod").ZodTypeAny, "passthrough">>, "many">>;
         description: import("zod").ZodOptional<import("zod").ZodString>;
         challenge: import("zod").ZodOptional<import("zod").ZodString>;
-        type: import("zod").ZodOptional<import("zod").ZodString>;
+        type: import("zod").ZodString;
+        caseInsensitive: import("zod").ZodOptional<import("zod").ZodBoolean>;
     }, import("zod").ZodTypeAny, "passthrough">[];
     encryption: {
         type: "ed25519-aes-gcm";
@@ -128,11 +129,11 @@ export declare const subplebbitForPublishingCache: LRUCache<string, Pick<{
     statsCid: string;
     lastCommentCid?: string | undefined;
     title?: string | undefined;
-    description?: string | undefined;
     posts?: {
         pages: Record<string, import("./pages/types.js").PageIpfsManuallyDefined>;
         pageCids: Record<string, string>;
     } | undefined;
+    description?: string | undefined;
     pubsubTopic?: string | undefined;
     postUpdates?: Record<string, string> | undefined;
     roles?: Record<string, import("zod").objectOutputType<{

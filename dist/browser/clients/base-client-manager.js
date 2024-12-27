@@ -69,19 +69,30 @@ export class BaseClientsManager {
         if (this._plebbit.browserLibp2pJsPublish)
             await this._initializeLibp2pClientIfNeeded();
         const timeBefore = Date.now();
+        let error;
         try {
             await this._plebbit.clients.pubsubClients[pubsubProviderUrl]._client.pubsub.subscribe(pubsubTopic, handler, {
-                onError(err) {
-                    log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err);
+                onError: async (err) => {
+                    error = err;
+                    log.error("pubsub callback error, topic", pubsubTopic, "provider url", pubsubProviderUrl, "error", err, "Will unsubscribe and re-attempt to subscribe");
+                    await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
+                    try {
+                        await this.pubsubUnsubscribeOnProvider(pubsubTopic, pubsubProviderUrl, handler);
+                    }
+                    catch (e) {
+                        log.error("Failed to unsubscribe after onError, topic", pubsubTopic, "provider url", pubsubProviderUrl, e);
+                    }
+                    await this.pubsubSubscribeOnProvider(pubsubTopic, handler, pubsubProviderUrl);
                 }
             });
+            if (error)
+                throw error;
             await this._plebbit._stats.recordGatewaySuccess(pubsubProviderUrl, "pubsub-subscribe", Date.now() - timeBefore);
             this.providerSubscriptions[pubsubProviderUrl].push(pubsubTopic);
-            return;
         }
         catch (e) {
             await this._plebbit._stats.recordGatewayFailure(pubsubProviderUrl, "pubsub-subscribe");
-            log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl})`);
+            log.error(`Failed to subscribe to pubsub topic (${pubsubTopic}) to (${pubsubProviderUrl}) due to error`, e);
             throw new PlebbitError("ERR_PUBSUB_FAILED_TO_SUBSCRIBE", { pubsubTopic, pubsubProviderUrl, error: e });
         }
     }
@@ -419,7 +430,7 @@ export class BaseClientsManager {
         const resolveCache = await this._plebbit._storage.getItem(cacheKey);
         if (remeda.isPlainObject(resolveCache)) {
             const stale = timestamp() - resolveCache.timestampSeconds > 3600; // Only resolve again if cache was stored over an hour ago
-            return { stale, resolveCache: resolveCache.valueOfTextRecord };
+            return { stale, ...resolveCache };
         }
         return undefined;
     }
@@ -427,7 +438,7 @@ export class BaseClientsManager {
         const log = Logger("plebbit-js:client-manager:resolveTextRecord");
         const chain = address.endsWith(".eth") ? "eth" : address.endsWith(".sol") ? "sol" : undefined;
         if (!chain)
-            throw Error(`Can't figure out the chain of the address`);
+            throw Error(`Can't figure out the chain of the address (${address}). Are you sure plebbit-js support this chain?`);
         const chainId = this._plebbit.chainProviders[chain]?.chainId;
         const cachedTextRecord = await this._getCachedTextRecord(address, txtRecord);
         if (cachedTextRecord) {
@@ -435,16 +446,16 @@ export class BaseClientsManager {
                 this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId)
                     .then((newTextRecordValue) => log.trace(`Updated the stale text-record (${txtRecord}) value of address (${address}) to ${newTextRecordValue}`))
                     .catch((err) => log.error(`Failed to update the stale text record (${txtRecord}) of address (${address})`, err));
-            return cachedTextRecord.resolveCache;
+            return cachedTextRecord.valueOfTextRecord;
         }
         else
             return this._resolveTextRecordConcurrently(address, txtRecord, chain, chainId);
     }
-    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl) { }
-    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl) { }
-    postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl, error) { }
-    async _resolveTextRecordSingleChainProvider(address, txtRecordName, chain, chainproviderUrl, chainId) {
-        this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl);
+    preResolveTextRecord(address, txtRecordName, chain, chainProviderUrl, staleCache) { }
+    postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainProviderUrl, staleCache) { }
+    postResolveTextRecordFailure(address, txtRecordName, chain, chainProviderUrl, error, staleCache) { }
+    async _resolveTextRecordSingleChainProvider(address, txtRecordName, chain, chainproviderUrl, chainId, staleCache) {
+        this.preResolveTextRecord(address, txtRecordName, chain, chainproviderUrl, staleCache);
         const timeBefore = Date.now();
         const cacheKey = sha256(address + txtRecordName + chain + chainproviderUrl);
         let isUsingCache = true;
@@ -466,7 +477,7 @@ export class BaseClientsManager {
                     chain,
                     chainproviderUrl
                 });
-            this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl);
+            this.postResolveTextRecordSuccess(address, txtRecordName, resolvedTextRecord, chain, chainproviderUrl, staleCache);
             if (!isUsingCache)
                 await this._plebbit._stats.recordGatewaySuccess(chainproviderUrl, chain, Date.now() - timeBefore);
             return resolvedTextRecord;
@@ -483,7 +494,7 @@ export class BaseClientsManager {
                     chainproviderUrl,
                     chainId
                 });
-            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError);
+            this.postResolveTextRecordFailure(address, txtRecordName, chain, chainproviderUrl, parsedError, staleCache);
             if (!isUsingCache)
                 await this._plebbit._stats.recordGatewayFailure(chainproviderUrl, chain);
             return { error: parsedError };
@@ -505,7 +516,7 @@ export class BaseClientsManager {
                 await delay(timeouts[i]);
             const cachedTextRecord = await this._getCachedTextRecord(address, txtRecordName);
             if (cachedTextRecord && !cachedTextRecord.stale)
-                return cachedTextRecord.resolveCache;
+                return cachedTextRecord.valueOfTextRecord;
             log.trace(`Retrying to resolve address (${address}) text record (${txtRecordName}) for the ${i}th time`);
             if (!this._plebbit.clients.chainProviders[chain]) {
                 throw Error(`Plebbit has no chain provider for (${chain})`);
@@ -515,7 +526,7 @@ export class BaseClientsManager {
                 ? this._plebbit.clients.chainProviders[chain].urls
                 : await this._plebbit._stats.sortGatewaysAccordingToScore(chain);
             try {
-                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId)));
+                const providerPromises = providersSorted.map((providerUrl) => queueLimit(() => this._resolveTextRecordSingleChainProvider(address, txtRecordName, chain, providerUrl, chainId, cachedTextRecord)));
                 //@ts-expect-error
                 const resolvedTextRecord = await Promise.race([
                     _firstResolve(providerPromises),

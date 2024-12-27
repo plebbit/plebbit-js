@@ -7,6 +7,7 @@ import * as Digest from "multiformats/hashes/digest";
 import { Buffer } from "buffer";
 import { base58btc } from "multiformats/bases/base58";
 import * as remeda from "remeda";
+import { DecryptedChallengeRequestPublicationSchema } from "./pubsub-messages/schema.js";
 export function timestamp() {
     return Math.round(Date.now() / 1000);
 }
@@ -250,10 +251,11 @@ export function hideClassPrivateProps(_this) {
     }
 }
 export function derivePublicationFromChallengeRequest(request) {
-    const pub = request.vote || request.comment || request.commentEdit || request.commentModeration;
-    if (!pub)
-        throw Error("Failed to find publication on request");
-    return pub;
+    const publicationFieldNames = remeda.keys.strict(DecryptedChallengeRequestPublicationSchema.shape);
+    for (const pubName of publicationFieldNames)
+        if (request[pubName])
+            return request[pubName];
+    throw Error("Failed to find publication on ChallengeRequest");
 }
 export function isRequestPubsubPublicationOfReply(request) {
     return Boolean(request.comment && request.comment.parentCid);
