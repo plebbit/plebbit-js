@@ -12,7 +12,7 @@
         "webpack": "webpack --mode development --config config/webpack.config.js --stats-error-details",
         "webpack:watch": "while true; do webpack watch --mode development --config config/webpack.config.js; sleep 1; done",
         "test": "run-s test:node test:browser:chrome test:browser:firefox",
-        "test:node": "mocha --forbid-only --bail --recursive --config config/.mocharc.json test/{node,node-and-browser}",
+        "test:node": "mocha --forbid-only --bail --recursive --config config/.mocharc.json test/",
         "test:node:rpc": "USE_RPC=1 mocha --forbid-only --exit --bail --recursive --config config/.mocharc.json test/node test/node-and-browser",
         "test:node:parallel:rpc": "USE_RPC=1 mocha --forbid-only --parallel --recursive --exit --config config/.mocharc.json test/node test/node-and-browser",
         "test:mocked:challenges": "mocha --forbid-only --bail --recursive --config config/.mocharc.json  test/challenges",
@@ -64,7 +64,7 @@
         "cbor": "9.0.1",
         "debounce": "1.2.1",
         "err-code": "3.0.1",
-        "ethers": "6.10.0",
+        "ethers": "6.13.4",
         "ext-name": "5.0.0",
         "file-type": "16.5.4",
         "hpagent": "1.2.0",
@@ -97,7 +97,7 @@
         "ts-custom-error": "3.3.1",
         "typestub-ipfs-only-hash": "4.0.0",
         "uuid": "9.0.1",
-        "viem": "1.5.2",
+        "viem": "2.21.57",
         "zod": "3.23.8"
     },
     "devDependencies": {
