@@ -84,7 +84,9 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
         walletMessageToSign.authorAddress = authorSigner.address;
         walletMessageToSign.timestamp = Math.round(Date.now() / 1000);
 
-        const walletSignature = await viemAccount.signMessage({ message: JSON.stringify(walletMessageToSign) }); // corrupt signature by adding "1"
+        const stringifiedMessageToSign = JSON.stringify(walletMessageToSign);
+
+        const walletSignature = await viemAccount.signMessage({ message: stringifiedMessageToSign });
 
         const postWithAuthorAddress = await generateMockPost(sub.address, plebbit, false, {
             signer: authorSigner,
@@ -98,6 +100,17 @@ describeSkipIfRpc(`Test evm-contract challenge`, async () => {
                 }
             }
         });
+        expect(postWithAuthorAddress.author.address).to.equal(authorSigner.address);
+        expect(postWithAuthorAddress.signer.privateKey).to.equal(authorSigner.privateKey);
+        expect(postWithAuthorAddress.author.wallets.eth.address).to.equal(viemAccount.address);
+
+        const isSignatureValid = await actualViemClient.verifyMessage({
+            address: postWithAuthorAddress.author.wallets.eth.address,
+            message: stringifiedMessageToSign,
+            signature: postWithAuthorAddress.author.wallets.eth.signature.signature
+        });
+
+        expect(isSignatureValid).to.be.true;
 
         // viemMaticFake["readContract"] = viemSandbox.fake.resolves(viemAccount.address); // NFT ownerof will resolve to this
         viemEthFake["call"] = viemSandbox.fake.resolves({ data: "0x0000000000000000000000000000000000000000865a0735887d15fcf91fa302" }); // mock nft wallet to have 0 pleb
