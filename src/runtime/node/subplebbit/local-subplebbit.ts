@@ -1778,7 +1778,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
 
     private async _cleanUpIpfsRepoRarely() {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.005) {
+        if (Math.random() < 0.001) {
             let gcCids = 0;
             try {
                 for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {
