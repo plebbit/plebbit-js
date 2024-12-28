@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CreateCommentModerationOptionsSchema, CommentModerationPubsubMessagePublicationSchema, CommentModerationChallengeRequestToEncryptSchema, CommentModerationSignedPropertyNames } from "./schema";
+import { CreateCommentModerationOptionsSchema, CommentModerationPubsubMessagePublicationSchema, CommentModerationChallengeRequestToEncryptSchema, CommentModerationSignedPropertyNames, CommentModerationsTableRowSchema } from "./schema";
 import type { AuthorTypeWithCommentUpdate, JsonOfClass } from "../../types";
 import { CommentModeration } from "./comment-moderation";
 import type { JsonSignature, SignerType } from "../../signer/types";
@@ -16,3 +16,4 @@ export type CommentModerationPubsubMessagePublication = z.infer<typeof CommentMo
 export interface CommentModerationPubsubMessagePublicationWithSubplebbitAuthor extends CommentModerationPubsubMessagePublication {
     author: AuthorTypeWithCommentUpdate;
 }
+export type CommentModerationTableRow = z.infer<typeof CommentModerationsTableRowSchema>;

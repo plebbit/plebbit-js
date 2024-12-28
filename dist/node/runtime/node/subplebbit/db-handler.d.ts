@@ -118,6 +118,7 @@ export declare class DbHandler {
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         content?: string | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
@@ -191,6 +192,7 @@ export declare class DbHandler {
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         content?: string | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;
@@ -215,7 +217,7 @@ export declare class DbHandler {
     private _queryCommentCounts;
     private _queryLatestAuthorEdit;
     private _queryLatestModeratorReason;
-    queryCommentFlagsSetByMod(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed">>;
+    queryCommentFlagsSetByMod(cid: string, trx?: Transaction): Promise<Pick<CommentUpdateType, "spoiler" | "pinned" | "locked" | "removed" | "nsfw">>;
     queryAuthorEditDeleted(cid: string, trx?: Transaction): Promise<Pick<CommentEditsTableRow, "deleted"> | undefined>;
     private _queryModCommentFlair;
     private _queryLastChildCidAndLastReplyTimestamp;
@@ -283,6 +285,7 @@ export declare class DbHandler {
         }, import("zod").ZodTypeAny, "passthrough"> | undefined;
         content?: string | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         extraProps?: import("zod").objectOutputType<{}, import("zod").ZodTypeAny, "passthrough"> | undefined;
         title?: string | undefined;
         link?: string | undefined;

@@ -20,6 +20,7 @@ export declare const AuthorCommentEditOptionsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }, "strict", z.ZodTypeAny, {
     commentCid: string;
@@ -32,6 +33,7 @@ export declare const AuthorCommentEditOptionsSchema: z.ZodObject<{
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }, {
     commentCid: string;
@@ -44,6 +46,7 @@ export declare const AuthorCommentEditOptionsSchema: z.ZodObject<{
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }>;
 export declare const CreateCommentEditOptionsSchema: z.ZodObject<z.objectUtil.extendShape<{
@@ -374,6 +377,7 @@ export declare const CreateCommentEditOptionsSchema: z.ZodObject<z.objectUtil.ex
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, "strict", z.ZodTypeAny, {
     signer: {
@@ -492,6 +496,7 @@ export declare const CreateCommentEditOptionsSchema: z.ZodObject<z.objectUtil.ex
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }, {
     signer: {
@@ -610,9 +615,10 @@ export declare const CreateCommentEditOptionsSchema: z.ZodObject<z.objectUtil.ex
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }>;
-export declare const CommentEditSignedPropertyNames: ("timestamp" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason")[];
+export declare const CommentEditSignedPropertyNames: ("timestamp" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason")[];
 export declare const CommentEditPubsubMessagePublicationSchema: z.ZodObject<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
     signer: z.ZodObject<{
         type: z.ZodEnum<["ed25519"]>;
@@ -941,6 +947,7 @@ export declare const CommentEditPubsubMessagePublicationSchema: z.ZodObject<Pick
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, {
     signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -1142,7 +1149,7 @@ export declare const CommentEditPubsubMessagePublicationSchema: z.ZodObject<Pick
         signature: string;
         signedPropertyNames: string[];
     }>;
-}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, "strict", z.ZodTypeAny, {
+}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, "strict", z.ZodTypeAny, {
     timestamp: number;
     signature: {
         type: "ed25519" | "eip191";
@@ -1197,6 +1204,7 @@ export declare const CommentEditPubsubMessagePublicationSchema: z.ZodObject<Pick
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }, {
     timestamp: number;
@@ -1253,6 +1261,7 @@ export declare const CommentEditPubsubMessagePublicationSchema: z.ZodObject<Pick
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 }>;
 export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema: z.ZodObject<z.objectUtil.extendShape<Pick<z.objectUtil.extendShape<z.objectUtil.extendShape<z.objectUtil.extendShape<{
@@ -1583,6 +1592,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, {
     signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -1784,7 +1794,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         signature: string;
         signedPropertyNames: string[];
     }>;
-}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -2396,6 +2406,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, {
     signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -2597,7 +2608,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         signature: string;
         signedPropertyNames: string[];
     }>;
-}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -3209,6 +3220,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, {
     signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -3410,7 +3422,7 @@ export declare const CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema
         signature: string;
         signedPropertyNames: string[];
     }>;
-}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
     author: z.ZodObject<{
         address: z.ZodString;
         previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -4023,6 +4035,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<z.objectUtil.extend
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     reason: z.ZodOptional<z.ZodString>;
 }>, {
     signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -4224,7 +4237,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<z.objectUtil.extend
         signature: string;
         signedPropertyNames: string[];
     }>;
-}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+}>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
     insertedAt: z.ZodNumber;
     authorSignerAddress: z.ZodString;
     isAuthorEdit: z.ZodBoolean;
@@ -4289,6 +4302,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<z.objectUtil.extend
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
     extraProps?: z.objectOutputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }, {
@@ -4350,6 +4364,7 @@ export declare const CommentEditsTableRowSchema: z.ZodObject<z.objectUtil.extend
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
     extraProps?: z.objectInputType<{}, z.ZodTypeAny, "passthrough"> | undefined;
 }>;
@@ -4685,6 +4700,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -4886,7 +4902,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -5498,6 +5514,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -5699,7 +5716,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -6311,6 +6328,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -6512,7 +6530,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -6855,6 +6873,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
         content?: string | undefined;
         deleted?: boolean | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
     } & {
         [k: string]: unknown;
@@ -6919,6 +6938,7 @@ export declare const CommentEditChallengeRequestToEncryptSchema: z.ZodObject<z.o
         content?: string | undefined;
         deleted?: boolean | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
     } & {
         [k: string]: unknown;

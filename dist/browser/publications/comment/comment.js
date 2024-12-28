@@ -76,6 +76,7 @@ export class Comment extends Publication {
         this.linkWidth = props.linkWidth;
         this.parentCid = props.parentCid;
         this.spoiler = props.spoiler;
+        this.nsfw = props.nsfw;
         this.title = props.title;
         this.linkHtmlTagName = props.linkHtmlTagName;
         // Initializing Comment Ipfs props
@@ -124,6 +125,7 @@ export class Comment extends Publication {
                 : typeof props.edit?.spoiler === "boolean"
                     ? props.edit?.spoiler
                     : this.spoiler;
+        this.nsfw = typeof props.nsfw === "boolean" ? props.nsfw : typeof props.edit?.nsfw === "boolean" ? props.edit?.nsfw : this.nsfw;
         if (props.author)
             Object.assign(this.author, props.author);
         if (props.edit?.content)

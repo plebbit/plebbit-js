@@ -594,6 +594,7 @@ export declare function parseCreateCommentModerationOptionsSchemaWithPlebbitErro
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -782,6 +783,7 @@ export declare function parseCommentModerationPubsubMessagePublicationSchemaWith
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -1068,6 +1070,7 @@ export declare function parseCreateCommentEditOptionsSchemaWithPlebbitErrorIfItF
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 };
 export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CommentEditPubsubMessagePublicationSchema>): {
@@ -1125,6 +1128,7 @@ export declare function parseCommentEditPubsubMessagePublicationSchemaWithPlebbi
     content?: string | undefined;
     deleted?: boolean | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
 };
 export declare function parseCreateSubplebbitFunctionArgumentsSchemaWithPlebbitErrorIfItFails(args: z.infer<typeof CreateSubplebbitFunctionArgumentsSchema>): z.objectOutputType<{
@@ -2670,6 +2674,7 @@ export declare function parseCommentPubsubMessagePublicationWithPlebbitErrorIfIt
     }, z.ZodTypeAny, "passthrough"> | undefined;
     content?: string | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;
@@ -2793,6 +2798,7 @@ export declare function parseCreateCommentOptionsSchemaWithPlebbitErrorIfItFails
     } | undefined;
     content?: string | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     title?: string | undefined;
     link?: string | undefined;
     linkWidth?: number | undefined;

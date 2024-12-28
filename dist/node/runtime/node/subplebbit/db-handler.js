@@ -144,6 +144,7 @@ export class DbHandler {
             table.text("linkHtmlTagName").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
             table.json("extraProps").nullable(); // this column will store props that is not recognized by the sub
             table.text("protocolVersion").notNullable();
             table.increments("id"); // Used for sorts
@@ -159,6 +160,7 @@ export class DbHandler {
             table.integer("replyCount").notNullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
             table.boolean("pinned").nullable();
             table.boolean("locked").nullable();
             table.boolean("removed").nullable();
@@ -203,6 +205,7 @@ export class DbHandler {
             table.boolean("deleted").nullable();
             table.json("flair").nullable();
             table.boolean("spoiler").nullable();
+            table.boolean("nsfw").nullable();
             table.boolean("isAuthorEdit").notNullable(); // if edit is signed by original author
             table.timestamp("insertedAt").defaultTo(this._knex.raw("(strftime('%s', 'now'))")); // Timestamp of when it was first inserted in the table
             table.json("extraProps").nullable();
@@ -699,7 +702,7 @@ export class DbHandler {
         return res;
     }
     async queryCommentFlagsSetByMod(cid, trx) {
-        const res = Object.assign({}, ...(await Promise.all(["spoiler", "pinned", "locked", "removed"].map((field) => this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
+        const res = Object.assign({}, ...(await Promise.all(["spoiler", "pinned", "locked", "removed", "nsfw"].map((field) => this._baseTransaction(trx)(TABLES.COMMENT_MODERATIONS)
             .jsonExtract("commentModeration", `$.${field}`, field, true)
             .where("commentCid", cid)
             .whereNotNull(field)

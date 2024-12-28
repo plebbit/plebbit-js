@@ -35,6 +35,7 @@ export declare class Comment extends Publication implements CommentPubsubMessage
     flair?: CommentPubsubMessagePublication["flair"];
     deleted?: CommentWithinPageJson["deleted"];
     spoiler?: CommentIpfsType["spoiler"];
+    nsfw?: CommentIpfsType["nsfw"];
     pinned?: CommentUpdateType["pinned"];
     locked?: CommentUpdateType["locked"];
     removed?: CommentUpdateType["removed"];

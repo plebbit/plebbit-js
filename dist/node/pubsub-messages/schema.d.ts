@@ -129,6 +129,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -644,7 +645,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -946,6 +947,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -1461,7 +1463,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -1763,6 +1765,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -2278,7 +2281,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -2580,6 +2583,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -3095,7 +3099,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -3397,6 +3401,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -3912,7 +3917,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -6905,6 +6910,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -7106,7 +7112,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -7718,6 +7724,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -7919,7 +7926,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -8531,6 +8538,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -8732,7 +8740,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -9343,6 +9351,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -9432,6 +9441,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -9521,6 +9531,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -10403,6 +10414,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -10492,6 +10504,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -10581,6 +10594,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -11463,6 +11477,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -11552,6 +11567,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -11641,6 +11657,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -16833,6 +16850,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -17034,7 +17052,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -18439,6 +18457,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -18528,6 +18547,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -18617,6 +18637,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -19192,6 +19213,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -19707,7 +19729,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -21757,6 +21779,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -21958,7 +21981,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -23363,6 +23386,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -23452,6 +23476,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -23541,6 +23566,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -24116,6 +24142,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -24631,7 +24658,7 @@ export declare const DecryptedChallengeRequestPublicationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -26372,6 +26399,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -26887,7 +26915,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -27189,6 +27217,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -27704,7 +27733,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -28006,6 +28035,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -28521,7 +28551,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -28823,6 +28853,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -29338,7 +29369,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -29640,6 +29671,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -30155,7 +30187,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -33148,6 +33180,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -33349,7 +33382,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -33961,6 +33994,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -34162,7 +34196,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -34774,6 +34808,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -34975,7 +35010,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -35586,6 +35621,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -35675,6 +35711,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -35764,6 +35801,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -36646,6 +36684,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -36735,6 +36774,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -36824,6 +36864,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -37706,6 +37747,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -37795,6 +37837,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -37884,6 +37927,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -43081,6 +43125,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -43282,7 +43327,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -44687,6 +44732,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -44776,6 +44822,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -44865,6 +44912,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -45440,6 +45488,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -45955,7 +46004,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -48007,6 +48056,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         reason: z.ZodOptional<z.ZodString>;
     }>, {
         signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -48208,7 +48258,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -49613,6 +49663,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -49702,6 +49753,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -49791,6 +49843,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -50366,6 +50419,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -50881,7 +50935,7 @@ export declare const DecryptedChallengeRequestSchema: z.ZodObject<z.objectUtil.e
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -52909,6 +52963,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -53424,7 +53479,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -53732,6 +53787,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -54247,7 +54303,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -54555,6 +54611,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         content: z.ZodOptional<z.ZodString>;
         title: z.ZodOptional<z.ZodString>;
         link: z.ZodOptional<z.ZodString>;
@@ -55070,7 +55127,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             signature: string;
             signedPropertyNames: string[];
         }>;
-    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
+    }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "content" | "spoiler" | "nsfw" | "title" | "link" | "linkWidth" | "linkHeight" | "linkHtmlTagName" | "parentCid" | "postCid">, {
         author: z.ZodObject<{
             address: z.ZodString;
             previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -55694,6 +55751,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -55895,7 +55953,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -56507,6 +56565,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -56708,7 +56767,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -57320,6 +57379,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -57521,7 +57581,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -57823,6 +57883,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -58678,6 +58739,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -58879,7 +58941,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -59491,6 +59553,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -59692,7 +59755,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -60304,6 +60367,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -60505,7 +60569,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -60807,6 +60871,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -61662,6 +61727,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -61863,7 +61929,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -62475,6 +62541,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -62676,7 +62743,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -63288,6 +63355,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             reason: z.ZodOptional<z.ZodString>;
         }>, {
             signer: z.ZodObject<z.objectUtil.extendShape<{
@@ -63489,7 +63557,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
                 signature: string;
                 signedPropertyNames: string[];
             }>;
-        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "reason">, {
+        }>, "timestamp" | "signature" | "flair" | "author" | "subplebbitAddress" | "protocolVersion" | "commentCid" | "content" | "deleted" | "spoiler" | "nsfw" | "reason">, {
             author: z.ZodObject<{
                 address: z.ZodString;
                 previousCommentCid: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
@@ -63791,6 +63859,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -64546,6 +64615,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough"> | undefined;
         content?: string | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;
@@ -64792,6 +64862,7 @@ export declare const DecryptedChallengeVerificationSchema: z.ZodObject<{
         }, z.ZodTypeAny, "passthrough"> | undefined;
         content?: string | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         title?: string | undefined;
         link?: string | undefined;
         linkWidth?: number | undefined;

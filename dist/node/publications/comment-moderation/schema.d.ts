@@ -17,6 +17,7 @@ export declare const ModeratorOptionsSchema: z.ZodObject<{
         expiresAt: z.ZodOptional<z.ZodNumber>;
     }, z.ZodTypeAny, "passthrough">>>;
     spoiler: z.ZodOptional<z.ZodBoolean>;
+    nsfw: z.ZodOptional<z.ZodBoolean>;
     pinned: z.ZodOptional<z.ZodBoolean>;
     locked: z.ZodOptional<z.ZodBoolean>;
     removed: z.ZodOptional<z.ZodBoolean>;
@@ -119,6 +120,7 @@ export declare const ModeratorOptionsSchema: z.ZodObject<{
         lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
     }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
     pinned?: boolean | undefined;
     locked?: boolean | undefined;
@@ -154,6 +156,7 @@ export declare const ModeratorOptionsSchema: z.ZodObject<{
         lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
     }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
     spoiler?: boolean | undefined;
+    nsfw?: boolean | undefined;
     reason?: string | undefined;
     pinned?: boolean | undefined;
     locked?: boolean | undefined;
@@ -485,6 +488,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<z.objectU
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -574,6 +578,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<z.objectU
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -663,6 +668,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<z.objectU
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -774,6 +780,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<z.objectU
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -920,6 +927,7 @@ export declare const CreateCommentModerationOptionsSchema: z.ZodObject<z.objectU
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -1356,6 +1364,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -1445,6 +1454,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -1534,6 +1544,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -2169,6 +2180,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -2255,6 +2267,7 @@ export declare const CommentModerationPubsubMessagePublicationSchema: z.ZodObjec
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -2589,6 +2602,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<z.objectUtil.
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -2678,6 +2692,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<z.objectUtil.
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -2767,6 +2782,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<z.objectUtil.
             expiresAt: z.ZodOptional<z.ZodNumber>;
         }, z.ZodTypeAny, "passthrough">>>;
         spoiler: z.ZodOptional<z.ZodBoolean>;
+        nsfw: z.ZodOptional<z.ZodBoolean>;
         pinned: z.ZodOptional<z.ZodBoolean>;
         locked: z.ZodOptional<z.ZodBoolean>;
         removed: z.ZodOptional<z.ZodBoolean>;
@@ -3409,6 +3425,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<z.objectUtil.
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -3499,6 +3516,7 @@ export declare const CommentModerationsTableRowSchema: z.ZodObject<z.objectUtil.
             lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
         }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
         spoiler?: boolean | undefined;
+        nsfw?: boolean | undefined;
         reason?: string | undefined;
         pinned?: boolean | undefined;
         locked?: boolean | undefined;
@@ -3839,6 +3857,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -3928,6 +3947,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -4017,6 +4037,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -4899,6 +4920,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -4988,6 +5010,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -5077,6 +5100,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -5959,6 +5983,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -6048,6 +6073,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -6137,6 +6163,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 expiresAt: z.ZodOptional<z.ZodNumber>;
             }, z.ZodTypeAny, "passthrough">>>;
             spoiler: z.ZodOptional<z.ZodBoolean>;
+            nsfw: z.ZodOptional<z.ZodBoolean>;
             pinned: z.ZodOptional<z.ZodBoolean>;
             locked: z.ZodOptional<z.ZodBoolean>;
             removed: z.ZodOptional<z.ZodBoolean>;
@@ -6774,6 +6801,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
             }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
             spoiler?: boolean | undefined;
+            nsfw?: boolean | undefined;
             reason?: string | undefined;
             pinned?: boolean | undefined;
             locked?: boolean | undefined;
@@ -6866,6 +6894,7 @@ export declare const CommentModerationChallengeRequestToEncryptSchema: z.ZodObje
                 lastCommentCid: z.ZodEffects<z.ZodString, string, string>;
             }, "flair" | "banExpiresAt">, z.ZodTypeAny, "passthrough"> | undefined;
             spoiler?: boolean | undefined;
+            nsfw?: boolean | undefined;
             reason?: string | undefined;
             pinned?: boolean | undefined;
             locked?: boolean | undefined;

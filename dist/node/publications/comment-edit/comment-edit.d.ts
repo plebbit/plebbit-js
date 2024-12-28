@@ -2,7 +2,7 @@ import { Plebbit } from "../../plebbit/plebbit.js";
 import Publication from "../publication.js";
 import type { CommentEditPubsubMessagePublication, CreateCommentEditOptions } from "./types.js";
 import type { PublicationTypeName } from "../../types.js";
-import { SignerType } from "../../signer/types.js";
+import type { SignerType } from "../../signer/types.js";
 export declare class CommentEdit extends Publication implements CommentEditPubsubMessagePublication {
     commentCid: CommentEditPubsubMessagePublication["commentCid"];
     content?: CommentEditPubsubMessagePublication["content"];
@@ -10,6 +10,7 @@ export declare class CommentEdit extends Publication implements CommentEditPubsu
     deleted?: CommentEditPubsubMessagePublication["deleted"];
     flair?: CommentEditPubsubMessagePublication["flair"];
     spoiler?: CommentEditPubsubMessagePublication["spoiler"];
+    nsfw?: CommentEditPubsubMessagePublication["nsfw"];
     signature: CommentEditPubsubMessagePublication["signature"];
     _pubsubMsgToPublish?: CommentEditPubsubMessagePublication;
     challengeRequest?: CreateCommentEditOptions["challengeRequest"];

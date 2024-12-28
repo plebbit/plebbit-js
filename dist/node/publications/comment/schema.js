@@ -16,6 +16,7 @@ export const CreateCommentOptionsSchema = z
     .object({
     flair: FlairSchema.optional(), // Author chosen colored label for the comment
     spoiler: z.boolean().optional(), // Hide the comment thumbnail behind spoiler warning
+    nsfw: z.boolean().optional(),
     content: CommentContentSchema.optional(),
     title: z.string().optional(),
     link: z.string().max(2000, messages.COMMENT_LINK_LENGTH_IS_OVER_LIMIT).url().optional(),
@@ -71,6 +72,7 @@ export const CommentUpdateNoRepliesSchema = z.object({
     edit: CommentEditPubsubMessagePublicationWithFlexibleAuthorSchema.optional(), // most recent edit by comment author, commentUpdate.edit.content, commentUpdate.edit.deleted, commentUpdate.edit.flair override Comment instance props. Validate commentUpdate.edit.signature
     flair: FlairSchema.optional(), // arbitrary colored string to describe the comment, added by mods, override comment.flair and comment.edit.flair (which are added by author)
     spoiler: z.boolean().optional(),
+    nsfw: z.boolean().optional(),
     pinned: z.boolean().optional(),
     locked: z.boolean().optional(), // mod locked a post
     removed: z.boolean().optional(), // mod deleted a comment
