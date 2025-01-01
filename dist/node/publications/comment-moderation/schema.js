@@ -6,6 +6,7 @@ export const ModeratorOptionsSchema = z
     .object({
     flair: FlairSchema.optional(),
     spoiler: z.boolean().optional(),
+    nsfw: z.boolean().optional(),
     pinned: z.boolean().optional(),
     locked: z.boolean().optional(),
     removed: z.boolean().optional(),

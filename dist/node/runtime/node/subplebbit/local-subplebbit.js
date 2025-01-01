@@ -486,7 +486,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
                 throw Error("There is a problem with db processing comment rows, the cids don't match");
         }
         catch (e) {
-            log.error(`Failed to insert comment (${commentCid}) to db due to error, rolling back on inserting the comment. This is a critical error`, e);
+            log.error(`Failed to insert comment (${commentCid}) to db due to error, rolling back on inserting the comment. This is a critical error`, e, "Comment table row is", commentRow);
             await this._dbHandler.rollbackTransaction(request.challengeRequestId.toString());
             throw e;
         }
@@ -1321,7 +1321,7 @@ export class LocalSubplebbit extends RpcLocalSubplebbit {
     }
     async _cleanUpIpfsRepoRarely() {
         const log = Logger("plebbit-js:local-subplebbit:syncIpnsWithDb:_cleanUpIpfsRepoRarely");
-        if (Math.random() < 0.005) {
+        if (Math.random() < 0.001) {
             let gcCids = 0;
             try {
                 for await (const res of this._clientsManager.getDefaultIpfs()._client.repo.gc({ quiet: true })) {

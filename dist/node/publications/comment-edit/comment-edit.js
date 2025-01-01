@@ -23,6 +23,7 @@ export class CommentEdit extends Publication {
         this.deleted = props.deleted;
         this.flair = props.flair;
         this.spoiler = props.spoiler;
+        this.nsfw = props.nsfw;
     }
     toJSONPubsubMessagePublication() {
         if (!this._pubsubMsgToPublish)
