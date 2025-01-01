@@ -183,7 +183,11 @@ SubplebbitFeatures { // any boolean that changes the functionality of the sub, a
   noPolls?: boolean
   noCrossposts?: boolean
   noUpvotes?: boolean
+  noPostUpvotes?: boolean
+  noReplyUpvotes?: boolean
   noDownvotes?: boolean
+  noPostDownvotes?: boolean
+  noReplyDownvotes?: boolean
   noAuthors?: boolean // no authors at all, like 4chan
   anonymousAuthors?: boolean // authors are given anonymous ids inside threads, like 4chan
   noNestedReplies?: boolean // no nested replies, like old school forums and 4chan
