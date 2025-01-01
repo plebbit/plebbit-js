@@ -1968,6 +1968,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
         const log = Logger("plebbit-js:local-subplebbit:start");
 
         this._stopHasBeenCalled = false;
+        if (!this._clientsManager.getDefaultIpfs())
+            throw Error("You need to define an IPFS client in your plebbit instance to be able to start a local sub");
         try {
             await this._initBeforeStarting();
             // update started value twice because it could be started prior lockSubStart
