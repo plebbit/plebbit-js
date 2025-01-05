@@ -114,7 +114,7 @@ export const ChallengeAnswerMessageSignedPropertyNames = remeda.keys.strict(reme
 export const ChallengeVerificationMessageSchema = PubsubMessageBaseSchema.extend({
     type: z.enum(["CHALLENGEVERIFICATION"]),
     challengeSuccess: z.boolean(),
-    challengeErrors: z.string().or(z.undefined()).array().optional(),
+    challengeErrors: z.record(z.number().int().nonnegative(), z.string()).optional(), // challenge index => challenge error
     reason: z.string().optional(),
     encrypted: EncryptedSchema.optional() // Will decrypt to DecryptedChallengeVerificationSchema
 }).strict();

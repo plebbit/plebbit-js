@@ -90,7 +90,9 @@ const getPendingChallengesOrChallengeVerification = async (
     challengeRequestMessage: DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor,
     subplebbit: LocalSubplebbit
 ): Promise<
-    { challengeSuccess: true } | { challengeSuccess: false; challengeErrors: string[] } | { pendingChallenges: PendingChallenge[] }
+    | { challengeSuccess: true }
+    | { challengeSuccess: false; challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]> }
+    | { pendingChallenges: PendingChallenge[] }
 > => {
     // if sub has no challenges, no need to send a challenge
     if (!Array.isArray(subplebbit.settings?.challenges)) return { challengeSuccess: true };
@@ -149,8 +151,7 @@ const getPendingChallengesOrChallengeVerification = async (
     // check failures and errors
     let challengeFailureCount = 0;
     let pendingChallenges: PendingChallenge[] = [];
-    const challengeErrors: string[] = new Array(challengeOrChallengeResults.length);
-    const publication = derivePublicationFromChallengeRequest(challengeRequestMessage);
+    const challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]> = {};
     for (const i in challengeOrChallengeResults) {
         const challengeIndex = Number(i);
         const challengeOrChallengeResult = challengeOrChallengeResults[challengeIndex];
@@ -210,7 +211,10 @@ const getChallengeVerificationFromChallengeAnswers = async (
     pendingChallenges: PendingChallenge[],
     challengeAnswers: DecryptedChallengeAnswer["challengeAnswers"],
     subplebbit: LocalSubplebbit
-): Promise<{ challengeSuccess: true } | { challengeSuccess: false; challengeErrors: string[] }> => {
+): Promise<
+    | { challengeSuccess: true }
+    | { challengeSuccess: false; challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]> }
+> => {
     const verifyChallengePromises: Promise<ChallengeResult>[] = [];
     for (const i in pendingChallenges) {
         verifyChallengePromises.push(pendingChallenges[i].verify(challengeAnswers[i])); // TODO double check if zod verifies output of a promise
@@ -232,7 +236,7 @@ const getChallengeVerificationFromChallengeAnswers = async (
     }
 
     let challengeFailureCount = 0;
-    const challengeErrors: string[] = [];
+    const challengeErrors: NonNullable<ChallengeVerificationMessageType["challengeErrors"]> = {};
     for (let i in challengeResults) {
         const challengeIndex = Number(i);
         if (!subplebbit.settings?.challenges?.[challengeIndex])
