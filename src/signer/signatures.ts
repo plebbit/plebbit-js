@@ -164,7 +164,13 @@ export async function _signPubsubMsg(
     // we assume here that pubsub msg already has been cleaned
     //@ts-expect-error
     const propsToSign = remeda.pick(msg, signedPropertyNames);
-    const publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    let publicationEncoded;
+    try {
+        publicationEncoded = cborg.encode(propsToSign, cborgEncodeOptions); // The comment instances get jsoned over the pubsub, so it makes sense that we would json them before signing, to make sure the data is the same before and after getting jsoned
+    } catch (e) {
+        log.error("Failed to encode pubsub message due to cborg error", e, propsToSign);
+        throw e;
+    }
     const signatureData = await signBufferEd25519(publicationEncoded, signer.privateKey);
     const publicKeyBuffer = uint8ArrayFromString(signer.publicKey, "base64");
     return {
