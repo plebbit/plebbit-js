@@ -15,6 +15,7 @@ import { PostsPagesIpfsSchema } from "../pages/schema.js";
 import { LocalSubplebbit } from "../runtime/node/subplebbit/local-subplebbit.js";
 import * as remeda from "remeda";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../pubsub-messages/types.js";
+import { messages } from "../errors.js";
 
 // Other props of Subplebbit Ipfs here
 export const SubplebbitEncryptionSchema = z
@@ -56,8 +57,6 @@ export const SubplebbitFeaturesSchema = z
         noImageReplies: z.boolean().optional(), // Not implemented
         noPolls: z.boolean().optional(), // Not impllemented
         noCrossposts: z.boolean().optional(), // Not implemented
-        noUpvotes: z.boolean().optional(), // Not implemented
-        noDownvotes: z.boolean().optional(), // Not implemented
         noAuthors: z.boolean().optional(), // Not implemented. No authors at all, like 4chan
         anonymousAuthors: z.boolean().optional(), // Not implemented. Authors are given anonymous ids inside threads, like 4chan
         noNestedReplies: z.boolean().optional(), // Not implemented. No nested replies, like old school forums and 4chan
@@ -70,6 +69,8 @@ export const SubplebbitFeaturesSchema = z
         noMarkdownVideos: z.boolean().optional(), // Not implemented. Don't embed videos in text posts markdown
         markdownImageReplies: z.boolean().optional(), // Not implemented
         markdownVideoReplies: z.boolean().optional(), // Not implemented
+        noUpvotes: z.boolean().optional(), // Not allowed to publish a vote=1
+        noDownvotes: z.boolean().optional(), // Not allowed to publish a vote=-1
         requirePostLink: z.boolean().optional(), // post.link must be defined and a valid https url
         requirePostLinkIsMedia: z.boolean().optional() // post.link must be of media (audio, video, image)
     })

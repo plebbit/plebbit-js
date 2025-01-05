@@ -1053,6 +1053,8 @@ export class LocalSubplebbit extends RpcLocalSubplebbit implements CreateNewLoca
             const votePublication = request.vote;
             if (remeda.intersection(VotePubsubReservedFields, remeda.keys.strict(votePublication)).length > 0)
                 return messages.ERR_VOTE_HAS_RESERVED_FIELD;
+            if (votePublication.vote === 1 && this.features?.noUpvotes) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES;
+            if (votePublication.vote === -1 && this.features?.noDownvotes) return messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES;
         } else if (request.commentModeration) {
             const commentModerationPublication = request.commentModeration;
             if (remeda.intersection(CommentModerationReservedFields, remeda.keys.strict(commentModerationPublication)).length > 0)

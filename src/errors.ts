@@ -193,6 +193,8 @@ export enum messages {
     ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_MODIFY_SUB_WITHOUT_BEING_OWNER_OR_ADMIN = "SubplebbitEdit attempted to modify subplebbit without being an owner or admin",
     ERR_SUBPLEBBIT_EDIT_ATTEMPTED_TO_NON_PUBLIC_PROPS = "SubplebbitEdit attempted to modify non public props or non existent. SubplebbitEdit is only allowed to edit props from SubplebbitIpfs schema",
     ERR_PUBLICATION_TIMESTAMP_IS_NOT_IN_PROPER_RANGE = "Timestamp of publication is either too high or too low. It should be within 5 minutes range",
+    ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES = "subplebbit.features.noUpvotes is true which means no upvotes can be published to this subplebbit",
+    ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES = "subplebbit.features.noDownvotes is true which means no downvotes can be published to this subplebbit",
 
     // Comment Edit errors
     ERR_SUB_COMMENT_MOD_CAN_NOT_LOCK_REPLY = "Can't lock replies. Only posts",
