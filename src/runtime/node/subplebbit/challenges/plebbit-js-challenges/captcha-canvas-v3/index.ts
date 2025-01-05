@@ -4,7 +4,7 @@ import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting }
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../../pubsub-messages/types.js";
 import { createCaptcha } from "captcha-canvas";
 
-const optionInputs = [
+const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "characters",
         label: "Characters",

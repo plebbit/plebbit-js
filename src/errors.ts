@@ -89,6 +89,7 @@ export enum messages {
     ERR_INVALID_CREATE_PLEBBIT_WS_SERVER_OPTIONS_SCHEMA = "Invalid create arguments for Plebbit WS RPC server",
     ERR_INVALID_CREATE_PLEBBIT_ARGS_SCHEMA = "User sent arguments with invalid schema in an attempt to create a Plebbit instance",
     ERR_INVALID_CREATE_SUBPLEBBIT_WITH_RPC_ARGS_SCHEMA = "User provided invalid schema of arguments for plebbit.createSubplebbit while connected to RPC",
+    ERR_CAN_NOT_SET_EXCLUDE_TO_HAVE_MORE_THAN_ONE_PUBLICATION = "The subplebbit has subplebbit.settings.challenges[x].exclude[y] with more than one 'vote'| 'comment' | 'reply' as true. It can only be one",
 
     // Sign errors
     ERR_AUTHOR_ADDRESS_NOT_MATCHING_SIGNER = "comment.author.address does not match signer.address",

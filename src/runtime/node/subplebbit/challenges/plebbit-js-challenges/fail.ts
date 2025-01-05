@@ -3,7 +3,7 @@
 import type { Challenge, ChallengeFile, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
-const optionInputs = [
+const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "error",
         label: "Error",

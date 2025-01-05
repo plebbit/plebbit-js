@@ -13,7 +13,7 @@ import type { Plebbit } from "../../../../../../plebbit/plebbit.js";
 import { derivePublicationFromChallengeRequest, isStringDomain } from "../../../../../../util.js";
 import { normalize } from "viem/ens";
 
-const optionInputs = [
+const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "chainTicker",
         label: "chainTicker",

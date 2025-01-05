@@ -2,7 +2,7 @@ import { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting }
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 import { derivePublicationFromChallengeRequest } from "../../../../../util.js";
 
-const optionInputs = [
+const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "blacklist",
         label: "Blacklist",

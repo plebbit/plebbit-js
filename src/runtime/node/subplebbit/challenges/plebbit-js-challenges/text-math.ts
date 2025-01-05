@@ -1,7 +1,7 @@
 import type { Challenge, ChallengeFile, ChallengeResult, SubplebbitChallengeSetting } from "../../../../../subplebbit/types.js";
 import type { DecryptedChallengeRequestMessageTypeWithSubplebbitAuthor } from "../../../../../pubsub-messages/types.js";
 
-const optionInputs = [
+const optionInputs = <NonNullable<ChallengeFile["optionInputs"]>>[
     {
         option: "difficulty",
         label: "Difficulty",

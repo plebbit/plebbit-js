@@ -106,7 +106,7 @@ export const ResultOfGetChallengeSchema = ChallengeFromGetChallengeSchema.or(Cha
 
 export const ChallengeExcludeSubplebbitSchema = z
     .object({
-        addresses: SubplebbitAddressSchema.array(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
+        addresses: SubplebbitAddressSchema.array().nonempty(), // list of subplebbit addresses that can be used to exclude, plural because not a condition field like 'role'
         maxCommentCids: z.number().nonnegative().int(), // maximum amount of comment cids that will be fetched to check
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
@@ -120,16 +120,20 @@ export const ChallengeExcludeSchema = z
         postScore: z.number().int().optional(),
         replyScore: z.number().int().optional(),
         firstCommentTimestamp: PlebbitTimestampSchema.optional(),
-        challenges: z.number().nonnegative().int().array().optional(),
+        challenges: z.number().nonnegative().int().array().nonempty().optional(),
         post: z.boolean().optional(),
         reply: z.boolean().optional(),
         vote: z.boolean().optional(),
-        role: SubplebbitRoleSchema.shape.role.array().optional(),
-        address: AuthorAddressSchema.array().optional(),
+        role: SubplebbitRoleSchema.shape.role.array().nonempty().optional(),
+        address: AuthorAddressSchema.array().nonempty().optional(),
         rateLimit: z.number().nonnegative().int().optional(),
         rateLimitChallengeSuccess: z.boolean().optional()
     })
-    .passthrough();
+    .passthrough()
+    .refine(
+        (args) => [args.post, args.vote, args.reply].filter((pub) => pub === true).length <= 1,
+        messages.ERR_CAN_NOT_SET_EXCLUDE_TO_HAVE_MORE_THAN_ONE_PUBLICATION
+    );
 
 export const SubplebbitChallengeSettingSchema = z
     .object({
@@ -137,7 +141,7 @@ export const SubplebbitChallengeSettingSchema = z
         path: z.string().optional(), // (only if name is undefined) the path to the challenge js file, used to get the props ChallengeFile {optionInputs, type, getChallenge}
         name: z.string().optional(), // (only if path is undefined) the challengeName from Plebbit.challenges to identify it
         options: z.record(z.string(), z.string()).optional(), //{ [optionPropertyName: string]: string } the options to be used to the getChallenge function, all values must be strings for UI ease of use
-        exclude: ChallengeExcludeSchema.array().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
+        exclude: ChallengeExcludeSchema.array().nonempty().optional(), // singular because it only has to match 1 exclude, the client must know the exclude setting to configure what challengeCommentCids to send
         description: z.string().optional() // describe in the frontend what kind of challenge the user will receive when publishing
     })
     .strict()
@@ -146,7 +150,7 @@ export const SubplebbitChallengeSettingSchema = z
 export const ChallengeFileSchema = z
     .object({
         // the result of the function exported by the challenge file
-        optionInputs: ChallengeOptionInputSchema.array().optional(), // the options inputs fields to display to the user
+        optionInputs: ChallengeOptionInputSchema.array().nonempty().optional(), // the options inputs fields to display to the user
         type: ChallengeFromGetChallengeSchema.shape.type,
         challenge: ChallengeFromGetChallengeSchema.shape.challenge.optional(), // some challenges can be static and asked before the user publishes, like a password for example
         caseInsensitive: z.boolean().optional(), // challenge answer capitalization is ignored, informational only option added by the challenge file
@@ -165,7 +169,7 @@ export const ChallengeFileSchema = z
 
 export const SubplebbitChallengeSchema = z
     .object({
-        exclude: ChallengeExcludeSchema.array().optional(),
+        exclude: ChallengeExcludeSchema.array().nonempty().optional(),
         description: ChallengeFileSchema.shape.description,
         challenge: ChallengeFileSchema.shape.challenge,
         type: ChallengeFileSchema.shape.type,
