@@ -5,7 +5,9 @@ import {
     overrideCommentInstancePropsAndSign,
     publishWithExpectedResult,
     mockRemotePlebbitIpfsOnly,
-    resolveWhenConditionIsTrue
+    resolveWhenConditionIsTrue,
+    publishRandomPost,
+    generateMockVote
 } from "../../../dist/node/test/test-util";
 import { messages } from "../../../dist/node/errors";
 
@@ -90,5 +92,86 @@ describe(`subplebbit.features.requirePostLinkIsMedia`, async () => {
         expect(post.link).to.equal(validUrl);
         await publishWithExpectedResult(post, true);
         expect(post.link).to.equal(validUrl);
+    });
+});
+
+describe(`subplebbit.features.noUpvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Feature is updated correctly in subplebbit.features`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
+        await subplebbit.edit({ features: { ...subplebbit.features, noUpvotes: true } });
+        expect(subplebbit.features.noUpvotes).to.be.true;
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
+        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        expect(remoteSub.features.noUpvotes).to.be.true;
+    });
+
+    it(`Not allowed to publish upvotes if subplebbit.features.noUpvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(upvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_UPVOTES);
+    });
+
+    it(`Allowed to publish downvotes if subplebbit.features.noUpvotes=true`, async () => {
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(downvote, true);
+    });
+});
+describe(`subplebbit.features.noDownvotes`, async () => {
+    let plebbit, subplebbit, remotePlebbit, postToVoteOn;
+
+    before(async () => {
+        plebbit = await mockPlebbit();
+        remotePlebbit = await mockRemotePlebbitIpfsOnly();
+        subplebbit = await createSubWithNoChallenge({}, plebbit);
+
+        await subplebbit.start();
+        await resolveWhenConditionIsTrue(subplebbit, () => typeof subplebbit.updatedAt === "number");
+
+        postToVoteOn = await publishRandomPost(subplebbit.address, remotePlebbit);
+    });
+
+    after(async () => {
+        await subplebbit.delete();
+    });
+
+    it(`Feature is updated correctly in subplebbit.features`, async () => {
+        expect(subplebbit.features).to.be.undefined;
+        const oldUpdatedAt = subplebbit.updatedAt;
+        await subplebbit.edit({ features: { ...subplebbit.features, noDownvotes: true } });
+        expect(subplebbit.features.noDownvotes).to.be.true;
+        await resolveWhenConditionIsTrue(subplebbit, () => subplebbit.updatedAt !== oldUpdatedAt); // that means we published a new update
+        const remoteSub = await remotePlebbit.getSubplebbit(subplebbit.address);
+        expect(remoteSub.features.noDownvotes).to.be.true;
+    });
+
+    it(`Not allowed to publish downvotes if subplebbit.features.noDownvotes=true`, async () => {
+        const downvote = await generateMockVote(postToVoteOn, -1, remotePlebbit); // should be rejected
+
+        await publishWithExpectedResult(downvote, false, messages.ERR_NOT_ALLOWED_TO_PUBLISH_DOWNVOTES);
+    });
+
+    it(`Allowed to publish upvotes if subplebbit.features.noDownvotes=true`, async () => {
+        const upvote = await generateMockVote(postToVoteOn, 1, remotePlebbit); // should be accepted
+
+        await publishWithExpectedResult(upvote, true);
     });
 });
