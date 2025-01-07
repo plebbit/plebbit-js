@@ -430,21 +430,21 @@ results[excludeAccountAgeChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're not allowed to publish."]
+        challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
 results[whitelistChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're not whitelisted."]
+        challengeErrors: { 0: "You're not whitelisted." }
     }
 };
 results[blacklistChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're blacklisted."]
+        challengeErrors: { 0: "You're blacklisted." }
     }
 };
 // comment out because don't know how to require external challenge in the browser tests
@@ -459,42 +459,52 @@ results[evmContractCallChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["Author doesn't have a wallet set."]
+        challengeErrors: { 0: "Author doesn't have a wallet set." }
     }
 };
 results[passwordChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
-    "low-karma.eth": { challengeSuccess: false, challengeErrors: ["Wrong answer."] }
+    "low-karma.eth": { challengeSuccess: false, challengeErrors: { 0: "Wrong answer." } }
 };
 results[excludeFriendlySubKarmaChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're not allowed to publish."]
+        challengeErrors: { 0: "You're not allowed to publish." }
     }
 };
 results[twoOutOf4SuccessChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're not allowed to publish.", "You're not allowed to publish.", "You're blacklisted.", "You're blacklisted."]
+        challengeErrors: {
+            0: "You're not allowed to publish.",
+            1: "You're not allowed to publish.",
+            2: "You're blacklisted.",
+            3: "You're blacklisted."
+        }
     }
 };
 results[twoOutOf4SuccessInverseChallegeSubplebbit.title] = {
     "high-karma.eth": { challengeSuccess: true },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're blacklisted.", "You're blacklisted.", "You're not allowed to publish.", "You're not allowed to publish."]
+        challengeErrors: {
+            0: "You're blacklisted.",
+            1: "You're blacklisted.",
+            2: "You're not allowed to publish.",
+            3: "You're not allowed to publish."
+        }
     }
 };
 results[rateLimitChallegeSubplebbit.title] = {
     "high-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h."]
+        challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
     },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h."]
+        challengeErrors: { 0: "You're doing this too much, rate limit: 0 post/h, 10 replies/h, 100 votes/h." }
     }
 };
 results[rateLimitChallengeSuccessChallegeSubplebbit.title] = {
@@ -511,7 +521,7 @@ results[excludeModsChallegeSubplebbit.title] = {
     },
     "low-karma.eth": {
         challengeSuccess: false,
-        challengeErrors: ["You're not a mod."]
+        challengeErrors: { 0: "You're not a mod." }
     }
 };
 

@@ -258,11 +258,14 @@ describe("getChallengeVerification", () => {
 
         // first rate limit triggered
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
-        expect(challengeVerification).to.deep.equal({ challengeErrors: ["rate limited 1", undefined], challengeSuccess: false });
+        expect(challengeVerification).to.deep.equal({ challengeErrors: { 0: "rate limited 1" }, challengeSuccess: false });
 
         // second rate limit triggered
         challengeVerification = await getChallengeVerification(challengeRequestMessage, subplebbit, shouldNotCall);
-        expect(challengeVerification).to.deep.equal({ challengeSuccess: false, challengeErrors: ["rate limited 1", "rate limited 2"] });
+        expect(challengeVerification).to.deep.equal({
+            challengeSuccess: false,
+            challengeErrors: { 0: "rate limited 1", 1: "rate limited 2" }
+        });
     });
 
     it("getChallenge function throws", async () => {
